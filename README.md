@@ -19,14 +19,12 @@
 |---|---|---|
 | このリポジトリの歩き方を知る | [ナビゲーションガイド](docs/ja/navigation.md) | 3 分 |
 | 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | 10 分 |
-| 現行 NAS を棚卸しする | [Playbook 01 — 評価](playbooks/01-assess/) | 30 分 |
-| 移行先の構成を設計する | [Playbook 02 — 設計](playbooks/02-design/) | 60 分 |
-| 移行を実行する | [Playbook 03 — 移行](playbooks/03-migrate/) | — |
-| 運用を立ち上げる | [Playbook 05 — 運用](playbooks/05-operate/) | — |
-| データ保護（Snapshot / SnapMirror / WORM）を設計する | [Domain — データ保護](domains/data-protection/) | 30 分 |
-| 他ストレージ選択肢と比較する | [比較マトリクス](reference/comparison/) | 15 分 |
-| 事例を読む（匿名化済み） | [Case Studies](case-studies/) | 10 分 |
+| 検証済みの上限値を確認する | [上限値・クォータ](reference/limits/) | 5 分 |
+| 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
+
+> **収録状況**: ライフサイクル 6 モジュールとテーマ 6 モジュールは、いまは「扱う問いと構造を定義した段階」です（`notes/` は未収録）。各モジュールの README に、そのモジュールが答える予定の問いが一覧されています。
+> 骨組みだけの入口に読者の時間を使わせないため、上の表には**いま中身がある資料だけ**を載せています。モジュールの全体像は下の 2 軸ナビゲーションを参照してください。
 
 ---
 

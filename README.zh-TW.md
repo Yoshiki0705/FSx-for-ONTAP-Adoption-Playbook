@@ -19,14 +19,13 @@
 |---|---|---|
 | 了解如何瀏覽本儲存庫 | [導覽指南](docs/en/navigation.md) | 3 分鐘 |
 | 判斷能否遷移以及如何遷移 | [遷移方式決策樹](reference/decision-trees/migration-method.md) | 10 分鐘 |
-| 盤點現有 NAS | [Playbook 01 — 評估](playbooks/01-assess/) | 30 分鐘 |
-| 設計目標組態 | [Playbook 02 — 設計](playbooks/02-design/) | 60 分鐘 |
-| 執行遷移 | [Playbook 03 — 遷移](playbooks/03-migrate/) | — |
-| 建立營運體系 | [Playbook 05 — 營運](playbooks/05-operate/) | — |
-| 設計資料保護（Snapshot / SnapMirror / WORM） | [Domain — 資料保護](domains/data-protection/) | 30 分鐘 |
-| 與其他儲存選項比較 | [比較矩陣](reference/comparison/) | 15 分鐘 |
-| 閱讀案例（已匿名化） | [Case Studies](case-studies/) | 10 分鐘 |
+| 查看已驗證的上限值 | [上限值與配額](reference/limits/) | 5 分鐘 |
+| 了解如何判讀知識的可信度 | [知識分類政策](docs/en/evidence-policy.md) | 5 分鐘 |
 | 補充知識（撰寫） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分鐘 |
+
+> **收錄情況**：生命週期 6 個模組與主題 6 個模組目前處於「已定義待解決的問題與結構」的階段（`notes/` 尚未收錄）。
+> 各模組的 README 列出了該模組計畫回答的問題。
+> 為了不讓讀者把時間花在只有骨架的入口上，上表只列出**目前已有內容的資料**。模組全貌請參見下方的雙軸導覽。
 
 ---
 

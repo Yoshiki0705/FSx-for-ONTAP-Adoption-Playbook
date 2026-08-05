@@ -19,14 +19,13 @@
 |---|---|---|
 | 이 리포지토리를 둘러보는 방법 알기 | [내비게이션 가이드](docs/en/navigation.md) | 3분 |
 | 마이그레이션 가능성과 방법 판단 | [마이그레이션 방식 결정 트리](reference/decision-trees/migration-method.md) | 10분 |
-| 현행 NAS 자산 조사 | [Playbook 01 — 평가](playbooks/01-assess/) | 30분 |
-| 마이그레이션 대상 구성 설계 | [Playbook 02 — 설계](playbooks/02-design/) | 60분 |
-| 마이그레이션 실행 | [Playbook 03 — 마이그레이션](playbooks/03-migrate/) | — |
-| 운영 체계 구축 | [Playbook 05 — 운영](playbooks/05-operate/) | — |
-| 데이터 보호(Snapshot / SnapMirror / WORM) 설계 | [Domain — 데이터 보호](domains/data-protection/) | 30분 |
-| 다른 스토리지 선택지와 비교 | [비교 매트릭스](reference/comparison/) | 15분 |
-| 사례 읽기(익명화 완료) | [Case Studies](case-studies/) | 10분 |
+| 검증된 상한값 확인 | [상한값·쿼터](reference/limits/) | 5분 |
+| 지식의 신뢰도를 읽는 방법 알기 | [지식 분류 정책](docs/en/evidence-policy.md) | 5분 |
 | 지식 추가하기(집필) | [CONTRIBUTING.md](CONTRIBUTING.md) | 10분 |
+
+> **수록 현황**: 라이프사이클 6개 모듈과 테마 6개 모듈은 현재 "다룰 질문과 구조를 정의한 단계"입니다(`notes/`는 미수록).
+> 각 모듈 README에 해당 모듈이 답할 예정인 질문이 정리되어 있습니다.
+> 골격만 있는 입구에 독자의 시간을 쓰지 않도록, 위 표에는 **현재 내용이 있는 자료만** 실었습니다. 모듈 전체 구성은 아래 2축 내비게이션을 참조하세요.
 
 ---
 

@@ -19,14 +19,13 @@
 |---|---|---|
 | 了解如何浏览本仓库 | [导航指南](docs/en/navigation.md) | 3 分钟 |
 | 判断能否迁移以及如何迁移 | [迁移方式决策树](reference/decision-trees/migration-method.md) | 10 分钟 |
-| 盘点现有 NAS | [Playbook 01 — 评估](playbooks/01-assess/) | 30 分钟 |
-| 设计目标配置 | [Playbook 02 — 设计](playbooks/02-design/) | 60 分钟 |
-| 执行迁移 | [Playbook 03 — 迁移](playbooks/03-migrate/) | — |
-| 建立运维体系 | [Playbook 05 — 运维](playbooks/05-operate/) | — |
-| 设计数据保护（Snapshot / SnapMirror / WORM） | [Domain — 数据保护](domains/data-protection/) | 30 分钟 |
-| 与其他存储选项比较 | [比较矩阵](reference/comparison/) | 15 分钟 |
-| 阅读案例（已匿名化） | [Case Studies](case-studies/) | 10 分钟 |
+| 查看已验证的上限值 | [上限值与配额](reference/limits/) | 5 分钟 |
+| 了解如何判读知识的可信度 | [知识分类政策](docs/en/evidence-policy.md) | 5 分钟 |
 | 补充知识（撰写） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分钟 |
+
+> **收录情况**：生命周期 6 个模块与主题 6 个模块目前处于"已定义待解决的问题与结构"的阶段（`notes/` 尚未收录）。
+> 各模块的 README 列出了该模块计划回答的问题。
+> 为了不让读者把时间花在只有骨架的入口上，上表只列出**目前已有内容的资料**。模块全貌请参见下方的双轴导航。
 
 ---
 

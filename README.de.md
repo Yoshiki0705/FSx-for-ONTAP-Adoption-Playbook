@@ -19,14 +19,15 @@
 |---|---|---|
 | Verstehen, wie man dieses Repository durchsucht | [Navigationsleitfaden](docs/en/navigation.md) | 3 Min. |
 | Entscheiden, ob und wie migriert wird | [Entscheidungsbaum: Migrationsmethode](reference/decision-trees/migration-method.md) | 10 Min. |
-| Bestand des vorhandenen NAS aufnehmen | [Playbook 01 — Bewertung](playbooks/01-assess/) | 30 Min. |
-| Zielkonfiguration entwerfen | [Playbook 02 — Design](playbooks/02-design/) | 60 Min. |
-| Migration durchführen | [Playbook 03 — Migration](playbooks/03-migrate/) | — |
-| Betrieb aufbauen | [Playbook 05 — Betrieb](playbooks/05-operate/) | — |
-| Datenschutz entwerfen (Snapshot / SnapMirror / WORM) | [Domäne — Datenschutz](domains/data-protection/) | 30 Min. |
-| Mit anderen Storage-Optionen vergleichen | [Vergleichsmatrizen](reference/comparison/) | 15 Min. |
-| Fallbeispiele lesen (anonymisiert) | [Case Studies](case-studies/) | 10 Min. |
+| Verifizierte Grenzwerte nachsehen | [Grenzwerte und Kontingente](reference/limits/) | 5 Min. |
+| Verstehen, wie die Vertrauensstufen zu lesen sind | [Evidenzrichtlinie](docs/en/evidence-policy.md) | 5 Min. |
 | Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 Min. |
+
+> **Abdeckungsstand**: Die 6 Lifecycle-Module und die 6 Themenmodule definieren derzeit die Fragen, die
+> sie beantworten werden, sowie die Struktur dafür — `notes/` ist noch nicht gefüllt. Das README jedes
+> Moduls listet die Fragen auf, für die es zuständig ist.
+> Die Tabelle oben führt daher **nur Material auf, das heute Inhalt hat**, anstatt Lesezeit an einem
+> leeren Einstiegspunkt zu verbrauchen. Die vollständige Modulkarte zeigt die Zwei-Achsen-Navigation unten.
 
 ---
 

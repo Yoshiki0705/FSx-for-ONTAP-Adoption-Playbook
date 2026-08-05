@@ -19,14 +19,15 @@
 |---|---|---|
 | Comprendre comment parcourir ce dépôt | [Guide de navigation](docs/en/navigation.md) | 3 min |
 | Décider s'il faut migrer, et comment | [Arbre de décision : méthode de migration](reference/decision-trees/migration-method.md) | 10 min |
-| Inventorier le NAS existant | [Playbook 01 — Évaluation](playbooks/01-assess/) | 30 min |
-| Concevoir la configuration cible | [Playbook 02 — Conception](playbooks/02-design/) | 60 min |
-| Exécuter la migration | [Playbook 03 — Migration](playbooks/03-migrate/) | — |
-| Mettre en place l'exploitation | [Playbook 05 — Exploitation](playbooks/05-operate/) | — |
-| Concevoir la protection des données (Snapshot / SnapMirror / WORM) | [Domaine — Protection des données](domains/data-protection/) | 30 min |
-| Comparer aux autres options de stockage | [Matrices de comparaison](reference/comparison/) | 15 min |
-| Lire des cas d'usage (anonymisés) | [Case Studies](case-studies/) | 10 min |
+| Consulter les limites vérifiées | [Limites et quotas](reference/limits/) | 5 min |
+| Comprendre comment lire les niveaux de confiance | [Politique de niveaux de preuve](docs/en/evidence-policy.md) | 5 min |
 | Ajouter des connaissances (rédaction) | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 min |
+
+> **État de la couverture** : les 6 modules de cycle de vie et les 6 modules thématiques définissent
+> pour l'instant les questions qu'ils traiteront et la structure pour y répondre — `notes/` n'est pas
+> encore alimenté. Le README de chaque module liste les questions qu'il a pour périmètre.
+> Le tableau ci-dessus ne recense donc que **les documents qui ont du contenu aujourd'hui**, plutôt que
+> de faire perdre du temps sur un point d'entrée vide. Pour la carte complète, voir la navigation à deux axes ci-dessous.
 
 ---
 

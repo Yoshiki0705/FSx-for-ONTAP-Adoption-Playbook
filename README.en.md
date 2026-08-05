@@ -19,14 +19,15 @@
 |---|---|---|
 | Learn how to navigate this repository | [Navigation Guide](docs/en/navigation.md) | 3 min |
 | Decide whether and how to migrate | [Migration Method Decision Tree](reference/decision-trees/migration-method.md) | 10 min |
-| Inventory your current NAS | [Playbook 01 — Assess](playbooks/01-assess/) | 30 min |
-| Design the target configuration | [Playbook 02 — Design](playbooks/02-design/) | 60 min |
-| Execute the migration | [Playbook 03 — Migrate](playbooks/03-migrate/) | — |
-| Stand up operations | [Playbook 05 — Operate](playbooks/05-operate/) | — |
-| Design data protection (Snapshot / SnapMirror / WORM) | [Domain — Data Protection](domains/data-protection/) | 30 min |
-| Compare against other storage options | [Comparison Matrices](reference/comparison/) | 15 min |
-| Read case studies (anonymized) | [Case Studies](case-studies/) | 10 min |
+| Check verified limits and quotas | [Limits and Quotas](reference/limits/) | 5 min |
+| Learn how to read the confidence levels | [Evidence Policy](docs/en/evidence-policy.md) | 5 min |
 | Add knowledge (authoring) | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 min |
+
+> **Coverage**: the 6 lifecycle modules and 6 domain modules currently define the questions they will
+> answer and the structure to answer them in — `notes/` is not yet populated. Each module README lists
+> the questions it is scoped to cover.
+> The table above therefore lists **only material that has content today**, rather than spending a
+> reader's time on an empty entry point. For the full module map, see the two-axis navigation below.
 
 ---
 
