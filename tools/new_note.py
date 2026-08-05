@@ -14,7 +14,7 @@ import argparse
 import datetime as dt
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -86,12 +86,49 @@ TODO
 """
 
 
+def resolve_module(raw: str, lang: str) -> tuple[PurePosixPath, str, str] | None:
+    """Accept either `domains/performance` or `docs/ja/domains/performance`.
+
+    The short form is what CONTRIBUTING.md documents and what people type from memory; the long
+    form is what shell completion produces now that the tree lives under docs/. Supporting both
+    keeps the documented command working after the move instead of quietly breaking it.
+    """
+    parts = PurePosixPath(raw.strip("/")).parts
+    if parts and parts[0] == "docs":
+        if len(parts) != 4:
+            print(
+                "error: --module must be docs/<lang>/playbooks/<name> "
+                "or docs/<lang>/domains/<name>",
+                file=sys.stderr,
+            )
+            return None
+        _, module_lang, group, name = parts
+    elif len(parts) == 2:
+        module_lang, group, name = lang, parts[0], parts[1]
+    else:
+        print(
+            "error: --module must be playbooks/<name>, domains/<name>, "
+            "or the same path under docs/<lang>/",
+            file=sys.stderr,
+        )
+        return None
+
+    if group not in ("playbooks", "domains"):
+        print(
+            f"error: unknown group {group!r} (expected playbooks or domains)",
+            file=sys.stderr,
+        )
+        return None
+
+    return PurePosixPath("docs", module_lang, group, name), group, name
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--module",
         required=True,
-        help="module path relative to the repo root (e.g. domains/performance)",
+        help="module path, e.g. domains/performance or docs/ja/domains/performance",
     )
     parser.add_argument("--slug", required=True, help="kebab-case file slug (no .md)")
     parser.add_argument(
@@ -103,25 +140,14 @@ def main() -> int:
         print(f"error: slug must be kebab-case, got {args.slug!r}", file=sys.stderr)
         return 1
 
-    module = (ROOT / args.module).resolve()
-    try:
-        rel_module = module.relative_to(ROOT)
-    except ValueError:
-        print("error: --module must be inside the repository", file=sys.stderr)
+    resolved = resolve_module(args.module, args.lang)
+    if resolved is None:
         return 1
+    rel_module, group, name = resolved
+    module = ROOT / rel_module
     if not module.is_dir():
         print(f"error: module not found: {rel_module}", file=sys.stderr)
         return 1
-
-    parts = rel_module.parts
-    if len(parts) != 2 or parts[0] not in ("playbooks", "domains"):
-        print(
-            "error: --module must be playbooks/<name> or domains/<name>",
-            file=sys.stderr,
-        )
-        return 1
-
-    group, name = parts
     if group == "playbooks":
         lifecycle = LIFECYCLE_BY_DIR.get(name)
         if lifecycle is None:
@@ -153,7 +179,8 @@ def main() -> int:
         "  2. keep evidence: hypothesis until you have actually verified the behaviour"
     )
     print(f"  3. link it from {rel_module}/README.md")
-    print(f"  4. run: make lint   (today is {dt.date.today().isoformat()})")
+    today = dt.datetime.now(dt.UTC).date().isoformat()
+    print(f"  4. run: make lint   (today is {today} UTC)")
     return 0
 
 

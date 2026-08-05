@@ -1,0 +1,17 @@
+# Development toolchain, exact-pinned.
+#
+# Why pinned: CI previously ran `pipx install ruff`, which resolves to whatever the
+# latest release happens to be. When ruff 0.16 widened its default rule set, CI started
+# reporting 35 findings on code that had not changed, while a developer on an older ruff
+# saw "All checks passed". A lint gate whose verdict depends on the day it runs cannot
+# tell you whether your change is clean.
+#
+# Bump deliberately: change the version here, run `make lint`, fix what the new version
+# finds, and commit both together.
+#
+# The validators in tools/ are stdlib-only by design and are not listed here.
+ruff==0.16.1
+
+# Not installable via pip — install separately, see CONTRIBUTING.md:
+#   markdownlint-cli2   npm install -g markdownlint-cli2@0.22.1
+#   gitleaks            brew install gitleaks

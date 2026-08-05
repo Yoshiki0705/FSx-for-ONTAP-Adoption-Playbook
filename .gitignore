@@ -40,8 +40,8 @@ tmp/
 *.log
 
 # --- Diagram intermediates (commit only final svg/png) ---
-docs/diagrams/**/*.bkp
-docs/diagrams/.$*
+docs/_assets/diagrams/**/*.bkp
+docs/_assets/diagrams/.$*
 /tmp-previews/
 
 # --- Credentials (defense in depth; should never exist here) ---

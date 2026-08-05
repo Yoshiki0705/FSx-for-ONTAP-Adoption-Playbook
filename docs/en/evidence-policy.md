@@ -1,6 +1,8 @@
 # Evidence Policy
 
-[日本語](../ja/evidence-policy.md) | [🏠 Repository home](../../README.en.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](../ja/evidence-policy.md) | [English](evidence-policy.md) | [🏠 Repository home](README.md)
+<!-- lang-switcher:end -->
 
 ---
 
@@ -122,8 +124,10 @@ What `make lint` checks:
 - [Navigation Guide](navigation.md)
 - [CONTRIBUTING.md](../../CONTRIBUTING.md)
 - [AGENTS.md](../../AGENTS.md) — conventions for AI agents
-- [Repository home](../../README.en.md)
+- [Repository home](README.md)
 
 ---
 
-[日本語](../ja/evidence-policy.md) | [🏠 Repository home](../../README.en.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](../ja/evidence-policy.md) | [English](evidence-policy.md) | [🏠 Repository home](README.md)
+<!-- lang-switcher:end -->

@@ -1,6 +1,8 @@
 # 知見の分類ポリシー
 
-[English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](evidence-policy.md) | [English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->
 
 ---
 
@@ -126,4 +128,6 @@ lang: ja
 
 ---
 
-[English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](evidence-policy.md) | [English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->

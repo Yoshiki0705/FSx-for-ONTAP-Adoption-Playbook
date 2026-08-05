@@ -27,8 +27,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Installed from the pinned manifest, not `pipx install ruff`. An unpinned install
+      # resolves to the latest release, so a ruff version that widens its default rule set
+      # turns this gate red without any commit — and disagrees with whatever developers
+      # have locally. requirements-dev.txt is the single declared version.
       - name: Install ruff
-        run: pipx install ruff
+        run: pip install -r requirements-dev.txt
 
       # check and format are separate steps because formatting drift otherwise passes locally
       # and only surfaces in CI, which is exactly the failure this ordering prevents.
@@ -45,6 +49,9 @@ jobs:
 
       - name: Check i18n parity
         run: python3 tools/check_i18n_parity.py
+
+      - name: Check language switchers and cross-language links
+        run: python3 tools/sync_lang_switcher.py
 
       - name: Audit public output
         run: python3 tools/audit_public_output.py

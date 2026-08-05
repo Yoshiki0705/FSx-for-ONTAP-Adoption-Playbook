@@ -2,7 +2,9 @@
 
 ![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
 
-🌐 [日本語](README.md) | [English](README.en.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](README.md) | [English](docs/en/README.md) | [한국어](docs/ko/README.md) | [简体中文](docs/zh-CN/README.md) | [繁體中文](docs/zh-TW/README.md) | [Français](docs/fr/README.md) | [Deutsch](docs/de/README.md) | [Español](docs/es/README.md)
+<!-- lang-switcher:end -->
 
 ---
 
@@ -18,8 +20,8 @@
 | やりたいこと | ガイド | 所要時間 |
 |---|---|---|
 | このリポジトリの歩き方を知る | [ナビゲーションガイド](docs/ja/navigation.md) | 3 分 |
-| 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | 10 分 |
-| 検証済みの上限値を確認する | [上限値・クォータ](reference/limits/) | 5 分 |
+| 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) | 10 分 |
+| 検証済みの上限値を確認する | [上限値・クォータ](docs/ja/reference/limits/) | 5 分 |
 | 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
@@ -37,12 +39,12 @@
 
 | # | モジュール | 扱う問い |
 |---|---|---|
-| 01 | [`01-assess/`](playbooks/01-assess/) | 現行 NAS に何があり、何が移行の制約になるか |
-| 02 | [`02-design/`](playbooks/02-design/) | どの構成・容量・スループット・保護方式を選ぶか |
-| 03 | [`03-migrate/`](playbooks/03-migrate/) | どの方式で、どう切り替え、どう戻すか |
-| 04 | [`04-build/`](playbooks/04-build/) | IaC・自動化・再現可能な構築をどう組むか |
-| 05 | [`05-operate/`](playbooks/05-operate/) | 監視・容量・障害対応・変更管理をどう回すか |
-| 06 | [`06-optimize/`](playbooks/06-optimize/) | 性能とコストをどこまで詰めるか |
+| 01 | [`01-assess/`](docs/ja/playbooks/01-assess/) | 現行 NAS に何があり、何が移行の制約になるか |
+| 02 | [`02-design/`](docs/ja/playbooks/02-design/) | どの構成・容量・スループット・保護方式を選ぶか |
+| 03 | [`03-migrate/`](docs/ja/playbooks/03-migrate/) | どの方式で、どう切り替え、どう戻すか |
+| 04 | [`04-build/`](docs/ja/playbooks/04-build/) | IaC・自動化・再現可能な構築をどう組むか |
+| 05 | [`05-operate/`](docs/ja/playbooks/05-operate/) | 監視・容量・障害対応・変更管理をどう回すか |
+| 06 | [`06-optimize/`](docs/ja/playbooks/06-optimize/) | 性能とコストをどこまで詰めるか |
 
 ### テーマ軸 — `domains/`
 
@@ -50,21 +52,21 @@
 
 | モジュール | 扱う問い |
 |---|---|
-| [`data-protection/`](domains/data-protection/) | Snapshot / SnapMirror / SnapLock / バックアップ・ランサム対策 |
-| [`data-utilization/`](domains/data-utilization/) | 分析・AI/RAG・S3 API 経由のデータ活用 |
-| [`security-governance/`](domains/security-governance/) | 暗号化・監査・権限設計・規制対応の考え方 |
-| [`performance/`](domains/performance/) | スループット設計・レイテンシ・キャッシュ・共有帯域 |
-| [`cost/`](domains/cost/) | 容量・ティアリング・見積もりと実測の差分 |
-| [`multiprotocol-identity/`](domains/multiprotocol-identity/) | NFS / SMB 共存・Active Directory 連携・ID マッピング |
+| [`data-protection/`](docs/ja/domains/data-protection/) | Snapshot / SnapMirror / SnapLock / バックアップ・ランサム対策 |
+| [`data-utilization/`](docs/ja/domains/data-utilization/) | 分析・AI/RAG・S3 API 経由のデータ活用 |
+| [`security-governance/`](docs/ja/domains/security-governance/) | 暗号化・監査・権限設計・規制対応の考え方 |
+| [`performance/`](docs/ja/domains/performance/) | スループット設計・レイテンシ・キャッシュ・共有帯域 |
+| [`cost/`](docs/ja/domains/cost/) | 容量・ティアリング・見積もりと実測の差分 |
+| [`multiprotocol-identity/`](docs/ja/domains/multiprotocol-identity/) | NFS / SMB 共存・Active Directory 連携・ID マッピング |
 
 ### 横断リファレンス — `reference/`
 
 | ディレクトリ | 概要 |
 |---|---|
-| [`decision-trees/`](reference/decision-trees/) | 選択フローチャート（移行方式・保護方式・プロトコル） |
-| [`comparison/`](reference/comparison/) | 選択肢の比較マトリクス（トレードオフを対称に記載） |
-| [`limits/`](reference/limits/) | 上限値・クォータと、その出典・検証日 |
-| [`glossary/`](reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
+| [`decision-trees/`](docs/ja/reference/decision-trees/) | 選択フローチャート（移行方式・保護方式・プロトコル） |
+| [`comparison/`](docs/ja/reference/comparison/) | 選択肢の比較マトリクス（トレードオフを対称に記載） |
+| [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
+| [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
 
 </details>
 
@@ -74,9 +76,8 @@
 `playbooks/` と `domains/` の各モジュールは **同一の内部構造**を持ちます。新しいモジュールを足すときは `_template/` をコピーしてください。
 
 ```text
-<module>/
-├── README.md          # モジュールのハブ（JA）
-├── README.en.md       # 同（EN）
+docs/<lang>/{playbooks,domains}/<module>/
+├── README.md          # モジュールのハブ
 ├── notes/             # 知見の最小単位。1 ファイル = 1 論点
 │   └── <slug>.md      # YAML frontmatter 必須
 └── checklists/        # 現場で使うチェックリスト
@@ -115,7 +116,7 @@ lang: ja
 | 担当者名・レビュアー名 | 役割ベースの表記（例: ストレージ運用担当の観点） |
 | サポートケース番号・内部チケット ID | 「ベンダーに確認済み（追跡中）」 |
 
-事例は「何が問題で、どう判断し、結果どうなったか」を **一般化された教訓**として書きます。テンプレートは [`case-studies/_template/`](case-studies/_template/) にあります。公開前チェックは `make audit` で自動化されています。
+事例は「何が問題で、どう判断し、結果どうなったか」を **一般化された教訓**として書きます。テンプレートは [`case-studies/_template/`](docs/ja/case-studies/_template/) にあります。公開前チェックは `make audit` で自動化されています。
 
 </details>
 
@@ -146,7 +147,7 @@ Tier 1 は **セクション構成と数が言語間で一致**しているこ�
 | [`llms.txt`](llms.txt) | LLM 向けのリポジトリ全体マップ（[llmstxt.org](https://llmstxt.org/) 準拠） |
 | [`AGENTS.md`](AGENTS.md) | コーディングエージェント向けの規約・禁止事項・検証手順 |
 | `notes/*.md` の frontmatter | 機械可読なメタデータ（ライフサイクル / テーマ / 証跡レベル / 検証日） |
-| [`reference/limits/`](reference/limits/) | 上限値を出典・検証日付きで構造化 |
+| [`reference/limits/`](docs/ja/reference/limits/) | 上限値を出典・検証日付きで構造化 |
 
 **知見を引用する側への注意**: `evidence: hypothesis` や `field-observation` のノートは検証済みの事実ではありません。frontmatter の `evidence` を必ず確認してください。
 
@@ -193,4 +194,6 @@ MIT — [LICENSE](LICENSE)
 
 ---
 
-🌐 [日本語](README.md) | [English](README.en.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](README.md) | [English](docs/en/README.md) | [한국어](docs/ko/README.md) | [简体中文](docs/zh-CN/README.md) | [繁體中文](docs/zh-TW/README.md) | [Français](docs/fr/README.md) | [Deutsch](docs/de/README.md) | [Español](docs/es/README.md)
+<!-- lang-switcher:end -->
