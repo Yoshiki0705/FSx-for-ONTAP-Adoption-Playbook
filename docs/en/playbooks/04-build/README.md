@@ -27,7 +27,7 @@ A hand-built environment cannot be reproduced. Infrastructure as code and automa
 | Directory | Contents |
 |---|---|
 | [`notes/`](../../../ja/playbooks/04-build/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/04-build/checklists/) | Checklists for field use |
+| [`checklists/`](../../../ja/playbooks/04-build/checklists/) | Checklists for field use. → [Pre-production review](../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) |
 
 ---
 

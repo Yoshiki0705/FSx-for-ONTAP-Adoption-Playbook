@@ -61,6 +61,44 @@ And always make these distinctions explicit:
 
 ---
 
+## Before adopting into production
+
+A tier tells you how far a statement can be trusted. It does **not** guarantee that the statement
+holds in your environment. Before production, do the following per tier.
+
+| Tier | Do this first |
+|---|---|
+| `verified` | Identify every difference between the stated environment and yours. If version, region, or configuration differs, measure again |
+| `documented` | Open the source and confirm the current revision still says the same thing. Documentation gets revised |
+| `field-observation` | Confirm it reproduces in your environment. If it does not, you cannot build on it |
+| `hypothesis` | Verify before use. Never base a design on an untested inference |
+
+### Adoption sequence
+
+```mermaid
+graph LR
+    R[Read the note] --> C{Tier and the gap<br/>to your environment}
+    C -->|Gap exists| T[Reproduce in a test environment]
+    C -->|No gap| S[Apply to a limited scope]
+    T --> S
+    S --> M[Observe effect and side effects]
+    M --> P[Roll out to production]
+    P --> W[Record the value for your environment]
+```
+
+| # | Step | Purpose |
+|---|---|---|
+| 1 | Check the `evidence` tier and the stated environment | Establish what is actually verified |
+| 2 | Write down the gaps: version, region, configuration, load | Define what needs re-verification |
+| 3 | Reproduce it in a test environment matching production | Avoid learning the behaviour in production |
+| 4 | Apply to a limited scope and observe | Catch unintended side effects at small scale |
+| 5 | Record the result for your environment | Input for the next decision. Differences are welcome as an [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues) |
+
+**Step 3 is not optional for irreversible operations.** Settings that cannot be undone — enabling
+SnapLock, for example — must not reach production without a test-environment confirmation first.
+
+---
+
 ## Promotion and demotion
 
 ```mermaid

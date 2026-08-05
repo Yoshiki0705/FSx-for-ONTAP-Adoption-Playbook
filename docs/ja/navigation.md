@@ -8,7 +8,9 @@
 
 ## 結論
 
-入口は 2 つです。**「いまどのフェーズか」で引くなら `playbooks/`、「この論点を調べたい」で引くなら `domains/`。** どちらから入っても同じノートに到達します。判断そのものに迷っている場合は `reference/decision-trees/` から始めてください。
+入口は 3 つです。**初見なら [自分の環境から引く](#自分の環境から引く) から始めてください。** 構成の特徴を選べば読む順序が決まります。
+
+プロジェクトの進行に沿って引くなら `playbooks/`、論点から引くなら `domains/`。どちらから入っても同じノートに到達します。選択肢が複数あって決めきれない場合は `reference/decision-trees/` から始めてください。
 
 ---
 
@@ -28,6 +30,26 @@ graph TD
     D --> D1[reference/comparison/]
     E --> E1[case-studies/]
 ```
+
+---
+
+## 自分の環境から引く
+
+上の分岐は「何を知りたいか」から入ります。**「自分の構成だとどこを読むべきか」**で引きたい場合はこちらを使ってください。左端が自環境の特徴、右が読む順序です。
+
+| 自環境の特徴 | 最初に読む | 次に読む |
+|---|---|---|
+| 移行元が ONTAP（オンプレミス / 他クラウド） | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) → [設計](playbooks/02-design/) |
+| 移行元が Windows ファイルサーバー（SMB / NTFS ACL 保持が要件） | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [マルチプロトコル・ID](domains/multiprotocol-identity/) |
+| 移行元が ONTAP 以外の NAS | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) |
+| NFS と SMB を同じデータに対して使う | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [セキュリティ・ガバナンス](domains/security-governance/) |
+| Active Directory 連携が前提 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | [設計](playbooks/02-design/) |
+| 新規構築（移行元なし） | [設計](playbooks/02-design/) | [構築](playbooks/04-build/) → [運用](playbooks/05-operate/) |
+| すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
+| すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
+| 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
+
+**どの行でも、読んだ内容をそのまま本番に適用しないでください。** 各ノートの `evidence` 区分を確認し、[本番に取り入れる前の確認](evidence-policy.md#本番に取り入れる前の確認) の手順を通してください。
 
 ---
 

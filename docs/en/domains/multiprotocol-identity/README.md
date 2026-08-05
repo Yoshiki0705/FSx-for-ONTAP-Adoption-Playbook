@@ -14,9 +14,9 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | How security style changes permission evaluation | _not yet added_ |
+| 1 | How security style changes permission evaluation | [Security style determines the permission model](../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | 2 | What Active Directory integration presupposes | _not yet added_ |
-| 3 | When win-unix / unix-win mapping is consulted | _not yet added_ |
+| 3 | When win-unix / unix-win mapping is consulted | [same note](../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | 4 | What it takes to share the same data over NFS and SMB | _not yet added_ |
 | 5 | What breaks when AD becomes unreachable | _not yet added_ |
 

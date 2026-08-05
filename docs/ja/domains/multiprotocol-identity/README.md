@@ -14,9 +14,9 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 
 | # | 問い | ノート |
 |---|---|---|
-| 1 | セキュリティスタイルが権限評価をどう変えるか | _未追加_ |
+| 1 | セキュリティスタイルが権限評価をどう変えるか | [セキュリティスタイルが権限評価のモデルを決める](notes/security-style-and-permission-evaluation.md) |
 | 2 | Active Directory 連携で何が前提になるか | _未追加_ |
-| 3 | win-unix / unix-win マッピングはいつ参照されるか | _未追加_ |
+| 3 | win-unix / unix-win マッピングはいつ参照されるか | [同上](notes/security-style-and-permission-evaluation.md#セキュリティスタイルと権限評価の対応) |
 | 4 | 同一データを NFS と SMB で共有する条件は何か | _未追加_ |
 | 5 | AD が到達不能になると何が壊れるか | _未追加_ |
 

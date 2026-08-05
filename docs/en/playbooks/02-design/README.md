@@ -50,6 +50,7 @@ See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 
 - [Browse by topic](../../navigation.md#topic-axis--domains)
 - [Migration Method Decision Tree](../../../ja/reference/decision-trees/migration-method.md)
+- [Pre-production review](../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — **irreversible choices are settled in this phase**
 - [Navigation Guide](../../navigation.md)
 - [Glossary](../../../ja/reference/glossary/)
 

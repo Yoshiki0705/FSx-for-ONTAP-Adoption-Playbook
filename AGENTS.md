@@ -290,6 +290,7 @@ new file needs the markers added once, after the H1 and at the end of the file.
 - Markdown, ATX headings (`##`), no trailing whitespace, one sentence per line is **not** required.
 - Tables over bullet lists for anything with 2+ attributes per item.
 - Mermaid for flowcharts and sequence diagrams; draw.io for architecture diagrams.
+- **Every diagram carries the same information in prose or a table.** A mermaid block is a summary of something stated elsewhere in the document, never the only place a fact appears. Mermaid does not render in every context, is not reliably reachable by a screen reader, and is not extractable by a crawler — so a decision that exists only inside a diagram is a decision some readers cannot access.
 - Code blocks always carry a language tag.
 - Internal links are relative paths. Blog-facing images use absolute `raw.githubusercontent.com` URLs.
 - Japanese is the primary authoring language; code, identifiers, and commit messages are English.

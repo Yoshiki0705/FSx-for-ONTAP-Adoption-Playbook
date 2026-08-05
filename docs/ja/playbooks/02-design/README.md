@@ -50,6 +50,7 @@
 
 - [テーマ軸で探す](../../navigation.md#テーマ軸--domains)
 - [移行方式 決定ツリー](../../reference/decision-trees/migration-method.md)
+- [本番投入前レビュー](../04-build/checklists/pre-production-review.md) — **不可逆な項目はこのフェーズで確定させます**
 - [ナビゲーションガイド](../../navigation.md)
 - [用語集](../../reference/glossary/)
 

@@ -8,7 +8,9 @@
 
 ## Conclusion
 
-There are two entry points. **Enter through `playbooks/` when your question is "which phase am I in", and through `domains/` when it is "I need to research this concern."** Either path reaches the same notes. If you are still deciding on the decision itself, start from `reference/decision-trees/`.
+There are three entry points. **If this is your first visit, start from [Start from your environment](#start-from-your-environment)** — pick the row that matches your configuration and it gives you a reading order.
+
+Otherwise, enter through `playbooks/` when your question is "which phase am I in", and through `domains/` when it is "I need to research this concern." Either path reaches the same notes. If several options are on the table and you cannot pick, start from `reference/decision-trees/`.
 
 ---
 
@@ -28,6 +30,39 @@ graph TD
     D --> D1[reference/comparison/]
     E --> E1[case-studies/]
 ```
+
+---
+
+## Start from your environment
+
+The branches above start from "what do you want to know". Use this table instead to start from
+**"given my configuration, what should I read"**. The left column describes your environment; the
+rest gives a reading order.
+
+| Your environment | Read first | Read next |
+|---|---|---|
+| Source is ONTAP (on premises or another cloud) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) → [Design](playbooks/02-design/) |
+| Source is a Windows file server (SMB, NTFS ACLs must be preserved) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Multiprotocol identity](domains/multiprotocol-identity/) |
+| Source is a non-ONTAP NAS | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) |
+| NFS and SMB against the same data | [Security style determines the permission model](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [Security and governance](domains/security-governance/) |
+| Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
+| Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
+| Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
+| Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
+| Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
+
+Two things to know about the links above.
+
+| Marking | What to expect |
+|---|---|
+| **(日本語)** | Not translated. Prose *and* diagram labels are Japanese, so treat these as a pointer to the topic, not as the explanation. URLs, commands, and product terms are still language-neutral |
+| `reference/` links, unmarked | Written as bilingual single files — Japanese and English share the same tables, so these are readable as they are |
+
+Translation requests are welcome as an
+[Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues).
+
+**Do not apply anything you read here directly to production.** Check each note's `evidence` tier
+and work through [Before adopting into production](evidence-policy.md#before-adopting-into-production).
 
 ---
 

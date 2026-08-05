@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Environment-first entry point** in the navigation guide (ja, en): pick the row matching your
+  configuration — migration source, protocol mix, AD dependency, running vs greenfield — and get a
+  reading order. The existing entry points branch on "what do you want to know", which assumes the
+  reader already knows where their question belongs.
+- **"Before adopting into production"** in the evidence policy (ja, en): what to confirm per evidence
+  tier, the adoption sequence, and the rule that irreversible settings cannot skip a test
+  environment. The tiers said how far a finding could be trusted but never how to act on one.
+- First note: [security style determines the permission model](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md)
+  — why denying ID mapping does not block SMB on NTFS-style volumes, and why a check run as a member
+  of the file system administrators group produces a false negative.
+- First checklist: [pre-production review](docs/ja/playbooks/04-build/checklists/pre-production-review.md)
+  — scoped to two questions only, what cannot be changed later and what hits a limit, with an
+  explicit table of irreversible items.
+- Authoring rule: every diagram repeats its information in prose or a table. Mermaid does not render
+  everywhere, is not reliably reachable by a screen reader, and is not extractable by a crawler.
+- `tools/new_note.py` template now carries a "verify in your own environment" section, so the path
+  from reading a note to adopting it is part of every note rather than an afterthought.
 - Repository scaffold: two-axis content model (`playbooks/` lifecycle × `domains/` topic)
 - Evidence-tier discipline (`verified` / `documented` / `field-observation` / `hypothesis`) with
   frontmatter enforcement in `tools/validate_frontmatter.py`
