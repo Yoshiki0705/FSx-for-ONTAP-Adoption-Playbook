@@ -1,0 +1,69 @@
+name: Knowledge request
+description: Request a note on a topic that is missing or unclear
+title: "[Knowledge] "
+labels: ["knowledge-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include company names, real identifiers, IP addresses, account IDs, or support case
+        numbers. Describe your situation by industry and scale band instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The question you need answered
+      description: State it as a question, not a topic label.
+      placeholder: Why does throughput drop when NFS and SMB clients access the same volume concurrently?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: lifecycle
+    attributes:
+      label: Lifecycle phase
+      multiple: true
+      options:
+        - assess
+        - design
+        - migrate
+        - build
+        - operate
+        - optimize
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Topic domain
+      multiple: true
+      options:
+        - data-protection
+        - data-utilization
+        - security-governance
+        - performance
+        - cost
+        - multiprotocol-identity
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Industry, scale band, and protocols in use. No identifying details.
+      placeholder: |
+        Industry: manufacturing
+        Scale: several hundred TB
+        Protocols: SMB primary, NFS for a build pipeline
+    validations:
+      required: false
+
+  - type: textarea
+    id: searched
+    attributes:
+      label: What you already checked
+      description: Which existing notes or documents you looked at, so the answer does not duplicate them.
+    validations:
+      required: false

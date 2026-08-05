@@ -1,0 +1,51 @@
+name: Correction
+description: Report something in this repository that is wrong, stale, or misleading
+title: "[Correction] "
+labels: ["correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Corrections are as valuable as new content. If a note's `evidence` tier overstates its
+        support, that is worth reporting even when the underlying claim turns out to be right.
+
+  - type: input
+    id: file
+    attributes:
+      label: File and line
+      placeholder: domains/performance/notes/example.md:42
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Factually incorrect
+        - Stale (was correct, no longer is)
+        - Evidence tier overstates the support
+        - Number published without its measurement environment
+        - Vendor-versus framing or unbalanced trade-offs
+        - Broken link or navigation dead end
+        - Translation diverges from the Japanese source
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: What is wrong, and what it should say
+    validations:
+      required: true
+
+  - type: textarea
+    id: basis
+    attributes:
+      label: Basis
+      description: >
+        Documentation URL, or your own measurement with ONTAP version, region, and configuration.
+        If you have not verified it yourself, say so - a hypothesis is still worth filing.
+    validations:
+      required: false

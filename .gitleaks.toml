@@ -1,0 +1,30 @@
+title = "FSx for ONTAP Adoption Playbook - gitleaks config"
+
+[extend]
+useDefault = true
+
+# Documentation deliberately shows the shape of identifiers so readers recognize them.
+# These are the sanctioned placeholders; anything outside them should still be flagged.
+[[allowlists]]
+description = "Sanctioned documentation placeholders"
+regexTarget = "match"
+regexes = [
+  '''123456789012''',                 # placeholder AWS account ID
+  '''fs-0123456789abcdef0''',         # placeholder file system ID
+  '''vpc-0123456789abcdef0''',        # placeholder VPC ID
+  '''subnet-0123456789abcdef0''',
+  '''sg-0123456789abcdef0''',
+  '''10\.0\.[x0-9]+\.[x0-9]+''',      # masked internal IP
+  '''-XXXXXX''',                      # masked Secrets Manager ARN suffix
+  '''<[a-z-]+>''',                    # angle-bracket placeholders
+  '''\$\{[A-Z_]+\}''',                # shell-style placeholders
+  '''example\.(com|org)''',
+]
+
+[[allowlists]]
+description = "Paths that never contain real secrets"
+paths = [
+  '''\.gitleaks\.toml''',
+  '''(^|/)tools/''',                  # validator regexes look like secret patterns
+  '''(^|/)reference/glossary/''',
+]

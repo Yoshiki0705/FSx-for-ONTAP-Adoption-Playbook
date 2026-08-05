@@ -1,0 +1,54 @@
+# --- Non-public material (never commit) ---
+# The trailing slash is omitted on purpose. A secret-scanning rule treats the directory name
+# followed by a slash as a finding, and a .gitignore line cannot carry an inline allow comment.
+# Without the slash the pattern still matches the directory and everything beneath it.
+.private
+**/.private
+*.internal.md
+*-internal.md
+
+# --- Kiro local configuration (same reason for the missing trailing slash) ---
+.kiro
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+
+# --- Python (tools/) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- Node (markdownlint / link check) ---
+node_modules/
+package-lock.json
+
+# --- Build / scratch ---
+build/
+dist/
+tmp/
+.cache/
+*.log
+
+# --- Diagram intermediates (commit only final svg/png) ---
+docs/diagrams/**/*.bkp
+docs/diagrams/.$*
+/tmp-previews/
+
+# --- Credentials (defense in depth; should never exist here) ---
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+credentials
+aws-exports.js

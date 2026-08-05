@@ -1,0 +1,68 @@
+# Amazon FSx for NetApp ONTAP — Adoption Playbook
+
+> A documentation-first knowledge base for migrating to Amazon FSx for NetApp ONTAP and for the
+> design, build, and operations work that follows. Content is organized on two axes: a lifecycle
+> axis (assess → design → migrate → build → operate → optimize) and a topic axis (data protection,
+> data utilization, security and governance, performance, cost, multiprotocol identity).
+> Findings from field technical-support work are included as anonymized reference material.
+
+## How to read this repository
+
+Every knowledge file under a `notes/` directory carries YAML frontmatter with an `evidence` field.
+Treat it as the confidence signal:
+
+- `verified` — reproduced by the author in the environment stated inline; `verified_on` gives the date.
+- `documented` — stated in vendor or AWS documentation; `source` gives the URL.
+- `field-observation` — observed once, not reproduced. Not a general rule.
+- `hypothesis` — reasoned expectation, untested.
+
+Do not present `field-observation` or `hypothesis` content as established fact. Numbers are only
+meaningful together with the ONTAP version, region, and configuration stated next to them.
+Naming convention used throughout: "Amazon FSx for NetApp ONTAP" on first mention, "FSx for ONTAP"
+thereafter.
+
+## Entry points
+
+- [README (Japanese)](README.md): Primary hub with the two-axis navigation.
+- [README (English)](README.en.md): English hub, same structure.
+- [Navigation guide](docs/en/navigation.md): How to pick an entry point for your question.
+- [Evidence policy](docs/en/evidence-policy.md): Definition of the four evidence tiers and what each requires.
+- [AGENTS.md](AGENTS.md): Conventions, prohibitions, and verification steps for coding agents.
+
+## Lifecycle playbooks
+
+- [01 Assess](playbooks/01-assess/): Inventory of the current NAS and identification of migration constraints.
+- [02 Design](playbooks/02-design/): Capacity, throughput, protocol, and protection scheme selection.
+- [03 Migrate](playbooks/03-migrate/): Method selection, cutover sequencing, and rollback.
+- [04 Build](playbooks/04-build/): Infrastructure as code, automation, reproducible builds.
+- [05 Operate](playbooks/05-operate/): Monitoring, capacity management, incident response, change management.
+- [06 Optimize](playbooks/06-optimize/): Performance and cost tuning after steady state.
+
+## Topic domains
+
+- [Data protection](domains/data-protection/): Snapshot, SnapMirror, SnapLock, backup and ransomware readiness.
+- [Data utilization](domains/data-utilization/): Analytics, AI and RAG, access over the S3 API.
+- [Security and governance](domains/security-governance/): Encryption, audit, permission design, regulated workload considerations.
+- [Performance](domains/performance/): Throughput design, latency, caching, shared bandwidth behavior.
+- [Cost](domains/cost/): Capacity, tiering, and the gap between estimates and measurements.
+- [Multiprotocol identity](domains/multiprotocol-identity/): NFS and SMB coexistence, Active Directory integration, ID mapping.
+
+## Reference
+
+- [Decision trees](reference/decision-trees/): Selection flowcharts for migration method, protection scheme, and protocol.
+- [Comparison matrices](reference/comparison/): Option comparisons with trade-offs stated symmetrically for every option.
+- [Limits and quotas](reference/limits/): Limit values with source and verification date.
+- [Glossary](reference/glossary/): ONTAP and AWS terminology.
+
+## Case studies
+
+- [Case studies](case-studies/): Generalized lessons from field work. Contains no company names,
+  no real identifiers, and no configurations that could identify an organization.
+
+## Optional
+
+- [Contributing guide](CONTRIBUTING.md): Authoring conventions, frontmatter schema, review gates.
+- [Changelog](CHANGELOG.md): Notable additions and corrections.
+- [Related repository: S3 Access Points serverless patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns)
+- [Related repository: observability integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations)
+- [Related repository: lakehouse integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations)

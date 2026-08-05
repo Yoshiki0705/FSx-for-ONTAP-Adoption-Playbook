@@ -1,0 +1,16 @@
+# Tier 1 documents under docs/<lang>/ and the languages required for each.
+#
+# Format:  <filename>[: lang,lang,...]
+#   - Omitting the language list requires all 8 Tier 1 languages.
+#   - Listing languages explicitly is how a guide lands in ja+en first and gets promoted later.
+#
+# Promotion checklist when adding languages to an entry:
+#   1. Copy the ja file and translate headings + body, keeping section structure identical.
+#   2. Do NOT translate: file paths, commands, badge URLs, anchor IDs, product/technical terms.
+#   3. Add the language code here.
+#   4. Run: make i18n-check
+#
+# Root README.md is always checked against all 8 languages and is not listed here.
+
+navigation.md: ja,en
+evidence-policy.md: ja,en
