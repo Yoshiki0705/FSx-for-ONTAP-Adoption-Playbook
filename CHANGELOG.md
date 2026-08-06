@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [monitoring fails on averages](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md).
+  Which statistic you graph has to be decided before the threshold, because `Average` hides saturation
+  for two structural reasons: **odd-numbered file servers are preferred and even-numbered ones are
+  standby**, so averaging them roughly halves the reading by design; and utilization metrics emit one
+  data point per aggregate, while a FlexVol lives on exactly one aggregate — so the saturated aggregate
+  is precisely the one holding the affected volume. The alarm recipe in the AWS documentation uses
+  `MAX(StorageCapacityUtilization)` for the same reason.
+  - 80% is a recommendation, not the only threshold. **At 90% capacity-pool reads stop being cached on
+    SSD, and at 98% tiering stops entirely.** Recovery from 98% requires getting back under 90%, not
+    just under 98%.
+  - A third failure mode is not fixable by choosing a statistic: **client traffic is prioritized over
+    background tasks** (tiering, storage efficiency, backups), so those fall behind at peak without
+    alarming. `NetworkThroughputUtilization` counts that background traffic too, which is why high
+    network utilization does not imply high client load.
+  - Also recorded: all writes land on SSD first regardless of tiering policy and metadata always stays
+    there, so an `All`-tiered volume still consumes SSD at roughly 1:10; and if deleting data does not
+    free SSD, snapshots are still holding it — which makes retention design part of capacity design.
 - Note: [having snapshots is not the same as being able to recover](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md).
   Snapshot, backup, and SnapMirror cover **different failure domains**, and the mechanism most people
   rely on does not survive the failure they most fear: a snapshot lives inside the same file system,

@@ -14,9 +14,9 @@ Covers monitoring, capacity management, incident response, and change management
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | What to monitor and where to set thresholds | _not yet added_ |
-| 2 | How to detect impending capacity exhaustion | _not yet added_ |
-| 3 | How to triage performance degradation | _not yet added_ |
+| 1 | What to monitor and where to set thresholds | [Monitoring fails on averages](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語) |
+| 2 | How to detect impending capacity exhaustion | [The SSD utilization bands and what changes at each](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#ssd-利用率の帯域と各点で変わること) (日本語) |
+| 3 | How to triage performance degradation | [Triage order](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) (日本語) |
 | 4 | How to handle ONTAP version updates | _not yet added_ |
 | 5 | How to define first-response actions during an incident | _not yet added_ |
 
