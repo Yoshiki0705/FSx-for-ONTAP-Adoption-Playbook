@@ -9,6 +9,30 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Five claims verified with create, modify and delete operations** against a live file system, recorded
+  in [limits](docs/ja/reference/limits/) with the environment and method. Two of the seven candidates were
+  declined and two turned out not to be measurable this way; all four are listed with the reason.
+  - **The strongest result is inode exhaustion.** On a 20 MiB volume: 566 inodes total, **96 already used
+    on an empty volume**, 470 files created to reach 100%. At that point `df -h` still showed **19M with
+    448K used (3%)**, creating a new file failed with **`No space left on device`**, and **writing to an
+    existing file still succeeded.** So the error names the wrong resource, and the symptom is partial —
+    creation stops while writes continue, which is a harder failure to diagnose than a total stop.
+  - **DP volumes cannot be backed up** — confirmed with a control: the same `CreateBackup` call succeeded
+    on an RW volume, so the rejection is not a permissions or environment artefact.
+  - **The CLI tiering default is now causal, not correlational**: a volume created via AWS CLI with no
+    `TieringPolicy` came back `SNAPSHOT_ONLY` / cooling `2`. The console side remains unverified and is
+    labelled as such.
+  - **SnapLock**: `PERMANENTLY_DISABLED` is terminal, with both `ENABLED` and `DISABLED` rejected. And the
+    retention mode is fixed in a stronger sense than "cannot be changed" — **`UpdateVolume` has no
+    parameter for it at all**, the same shape as deployment type.
+  - Also recorded three boundaries found by trying: **`CreateSnapshot` is OpenZFS-only** so ONTAP snapshots
+    are outside the AWS API; a **SnapLock audit log volume cannot be deleted through the AWS API** and can
+    only be mounted at `/snaplock_audit_log`; and **`UpdateVolume` is asynchronous and records no
+    `AdministrativeAction`**, so a 200 response is not confirmation. That last one produced a false
+    "silently ignored" diagnosis during the work, which is recorded rather than quietly corrected.
+  - Not measured, with reasons stated: the 1,023 snapshot ceiling (needs ONTAP credentials), 4,091 backups
+    (impractical), the 90%/98% tiering thresholds (**declined** — cannot be isolated from live volumes on
+    the same file system), and patch-time I/O pauses (needs a maintenance window plus sustained load).
 - **Case studies are now findable by industry and by workload**, via a new linked index of
   [published FSx for ONTAP case studies](docs/ja/case-studies/public-case-studies.md). Both axes reach the
   same material, because a matching workload is often more useful than a matching industry and a reader

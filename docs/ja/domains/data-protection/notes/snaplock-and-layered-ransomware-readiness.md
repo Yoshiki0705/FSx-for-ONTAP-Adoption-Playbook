@@ -68,6 +68,41 @@ Compliance と Enterprise の差は 1 点に集約されます。**Enterprise �
 | 監査ログボリュームの最小保持期間 | **6 か月** |
 | 恒久無効化 | **不可逆**。ただし恒久無効にすれば監査ログボリュームは不要になります |
 
+### 実測で確認した内容
+
+| 項目 | 結果 |
+|---|---|
+| `SnaplockType` の変更 | **`UpdateVolume` に該当パラメータが存在しません。** 受理されるのは `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 5 つだけです |
+| `PrivilegedDelete` / `AuditLogVolume` / `AutocommitPeriod` の既定 | `DISABLED` / `false` / `NONE` |
+| `RetentionPeriod` の既定 | 既定 0 YEARS / 最小 0 YEARS / **最大 30 YEARS** |
+| **`PERMANENTLY_DISABLED` からの復帰** | **`ENABLED` も `DISABLED` も拒否**: `Privileged-delete is permanently disabled on this volume.` |
+
+**保持モードは「変更が拒否される」のではなく「変更する手段がない」形で固定されています。** デプロイタイプと同じ構造です。
+
+**特権削除の有効化に監査ログボリュームが必要かどうかは判定できていません。** 監査ログボリュームの作成前と作成後の両方で試したため、**どちらが成立したのか帰属できません。** ドキュメントは必要と記載しています。
+
+> **この節の区分**: `verified`（検証日 2026-08-06）。`ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）。
+> **WORM へのコミットは行っていません。** ロック済みファイルの削除挙動は検証範囲外です。
+> 記録は [上限値・クォータ](../../../reference/limits/) にあります。
+
+---
+
+## 監査ログボリュームは作る前に置き場所を決めてください
+
+**実測で、AWS API では削除できないことを確認しました。**
+
+| 項目 | 結果 |
+|---|---|
+| マウント位置 | **`/snaplock_audit_log` のみ。** 他のパスは `SnapLock audit log volume can only be mounted at the junction path /snaplock_audit_log` で拒否されます |
+| 通常の削除 | 拒否。理由: `Cannot delete the volume because it is configured as a SnapLock audit log volume` |
+| `BypassSnaplockEnterpriseRetention=true` | **効きません。** `Lifecycle` が `CREATED` に戻ります |
+| `AuditLogVolume=false` への変更 | 適用されませんでした |
+| SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
+
+**つまり監査ログボリュームを作ると、AWS API の操作だけでは取り消せません。** 解除には ONTAP レベルの操作が必要です。境界の考え方は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。
+
+Enterprise ボリュームの削除拒否メッセージは阻害要因を 4 つ列挙します。**未期限の WORM ファイル、リーガルホールド下のファイル、未期限のロック済み Snapshot、未期限の監査ログボリューム**です。削除できない場合、このどれに該当するかを確認してください。
+
 そして例外があります。
 
 **保持期間が満了した WORM ファイルに対して、特権削除は実行できません。** 満了後は通常の削除操作を使います。
@@ -147,7 +182,10 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 | Enterprise なら管理者がいつでも消せる | **保持期間中に限って**特権削除が使えます。満了後は通常の削除です |
 | 満了したファイルは特権削除で消す | **特権削除は実行できません。** 通常の削除を使います |
 | 特権削除はすぐ有効にできる | **同じ SVM に監査ログボリュームが必要**です。最小保持期間は 6 か月です |
-| 特権削除は後から無効・有効を切り替えられる | 恒久無効は**終端状態**です。再有効化できません |
+| 特権削除は後から無効・有効を切り替えられる | 恒久無効は**終端状態**です。実測で再有効化が拒否されました |
+| 保持モードは変更を試せば拒否される | **変更するパラメータ自体がありません** |
+| 監査ログボリュームは任意の場所に作れる | **`/snaplock_audit_log` のみ**です |
+| 監査ログボリュームは後で削除できる | **AWS API では削除できません。** ONTAP レベルの操作が必要です |
 | Legal Hold は両モードで使える | **Compliance のみ**です |
 | EBR と Legal Hold はコンソールから操作できる | **ONTAP CLI と REST API のみ**です |
 | SnapLock ボリュームは階層化できない | 種別に関係なく容量プールへ階層化できます |
