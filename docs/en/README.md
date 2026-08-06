@@ -22,6 +22,7 @@
 | Learn how to navigate this repository | [Navigation Guide](navigation.md) | 3 min |
 | Decide whether and how to migrate | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) | 10 min |
 | Check verified limits and quotas | [Limits and Quotas](../ja/reference/limits/) | 5 min |
+| Compare the trade-offs between options | [Comparison Matrices](../ja/reference/comparison/) | 10 min |
 | Learn how to read the confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
 | Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
 | Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |

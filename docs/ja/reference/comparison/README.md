@@ -76,7 +76,8 @@ YYYY-MM-DD 時点の情報です。
 
 | 資料 / Document | 比較対象 / Options compared | 比較時点 / As of |
 |---|---|---|
-| _まだ追加されていません / None added yet_ | — | — |
+| [データ保護方式の比較](data-protection-methods.md) | Snapshot / ボリュームバックアップ / AWS Backup / SnapMirror（+ SnapLock の 2 モード） | 2026-08-06 |
+| [階層化ポリシーの比較](tiering-policies.md) | `NONE` / `SNAPSHOT_ONLY` / `AUTO` / `ALL` | 2026-08-06 |
 
 ---
 

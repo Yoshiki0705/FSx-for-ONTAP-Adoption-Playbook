@@ -91,7 +91,7 @@ Written as bilingual single files: Japanese and English prose share the same tab
 serve both languages and there is no separate `docs/en/reference/` tree.
 
 - [Decision trees](docs/ja/reference/decision-trees/): Selection flowcharts for migration method, protection scheme, and protocol.
-- [Comparison matrices](docs/ja/reference/comparison/): Option comparisons with trade-offs stated symmetrically for every option.
+- [Comparison matrices](docs/ja/reference/comparison/): Option comparisons with trade-offs stated symmetrically for every option. Two are available: [data protection methods](docs/ja/reference/comparison/data-protection-methods.md) covering snapshot, volume backup, AWS Backup and SnapMirror plus the two SnapLock modes, and [tiering policies](docs/ja/reference/comparison/tiering-policies.md) covering NONE, SNAPSHOT_ONLY, AUTO and ALL.
 - [Limits and quotas](docs/ja/reference/limits/): Limit values with source and verification date.
 - [Glossary](docs/ja/reference/glossary/): ONTAP and AWS terminology.
 
