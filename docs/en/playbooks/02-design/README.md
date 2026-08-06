@@ -14,11 +14,11 @@ Turn assessment output into a target configuration. Capacity and throughput can 
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | How to divide file systems and SVMs | _not yet added_ |
-| 2 | How to size capacity and throughput | _not yet added_ |
-| 3 | How to choose volume security style | _not yet added_ |
-| 4 | How to decide between Multi-AZ and Single-AZ | _not yet added_ |
-| 5 | Which settings are irreversible, and when they must be decided | _not yet added_ |
+| 1 | How to divide file systems and SVMs | [Divide at a granularity you can move](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md#ha-ペアを足すときに起きること) (日本語) |
+| 2 | How to size capacity and throughput | [The ceiling of a single HA pair](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md#単一-ha-ペアの天井) (日本語) |
+| 3 | How to choose volume security style | [Volume security style decides the permission model](../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
+| 4 | How to decide between Multi-AZ and Single-AZ | [Choosing between Multi-AZ and Single-AZ](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md#multi-az-と-single-az-の判断) (日本語) |
+| 5 | Which settings are irreversible, and when they must be decided | [Deployment type is decided once](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語) |
 
 ---
 

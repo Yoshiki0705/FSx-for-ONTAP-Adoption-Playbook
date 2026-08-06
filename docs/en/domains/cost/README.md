@@ -14,11 +14,11 @@ Covers capacity, tiering, and the gap between estimates and measurements. Estima
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | What is billed and what is not | _not yet added_ |
-| 2 | How far tiering actually brings cost down | _not yet added_ |
-| 3 | Which assumptions typically break an estimate | _not yet added_ |
-| 4 | How to account for Snapshot capacity impact | _not yet added_ |
-| 5 | How to present the cost-availability-performance trade-off | _not yet added_ |
+| 1 | What is billed and what is not | [What is billed](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#何が課金対象か) (日本語) |
+| 2 | How far tiering actually brings cost down | [Tiering does not always cost less](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#階層化は常に安くなるわけではありません) (日本語) |
+| 3 | Which assumptions typically break an estimate | [The assumptions that break an estimate](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) (日本語) |
+| 4 | How to account for Snapshot capacity impact | [Snapshots show up as capacity](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#snapshot-は容量として現れます) (日本語) |
+| 5 | How to present the cost-availability-performance trade-off | [Presenting the trade-off symmetrically](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#トレードオフの提示のしかた) (日本語) |
 
 ---
 

@@ -26,22 +26,26 @@
 | 공개 정보에서 1차 정보를 찾는다 | [공개된 1차 정보와 사례의 입구](../ja/case-studies/public-references.md) (日本語) | 5분 |
 | 지식 추가하기(집필) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10분 |
 
-> **수록 현황**: 12개 모듈 중 8개 모듈에 내용이 있습니다(`notes/` 7건, `checklists/` 1건).
-> 나머지 4개 모듈([`02-design/`](../ja/playbooks/02-design/), [`06-optimize/`](../ja/playbooks/06-optimize/), [`security-governance/`](../ja/domains/security-governance/), [`cost/`](../ja/domains/cost/))은 다룰 질문을 정의한 단계입니다.
-> 골격만 있는 입구에 독자의 시간을 쓰지 않도록, 위 표에는 **현재 내용이 있는 자료만** 실었습니다. 개별 노트는 현재 일본어로 작성되어 있으며, 모듈 전체 구성은 아래 2축 내비게이션을 참조하세요.
+> **수록 현황**: **12개 모듈 모두 내용이 있습니다**(`notes/` 11건, `checklists/` 1건).
+> 다만 모듈 단위로 채워졌다는 뜻이며, 질문 단위로는 아직 답이 없는 항목이 남아 있습니다.
+> 각 모듈 README에 그 모듈이 답하는 질문과 아직 작성되지 않은 항목이 표시되어 있습니다. 개별 노트는 현재 일본어로 작성되어 있습니다.
 
 ### 지금 읽을 수 있는 자료
 
 각 자료는 「1 파일 = 1 논점」이며, **일차 정보의 출처**와 **자신의 환경에서 확인하는 절차**를 반드시 포함합니다. 본문은 현재 일본어이므로 제목도 일본어 그대로 표기합니다.
 
 - [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
+- [デプロイタイプは一度しか決められない](../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語)
 - [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
-- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
-- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
-- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
-- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
-- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
 - [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
+- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
+- [階層化の既定値は作成方法で違う](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語)
+- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
+- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
+- [保存時の暗号化は自動、転送時は既定で無効](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語)
+- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
+- [課金は「確保した量」と「使った量」に分かれる](../ja/domains/cost/notes/provisioned-versus-consumed.md) (日本語)
+- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
 
 마지막으로 각 모듈 README에는 그 모듈이 답하는 질문과, 아직 작성되지 않은 항목이 표시되어 있습니다.
 

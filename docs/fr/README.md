@@ -26,24 +26,26 @@
 | Trouver les sources primaires publiques | [Sources publiques et comment les pondérer](../ja/case-studies/public-references.md) (日本語) | 5 min |
 | Ajouter des connaissances (rédaction) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
-> **État de la couverture** : 8 des 12 modules ont désormais du contenu (7 `notes/`, 1 `checklists/`).
-> Les 4 restants — [`02-design/`](../ja/playbooks/02-design/), [`06-optimize/`](../ja/playbooks/06-optimize/),
-> [`security-governance/`](../ja/domains/security-governance/), [`cost/`](../ja/domains/cost/) — définissent les questions qu'ils ont pour périmètre.
-> Le tableau ci-dessus ne recense donc que **les documents qui ont du contenu aujourd'hui**, plutôt que
-> de faire perdre du temps sur un point d'entrée vide. Les notes elles-mêmes sont pour l'instant en japonais ; pour la carte complète, voir la navigation à deux axes ci-dessous.
+> **État de la couverture** : **les 12 modules ont tous du contenu** (11 `notes/`, 1 `checklists/`).
+> Cela vaut au niveau des modules ; au niveau des questions, certaines réponses restent à écrire.
+> Le README de chaque module indique les questions qu'il traite et celles dont la réponse n'est pas encore écrite. Les notes sont pour l'instant en japonais.
 
 ### Disponible aujourd'hui
 
 Chaque document traite un seul sujet par fichier et porte toujours **ses sources primaires** ainsi qu'**une procédure de vérification dans votre propre environnement**. Le corps du texte étant en japonais, les titres sont laissés en japonais.
 
 - [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
+- [デプロイタイプは一度しか決められない](../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語)
 - [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
-- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
-- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
-- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
-- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
-- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
 - [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
+- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
+- [階層化の既定値は作成方法で違う](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語)
+- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
+- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
+- [保存時の暗号化は自動、転送時は既定で無効](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語)
+- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
+- [課金は「確保した量」と「使った量」に分かれる](../ja/domains/cost/notes/provisioned-versus-consumed.md) (日本語)
+- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
 
 Le README de chaque module indique par ailleurs les questions qu'il traite et celles dont la réponse n'est pas encore écrite.
 
