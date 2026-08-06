@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md).
+  SMB migrations lose ACLs for two reasons that have nothing to do with tool capability — the defaults
+  do not include them, and an account without the right privilege skips unreadable ACLs silently and
+  still exits successfully. `robocopy` defaults to `/COPY:DAT`, which carries no ACLs at all; DataSync
+  carries DACLs but not SACLs unless asked. "No errors" is therefore not evidence of preservation, and
+  the note gives the sample comparison that is.
 - **A version-compatibility gate in the migration decision tree.** When the source is ONTAP,
   SnapMirror is only a candidate if the source and destination version combination appears in the
   compatibility matrix — so the tree now asks that before recommending it, and gives three routes
