@@ -1,12 +1,16 @@
 # ナビゲーションガイド
 
-[English](../en/navigation.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](navigation.md) | [English](../en/navigation.md) | [한국어](../ko/navigation.md) | [简体中文](../zh-CN/navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](../de/navigation.md) | [Español](../es/navigation.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->
 
 ---
 
 ## 結論
 
-入口は 2 つです。**「いまどのフェーズか」で引くなら `playbooks/`、「この論点を調べたい」で引くなら `domains/`。** どちらから入っても同じノートに到達します。判断そのものに迷っている場合は `reference/decision-trees/` から始めてください。
+入口は 3 つです。**初見なら [自分の環境から引く](#自分の環境から引く) から始めてください。** 構成の特徴を選べば読む順序が決まります。
+
+プロジェクトの進行に沿って引くなら `playbooks/`、論点から引くなら `domains/`。どちらから入っても同じノートに到達します。選択肢が複数あって決めきれない場合は `reference/decision-trees/` から始めてください。
 
 ---
 
@@ -29,18 +33,38 @@ graph TD
 
 ---
 
+## 自分の環境から引く
+
+上の分岐は「何を知りたいか」から入ります。**「自分の構成だとどこを読むべきか」**で引きたい場合はこちらを使ってください。左端が自環境の特徴、右が読む順序です。
+
+| 自環境の特徴 | 最初に読む | 次に読む |
+|---|---|---|
+| 移行元が ONTAP（オンプレミス / 他クラウド） | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) → [設計](playbooks/02-design/) |
+| 移行元が Windows ファイルサーバー（SMB / NTFS ACL 保持が要件） | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [マルチプロトコル・ID](domains/multiprotocol-identity/) |
+| 移行元が ONTAP 以外の NAS | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) |
+| NFS と SMB を同じデータに対して使う | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [セキュリティ・ガバナンス](domains/security-governance/) |
+| Active Directory 連携が前提 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | [設計](playbooks/02-design/) |
+| 新規構築（移行元なし） | [設計](playbooks/02-design/) | [構築](playbooks/04-build/) → [運用](playbooks/05-operate/) |
+| すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
+| すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
+| 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
+
+**どの行でも、読んだ内容をそのまま本番に適用しないでください。** 各ノートの `evidence` 区分を確認し、[本番に取り入れる前の確認](evidence-policy.md#本番に取り入れる前の確認) の手順を通してください。
+
+---
+
 ## ライフサイクル軸 — `playbooks/`
 
 プロジェクトの進行に沿った入口です。前のフェーズの出力が次のフェーズの入力になります。
 
 | # | モジュール | 主な出力 | 次に読む |
 |---|---|---|---|
-| 01 | [評価](../../playbooks/01-assess/) | 現行インベントリ、制約リスト | 02 設計 |
-| 02 | [設計](../../playbooks/02-design/) | 構成決定、不可逆項目の確定 | 03 移行 |
-| 03 | [移行](../../playbooks/03-migrate/) | 移行計画、切替手順、ロールバック手順 | 04 構築 |
-| 04 | [構築](../../playbooks/04-build/) | IaC、自動化、構築後検証 | 05 運用 |
-| 05 | [運用](../../playbooks/05-operate/) | 監視設計、Runbook | 06 最適化 |
-| 06 | [最適化](../../playbooks/06-optimize/) | 性能・コストの改善結果 | — |
+| 01 | [評価](playbooks/01-assess/) | 現行インベントリ、制約リスト | 02 設計 |
+| 02 | [設計](playbooks/02-design/) | 構成決定、不可逆項目の確定 | 03 移行 |
+| 03 | [移行](playbooks/03-migrate/) | 移行計画、切替手順、ロールバック手順 | 04 構築 |
+| 04 | [構築](playbooks/04-build/) | IaC、自動化、構築後検証 | 05 運用 |
+| 05 | [運用](playbooks/05-operate/) | 監視設計、Runbook | 06 最適化 |
+| 06 | [最適化](playbooks/06-optimize/) | 性能・コストの改善結果 | — |
 
 ---
 
@@ -50,12 +74,12 @@ graph TD
 
 | モジュール | 典型的な質問 |
 |---|---|
-| [データ保護](../../domains/data-protection/) | Snapshot をどう設計するか / 本当に復旧できるか |
-| [データ活用](../../domains/data-utilization/) | コピーを増やさず分析・AI に使えるか |
-| [セキュリティ・ガバナンス](../../domains/security-governance/) | 暗号化・監査・権限をどう設計するか |
-| [性能](../../domains/performance/) | スループットはどこで決まり、どこで共有されるか |
-| [コスト](../../domains/cost/) | 見積もりと実測がなぜずれるか |
-| [マルチプロトコル・ID](../../domains/multiprotocol-identity/) | NFS と SMB で権限がなぜ食い違うか |
+| [データ保護](domains/data-protection/) | Snapshot をどう設計するか / 本当に復旧できるか |
+| [データ活用](domains/data-utilization/) | コピーを増やさず分析・AI に使えるか |
+| [セキュリティ・ガバナンス](domains/security-governance/) | 暗号化・監査・権限をどう設計するか |
+| [性能](domains/performance/) | スループットはどこで決まり、どこで共有されるか |
+| [コスト](domains/cost/) | 見積もりと実測がなぜずれるか |
+| [マルチプロトコル・ID](domains/multiprotocol-identity/) | NFS と SMB で権限がなぜ食い違うか |
 
 ---
 
@@ -63,16 +87,16 @@ graph TD
 
 | ディレクトリ | 使う場面 |
 |---|---|
-| [決定ツリー](../../reference/decision-trees/) | 選択肢が複数あり、どれを選ぶか決めたい |
-| [比較マトリクス](../../reference/comparison/) | 他の選択肢とのトレードオフを整理したい |
-| [上限値・クォータ](../../reference/limits/) | 設計が上限に当たらないか確認したい |
-| [用語集](../../reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |
+| [決定ツリー](reference/decision-trees/) | 選択肢が複数あり、どれを選ぶか決めたい |
+| [比較マトリクス](reference/comparison/) | 他の選択肢とのトレードオフを整理したい |
+| [上限値・クォータ](reference/limits/) | 設計が上限に当たらないか確認したい |
+| [用語集](reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |
 
 ---
 
 ## 事例 — `case-studies/`
 
-[Case Studies](../../case-studies/) には、技術支援の現場で得た知見を**一般化された教訓**として載せています。企業名・組織名・実際の識別子・組織が特定できる構成は一切含みません。
+[Case Studies](case-studies/) には、技術支援の現場で得た知見を**一般化された教訓**として載せています。企業名・組織名・実際の識別子・組織が特定できる構成は一切含みません。
 
 事例は次の形式で書かれています。
 
@@ -122,4 +146,6 @@ graph TD
 
 ---
 
-[English](../en/navigation.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](navigation.md) | [English](../en/navigation.md) | [한국어](../ko/navigation.md) | [简体中文](../zh-CN/navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](../de/navigation.md) | [Español](../es/navigation.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->

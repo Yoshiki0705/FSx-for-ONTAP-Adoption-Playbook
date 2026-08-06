@@ -15,22 +15,42 @@ A **documentation-first** knowledge base for Amazon FSx for NetApp ONTAP adoptio
 and best practices across design, build, and operations. There is no application to deploy — the
 deliverable is the documentation itself, plus small validation tools under `tools/`.
 
-Two navigation axes:
+**Every localizable document lives under `docs/<lang>/`.** Japanese is the reference language and the
+only complete tree. The one exception is the root `README.md`, which *is* the Japanese hub — so
+`docs/ja/README.md` does not exist.
 
-- `playbooks/` — lifecycle: `01-assess` → `02-design` → `03-migrate` → `04-build` → `05-operate` → `06-optimize`
-- `domains/` — cross-cutting topics: `data-protection`, `data-utilization`, `security-governance`, `performance`, `cost`, `multiprotocol-identity`
+Two navigation axes, mirrored in each language:
 
-Plus `case-studies/` (anonymized field findings), `reference/` (decision trees, comparisons, limits, glossary), and `docs/<lang>/` (8-language guides).
+- `docs/<lang>/playbooks/` — lifecycle: `01-assess` → `02-design` → `03-migrate` → `04-build` → `05-operate` → `06-optimize`
+- `docs/<lang>/domains/` — cross-cutting topics: `data-protection`, `data-utilization`, `security-governance`, `performance`, `cost`, `multiprotocol-identity`
+
+Plus `docs/<lang>/case-studies/` (anonymized field findings) and `docs/ja/reference/` (decision
+trees, comparisons, limits, glossary — currently bilingual single files, see Localization).
 
 ## Core Commands
 
+### Set up the pinned toolchain first
+
+```bash
+pip install -r requirements-dev.txt   # ruff, exact-pinned
+npm install -g markdownlint-cli2      # not pip-installable
+brew install gitleaks                 # not pip-installable
+```
+
+**`make lint` warns when the installed `ruff` differs from the pinned version. That warning means a
+local pass does not predict CI.** Rule sets widen between releases, so a newer `ruff` reports
+findings on code that has not changed, and an older one stays silent on code CI will reject. Install
+the pinned version rather than working past the warning — the alternative is discovering it as a red
+pull request.
+
 ```bash
 make help          # List all targets
-make lint          # markdownlint + frontmatter schema validation
-make i18n-check    # Tier 1 cross-language section parity
-make audit         # Pre-publication audit (naming / neutrality / PII / internal IDs)
-make links         # Broken link check (internal links offline, external opt-in)
-make all           # lint + i18n-check + audit + links
+make lint            # markdownlint + frontmatter schema validation
+make i18n-check      # Tier 1 cross-language section parity
+make switcher-check  # Language switcher blocks match what exists on disk
+make audit           # Pre-publication audit (naming / neutrality / PII / internal IDs)
+make links           # Broken link check (internal links offline, external opt-in)
+make all             # lint + i18n-check + switcher-check + audit + links
 
 # Individual validators (also callable directly)
 python3 tools/validate_frontmatter.py            # Schema + evidence-tier rules
@@ -38,6 +58,9 @@ python3 tools/check_i18n_parity.py               # Section structure/count acros
 python3 tools/audit_public_output.py             # Naming, neutrality, PII, internal IDs
 python3 tools/check_links.py                     # Internal link resolution
 python3 tools/check_links.py --external          # Include external URLs (network required)
+python3 tools/sync_lang_switcher.py              # Verify switcher blocks
+python3 tools/sync_lang_switcher.py --write      # Regenerate switcher blocks
+python3 tools/sync_lang_switcher.py --verify-parity   # JA/EN links must match modulo <lang>
 python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffold a note
 ```
 
@@ -46,37 +69,50 @@ python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffo
 ## Repository Layout
 
 ```text
-├── README.md                       # JA hub (+ 7 translations: .en .ko .zh-CN .zh-TW .fr .de .es)
+├── README.md                       # JA hub. The other 7 hubs live at docs/<lang>/README.md
 ├── AGENTS.md                       # This file
 ├── llms.txt                        # LLM-facing repository map (llmstxt.org)
 ├── CONTRIBUTING.md                 # Authoring conventions
 ├── Makefile
-├── playbooks/                      # Lifecycle axis
-│   ├── 01-assess/ … 06-optimize/
-│   │   ├── README.md / README.en.md
-│   │   ├── notes/<slug>.md         # 1 file = 1 concern, YAML frontmatter required
-│   │   └── checklists/<slug>.md
-│   └── _template/                  # Copy this to add a module
-├── domains/                        # Topic axis (same internal shape)
-│   ├── data-protection/ … multiprotocol-identity/
-│   └── _template/
-├── case-studies/
-│   ├── _template/case-study.md     # Anonymization-enforcing template
-│   └── README.md
-├── reference/
-│   ├── decision-trees/             # Mermaid flowcharts
-│   ├── comparison/                 # Option matrices (symmetric trade-offs)
-│   ├── limits/                     # Limits + source + verified_on
-│   └── glossary/
 ├── docs/
-│   ├── ja/ en/ ko/ zh-CN/ zh-TW/ fr/ de/ es/   # Tier 1 guides
-│   ├── diagrams/                   # .drawio sources
-│   └── images/  images/png/        # Exported svg / png@2x
+│   ├── i18n-manifest.txt           # Which Tier 1 guide requires which languages
+│   ├── _assets/
+│   │   ├── diagrams/               # .drawio sources
+│   │   └── images/  images/png/    # Exported svg / png@2x
+│   ├── ja/                         # Reference language, only complete tree
+│   │   ├── navigation.md  evidence-policy.md
+│   │   ├── playbooks/               # Lifecycle axis
+│   │   │   ├── 01-assess/ … 06-optimize/
+│   │   │   │   ├── README.md
+│   │   │   │   ├── notes/<slug>.md  # 1 file = 1 concern, YAML frontmatter required
+│   │   │   │   └── checklists/<slug>.md
+│   │   │   └── _template/           # Copy this to add a module
+│   │   ├── domains/                 # Topic axis (same internal shape)
+│   │   │   ├── data-protection/ … multiprotocol-identity/
+│   │   │   └── _template/
+│   │   ├── case-studies/
+│   │   │   ├── _template/case-study.md   # Anonymization-enforcing template
+│   │   │   └── README.md
+│   │   └── reference/
+│   │       ├── decision-trees/      # Mermaid flowcharts
+│   │       ├── comparison/          # Option matrices (symmetric trade-offs)
+│   │       ├── limits/              # Limits + source + verified_on
+│   │       └── glossary/
+│   ├── en/                          # Same shape, only the files that are translated
+│   │   ├── README.md  navigation.md  evidence-policy.md
+│   │   ├── playbooks/<module>/README.md
+│   │   ├── domains/<module>/README.md
+│   │   └── case-studies/README.md
+│   └── ko/ zh-CN/ zh-TW/ fr/ de/ es/     # README.md hubs for now
 ├── tools/                          # Validation + scaffolding scripts (Python 3.12, stdlib only)
 ├── scripts/                        # Maintenance helpers
 ├── .kiro/                          # Kiro steering + MCP (gitignored, local only)  <!-- gitleaks:allow -->
 └── .private/                       # Non-public source notes (gitignored, never committed)  <!-- gitleaks:allow -->
 ```
+
+A language directory holds only what has actually been translated. Nothing is stubbed out to make
+the tree look symmetric — `make switcher-check` derives the language switcher from what exists, so a
+missing translation is simply absent from the switcher rather than a broken link.
 
 ## Content Model
 
@@ -156,6 +192,30 @@ This is a public repository. Git history is permanent and search-indexed.
 
 Names are acceptable in `.private/` and `.kiro/` (both gitignored). Never in tracked files.  <!-- gitleaks:allow -->
 
+### Branch names and commit messages are public output too
+
+They are indexed, quoted in release notes, and effectively permanent. The existing rules cover their
+*form*; these cover their *content*.
+
+**Branch names** — `<type>/<what>`, kebab-case ASCII, ≤ 40 characters.
+
+| Rule | Why |
+|---|---|
+| Name what the branch **adds or changes**, never what was wrong before | A name is visible on the pull request page forever and reads as a verdict on earlier work. `docs/readme-honest-coverage` judges the past; `docs/module-status-accuracy` describes the change |
+| Noun phrase, not a sentence | `docs/lang-directory-layout`, not `docs/move-all-docs-under-lang` |
+| One concern per branch | When the name stops describing the contents, split the branch. Do not rename it to something vaguer |
+| No dates, ticket IDs, person names, or tooling/session references | `docs/phase3-20260806`, `docs/agent-session-2` leak process and rot immediately |
+
+**Commit subjects** — `<type>(<scope>): <what changed>`, ≤ 72 characters, imperative, no trailing period.
+
+State the effect, not the activity: `docs: add environment-first entry`, not `docs: update navigation.md`. The diff already lists files; the subject is for the reader scanning `git log --oneline`.
+
+**Commit bodies** — wrap at 72. Lead with **why**: the problem the change addresses, since the diff already shows what. Say what was deliberately left undone and which constraints were accepted. Corrections to an earlier commit are stated plainly, without apology.
+
+**Never in a branch name, subject, body, or PR text**: persona names, review rounds or counts, customer or organization names, support case numbers, vendor-internal IDs, real account IDs or IPs, personal paths, and vendor-versus phrasing. Process metadata is banned here for the same reason it is banned in published docs — it is noise for readers and it dates the work.
+
+**Merge strategy affects how long a branch name lives.** A squash merge keeps the pull request title and number in `main`; the branch name survives only on the pull request page. A merge commit embeds the branch name in `main` permanently. Squash is the default here — the pull request body carries the detail, and `main` stays readable.
+
 ### Do not invent role-labeled review notes
 
 Do **not** write inline callouts labeled with a job title or persona name (`> **AppSec lens**:`,
@@ -215,16 +275,89 @@ section with back-links.
 
 ## Localization
 
+### Path model
+
+A document's language is its directory, never a filename suffix. `README.en.md` and friends do not
+exist; the counterpart of `docs/ja/domains/cost/README.md` is `docs/en/domains/cost/README.md`.
+
+Because the two files sit at the same depth, **a translation is a copy plus text replacement — every
+relative link stays byte-identical**. If you find yourself adjusting `../` counts while translating,
+something is in the wrong place. `make switcher-check --verify-parity` enforces this: it compares the
+Japanese and English link target sets and fails on any difference beyond the language segment.
+
+One exception: root `README.md` is the Japanese hub, so `docs/ja/README.md` does not exist and the
+"home" link resolves to a different depth per language. That link is generated, so it costs nothing.
+
+### Tiers
+
 Three tiers, enforced by `make i18n-check`:
 
 | Tier | Scope | Languages |
 |---|---|---|
-| 1 | Root `README`, `docs/<lang>/` primary guides | ja, en, ko, zh-CN, zh-TW, fr, de, es |
-| 2 | Module `README` | ja, en |
-| 3 | `notes/`, `checklists/` | ja (en optional) |
+| 1 | Root `README.md` + `docs/<lang>/README.md`, and the guides listed in `docs/i18n-manifest.txt` | per manifest; default all 8 |
+| 2 | Module `README` under `docs/<lang>/{playbooks,domains}/` | ja, en |
+| 3 | `notes/`, `checklists/`, `reference/` | ja (en optional) |
 
-Tier 1 requires matching section structure and count across all 8 languages. When you change one
-language, change all of them in the same commit.
+### What qualifies for eight languages
+
+Tier 1 is **first-touch material only**: how to find your way around, and how to read the confidence
+signals. A reader arriving in their own language needs to know where to go and how much to trust
+what they find — nothing beyond that.
+
+| Belongs in Tier 1 | Stays at ja + en or ja |
+|---|---|
+| The hub, navigation, how to read the evidence tiers | Anything carrying a number, a limit, or a threshold |
+| Anonymization and contribution policy a reader must understand before acting | Anything describing an irreversible operation |
+| Labels and wording a reader meets before choosing a path | Notes, checklists, decision trees, comparison matrices |
+
+The dividing line is consequence. **A mistranslation in first-touch material sends someone to the
+wrong page, which they will notice. A mistranslation in a design judgment does not announce itself
+and can be acted on.** Deep technical material is therefore deliberately not promoted, even when a
+translation would be easy to produce.
+
+Promotion is also gated on stability. Translating a document that is still changing multiplies every
+later edit by eight. Promote when the content has settled, not when it is first written.
+
+### Declaring authority
+
+Every Tier 1 document states which version is authoritative, symmetrically:
+
+- The Japanese version states that it is the authoritative one for technical accuracy.
+- Every other language states that Japanese is authoritative and that discrepancies should be
+  reported.
+
+This is a plain paragraph, not a heading, so it does not affect section parity. It exists because
+translations here are produced with machine assistance and are not natively reviewed before
+publication — a reader deciding whether to act on a statement is entitled to know that.
+
+**The operating model is publish, then correct on report.** Waiting for native review before
+publishing would mean shipping nothing outside Japanese and English. Instead the limitation is
+stated, the report path is one click away, and a translation correction is treated as an ordinary
+correction rather than a special case. That trade is only honest while the notice stays visible and
+the scope stays narrow — which is why first-touch material is the boundary, not a starting point to
+expand from.
+
+Tier 1 requires matching section structure and count across the languages the manifest names for that
+file. When you change one language, change all of them in the same commit.
+
+`docs/ja/reference/**` is currently written as **bilingual single files** (Japanese and English prose
+sharing the same tables). It is therefore not split per language yet, and English pages link into
+`docs/ja/reference/`. When adding to `reference/`, follow the existing bilingual style rather than
+creating a partial `docs/en/reference/` tree.
+
+### Language switcher
+
+Never hand-write or hand-edit a switcher line. Each localized file carries a generated block:
+
+```markdown
+<!-- lang-switcher:start -->
+🌐 [日本語](…) | [English](…) | [🏠 リポジトリトップ](…)
+<!-- lang-switcher:end -->
+```
+
+`python3 tools/sync_lang_switcher.py --write` fills it from the filesystem, listing only languages
+that actually exist. The tool does not insert the marker pair — placement is a layout decision, so a
+new file needs the markers added once, after the H1 and at the end of the file.
 
 **Never translate**: file paths, commands, badge URLs, anchor IDs, product and technical terms
 (ONTAP, SnapMirror, FlexCache, FlexClone, SnapLock, FabricPool, S3 Access Point, SVM, LIF).
@@ -234,6 +367,7 @@ language, change all of them in the same commit.
 - Markdown, ATX headings (`##`), no trailing whitespace, one sentence per line is **not** required.
 - Tables over bullet lists for anything with 2+ attributes per item.
 - Mermaid for flowcharts and sequence diagrams; draw.io for architecture diagrams.
+- **Every diagram carries the same information in prose or a table.** A mermaid block is a summary of something stated elsewhere in the document, never the only place a fact appears. Mermaid does not render in every context, is not reliably reachable by a screen reader, and is not extractable by a crawler — so a decision that exists only inside a diagram is a decision some readers cannot access.
 - Code blocks always carry a language tag.
 - Internal links are relative paths. Blog-facing images use absolute `raw.githubusercontent.com` URLs.
 - Japanese is the primary authoring language; code, identifiers, and commit messages are English.
@@ -248,6 +382,7 @@ Follow the same standard as sibling repositories:
 - Service icons 80×80 (`Arch_*_64.svg` native), resource icons 48×48 (`Res_*_48.svg`). No rescaling, no mixing.
 - Labels use official service names with the `Amazon`/`AWS` prefix. No abbreviations (`ALB` → `Elastic Load Balancing`). Non-AWS elements (`NFS クライアント`, `Windows ファイルサーバー`) need no prefix.
 - Arrows: single-color preset open arrow only (`endArrow=open;endFill=0;strokeColor=#232F3E`). No color-coding or dashed-line semantics.
+- Sources live in `docs/_assets/diagrams/`, exports in `docs/_assets/images/` and `docs/_assets/images/png/`. Diagrams are language-neutral; the underscore marks the directory as not-content, which is also why the validators skip it.
 - Ship **both themes**: light is the default and what docs display; dark is generated from light with `Res_*_48_Dark` icon substitution and linked alongside.
 - Never commit the icon asset package itself — only diagrams with icons already embedded.
 - `ET.parse()` passing is not verification. **Render the PNG and look at it**, per language.
@@ -260,11 +395,13 @@ Before submitting changes:
 1. `make lint` — markdownlint clean, all frontmatter valid
 2. `make audit` — zero naming, neutrality, PII, or internal-ID hits
 3. `make i18n-check` — Tier 1 parity holds
-4. `make links` — no broken internal links
-5. New note → frontmatter complete, `evidence` tier honest, environment stated for any number
-6. New case study → anonymization table in `case-studies/_template/` fully applied
-7. Changed a Tier 1 doc → all 8 languages updated in the same commit
-8. Changed a diagram → light and dark regenerated, PNG visually confirmed
+4. `make switcher-check` — switcher blocks match the languages on disk
+5. `make links` — no broken internal links
+6. New note → frontmatter complete, `evidence` tier honest, environment stated for any number
+7. New case study → anonymization table in `docs/ja/case-studies/_template/` fully applied
+8. Changed a Tier 1 doc → every language the manifest names updated in the same commit
+9. Added a translation → `sync_lang_switcher.py --write`, never a hand-edited switcher line
+10. Changed a diagram → light and dark regenerated, PNG visually confirmed
 
 ## Self-Review (4-Axis Check)
 
@@ -283,7 +420,11 @@ Surface findings explicitly and fix before finalizing.
 |---|---|
 | `evidence: verified` without `verified_on` | `make lint` fails. Either add the date or downgrade the tier |
 | A measured number with no environment stated | Always state ONTAP version, region, and configuration next to the number |
-| Tier 1 doc updated in Japanese only | `make i18n-check` fails. Update all 8 in the same commit |
+| Tier 1 doc updated in Japanese only | `make i18n-check` fails. Update every language the manifest names, in the same commit |
+| Adjusting `../` counts while translating a file | The counterpart belongs at the same depth under `docs/<lang>/`. Only the language segment may differ |
+| Hand-editing a switcher line, or adding a language to it manually | `make switcher-check` fails. Run `sync_lang_switcher.py --write` |
+| A link that resolves but sends the reader into another language | `make links` cannot see this. `sync_lang_switcher.py --verify-parity` can |
+| Creating `docs/en/reference/` for one file | `reference/` is bilingual single files today. Follow that style or split the whole tree deliberately |
 | Bare `FSx` or `FSxN` slipping into prose | `make audit` fails. Only "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" |
 | Suggesting BlueXP / Workload Factory / NetApp Console | Reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / Snapshot-FlexClone-SnapMirror |
 | Vendor-versus phrasing in a comparison | State trade-offs symmetrically and add a "how to choose" section |
@@ -292,6 +433,7 @@ Surface findings explicitly and fix before finalizing.
 | Personal path `/Users/<name>/` in an example | Use `${PROJECT_DIR}` or a relative path |
 | Dark diagram not regenerated after a light edit | Regenerate; the light/dark pair must stay in sync |
 | Reading a `@2x` PNG directly | Exceeds the 2000px limit. Downscale to a preview first |
+| Working past the `ruff` version warning from `make lint` | Install the pinned version. A local pass with a different `ruff` does not predict CI, and the difference surfaces as a red pull request |
 | Citing another repo's finding without a link | Always link the source repository and doc |
 
 ## FSx for ONTAP Domain Knowledge (carry-over)
@@ -323,5 +465,5 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 - Primary region for verification: `ap-northeast-1` (Tokyo)
 - ONTAP baseline for carried-over findings: 9.17.1P7D1
-- Tooling: Python 3.12 (stdlib only for `tools/`), `markdownlint-cli2`, `gitleaks`
+- Tooling: Python 3.12 (stdlib only for `tools/`), `ruff` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`. CI installs `ruff` from the pinned file rather than resolving the latest release, so the lint verdict does not depend on the day it runs
 - No application runtime, no AWS deployment from this repository

@@ -52,8 +52,10 @@ NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bFSx\s+NetApp\b"), "use 'Amazon FSx for NetApp ONTAP'"),
     (
         re.compile(r"\bBlueXP\b|NetApp\s+Workload\s+Factory|NetApp\s+Console\b"),
-        "do not propose; reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / "
-        "Snapshot-FlexClone-SnapMirror",
+        (
+            "do not propose; reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / "
+            "Snapshot-FlexClone-SnapMirror"
+        ),
     ),
 ]
 
@@ -84,13 +86,14 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
     (
         re.compile(
             r"\b(?:is|are)\s+(?:far\s+)?(?:better|superior|inferior)\s+(?:than|to)\b",
-            re.I,
+            re.IGNORECASE,
         ),
         "state which option suits which context instead",
     ),
     (
         re.compile(
-            r"\bgame[- ]changer\b|\bbest[- ]in[- ]class\b|\bindustry[- ]leading\b", re.I
+            r"\bgame[- ]changer\b|\bbest[- ]in[- ]class\b|\bindustry[- ]leading\b",
+            re.IGNORECASE,
         ),
         "avoid marketing superlatives; show, don't tell",
     ),
@@ -199,8 +202,10 @@ def audit_line(
         findings.append(
             (
                 "role-label",
-                "role/persona-labeled callout implies a review that did not happen; "
-                "relabel to a neutral topic note (e.g. '**Security note**')",
+                (
+                    "role/persona-labeled callout implies a review that did not happen; "
+                    "relabel to a neutral topic note (e.g. '**Security note**')"
+                ),
             )
         )
 

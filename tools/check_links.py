@@ -115,15 +115,18 @@ def check_internal(source: Path, target: str) -> str | None:
     if not resolved.exists():
         return f"file not found: {raw_path}"
 
-    if fragment and resolved.suffix == ".md":
-        if slugify(fragment) not in anchors_of(resolved):
-            return f"anchor '#{fragment}' not found in {raw_path}"
+    if (
+        fragment
+        and resolved.suffix == ".md"
+        and slugify(fragment) not in anchors_of(resolved)
+    ):
+        return f"anchor '#{fragment}' not found in {raw_path}"
     return None
 
 
-def check_external(url: str, timeout: float = 10.0) -> str | None:
+def _probe(url: str, method: str, timeout: float) -> str | None:
     request = urllib.request.Request(
-        url, method="HEAD", headers={"User-Agent": USER_AGENT}
+        url, method=method, headers={"User-Agent": USER_AGENT}
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -138,6 +141,20 @@ def check_external(url: str, timeout: float = 10.0) -> str | None:
     return None
 
 
+def check_external(url: str, timeout: float = 10.0) -> str | None:
+    """Probe with HEAD, then confirm a failure with GET before reporting it.
+
+    Some hosts redirect a HEAD to a landing or sign-in page that returns 404 while the real page
+    answers GET with 200 - an interoperability matrix behind a login does exactly this. Reporting
+    those as broken trains people to ignore the check, so a failure is only reported when GET
+    agrees. HEAD stays first because it avoids downloading bodies for the common case.
+    """
+    problem = _probe(url, "HEAD", timeout)
+    if problem is None:
+        return None
+    return _probe(url, "GET", timeout)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -149,7 +166,11 @@ def main() -> int:
     internal_count = 0
     external_seen: dict[str, str | None] = {}
 
-    for path in iter_markdown(ROOT):
+    # llms.txt is Markdown-shaped but not .md, so it was silently exempt from this check. It is the
+    # entry point crawlers and agents read first, which makes it the worst place for a dead link.
+    extra = [ROOT / "llms.txt"] if (ROOT / "llms.txt").exists() else []
+
+    for path in [*iter_markdown(ROOT), *extra]:
         rel = path.relative_to(ROOT)
         for lineno, target in iter_links(path):
             scheme = urlparse(target).scheme

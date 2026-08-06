@@ -1,6 +1,8 @@
 # 知見の分類ポリシー
 
-[English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](evidence-policy.md) | [English](../en/evidence-policy.md) | [한국어](../ko/evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](../es/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->
 
 ---
 
@@ -56,6 +58,42 @@
 | この検証環境 vs 一般的なサービス上限 | 環境固有の値がサービスの仕様として引用される |
 | 設計上の考慮事項 vs 法務・コンプライアンス判断 | ガイダンスが法的根拠として扱われる |
 | AI の補助的な示唆 vs 最終判断 | 自動判定の結果が人の確認なしに確定する |
+
+---
+
+## 本番に取り入れる前の確認
+
+区分は「どこまで信頼できるか」を示すだけで、**あなたの環境で成り立つことを保証しません。** 本番に入れる前に、区分ごとに次を確認してください。
+
+| 区分 | 本番前に必ず行うこと |
+|---|---|
+| `verified` | 記載された検証環境と自環境の差分を洗い出す。バージョン・リージョン・構成のいずれかが違えば再測定する |
+| `documented` | 出典を実際に開き、現行版でも同じ記述かを確認する。ドキュメントは改訂される |
+| `field-observation` | 自環境で再現するかを確認する。再現しない場合、その記述は前提として使えない |
+| `hypothesis` | 検証してから使う。未検証の推論を設計の根拠にしない |
+
+### 適用の手順
+
+```mermaid
+graph LR
+    R[ノートを読む] --> C{evidence 区分と<br/>自環境の差分}
+    C -->|差分あり| T[検証環境で再現を試す]
+    C -->|差分なし| S[小さい範囲で適用]
+    T --> S
+    S --> M[効果と副作用を観測]
+    M --> P[本番へ展開]
+    P --> W[自環境の値として記録]
+```
+
+| # | 手順 | 目的 |
+|---|---|---|
+| 1 | `evidence` 区分と、記載された環境条件を確認する | どこまでが検証済みかを把握する |
+| 2 | 自環境との差分（バージョン / リージョン / 構成 / 負荷）を書き出す | 再検証が必要な範囲を確定する |
+| 3 | 本番と同じ構成の検証環境で再現する | 本番で初めて挙動を知る状況を避ける |
+| 4 | 影響範囲を限定して適用し、観測する | 想定外の副作用を小さい単位で捕まえる |
+| 5 | 自環境での結果を記録する | 次回の判断材料にする。差異があれば [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues) で共有を歓迎します |
+
+**不可逆な操作は手順 3 を省略できません。** SnapLock の有効化のように後戻りできない設定は、検証環境での確認を経ずに本番へ入れないでください。
 
 ---
 
@@ -126,4 +164,6 @@ lang: ja
 
 ---
 
-[English](../en/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](evidence-policy.md) | [English](../en/evidence-policy.md) | [한국어](../ko/evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](../es/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
+<!-- lang-switcher:end -->

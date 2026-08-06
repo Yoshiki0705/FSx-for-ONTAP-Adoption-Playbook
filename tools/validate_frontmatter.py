@@ -148,7 +148,10 @@ def validate(path: Path) -> tuple[list[str], str | None]:
                     f"{rel}: 'verified_on' must be YYYY-MM-DD, got {raw_date!r}"
                 )
             else:
-                if parsed > dt.date.today():
+                # UTC, not local time: a verified_on recorded today reads as "future" to a
+                # runner behind the author's timezone, so a naive today() makes the check
+                # disagree between a local run and CI.
+                if parsed > dt.datetime.now(dt.UTC).date():
                     errors.append(f"{rel}: 'verified_on' {raw_date} is in the future")
     elif tier == "documented":
         if not meta.get("source"):
