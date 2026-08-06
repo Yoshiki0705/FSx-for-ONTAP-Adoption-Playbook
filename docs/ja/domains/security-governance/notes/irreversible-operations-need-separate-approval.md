@@ -114,11 +114,39 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 | # | 項目 | 理由 |
 |---|---|---|
 | 1 | **保持期間の値を推測しない。既定値を黙って受け入れない** | 本件は既定の 6 か月が適用されました。値を提示していれば止まっていました |
-| 2 | **サービスの最小値を提示する。最小値が既に許容できないなら、その時点で止める** | 監査ログの下限は 6 か月です。「最小値にする」実践では回避できません |
+| 2 | **どのパラメータが期間を縛るのかを特定する。使う API に指定手段があるかまで確認する** | 本件はここを外しました。下表参照 |
 | 3 | **最も広い影響範囲を明示する**（ボリューム / SVM / ファイルシステム / バケット / ボールト / アカウント） | 呼び出しで指定したリソースより広いのが通例です |
 | 4 | **その範囲を期間いっぱい保持するコストを提示する** | 削除できないことは課金が続くことです |
 | 5 | **早期解除の documented な経路があるかを明言する** | 監査ログボリュームには、アカウント閉鎖以外ありません |
 | 6 | **削除手順のドキュメントを、有効化手順より先に読む** | 可逆性は出口側に書かれています |
+
+### 「保持期間を最小にする」では守れません — 縛るパラメータが別だからです
+
+**SnapLock には保持期間を表すパラメータが複数あり、ロックの原因になるものは 1 つです。** 本件で
+「最小値を設定する」実践は、**設定した側では既に最小（0 年）**でした。ロックしたのは別のパラメータです。
+
+| パラメータ | 設定できる値 | 何を縛るか | 本件の値 |
+|---|---|---|---|
+| ボリュームの `RetentionPeriod` | 秒〜年。**0 も可** | ボリューム上の WORM ファイル | Default **0 YEARS** / Minimum **0 YEARS** |
+| **監査ログ設定の `retention-period`** | ドキュメント上の下限 **6 か月** | 監査ログファイル → ボリュームの `expiry_time` | **P6M**（既定値が適用） |
+
+そして決定的な点として、**AWS API 側に監査ログの保持期間を指定するパラメータが存在しません。**
+
+| API | 監査ログ保持期間の指定 |
+|---|---|
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です <!-- allow:naming - AWS の API 名 --> |
+| ONTAP `snaplock log create -retention-period` | 可 |
+
+**つまり「短い期間を選べなかった」のではなく、「指定できる経路を使わなかった」のが実態です。**
+`AuditLogVolume=true` を AWS API で渡すと既定値が適用されます。値を制御したいなら ONTAP 側で作成する
+必要があります。
+
+> **ここは `documented` です。** 監査ログの下限が 6 か月という記載は
+> [参照した一次情報](#参照した一次情報) のとおりですが、**それより短い値が実際に拒否されるかは試していません。**
+> 試すには監査ログボリュームをもう 1 本作る必要があり、失敗すれば同じロックが増えます。
+
+**教訓は「最小値を選ぶ」ではありません。** 期間を縛るパラメータを特定し、**自分が使う API にその指定手段が
+あるかまで確認する**ことです。手段がなければ、既定値が適用されるという事実そのものが承認事項です。
 
 ### 検証は例外になりません
 
@@ -173,7 +201,9 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 | 影響は指定したリソースだけに及ぶ | **SVM とファイルシステムにも及びます。** 呼び出しでは指定していません |
 | Enterprise モードなら管理者が消せる | **監査ログボリュームには例外がありません** |
 | ONTAP レベルの権限があれば解除できる | SVM 側の指定は解除できますが、**削除できるようにはなりません** |
-| 保持期間を最小にしておけば安全 | **監査ログの最小値は 6 か月です。** 最小でも問題は残ります |
+| 保持期間を最小にしておけば安全 | **縛るパラメータが別です。** ボリュームの `RetentionPeriod` は 0 年でしたが、監査ログ設定の保持期間がロックしました |
+| SnapLock の保持期間は短くできないのか | **できます。** 秒単位まで設定可能です。ただし**監査ログ設定の保持期間は AWS API に指定手段がなく**、既定が適用されます |
+| Enterprise なら管理者が消せるので安全 | **監査ログボリュームには Enterprise の例外が適用されません。** ドキュメントが「Enterprise モードでも同様」と明記しています |
 | 検証環境なら試してよい | **使い捨てでなければ同じ損害です。** 他の検証ごと 6 か月固定されます |
 | 削除に失敗すれば API がエラーを返す | **エラーを返さず元の状態に戻ります。** 理由は ONTAP 側でしか分かりません |
 | 手順を文書化すれば再発しない | 本件は文書化しながら発生しました。**仕組みで止める必要があります** |
@@ -187,6 +217,8 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 |---|---|
 | 監査ログボリュームの保持期間が満了するまで、ボリューム・SVM・当該 SVM が属するファイルシステムのいずれも削除できないこと（Enterprise モードでも同じ）、Enterprise ボリュームの削除に `fsx:BypassSnapLockEnterpriseRetention` 権限が必要であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
 | 監査ログの最小保持期間が 6 か月であること、SVM あたり 1 つであること | [NetApp KB: What is the minimum retention of SnapLock audit log?](https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/SnapLock/What_is_the_minimum_retention_of_SnapLock_audit_log%3F) |
+| `CreateSnaplockConfiguration` のフィールドが 6 つであること、`RetentionPeriod` がボリュームの保持期間であること、`AuditLogVolume=true` で監査ログボリュームになり最小保持期間が 6 か月であること | [AWS API Reference: CreateSnaplockConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) |
+| 監査ログの保持期間を `snaplock log create -retention-period` で指定すること、既定・最小が 6 か月であること、削除ファイルの保持期間が長い場合はログ側が延長されること | [NetApp Docs: Create an ONTAP SnapLock-protected audit log](https://docs.netapp.com/us-en/ontap/snaplock/create-audit-log-task.html) |
 | 保持期間満了まで監査ログを削除できないこと、満了後も変更できないこと（Compliance / Enterprise 共通） | [NetApp Docs: Create an ONTAP SnapLock-protected audit log](https://docs.netapp.com/us-en/ontap/snaplock/create-audit-log-task.html) |
 | 監査ログ指定の解除 API（アクティブなログを閉じ、SnapLock ロギング対象外にする） | [NetApp Docs: Disassociate SnapLock audit logs](https://docs.netapp.com/us-en/ontap-restapi/delete-storage-snaplock-audit-logs-.html) |
 | 満了した WORM ファイルには特権削除を実行できないこと | [AWS: Understanding SnapLock Enterprise](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-enterprise.html) |

@@ -275,9 +275,12 @@ The lesson generalizes past SnapLock:
 
 ### The gate
 
-1. **Never infer a retention period, and never accept a service default silently.** State the minimum the
-   service permits and ask which value to use. If the minimum is already unacceptable, say so and stop —
-   that was the case here, where the audit log floor of six months was the whole problem.
+1. **Identify which parameter actually sets the lock, and check whether the API you are using can set it
+   at all.** Do not stop at "use the minimum". A service can expose several retention parameters, and the
+   one that binds may not be the one you set. Here the volume's `RetentionPeriod` was already `0 YEARS`
+   while a *different* parameter — the audit log configuration's retention — did the locking, and
+   `CreateSnaplockConfiguration` has **no field for it**, so the default applied silently. When your API
+   cannot set a value, the fact that a default will be applied is itself the thing to get approved.
 2. **State the widest scope before acting**: volume, SVM, file system, bucket, vault, account. Name the
    period, and the cost of holding that scope for its whole duration.
 3. **Say plainly whether any documented path reverses it early.** For a SnapLock audit log volume there is
@@ -485,6 +488,7 @@ Surface findings explicitly and fix before finalizing.
 | Suggesting BlueXP / Workload Factory / NetApp Console | Reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / Snapshot-FlexClone-SnapMirror |
 | **Enabling any immutability feature without an explicit instruction naming the retention value** | Stop and ask. See [Immutability (WORM) features](#immutability-worm-features-never-enable-one-on-your-own-judgement). A 128 MiB SnapLock audit log volume locked a whole file system for six months |
 | Reading the "how to enable" page but not the "how to delete" page | Reversibility is documented on the teardown page. Read the exit before the entry |
+| Assuming "use the minimum retention" is protection | Find the parameter that actually binds. A volume `RetentionPeriod` of `0 YEARS` did not prevent a six-month lock set by a *different* parameter the AWS API cannot even express |
 | Treating verification as a reason to skip the irreversibility gate | Use a disposable file system or account. The incident that created this rule was verification work |
 | Vendor-versus phrasing in a comparison | State trade-offs symmetrically and add a "how to choose" section |
 | Invented `**X Engineer lens**` callout | Relabel to a neutral topic note (`**Security note**`) |

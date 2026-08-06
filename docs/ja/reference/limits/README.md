@@ -321,6 +321,37 @@ its SVM, and the file system undeletable for at least six months — Enterprise 
 | ボリュームの `expiry_time` | 作成から 6 か月後の日時が入ります | 実測 |
 | ログファイルの保持 | `privileged_delete` / `system` の各ログに個別の失効日時 | 実測 |
 
+#### 期間を縛るパラメータはボリュームの保持期間ではありません / The binding parameter is not the volume retention
+
+**SnapLock には保持期間を表すパラメータが複数あり、ロックの原因になるのは 1 つです。** 混同すると
+「保持期間を最小にしたのにロックされた」という状況になります。
+
+SnapLock exposes more than one retention setting and only one causes the lock. Conflating them produces
+the situation where the volume retention is already at its minimum and the lock still happens.
+
+| パラメータ | 設定できる値 | 何を縛るか | 本検証での値 |
+|---|---|---|---|
+| ボリュームの `RetentionPeriod` | 秒〜年。**0 も可** | ボリューム上の WORM ファイル | Default **0 YEARS** / Minimum **0 YEARS** |
+| **監査ログ設定の保持期間** | ドキュメント上の下限 **6 か月** | 監査ログファイル → ボリュームの `expiry_time` | **`P6M`**（既定値が適用） |
+
+| API | 監査ログ保持期間の指定 | 出典 |
+|---|---|---|
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です | [API Reference](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) <!-- allow:naming - AWS の API 名 --> |
+| ONTAP `snaplock log create -retention-period` | **可** | [NetApp Docs](https://docs.netapp.com/us-en/ontap/snaplock/create-audit-log-task.html) |
+
+> **`AuditLogVolume=true` を AWS API で渡すと、保持期間は選べず既定値が適用されます。** 値を制御するには
+> ONTAP 側で作成する必要があります。**「最小値を設定する」運用ルールは、指定手段のない API では機能しません。**
+>
+> **Passing `AuditLogVolume=true` through the AWS API applies the default; the value cannot be chosen there.**
+> Controlling it requires creating the log configuration through ONTAP. **A "always use the minimum" policy
+> does not function on an API that cannot express the value.**
+
+> **6 か月より短い値が拒否されるかは実測していません**（`documented`）。試すには監査ログボリュームを
+> もう 1 本作る必要があり、失敗すれば同じロックが増えます。
+>
+> **Whether a value below six months is rejected was not measured** (`documented`). Testing it requires
+> creating another audit log volume, where a failed test adds another six-month lock.
+
 #### AWS API 経由では解除できません / The AWS API cannot release it
 
 | 操作 | 結果 |
@@ -330,6 +361,16 @@ its SVM, and the file system undeletable for at least six months — Enterprise 
 | `SkipFinalBackup=true` との併用 | 効きません |
 | `AuditLogVolume=false` への変更 | 適用されませんでした |
 | SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
+
+> **ONTAP 側で指定を解除した後、AWS API は `AuditLogVolume: False` を返すようになりました。
+> しかしボリュームは依然として削除できません。** ONTAP 側の `snaplock.is_audit_log` は `true` のままで、
+> こちらが削除を阻害します。**AWS API の表示だけを見ると「監査ログボリュームではない」と読めるため、
+> 削除できない理由が消えたように見えます。** 実際には変わっていません。
+>
+> **After releasing the designation at the ONTAP level, the AWS API began reporting
+> `AuditLogVolume: False` — while the volume remained undeletable.** ONTAP's own `snaplock.is_audit_log`
+> is still `true`, and that is what blocks deletion. **Read only the AWS API and the volume no longer looks
+> like an audit log volume**, which makes the blocker appear to have gone. It has not.
 
 #### ONTAP REST では解除できますが、削除はできません / ONTAP REST releases the designation but not the volume
 
