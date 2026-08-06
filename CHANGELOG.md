@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`case-studies/` has its first entry**, and the directory now distinguishes **two kinds**: field cases
+  from technical-support work, and **verification cases from this repository's own environment.** The
+  distinction exists so a reader cannot mistake whose environment is being described — both are
+  single-environment observations, but only one comes from an engagement.
+  - The first entry is a verification case: [a documented default did not
+    reproduce](docs/ja/case-studies/documented-default-did-not-reproduce.md), written about the inode
+    correction in this same release. It is the shape the template asks for and rarely gets — an account of
+    **being wrong**, with the three things that did not go as expected stated plainly: the cause was the
+    absence of measurement rather than weak research, **the incorrect table was the more usable one**
+    (specific thresholds beat "measure it yourself" as guidance), and the observation was a *negative*
+    result, which supports "not seen here" but not "does not exist".
+  - **No engagement case studies were invented.** Case studies are accounts of real work; fabricating them
+    would misrepresent experience rather than merely misstate a fact. The directory index stays honest
+    about having one entry.
 - **`reference/comparison/` now has content**, where the index previously read "none added yet". Two
   matrices, both following the directory's own authoring rules — trade-offs stated symmetrically
   including for the recommended option, a "how to choose" section, and a dated comparison point.
