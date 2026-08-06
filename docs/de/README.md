@@ -26,28 +26,14 @@
 | Öffentliche Primärquellen finden | [Öffentliche Quellen und ihre Gewichtung](../ja/case-studies/public-references.md) (日本語) | 5 Min. |
 | Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 Min. |
 
-> **Abdeckungsstand**: **Alle 12 Module haben Inhalt** (11 `notes/`, 1 `checklists/`).
-> Das gilt auf Modulebene; auf Frageebene sind einzelne Antworten noch nicht geschrieben.
-> Das README jedes Moduls nennt die Fragen, die es behandelt, und markiert die noch nicht geschriebenen Antworten. Die Notizen liegen derzeit auf Japanisch vor.
+> **Abdeckungsstand**: **Alle 12 Module haben Inhalt.**
+> Das README jedes Moduls listet die Fragen und das jeweils zugehörige Dokument;
+> eine noch nicht beantwortete Frage ist mit `_未追加_` markiert. Die Notizen liegen derzeit auf Japanisch vor.
 
 ### Heute verfügbar
 
-Jedes Dokument behandelt ein Thema pro Datei und führt stets **seine Primärquellen** sowie **ein Verfahren zur Prüfung in der eigenen Umgebung** mit. Da der Text auf Japanisch vorliegt, bleiben auch die Titel auf Japanisch.
-
-- [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
-- [デプロイタイプは一度しか決められない](../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語)
-- [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
-- [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
-- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
-- [階層化の既定値は作成方法で違う](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語)
-- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
-- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
-- [保存時の暗号化は自動、転送時は既定で無効](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語)
-- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
-- [課金は「確保した量」と「使った量」に分かれる](../ja/domains/cost/notes/provisioned-versus-consumed.md) (日本語)
-- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
-
-Das README jedes Moduls nennt außerdem die Fragen, die es behandelt, und markiert die noch nicht geschriebenen Antworten.
+Jedes Dokument behandelt ein Thema pro Datei und führt stets **seine Primärquellen** sowie **ein Verfahren zur Prüfung in der eigenen Umgebung** mit.
+Der Text liegt derzeit auf Japanisch vor. Die vollständige Liste steht im README jedes Moduls neben den jeweiligen Fragen — [Lifecycle](../ja/playbooks/) / [Themen](../ja/domains/) / [Referenz](../ja/reference/).
 
 ---
 

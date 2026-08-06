@@ -15,10 +15,10 @@
 | # | 問い | ノート |
 |---|---|---|
 | 1 | スループットはどこで決まり、どこで共有されるか | [スループットは 1 つの設定値では決まらない](notes/where-throughput-is-determined-and-shared.md) |
-| 2 | プロトコル間で帯域をどう分け合うか | _未追加_ |
-| 3 | レイテンシのテール（p99）をどう見るか | _未追加_ |
-| 4 | キャッシュが効くワークロードの条件は何か | _未追加_ |
-| 5 | ベンチマークをどう設計すれば再現できるか | _未追加_ |
+| 2 | プロトコル間で帯域をどう分け合うか | [プロトコル間で帯域はどう分け合われるか](notes/what-you-cannot-read-from-cloudwatch.md#プロトコル間で帯域はどう分け合われるか) |
+| 3 | レイテンシのテール（p99）をどう見るか | [p99 は CloudWatch のメトリクスからは出せない](notes/what-you-cannot-read-from-cloudwatch.md) |
+| 4 | キャッシュが効くワークロードの条件は何か | [キャッシュが効く条件](notes/what-you-cannot-read-from-cloudwatch.md#キャッシュが効く条件) |
+| 5 | ベンチマークをどう設計すれば再現できるか | [再現できるベンチマークの条件](notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) |
 
 ---
 

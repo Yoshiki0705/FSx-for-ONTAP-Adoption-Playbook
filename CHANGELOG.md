@@ -9,6 +9,33 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [p99 cannot be read from the CloudWatch metrics](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
+  The volume latency metrics expose **total time and total operation count, with `Sum` as the valid
+  statistic** — so dividing them yields an average by construction and **tail latency is not derivable
+  from them at all.** p99 has to be measured at the client; no amount of detail on the storage side
+  produces it.
+  - The reproducibility finding: **burst credits sway a benchmark.** A file system accrues credits while
+    below baseline and spends them to exceed it, so the same test run with a depleted balance returns a
+    different number. A benchmark that does not record `FileServerDiskThroughputBalance` and
+    `FileServerDiskIopsBalance` before starting is not reproducible even when the procedure is identical.
+  - Also settles two questions by stating what does **not** exist: **there is no per-protocol bandwidth
+    allocation** — NFS, SMB, iSCSI and S3 access points share one HA pair's budget along with background
+    tasks, and the only documented prioritization is client traffic over background work. And **cache size
+    cannot be set directly**; in-memory and NVMe cache size is determined solely by throughput capacity,
+    so "give it more cache" means "raise throughput capacity".
+- Note: [the AD dependency lasts the lifetime, not just the join](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md).
+  A valid service account is required **for the lifetime of the file system**, because replacing a failed
+  file system or SVM and patching ONTAP both require unjoining and rejoining the domain. So an expired
+  credential is **symptomless in normal operation** and surfaces at the next maintenance window — which,
+  per the maintenance note, cannot be deferred past 14 days. "AD integration is working" is a statement
+  about normal operation only.
+  - Two AD-side actions silently break things: **moving the computer objects FSx for ONTAP created**, and
+    **deleting the directory while an SVM is joined**. Both leave the SVM misconfigured.
+  - Join failure names two causes — unmet port requirements or insufficient service account permissions on
+    the target OU — and **the error text does not distinguish them**, so checking both in order is the
+    correct procedure rather than a thorough one.
+  - For dual-protocol access, records the layer usually missed: protocol **version** is enabled separately,
+    so NFS v3 can be disabled while NFS is enabled, and v3 needs six ports where v4 needs only TCP 2049.
 - Note: [an S3 access point authorizes every request as one identity](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md).
   `FileSystemIdentity` is the identity used to authorize **all** file access requests made through an S3
   access point, so **the original per-file ACLs do not carry into anything reading through it.** IAM and
@@ -271,6 +298,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **Every number was removed from the coverage statement.** The note and checklist counts had been
+  rewritten twice in a single session, and the "some answers are still unwritten" qualifier became an
+  understatement the moment the last question was answered. The statement now carries only the module
+  completeness fact — which cannot rot, because the twelve modules are a fixed set and all are filled —
+  and points readers at the `_未追加_` marker in each module README, so **coverage is reported next to the
+  gap instead of in a summary that has to be maintained.**
+  - The enumerated note list in the six first-touch hubs was replaced with a pointer to the module
+    navigation for the same reason: adding a note meant editing nine files. Those titles were deliberately
+    untranslated Japanese anyway, so a pointer carries the same information at a third of the edit surface.
+    The `ja` and `en` hubs keep the full list with per-note descriptions, since both are fully maintained.
 - **Coverage is now stated at module level only.** With all twelve modules filled, the eight hub READMEs
   and `llms.txt` say "all 12 modules have content (11 `notes/`, 1 `checklists/`)" and then note that
   answers are still missing at the question level — **without giving a number for it.** A count of

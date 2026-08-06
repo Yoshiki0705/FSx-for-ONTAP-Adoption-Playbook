@@ -18,7 +18,7 @@
 | 2 | 誰が何をしたかをどう記録するか | [監査は 2 つの面に分かれ、片方に穴があります](notes/what-the-platform-gives-and-what-stays-yours.md#監査は-2-つの面に分かれ片方に穴があります) |
 | 3 | 権限設計をどう最小権限に寄せるか | [管理者を分ける](notes/what-the-platform-gives-and-what-stays-yours.md#権限設計管理者を分ける) |
 | 4 | 規制ワークロードで問われる論点は何か | [問われる論点の整理](notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) |
-| 5 | OT / IT 境界をまたぐ場合の考慮事項は何か | _未追加_ |
+| 5 | OT / IT 境界をまたぐ場合の考慮事項は何か | [境界をまたぐときに使える仕組みと限界](notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) |
 
 ---
 
