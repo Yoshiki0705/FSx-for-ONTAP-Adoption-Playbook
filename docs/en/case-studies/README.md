@@ -49,14 +49,38 @@ A collection of success stories is worth less than it looks. **The points where 
 
 ## Index
 
-**Two kinds are kept apart.**
+### How to find one
+
+**Search by your industry, or by your workload.** Both axes reach the same material.
+
+| Route | Where to look |
+|---|---|
+| **By industry** | [Public case studies — by industry](../../ja/case-studies/public-case-studies.md#業種から探す) (日本語) — energy, semiconductor/EDA, financial services, healthcare, medical devices, telecom, public health and education, media, IT |
+| **By workload** | [Public case studies — by workload](../../ja/case-studies/public-case-studies.md#ワークロードから探す) (日本語) — NAS migration, SQL Server, EDA, SaaS tenancy, hybrid and branch caching, media production, multi-Region |
+| **Industry-specific design material** | [Design material by industry](../../ja/case-studies/public-case-studies.md#業種固有の設計資料) (日本語) — EDA, financial services, EHR |
+| **Learn from a judgement that went wrong** | The table below (this repository's own cases) |
+
+**A matching workload is often more useful than a matching industry**, and the reverse holds too.
+
+---
+
+### Three kinds are kept apart
 
 | Kind | Contents | Tier |
 |---|---|---|
+| Public case study | Published by AWS or NetApp. **Organized as a linked index** | Location of the published account only |
 | Field case | A lesson from technical-support work, generalized | `field-observation` |
 | Verification case | An observation in **this repository's own verification environment** — not a customer engagement | `field-observation` |
 
-Verification cases are labelled separately so a reader cannot mistake **whose environment** is being described. Both are single-environment observations and neither guarantees reproduction elsewhere.
+**They are separated so a reader cannot mistake whose environment is being described.**
+
+A public case study is the fact that **an organization published that account**. Most do not state the ONTAP version, Region, configuration or measurement method, so **treat the figures in them as something to measure in your own environment, not as a design basis.** How to read them is in [what to check while reading](../../ja/case-studies/public-case-studies.md#読むときに確認すること) (日本語).
+
+Field and verification cases are both single-environment observations, and neither guarantees reproduction elsewhere.
+
+---
+
+### This repository's own cases
 
 | Case study | Kind | Scale band | Primary topic |
 |---|---|---|---|
