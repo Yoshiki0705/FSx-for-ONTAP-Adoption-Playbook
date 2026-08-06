@@ -9,6 +9,34 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Snapshot locking (Tamperproof Snapshot) is documented as a second instance of the same lock-in class**,
+  not as a SnapLock footnote. It matters because **it applies to volumes that are not SnapLock volumes at
+  all** (ONTAP 9.12.1+), so "we do not use SnapLock" is not protection. ONTAP's own enable-time warning
+  states the shape: locking cannot be disabled until every locked snapshot expires, and a volume with
+  unexpired locked snapshots cannot be deleted — which is one of the five conditions in the `525057`
+  refusal already recorded here.
+  - **The compound trap is the new finding.** Retention overrides the snapshot keep count, so locked
+    snapshots accumulate past a policy's count. Combined with the **measured** ceiling of 1,023 snapshots
+    per volume, an hourly schedule with a long retention can arrive at 1,023 *undeletable* snapshots, at
+    which point new snapshot creation stops and waiting out the retention is the only recovery. The
+    checklist now asks for retention × frequency < 1,023 to be calculated before enabling.
+  - **The failure mode inverts relative to the audit log volume.** There the six-month floor itself was
+    unacceptable, so the fault was "could not choose". Here retention is settable down to hours, so the
+    fault would be **"could have chosen and did not"**.
+  - **No AWS API parameter exists** — `CreateOntapVolumeConfiguration` has no field for it, so it is
+    reachable only through ONTAP. That also means **no AWS-side guardrail**: no IAM condition key, no
+    console warning. Any credential that reaches ONTAP can create the lock, which is now a checklist item
+    about who holds `fsxadmin`.
+  - **The FabricPool interaction is recorded as unresolved rather than answered.** ONTAP documentation lists
+    FabricPool under unsupported features; a NetApp KB treats FSx for ONTAP as an exception because its object store
+    is managed and inaccessible. Capacity-pool tiering *is* FabricPool, so this is not academic — but it
+    stays `documented` with the tension stated, because verifying it would mean creating the lock. AWS
+    Support has been asked for the FSx for ONTAP position.
+  - The guard covers these operations now, and **proved itself the moment it was wired up**: it blocked an
+    attempt to run its own verification command, because that command contained `-snapshot-locking-enabled`
+    as a literal string. The correct response was the built-in `--selftest` (26 cases, both directions), not
+    rewording the sample to slip past the pattern — so the cases live inside the script.
+
 - **A rule, a mechanism, and a note covering irreversible operations**, written because this repository
   broke the rule it already documented. During the verification recorded below, a SnapLock audit log
   volume was created without asking which retention period to use, and the governing warning was read
@@ -475,6 +503,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - `tools/new_note.py` accepts both `domains/performance` and `docs/ja/domains/performance`.
 
 ### Corrected
+
+- **A failed volume deletion *can* be diagnosed from the AWS API.** An earlier entry in this release claimed
+  it could not, and that only the ONTAP job message carried the reason. That was wrong, and it was the same
+  class of mistake as the incident it was describing: concluding without reading what was already available.
+  `DescribeVolumes` returns `LifecycleTransitionReason`, which in this case read
+  `Cannot delete the volume because it contains unexpired log files.` — **more precise than ONTAP**, which
+  enumerates five possible conditions. Only `Lifecycle` and `AdministrativeActions` had been read.
+  - What survives: the `delete-volume` **response** carries no reason and `AdministrativeActions` stays
+    `null`, so a follow-up `DescribeVolumes` is required. The transition from `DELETING` back to `CREATED`
+    as the failure signal is documented behaviour.
+  - Also recorded: the AWS troubleshooting page for failed SVM and volume deletions does **not** list
+    SnapLock audit log volumes among the causes, so that page alone does not lead to this diagnosis. The
+    feature request raised on the false premise was retracted with AWS Support and replaced by a
+    documentation request for that page.
+
+- **AWS Support confirmed in writing that there is no early exit.** Deleting the SnapLock audit log volume
+  before its retention expires is not possible, deleting the file system that contains it is not possible,
+  and **no path exists other than closing the account**. The explicit statement was requested precisely so
+  that this section could stop hedging: the volume and its file system are fixed in place until 2027-02.
 
 - **The inode arithmetic in the assess note was measured and did not reproduce.** The note published a
   break-even average file size table derived from the documented statement that volumes of 648 GiB or

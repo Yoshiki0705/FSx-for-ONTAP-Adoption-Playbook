@@ -31,6 +31,15 @@ would just push it toward guessing.
 
 Exit codes: 0 allow, 2 block (stderr is shown to the agent).
 
+SELF-TEST
+---------
+Run `python3 guard_irreversible_ops.py --selftest`. The cases live in this file rather than
+in a separate harness for a concrete reason: once the guard is wired to a hook, **passing a
+sample locking command on the command line gets the test run itself blocked.** That happened
+during development. Keeping the cases inside the module means verifying the guard never
+requires a matching string to cross the shell — and the alternative, rewriting the sample to
+slip past the pattern, is exactly the bypass this guard exists to prevent.
+
 REUSE
 -----
 Stdlib only, no repository-specific assumptions. Copy it into any project and wire it to
@@ -54,6 +63,19 @@ IMMUTABILITY_PATTERNS: dict[str, list[str]] = {
         r"SnaplockType",
         r"VolumeAppendModeEnabled",
         r"audit-logs",
+    ],
+    # Snapshot locking (Tamperproof Snapshot) is the same lock-in class as SnapLock and is
+    # easy to miss, because it applies to volumes that are *not* SnapLock volumes and has no
+    # AWS API parameter — so no IAM condition key or console warning can gate it. Enabling it
+    # cannot be undone until every locked snapshot expires, and the volume cannot be deleted
+    # until then.
+    "Snapshot locking / Tamperproof Snapshot": [
+        r"snapshot[-_]locking[-_]enabled",
+        r"snaplock[-_]expiry[-_]time",
+        r"modify-snaplock-expiry-time",
+        r"snapshot\s+policy\s+create",
+        r"retention[-_]period\d*",
+        r"snapmirror\s+policy\s+add-rule",
     ],
     "S3 Object Lock": [
         r"object-lock",
@@ -92,7 +114,7 @@ MUTATING = re.compile(
       (?:create|update|put|modify|delete|initiate|complete|lock|enable|associate|tag)-
   | -X\s*(?:POST|PATCH|PUT|DELETE)
   | --method\s*(?:POST|PATCH|PUT|DELETE)
-  | \b(?:volume|vserver|snapmirror)\s+[\w\s-]*?\b(?:create|modify|delete)\b   # ONTAP CLI
+  | \b(?:volume|vserver|snapmirror)\s+[\w\s-]*?\b(?:create|modify|delete|add-rule)\b  # ONTAP CLI
     """
 )
 
@@ -157,7 +179,186 @@ def find_matches(command: str) -> tuple[list[str], list[str]]:
     return areas, matches
 
 
+# (expected_exit, description, command) — kept in this file so the cases travel with the
+# guard when it is copied into another repository. A guard with no tests invites the
+# over-blocking failure that gets guards switched off, so both directions are covered.
+SELFTEST_CASES: list[tuple[int, str, str]] = [
+    # SnapLock
+    (
+        2,
+        "the call that caused the incident",
+        (
+            "aws fsx create-volume --volume-type ONTAP --ontap-configuration"
+            ' \'{"SnaplockConfiguration":{"SnaplockType":"ENTERPRISE","AuditLogVolume":true}}\''
+        ),
+    ),
+    (
+        2,
+        "privileged delete permanently disabled",
+        (
+            "aws fsx update-volume --ontap-configuration"
+            " 'SnaplockConfiguration={PrivilegedDelete=PERMANENTLY_DISABLED}'"
+        ),
+    ),
+    (
+        2,
+        "ONTAP REST audit-log POST",
+        "curl -sk -X POST https://127.0.0.1:18443/api/storage/snaplock/audit-logs -d '{}'",
+    ),
+    # Snapshot locking / Tamperproof Snapshot
+    (
+        2,
+        "enable snapshot locking on a new volume",
+        "volume create -volume vol1 -aggregate aggr1 -size 100m -snapshot-locking-enabled true",
+    ),
+    (
+        2,
+        "enable snapshot locking on an existing volume",
+        "volume modify -vserver vs1 -volume vol1 -snapshot-locking-enabled true",
+    ),
+    (
+        2,
+        "locking snapshot policy with a retention period",
+        (
+            "volume snapshot policy create -policy lock_policy -enabled true"
+            " -schedule1 hourly -count1 24 -retention-period1 '1 days'"
+        ),
+    ),
+    (
+        2,
+        "manual snapshot with a SnapLock expiry",
+        (
+            "volume snapshot create -vserver vs1 -volume vol1 -snapshot snap1"
+            " -snaplock-expiry-time '11/10/2026 09:00:00'"
+        ),
+    ),
+    (
+        2,
+        "set expiry on an existing snapshot",
+        (
+            "volume snapshot modify-snaplock-expiry-time -volume vol1 -snapshot snap2"
+            " -snaplock-expiry-time '11/10/2026 09:00:00'"
+        ),
+    ),
+    (
+        2,
+        "SnapMirror long-term retention rule",
+        (
+            "snapmirror policy add-rule -vserver vs1 -policy lockvault"
+            " -snapmirror-label test1 -keep 10 -retention-period '6 months'"
+        ),
+    ),
+    (
+        2,
+        "snapshot locking via ONTAP REST",
+        (
+            "curl -sk -X PATCH https://127.0.0.1:18443/api/storage/volumes/uuid"
+            " -d '{\"snapshot_locking_enabled\":true}'"
+        ),
+    ),
+    # Other immutability features
+    (
+        2,
+        "S3 Object Lock",
+        "aws s3api put-object-lock-configuration --bucket b --object-lock-configuration '{}'",
+    ),
+    (
+        2,
+        "Glacier vault lock completion",
+        "aws glacier complete-vault-lock --vault-name v --lock-id x",
+    ),
+    (
+        2,
+        "Backup Vault Lock",
+        (
+            "aws backup put-backup-vault-lock-configuration --backup-vault-name v"
+            " --changeable-for-days 3"
+        ),
+    ),
+    (
+        2,
+        "EBS snapshot lock",
+        "aws ec2 lock-snapshot --snapshot-id snap-1 --lock-mode compliance",
+    ),
+    (
+        2,
+        "S3 object retention",
+        'aws s3api put-object-retention --bucket b --key k --retention \'{"Mode":"COMPLIANCE"}\'',
+    ),
+    # Reads and unrelated work must pass
+    (
+        0,
+        "inspect SnapLock configuration",
+        "aws fsx describe-volumes --query 'Volumes[0].OntapConfiguration.SnaplockConfiguration'",
+    ),
+    (
+        0,
+        "read audit-log configuration over REST",
+        "curl -sk https://127.0.0.1:18443/api/storage/snaplock/audit-logs/?fields=**",
+    ),
+    (
+        0,
+        "read snapshot locking state",
+        "curl -sk 'https://127.0.0.1:18443/api/storage/volumes?fields=snapshot_locking_enabled'",
+    ),
+    (0, "show a snapshot policy", "volume snapshot policy show -policy lock_policy"),
+    (
+        0,
+        "show snapshot expiry times",
+        "volume snapshot show -volume vol1 -fields snaplock-expiry-time",
+    ),
+    (0, "read Object Lock state", "aws s3api get-object-lock-configuration --bucket b"),
+    (
+        0,
+        "read why a deletion failed",
+        (
+            "aws fsx describe-volumes --volume-ids fsvol-1"
+            " --query 'Volumes[0].LifecycleTransitionReason'"
+        ),
+    ),
+    (
+        0,
+        "unrelated volume creation",
+        "aws fsx create-volume --name plain --ontap-configuration 'SizeInBytes=104857600'",
+    ),
+    (0, "unrelated deletion", "aws fsx delete-volume --volume-id fsvol-123"),
+    (
+        0,
+        "assign a plain snapshot policy",
+        "aws fsx update-volume --ontap-configuration 'SnapshotPolicy=none'",
+    ),
+    (0, "an unrelated command", "make all"),
+]
+
+
+def evaluate(command: str) -> int:
+    """Return the exit code the guard would produce for one command."""
+    areas, _ = find_matches(command)
+    if not areas:
+        return 0
+    if not MUTATING.search(command):
+        return 0
+    return 2
+
+
+def selftest() -> int:
+    failures = 0
+    for want, description, command in SELFTEST_CASES:
+        got = evaluate(command)
+        if got == want:
+            print(f"  pass ({got})  {description}")
+        else:
+            failures += 1
+            print(f"  FAIL want={want} got={got}  {description}")
+    total = len(SELFTEST_CASES)
+    print(f"\n{total - failures}/{total} cases passed")
+    return 1 if failures else 0
+
+
 def main() -> int:
+    if "--selftest" in sys.argv:
+        return selftest()
+
     raw = sys.stdin.read()
     try:
         payload = json.loads(raw) if raw.strip() else {}
@@ -166,11 +367,8 @@ def main() -> int:
 
     command = extract_command(payload)
     areas, matches = find_matches(command)
-    if not areas:
-        return 0
-
     # Inspection stays allowed: an agent that cannot read the current state will guess.
-    if not MUTATING.search(command):
+    if evaluate(command) == 0:
         return 0
 
     print(

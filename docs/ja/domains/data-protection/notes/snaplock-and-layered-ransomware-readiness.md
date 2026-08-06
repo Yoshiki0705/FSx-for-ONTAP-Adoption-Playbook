@@ -150,6 +150,36 @@ ONTAP レベルの削除拒否メッセージは阻害要因を 5 つ列挙し�
 
 ---
 
+## 派生機能 Snapshot locking は非 SnapLock ボリュームにも効きます
+
+**SnapLock 技術を使う Snapshot locking（Tamperproof Snapshot）は、SnapLock ボリュームでなくても
+有効にできます。** つまり「このボリュームは SnapLock ではないから、不可逆な設定は入っていない」という
+前提は成立しません。
+
+| 項目 | SnapLock ボリューム | Snapshot locking |
+|---|---|---|
+| 対象ボリューム | SnapLock として作成したもののみ | **非 SnapLock でも可**（ONTAP 9.12.1 以降） |
+| 有効化の取り消し | **不可（恒久）** | **全ロック済み Snapshot の失効まで不可** |
+| ボリュームの削除 | 未期限の WORM ファイルがあると不可 | **未期限のロック済み Snapshot があると不可** |
+| 保持期間の下限 | ボリューム設定は 0 も可 | **時間単位から選べます**（Hours 0–24 など） |
+| Amazon FSx の API | `SnaplockConfiguration` で指定 <!-- allow:naming - AWS の API 名 --> | **パラメータが存在しません。** ONTAP CLI / REST 専用 |
+
+ONTAP CLI は有効化時に確認を求めます。**文面が示す構造は監査ログボリュームと同じです。**
+
+> `It cannot be disabled until all locked snapshots are past their expiry time. A volume with unexpired
+> locked snapshots cannot be deleted.`
+
+**保持期間がポリシーの世代数より優先される点も要注意です。** ロック済み Snapshot は `count` を超えても
+削除されないため、**実測した 1 ボリューム 1,023 個の上限に、世代数の上限が効かないまま到達しえます。**
+そこに並ぶのは削除できない Snapshot です。詳細は
+[Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#snapshot-をロックすると世代数の上限が効かなくなります)
+にあります。
+
+> **この節は `documented` です。** 有効化すると同種の削除ロックを新たに作るため、**検証していません。**
+> 記載の出典は [参照した一次情報](#参照した一次情報) にあります。
+
+---
+
 ## 特権削除は満了したファイルには使えません
 
 **保持期間が満了した WORM ファイルに対して、特権削除は実行できません。** 満了後は通常の削除操作を使います。
@@ -241,7 +271,7 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 | 影響は監査ログボリューム 1 本にとどまる | **SVM とファイルシステムも同じ期間削除できなくなります** |
 | ONTAP レベルで操作すれば削除できる | **SVM 側の指定は解除できますが、削除できるようにはなりません。** ボリューム側のフラグは読み取り専用です |
 | Enterprise モードなら管理者権限で削除できる | **監査ログボリュームには例外がありません。** ドキュメントが明示しています |
-| 削除に失敗すれば API がエラーを返す | **`delete-volume` は `CREATED` に戻るだけでエラーを返しません。** 理由は ONTAP 側でしか分かりません |
+| 削除に失敗すれば API がエラーを返す | **`delete-volume` の応答は `CREATED` に戻るだけです。** 理由は `DescribeVolumes` の `LifecycleTransitionReason` にあります（本件は `Cannot delete the volume because it contains unexpired log files.`） |
 | Legal Hold は両モードで使える | **Compliance のみ**です |
 | EBR と Legal Hold はコンソールから操作できる | **ONTAP CLI と REST API のみ**です |
 | SnapLock ボリュームは階層化できない | 種別に関係なく容量プールへ階層化できます |
@@ -259,6 +289,8 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 | `SnaplockType` が設定後に変更できないこと、`PERMANENTLY_DISABLED` が終端状態であること、特権削除の既定が `DISABLED` であること、監査ログボリュームの最小保持期間が 6 か月であること | [AWS API Reference: CreateSnaplockConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) |
 | Compliance ボリュームの WORM ファイルが保持期間満了まで削除できないこと | [AWS: Understanding SnapLock Compliance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-compliance.html) |
 | 監査ログボリュームの位置づけ | [AWS: SnapLock audit log volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-audit-log-volumes.html) |
+| Snapshot locking が非 SnapLock ボリュームで有効化できること（ONTAP 9.12.1 以降）、全ロック済み Snapshot の失効まで無効化できないこと、未期限のロック済み Snapshot があるボリュームを削除できないこと、ボリュームの失効時刻がロック済み Snapshot の最大失効時刻になること、保持期間が世代数より優先されること、保持期間の設定範囲、コンプライアンスクロックの初期化が前提であること | [NetApp Docs: Lock an ONTAP snapshot for protection against ransomware attacks](https://docs.netapp.com/us-en/ontap/snaplock/snapshot-lock-concept.html) |
+| Tamperproof Snapshot が SnapLock 技術を用い、非 SnapLock ボリュームでも Snapshot の削除を防ぐこと | [NetApp: SnapLock and tamperproof snapshots for ransomware protection](https://docs.netapp.com/us-en/ontap-technical-reports/ransomware-solutions/ransomware-snaplock-tamperproof-snapshots.html) |
 | **監査ログボリュームの保持期間が満了するまで、ボリューム・SVM・ファイルシステムのいずれも削除できないこと**（Enterprise モードでも同じ）、Enterprise ボリュームの削除に `fsx:BypassSnapLockEnterpriseRetention` 権限が必要であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
 | FPolicy の Native / External モードによる拡張子ベースの保護、検知の位置づけ、復旧手段としての Snapshot、Snapshot が同一ファイルシステム内にあること | [AWS Storage Blog: Protecting data against ransomware with FSx for ONTAP](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
 

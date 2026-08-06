@@ -266,7 +266,8 @@ The lesson generalizes past SnapLock:
 
 | Service | Operation or parameter |
 |---|---|
-| FSx for ONTAP | `SnaplockConfiguration`, `SnaplockType`, `AuditLogVolume`, `PrivilegedDelete`, `RetentionPeriod`, `VolumeAppendModeEnabled`, ONTAP `snaplock` / `audit-logs` endpoints |
+| FSx for ONTAP — SnapLock | `SnaplockConfiguration`, `SnaplockType`, `AuditLogVolume`, `PrivilegedDelete`, `RetentionPeriod`, `VolumeAppendModeEnabled`, ONTAP `snaplock` / `audit-logs` endpoints |
+| FSx for ONTAP — **snapshot locking (Tamperproof Snapshot)** | `-snapshot-locking-enabled`, `-snaplock-expiry-time`, `volume snapshot modify-snaplock-expiry-time`, `volume snapshot policy create -retention-period`, `snapmirror policy add-rule -retention-period`. **Applies to volumes that are not SnapLock volumes, and has no AWS API parameter — so "we do not use SnapLock" is not protection, and no IAM condition key or console warning can gate it** |
 | Amazon S3 | Object Lock configuration, `put-object-retention`, `put-object-legal-hold` |
 | S3 Glacier | `initiate-vault-lock`, `complete-vault-lock` |
 | AWS Backup | Vault Lock (`put-backup-vault-lock-configuration`), compliance mode |
@@ -296,7 +297,12 @@ The lesson generalizes past SnapLock:
 
 `scripts/guard_irreversible_ops.py` enforces this mechanically — it blocks a matching mutating command and
 allows read-only inspection. Wire it to a `PreToolUse` hook. **If it blocks you, do not look for a call
-that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories.
+that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories. Verify it with
+`python3 scripts/guard_irreversible_ops.py --selftest` (26 cases, both directions).
+
+The cases live inside the script deliberately. Once the hook is active, **passing a sample locking command
+on the command line gets the verification run itself blocked** — which happened during development. Keeping
+them internal means checking the guard never requires a matching string to cross the shell.
 
 ## Documentation Design Principles
 

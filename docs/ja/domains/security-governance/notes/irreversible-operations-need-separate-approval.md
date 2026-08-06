@@ -95,7 +95,8 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 
 | サービス | 操作・パラメータ |
 |---|---|
-| FSx for ONTAP | `SnaplockConfiguration`、`SnaplockType`、`AuditLogVolume`、`PrivilegedDelete`、`RetentionPeriod`、`VolumeAppendModeEnabled`、ONTAP の `snaplock` / `audit-logs` エンドポイント |
+| FSx for ONTAP — SnapLock | `SnaplockConfiguration`、`SnaplockType`、`AuditLogVolume`、`PrivilegedDelete`、`RetentionPeriod`、`VolumeAppendModeEnabled`、ONTAP の `snaplock` / `audit-logs` エンドポイント |
+| FSx for ONTAP — **Snapshot locking**（Tamperproof Snapshot） | `-snapshot-locking-enabled`、`-snaplock-expiry-time`、`volume snapshot modify-snaplock-expiry-time`、`volume snapshot policy create -retention-period`、`snapmirror policy add-rule -retention-period` |
 | Amazon S3 | Object Lock の構成、`put-object-retention`、`put-object-legal-hold` |
 | S3 Glacier | `initiate-vault-lock`、`complete-vault-lock` |
 | AWS Backup | Vault Lock（`put-backup-vault-lock-configuration`）、compliance モード |
@@ -104,6 +105,35 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 
 **これらは「設定ミス」が復旧不能になる唯一の種類の機能です。** ほかの設定は作り直せますが、この分類は
 作り直しもできません。
+
+### 「SnapLock を使っていない」は保護になりません
+
+**Snapshot locking（Tamperproof Snapshot）は、非 SnapLock ボリュームでも有効にできます。**
+SnapLock を採用していない環境でも、同じ削除ロックが発生しえます。
+
+| 項目 | 内容 |
+|---|---|
+| 対象 | **非 SnapLock ボリュームでも可**（ONTAP 9.12.1 以降） |
+| 無効化 | **全ロック済み Snapshot の失効まで不可** |
+| ボリュームの削除 | **未期限のロック済み Snapshot があると不可** |
+| ボリュームの `expiry_time` | ロック済み Snapshot の**最大失効時刻**が入ります |
+| 保持期間 | **時間単位まで短く設定できます**（Hours 0–24 / Days 0–36500 など） |
+| **AWS API のパラメータ** | **存在しません。** ONTAP CLI / REST 専用です |
+
+**AWS API にパラメータがないことは、AWS 側のガードレールも効かないことを意味します。** IAM の条件キーや
+コンソールの警告で止められません。**ONTAP に到達できる資格情報が、そのまま削除ロックを作れる権限です。**
+
+そして監査ログボリュームとは失敗の形が逆です。
+
+| | 監査ログボリューム | Snapshot locking |
+|---|---|---|
+| 保持期間の下限 | **6 か月**（下限自体が許容できない） | **時間単位から選べる** |
+| 失敗の形 | 「選べなかった」 | **「選べたのに選ばなかった」** |
+
+詳細と 1,023 上限との複合的な問題は [上限値・クォータ](../../../reference/limits/) にあります。
+
+> **この節は `documented` です。** 有効化すると同種の削除ロックを新たに作るため、**本リポジトリでは
+> 検証していません。** 自分の環境で試す場合も、使い捨てのファイルシステムを使ってください。
 
 ---
 
@@ -199,13 +229,15 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 | 誤解 | 実際 |
 |---|---|
 | 影響は指定したリソースだけに及ぶ | **SVM とファイルシステムにも及びます。** 呼び出しでは指定していません |
+| SnapLock を使っていなければこの問題は起きない | **Snapshot locking は非 SnapLock ボリュームでも有効にできます** |
+| AWS API に無い機能なら誤って有効化されない | **逆です。** AWS API にパラメータがないため、IAM 条件キーやコンソール警告で止められません |
 | Enterprise モードなら管理者が消せる | **監査ログボリュームには例外がありません** |
 | ONTAP レベルの権限があれば解除できる | SVM 側の指定は解除できますが、**削除できるようにはなりません** |
 | 保持期間を最小にしておけば安全 | **縛るパラメータが別です。** ボリュームの `RetentionPeriod` は 0 年でしたが、監査ログ設定の保持期間がロックしました |
 | SnapLock の保持期間は短くできないのか | **できます。** 秒単位まで設定可能です。ただし**監査ログ設定の保持期間は AWS API に指定手段がなく**、既定が適用されます |
 | Enterprise なら管理者が消せるので安全 | **監査ログボリュームには Enterprise の例外が適用されません。** ドキュメントが「Enterprise モードでも同様」と明記しています |
 | 検証環境なら試してよい | **使い捨てでなければ同じ損害です。** 他の検証ごと 6 か月固定されます |
-| 削除に失敗すれば API がエラーを返す | **エラーを返さず元の状態に戻ります。** 理由は ONTAP 側でしか分かりません |
+| 削除に失敗すれば API がエラーを返す | **応答にはエラーが含まれず、`CREATED` に戻ります。** 理由は `DescribeVolumes` の `LifecycleTransitionReason` を**読み直して**取得します |
 | 手順を文書化すれば再発しない | 本件は文書化しながら発生しました。**仕組みで止める必要があります** |
 | 機能側の問題である | **仕様どおりの動作です。** 問題は承認を取らずに実行した手順の側です |
 
