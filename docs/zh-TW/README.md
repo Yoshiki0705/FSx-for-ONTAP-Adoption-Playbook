@@ -19,10 +19,10 @@
 
 | 你想做的事 | 指南 | 預計時間 |
 |---|---|---|
-| 了解如何瀏覽本儲存庫 | [導覽指南](../en/navigation.md) | 3 分鐘 |
+| 了解如何瀏覽本儲存庫 | [導覽指南](navigation.md) | 3 分鐘 |
 | 判斷能否遷移以及如何遷移 | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) | 10 分鐘 |
 | 查看已驗證的上限值 | [上限值與配額](../ja/reference/limits/) | 5 分鐘 |
-| 了解如何判讀知識的可信度 | [知識分類政策](../en/evidence-policy.md) | 5 分鐘 |
+| 了解如何判讀知識的可信度 | [知識分類政策](evidence-policy.md) | 5 分鐘 |
 | 補充知識（撰寫） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分鐘 |
 
 > **收錄情況**：生命週期 6 個模組與主題 6 個模組目前處於「已定義待解決的問題與結構」的階段（`notes/` 尚未收錄）。
@@ -100,7 +100,7 @@ lang: zh-TW
 ---
 ```
 
-`evidence` 的四個級別用於讓讀者判斷「該敘述可以信賴到什麼程度」。詳情參見[知識分級政策](../en/evidence-policy.md)。
+`evidence` 的四個級別用於讓讀者判斷「該敘述可以信賴到什麼程度」。詳情參見[知識分級政策](evidence-policy.md)。
 
 </details>
 
@@ -166,7 +166,7 @@ make links         # 連結失效檢查
 make all           # 以上全部
 ```
 
-歡迎提交 Issue / Pull Request。撰寫規約見 [CONTRIBUTING.md](../../CONTRIBUTING.md)，知識分級標準見[知識分級政策](../en/evidence-policy.md)。
+歡迎提交 Issue / Pull Request。撰寫規約見 [CONTRIBUTING.md](../../CONTRIBUTING.md)，知識分級標準見[知識分級政策](evidence-policy.md)。
 
 </details>
 
@@ -187,6 +187,8 @@ make all           # 以上全部
 
 本儲存庫為個人整理的技術資訊，不代表所屬組織的官方立場。
 關於治理或法規遵循的敘述皆為**一般性的設計考量**，而非法務或法遵判斷。基準測試數值為所載驗證環境下的實測結果，不保證等同於通用服務上限，也不保證在生產環境中可重現。
+
+本儲存庫的日語版為技術正式版本。其他語言為機器輔助譯文，發布前未經母語審校；如有出入，以日語版為準。如發現錯誤，歡迎透過 [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues) 回報。
 
 ## 授權
 

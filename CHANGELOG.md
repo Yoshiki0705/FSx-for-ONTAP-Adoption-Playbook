@@ -9,6 +9,19 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The two first-touch guides are now available in all eight languages.** `navigation.md` and
+  `evidence-policy.md` join the hub READMEs, so a reader arriving in their own language can find
+  their way and understand the confidence signals before deciding whether to act.
+  - Scope is deliberate: first-touch material only. Anything carrying a number, a limit, or an
+    irreversible operation stays at ja + en. A mistranslated navigation label sends someone to the
+    wrong page and they notice; a mistranslated design judgment does not announce itself.
+  - Every Tier 1 document now declares which version is authoritative. Japanese is authoritative for
+    technical accuracy; the other languages say so and invite corrections. These translations are
+    machine-assisted and not natively reviewed before publication, and a reader deciding whether to
+    act is entitled to know that.
+  - `docs/i18n-terms.md`: the never-translate list, fixed renderings for the twelve terms that carry
+    a judgment, and the authority wording per language. Without a fixed table the same term drifts
+    between files, and drift in a word like "irreversible" changes what a reader believes is allowed.
 - **Environment-first entry point** in the navigation guide (ja, en): pick the row matching your
   configuration — migration source, protocol mix, AD dependency, running vs greenfield — and get a
   reading order. The existing entry points branch on "what do you want to know", which assumes the

@@ -19,10 +19,10 @@
 
 | 하려는 작업 | 가이드 | 소요 시간 |
 |---|---|---|
-| 이 리포지토리를 둘러보는 방법 알기 | [내비게이션 가이드](../en/navigation.md) | 3분 |
+| 이 리포지토리를 둘러보는 방법 알기 | [내비게이션 가이드](navigation.md) | 3분 |
 | 마이그레이션 가능성과 방법 판단 | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) | 10분 |
 | 검증된 상한값 확인 | [상한값·쿼터](../ja/reference/limits/) | 5분 |
-| 지식의 신뢰도를 읽는 방법 알기 | [지식 분류 정책](../en/evidence-policy.md) | 5분 |
+| 지식의 신뢰도를 읽는 방법 알기 | [지식 분류 정책](evidence-policy.md) | 5분 |
 | 지식 추가하기(집필) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10분 |
 
 > **수록 현황**: 라이프사이클 6개 모듈과 테마 6개 모듈은 현재 "다룰 질문과 구조를 정의한 단계"입니다(`notes/`는 미수록).
@@ -100,7 +100,7 @@ lang: ko
 ---
 ```
 
-`evidence`의 4단계는 독자가 "어디까지 신뢰하고 사용할 수 있는지"를 판단하기 위한 구분입니다. 자세한 내용은 [지식 분류 정책](../en/evidence-policy.md)을 참조하세요.
+`evidence`의 4단계는 독자가 "어디까지 신뢰하고 사용할 수 있는지"를 판단하기 위한 구분입니다. 자세한 내용은 [지식 분류 정책](evidence-policy.md)을 참조하세요.
 
 </details>
 
@@ -166,7 +166,7 @@ make links         # 링크 끊김 검사
 make all           # 위 전부
 ```
 
-Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../../CONTRIBUTING.md), 지식 분류 기준은 [지식 분류 정책](../en/evidence-policy.md)을 참조하세요.
+Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../../CONTRIBUTING.md), 지식 분류 기준은 [지식 분류 정책](evidence-policy.md)을 참조하세요.
 
 </details>
 
@@ -187,6 +187,8 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 
 본 리포지토리는 개인이 정리한 기술 정보이며, 소속 조직의 공식 견해가 아닙니다.
 거버넌스나 규제 대응에 관한 기술은 **일반적인 설계상의 고려 사항**이며, 법무·컴플라이언스상의 판단이 아닙니다. 벤치마크 값은 기재된 검증 환경에서의 실측이며, 일반적인 서비스 상한이나 프로덕션 환경에서의 재현을 보장하지 않습니다.
+
+이 리포지토리의 일본어판이 기술적 정본입니다. 다른 언어판은 기계 지원 번역이며 공개 전 원어민 검수를 거치지 않았습니다. 내용이 다를 경우 일본어판이 우선합니다. 오류를 발견하시면 [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues)로 알려주십시오.
 
 ## 라이선스
 

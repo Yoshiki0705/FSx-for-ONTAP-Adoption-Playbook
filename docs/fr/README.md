@@ -19,10 +19,10 @@
 
 | Ce que vous voulez faire | Guide | Durée |
 |---|---|---|
-| Comprendre comment parcourir ce dépôt | [Guide de navigation](../en/navigation.md) | 3 min |
+| Comprendre comment parcourir ce dépôt | [Guide de navigation](navigation.md) | 3 min |
 | Décider s'il faut migrer, et comment | [Arbre de décision : méthode de migration](../ja/reference/decision-trees/migration-method.md) | 10 min |
 | Consulter les limites vérifiées | [Limites et quotas](../ja/reference/limits/) | 5 min |
-| Comprendre comment lire les niveaux de confiance | [Politique de niveaux de preuve](../en/evidence-policy.md) | 5 min |
+| Comprendre comment lire les niveaux de confiance | [Politique de niveaux de preuve](evidence-policy.md) | 5 min |
 | Ajouter des connaissances (rédaction) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
 > **État de la couverture** : les 6 modules de cycle de vie et les 6 modules thématiques définissent
@@ -102,7 +102,7 @@ lang: fr
 ---
 ```
 
-Les quatre niveaux d'`evidence` permettent au lecteur de juger jusqu'où une note peut être utilisée. Voir la [politique de niveaux de preuve](../en/evidence-policy.md).
+Les quatre niveaux d'`evidence` permettent au lecteur de juger jusqu'où une note peut être utilisée. Voir la [politique de niveaux de preuve](evidence-policy.md).
 
 </details>
 
@@ -168,7 +168,7 @@ make links         # Contrôle des liens rompus
 make all           # Tout ce qui précède
 ```
 
-Les Issues et Pull Requests sont bienvenues. Voir [CONTRIBUTING.md](../../CONTRIBUTING.md) pour les conventions de rédaction et la [politique de niveaux de preuve](../en/evidence-policy.md) pour les critères de classement.
+Les Issues et Pull Requests sont bienvenues. Voir [CONTRIBUTING.md](../../CONTRIBUTING.md) pour les conventions de rédaction et la [politique de niveaux de preuve](evidence-policy.md) pour les critères de classement.
 
 </details>
 
@@ -189,6 +189,8 @@ Les Issues et Pull Requests sont bienvenues. Voir [CONTRIBUTING.md](../../CONTRI
 
 Ce dépôt rassemble du matériel technique personnel et ne représente pas la position officielle d'un employeur.
 Les propos relatifs à la gouvernance ou aux charges réglementées sont des **considérations de conception d'ordre général**, non des avis juridiques ou de conformité. Les valeurs de référence sont des mesures issues de l'environnement de vérification indiqué ; elles ne garantissent ni les limites générales du service ni une reproduction en production.
+
+La version japonaise de ce dépôt fait référence pour l'exactitude technique. Les autres langues sont des traductions assistées par machine qui n'ont pas été relues par des locuteurs natifs avant publication ; en cas de divergence, la version japonaise prévaut. Les corrections sont bienvenues via une [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues).
 
 ## Licence
 
