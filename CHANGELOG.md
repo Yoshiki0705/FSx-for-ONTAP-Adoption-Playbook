@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`reference/comparison/` now has content**, where the index previously read "none added yet". Two
+  matrices, both following the directory's own authoring rules — trade-offs stated symmetrically
+  including for the recommended option, a "how to choose" section, and a dated comparison point.
+  - [Data protection methods](docs/ja/reference/comparison/data-protection-methods.md): snapshot, volume
+    backup, AWS Backup and SnapMirror, plus the two SnapLock modes as a separate axis since **immutability
+    is not a recovery method**. Frames the four as **not alternatives** — they cover different failure
+    domains and are combined rather than chosen between. The constraint that decides DR designs gets its
+    own section: only read-write volumes can be backed up, so backing up a SnapMirror replica is not
+    available and the backup has to be taken on the source side.
+  - [Tiering policies](docs/ja/reference/comparison/tiering-policies.md): `NONE`, `SNAPSHOT_ONLY`, `AUTO`,
+    `ALL`, organized around the two axes that actually differ — what gets moved, and whether a read pulls
+    it back. Includes the **measured defaults** and states plainly that while `AUTO` and `SNAPSHOT_ONLY`
+    volumes coexisted in one file system, **which creation path produced which was not recorded, so the
+    causal claim was not verified** — only the values.
 - **First `verified` entries from a live environment**, in [limits](docs/ja/reference/limits/): SSD IOPS
   defaulting to 3 per GiB, `AUTO` cooling defaulting to 31 days and `SNAPSHOT_ONLY` to 2 across 32
   volumes, first-generation Single-AZ running one HA pair, the maintenance window format, and the absence
