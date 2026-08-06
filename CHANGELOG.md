@@ -9,6 +9,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A version-compatibility gate in the migration decision tree.** When the source is ONTAP,
+  SnapMirror is only a candidate if the source and destination version combination appears in the
+  compatibility matrix — so the tree now asks that before recommending it, and gives three routes
+  when the answer is no: upgrade the source, upgrade through an intermediate version, or switch to a
+  method that is not SnapMirror.
+  - Recorded explicitly that **"within N versions" is not a usable rule.** Compatibility is defined
+    by a matrix, not an arithmetic window, and the matrix absorbs cloud-only releases,
+    platform-limited releases, and constraints that only apply once a feature is enabled.
+  - Also recorded that the destination version is not a free choice — AWS manages it — and that
+    FSx for ONTAP supports volume-level SnapMirror only, so a plan that assumes synchronous
+    replication does not hold.
 - **An index of published primary sources**, at
   [`docs/ja/case-studies/public-references.md`](docs/ja/case-studies/public-references.md).
   Information about FSx for ONTAP is split across an AWS side and a NetApp side, and reading only one
