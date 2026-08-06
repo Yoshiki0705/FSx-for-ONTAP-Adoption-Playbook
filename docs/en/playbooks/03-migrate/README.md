@@ -14,8 +14,8 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | Which method to choose (SnapMirror / DataSync / host-side copy) | _not yet added_ |
-| 2 | What is required to migrate while preserving ACLs | _not yet added_ |
+| 1 | Which method to choose (SnapMirror / DataSync / host-side copy) | [Choosing a migration method](../../../ja/reference/decision-trees/migration-method.md) (日本語) |
+| 2 | What is required to migrate while preserving ACLs | [Preserving ACLs is a privilege problem, not a tool problem](../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) |
 | 3 | How to plan initial and incremental sync | _not yet added_ |
 | 4 | How to minimize cutover downtime | _not yet added_ |
 | 5 | Up to what point, and how, you can roll back | _not yet added_ |
