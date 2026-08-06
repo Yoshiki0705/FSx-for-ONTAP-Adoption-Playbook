@@ -49,9 +49,18 @@ A collection of success stories is worth less than it looks. **The points where 
 
 ## Index
 
-| Case study | Industry | Scale band | Primary topic |
+**Two kinds are kept apart.**
+
+| Kind | Contents | Tier |
+|---|---|---|
+| Field case | A lesson from technical-support work, generalized | `field-observation` |
+| Verification case | An observation in **this repository's own verification environment** — not a customer engagement | `field-observation` |
+
+Verification cases are labelled separately so a reader cannot mistake **whose environment** is being described. Both are single-environment observations and neither guarantees reproduction elsewhere.
+
+| Case study | Kind | Scale band | Primary topic |
 |---|---|---|---|
-| _None added yet_ | — | — | — |
+| [A documented default did not reproduce, and the guidance derived from it was wrong](../../ja/case-studies/documented-default-did-not-reproduce.md) (日本語) | Verification | Several TB | A citation is not a measurement; keep both values when they disagree |
 
 **For cases and primary sources already published elsewhere**, see [Public references and how to weigh them](../../ja/case-studies/public-references.md) (日本語). It maps where the AWS and NetApp documentation, blogs, Q&A sites, and community material actually live, and how much weight each kind of source carries.
 
