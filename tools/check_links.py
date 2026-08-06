@@ -115,9 +115,12 @@ def check_internal(source: Path, target: str) -> str | None:
     if not resolved.exists():
         return f"file not found: {raw_path}"
 
-    if fragment and resolved.suffix == ".md":
-        if slugify(fragment) not in anchors_of(resolved):
-            return f"anchor '#{fragment}' not found in {raw_path}"
+    if (
+        fragment
+        and resolved.suffix == ".md"
+        and slugify(fragment) not in anchors_of(resolved)
+    ):
+        return f"anchor '#{fragment}' not found in {raw_path}"
     return None
 
 
@@ -149,7 +152,11 @@ def main() -> int:
     internal_count = 0
     external_seen: dict[str, str | None] = {}
 
-    for path in iter_markdown(ROOT):
+    # llms.txt is Markdown-shaped but not .md, so it was silently exempt from this check. It is the
+    # entry point crawlers and agents read first, which makes it the worst place for a dead link.
+    extra = [ROOT / "llms.txt"] if (ROOT / "llms.txt").exists() else []
+
+    for path in [*iter_markdown(ROOT), *extra]:
         rel = path.relative_to(ROOT)
         for lineno, target in iter_links(path):
             scheme = urlparse(target).scheme

@@ -10,6 +10,10 @@ on:
 
 permissions:
   contents: read
+  # The action lists a pull request's commits to decide what to scan. Without this it gets
+  # "403 Resource not accessible by integration" from /pulls/{n}/commits and the job fails
+  # before scanning, which looks like a secret finding but is a permission gap.
+  pull-requests: read
 
 jobs:
   scan:
@@ -25,4 +29,8 @@ jobs:
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@83373cf2f8c4db6e24b41c1a9b086bb9619e9cd3 # v2.3.7
         env:
+          # Required for pull_request events. Without it the action exits before scanning
+          # anything ("GITHUB_TOKEN is now required to scan pull requests"), so the job
+          # failed on every PR and no pull request was ever actually secret-scanned.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false

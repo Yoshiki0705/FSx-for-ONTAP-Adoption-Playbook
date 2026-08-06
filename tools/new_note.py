@@ -14,7 +14,7 @@ import argparse
 import datetime as dt
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -64,6 +64,9 @@ TODO
 
 ## 検証環境
 
+数値や実測を書く場合は必須です。`documented` で出典のみに基づく場合は、この節を削除して
+「参照した一次情報」に置き換えてください。
+
 | 項目 | 値 |
 |---|---|
 | ONTAP バージョン | TODO |
@@ -73,6 +76,19 @@ TODO
 
 > **注意**: 上記はこの環境での実測であり、一般的なサービス上限や本番環境での再現を
 > 保証するものではありません。
+
+## 自分の環境で確かめる
+
+読者が自環境で再現できる手順を書いてください。**この節がないノートは、読者が本番に
+取り入れる判断に使えません。**
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | TODO - 現状を確認するコマンドまたは API | 前提が自環境で成り立つか |
+| 2 | TODO - 挙動を再現する操作 | 記述どおりに動くか |
+| 3 | TODO - 結果の判定基準 | 成功と失敗の区別 |
+
+適用手順の全体像は [本番に取り入れる前の確認](TODO - evidence-policy.md への相対パス#本番に取り入れる前の確認) を参照してください。
 
 ## よくある誤解
 
@@ -86,12 +102,49 @@ TODO
 """
 
 
+def resolve_module(raw: str, lang: str) -> tuple[PurePosixPath, str, str] | None:
+    """Accept either `domains/performance` or `docs/ja/domains/performance`.
+
+    The short form is what CONTRIBUTING.md documents and what people type from memory; the long
+    form is what shell completion produces now that the tree lives under docs/. Supporting both
+    keeps the documented command working after the move instead of quietly breaking it.
+    """
+    parts = PurePosixPath(raw.strip("/")).parts
+    if parts and parts[0] == "docs":
+        if len(parts) != 4:
+            print(
+                "error: --module must be docs/<lang>/playbooks/<name> "
+                "or docs/<lang>/domains/<name>",
+                file=sys.stderr,
+            )
+            return None
+        _, module_lang, group, name = parts
+    elif len(parts) == 2:
+        module_lang, group, name = lang, parts[0], parts[1]
+    else:
+        print(
+            "error: --module must be playbooks/<name>, domains/<name>, "
+            "or the same path under docs/<lang>/",
+            file=sys.stderr,
+        )
+        return None
+
+    if group not in ("playbooks", "domains"):
+        print(
+            f"error: unknown group {group!r} (expected playbooks or domains)",
+            file=sys.stderr,
+        )
+        return None
+
+    return PurePosixPath("docs", module_lang, group, name), group, name
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--module",
         required=True,
-        help="module path relative to the repo root (e.g. domains/performance)",
+        help="module path, e.g. domains/performance or docs/ja/domains/performance",
     )
     parser.add_argument("--slug", required=True, help="kebab-case file slug (no .md)")
     parser.add_argument(
@@ -103,25 +156,14 @@ def main() -> int:
         print(f"error: slug must be kebab-case, got {args.slug!r}", file=sys.stderr)
         return 1
 
-    module = (ROOT / args.module).resolve()
-    try:
-        rel_module = module.relative_to(ROOT)
-    except ValueError:
-        print("error: --module must be inside the repository", file=sys.stderr)
+    resolved = resolve_module(args.module, args.lang)
+    if resolved is None:
         return 1
+    rel_module, group, name = resolved
+    module = ROOT / rel_module
     if not module.is_dir():
         print(f"error: module not found: {rel_module}", file=sys.stderr)
         return 1
-
-    parts = rel_module.parts
-    if len(parts) != 2 or parts[0] not in ("playbooks", "domains"):
-        print(
-            "error: --module must be playbooks/<name> or domains/<name>",
-            file=sys.stderr,
-        )
-        return 1
-
-    group, name = parts
     if group == "playbooks":
         lifecycle = LIFECYCLE_BY_DIR.get(name)
         if lifecycle is None:
@@ -153,7 +195,8 @@ def main() -> int:
         "  2. keep evidence: hypothesis until you have actually verified the behaviour"
     )
     print(f"  3. link it from {rel_module}/README.md")
-    print(f"  4. run: make lint   (today is {dt.date.today().isoformat()})")
+    today = dt.datetime.now(dt.UTC).date().isoformat()
+    print(f"  4. run: make lint   (today is {today} UTC)")
     return 0
 
 

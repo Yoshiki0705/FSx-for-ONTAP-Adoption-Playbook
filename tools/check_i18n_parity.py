@@ -5,8 +5,12 @@ Translations drift silently: a section gets added in Japanese and the other seve
 rendering an older story. Comparing heading *structure* (level + order + count) rather than text
 catches that without requiring the translations themselves to be machine-comparable.
 
-Tier 1 = root README, plus the docs/ files listed in `docs/i18n-manifest.txt`.
-Tier 2 (module READMEs) is checked as ja + en only.
+Tier 1 = the language hubs, plus the docs/ files listed in `docs/i18n-manifest.txt`.
+Tier 2 (module READMEs under docs/<lang>/) is checked as ja + en only.
+
+A document's language is its directory, not a filename suffix. The one exception is the Japanese
+hub: it is the repository-root README.md, because that is what GitHub renders on the landing page,
+so `docs/ja/README.md` deliberately does not exist.
 
 The manifest exists so that a new guide can land in Japanese and English first and be promoted to
 all eight languages deliberately. Without it, either every new doc blocks the commit gate until
@@ -83,9 +87,16 @@ def read_manifest() -> list[tuple[str, list[str]]]:
     return entries
 
 
-def readme_for(base: Path, lang: str) -> Path:
-    """Root/module README path for a language. Japanese is the unsuffixed file."""
-    return base / ("README.md" if lang == "ja" else f"README.{lang}.md")
+def hub_for(lang: str) -> Path:
+    """The top-level hub for a language. Japanese is the repository-root README."""
+    if lang == "ja":
+        return ROOT / "README.md"
+    return ROOT / "docs" / lang / "README.md"
+
+
+def module_readme(lang: str, group: str, module: str) -> Path:
+    """Module README for a language, e.g. docs/en/domains/cost/README.md."""
+    return ROOT / "docs" / lang / group / module / "README.md"
 
 
 def compare(label: str, reference: Path, others: list[tuple[str, Path]]) -> list[str]:
@@ -120,14 +131,14 @@ def main() -> int:
     errors: list[str] = []
     checked = 0
 
-    # --- Tier 1: root README, 8 languages -------------------------------------
-    root_readme = readme_for(ROOT, "ja")
-    if root_readme.exists():
+    # --- Tier 1: language hubs, 8 languages -----------------------------------
+    ja_hub = hub_for("ja")
+    if ja_hub.exists():
         checked += 1
         errors += compare(
-            "root README",
-            root_readme,
-            [(lang, readme_for(ROOT, lang)) for lang in TIER1_LANGS if lang != "ja"],
+            "hub README",
+            ja_hub,
+            [(lang, hub_for(lang)) for lang in TIER1_LANGS if lang != "ja"],
         )
     else:
         errors.append("root README.md not found")
@@ -145,23 +156,26 @@ def main() -> int:
         errors += compare(f"docs/*/{name}", reference, others)
 
     # --- Tier 2: module READMEs, ja + en --------------------------------------
+    # Modules are discovered from the Japanese tree because Japanese is the reference language and
+    # the only complete one. A module that exists only in a translation is itself a defect, and
+    # surfaces here as a directory nobody compares against.
     for group in ("playbooks", "domains"):
-        base = ROOT / group
+        base = ROOT / "docs" / "ja" / group
         if not base.is_dir():
             continue
         for module in sorted(base.iterdir()):
             if not module.is_dir() or module.name.startswith("_"):
                 continue
-            reference = readme_for(module, "ja")
+            reference = module_readme("ja", group, module.name)
             if not reference.exists():
-                errors.append(f"{group}/{module.name}: missing README.md")
+                errors.append(f"docs/ja/{group}/{module.name}: missing README.md")
                 continue
             checked += 1
             errors += compare(
                 f"{group}/{module.name}/README",
                 reference,
                 [
-                    (lang, readme_for(module, lang))
+                    (lang, module_readme(lang, group, module.name))
                     for lang in TIER2_LANGS
                     if lang != "ja"
                 ],

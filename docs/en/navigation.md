@@ -1,12 +1,16 @@
 # Navigation Guide
 
-[日本語](../ja/navigation.md) | [🏠 Repository home](../../README.en.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](../ja/navigation.md) | [English](navigation.md) | [🏠 Repository home](README.md)
+<!-- lang-switcher:end -->
 
 ---
 
 ## Conclusion
 
-There are two entry points. **Enter through `playbooks/` when your question is "which phase am I in", and through `domains/` when it is "I need to research this concern."** Either path reaches the same notes. If you are still deciding on the decision itself, start from `reference/decision-trees/`.
+There are three entry points. **If this is your first visit, start from [Start from your environment](#start-from-your-environment)** — pick the row that matches your configuration and it gives you a reading order.
+
+Otherwise, enter through `playbooks/` when your question is "which phase am I in", and through `domains/` when it is "I need to research this concern." Either path reaches the same notes. If several options are on the table and you cannot pick, start from `reference/decision-trees/`.
 
 ---
 
@@ -29,18 +33,51 @@ graph TD
 
 ---
 
+## Start from your environment
+
+The branches above start from "what do you want to know". Use this table instead to start from
+**"given my configuration, what should I read"**. The left column describes your environment; the
+rest gives a reading order.
+
+| Your environment | Read first | Read next |
+|---|---|---|
+| Source is ONTAP (on premises or another cloud) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) → [Design](playbooks/02-design/) |
+| Source is a Windows file server (SMB, NTFS ACLs must be preserved) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Multiprotocol identity](domains/multiprotocol-identity/) |
+| Source is a non-ONTAP NAS | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) |
+| NFS and SMB against the same data | [Security style determines the permission model](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [Security and governance](domains/security-governance/) |
+| Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
+| Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
+| Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
+| Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
+| Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
+
+Two things to know about the links above.
+
+| Marking | What to expect |
+|---|---|
+| **(日本語)** | Not translated. Prose *and* diagram labels are Japanese, so treat these as a pointer to the topic, not as the explanation. URLs, commands, and product terms are still language-neutral |
+| `reference/` links, unmarked | Written as bilingual single files — Japanese and English share the same tables, so these are readable as they are |
+
+Translation requests are welcome as an
+[Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues).
+
+**Do not apply anything you read here directly to production.** Check each note's `evidence` tier
+and work through [Before adopting into production](evidence-policy.md#before-adopting-into-production).
+
+---
+
 ## Lifecycle axis — `playbooks/`
 
 The entry point that follows project progression. Each phase's output is the next phase's input.
 
 | # | Module | Primary output | Read next |
 |---|---|---|---|
-| 01 | [Assess](../../playbooks/01-assess/) | Current inventory, constraint list | 02 Design |
-| 02 | [Design](../../playbooks/02-design/) | Configuration decisions, irreversible items settled | 03 Migrate |
-| 03 | [Migrate](../../playbooks/03-migrate/) | Migration plan, cutover procedure, rollback procedure | 04 Build |
-| 04 | [Build](../../playbooks/04-build/) | Infrastructure as code, automation, post-build verification | 05 Operate |
-| 05 | [Operate](../../playbooks/05-operate/) | Monitoring design, runbooks | 06 Optimize |
-| 06 | [Optimize](../../playbooks/06-optimize/) | Performance and cost improvement results | — |
+| 01 | [Assess](playbooks/01-assess/) | Current inventory, constraint list | 02 Design |
+| 02 | [Design](playbooks/02-design/) | Configuration decisions, irreversible items settled | 03 Migrate |
+| 03 | [Migrate](playbooks/03-migrate/) | Migration plan, cutover procedure, rollback procedure | 04 Build |
+| 04 | [Build](playbooks/04-build/) | Infrastructure as code, automation, post-build verification | 05 Operate |
+| 05 | [Operate](playbooks/05-operate/) | Monitoring design, runbooks | 06 Optimize |
+| 06 | [Optimize](playbooks/06-optimize/) | Performance and cost improvement results | — |
 
 ---
 
@@ -50,12 +87,12 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 
 | Module | Typical question |
 |---|---|
-| [Data protection](../../domains/data-protection/) | How to design Snapshot policy / can we actually recover |
-| [Data utilization](../../domains/data-utilization/) | Can analytics and AI use this without multiplying copies |
-| [Security & governance](../../domains/security-governance/) | How to design encryption, audit, and permissions |
-| [Performance](../../domains/performance/) | Where throughput is determined and where it is shared |
-| [Cost](../../domains/cost/) | Why estimates and measurements diverge |
-| [Multiprotocol & identity](../../domains/multiprotocol-identity/) | Why permissions disagree between NFS and SMB |
+| [Data protection](domains/data-protection/) | How to design Snapshot policy / can we actually recover |
+| [Data utilization](domains/data-utilization/) | Can analytics and AI use this without multiplying copies |
+| [Security & governance](domains/security-governance/) | How to design encryption, audit, and permissions |
+| [Performance](domains/performance/) | Where throughput is determined and where it is shared |
+| [Cost](domains/cost/) | Why estimates and measurements diverge |
+| [Multiprotocol & identity](domains/multiprotocol-identity/) | Why permissions disagree between NFS and SMB |
 
 ---
 
@@ -63,16 +100,16 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 
 | Directory | When to use it |
 |---|---|
-| [Decision trees](../../reference/decision-trees/) | Several options exist and you need to pick one |
-| [Comparison matrices](../../reference/comparison/) | You need the trade-offs against other options laid out |
-| [Limits and quotas](../../reference/limits/) | You need to confirm a design will not hit a limit |
-| [Glossary](../../reference/glossary/) | You need the definition of an ONTAP or AWS term |
+| [Decision trees](../ja/reference/decision-trees/) | Several options exist and you need to pick one |
+| [Comparison matrices](../ja/reference/comparison/) | You need the trade-offs against other options laid out |
+| [Limits and quotas](../ja/reference/limits/) | You need to confirm a design will not hit a limit |
+| [Glossary](../ja/reference/glossary/) | You need the definition of an ONTAP or AWS term |
 
 ---
 
 ## Case studies — `case-studies/`
 
-[Case Studies](../../case-studies/) carries findings from field technical-support work as **generalized lessons**. They contain no company or organization names, no real identifiers, and no configuration that could identify an organization.
+[Case Studies](case-studies/) carries findings from field technical-support work as **generalized lessons**. They contain no company or organization names, no real identifiers, and no configuration that could identify an organization.
 
 Each case study follows this shape:
 
@@ -122,4 +159,6 @@ See the [Evidence Policy](evidence-policy.md) for details.
 
 ---
 
-[日本語](../ja/navigation.md) | [🏠 Repository home](../../README.en.md)
+<!-- lang-switcher:start -->
+🌐 [日本語](../ja/navigation.md) | [English](navigation.md) | [🏠 Repository home](README.md)
+<!-- lang-switcher:end -->

@@ -4,7 +4,7 @@
 <!-- 執筆規約そのものを定義する文書であり、禁止パターンを引用する必要があるため監査を免除します。
      このファイル単位の宣言をコンテンツファイルにコピーしないでください。 -->
 
-[🏠 リポジトリトップ](README.md) | [🏠 Repository home](README.en.md)
+[🏠 リポジトリトップ](README.md) | [🏠 Repository home](docs/en/README.md)
 
 ---
 
@@ -84,11 +84,38 @@ make all           # コミット前に必ず実行
 
 ## 多言語対応
 
+ドキュメントの言語は**ディレクトリ**で表します。`README.en.md` のようなサフィックスは使いません。
+`docs/ja/domains/cost/README.md` の対訳は `docs/en/domains/cost/README.md` です。
+
+同じ深さに置かれるため、**翻訳はコピーして本文を訳すだけ**です。相対リンクは 1 文字も変わりません。
+翻訳中に `../` の数を数え直しているとしたら、ファイルの置き場所が間違っています。
+
+例外はルートの `README.md` だけです。これが日本語のハブなので `docs/ja/README.md` は存在しません。
+
 | ティア | 対象 | 必要言語 |
 |---|---|---|
-| 1 | ルート `README`、`docs/i18n-manifest.txt` に登録された `docs/` | manifest の指定に従う（既定は 8 言語） |
-| 2 | 各モジュールの `README` | 日本語 + English |
+| 1 | ルート `README.md` と `docs/<lang>/README.md`、`docs/i18n-manifest.txt` に登録されたガイド | manifest の指定に従う（既定は 8 言語） |
+| 2 | `docs/<lang>/{playbooks,domains}/` 各モジュールの `README.md` | 日本語 + English |
 | 3 | `notes/`、`checklists/` | 日本語（English は任意） |
+
+`docs/ja/reference/` は現在、日本語と English を同一ファイルに併記する形式です。言語ごとに分割していないため、
+追記するときも既存の併記スタイルに合わせてください（`docs/en/reference/` を部分的に作らないこと）。
+
+### 言語スイッチャーは手で書かない
+
+各ドキュメント冒頭と末尾のスイッチャーは**生成物**です。手で編集しないでください。
+
+```bash
+make switcher-write   # 実在する翻訳だけを並べて再生成
+make switcher-check   # 生成結果と実ファイルの一致を検査（make all に含まれます）
+```
+
+存在しない翻訳はリンクに現れません。翻訳を追加したら `make switcher-write` を実行するだけです。
+マーカー（`<!-- lang-switcher:start -->` / `<!-- lang-switcher:end -->`）の挿入位置だけは人が決めます。
+新規ファイルでは H1 直後と末尾に一度だけ書いてください。
+
+`make switcher-check` は同時に、**自言語に対訳があるのに他言語へリンクしていないか**も検査します。
+これは `make links` では見つかりません（リンク自体は解決するため）。
 
 Tier 1 は**セクション構成と数が言語間で一致**していることを CI が検査します。
 新しいガイドはまず ja + en で追加し、`docs/i18n-manifest.txt` に `name.md: ja,en` として登録します。
@@ -105,8 +132,9 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 |---|---|
 | `make lint` | frontmatter スキーマ + Markdown lint |
 | `make i18n-check` | Tier 1 の言語間パリティ |
+| `make switcher-check` | 言語スイッチャーの整合 + 誤った言語へのリンク |
 | `make audit` | 命名 / 中立性 / 個人情報 / 内部 ID / シークレット |
-| `make links` | 内部リンクの解決 |
+| `make links` | 内部リンクの解決（`llms.txt` を含む） |
 | `make links-external` | 外部 URL も含む（ネットワーク必要） |
 | `make all` | 上記すべて。**コミット前の必須ゲート** |
 
@@ -125,7 +153,7 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 
 | # | 軸 | 確認内容 |
 |---|---|---|
-| 1 | 実装漏れ | ノートをモジュール README からリンクしたか。Tier 1 を 1 言語だけ更新していないか |
+| 1 | 実装漏れ | ノートをモジュール README からリンクしたか。Tier 1 を 1 言語だけ更新していないか。翻訳を追加したら `make switcher-write` を実行したか |
 | 2 | 違和感 | プレースホルダーの残り。`evidence: verified` に `verified_on` がない。見出しと本文の不一致 |
 | 3 | 磨き込み | 同じファイルに触れる小さな改善を「範囲外」として見送っていないか |
 | 4 | 退行リスク | リンク先を移動していないか。他のドキュメントが引用している数値を変えていないか |
@@ -154,8 +182,8 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 - [知見の分類ポリシー](docs/ja/evidence-policy.md) — `evidence` 区分の判断基準
 - [ナビゲーションガイド](docs/ja/navigation.md) — リポジトリの歩き方
 - [AGENTS.md](AGENTS.md) — AI エージェント向けの規約（人間が読んでも有用）
-- [case-studies/README.md](case-studies/README.md) — 事例の匿名化ポリシー
+- [case-studies/README.md](docs/ja/case-studies/README.md) — 事例の匿名化ポリシー
 
 ---
 
-[🏠 リポジトリトップ](README.md) | [🏠 Repository home](README.en.md)
+[🏠 リポジトリトップ](README.md) | [🏠 Repository home](docs/en/README.md)
