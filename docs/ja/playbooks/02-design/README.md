@@ -14,11 +14,11 @@
 
 | # | 問い | ノート |
 |---|---|---|
-| 1 | ファイルシステムと SVM をどう分割するか | _未追加_ |
-| 2 | 容量とスループットをどう見積もるか | _未追加_ |
-| 3 | ボリュームのセキュリティスタイルをどう選ぶか | _未追加_ |
-| 4 | マルチ AZ とシングル AZ をどう判断するか | _未追加_ |
-| 5 | 不可逆な設定はどれで、いつ決める必要があるか | _未追加_ |
+| 1 | ファイルシステムと SVM をどう分割するか | [移動できる粒度で分割する](notes/deployment-type-is-decided-once.md#ha-ペアを足すときに起きること) |
+| 2 | 容量とスループットをどう見積もるか | [単一 HA ペアの天井](notes/deployment-type-is-decided-once.md#単一-ha-ペアの天井) |
+| 3 | ボリュームのセキュリティスタイルをどう選ぶか | [セキュリティスタイルが権限評価のモデルを決める](../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
+| 4 | マルチ AZ とシングル AZ をどう判断するか | [Multi-AZ と Single-AZ の判断](notes/deployment-type-is-decided-once.md#multi-az-と-single-az-の判断) |
+| 5 | 不可逆な設定はどれで、いつ決める必要があるか | [デプロイタイプは一度しか決められない](notes/deployment-type-is-decided-once.md) |
 
 ---
 

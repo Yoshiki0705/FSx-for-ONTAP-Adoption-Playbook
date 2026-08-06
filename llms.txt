@@ -59,8 +59,8 @@ missing translation is an absent link, never a placeholder page.
 
 ## Findings available today
 
-Eight of the twelve modules have content. The remaining four — 02 Design, 06 Optimize, security and
-governance, cost — currently define the questions they are scoped to cover and contain no findings.
+All twelve modules have content: eleven notes and one checklist. That is a module-level statement — at
+the question level some answers are still unwritten, and each module README marks which ones.
 Each file below is one concern, carries its primary sources, and ends with a procedure for checking the
 claim in your own environment. All are Japanese; the English module READMEs link to each one.
 
@@ -68,6 +68,10 @@ claim in your own environment. All are Japanese; the English module READMEs link
 - [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md): Defaults omit ACLs, and an account lacking the right privilege skips unreadable ones silently while still exiting successfully. "No errors" is not evidence of preservation.
 - [Monitoring fails on averages](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md): The statistic has to be chosen before the threshold. Standby file servers and unsaturated aggregates pull an average down, and SSD utilization changes behavior at 90% and 98%, not only at the recommended 80%.
 - [Pre-production review](docs/ja/playbooks/04-build/checklists/pre-production-review.md): Checklist of the irreversible settings, and of what to exercise before going live.
+- [Deployment type is decided once](docs/ja/playbooks/02-design/notes/deployment-type-is-decided-once.md): Deployment type cannot be changed after creation, and the same choice fixes the scale-out ceiling. Only second-generation Single-AZ supports more than one HA pair, so "start Multi-AZ and add pairs later" is not available. Added HA pairs cannot be removed, and past six pairs iSCSI and NVMe/TCP stop being available.
+- [Tiering defaults differ by creation method](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md): The console defaults a volume to Auto with a 31-day cooling period while the CLI, API and ONTAP CLI default to Snapshot Only with 2 days, so a console-built test environment and an IaC-built production one tier differently. Whether a read promotes data back to SSD also depends on the policy and on whether the read is random or sequential.
+- [At rest is automatic, in transit is off by default](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md): Encryption at rest cannot be disabled, while encryption in transit is not enabled by default and Kerberos for NFS and SMB requires the SVM to be joined to Active Directory or LDAP. SMB access auditing records only the first read and first write per object, so read counts cannot be answered from it.
+- [Billing splits into provisioned and consumed](docs/ja/domains/cost/notes/provisioned-versus-consumed.md): SSD capacity, SSD IOPS and throughput are billed on what is provisioned; capacity pool and backups on what is consumed. Capacity pool also carries per-read and per-write request charges, so tiering data that turns out to be read regularly can cost more. Deduplication and compression do not lower the bill unless provisioned capacity is reduced.
 - [Having snapshots is not the same as being able to recover](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md): Snapshot, backup and SnapMirror cover different failure domains. A snapshot lives inside the same file system and is lost with it, and only read-write volumes can be backed up.
 - [Volume security style decides the permission model](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md): Blocking ID mapping does not block SMB access on an NTFS-style volume, because that path evaluates the NTFS ACL directly.
 - [Throughput is not set by one value](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md): Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed a single HA pair regardless of how many pairs the file system has.

@@ -14,11 +14,11 @@ Performance and cost tuning once you are in steady state. Optimization cannot be
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | How to identify where the bottleneck is | _not yet added_ |
-| 2 | How to configure tiering | _not yet added_ |
-| 3 | How to measure storage efficiency gains | _not yet added_ |
-| 4 | What to check before raising the throughput setting | _not yet added_ |
-| 5 | How to position the cost-versus-availability trade-off | _not yet added_ |
+| 1 | How to identify where the bottleneck is | [Triage order](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) (日本語) |
+| 2 | How to configure tiering | [Tiering defaults differ by creation method](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) |
+| 3 | How to measure storage efficiency gains | [How to measure the gain](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md#ストレージ効率の効果をどう測るか) (日本語) |
+| 4 | What to check before raising the throughput setting | [Order changes by whether they can be undone](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md#変更の順序は戻せるかで決める) (日本語) |
+| 5 | How to position the cost-versus-availability trade-off | [Presenting the trade-off symmetrically](../../../ja/domains/cost/notes/provisioned-versus-consumed.md#トレードオフの提示のしかた) (日本語) |
 
 ---
 

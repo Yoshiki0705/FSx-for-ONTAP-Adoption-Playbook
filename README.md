@@ -26,9 +26,9 @@
 | 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
-> **収録状況**: 12 モジュールのうち 8 モジュールに中身があります（`notes/` 7 本、`checklists/` 1 本）。
-> 残る 4 モジュール（[`02-design/`](docs/ja/playbooks/02-design/)、[`06-optimize/`](docs/ja/playbooks/06-optimize/)、[`security-governance/`](docs/ja/domains/security-governance/)、[`cost/`](docs/ja/domains/cost/)）は、扱う問いを定義した段階です。
-> 骨組みだけの入口に読者の時間を使わせないため、上の表と下の一覧には**いま中身がある資料だけ**を載せています。各モジュールの README には、そのモジュールが答える問いと、答えが未収録かどうかが一覧されています。
+> **収録状況**: **12 モジュールすべてに中身があります**（`notes/` 11 本、`checklists/` 1 本）。
+> ただしこれはモジュール単位の話で、**問い単位ではまだ答えが未収録のものが残っています。**
+> 各モジュールの README に、そのモジュールが答える問いと、未収録の問いが一覧されています。
 
 ### いま読める知見
 
@@ -37,13 +37,17 @@
 | 知見 | 答えていること |
 |---|---|
 | [容量が余っていても書けなくなる](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | 棚卸しでファイル数を数える理由。inode の既定値は 648 GiB を超えると増えません |
+| [デプロイタイプは一度しか決められない](docs/ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) | 可用性の選択がスケールアウトの上限も決めます。Multi-AZ は HA ペア 1 組で固定です |
 | [ACL 保持は権限の問題であってツールの問題ではない](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) | 既定値のまま実行すると ACL が黙って落ち、それでも「成功」で終わります |
-| [監視は平均値で失敗する](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 閾値より先に統計値を決める理由。待機系ノードが平均を引き下げます |
-| [Snapshot があることと復旧できることは別](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに守れる障害が違います。Snapshot はボリュームと一緒に失われます |
-| [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
-| [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わり、FlexVol は 1 HA ペアを超えられません |
-| [FSx for ONTAP S3 AP は「S3 として使える」わけではない](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・同一リージョンなどの前提条件が設計段階の制約になります |
 | [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) | 不可逆な設定と、本番前に実際に試しておく項目のチェックリスト |
+| [監視は平均値で失敗する](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 閾値より先に統計値を決める理由。待機系ノードが平均を引き下げます |
+| [階層化の既定値は作成方法で違う](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) | コンソールと IaC で既定のポリシーが違います。変更は戻せる順に試します |
+| [Snapshot があることと復旧できることは別](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに守れる障害が違います。Snapshot はボリュームと一緒に失われます |
+| [FSx for ONTAP S3 AP は「S3 として使える」わけではない](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・同一リージョンなどの前提条件が設計段階の制約になります |
+| [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
+| [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わり、FlexVol は 1 HA ペアを超えられません |
+| [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |
+| [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
 
 ---
 

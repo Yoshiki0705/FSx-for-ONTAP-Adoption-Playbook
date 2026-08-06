@@ -9,6 +9,54 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [tiering defaults differ by creation method](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md).
+  **The default tiering policy depends on how the volume was created.** The console defaults to `Auto`
+  with a 31-day cooling period; the AWS CLI, the API and the ONTAP CLI default to `Snapshot Only` with
+  2 days. Those policies do not move the same data — `Snapshot Only` never tiers user data — so a
+  console-built test environment and an IaC-built production environment tier differently while both
+  look like "the default".
+  - Whether a read pulls data back to SSD also depends on the policy **and on the access pattern**:
+    under `Auto` a random read promotes the block back to primary while a sequential read (an antivirus
+    scan, for instance) leaves it cold, and under `ALL` a read never promotes. So `ALL` keeps paying
+    capacity-pool request charges on data that is read repeatedly.
+  - Records an ordering rule the repository had not stated: **try changes in order of reversibility**,
+    not expected impact. Tiering policy and storage efficiency are reversible, throughput is reversible
+    with a failover, and adding HA pairs is not reversible at all — so it goes last.
+- Note: [at rest is automatic, in transit is off by default](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
+  Encryption at rest cannot be disabled and covers data and metadata, so it is not a design decision.
+  Encryption in transit is the opposite: **not enabled by default**, and Kerberos for NFS and SMB
+  requires the SVM to be joined to Active Directory or LDAP — which makes AD a prerequisite for
+  in-transit encryption, not only for authentication. Requiring SMB encryption also **disconnects
+  clients that do not support it**, so it is a security change and an availability change at once.
+  - The finding most likely to surface during an audit: **SMB access auditing records only the first
+    read and the first write per object.** Opens, deletes, renames and unlinks are recorded, but
+    "how many times did this user read this file" cannot be answered from the log.
+  - Deliberately stops at what gets asked and what can be stated as fact. Compliance determinations
+    belong to the reader's own audit and legal process, so the note makes that boundary explicit.
+    Question 5 of that module, on the OT/IT boundary, is left unanswered rather than filled with
+    material this repository has no source for.
+- Note: [billing splits into provisioned and consumed](docs/ja/domains/cost/notes/provisioned-versus-consumed.md).
+  SSD capacity, SSD IOPS and throughput are billed on **what is provisioned** — unused space included —
+  while capacity pool and backups are billed on **what is consumed**. Most estimate errors sit on that
+  line. Capacity pool additionally carries **per-read and per-write request charges**, so tiering data
+  that turns out to be read regularly can cost more rather than less.
+  - **Deduplication and compression do not lower the bill.** They reduce consumed space, but SSD is
+    billed on provisioned capacity, so nothing changes until provisioned capacity is actually reduced.
+    Reporting the gain as "free space" hides that the invoice did not move.
+  - Also corrects an assumption in the other direction: **cross-AZ replication traffic for Multi-AZ is
+    included in the throughput capacity price**, so treating it as a separate transfer charge overstates
+    the cost of Multi-AZ. And 3 IOPS/GB is included, so raising IOPS is not automatically billable.
+- Note: [deployment type is decided once](docs/ja/playbooks/02-design/notes/deployment-type-is-decided-once.md).
+  **Deployment type cannot be changed after creation** — not even Single-AZ 1 to Single-AZ 2 — and the
+  same single choice fixes the scale-out ceiling. Only second-generation Single-AZ supports more than one
+  HA pair, so "start on Multi-AZ and add pairs when performance runs short" is not a path that exists;
+  it becomes a rebuild and a data migration.
+  - Adding HA pairs has consequences the checklist did not cover: the new pair arrives with **matching
+    SSD capacity**, so it is a cost decision too; **existing volumes must be moved and clients remounted**
+    before anything gets faster; the pairs **cannot be removed**; and **past six pairs iSCSI and NVMe/TCP
+    stop being available**, which combined with non-removability makes it a one-way door.
+  - Covers file-system-level irreversibility, complementing the volume- and SVM-level table already in
+    the pre-production checklist rather than restating it.
 - `llms.txt` now carries a **findings section** listing each note with a one-line statement of what it
   establishes. Previously the file described the taxonomy — the twelve modules and the two axes — so an
   agent reading it learned how the repository is organized but not that any findings existed. It also
@@ -160,6 +208,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **Coverage is now stated at module level only.** With all twelve modules filled, the eight hub READMEs
+  and `llms.txt` say "all 12 modules have content (11 `notes/`, 1 `checklists/`)" and then note that
+  answers are still missing at the question level — **without giving a number for it.** A count of
+  answered questions would live in nine files across eight languages and would need editing on every
+  note added, which is how the previous claim went stale. The module count is stable now that it is
+  complete; the question-level gap is signposted in each module README instead, next to the gap itself.
 - **Localized content moved under `docs/<lang>/`.** A document's language is now its directory
   rather than a filename suffix; `README.<lang>.md` no longer exists anywhere. The root `README.md`
   stays as the Japanese hub, so `docs/ja/README.md` deliberately does not exist. Because every
