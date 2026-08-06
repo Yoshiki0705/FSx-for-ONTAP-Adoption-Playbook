@@ -147,6 +147,7 @@ Get-Acl -Path <path> | Format-List
 
 - [Playbook 03 — 移行](../README.md) — このモジュールのハブ
 - [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択を左右します
+- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md#棚卸し項目は後で戻せない判断から逆算する) — ACL が読めるかの確認は棚卸しの項目です
 - [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — 移行先での権限評価の前提
 - [本番投入前レビュー](../../04-build/checklists/pre-production-review.md) — 移行後の ACL サンプル検証を項目に含めています
 - [知見の分類ポリシー](../../../evidence-policy.md)

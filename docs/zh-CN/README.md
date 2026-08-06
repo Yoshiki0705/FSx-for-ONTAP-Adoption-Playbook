@@ -26,9 +26,24 @@
 | 从公开信息中查找一次信息 | [公开的一次信息与案例入口](../ja/case-studies/public-references.md) (日本語) | 5 分钟 |
 | 补充知识（撰写） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分钟 |
 
-> **收录情况**：生命周期 6 个模块与主题 6 个模块目前处于"已定义待解决的问题与结构"的阶段（`notes/` 尚未收录）。
-> 各模块的 README 列出了该模块计划回答的问题。
-> 为了不让读者把时间花在只有骨架的入口上，上表只列出**目前已有内容的资料**。模块全貌请参见下方的双轴导航。
+> **收录情况**：12 个模块中已有 8 个模块具备内容（`notes/` 7 篇、`checklists/` 1 篇）。
+> 其余 4 个模块（[`02-design/`](../ja/playbooks/02-design/)、[`06-optimize/`](../ja/playbooks/06-optimize/)、[`security-governance/`](../ja/domains/security-governance/)、[`cost/`](../ja/domains/cost/)）目前处于已定义待解决问题的阶段。
+> 为了不让读者把时间花在只有骨架的入口上，上表只列出**目前已有内容的资料**。各篇笔记目前以日语撰写，模块全貌请参见下方的双轴导航。
+
+### 目前可阅读的资料
+
+每篇资料均为「1 个文件 = 1 个议题」，并且必定包含**一次信息的出处**与**在自己环境中确认的步骤**。正文目前为日语，因此标题也保留日语原文。
+
+- [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
+- [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
+- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
+- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
+- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
+- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
+- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
+- [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
+
+此外，各模块的 README 会标示该模块回答的问题，以及尚未撰写的条目。
 
 ---
 

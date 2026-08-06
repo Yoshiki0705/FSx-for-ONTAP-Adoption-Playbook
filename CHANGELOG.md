@@ -170,6 +170,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Corrected
 
+- **All eight hub READMEs claimed `notes/` was not yet populated.** That stopped being true once the
+  first notes landed, and it was the most misleading sentence in the repository: it sat on the landing
+  page and told first-time readers there was nothing to read. The statement is now a count — 8 of 12
+  modules have content — and it names the four modules that are still question-definition only, so the
+  claim degrades into being merely out of date rather than actively wrong.
+  - Each hub now carries an **"available today" list**, so a reader reaches the material without first
+    having to learn the two-axis navigation. In the six first-touch languages the note titles are
+    deliberately **left in Japanese**: a title here states a finding, and findings stay out of
+    machine-assisted translation. The heading and lead-in are localized, because those are navigation.
+  - Reverse links added where a document already pointed at the topic: the pre-production checklist now
+    links to the restore drill and the monitoring note, the migration decision tree links to the
+    inventory note, and the ACL note links back to the inventory item covering ACL readability.
 - **The pre-production checklist cited an AWS Prescriptive Guidance URL that returns 404.** The page
   appears to have been moved or retired since it was indexed. The affected claim — tier latency
   levels — is now sourced to the AWS Storage Blog sizing article, which states it directly. Re-sourcing

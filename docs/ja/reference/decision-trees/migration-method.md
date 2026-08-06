@@ -150,6 +150,7 @@ graph TD
 ## 関連ドキュメント
 
 - [Playbook 01 — 評価](../../playbooks/01-assess/) — 移行前に測るべき項目
+- [容量が余っていても書けなくなる](../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — 方式を選ぶ前に数えるもの。ファイル数とディレクトリあたりの上限は移行ツールの完走に影響します
 - [Playbook 03 — 移行](../../playbooks/03-migrate/) — 各方式の実行手順
 - [Domain — マルチプロトコル・ID](../../domains/multiprotocol-identity/) — ACL と ID マッピング
 - [Domain — データ保護](../../domains/data-protection/) — SnapMirror の位置づけ

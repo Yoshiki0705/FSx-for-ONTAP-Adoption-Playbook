@@ -26,11 +26,26 @@
 | Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
 | Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
-> **Coverage**: the 6 lifecycle modules and 6 domain modules currently define the questions they will
-> answer and the structure to answer them in — `notes/` is not yet populated. Each module README lists
-> the questions it is scoped to cover.
-> The table above therefore lists **only material that has content today**, rather than spending a
-> reader's time on an empty entry point. For the full module map, see the two-axis navigation below.
+> **Coverage**: 8 of the 12 modules now have content (7 `notes/`, 1 `checklists/`).
+> The remaining 4 — [`02-design/`](playbooks/02-design/), [`06-optimize/`](playbooks/06-optimize/), [`security-governance/`](domains/security-governance/), [`cost/`](domains/cost/) — define the questions they are scoped to cover.
+> The table above and the list below therefore carry **only material that has content today**, rather than
+> spending a reader's time on an empty entry point. Each module README lists its questions and marks which
+> answers are not yet written.
+
+### Available today
+
+Each note is one concern per file, and always carries **its primary sources** and **a procedure for checking it in your own environment**. The notes themselves are Japanese for now.
+
+| Finding | What it answers |
+|---|---|
+| [Free space does not mean you can still write](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語) | Why an inventory has to count files, not just bytes — the default inode count stops growing past 648 GiB |
+| [ACL preservation is a privilege problem, not a tool problem](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Run with the defaults and ACLs are dropped silently, while the job still reports success |
+| [Monitoring fails on averages](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語) | Why the statistic is decided before the threshold — standby nodes pull the average down |
+| [Having snapshots is not the same as being able to recover](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語) | Each mechanism covers a different failure. A snapshot is lost along with its volume |
+| [Volume security style decides the permission model](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
+| [Throughput is not set by one value](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語) | Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed one HA pair |
+| [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account and same-Region prerequisites become plan-level constraints |
+| [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | Checklist of the irreversible settings and what to actually exercise before going live |
 
 ---
 

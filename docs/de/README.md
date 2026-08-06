@@ -26,11 +26,26 @@
 | Öffentliche Primärquellen finden | [Öffentliche Quellen und ihre Gewichtung](../ja/case-studies/public-references.md) (日本語) | 5 Min. |
 | Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 Min. |
 
-> **Abdeckungsstand**: Die 6 Lifecycle-Module und die 6 Themenmodule definieren derzeit die Fragen, die
-> sie beantworten werden, sowie die Struktur dafür — `notes/` ist noch nicht gefüllt. Das README jedes
-> Moduls listet die Fragen auf, für die es zuständig ist.
+> **Abdeckungsstand**: 8 der 12 Module haben inzwischen Inhalt (7 `notes/`, 1 `checklists/`).
+> Die verbleibenden 4 — [`02-design/`](../ja/playbooks/02-design/), [`06-optimize/`](../ja/playbooks/06-optimize/),
+> [`security-governance/`](../ja/domains/security-governance/), [`cost/`](../ja/domains/cost/) — definieren die Fragen, für die sie zuständig sind.
 > Die Tabelle oben führt daher **nur Material auf, das heute Inhalt hat**, anstatt Lesezeit an einem
-> leeren Einstiegspunkt zu verbrauchen. Die vollständige Modulkarte zeigt die Zwei-Achsen-Navigation unten.
+> leeren Einstiegspunkt zu verbrauchen. Die Notizen selbst liegen derzeit auf Japanisch vor; die vollständige Modulkarte zeigt die Zwei-Achsen-Navigation unten.
+
+### Heute verfügbar
+
+Jedes Dokument behandelt ein Thema pro Datei und führt stets **seine Primärquellen** sowie **ein Verfahren zur Prüfung in der eigenen Umgebung** mit. Da der Text auf Japanisch vorliegt, bleiben auch die Titel auf Japanisch.
+
+- [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
+- [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
+- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
+- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
+- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
+- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
+- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
+- [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
+
+Das README jedes Moduls nennt außerdem die Fragen, die es behandelt, und markiert die noch nicht geschriebenen Antworten.
 
 ---
 

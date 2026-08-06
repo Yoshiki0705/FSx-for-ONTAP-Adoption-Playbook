@@ -122,6 +122,8 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 - [Playbook 04 — 構築](../README.md) — このモジュールのハブ
 - [Playbook 02 — 設計](../../02-design/) — 不可逆項目はここで確定させる
 - [Playbook 05 — 運用](../../05-operate/) — 監視とインシデント対応
+- [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — 監視を入れる前に統計値を決める
+- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#自分の環境で確かめる) — 復元を実際に試す手順
 - [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
 - [知見の分類ポリシー](../../../evidence-policy.md) — `documented` の扱いと本番投入前の確認
 - [ナビゲーションガイド](../../../navigation.md)
