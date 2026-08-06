@@ -23,6 +23,7 @@
 | 마이그레이션 가능성과 방법 판단 | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) | 10분 |
 | 검증된 상한값 확인 | [상한값·쿼터](../ja/reference/limits/) | 5분 |
 | 지식의 신뢰도를 읽는 방법 알기 | [지식 분류 정책](evidence-policy.md) | 5분 |
+| 공개 정보에서 1차 정보를 찾는다 | [공개된 1차 정보와 사례의 입구](../ja/case-studies/public-references.md) (日本語) | 5분 |
 | 지식 추가하기(집필) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10분 |
 
 > **수록 현황**: 라이프사이클 6개 모듈과 테마 6개 모듈은 현재 "다룰 질문과 구조를 정의한 단계"입니다(`notes/`는 미수록).

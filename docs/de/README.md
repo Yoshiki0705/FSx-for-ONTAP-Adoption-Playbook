@@ -23,6 +23,7 @@
 | Entscheiden, ob und wie migriert wird | [Entscheidungsbaum: Migrationsmethode](../ja/reference/decision-trees/migration-method.md) | 10 Min. |
 | Verifizierte Grenzwerte nachsehen | [Grenzwerte und Kontingente](../ja/reference/limits/) | 5 Min. |
 | Verstehen, wie die Vertrauensstufen zu lesen sind | [Evidenzrichtlinie](evidence-policy.md) | 5 Min. |
+| Öffentliche Primärquellen finden | [Öffentliche Quellen und ihre Gewichtung](../ja/case-studies/public-references.md) (日本語) | 5 Min. |
 | Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 Min. |
 
 > **Abdeckungsstand**: Die 6 Lifecycle-Module und die 6 Themenmodule definieren derzeit die Fragen, die

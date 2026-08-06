@@ -124,9 +124,9 @@ def check_internal(source: Path, target: str) -> str | None:
     return None
 
 
-def check_external(url: str, timeout: float = 10.0) -> str | None:
+def _probe(url: str, method: str, timeout: float) -> str | None:
     request = urllib.request.Request(
-        url, method="HEAD", headers={"User-Agent": USER_AGENT}
+        url, method=method, headers={"User-Agent": USER_AGENT}
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -139,6 +139,20 @@ def check_external(url: str, timeout: float = 10.0) -> str | None:
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:
         return f"unreachable ({exc})"
     return None
+
+
+def check_external(url: str, timeout: float = 10.0) -> str | None:
+    """Probe with HEAD, then confirm a failure with GET before reporting it.
+
+    Some hosts redirect a HEAD to a landing or sign-in page that returns 404 while the real page
+    answers GET with 200 - an interoperability matrix behind a login does exactly this. Reporting
+    those as broken trains people to ignore the check, so a failure is only reported when GET
+    agrees. HEAD stays first because it avoids downloading bodies for the common case.
+    """
+    problem = _probe(url, "HEAD", timeout)
+    if problem is None:
+        return None
+    return _probe(url, "GET", timeout)
 
 
 def main() -> int:

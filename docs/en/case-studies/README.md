@@ -53,6 +53,8 @@ A collection of success stories is worth less than it looks. **The points where 
 |---|---|---|---|
 | _None added yet_ | — | — | — |
 
+**For cases and primary sources already published elsewhere**, see [Public references and how to weigh them](../../ja/case-studies/public-references.md) (日本語). It maps where the AWS and NetApp documentation, blogs, Q&A sites, and community material actually live, and how much weight each kind of source carries.
+
 ---
 
 ## Related documents

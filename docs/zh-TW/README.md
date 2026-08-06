@@ -23,6 +23,7 @@
 | 判斷能否遷移以及如何遷移 | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) | 10 分鐘 |
 | 查看已驗證的上限值 | [上限值與配額](../ja/reference/limits/) | 5 分鐘 |
 | 了解如何判讀知識的可信度 | [知識分類政策](evidence-policy.md) | 5 分鐘 |
+| 從公開資訊中查找第一手資訊 | [公開的第一手資訊與案例入口](../ja/case-studies/public-references.md) (日本語) | 5 分鐘 |
 | 補充知識（撰寫） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分鐘 |
 
 > **收錄情況**：生命週期 6 個模組與主題 6 個模組目前處於「已定義待解決的問題與結構」的階段（`notes/` 尚未收錄）。

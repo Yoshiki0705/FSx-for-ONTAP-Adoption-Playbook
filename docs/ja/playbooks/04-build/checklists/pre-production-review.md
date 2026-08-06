@@ -3,7 +3,7 @@ title: 本番投入前レビュー — 後から変えられない項目と、�
 lifecycle: [design, build, operate]
 domains: [security-governance, performance, data-protection]
 evidence: documented
-source: https://docs.aws.amazon.com/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/best-practices.html
+source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/storage-capacity-and-IOPS.html
 lang: ja
 ---
 
@@ -43,6 +43,7 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 ## 2. 容量とスループット
 
 - [ ] **SSD 層の使用率が 80% を超えない計画になっている**。AWS は 80% 以下を推奨しています。超えるとデータのティアリング、スループットのスケーリング、その他の保守処理が正常に機能しなくなります
+- [ ] **SSD 層が 98% に達するとティアリングが完全に停止することを把握した**。使用率に応じて挙動が段階的に変わります。50% 以下では All ポリシー以外はティアリングせず、90% 以上では容量プールから SSD への読み戻しが止まり、**98% 以上でティアリング機能そのものが停止**します
 - [ ] **容量プール層に置くデータのレイテンシ要件を確認した**。SSD 層はサブミリ秒、容量プール層は数十ミリ秒の水準です。レイテンシに敏感なデータをティアリング対象にしていないか確認してください
 - [ ] **スループットと IOPS のプロビジョニング値を、実測に基づいて決めた**。ドキュメントの上限値ではなく、自環境のワークロードで測った値が根拠になります
 - [ ] **バックグラウンド処理が遅くなる前提を織り込んだ**。FSx for ONTAP はクライアントトラフィックをバックグラウンドタスク（ティアリング、ストレージ効率化、バックアップ）より優先します。ピーク時にバックアップが想定どおり終わらない可能性を検討してください
@@ -106,8 +107,10 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 | 論点 | 出典 |
 |---|---|
 | SSD 層 80% 推奨、ティアリングと保守処理への影響 | [AWS: File system storage capacity and IOPS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/storage-capacity-and-IOPS.html) |
-| 層ごとのレイテンシ水準、企業環境でのベストプラクティス | [AWS Prescriptive Guidance: Best practices](https://docs.aws.amazon.com/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/best-practices.html) |
+| 使用率ごとのティアリング挙動（50% / 90% / 98%） | [AWS re:Post: Modify storage data tiering policies](https://repost.aws/knowledge-center/fsx-ontap-modify-data-tiering) |
+| 層ごとのレイテンシ水準（サブミリ秒 / 数十ミリ秒） | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
 | クライアントトラフィックがバックグラウンドタスクより優先される | [AWS: Migrating to FSx for ONTAP using SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 移行中にティアリングが追いつかない場合の挙動 | [AWS Storage Blog: Cloud Write mode for petabyte-scale migrations](https://aws.amazon.com/blogs/storage/streamline-petabyte-scale-data-migrations-with-cloud-write-mode-on-amazon-fsx-for-netapp-ontap/) |
 | ティアリングポリシーと容量の動的割り当て | [AWS: Managing storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-storage-capacity.html) |
 | 性能警告と推奨事項 | [AWS: Performance warnings and recommendations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance-insights-FSxN.html) — AWS 側の URL に由来する表記です <!-- allow:naming --> |
 | スループット / IOPS スロットリングの切り分け | [AWS re:Post: Troubleshoot slow performance](https://repost.aws/knowledge-center/fsx-ontap-fix-slow-performance) |
