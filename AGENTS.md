@@ -29,6 +29,20 @@ trees, comparisons, limits, glossary — currently bilingual single files, see L
 
 ## Core Commands
 
+### Set up the pinned toolchain first
+
+```bash
+pip install -r requirements-dev.txt   # ruff, exact-pinned
+npm install -g markdownlint-cli2      # not pip-installable
+brew install gitleaks                 # not pip-installable
+```
+
+**`make lint` warns when the installed `ruff` differs from the pinned version. That warning means a
+local pass does not predict CI.** Rule sets widen between releases, so a newer `ruff` reports
+findings on code that has not changed, and an older one stays silent on code CI will reject. Install
+the pinned version rather than working past the warning — the alternative is discovering it as a red
+pull request.
+
 ```bash
 make help          # List all targets
 make lint            # markdownlint + frontmatter schema validation
@@ -419,6 +433,7 @@ Surface findings explicitly and fix before finalizing.
 | Personal path `/Users/<name>/` in an example | Use `${PROJECT_DIR}` or a relative path |
 | Dark diagram not regenerated after a light edit | Regenerate; the light/dark pair must stay in sync |
 | Reading a `@2x` PNG directly | Exceeds the 2000px limit. Downscale to a preview first |
+| Working past the `ruff` version warning from `make lint` | Install the pinned version. A local pass with a different `ruff` does not predict CI, and the difference surfaces as a red pull request |
 | Citing another repo's finding without a link | Always link the source repository and doc |
 
 ## FSx for ONTAP Domain Knowledge (carry-over)
@@ -450,5 +465,5 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 - Primary region for verification: `ap-northeast-1` (Tokyo)
 - ONTAP baseline for carried-over findings: 9.17.1P7D1
-- Tooling: Python 3.12 (stdlib only for `tools/`), `markdownlint-cli2`, `gitleaks`
+- Tooling: Python 3.12 (stdlib only for `tools/`), `ruff` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`. CI installs `ruff` from the pinned file rather than resolving the latest release, so the lint verdict does not depend on the day it runs
 - No application runtime, no AWS deployment from this repository
