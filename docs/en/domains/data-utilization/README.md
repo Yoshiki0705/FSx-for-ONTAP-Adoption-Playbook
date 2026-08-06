@@ -14,7 +14,7 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | What is and is not possible over the S3 API | _not yet added_ |
+| 1 | What is and is not possible over the S3 API | [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) |
 | 2 | How to connect an analytics platform | _not yet added_ |
 | 3 | How to handle permissions in AI / RAG | _not yet added_ |
 | 4 | What a copy-minimizing design looks like | _not yet added_ |

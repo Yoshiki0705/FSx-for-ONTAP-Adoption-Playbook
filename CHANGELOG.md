@@ -9,6 +9,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [FSx for ONTAP S3 AP is not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md).
+  Access points attached to an FSx for ONTAP volume carry restrictions that bucket access points do
+  not: ONTAP 9.17.1 or later, same AWS account, same Region. Cross-account designs do not work at all,
+  which is a plan-level constraint rather than a configuration detail.
+  - Enabling S3 access points **lowers the volume-count ceiling** — 500 to 491, and 1,000 to 975 at
+    two HA pairs or 903 at twelve. More pairs means a larger reduction, so "add pairs to get more
+    volumes" does not hold.
+  - Object size limits are kept as a link to the sibling repository rather than restated. They are
+    measurements, and a measurement separated from its environment gets misused. The note does carry
+    the operationally important part: the whole-object limit is evaluated at
+    `CompleteMultipartUpload`, so an oversized upload fails *after* transferring everything, which
+    makes client-side validation the only cheap check.
 - Note: [throughput is not set by one value](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md).
   The ceiling depends on generation, AZ configuration, and **region** — first-generation file systems
   reach half the documented IOPS and throughput outside four named regions. Raising the throughput
