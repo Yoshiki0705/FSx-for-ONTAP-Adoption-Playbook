@@ -181,16 +181,21 @@ def sync_file(rel: str, write: bool) -> list[str]:
         for start, end in reversed(blocks):
             del lines[start : end + 1]
             # Deleting the block can leave two blank lines behind, which markdownlint rejects.
-            if start < len(lines) and start > 0:
-                if lines[start - 1].strip() == "" and lines[start].strip() == "":
-                    del lines[start]
+            if (
+                0 < start < len(lines)
+                and lines[start - 1].strip() == ""
+                and lines[start].strip() == ""
+            ):
+                del lines[start]
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return []
 
     if not blocks:
         return [
-            f"{rel}: missing switcher markers; add {START} / {END} "
-            f"immediately after the H1 and at the end of the file"
+            (
+                f"{rel}: missing switcher markers; add {START} / {END} "
+                f"immediately after the H1 and at the end of the file"
+            )
         ]
     if len(blocks) != 2:
         problems.append(
@@ -219,9 +224,7 @@ def sync_file(rel: str, write: bool) -> list[str]:
 
 def normalize(resolved: str) -> str:
     """Treat `dir` and `dir/README.md` as the same target."""
-    return (
-        resolved[: -len("/README.md")] if resolved.endswith("/README.md") else resolved
-    )
+    return resolved.removesuffix("/README.md")
 
 
 def iter_links(text: str):
