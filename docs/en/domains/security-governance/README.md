@@ -18,7 +18,7 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 | 2 | How to record who did what | [Two audit planes, one with a documented gap](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#監査は-2-つの面に分かれ片方に穴があります) (日本語) |
 | 3 | How to move permission design toward least privilege | [Separate the administrators](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計管理者を分ける) (日本語) |
 | 4 | Which points come up for regulated workloads | [What gets asked, and what can be answered as fact](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) (日本語) |
-| 5 | Considerations when crossing the OT / IT boundary | _not yet added_ |
+| 5 | Considerations when crossing the OT / IT boundary | [Mechanisms for crossing a segmented boundary, and their limits](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) (日本語) |
 
 ---
 

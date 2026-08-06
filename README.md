@@ -26,9 +26,9 @@
 | 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
-> **収録状況**: **12 モジュールすべてに中身があります**（`notes/` 11 本、`checklists/` 1 本）。
-> ただしこれはモジュール単位の話で、**問い単位ではまだ答えが未収録のものが残っています。**
-> 各モジュールの README に、そのモジュールが答える問いと、未収録の問いが一覧されています。
+> **収録状況**: **12 モジュールすべてに中身があります。**
+> 各モジュールの README に、そのモジュールが答える問いと、対応するノートが一覧されています。
+> **答えが未収録の問いは `_未追加_` と表示されます。**
 
 ### いま読める知見
 
@@ -39,15 +39,22 @@
 | [容量が余っていても書けなくなる](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | 棚卸しでファイル数を数える理由。inode の既定値は 648 GiB を超えると増えません |
 | [デプロイタイプは一度しか決められない](docs/ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) | 可用性の選択がスケールアウトの上限も決めます。Multi-AZ は HA ペア 1 組で固定です |
 | [ACL 保持は権限の問題であってツールの問題ではない](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) | 既定値のまま実行すると ACL が黙って落ち、それでも「成功」で終わります |
+| [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](docs/ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | 「切り替えを戻す」操作は存在しません。差分同期は共通 Snapshot に依存します |
+| [IaC の境界は API の表面で決まる](docs/ja/playbooks/04-build/notes/what-iac-cannot-reach.md) | テンプレートが成功しても構成は完成しません。ONTAP レベルの設定は届きません |
 | [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) | 不可逆な設定と、本番前に実際に試しておく項目のチェックリスト |
 | [監視は平均値で失敗する](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 閾値より先に統計値を決める理由。待機系ノードが平均を引き下げます |
+| [メンテナンスは 14 日を超えて延期できない](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超と route 不足が、パッチ適用を悪化させます |
 | [階層化の既定値は作成方法で違う](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) | コンソールと IaC で既定のポリシーが違います。変更は戻せる順に試します |
 | [Snapshot があることと復旧できることは別](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに守れる障害が違います。Snapshot はボリュームと一緒に失われます |
+| [SnapLock は有効化とロックが別](docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) | 不可逆な選択が 3 段あります。特権削除は満了後には使えません |
 | [FSx for ONTAP S3 AP は「S3 として使える」わけではない](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・同一リージョンなどの前提条件が設計段階の制約になります |
+| [S3 Access Point は全リクエストを 1 つの ID で認可する](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI / RAG のパイプラインに引き継がれません |
 | [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
 | [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わり、FlexVol は 1 HA ペアを超えられません |
+| [p99 は CloudWatch のメトリクスからは出せない](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られません。ベンチマークはクレジット残高に左右されます |
 | [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |
 | [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
+| [AD への依存は参加時ではなく生涯続く](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | 資格情報の失効は平常時に無症状で、次のメンテナンスで顕在化します |
 
 ---
 

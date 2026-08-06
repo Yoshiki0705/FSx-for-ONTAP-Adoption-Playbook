@@ -15,10 +15,10 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 | # | Question | Notes |
 |---|---|---|
 | 1 | Where throughput is determined and where it is shared | [Throughput is not set by one value](../../../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語) |
-| 2 | How bandwidth is shared across protocols | _not yet added_ |
-| 3 | How to look at latency tails (p99) | _not yet added_ |
-| 4 | What makes a workload benefit from caching | _not yet added_ |
-| 5 | How to design a benchmark that reproduces | _not yet added_ |
+| 2 | How bandwidth is shared across protocols | [How bandwidth is shared across protocols](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#プロトコル間で帯域はどう分け合われるか) (日本語) |
+| 3 | How to look at latency tails (p99) | [p99 cannot be read from the CloudWatch metrics](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) (日本語) |
+| 4 | What makes a workload benefit from caching | [When caching helps](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#キャッシュが効く条件) (日本語) |
+| 5 | How to design a benchmark that reproduces | [What a reproducible benchmark records](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) (日本語) |
 
 ---
 

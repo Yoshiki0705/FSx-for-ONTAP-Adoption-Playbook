@@ -26,28 +26,14 @@
 | 從公開資訊中查找第一手資訊 | [公開的第一手資訊與案例入口](../ja/case-studies/public-references.md) (日本語) | 5 分鐘 |
 | 補充知識（撰寫） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分鐘 |
 
-> **收錄情況**：**12 個模組全部具備內容**（`notes/` 11 篇、`checklists/` 1 篇）。
-> 這是按模組計算的結果；按問題計算，仍有尚未撰寫答案的條目。
-> 各模組的 README 會標示該模組回答的問題以及尚未撰寫的條目。各篇筆記目前以日文撰寫。
+> **收錄情況**：**12 個模組全部具備內容。**
+> 各模組的 README 列出了該模組回答的問題及對應的資料；
+> 尚未撰寫的問題會標示為 `_未追加_`。各篇筆記目前以日文撰寫。
 
 ### 目前可閱讀的資料
 
-每篇資料均為「1 個檔案 = 1 個議題」，並且必定包含**一次資訊的出處**與**在自己環境中確認的步驟**。正文目前為日文，因此標題也保留日文原文。
-
-- [容量が余っていても書けなくなる](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語)
-- [デプロイタイプは一度しか決められない](../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語)
-- [ACL 保持は権限の問題であってツールの問題ではない](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
-- [本番投入前レビュー](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語)
-- [監視は平均値で失敗する](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語)
-- [階層化の既定値は作成方法で違う](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語)
-- [Snapshot があることと復旧できることは別](../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語)
-- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語)
-- [保存時の暗号化は自動、転送時は既定で無効](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語)
-- [スループットは 1 つの設定値では決まらない](../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語)
-- [課金は「確保した量」と「使った量」に分かれる](../ja/domains/cost/notes/provisioned-versus-consumed.md) (日本語)
-- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語)
-
-此外，各模組的 README 會標示該模組回答的問題，以及尚未撰寫的條目。
+每篇資料均為「1 個檔案 = 1 個議題」，並且必定包含**一次資訊的出處**與**在自己環境中確認的步驟**。
+正文目前為日文。完整列表連同各自的問題一併整理在各模組的 README 中 —— [生命週期](../ja/playbooks/) / [主題](../ja/domains/) / [參考](../ja/reference/)。
 
 ---
 
