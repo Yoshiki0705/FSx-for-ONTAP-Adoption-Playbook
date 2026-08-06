@@ -26,12 +26,33 @@ lang: ja
 | SMB 暗号化の強制 | **ONTAP CLI のみ**（`vserver cifs security modify`） |
 | ボリュームの inode 上限 | **ONTAP CLI のみ**（`volume modify -files`） |
 | FlexVol から FlexGroup への変換 | **ONTAP CLI のみ** |
+| **ONTAP ボリュームの Snapshot 作成** | **ONTAP CLI / REST のみ。** 実測で確認しました（下記） |
+| **SnapLock 監査ログボリュームの指定解除** | **ONTAP レベルのみ。** 実測で確認しました（下記） |
 
 したがって **テンプレートが成功しても構成は完成していません。** 「IaC で全部管理する」という方針は、この境界を越えられません。設計すべきは境界の位置ではなく、**境界の向こう側をどう再現可能にするか**です。
 
 > **Evidence**: `documented` — 各操作の経路とテンプレートの更新挙動は AWS 公式ドキュメントと CloudFormation リファレンスの記載に基づきます。
 > **特定のツール構成の推奨はしません。** 自環境での確認手順は
 > 「[自分の環境で確かめる](#自分の環境で確かめる)」にあります。
+
+---
+
+## 実測で見つかった 3 つの境界
+
+**いずれも「テンプレートや AWS CLI から届かない」ことを実際に試して確認しました。**
+
+| 発見 | 内容 |
+|---|---|
+| **`CreateSnapshot` は FSx for OpenZFS 専用** | ONTAP ボリュームに対して実行すると `Unable to create a snapshot because the volume was not found` になります。**ボリュームは存在し `CREATED` です。** ONTAP の Snapshot は Snapshot ポリシーまたは ONTAP CLI / REST の領域です |
+| **SnapLock 監査ログボリュームは AWS API で削除できない** | 通常の削除も `BypassSnaplockEnterpriseRetention=true` も効きません。SVM 側の指定が API に露出していないため、解除には ONTAP レベルの操作が必要です |
+| **`UpdateVolume` は非同期で痕跡を残さない** | 反映は 30 秒では未確認、120〜180 秒で確認。**`AdministrativeActions` には記録されません**（`null`）。連続実行は `There is an update already in progress.` で拒否されます |
+
+**3 つ目が検証の設計に効きます。** API が成功を返しても反映されたことにはならず、記録も残らないため、**`DescribeVolumes` を読み直す以外に確認手段がありません。** この検証では短い待ち時間で状態を読み、一度「無視された」と誤診しました。
+
+> **区分**: `verified`（検証日 2026-08-06、`ap-northeast-1`、`SINGLE_AZ_1`）。
+> 記録は [上限値・クォータ](../../../reference/limits/) にあります。
+
+**構築後の検証を自動化するなら、この 3 つ目を前提に組んでください。** 「API が 200 を返したか」ではなく「読み直して意図した値になっているか」を判定条件にします。
 
 ---
 

@@ -121,23 +121,131 @@ Defaults observed read-only in the same environment. **All matched the documenta
 
 ---
 
-## まだ実測していない項目 / Not yet measured
+## 作成・変更・削除を伴う実測 / Measured with mutating operations
 
-**ここに残っているものは `documented` のままです。** 実測には作成・変更・削除を伴うため、この検証では
-行っていません。
+専用に作成したボリューム上で実施し、**終了後に削除しました**（1 件を除く。後述）。
+検証日 2026-08-06、環境は下記。
 
-These remain `documented`. Measuring them requires create, modify or delete operations, which this
-verification did not perform.
+Performed on purpose-created volumes and **deleted afterwards** (with one exception, noted below).
+Verified 2026-08-06 in the environment recorded below.
 
-| 項目 | 実測に必要な操作 |
+### inode を使い切ったときの挙動 / Behaviour on inode exhaustion
+
+**このリポジトリで最も重要な実測結果です。** 20 MiB（FlexVol の最小サイズ）のボリュームを NFSv3 で
+マウントし、ファイルを作り続けました。
+
+| 項目 | 値 | 備考 |
+|---|---|---|
+| 総 inode 数（20 MiB ボリューム） | **566** | `df -i` |
+| **作成直後に使用済みの inode** | **96** | 空のボリュームでも 0 ではありません |
+| 作成できたファイル数 | 470 | 566 − 96 |
+| 使い切った時点の `df -i` | `IUsed 566 / IFree 0 / IUse% 100%` | — |
+| 同時点の `df -h` | **19M 中 448K 使用（3%）** | **容量はほぼ空です** |
+| **新規ファイルの作成** | **失敗**: `No space left on device` | — |
+| **既存ファイルへのデータ書き込み** | **成功** | 書き込み自体は止まりません |
+
+> **エラーメッセージが間違ったリソースを指します。** `No space left on device`（`ENOSPC`）は容量不足を
+> 示す文面ですが、実際に枯渇しているのは inode です。**容量を見て「空いている」と判断すると原因に到達できません。**
+> そして**止まるのは「作成」だけで、既存ファイルへの書き込みは続きます。** 症状が部分的なため、
+> アプリケーションによっては一部の操作だけが失敗します。
+>
+> **The error names the wrong resource.** `No space left on device` (`ENOSPC`) reads as a capacity
+> problem, but what is exhausted is inodes. **Checking free capacity leads away from the cause.** And
+> only *creation* stops — writes to existing files continue, so the symptom is partial.
+
+**20 MiB での比率は大きいボリュームと一致しません。** 37,052 B/inode であり、100 GiB〜2 TiB で観測した
+34,493 B/inode とは異なります。**上の比率は最小サイズまで外挿できません。**
+
+### DP ボリュームはバックアップできない / DP volumes are not backupable
+
+**対照実験として RW ボリュームでも同じ操作を行いました。**
+
+| 対象 | 結果 |
 |---|---|
-| DP ボリュームがバックアップ対象外であること | 該当ボリュームへの `CreateBackup` 試行 |
-| Snapshot 1,023 個 / バックアップ 4,091 個の上限 | 上限までの作成 |
-| SSD 90% / 98% での階層化の挙動変化 | 意図的な容量圧迫 |
-| 作成経路による階層化ポリシー既定の差 | コンソールと CLI の両方でのボリューム作成 |
-| SnapLock の不可逆性と特権削除の挙動 | SnapLock ボリュームの作成 |
-| パッチ適用時の I/O 一時停止 | メンテナンスウィンドウ中の観測 |
-| inode を使い切ったときの書き込み失敗 | 意図的な inode 枯渇 |
+| `DP` ボリューム（SnapMirror 複製先） | **拒否**: `BadRequest ... Volume with type DP is not backupable.` |
+| `RW` ボリューム（対照） | **成功**: `USER_INITIATED` のバックアップが作成された |
+
+### 階層化ポリシーの既定は作成経路で決まる / The tiering default follows the creation path
+
+**AWS CLI で `TieringPolicy` を指定せずにボリュームを作成しました。** 作成経路を自分で制御したので、
+相関ではなく**因果の確認**です。
+
+| 作成方法 | 結果 |
+|---|---|
+| AWS CLI、`TieringPolicy` 未指定 | **`SNAPSHOT_ONLY` / cooling `2`** |
+
+コンソール側（`AUTO` / 31）はこの検証では作成していません。**ドキュメント記載と、環境内に `AUTO` /
+31 のボリュームが存在することの 2 点にとどまります。**
+
+### 階層化ポリシーの変更は無停止 / Changing the tiering policy is non-disruptive
+
+| 操作 | 結果 |
+|---|---|
+| `SNAPSHOT_ONLY` / 2 → `AUTO` / 45 | 適用された。`Lifecycle` は一貫して `CREATED` |
+
+### SnapLock の不可逆性 / SnapLock irreversibility
+
+| 項目 | 結果 |
+|---|---|
+| `SnaplockType` の変更 | **`UpdateVolume` に該当パラメータが存在しません。** 受理されるのは `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 5 つのみ |
+| `PrivilegedDelete` の既定 | `DISABLED` |
+| `AuditLogVolume` の既定 | `false` |
+| `AutocommitPeriod` の既定 | `NONE` |
+| `RetentionPeriod` の既定 | 既定 0 YEARS / 最小 0 YEARS / **最大 30 YEARS** |
+| 作成時の `PrivilegedDelete=ENABLED` | 成功 |
+| `PERMANENTLY_DISABLED` からの復帰 | **`ENABLED` も `DISABLED` も拒否**: `Privileged-delete is permanently disabled on this volume.` |
+
+**特権削除の有効化に監査ログボリュームが必要かどうかは判定できていません。** 監査ログボリュームの作成
+前と作成後の両方で有効化を試したため、**どちらが成立したのか帰属できません。**
+
+### SnapLock 監査ログボリュームの制約 / Audit log volume constraints
+
+| 項目 | 結果 |
+|---|---|
+| マウント位置 | **`/snaplock_audit_log` のみ**。他のジャンクションパスは拒否: `SnapLock audit log volume can only be mounted at the junction path /snaplock_audit_log` |
+| **AWS API での削除** | **できません。** `BypassSnaplockEnterpriseRetention=true` でも `Lifecycle` が `CREATED` に戻ります。理由: `Cannot delete the volume because it is configured as a SnapLock audit log volume` |
+| `AuditLogVolume=false` への変更 | 適用されませんでした |
+| SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
+
+Enterprise ボリュームの削除拒否メッセージは、阻害要因を 4 つ列挙します。**未期限の WORM ファイル、
+リーガルホールド下のファイル、未期限のロック済み Snapshot、未期限の監査ログボリューム**です。
+
+> **監査ログボリュームは作る前に置き場所を決めてください。** AWS API では取り消せません。
+>
+> **Decide where an audit log volume goes before creating one.** The AWS API cannot undo it.
+
+### `UpdateVolume` は非同期で痕跡を残さない / `UpdateVolume` is asynchronous and leaves no trace
+
+| 項目 | 結果 |
+|---|---|
+| 反映までの時間 | 30 秒では未反映、120〜180 秒で反映を確認 |
+| `AdministrativeActions` | **記録されません**（`null`） |
+| 連続実行 | **拒否**: `Unable to perform the volume update. There is an update already in progress.` |
+
+> **API が成功を返しても、反映されたことにはなりません。** `AdministrativeActions` にも残らないため、
+> **`DescribeVolumes` を読み直す以外に確認手段がありません。** 短い待ち時間で状態を読むと
+> 「無視された」と誤診します（この検証で実際に一度誤診しました）。
+>
+> **A successful API response is not confirmation.** Nothing is recorded in `AdministrativeActions`,
+> so re-reading `DescribeVolumes` is the only way to confirm. Reading state too soon produces a false
+> "silently ignored" diagnosis — which happened once during this verification.
+
+検証環境 / Environment: `ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、HA ペア 1 組、スループット
+128 MBps、SSD 1,024 GiB。inode 検証のみ別ファイルシステム（同一構成、同一リージョン）で実施し、
+NFSv3 でマウントしました。**ONTAP バージョンは取得できていません。**
+
+---
+
+## 実測できなかった項目 / Could not be measured
+
+| 項目 | 理由 |
+|---|---|
+| Snapshot 1,023 個の上限 | **`CreateSnapshot` は FSx for OpenZFS 専用**です。ONTAP ボリュームでは `Unable to create a snapshot because the volume was not found` になります。ONTAP CLI / REST が必要で、`fsxadmin` の資格情報がありません |
+| バックアップ 4,091 個の上限 | 現実的な回数ではありません |
+| SSD 90% / 98% での階層化の挙動変化 | **実施しませんでした。** 稼働ファイルシステムの SSD 層を意図的に埋める必要があり、同一ファイルシステムの全ボリュームに影響します。テストボリュームに隔離できません |
+| パッチ適用時の I/O 一時停止 | メンテナンスウィンドウの到来と、その間の継続的な I/O 負荷の両方が必要です |
+| 作成経路のうちコンソール側 | この検証ではコンソールを使用していません |
+| 特権削除と監査ログボリュームの因果 | 上記のとおり帰属できません |
 
 ---
 
