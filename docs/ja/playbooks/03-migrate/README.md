@@ -16,9 +16,9 @@
 |---|---|---|
 | 1 | どの移行方式を選ぶか（SnapMirror / DataSync / ホスト側コピー） | [移行方式の選択](../../reference/decision-trees/migration-method.md) |
 | 2 | ACL を保持したまま移行するには何が必要か | [ACL 保持は権限の問題であってツールの問題ではない](notes/preserving-acls-during-migration.md) |
-| 3 | 初期同期と差分同期をどう計画するか | _未追加_ |
-| 4 | 切り替え時のダウンタイムをどう最小化するか | _未追加_ |
-| 5 | どの時点まで、どうやって戻せるか | _未追加_ |
+| 3 | 初期同期と差分同期をどう計画するか | [初期同期と差分同期](notes/where-the-rollback-window-closes.md#初期同期と差分同期) |
+| 4 | 切り替え時のダウンタイムをどう最小化するか | [切り替えの順序](notes/where-the-rollback-window-closes.md#切り替えの順序) |
+| 5 | どの時点まで、どうやって戻せるか | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](notes/where-the-rollback-window-closes.md) |
 
 ---
 
