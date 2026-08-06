@@ -12,5 +12,5 @@
 #
 # Root README.md is always checked against all 8 languages and is not listed here.
 
-navigation.md: ja,en
-evidence-policy.md: ja,en
+navigation.md
+evidence-policy.md

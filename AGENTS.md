@@ -282,7 +282,46 @@ Three tiers, enforced by `make i18n-check`:
 |---|---|---|
 | 1 | Root `README.md` + `docs/<lang>/README.md`, and the guides listed in `docs/i18n-manifest.txt` | per manifest; default all 8 |
 | 2 | Module `README` under `docs/<lang>/{playbooks,domains}/` | ja, en |
-| 3 | `notes/`, `checklists/` | ja (en optional) |
+| 3 | `notes/`, `checklists/`, `reference/` | ja (en optional) |
+
+### What qualifies for eight languages
+
+Tier 1 is **first-touch material only**: how to find your way around, and how to read the confidence
+signals. A reader arriving in their own language needs to know where to go and how much to trust
+what they find — nothing beyond that.
+
+| Belongs in Tier 1 | Stays at ja + en or ja |
+|---|---|
+| The hub, navigation, how to read the evidence tiers | Anything carrying a number, a limit, or a threshold |
+| Anonymization and contribution policy a reader must understand before acting | Anything describing an irreversible operation |
+| Labels and wording a reader meets before choosing a path | Notes, checklists, decision trees, comparison matrices |
+
+The dividing line is consequence. **A mistranslation in first-touch material sends someone to the
+wrong page, which they will notice. A mistranslation in a design judgment does not announce itself
+and can be acted on.** Deep technical material is therefore deliberately not promoted, even when a
+translation would be easy to produce.
+
+Promotion is also gated on stability. Translating a document that is still changing multiplies every
+later edit by eight. Promote when the content has settled, not when it is first written.
+
+### Declaring authority
+
+Every Tier 1 document states which version is authoritative, symmetrically:
+
+- The Japanese version states that it is the authoritative one for technical accuracy.
+- Every other language states that Japanese is authoritative and that discrepancies should be
+  reported.
+
+This is a plain paragraph, not a heading, so it does not affect section parity. It exists because
+translations here are produced with machine assistance and are not natively reviewed before
+publication — a reader deciding whether to act on a statement is entitled to know that.
+
+**The operating model is publish, then correct on report.** Waiting for native review before
+publishing would mean shipping nothing outside Japanese and English. Instead the limitation is
+stated, the report path is one click away, and a translation correction is treated as an ordinary
+correction rather than a special case. That trade is only honest while the notice stays visible and
+the scope stays narrow — which is why first-touch material is the boundary, not a starting point to
+expand from.
 
 Tier 1 requires matching section structure and count across the languages the manifest names for that
 file. When you change one language, change all of them in the same commit.

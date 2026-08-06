@@ -190,6 +190,8 @@ Issues and Pull Requests are welcome. See [CONTRIBUTING.md](../../CONTRIBUTING.m
 This repository is personal technical material and does not represent the official position of any employer.
 Statements about governance or regulated workloads are **general design considerations**, not legal or compliance judgments. Benchmark figures are measurements from the stated verification environment; they do not guarantee general service limits or reproduction in a production environment.
 
+The Japanese version of this repository is authoritative for technical accuracy. Other languages are machine-assisted translations that have not been natively reviewed before publication; where they disagree, the Japanese version prevails. Corrections are welcome as an [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues).
+
 ## License
 
 MIT — [LICENSE](../../LICENSE)

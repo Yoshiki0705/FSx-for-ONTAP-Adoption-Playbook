@@ -19,10 +19,10 @@
 
 | Lo que quieres hacer | Guía | Tiempo |
 |---|---|---|
-| Entender cómo recorrer este repositorio | [Guía de navegación](../en/navigation.md) | 3 min |
+| Entender cómo recorrer este repositorio | [Guía de navegación](navigation.md) | 3 min |
 | Decidir si migrar y cómo hacerlo | [Árbol de decisión: método de migración](../ja/reference/decision-trees/migration-method.md) | 10 min |
 | Consultar los límites verificados | [Límites y cuotas](../ja/reference/limits/) | 5 min |
-| Entender cómo leer los niveles de confianza | [Política de niveles de evidencia](../en/evidence-policy.md) | 5 min |
+| Entender cómo leer los niveles de confianza | [Política de niveles de evidencia](evidence-policy.md) | 5 min |
 | Añadir conocimiento (redacción) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
 > **Estado de la cobertura**: los 6 módulos de ciclo de vida y los 6 módulos temáticos definen por ahora
@@ -102,7 +102,7 @@ lang: es
 ---
 ```
 
-Los cuatro niveles de `evidence` permiten al lector juzgar hasta qué punto puede apoyarse en una nota. Consulta la [política de niveles de evidencia](../en/evidence-policy.md).
+Los cuatro niveles de `evidence` permiten al lector juzgar hasta qué punto puede apoyarse en una nota. Consulta la [política de niveles de evidencia](evidence-policy.md).
 
 </details>
 
@@ -168,7 +168,7 @@ make links         # Comprobación de enlaces roscos
 make all           # Todo lo anterior
 ```
 
-Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTING.md) para las convenciones de redacción y la [política de niveles de evidencia](../en/evidence-policy.md) para los criterios de clasificación.
+Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTING.md) para las convenciones de redacción y la [política de niveles de evidencia](evidence-policy.md) para los criterios de clasificación.
 
 </details>
 
@@ -189,6 +189,8 @@ Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTI
 
 Este repositorio es material técnico personal y no representa la posición oficial de ningún empleador.
 Las afirmaciones sobre gobernanza o cargas reguladas son **consideraciones generales de diseño**, no juicios legales ni de cumplimiento. Las cifras de referencia son mediciones del entorno de verificación indicado; no garantizan los límites generales del servicio ni su reproducción en producción.
+
+La versión en japonés de este repositorio es la de referencia en cuanto a exactitud técnica. Los demás idiomas son traducciones asistidas por máquina que no han sido revisadas por hablantes nativos antes de su publicación; en caso de discrepancia, prevalece la versión en japonés. Las correcciones son bienvenidas mediante una [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues).
 
 ## Licencia
 

@@ -19,10 +19,10 @@
 
 | Was Sie vorhaben | Leitfaden | Dauer |
 |---|---|---|
-| Verstehen, wie man dieses Repository durchsucht | [Navigationsleitfaden](../en/navigation.md) | 3 Min. |
+| Verstehen, wie man dieses Repository durchsucht | [Navigationsleitfaden](navigation.md) | 3 Min. |
 | Entscheiden, ob und wie migriert wird | [Entscheidungsbaum: Migrationsmethode](../ja/reference/decision-trees/migration-method.md) | 10 Min. |
 | Verifizierte Grenzwerte nachsehen | [Grenzwerte und Kontingente](../ja/reference/limits/) | 5 Min. |
-| Verstehen, wie die Vertrauensstufen zu lesen sind | [Evidenzrichtlinie](../en/evidence-policy.md) | 5 Min. |
+| Verstehen, wie die Vertrauensstufen zu lesen sind | [Evidenzrichtlinie](evidence-policy.md) | 5 Min. |
 | Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 Min. |
 
 > **Abdeckungsstand**: Die 6 Lifecycle-Module und die 6 Themenmodule definieren derzeit die Fragen, die
@@ -102,7 +102,7 @@ lang: de
 ---
 ```
 
-Die vier `evidence`-Stufen erlauben es Lesern zu beurteilen, wie weit eine Notiz belastbar ist. Siehe [Evidenz-Richtlinie](../en/evidence-policy.md).
+Die vier `evidence`-Stufen erlauben es Lesern zu beurteilen, wie weit eine Notiz belastbar ist. Siehe [Evidenz-Richtlinie](evidence-policy.md).
 
 </details>
 
@@ -168,7 +168,7 @@ make links         # Prüfung auf defekte Links
 make all           # Alles Vorgenannte
 ```
 
-Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIBUTING.md](../../CONTRIBUTING.md), Einstufungskriterien in der [Evidenz-Richtlinie](../en/evidence-policy.md).
+Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIBUTING.md](../../CONTRIBUTING.md), Einstufungskriterien in der [Evidenz-Richtlinie](evidence-policy.md).
 
 </details>
 
@@ -189,6 +189,8 @@ Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIB
 
 Dieses Repository enthält persönliches technisches Material und gibt nicht die offizielle Position eines Arbeitgebers wieder.
 Aussagen zu Governance oder regulierten Workloads sind **allgemeine Designüberlegungen**, keine rechtliche oder Compliance-Beurteilung. Benchmark-Werte sind Messungen aus der angegebenen Prüfumgebung; sie garantieren weder allgemeine Servicegrenzen noch eine Reproduktion in Produktionsumgebungen.
+
+Die japanische Fassung dieses Repositorys ist für die technische Richtigkeit maßgeblich. Andere Sprachen sind maschinell unterstützte Übersetzungen, die vor der Veröffentlichung nicht muttersprachlich geprüft wurden; bei Abweichungen gilt die japanische Fassung. Korrekturen sind als [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues) willkommen.
 
 ## Lizenz
 

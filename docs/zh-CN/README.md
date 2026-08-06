@@ -19,10 +19,10 @@
 
 | 你想做的事 | 指南 | 预计时间 |
 |---|---|---|
-| 了解如何浏览本仓库 | [导航指南](../en/navigation.md) | 3 分钟 |
+| 了解如何浏览本仓库 | [导航指南](navigation.md) | 3 分钟 |
 | 判断能否迁移以及如何迁移 | [迁移方式决策树](../ja/reference/decision-trees/migration-method.md) | 10 分钟 |
 | 查看已验证的上限值 | [上限值与配额](../ja/reference/limits/) | 5 分钟 |
-| 了解如何判读知识的可信度 | [知识分类政策](../en/evidence-policy.md) | 5 分钟 |
+| 了解如何判读知识的可信度 | [知识分类政策](evidence-policy.md) | 5 分钟 |
 | 补充知识（撰写） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分钟 |
 
 > **收录情况**：生命周期 6 个模块与主题 6 个模块目前处于"已定义待解决的问题与结构"的阶段（`notes/` 尚未收录）。
@@ -100,7 +100,7 @@ lang: zh-CN
 ---
 ```
 
-`evidence` 的四个级别用于让读者判断"该记述可以信赖到什么程度"。详情参见[知识分级政策](../en/evidence-policy.md)。
+`evidence` 的四个级别用于让读者判断"该记述可以信赖到什么程度"。详情参见[知识分级政策](evidence-policy.md)。
 
 </details>
 
@@ -166,7 +166,7 @@ make links         # 链接失效检查
 make all           # 以上全部
 ```
 
-欢迎提交 Issue / Pull Request。撰写规约见 [CONTRIBUTING.md](../../CONTRIBUTING.md)，知识分级标准见[知识分级政策](../en/evidence-policy.md)。
+欢迎提交 Issue / Pull Request。撰写规约见 [CONTRIBUTING.md](../../CONTRIBUTING.md)，知识分级标准见[知识分级政策](evidence-policy.md)。
 
 </details>
 
@@ -187,6 +187,8 @@ make all           # 以上全部
 
 本仓库为个人整理的技术信息，不代表所属组织的官方立场。
 关于治理或合规的记述均为**一般性的设计考量**，而非法务或合规判断。基准测试数值为所载验证环境下的实测结果，不保证等同于通用服务上限，也不保证在生产环境中可复现。
+
+本仓库的日语版为技术正式版本。其他语言为机器辅助译文，发布前未经母语审校；如有出入，以日语版为准。如发现错误，欢迎通过 [Issue](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues) 反馈。
 
 ## 许可证
 

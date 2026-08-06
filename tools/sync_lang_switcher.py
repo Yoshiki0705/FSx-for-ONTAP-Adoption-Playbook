@@ -44,12 +44,19 @@ LANG_NAMES = {
     "de": "Deutsch",
     "es": "Español",
 }
-# Only the labels that already exist in the repository. A language gains an entry when it gains a
-# document below hub level - inventing an unreviewed UI string in six languages is not this tool's
-# job, so it fails loudly instead.
+# The "back to the hub" label per language. A language needs an entry here before it can hold a
+# document below hub level; without one the tool fails rather than inventing a UI string. ja and en
+# are taken from the wording already used in the repository, the rest were added when the first-touch
+# guides were promoted to eight languages.
 HOME_LABEL = {
     "ja": "🏠 リポジトリトップ",
     "en": "🏠 Repository home",
+    "ko": "🏠 저장소 홈",
+    "zh-CN": "🏠 仓库首页",
+    "zh-TW": "🏠 儲存庫首頁",
+    "fr": "🏠 Accueil du dépôt",
+    "de": "🏠 Repository-Startseite",
+    "es": "🏠 Inicio del repositorio",
 }
 
 START = "<!-- lang-switcher:start -->"
