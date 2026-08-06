@@ -22,7 +22,7 @@ make new-note MODULE=domains/performance SLUG=my-concern
 make all           # コミット前に必ず実行
 ```
 
-`tools/` は Python 3.12 標準ライブラリのみで動きます。追加の依存はありません。
+`tools/` は Python 3.12 以降の標準ライブラリのみで動きます。追加の依存はありません。CI は 3.14 で実行しています。
 
 ---
 
