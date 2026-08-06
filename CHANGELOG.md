@@ -9,6 +9,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- `llms.txt` now carries a **findings section** listing each note with a one-line statement of what it
+  establishes. Previously the file described the taxonomy — the twelve modules and the two axes — so an
+  agent reading it learned how the repository is organized but not that any findings existed. It also
+  states the coverage count, so an agent is not left to infer that an empty module is an oversight.
+  - Mermaid node labels containing a colon are now quoted. Nothing was known to be broken; a malformed
+    diagram renders as an error box on GitHub and no gate in this repository parses Mermaid, so the
+    failure mode is silent and worth closing off rather than trusting.
 - Note: [free space does not mean you can still write](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md).
   A volume counts files, directories **and snapshot copies** as inodes, and once inodes are exhausted
   the volume rejects writes even with capacity left. The trap is in how the default scales: **one inode

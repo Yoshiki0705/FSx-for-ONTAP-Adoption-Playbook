@@ -57,6 +57,22 @@ missing translation is an absent link, never a placeholder page.
 - [Cost](docs/en/domains/cost/): Capacity, tiering, and the gap between estimates and measurements.
 - [Multiprotocol identity](docs/en/domains/multiprotocol-identity/): NFS and SMB coexistence, Active Directory integration, ID mapping.
 
+## Findings available today
+
+Eight of the twelve modules have content. The remaining four — 02 Design, 06 Optimize, security and
+governance, cost — currently define the questions they are scoped to cover and contain no findings.
+Each file below is one concern, carries its primary sources, and ends with a procedure for checking the
+claim in your own environment. All are Japanese; the English module READMEs link to each one.
+
+- [Free space does not mean you can still write](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md): An inventory has to count files, not only bytes. The default inode count stops growing past 648 GiB, so a large volume holding small files exhausts inodes long before capacity and then rejects writes.
+- [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md): Defaults omit ACLs, and an account lacking the right privilege skips unreadable ones silently while still exiting successfully. "No errors" is not evidence of preservation.
+- [Monitoring fails on averages](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md): The statistic has to be chosen before the threshold. Standby file servers and unsaturated aggregates pull an average down, and SSD utilization changes behavior at 90% and 98%, not only at the recommended 80%.
+- [Pre-production review](docs/ja/playbooks/04-build/checklists/pre-production-review.md): Checklist of the irreversible settings, and of what to exercise before going live.
+- [Having snapshots is not the same as being able to recover](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md): Snapshot, backup and SnapMirror cover different failure domains. A snapshot lives inside the same file system and is lost with it, and only read-write volumes can be backed up.
+- [Volume security style decides the permission model](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md): Blocking ID mapping does not block SMB access on an NTFS-style volume, because that path evaluates the NTFS ACL directly.
+- [Throughput is not set by one value](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md): Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed a single HA pair regardless of how many pairs the file system has.
+- [FSx for ONTAP S3 access points are not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md): Same-account and same-Region prerequisites are plan-level constraints, and enabling access points lowers the volume-count ceiling.
+
 ## Reference
 
 Written as bilingual single files: Japanese and English prose share the same tables, so these links
