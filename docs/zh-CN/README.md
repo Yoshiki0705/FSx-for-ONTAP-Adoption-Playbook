@@ -23,6 +23,7 @@
 | 判断能否迁移以及如何迁移 | [迁移方式决策树](../ja/reference/decision-trees/migration-method.md) | 10 分钟 |
 | 查看已验证的上限值 | [上限值与配额](../ja/reference/limits/) | 5 分钟 |
 | 了解如何判读知识的可信度 | [知识分类政策](evidence-policy.md) | 5 分钟 |
+| 从公开信息中查找一次信息 | [公开的一次信息与案例入口](../ja/case-studies/public-references.md) (日本語) | 5 分钟 |
 | 补充知识（撰写） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分钟 |
 
 > **收录情况**：生命周期 6 个模块与主题 6 个模块目前处于"已定义待解决的问题与结构"的阶段（`notes/` 尚未收录）。

@@ -9,6 +9,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **An index of published primary sources**, at
+  [`docs/ja/case-studies/public-references.md`](docs/ja/case-studies/public-references.md).
+  Information about FSx for ONTAP is split across an AWS side and a NetApp side, and reading only one
+  hides constraints documented on the other. The page maps where things are rather than summarising
+  them, because summaries go stale while the structure lasts.
+  - It also carries a weighting table: the same `evidence` discipline applied to external sources.
+    A Q&A answer is a field observation, a vendor case study reports what worked and rarely what
+    constrained it, and a number without its measurement environment is unusable regardless of how
+    official the source is.
+  - Individual bloggers are deliberately not listed. A curated list of people cannot be kept current,
+    and inclusion or omission reads as a judgement. The page gives search strategies and a single
+    test instead: does the article state its ONTAP version, region, and configuration.
 - **The two first-touch guides are now available in all eight languages.** `navigation.md` and
   `evidence-policy.md` join the hub READMEs, so a reader arriving in their own language can find
   their way and understand the confidence signals before deciding whether to act.
@@ -70,4 +82,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Corrected
 
-- Nothing yet.
+- **The pre-production checklist cited an AWS Prescriptive Guidance URL that returns 404.** The page
+  appears to have been moved or retired since it was indexed. The affected claim — tier latency
+  levels — is now sourced to the AWS Storage Blog sizing article, which states it directly. Re-sourcing
+  also surfaced a more actionable fact that has been added: tiering behaviour changes by utilization
+  band, and stops entirely at 98% SSD, not merely degrading past the 80% recommendation.
+- `tools/check_links.py --external` reported false failures for hosts that redirect a `HEAD` to a
+  landing or sign-in page returning 404 while `GET` answers 200. A failure is now confirmed with
+  `GET` before being reported. Reporting working links as broken trains people to ignore the check.

@@ -23,6 +23,7 @@
 | Decidir si migrar y cómo hacerlo | [Árbol de decisión: método de migración](../ja/reference/decision-trees/migration-method.md) | 10 min |
 | Consultar los límites verificados | [Límites y cuotas](../ja/reference/limits/) | 5 min |
 | Entender cómo leer los niveles de confianza | [Política de niveles de evidencia](evidence-policy.md) | 5 min |
+| Encontrar fuentes primarias públicas | [Fuentes públicas y cómo ponderarlas](../ja/case-studies/public-references.md) (日本語) | 5 min |
 | Añadir conocimiento (redacción) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
 > **Estado de la cobertura**: los 6 módulos de ciclo de vida y los 6 módulos temáticos definen por ahora

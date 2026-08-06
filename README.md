@@ -23,6 +23,7 @@
 | 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) | 10 分 |
 | 検証済みの上限値を確認する | [上限値・クォータ](docs/ja/reference/limits/) | 5 分 |
 | 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
+| 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
 > **収録状況**: ライフサイクル 6 モジュールとテーマ 6 モジュールは、いまは「扱う問いと構造を定義した段階」です（`notes/` は未収録）。各モジュールの README に、そのモジュールが答える予定の問いが一覧されています。
