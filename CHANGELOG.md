@@ -9,6 +9,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [throughput is not set by one value](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md).
+  The ceiling depends on generation, AZ configuration, and **region** — first-generation file systems
+  reach half the documented IOPS and throughput outside four named regions. Raising the throughput
+  setting alone does not reach the ceiling either; it requires a matching SSD capacity and IOPS
+  configuration.
+  - The consequence most likely to be designed around wrongly: a FlexVol lives on exactly one
+    aggregate, and each HA pair has one aggregate. So a file system with twelve HA pairs still serves
+    a FlexVol at one pair's performance. Using more than one pair in a single namespace requires a
+    FlexGroup, spanning all aggregates with an even constituent count.
+  - Also recorded that adding HA pairs raises the **minimum** throughput, not just the maximum, so
+    it is a cost decision as well as a performance one.
 - Note: [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md).
   SMB migrations lose ACLs for two reasons that have nothing to do with tool capability — the defaults
   do not include them, and an account without the right privilege skips unreadable ACLs silently and
