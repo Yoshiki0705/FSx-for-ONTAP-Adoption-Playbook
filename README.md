@@ -26,8 +26,24 @@
 | 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
-> **収録状況**: ライフサイクル 6 モジュールとテーマ 6 モジュールは、いまは「扱う問いと構造を定義した段階」です（`notes/` は未収録）。各モジュールの README に、そのモジュールが答える予定の問いが一覧されています。
-> 骨組みだけの入口に読者の時間を使わせないため、上の表には**いま中身がある資料だけ**を載せています。モジュールの全体像は下の 2 軸ナビゲーションを参照してください。
+> **収録状況**: 12 モジュールのうち 8 モジュールに中身があります（`notes/` 7 本、`checklists/` 1 本）。
+> 残る 4 モジュール（[`02-design/`](docs/ja/playbooks/02-design/)、[`06-optimize/`](docs/ja/playbooks/06-optimize/)、[`security-governance/`](docs/ja/domains/security-governance/)、[`cost/`](docs/ja/domains/cost/)）は、扱う問いを定義した段階です。
+> 骨組みだけの入口に読者の時間を使わせないため、上の表と下の一覧には**いま中身がある資料だけ**を載せています。各モジュールの README には、そのモジュールが答える問いと、答えが未収録かどうかが一覧されています。
+
+### いま読める知見
+
+各ノートは「1 ファイル = 1 論点」で、**一次情報の出典**と**自分の環境で確かめる手順**を必ず含みます。
+
+| 知見 | 答えていること |
+|---|---|
+| [容量が余っていても書けなくなる](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | 棚卸しでファイル数を数える理由。inode の既定値は 648 GiB を超えると増えません |
+| [ACL 保持は権限の問題であってツールの問題ではない](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) | 既定値のまま実行すると ACL が黙って落ち、それでも「成功」で終わります |
+| [監視は平均値で失敗する](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 閾値より先に統計値を決める理由。待機系ノードが平均を引き下げます |
+| [Snapshot があることと復旧できることは別](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに守れる障害が違います。Snapshot はボリュームと一緒に失われます |
+| [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
+| [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わり、FlexVol は 1 HA ペアを超えられません |
+| [FSx for ONTAP S3 AP は「S3 として使える」わけではない](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・同一リージョンなどの前提条件が設計段階の制約になります |
+| [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) | 不可逆な設定と、本番前に実際に試しておく項目のチェックリスト |
 
 ---
 
