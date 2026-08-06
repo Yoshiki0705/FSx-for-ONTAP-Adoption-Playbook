@@ -2,5 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "A ruff bump usually widens the default rule set, so findings appear on code that has not changed. They must be fixed in the same pull request or the lint gate stays red.",
+      "matchPackageNames": [
+        "ruff"
+      ],
+      "prBodyNotes": [
+        "**A newer `ruff` may report findings on code that has not changed.** Install this version, run `make lint`, and fix what it reports **in this pull request** - otherwise the lint gate stays red and the bump cannot merge. See the Core Commands section of `AGENTS.md`."
+      ]
+    }
   ]
 }
