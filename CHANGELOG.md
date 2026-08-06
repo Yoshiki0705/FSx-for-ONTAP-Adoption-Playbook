@@ -9,6 +9,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **First `verified` entries from a live environment**, in [limits](docs/ja/reference/limits/): SSD IOPS
+  defaulting to 3 per GiB, `AUTO` cooling defaulting to 31 days and `SNAPSHOT_ONLY` to 2 across 32
+  volumes, first-generation Single-AZ running one HA pair, the maintenance window format, and the absence
+  of any deployment-type parameter on `update-file-system`. All matched the documentation.
+  - Recorded with the environment and method the evidence policy requires, including two honest gaps:
+    **the ONTAP version could not be captured** (`DescribeFileSystems` returned no
+    `FileSystemTypeVersion`), and the measurement was **read-only observation** — nothing was created,
+    modified or deleted.
+  - A **"not yet measured" table** lists what stays `documented` and names the operation each would
+    require, so the boundary between observed and cited is visible rather than implied. No note was
+    promoted to `verified` wholesale, because no note's central thesis was reproduced end to end — only
+    specific values were.
 - Note: [p99 cannot be read from the CloudWatch metrics](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
   The volume latency metrics expose **total time and total operation count, with `Sum` as the valid
   statistic** — so dividing them yields an average by construction and **tail latency is not derivable
@@ -330,6 +342,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - `tools/new_note.py` accepts both `domains/performance` and `docs/ja/domains/performance`.
 
 ### Corrected
+- **The inode arithmetic in the assess note was measured and did not reproduce.** The note published a
+  break-even average file size table derived from the documented statement that volumes of 648 GiB or
+  more all default to 21,251,126 inodes. Reading `FilesCapacity` on a live file system showed inode
+  capacity **scaling linearly with volume size instead**: 100 GiB → 3,112,959, 1 TiB → 31,876,709,
+  2 TiB → 63,753,417, and a FlexGroup at the same ratio. The 2 TiB to 1 TiB ratio is **exactly 2.0**, and
+  both are above 648 GiB, so the cap did not apply in this environment.
+  - All four values match `size × 0.95 ÷ 32 KiB` to within 1–24 inodes, consistent with the documented
+    default ratio being applied to post-reserve capacity at every size rather than capping.
+  - The published table implied ~505 KiB at 10 TiB and ~2.5 MiB at 50 TiB as the point where inodes run
+    out first. **Those figures are removed**, since a linear default puts the break-even near 32 KiB at
+    any size — a materially different design conclusion.
+  - The note's thesis is unaffected and is now stated as the actionable form: inodes are finite and
+    exhausting them stops writes with capacity to spare, so **read `FilesCapacity` rather than assuming a
+    number.** Both the documented and the measured value are recorded side by side in
+    [limits](docs/ja/reference/limits/), which is what that page's own recording rule requires.
+  - This is the repository's own argument landing on itself: the arithmetic was correct, its premise was
+    documented, and it still did not survive a measurement.
 
 - **All eight hub READMEs claimed `notes/` was not yet populated.** That stopped being true once the
   first notes landed, and it was the most misleading sentence in the repository: it sat on the landing
