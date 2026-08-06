@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [having snapshots is not the same as being able to recover](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md).
+  Snapshot, backup, and SnapMirror cover **different failure domains**, and the mechanism most people
+  rely on does not survive the failure they most fear: a snapshot lives inside the same file system,
+  which is why restores are fast and also why the snapshot is lost along with the volume or file system.
+  - The finding most likely to break a DR design: **read-write is the only volume type that can be
+    backed up.** Data-protection, load-sharing-mirror, and FlexCache/SnapMirror destination volumes
+    cannot be. So "replicate to another Region with SnapMirror, then back up the replica" does not
+    work — the backup has to be taken on the source side.
+  - Restores are not unconditional. If a snapshot newer than the restore target is tied to an existing
+    backup, **the restore is refused** until the newer side is removed. That is a constraint people
+    tend to discover mid-incident, so the note puts it in the drill rather than in a warning box.
+  - Recovery time depends on generation: second-generation file systems give read access within minutes
+    of starting a restore, while first-generation waits for the whole volume. The same RTO cannot be
+    claimed for both.
 - Note: [FSx for ONTAP S3 AP is not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md).
   Access points attached to an FSx for ONTAP volume carry restrictions that bucket access points do
   not: ONTAP 9.17.1 or later, same AWS account, same Region. Cross-account designs do not work at all,
