@@ -9,6 +9,33 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [an S3 access point authorizes every request as one identity](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md).
+  `FileSystemIdentity` is the identity used to authorize **all** file access requests made through an S3
+  access point, so **the original per-file ACLs do not carry into anything reading through it.** IAM and
+  CloudTrail still show who called, but the file-system layer never evaluated whether that person could
+  read the file.
+  - This is the starting point for AI and RAG permission design, not a detail: permissions are flattened
+    at the moment the index is built, so retrieval scoping has to be designed **in the index** — either
+    one index and access point per permission boundary, or permission metadata carried in the index and
+    filtered at query time. Leaving it to file ACLs does not work on this path.
+  - Covers the three ways to reach data without copying and what each costs: S3 access points, FlexClone,
+    and FlexCache. **FlexCache suits read-heavy workloads with infrequent changes**, because a change at
+    the origin requires the cache to refresh — and cache misses and writes are both bound by the link to
+    the origin, so the path decides the performance rather than the cache existing.
+  - Both FlexCache and FlexClone are **ONTAP CLI only**, which is another instance of the IaC boundary.
+- Note: [enabling SnapLock is not the same as locking](docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md).
+  SnapLock carries **three separate irreversible decisions**: enabling it on a volume, the retention mode
+  (`COMPLIANCE` or `ENTERPRISE`, which cannot be changed once set), and permanently disabling privileged
+  delete, which is a terminal state. And enabling SnapLock locks nothing by itself — the retention period
+  and the WORM transition do.
+  - Privileged delete is narrower than it sounds. It is Enterprise-only, requires a **SnapLock audit log
+    volume in the same SVM** first (minimum retention six months), and **cannot be used on a file whose
+    retention has already expired** — a normal delete is what works then. Reading it as "an admin can
+    always delete" produces the wrong runbook.
+  - Ransomware readiness is written as four layers with each limit stated: prevention via FPolicy only
+    catches extension-driven behaviour, detection is not recovery, snapshots live in the same file system
+    and die with the volume, and SnapLock Compliance buys immutability at the price of **not being able to
+    delete it yourself either**, which is a capacity commitment for the length of the retention period.
 - Note: [maintenance cannot be deferred past 14 days](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
   ONTAP patching is performed by the service, so the only decision is when. And the deferral has a hard
   edge: **a maintenance window must occur at least once every 14 days**, and if a patch is released and no
