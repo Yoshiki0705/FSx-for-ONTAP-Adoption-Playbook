@@ -97,8 +97,8 @@ serve both languages and there is no separate `docs/en/reference/` tree.
 
 ## Case studies
 
-- [Case studies](docs/en/case-studies/): Generalized lessons from field work. Contains no company names,
-  no real identifiers, and no configurations that could identify an organization.
+- [Case studies](docs/en/case-studies/): Three kinds are kept apart so a reader can tell whose environment is being described. Public case studies published by AWS or NetApp are organized as a linked index; field cases are generalized lessons from technical-support work; verification cases are observations in this repository's own environment. Field and verification cases contain no company names, no real identifiers, and no configurations that could identify an organization.
+- [Published case studies by industry and workload](docs/ja/case-studies/public-case-studies.md): A linked index of AWS and NetApp case studies, searchable along two axes — industry (energy, semiconductor/EDA, financial services, healthcare, medical devices, telecom, public health and education, media, IT) and workload (NAS migration, SQL Server, EDA, SaaS tenancy, hybrid and branch caching, media production, multi-Region). Figures from those accounts are deliberately not restated: most published case studies omit the ONTAP version, Region, configuration and measurement method, so they establish where a topic is discussed rather than a value to design against.
 
 ## Optional
 

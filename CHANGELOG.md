@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Case studies are now findable by industry and by workload**, via a new linked index of
+  [published FSx for ONTAP case studies](docs/ja/case-studies/public-case-studies.md). Both axes reach the
+  same material, because a matching workload is often more useful than a matching industry and a reader
+  arriving with either attribute should land somewhere.
+  - Industry axis: energy, semiconductor/EDA, financial services, healthcare, medical devices, telecom,
+    public health and education, media, and IT — plus one account whose industry is not disclosed.
+    Workload axis: NAS migration, SQL Server, EDA, SaaS tenancy, hybrid and branch caching, media
+    production, and multi-Region deployment.
+  - **Figures from those accounts are deliberately not restated.** Most published case studies omit the
+    ONTAP version, Region, configuration and measurement method, which puts them below `documented` in
+    this repository's terms — they establish that an organization published an account, not a value to
+    design against. A seven-point "what to check while reading" table makes that judgement transferable
+    instead of asking readers to take it on trust.
+  - Industry-specific *design* material is listed separately from case studies, since an EDA best-practices
+    paper is more use for a decision than an EDA success story. TR-4937 is cited **by report number rather
+    than URL**, because that distribution URL moves and a number does not.
+  - The directory now separates **three** kinds rather than two: public, field, and verification.
 - **`case-studies/` has its first entry**, and the directory now distinguishes **two kinds**: field cases
   from technical-support work, and **verification cases from this repository's own environment.** The
   distinction exists so a reader cannot mistake whose environment is being described — both are

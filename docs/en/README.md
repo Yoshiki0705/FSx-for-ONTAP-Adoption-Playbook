@@ -25,6 +25,7 @@
 | Compare the trade-offs between options | [Comparison Matrices](../ja/reference/comparison/) | 10 min |
 | Learn how to read the confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
 | Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
+| Find a case study for your industry or workload | [Published FSx for ONTAP case studies](../ja/case-studies/public-case-studies.md) (日本語) | 10 min |
 | Learn from a judgement that went wrong | [Case studies](case-studies/README.md) | 10 min |
 | Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
