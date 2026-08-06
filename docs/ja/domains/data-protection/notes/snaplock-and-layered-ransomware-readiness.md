@@ -143,7 +143,7 @@ Compliance と Enterprise の差は 1 点に集約されます。**Enterprise �
 ONTAP レベルの削除拒否メッセージは阻害要因を 5 つ列挙します。**未期限の WORM ファイル、リーガルホールド下のファイル、未期限のロック済み Snapshot、未期限の監査ログボリューム、保留中の WAFL スキャンのためオンラインが必要** — です。削除できない場合、このどれに該当するかを確認してください。
 
 > **この節の区分**: 削除できなくなる対象の範囲は `documented`（[AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html)）。
-> 操作の可否と各エラーは `verified`（検証日 2026-08-06 / 2026-08-07、`ap-northeast-1`、
+> 操作の可否と各エラーは `verified`（検証日 2026-08-06、`ap-northeast-1`、
 > `SINGLE_AZ_1`、ONTAP `9.17.1P7D1`）。エラーコードを含む全記録は
 > [上限値・クォータ](../../../reference/limits/) にあります。
 

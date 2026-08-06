@@ -244,6 +244,57 @@ Do not add "Persona Review Summary" sections, review rounds, review dates, lens 
 `R1/F2/EXT/Round` tags. They are noise for humans and inflate token cost and hallucination risk for
 crawlers. Review provenance belongs in `.private/`.  <!-- gitleaks:allow -->
 
+## Immutability (WORM) features: never enable one on your own judgement
+
+**This is the hardest rule in this file. It exists because it was broken.**
+
+On 2026-08-06 an agent working in this repository created an FSx for ONTAP SnapLock audit log volume to
+verify a documented claim. It did not ask which retention period to use, and it read the warning that
+governs the operation only *after* the operation would not reverse. One 128 MiB volume made the volume,
+its SVM, and **the entire file system** undeletable for six months. The agent had already set privileged
+delete to `PERMANENTLY_DISABLED`, closing the last escape route. The verification produced no usable
+finding. A support case was opened; the constraint is documented and working as designed.
+
+The lesson generalizes past SnapLock:
+
+> **A feature whose purpose is to remove your ability to delete data must never be enabled by an agent
+> acting on its own judgement.** When such a feature works correctly it is indistinguishable from an
+> outage you caused. There is no rollback, and the blast radius is routinely wider than the resource
+> named in the call.
+
+### Operations that require an explicit human instruction naming the retention value
+
+| Service | Operation or parameter |
+|---|---|
+| FSx for ONTAP | `SnaplockConfiguration`, `SnaplockType`, `AuditLogVolume`, `PrivilegedDelete`, `RetentionPeriod`, `VolumeAppendModeEnabled`, ONTAP `snaplock` / `audit-logs` endpoints |
+| Amazon S3 | Object Lock configuration, `put-object-retention`, `put-object-legal-hold` |
+| S3 Glacier | `initiate-vault-lock`, `complete-vault-lock` |
+| AWS Backup | Vault Lock (`put-backup-vault-lock-configuration`), compliance mode |
+| Amazon EBS | `lock-snapshot` |
+| Anywhere | any value literally named `PERMANENTLY_DISABLED`, `COMPLIANCE`, or an equivalent terminal state |
+
+### The gate
+
+1. **Never infer a retention period, and never accept a service default silently.** State the minimum the
+   service permits and ask which value to use. If the minimum is already unacceptable, say so and stop —
+   that was the case here, where the audit log floor of six months was the whole problem.
+2. **State the widest scope before acting**: volume, SVM, file system, bucket, vault, account. Name the
+   period, and the cost of holding that scope for its whole duration.
+3. **Say plainly whether any documented path reverses it early.** For a SnapLock audit log volume there is
+   none short of closing the account.
+4. **Read the delete/teardown page before the create page.** Reversibility is a property of the exit, and
+   the exit is documented separately from the entry. Here the governing text was a warning on
+   [Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html),
+   not on the page describing how to turn the feature on.
+5. **Verification is not an exemption.** Use a disposable, dedicated file system or account. The incident
+   above *was* verification work.
+6. **Do not combine irreversible operations without re-asking.** Ordering narrows the exits: privileged
+   delete was disabled first, so the WORM log files could not be removed later.
+
+`scripts/guard_irreversible_ops.py` enforces this mechanically — it blocks a matching mutating command and
+allows read-only inspection. Wire it to a `PreToolUse` hook. **If it blocks you, do not look for a call
+that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories.
+
 ## Documentation Design Principles
 
 ### Hub & Spoke
@@ -432,6 +483,9 @@ Surface findings explicitly and fix before finalizing.
 | Creating `docs/en/reference/` for one file | `reference/` is bilingual single files today. Follow that style or split the whole tree deliberately |
 | Bare `FSx` or `FSxN` slipping into prose | `make audit` fails. Only "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" |
 | Suggesting BlueXP / Workload Factory / NetApp Console | Reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / Snapshot-FlexClone-SnapMirror |
+| **Enabling any immutability feature without an explicit instruction naming the retention value** | Stop and ask. See [Immutability (WORM) features](#immutability-worm-features-never-enable-one-on-your-own-judgement). A 128 MiB SnapLock audit log volume locked a whole file system for six months |
+| Reading the "how to enable" page but not the "how to delete" page | Reversibility is documented on the teardown page. Read the exit before the entry |
+| Treating verification as a reason to skip the irreversibility gate | Use a disposable file system or account. The incident that created this rule was verification work |
 | Vendor-versus phrasing in a comparison | State trade-offs symmetrically and add a "how to choose" section |
 | Invented `**X Engineer lens**` callout | Relabel to a neutral topic note (`**Security note**`) |
 | Case study with a recognizable configuration | Abstract to industry + scale band; drop anything identifying |

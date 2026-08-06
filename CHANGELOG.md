@@ -9,6 +9,33 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A rule, a mechanism, and a note covering irreversible operations**, written because this repository
+  broke the rule it already documented. During the verification recorded below, a SnapLock audit log
+  volume was created without asking which retention period to use, and the governing warning was read
+  only after the operation would not reverse. One 128 MiB volume made the volume, its SVM, and **the whole
+  file system** undeletable for six months. Privileged delete had already been set to
+  `PERMANENTLY_DISABLED`, closing the last route out. **The feature behaved exactly as specified** — the
+  failure was in the approval step, and the verification itself produced no usable finding.
+  - New note: [approval for an irreversible operation is separate from approval for the task](docs/ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md).
+    It states the gate — never infer a retention value, name the widest scope and its cost, say whether
+    any documented early exit exists, and **read the delete page before the enable page**, because
+    reversibility is a property of the exit and is documented separately from the entry.
+  - The scope is deliberately wider than SnapLock. The same shape appears in S3 Object Lock, S3 Glacier
+    Vault Lock, AWS Backup Vault Lock, and EBS snapshot lock: **a feature whose purpose is to remove the
+    ability to delete cannot be enabled on an implementer's own judgement**, because working correctly it
+    is indistinguishable from an outage you caused.
+  - New mechanism: `scripts/guard_irreversible_ops.py`, stdlib-only and project-agnostic, blocks matching
+    mutating commands while leaving read-only inspection alone — an implementer who cannot read the current
+    state will guess instead. It blocks rather than prompts, on the reasoning that a prompt gets approved
+    in the flow of work whereas a block forces the reasoning into the conversation. Over-blocking is
+    treated as a defect for the same reason: a guard that fires on reads gets switched off, and one such
+    case (`get-object-lock-configuration` matching a `lock-` verb) was found and fixed during testing.
+  - `AGENTS.md` carries the rule so it travels with the repository, and the pre-production checklist now
+    lists the audit log volume and the permanently-disabled state among the irreversible items — the
+    checklist previously named SnapLock enablement but not either of these.
+  - **Deciding not to use privileged delete removes the exposure entirely**, since the audit log volume is
+    only required in order to use it. That is now the first thing the checklist asks.
+
 - **Verified against a live file system through the ONTAP REST API**, which reaches behaviour the AWS API
   does not expose. Recorded in [limits](docs/ja/reference/limits/) with the environment and the access path.
   - **A SnapLock audit log volume locks the volume, its SVM, and the whole file system from deletion for at

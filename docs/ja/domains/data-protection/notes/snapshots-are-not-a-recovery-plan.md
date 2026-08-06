@@ -106,7 +106,7 @@ Snapshot 予約の既定は 5% です。
 > エラーは `No space left on device` なので、**個数の上限に達したのか容量が足りないのかは、メッセージからは
 > 区別できません。** 両方を確認してください。
 
-> **この節の区分**: `verified`（検証日 2026-08-07）。`ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、
+> **この節の区分**: `verified`（検証日 2026-08-06）。`ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、
 > ONTAP `9.17.1P7D1`。**Amazon FSx の `CreateSnapshot` は FSx for OpenZFS 専用**のため、 <!-- allow:naming - AWS の API 名 -->
 > ONTAP REST API で作成しました。記録は [上限値・クォータ](../../../reference/limits/) にあります。
 
