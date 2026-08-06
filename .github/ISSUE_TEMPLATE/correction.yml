@@ -9,13 +9,36 @@ body:
         Corrections are as valuable as new content. If a note's `evidence` tier overstates its
         support, that is worth reporting even when the underlying claim turns out to be right.
 
+        **Translation reports are equally welcome.** Everything outside Japanese and English is
+        machine-assisted and has not been reviewed by a native speaker before publication, so
+        awkward phrasing and mistranslated terms are expected to reach you before they reach us.
+        You do not need to propose a replacement — pointing at the sentence is enough.
+
   - type: input
     id: file
     attributes:
       label: File and line
-      placeholder: domains/performance/notes/example.md:42
+      placeholder: docs/ja/domains/performance/notes/example.md:42
     validations:
       required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      description: The language of the file you are reporting. Leave as-is if it does not apply.
+      options:
+        - Not language-specific
+        - ja
+        - en
+        - ko
+        - zh-CN
+        - zh-TW
+        - fr
+        - de
+        - es
+    validations:
+      required: false
 
   - type: dropdown
     id: kind
