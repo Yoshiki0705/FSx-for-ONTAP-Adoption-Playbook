@@ -104,7 +104,7 @@ python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffo
 │   │   ├── domains/<module>/README.md
 │   │   └── case-studies/README.md
 │   └── ko/ zh-CN/ zh-TW/ fr/ de/ es/     # README.md hubs for now
-├── tools/                          # Validation + scaffolding scripts (Python 3.12, stdlib only)
+├── tools/                          # Validation + scaffolding scripts (Python 3.12+, stdlib only)
 ├── scripts/                        # Maintenance helpers
 ├── .kiro/                          # Kiro steering + MCP (gitignored, local only)  <!-- gitleaks:allow -->
 └── .private/                       # Non-public source notes (gitignored, never committed)  <!-- gitleaks:allow -->
@@ -465,5 +465,6 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 - Primary region for verification: `ap-northeast-1` (Tokyo)
 - ONTAP baseline for carried-over findings: 9.17.1P7D1
-- Tooling: Python 3.12 (stdlib only for `tools/`), `ruff` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`. CI installs `ruff` from the pinned file rather than resolving the latest release, so the lint verdict does not depend on the day it runs
+- Tooling: Python 3.12 or later (stdlib only for `tools/`; CI runs 3.14), `ruff` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`. CI installs `ruff` from the pinned file rather than resolving the latest release, so the lint verdict does not depend on the day it runs
+- A CI interpreter bump is a documentation change too: the version appears in prose in `AGENTS.md` and `CONTRIBUTING.md`, and a dependency bot cannot update prose. State the supported floor as a range and the CI version separately, so a later bump touches one line instead of three
 - No application runtime, no AWS deployment from this repository
