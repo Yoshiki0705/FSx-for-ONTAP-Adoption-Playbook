@@ -9,6 +9,42 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [maintenance cannot be deferred past 14 days](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
+  ONTAP patching is performed by the service, so the only decision is when. And the deferral has a hard
+  edge: **a maintenance window must occur at least once every 14 days**, and if a patch is released and no
+  window happens in that period, maintenance proceeds anyway.
+  - Two states make patching materially worse, and both are avoidable in advance. **SSD above 90% causes
+    throughput to be throttled for the duration of patching** — a third consequence of that band, on top
+    of the caching change already recorded. And on Multi-AZ, **missing routes with no room left in the
+    route table disconnect connected clients** for the duration of patching.
+  - The I/O pause happens **twice**, not once: failover before patching a file server and failback after,
+    each under 60 seconds. Whether that is acceptable is decided by application timeouts, not by the
+    storage figure, so the drill measures the application rather than the platform.
+  - Also recorded: offline volumes are brought online for the patching window and are **not accessible to
+    clients** while that lasts, so a deliberately offline volume does not stay offline.
+- Note: [the IaC boundary is set by the API surface](docs/ja/playbooks/04-build/notes/what-iac-cannot-reach.md).
+  What to manage in IaC is settled before it is decided, because some settings simply cannot be reached
+  that way. File systems, SVMs, volumes, backups and tags are template-managed; **SMB encryption
+  enforcement, the volume inode maximum and FlexVol-to-FlexGroup conversion are ONTAP CLI only.** So a
+  successful template does not mean a complete configuration, and verification has to cover two layers.
+  - The trap in the template itself: **`RootVolumeSecurityStyle` on an SVM is `Replacement`**, so changing
+    it recreates the SVM. That is a different situation from volume-level security style, which is
+    modifiable.
+  - **Omitting `SvmAdminPassword` costs least privilege**: without it, managing that SVM requires
+    `fsxadmin`, which is a file-system-wide administrator. Setting it allows `vsadmin` instead.
+  - FlexClone has an interaction worth knowing before relying on it for test environments: **creating a
+    clone after an SSD decrease operation has started pauses that operation** until the clone is deleted.
+- Note: [the rollback window closes when clients start writing](docs/ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md).
+  A SnapMirror destination is **read-only until the relationship is broken**, and breaking it does not
+  affect the source — so rollback is free right up until clients write to the destination. After that,
+  going back means discarding those writes or reversing the replication direction. **There is no "undo
+  the cutover" operation**, which is why the note frames rollback as a data decision rather than a
+  configuration one.
+  - The largest schedule risk is elsewhere: **incremental transfer depends on the newest common snapshot**,
+    so deleting SnapMirror's snapshots on the source forces a full baseline transfer again.
+  - Records that downtime is bounded by `quiesce` through remount, not by transfer time, so the thing to
+    shorten is the cutover procedure. And that `Idle` means "not transferring", not "current" — data
+    recency is read from `Last Transfer End Timestamp`.
 - Note: [tiering defaults differ by creation method](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md).
   **The default tiering policy depends on how the volume was created.** The console defaults to `Auto`
   with a 31-day cooling period; the AWS CLI, the API and the ONTAP CLI default to `Snapshot Only` with

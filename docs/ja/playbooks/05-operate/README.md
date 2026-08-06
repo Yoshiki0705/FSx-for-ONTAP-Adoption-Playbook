@@ -17,8 +17,8 @@
 | 1 | 何を監視し、どこに閾値を置くか | [監視は平均値で失敗する](notes/monitoring-fails-on-averages.md) |
 | 2 | 容量の枯渇をどう予兆検知するか | [SSD 利用率の帯域と各点で変わること](notes/monitoring-fails-on-averages.md#ssd-利用率の帯域と各点で変わること) |
 | 3 | 性能劣化の切り分け手順はどうなるか | [切り分け順](notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) |
-| 4 | ONTAP のバージョン更新をどう扱うか | _未追加_ |
-| 5 | インシデント時の初動をどう定義するか | _未追加_ |
+| 4 | ONTAP のバージョン更新をどう扱うか | [メンテナンスは 14 日を超えて延期できない](notes/maintenance-cannot-be-deferred.md) |
+| 5 | インシデント時の初動をどう定義するか | [インシデント時の初動](notes/maintenance-cannot-be-deferred.md#インシデント時の初動) |
 
 ---
 
