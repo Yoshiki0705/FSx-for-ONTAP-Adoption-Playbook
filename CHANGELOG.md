@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- Note: [free space does not mean you can still write](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md).
+  A volume counts files, directories **and snapshot copies** as inodes, and once inodes are exhausted
+  the volume rejects writes even with capacity left. The trap is in how the default scales: **one inode
+  per 32 KiB only up to 648 GiB.** Past that, every volume gets the same 21,251,126 regardless of size,
+  so a 10 TiB volume has the same default inode budget as a 648 GiB one.
+  - The note publishes the break-even average file size derived from that default — below roughly
+    **505 KiB on a 10 TiB volume, or 2.5 MiB on a 50 TiB volume**, inodes run out before capacity. These
+    are labelled as arithmetic from the documented default, not measurements. Raising the limit helps but
+    is bounded: one inode per 4 KiB, hard-capped at 2 billion per volume, which still leaves ~27 KiB as
+    the break-even on 50 TiB.
+  - The rest of the inventory is organized by **which later decision consumes each measurement**, on the
+    principle that an item is only worth collecting if a decision changes based on its value — and that
+    the items skipped are the ones that resurface as irreversible settings. Each row links to the note
+    that establishes the dependency, so 01-assess now acts as the entry point into the rest of the repo.
+  - Also recorded: protocol inventory taken from configuration is wrong in both directions (enabled but
+    unused shares, and paths absent from the register), and a performance baseline recorded without the
+    region, generation and statistic cannot be compared against after migration.
 - Note: [monitoring fails on averages](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md).
   Which statistic you graph has to be decided before the threshold, because `Average` hides saturation
   for two structural reasons: **odd-numbered file servers are preferred and even-numbered ones are
