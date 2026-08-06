@@ -164,10 +164,26 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 
 | 項目 | 規約 |
 |---|---|
-| ブランチ | `docs/<short-description>` または `feat/<short-description>` |
-| コミットメッセージ | Conventional Commits（`docs:` / `feat:` / `fix:` / `chore:` / `ci:`）、72 文字以内 |
-| PR タイトル | `<type>: <description>`、70 文字以内。CI が検査 |
+| ブランチ | `<type>/<what>`、kebab-case、40 文字以内。例: `docs/lang-directory-layout` |
+| コミット件名 | Conventional Commits（`docs:` / `feat:` / `fix:` / `chore:` / `ci:`）、72 文字以内、命令形、句点なし |
+| コミット本文 | 72 桁で折り返し。**なぜ**を先に書く（何をしたかは差分が示します） |
+| PR タイトル | `<type>: <description>`、70 文字以内。CI が検査。**squash merge の件名になります** |
 | PR 本文 | [テンプレート](.github/PULL_REQUEST_TEMPLATE.md) に従う |
+| マージ方式 | squash merge。`main` を線形に保ち、詳細は PR 本文に残します |
+
+### ブランチ名とコミットメッセージも公開物です
+
+検索インデックスに載り、実質的に永続します。形式だけでなく中身にも規約があります。
+
+| ルール | 理由 |
+|---|---|
+| **追加・変更する内容**を名前にする。以前が何を欠いていたかは書かない | ブランチ名は PR ページに永久に残り、過去の成果への評定として読まれます。`docs/readme-honest-coverage` は過去を裁いており、`docs/module-status-accuracy` は変更を説明しています |
+| 文ではなく名詞句 | `docs/lang-directory-layout`（○）/ `docs/move-all-docs-under-lang`（×） |
+| 1 ブランチ 1 論点 | 名前が中身を説明しなくなったら**分割**します。曖昧な名前に変えて済ませないでください |
+| 日付・チケット ID・個人名・ツールやセッションへの言及を入れない | `docs/phase3-20260806` や `docs/agent-session-2` は経緯を漏らし、すぐ陳腐化します |
+| 件名は活動ではなく効果を書く | `docs: add environment-first entry`（○）/ `docs: update navigation.md`（×） |
+
+**ブランチ名・件名・本文・PR 本文に書かないもの**: 個人名、レビュー回数や観点数、企業・組織名、サポートケース番号、ベンダー内部 ID、実アカウント ID や IP、個人のパス、ベンダー対決表現。プロセスメタデータを禁じる理由は公開ドキュメントと同じで、読者にとって雑音であり、作業時期に縛られるためです。
 
 マージ前のゲート:
 

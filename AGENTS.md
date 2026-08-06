@@ -178,6 +178,30 @@ This is a public repository. Git history is permanent and search-indexed.
 
 Names are acceptable in `.private/` and `.kiro/` (both gitignored). Never in tracked files.  <!-- gitleaks:allow -->
 
+### Branch names and commit messages are public output too
+
+They are indexed, quoted in release notes, and effectively permanent. The existing rules cover their
+*form*; these cover their *content*.
+
+**Branch names** — `<type>/<what>`, kebab-case ASCII, ≤ 40 characters.
+
+| Rule | Why |
+|---|---|
+| Name what the branch **adds or changes**, never what was wrong before | A name is visible on the pull request page forever and reads as a verdict on earlier work. `docs/readme-honest-coverage` judges the past; `docs/module-status-accuracy` describes the change |
+| Noun phrase, not a sentence | `docs/lang-directory-layout`, not `docs/move-all-docs-under-lang` |
+| One concern per branch | When the name stops describing the contents, split the branch. Do not rename it to something vaguer |
+| No dates, ticket IDs, person names, or tooling/session references | `docs/phase3-20260806`, `docs/agent-session-2` leak process and rot immediately |
+
+**Commit subjects** — `<type>(<scope>): <what changed>`, ≤ 72 characters, imperative, no trailing period.
+
+State the effect, not the activity: `docs: add environment-first entry`, not `docs: update navigation.md`. The diff already lists files; the subject is for the reader scanning `git log --oneline`.
+
+**Commit bodies** — wrap at 72. Lead with **why**: the problem the change addresses, since the diff already shows what. Say what was deliberately left undone and which constraints were accepted. Corrections to an earlier commit are stated plainly, without apology.
+
+**Never in a branch name, subject, body, or PR text**: persona names, review rounds or counts, customer or organization names, support case numbers, vendor-internal IDs, real account IDs or IPs, personal paths, and vendor-versus phrasing. Process metadata is banned here for the same reason it is banned in published docs — it is noise for readers and it dates the work.
+
+**Merge strategy affects how long a branch name lives.** A squash merge keeps the pull request title and number in `main`; the branch name survives only on the pull request page. A merge commit embeds the branch name in `main` permanently. Squash is the default here — the pull request body carries the detail, and `main` stays readable.
+
 ### Do not invent role-labeled review notes
 
 Do **not** write inline callouts labeled with a job title or persona name (`> **AppSec lens**:`,
