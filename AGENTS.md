@@ -64,7 +64,12 @@ python3 tools/sync_lang_switcher.py --verify-parity   # JA/EN links must match m
 python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffold a note
 ```
 
-`make all` is the gate. Run it before every commit.
+`make all` is the gate. Run it before every commit — and specifically **after the last edit**, not before it.
+
+The pre-commit hook is not a substitute. It scans for secrets only, so a commit can pass the hook and
+still fail `markdown lint` in CI. The failure mode this produces is narrow and easy to walk into: run
+the gate, then touch one more file (a CHANGELOG entry is the usual candidate), then commit. Re-run the
+gate after that last edit.
 
 ## Repository Layout
 
