@@ -342,6 +342,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - `tools/new_note.py` accepts both `domains/performance` and `docs/ja/domains/performance`.
 
 ### Corrected
+
 - **The inode arithmetic in the assess note was measured and did not reproduce.** The note published a
   break-even average file size table derived from the documented statement that volumes of 648 GiB or
   more all default to 21,251,126 inodes. Reading `FilesCapacity` on a live file system showed inode
