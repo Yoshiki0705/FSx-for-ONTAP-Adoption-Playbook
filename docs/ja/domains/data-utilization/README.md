@@ -15,10 +15,10 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | # | 問い | ノート |
 |---|---|---|
 | 1 | S3 API 経由のアクセスで何ができ、何ができないか | [FSx for ONTAP S3 AP は「S3 として使える」わけではない](notes/s3-access-point-constraints.md) |
-| 2 | 分析基盤にどう接続するか | _未追加_ |
-| 3 | AI / RAG で権限をどう扱うか | _未追加_ |
-| 4 | データコピーを増やさない設計とは | _未追加_ |
-| 5 | 読み取り加速をどこで効かせるか | _未追加_ |
+| 2 | 分析基盤にどう接続するか | [分析基盤への接続](notes/reaching-data-without-copies.md#分析基盤への接続) |
+| 3 | AI / RAG で権限をどう扱うか | [権限が平坦化されることの意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味) |
+| 4 | データコピーを増やさない設計とは | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) |
+| 5 | 読み取り加速をどこで効かせるか | [FlexCache が効く条件](notes/reaching-data-without-copies.md#flexcache-が効く条件) |
 
 ---
 

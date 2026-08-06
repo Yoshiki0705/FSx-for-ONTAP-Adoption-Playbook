@@ -94,6 +94,8 @@ lang: ja
 
 Snapshot は容量プールではなく**ボリュームの容量**を消費します。そして削除したデータを Snapshot が保持している場合、**データを削除しても空き容量は増えません。**
 
+なお Snapshot が原因ではない場合もあります。**大量のデータやディレクトリを削除した直後は、空き容量の反映に時間がかかります。** ブロック所有権の計算処理が完了するまで、ブロックが空き容量に戻らないためです。これは想定された挙動で、ボリュームの性能には影響しません。**「削除したのに減らない」を Snapshot のせいと決める前に、時間を置いて再確認してください。**
+
 保持ポリシーは容量の見積もりに直接効きます。上限との関係は [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md#上限と保持期間) に、inode の消費は [容量が余っていても書けなくなる](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#snapshot-も-inode-を消費します) にあります。
 
 ---
@@ -164,7 +166,7 @@ graph TD
 | 2 | 容量プールへの読み取り・書き込みリクエスト数を一定期間集計する | リクエスト課金の規模。階層化の是非 |
 | 3 | 重複排除・圧縮の前後で「実使用量」と「確保容量」を分けて記録する | **効率化が請求に効いていないことの確認。** 確保容量を下げる根拠になります |
 | 4 | `All` 階層化ボリュームの SSD 消費を測る | メタデータ分が 1 : 10 の目安と合うか |
-| 5 | Snapshot を削除して空き容量の変化を見る | Snapshot が保持している容量 |
+| 5 | Snapshot を削除して空き容量の変化を見る | Snapshot が保持している容量。**大量削除の直後は反映に時間がかかります** |
 | 6 | 確保 IOPS が 3 IOPS/GB を超えているかを確認する | 追加課金が発生しているか |
 | 7 | 測定時のリージョン・世代・デプロイタイプを記録する | 単価も上限も変わるため、条件なしの数値は比較に使えません |
 
@@ -198,6 +200,7 @@ graph TD
 | 重複排除・圧縮はデータを縮めるが確保済みストレージに対して課金されること、階層化がコスト削減手段であること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
 | SnapLock ライセンスが課金要素に含まれること | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
 | 全書き込みが SSD 経由であること、メタデータが常に SSD にあること、1 : 10 の目安 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 大量削除の直後は空き容量の反映に時間がかかること（ブロック所有権の計算処理）、性能には影響しないこと | [AWS re:Post: Why didn't the available space update after I deleted a large amount of data?](https://repost.aws/knowledge-center/fsx-ontap-space-available-from-deletions) |
 
 ---
 

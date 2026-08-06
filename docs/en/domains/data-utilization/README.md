@@ -15,10 +15,10 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 | # | Question | Notes |
 |---|---|---|
 | 1 | What is and is not possible over the S3 API | [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) |
-| 2 | How to connect an analytics platform | _not yet added_ |
-| 3 | How to handle permissions in AI / RAG | _not yet added_ |
-| 4 | What a copy-minimizing design looks like | _not yet added_ |
-| 5 | Where read acceleration is worth applying | _not yet added_ |
+| 2 | How to connect an analytics platform | [Connecting an analytics platform](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#分析基盤への接続) (日本語) |
+| 3 | How to handle permissions in AI / RAG | [What flattened permissions mean](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) (日本語) |
+| 4 | What a copy-minimizing design looks like | [Three ways to reach data without copying](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) (日本語) |
+| 5 | Where read acceleration is worth applying | [When FlexCache helps](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) (日本語) |
 
 ---
 

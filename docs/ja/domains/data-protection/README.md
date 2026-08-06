@@ -16,9 +16,9 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 |---|---|---|
 | 1 | Snapshot ポリシーをどう設計するか | [上限と保持期間から逆算する](notes/snapshots-are-not-a-recovery-plan.md#上限と保持期間) |
 | 2 | SnapMirror で何が守られ、何が守られないか | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md#何から守れるのか) |
-| 3 | WORM / SnapLock をどう使い、何が不可逆か | _未追加_ |
+| 3 | WORM / SnapLock をどう使い、何が不可逆か | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) |
 | 4 | 復旧手順をどう検証するか | [復元を実際に試す手順](notes/snapshots-are-not-a-recovery-plan.md#自分の環境で確かめる) |
-| 5 | ランサムウェア対策として何が有効か | _未追加_ |
+| 5 | ランサムウェア対策として何が有効か | [ランサムウェア対策は層で考える](notes/snaplock-and-layered-ransomware-readiness.md#ランサムウェア対策は層で考える) |
 
 ---
 
