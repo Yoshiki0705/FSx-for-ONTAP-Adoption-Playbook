@@ -9,6 +9,42 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Verified against a live file system through the ONTAP REST API**, which reaches behaviour the AWS API
+  does not expose. Recorded in [limits](docs/ja/reference/limits/) with the environment and the access path.
+  - **A SnapLock audit log volume locks the volume, its SVM, and the whole file system from deletion for at
+    least six months — Enterprise mode included.** This is the most consequential constraint recorded so
+    far, and it corrects an earlier implication in this repository: the previous text said releasing the
+    designation "requires an ONTAP-level operation", which reads as though ONTAP-level access solves it.
+    **It does not.** The SVM-level designation can be released via ONTAP REST — after unmounting, which is
+    itself a required first step — but the volume's own `is_audit_log` field is read-only, so the volume
+    stays undeletable until retention expires. The scope beyond the volume is documented by AWS in a
+    warning; the operation-by-operation results are measured here. Creating one during this verification is
+    why a single verification volume remains in the environment.
+  - **The 1,023 snapshot ceiling is now measured, not just cited** — and the measurement changed the advice.
+    On a 100 MiB volume creation stopped at **694** with `No space left on device`; after growing the same
+    volume to 8 GiB it stopped at exactly **1,023** with `Cannot exceed maximum number of snapshots.` So
+    **1,023 is the ceiling given enough space**, and on a small volume the space limit binds first — with an
+    error that, as with inode exhaustion, names capacity rather than the real cause. Each snapshot cost
+    roughly **150 KiB even on an empty volume**, which matters when planning retention against the 5%
+    default snapshot reserve.
+  - **A failed volume deletion cannot be diagnosed from the AWS API.** `delete-volume` is accepted, moves to
+    `DELETING`, then silently returns to `CREATED` — no error, no `AdministrativeActions` entry. The reason
+    appeared only in the ONTAP REST job message. Worse, **blockers surface one at a time**: clearing the
+    first revealed a second, with no way to see the full list up front.
+  - **A leftover backup blocks deletion while looking like something else.** ONTAP reported a SnapMirror
+    relationship, but the visible relationship list held only an unrelated entry on another SVM and the
+    source-side query returned nothing. The actual cause was an `AVAILABLE` backup, identifiable by the
+    `backup-<backup-id>` snapshot it leaves on the volume. Hence the practical note to delete verification
+    volumes with `SkipFinalBackup=true`, or the final backup blocks the next deletion.
+  - **The ONTAP version is obtainable after all**, which corrects a limitation stated throughout the earlier
+    read-only work. `DescribeFileSystems` does not return `FileSystemTypeVersion`, but ONTAP REST
+    `GET /api/cluster?fields=version` returns `NetApp Release 9.17.1P7D1`. Only one of the two file systems
+    was queried, so the sections resting on the other still carry no version — stated per section rather
+    than applied to all of them.
+  - The access path is recorded because it is the part that generalizes: a **Session Manager port-forward**
+    to the management endpoint needs **no additional IAM permission on the instance and puts no password
+    into SSM command history**, unlike passing credentials through `send-command --parameters`.
+
 - **Five claims verified with create, modify and delete operations** against a live file system, recorded
   in [limits](docs/ja/reference/limits/) with the environment and method. Two of the seven candidates were
   declined and two turned out not to be measurable this way; all four are listed with the reason.
@@ -30,9 +66,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     only be mounted at `/snaplock_audit_log`; and **`UpdateVolume` is asynchronous and records no
     `AdministrativeAction`**, so a 200 response is not confirmation. That last one produced a false
     "silently ignored" diagnosis during the work, which is recorded rather than quietly corrected.
-  - Not measured, with reasons stated: the 1,023 snapshot ceiling (needs ONTAP credentials), 4,091 backups
-    (impractical), the 90%/98% tiering thresholds (**declined** — cannot be isolated from live volumes on
-    the same file system), and patch-time I/O pauses (needs a maintenance window plus sustained load).
+  - Not measured, with reasons stated: 4,091 backups (impractical), the 90%/98% tiering thresholds
+    (**declined** — cannot be isolated from live volumes on the same file system), and patch-time I/O pauses
+    (needs a maintenance window plus sustained load). The 1,023 snapshot ceiling was listed here as needing
+    ONTAP credentials; it has since been measured, above.
 - **Case studies are now findable by industry and by workload**, via a new linked index of
   [published FSx for ONTAP case studies](docs/ja/case-studies/public-case-studies.md). Both axes reach the
   same material, because a matching workload is often more useful than a matching industry and a reader
