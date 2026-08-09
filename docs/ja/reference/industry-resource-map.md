@@ -118,6 +118,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
+| 事例 | [コミックス・ウェーブ・フィルム](https://aws.amazon.com/jp/solutions/case-studies/comix-wave-film/) | クラウドで最大 300 台同時レンダリング。55.61 TB / 1,690 万ファイル。DR バックアップ 7 日分。CG 部以外の全部署で採用 |
 | 事例 | [メディア業界の事例](https://www.netapp.com/blog/benefits-of-cloud-computing-in-media-industry/) | VFX 制作ワークフロー |
 | パターン | [UC4: media-vfx](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/media-vfx/) | VFX レンダリング品質チェック |
 | ノート | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) | スループット上限に直結する選択 |
