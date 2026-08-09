@@ -14,10 +14,10 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | How to design a Snapshot policy | [Work back from the limits and retention](../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#上限と保持期間) (日本語) |
-| 2 | What SnapMirror protects and what it does not | [Having snapshots is not the same as being able to recover](../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#何から守れるのか) (日本語) |
+| 1 | How to design a Snapshot policy | [Work back from the limits and retention](notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods) (日本語) |
+| 2 | What SnapMirror protects and what it does not | [Having snapshots is not the same as being able to recover](notes/snapshots-are-not-a-recovery-plan.md#what-each-mechanism-protects-against) (日本語) |
 | 3 | How to use WORM / SnapLock and what is irreversible | [Enabling SnapLock is not the same as locking](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) |
-| 4 | How to verify the recovery procedure | [Actually exercising a restore](../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#自分の環境で確かめる) (日本語) |
+| 4 | How to verify the recovery procedure | [Actually exercising a restore](notes/snapshots-are-not-a-recovery-plan.md#verify-in-your-own-environment) (日本語) |
 | 5 | What is effective as ransomware readiness | [Ransomware readiness is layered](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#ランサムウェア対策は層で考える) (日本語) |
 
 ---
@@ -26,7 +26,7 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 
 | Directory | Contents |
 |---|---|
-| [`notes/`](../../../ja/domains/data-protection/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
+| [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
 | [`checklists/`](../../../ja/domains/data-protection/checklists/) | Checklists for field use |
 
 ---

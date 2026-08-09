@@ -9,6 +9,10 @@ lang: ja
 
 # スループットは 1 つの設定値では決まらない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](where-throughput-is-determined-and-shared.md) | [English](../../../../en/domains/performance/notes/where-throughput-is-determined-and-shared.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---
@@ -166,3 +170,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](where-throughput-is-determined-and-shared.md) | [English](../../../../en/domains/performance/notes/where-throughput-is-determined-and-shared.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

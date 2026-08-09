@@ -9,6 +9,10 @@ lang: ja
 
 # Snapshot があることと復旧できることは別
 
+<!-- lang-switcher:start -->
+🌐 [日本語](snapshots-are-not-a-recovery-plan.md) | [English](../../../../en/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
 
 ---
@@ -183,3 +187,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](snapshots-are-not-a-recovery-plan.md) | [English](../../../../en/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

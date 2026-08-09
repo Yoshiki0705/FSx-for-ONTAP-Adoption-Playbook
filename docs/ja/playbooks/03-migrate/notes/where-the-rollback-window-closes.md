@@ -9,6 +9,10 @@ lang: ja
 
 # 切り戻せる時点はクライアントが書き始めた瞬間に閉じる
 
+<!-- lang-switcher:start -->
+🌐 [日本語](where-the-rollback-window-closes.md) | [English](../../../../en/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
 
 ---
@@ -178,3 +182,7 @@ Snapshot ポリシーの複製で問題を避けるため、**`preserve` パラ�
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](where-the-rollback-window-closes.md) | [English](../../../../en/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
