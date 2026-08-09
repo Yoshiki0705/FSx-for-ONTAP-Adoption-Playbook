@@ -42,7 +42,9 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | 事例 | [NVIDIA](https://aws.amazon.com/jp/solutions/case-studies/nvidia-case-study/) | ハイブリッド EDA。オンプレ FlexCache をクラウドに拡張し 15-20 種のフローを同時実行。write-shunt filer で 5,000 並列ジョブ対応 |
+| 事例 | [Amazon Annapurna Labs](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 容量 2 倍にスケール、性能維持、100% 可用性、ストレージコスト 35% 削減 |
 | 事例 | [Arm](https://aws.amazon.com/solutions/case-studies/arm-ltd-case-study/) | チップ設計ワークロードの性能スケール |
+| 事例 | [Vitesco](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 自動車半導体。コンピュートコストの可視化と制御 |
 | 技術資料 | [EDA ベストプラクティス（PDF）](https://d1.awsstatic.com/fsx/FSx_for_ONTAP_EDA_Best_Practices_2.pdf) | ボリューム設計・データ種別・サイジング |
 | 技術資料 | [EDA Scale with IBM LSF](https://aws.amazon.com/blogs/industries/eda-scale-with-fsx-for-netapp-ontap-and-ibm-lsf/) | バッチスケジューラとのスケール |
 | パターン | [UC6: semiconductor-eda](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/semiconductor-eda/) | GDS/OASIS バリデーション |
