@@ -35,12 +35,23 @@ lang: ja
 | 業種 | 事例 | 何が読めるか |
 |---|---|---|
 | エネルギー | [Phillips 66](https://aws.amazon.com/solutions/case-studies/phillips66-migration-case-study/) | オンプレミスからのクラウド移行。移行そのものを主題にした AWS 公式事例 |
+| 半導体 / EDA | [NVIDIA](https://aws.amazon.com/jp/solutions/case-studies/nvidia-case-study/) | オンプレミス EDA 環境のハイブリッド拡張。FlexCache + write-shunt filer で 15-20 種のフローを同時実行。5,000 並列ジョブを 5 ターゲットに分散 |
 | 半導体 / EDA | [Arm](https://aws.amazon.com/solutions/case-studies/arm-ltd-case-study/) | チップ設計ワークロードの性能スケール。EDA の代表例 |
+| 金融（クレジットカード） | [PayPay カード](https://aws.amazon.com/jp/solutions/case-studies/paypay-card-case-study/) | メインフレームからの基幹システム移行。PCIDSS 準拠、Multi-AZ 構成、大阪 DR。ファイル共有にレスポンス性で FSx for ONTAP を採用。**日本のクレジットカード事業会社初の AWS 移行** |
 | 金融（ウェルスマネジメント技術） | [AdvisorEngine](https://www.netapp.com/customers/advisorengine-amazon-fsx-ontap-case-study/) | PoC を経た SQL Server の再アーキテクチャ。コストと性能の両方を論点にしています |
+| 金融（銀行） | [Banco Pan](https://aws.amazon.com/solutions/case-studies/banco-pan-case-study/) | **コスト 51% 削減**。ブラジルのデジタルバンク |
+| 金融（市場データ） | [S&P Global Market Intelligence](https://aws.amazon.com/blogs/storage/why-sp-global-chose-amazon-fsx-for-netapp-ontap-to-achieve-high-availability-and-disaster-recovery-for-sql-server/) | SQL Server FCI DR。SnapMirror で RPO 短縮。「使った分だけ」の課金に言及 |
 | ヘルスケア（SaaS 提供） | [Infor](https://www.netapp.com/customers/infor/) | **シングルテナント構成を個別に調整する**設計。SaaS 事業者側の視点 |
 | 医療機器 | [オンプレミス SQL Server の移行](https://docs.netapp.com/us-en/netapp-solutions-databases/mssql/customer-usecase-mssql-fsx1.html) | 課題・解決・結果の形式で書かれた SQL Server 移行。技術文書側に置かれています |
+| 通信（BSS/OSS） | [Amdocs](https://aws.amazon.com/solutions/case-studies/amdocs-case-study/) | 通信向けソフトウェアのストレージ性能スケーリング |
 | 通信（SaaS 提供） | [MYCOM OSI](https://aws.amazon.com/jp/blogs/news/how-mycom-osi-optimized-saas-storage-with-amazon-fsx-for-netapp-ontap/)（日本語） | SaaS のストレージのコストパフォーマンス改善 |
 | 公共医療・教育 | [NetApp の事例まとめ](https://www.netapp.com/blog/aws-fsxo-blg-customer-success-stories-with-amazon-fsx-for-netapp-ontap/) | eHealth NSW（公共医療）と Pearson（教育）を含む複数事例の入口 |
+| 防衛 / 公共 | [Peraton](https://www.netapp.com/customers/peraton-amazon-fsx-case-study/) | セキュリティ重視のオンプレミス移行。FedRAMP / DoD SRG 対応 |
+| 保険 | [Nordcloud: Swiss insurer](https://nordcloud.com/case-studies/swiss-insurance-provider/) | オンプレミス NetApp からの無停止 AWS 移行。複数リージョン |
+| 物流 / VDI | [Allcargo](https://aws.amazon.com/blogs/storage/how-allcargo-migrated-vdi-workload-to-amazon-fsx-using-aws-datasync/) | 3,500 VDI ユーザーのグローバル移行。ログインストーム対策。DataSync + SnapMirror |
+| エンタープライズコンテンツ管理 | [Hyland](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 2 PB → 14 PB（3 年で 7 倍）。数百万の小ファイルの DR レプリケーション |
+| スポーツ / 小売 | [adidas](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 大規模インスタンスでの高速処理。リストアの迅速性 |
+| 製造 | [Komprise + FSx for ONTAP](https://www.komprise.com/blog/manufacturing-case-study-komprise-amazon-fsx-for-ontap/) | 3 PB 移行、コスト 50% 以上削減。工場データの一元化 |
 | メディア・エンタメ | [メディア業界の事例](https://www.netapp.com/blog/benefits-of-cloud-computing-in-media-industry/) | 制作ワークフローを主題にした事例群 |
 | IT（自社導入） | [NetApp IT](https://www.netapp.com/customers/it-use-cases/amazon-fsx/) / [ハイブリッドクラウド戦略](https://www.netapp.com/customers/it-use-cases/fsx-ontap-hybrid-cloud-strategy/) | **ベンダー自身の IT 部門**による導入。複数リージョンへの展開に触れています |
 | 業種非公開 | [ストレージ TCO を 28% 削減](https://aws.amazon.com/blogs/storage/how-a-customer-reduced-storage-tco-by-28-with-amazon-fsx-for-netapp-ontap/) | **FlexCache の write-back を含む拠点間構成**。前提条件が具体的に書かれています |
