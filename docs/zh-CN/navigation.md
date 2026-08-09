@@ -103,6 +103,12 @@ graph TD
 | [上限值与配额](../ja/reference/limits/) | 需要确认设计不会触及上限 |
 | [术语表](../ja/reference/glossary/) | 需要确认 ONTAP / AWS 术语的定义 |
 
+## 实践工作坊的实施 — `workshop-studio/`
+
+| 目录 | 使用场景 |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | 将 AWS Workshop Studio 公开研讨会压缩到活动实际时长内所需的实测耗时与模块取舍 (日本語) |
+
 ---
 
 ## 案例 — `case-studies/`

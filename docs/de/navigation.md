@@ -103,6 +103,12 @@ Als zweisprachige Einzeldateien auf Japanisch und Englisch geschrieben.
 | [Grenzwerte und Kontingente](../ja/reference/limits/) | Es soll bestätigt werden, dass ein Design keinen Grenzwert erreicht |
 | [Glossar](../ja/reference/glossary/) | Die Definition eines ONTAP- oder AWS-Begriffs wird benötigt |
 
+## Durchführung von Hands-on-Workshops — `workshop-studio/`
+
+| Verzeichnis | Wann zu verwenden |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Gemessene Laufzeiten und Modulauswahl, um einen öffentlichen AWS-Workshop-Studio-Workshop in die real verfügbare Zeit zu bringen (日本語) |
+
 ---
 
 ## Fallstudien — `case-studies/`

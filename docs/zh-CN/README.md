@@ -75,6 +75,12 @@
 | [`limits/`](../ja/reference/limits/) | 上限与配额，附出处与验证日期 |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS 术语定义 |
 
+### 实践工作坊的实施 — `workshop-studio/`
+
+| 目录 | 内容 |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | 将 AWS Workshop Studio 公开研讨会压缩到活动实际时长内所需的实测耗时与模块取舍 (日本語) |
+
 </details>
 
 <details>

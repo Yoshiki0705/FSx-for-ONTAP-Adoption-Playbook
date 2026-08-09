@@ -103,6 +103,12 @@ graph TD
 | [상한값·쿼터](../ja/reference/limits/) | 설계가 상한에 걸리지 않는지 확인하고 싶다 |
 | [용어집](../ja/reference/glossary/) | ONTAP / AWS 용어의 정의를 확인하고 싶다 |
 
+## 핸즈온 진행 — `workshop-studio/`
+
+| 디렉터리 | 사용하는 상황 |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | AWS Workshop Studio 공개 워크숍을 이벤트의 실제 진행 시간에 맞추기 위한 실측 시간과 모듈 선택 (日本語) |
+
 ---
 
 ## 사례 — `case-studies/`

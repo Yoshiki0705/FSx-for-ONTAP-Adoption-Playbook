@@ -94,6 +94,14 @@ graph TD
 
 ---
 
+## ハンズオン開催 — `workshop-studio/`
+
+| ドキュメント | 使う場面 |
+|---|---|
+| [Workshop Studio](workshop-studio/) | 公開ワークショップをイベントの持ち時間に収めたい |
+
+---
+
 ## 事例 — `case-studies/`
 
 [Case Studies](case-studies/) には、技術支援の現場で得た知見を**一般化された教訓**として載せています。企業名・組織名・実際の識別子・組織が特定できる構成は一切含みません。

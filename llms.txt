@@ -95,6 +95,16 @@ serve both languages and there is no separate `docs/en/reference/` tree.
 - [Limits and quotas](docs/ja/reference/limits/): Limit values with source and verification date.
 - [Glossary](docs/ja/reference/glossary/): ONTAP and AWS terminology.
 
+## Workshop delivery
+
+Japanese-only. Knowledge about running a public AWS Workshop Studio workshop inside a community
+event's time budget, not a restatement of the workshop's own instructions.
+
+- [Workshop Studio delivery notes](docs/ja/workshop-studio/): What a published workshop does not tell you — measured durations, which modules to drop, and the dependencies between them.
+- [Fitting the EDA zero-copy scenario into 90 minutes](docs/ja/workshop-studio/eda-s3-access-points-90min/): Module selection and a timetable for the FSx for ONTAP S3 access point workshop. Machine time across the selected modules totals about 35 seconds, so the only hard constraint is the Amazon Quick knowledge base sync, which has to be started early and overlapped with another module.
+- [Measured timings](docs/ja/workshop-studio/eda-s3-access-points-90min/measured-timings.md): Log generation takes 2.5 seconds against a stated 90 seconds; access point creation reaches AVAILABLE in 14 seconds; five Athena queries run in 2-3 seconds each. Environment stated alongside every number, and the unmeasured modules are listed as unmeasured.
+- [Where a self-hosted run breaks](docs/ja/workshop-studio/eda-s3-access-points-90min/facilitation-risks.md): Three failures whose error messages point away from the cause — a Glue crawler blocked by Lake Formation, region hardcoded into policy ARNs surfacing as access denied, and IAM propagation making the first attempt fail.
+
 ## Case studies
 
 - [Case studies](docs/en/case-studies/): Three kinds are kept apart so a reader can tell whose environment is being described. Public case studies published by AWS or NetApp are organized as a linked index; field cases are generalized lessons from technical-support work; verification cases are observations in this repository's own environment. Field and verification cases contain no company names, no real identifiers, and no configurations that could identify an organization.

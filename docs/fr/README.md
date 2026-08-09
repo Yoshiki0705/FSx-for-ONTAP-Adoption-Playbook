@@ -75,6 +75,12 @@ L'entrée à privilégier quand la question est « je dois creuser ce sujet pré
 | [`limits/`](../ja/reference/limits/) | Limites et quotas, avec source et date de vérification |
 | [`glossary/`](../ja/reference/glossary/) | Terminologie ONTAP et AWS |
 
+### Animation d'ateliers — `workshop-studio/`
+
+| Répertoire | Contenu |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Durées mesurées et sélection des modules pour tenir un atelier public AWS Workshop Studio dans le temps réellement disponible (日本語) |
+
 </details>
 
 <details>

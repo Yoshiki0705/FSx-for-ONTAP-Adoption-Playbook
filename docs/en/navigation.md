@@ -107,6 +107,14 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 
 ---
 
+## Hands-on workshops — `workshop-studio/`
+
+| Directory | When to use |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Measured timings and module selection to fit a public AWS Workshop Studio workshop into the available time slot (日本語) |
+
+---
+
 ## Case studies — `case-studies/`
 
 [Case Studies](case-studies/) carries findings from field technical-support work as **generalized lessons**. They contain no company or organization names, no real identifiers, and no configuration that could identify an organization.

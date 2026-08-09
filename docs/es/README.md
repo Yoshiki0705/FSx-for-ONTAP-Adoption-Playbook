@@ -75,6 +75,12 @@ La entrada cuando la pregunta es «necesito investigar este asunto concreto». S
 | [`limits/`](../ja/reference/limits/) | Límites y cuotas, con fuente y fecha de verificación |
 | [`glossary/`](../ja/reference/glossary/) | Terminología de ONTAP y AWS |
 
+### Impartición de talleres — `workshop-studio/`
+
+| Directorio | Contenido |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Tiempos medidos y selección de módulos para ajustar un taller público de AWS Workshop Studio al tiempo real del evento (日本語) |
+
 </details>
 
 <details>
