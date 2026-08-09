@@ -20,6 +20,7 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | [`comparison/`](comparison/) | 比較マトリクス。トレードオフを対称に記載 / Comparison matrices with symmetric trade-offs |
 | [`limits/`](limits/) | 上限値・クォータ。出典と検証日付き / Limits and quotas, with source and verification date |
 | [`glossary/`](glossary/) | ONTAP / AWS 用語集 / Terminology |
+| [`industry-resource-map.md`](industry-resource-map.md) | 業種別リソースマップ。公開事例・実装パターン・設計ノートの横断索引 / Industry resource map with cross-links to case studies, implementation patterns, and design notes |
 
 ---
 

@@ -16,9 +16,9 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 |---|---|---|
 | 1 | Which method to choose (SnapMirror / DataSync / host-side copy) | [Choosing a migration method](../../../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 2 | What is required to migrate while preserving ACLs | [Preserving ACLs is a privilege problem, not a tool problem](../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) |
-| 3 | How to plan initial and incremental sync | [Baseline and incremental sync](../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md#初期同期と差分同期) (日本語) |
-| 4 | How to minimize cutover downtime | [The cutover sequence](../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md#切り替えの順序) (日本語) |
-| 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) (日本語) |
+| 3 | How to plan initial and incremental sync | [Baseline and incremental sync](notes/where-the-rollback-window-closes.md#baseline-sync-and-incremental-sync) (日本語) |
+| 4 | How to minimize cutover downtime | [The cutover sequence](notes/where-the-rollback-window-closes.md#cutover-sequence) (日本語) |
+| 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) (日本語) |
 
 ---
 
@@ -26,7 +26,7 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 
 | Directory | Contents |
 |---|---|
-| [`notes/`](../../../ja/playbooks/03-migrate/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
+| [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
 | [`checklists/`](../../../ja/playbooks/03-migrate/checklists/) | Checklists for field use |
 
 ---
