@@ -52,8 +52,9 @@ AWS ドキュメントは「**648 GiB 以上のボリュームは既定でいず
 
 > **この節の区分**: `verified`（検証日 2026-08-06）。**このノート全体の `documented` 区分の外にあります。**
 > 検証環境は `ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、HA ペア 1 組、スループット 128 MBps、
-> SSD 1,024 GiB、SSD IOPS 3,072（`AUTOMATIC`）。**ONTAP バージョンは取得できていません**
-> （`DescribeFileSystems` が `FileSystemTypeVersion` を返しませんでした）。測定は CloudWatch の
+> SSD 1,024 GiB、SSD IOPS 3,072（`AUTOMATIC`）。**この検証の時点では ONTAP バージョンを取得していません**
+> （`DescribeFileSystems` は `FileSystemTypeVersion` を返しません。**ONTAP REST API 経由なら取得できます**。
+> 別の検証で `9.17.1P7D1` を確認しました）。測定は CloudWatch の
 > `FilesCapacity`（`Maximum`）を読む読み取り専用の観測のみで、inode を使い切る試験は行っていません。
 > 値の記録は [上限値・クォータ](../../../reference/limits/) にあります。
 
@@ -97,7 +98,8 @@ inode は手動で増やせますが、上限があります。
 
 > **この節の区分**: `verified`（検証日 2026-08-06）。検証環境は `ap-northeast-1`、`SINGLE_AZ_1`
 > （第 1 世代）、HA ペア 1 組、スループット 128 MBps、SSD 1,024 GiB、NFSv3 でマウント。
-> **ONTAP バージョンは取得できていません。** 記録は [上限値・クォータ](../../../reference/limits/) にあります。
+> **この検証の時点では ONTAP バージョンを取得していません**（ONTAP REST API 経由なら取得できます）。
+> 記録は [上限値・クォータ](../../../reference/limits/) にあります。
 
 **なお 20 MiB での比率は大きいボリュームと一致しません。** 37,052 B/inode であり、100 GiB〜2 TiB で観測した 34,493 B/inode とは異なります。**上の比率表は最小サイズまで外挿できません。**
 

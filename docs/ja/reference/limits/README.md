@@ -23,6 +23,60 @@ premise to design against.
 
 ---
 
+## ONTAP バージョンの取得経路 / Where the ONTAP version comes from
+
+**AWS CLI では取得できず、ONTAP REST API では取得できました。** バージョン依存の挙動を記録するには
+バージョンが必要なので、取得経路そのものを記録しておきます。
+
+The AWS CLI does not return it; the ONTAP REST API does. Recording version-specific behaviour requires
+the version, so the retrieval path is itself worth recording.
+
+| 経路 / Path | 結果 / Result |
+|---|---|
+| `aws fsx describe-file-systems` の `FileSystemTypeVersion` | **返りません**（`None`） |
+| ONTAP REST `GET /api/cluster?fields=version` | **`NetApp Release 9.17.1P7D1`** |
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| ONTAP バージョン | `9.17.1P7D1` | 実測 | 2026-08-06 | ビルド日時も併せて返ります |
+| ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 | 未認証は `401` |
+
+> **取得したのは検証環境 2 台のうち 1 台だけです。** もう 1 台は管理エンドポイントが別 VPC にあり、
+> 本検証では取得していません。**以降の記述で「ONTAP 9.17.1P7D1」と書いてあるのは、この 1 台で
+> 実施した検証に限ります。**
+>
+> **Only one of the two file systems was queried.** The other has its management endpoint in a different
+> VPC and was not reached. **Where a section below states ONTAP 9.17.1P7D1, that applies only to
+> verification performed on that one file system.**
+
+### 管理エンドポイントへの到達方法 / Reaching the management endpoint
+
+管理エンドポイントは VPC 内のプライベート IP です。**同一 VPC の EC2 に Session Manager の
+ポートフォワードを張ると、手元から到達できます。**
+
+| 前提 / Prerequisite | 内容 |
+|---|---|
+| SSM エージェント | `AWS-StartPortForwardingSessionToRemoteHost` に対応するバージョン |
+| EC2 の配置 | 管理エンドポイントと**同一 VPC**（本検証では同一 VPC 内の別サブネット） |
+| ローカル | `session-manager-plugin` |
+
+```bash
+aws ssm start-session \
+  --target <instance-id> \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["<management-ip>"],"portNumber":["443"],"localPortNumber":["18443"]}'
+```
+
+> **資格情報の扱い**: この方法では **EC2 に IAM 権限を追加する必要がなく、パスワードが SSM の
+> コマンド履歴に残りません。** `aws ssm send-command --parameters` に資格情報を渡す方法は、
+> 履歴に平文で永続化されるため避けてください。
+>
+> **Credential handling**: this path needs **no additional IAM permission on the instance, and no
+> password enters SSM command history.** Passing credentials through `aws ssm send-command
+> --parameters` persists them in that history in clear text — avoid it.
+
+---
+
 ## FSx for ONTAP S3 AP — オブジェクトサイズ / Object size
 
 姉妹リポジトリで実測された値です。詳細は
@@ -107,8 +161,10 @@ Defaults observed read-only in the same environment. **All matched the documenta
 
 検証環境 / Environment: `ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、HA ペア 1 組、スループット
 128 MBps、SSD 1,024 GiB、SSD IOPS 3,072（`AUTOMATIC`）、ファイルシステム 2 台・ボリューム 43 本。
-**ONTAP バージョンは取得できていません**（`DescribeFileSystems` が `FileSystemTypeVersion` を
-返しませんでした）。
+**ONTAP バージョンはこの節の観測時点では取得できていません**（`DescribeFileSystems` は
+`FileSystemTypeVersion` を返しません）。後日 2 台のうち 1 台のみ ONTAP REST API で `9.17.1P7D1` を
+確認しました。取得経路は
+「[ONTAP バージョンの取得経路](#ontap-バージョンの取得経路--where-the-ontap-version-comes-from)」にあります。
 
 測定方法 / Method: AWS CLI と CloudWatch の**読み取り専用の観測のみ**。作成・変更・削除は行っていません。
 `FilesCapacity` と `FilesUsed` は `Maximum` 統計、期間 3,600 秒。
@@ -156,6 +212,46 @@ Verified 2026-08-06 in the environment recorded below.
 **20 MiB での比率は大きいボリュームと一致しません。** 37,052 B/inode であり、100 GiB〜2 TiB で観測した
 34,493 B/inode とは異なります。**上の比率は最小サイズまで外挿できません。**
 
+### Snapshot は 1 ボリューム 1,023 個で止まる / The snapshot ceiling is 1,023 per volume
+
+ドキュメント記載の 1,023 を実測で確認しました。**ただし到達には十分な容量が必要で、小さいボリュームでは
+先に容量で止まります。** 対照実験として 2 つのサイズで実施しました。
+
+The documented ceiling of 1,023 was reproduced. **Reaching it requires enough space, though — on a small
+volume the space limit binds first.** Run as a two-size control.
+
+| ボリュームサイズ | 止まった個数 | 止まった理由 | エラーコード |
+|---|---|---|---|
+| 100 MiB | **694** | `No space left on device. Additional space required: 68.0KB.` | `524479` |
+| 同ボリュームを 8 GiB に拡張後 | **1,023** | `Cannot exceed maximum number of snapshots.` | `525062` |
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| 1 ボリュームあたりの Snapshot 上限 | **1,023 個** | 実測 | 2026-08-06 | 1,024 個目が `500` で拒否。`num_records` は 1,023 |
+| 上限到達時のエラー | `Cannot exceed maximum number of snapshots.` | 実測 | 2026-08-06 | ONTAP エラーコード `525062` |
+| 1,023 個分の Snapshot メタデータ | **156,659,712 B**（約 149 MiB） | 実測 | 2026-08-06 | **空のボリューム**で。1 個あたり約 150 KiB |
+| Snapshot 予約の既定 | **5%** | 実測 | 2026-08-06 | 8 GiB では 429,494,272 B |
+| 予約に対する使用率 | 36% | 実測 | 2026-08-06 | 1,023 個時点 |
+
+> **1,023 は「容量が足りていれば」の上限です。** 小さいボリュームでは Snapshot メタデータの置き場所が
+> 先に尽きます。100 MiB では 694 個で `No space left on device` になりました。**inode 枯渇と同じく、
+> このエラーも容量不足の文面で出ます。**
+>
+> **1,023 is the ceiling *given enough space*.** On a small volume the room for snapshot metadata runs
+> out first — 694 on 100 MiB, reported as `No space left on device`. **As with inode exhaustion, the
+> message reads as a capacity problem.**
+
+> **空のボリュームでも 1 個あたり約 150 KiB を消費します。** データを持つボリュームでは変化する前提の
+> 値ですが、**「Snapshot はほぼ容量を食わない」という前提で保持数を決めると予約を超えます。**
+>
+> **Even on an empty volume each snapshot costs roughly 150 KiB.** The figure will differ on a volume
+> holding data, but **planning retention on the assumption that snapshots are nearly free will overrun
+> the reserve.**
+
+測定方法 / Method: ONTAP REST `POST /api/storage/volumes/{uuid}/snapshots` を連続実行。
+**`CreateSnapshot` は FSx for OpenZFS 専用**のため、この用途には使えません（下記参照）。
+検証後、ボリュームは削除しました。
+
 ### DP ボリュームはバックアップできない / DP volumes are not backupable
 
 **対照実験として RW ボリュームでも同じ操作を行いました。**
@@ -200,19 +296,211 @@ Verified 2026-08-06 in the environment recorded below.
 
 ### SnapLock 監査ログボリュームの制約 / Audit log volume constraints
 
-| 項目 | 結果 |
+**このリポジトリで最も影響が大きい制約です。** 監査ログボリュームを 1 本作ると、**そのボリューム・SVM・
+ファイルシステムの 3 つが最低 6 か月間削除できなくなります。Enterprise モードでも同じです。**
+
+The most consequential constraint recorded here. Creating a single audit log volume makes **the volume,
+its SVM, and the file system undeletable for at least six months — Enterprise mode included.**
+
+> **6 か月間削除できないのはボリュームだけではありません。** AWS ドキュメントは警告として、
+> 保持期間が満了するまで**監査ログボリューム・SVM・そのSVMが属するファイルシステム**のいずれも
+> 削除できないと記載しています。
+>
+> **The six-month lock is not limited to the volume.** AWS documentation states in a warning that until
+> the retention period expires, neither the audit log volume, nor the SVM, nor the file system
+> associated with that SVM can be deleted.
+>
+> 出典 / Source: [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html)
+
+| 項目 | 結果 | 区分 |
+|---|---|---|
+| 最小保持期間 | **6 か月**（実測値は `P6M`） | `documented` + 実測一致 |
+| 削除できなくなる対象 | **ボリューム / SVM / ファイルシステム** | `documented` |
+| Enterprise モードでの例外 | **ありません** | `documented` |
+| マウント位置 | **`/snaplock_audit_log` のみ**。他は拒否: `SnapLock audit log volume can only be mounted at the junction path /snaplock_audit_log` | 実測 |
+| ボリュームの `expiry_time` | 作成から 6 か月後の日時が入ります | 実測 |
+| ログファイルの保持 | `privileged_delete` / `system` の各ログに個別の失効日時 | 実測 |
+
+#### 期間を縛るパラメータはボリュームの保持期間ではありません / The binding parameter is not the volume retention
+
+**SnapLock には保持期間を表すパラメータが複数あり、ロックの原因になるのは 1 つです。** 混同すると
+「保持期間を最小にしたのにロックされた」という状況になります。
+
+SnapLock exposes more than one retention setting and only one causes the lock. Conflating them produces
+the situation where the volume retention is already at its minimum and the lock still happens.
+
+| パラメータ | 設定できる値 | 何を縛るか | 本検証での値 |
+|---|---|---|---|
+| ボリュームの `RetentionPeriod` | 秒〜年。**0 も可** | ボリューム上の WORM ファイル | Default **0 YEARS** / Minimum **0 YEARS** |
+| **監査ログ設定の保持期間** | ドキュメント上の下限 **6 か月** | 監査ログファイル → ボリュームの `expiry_time` | **`P6M`**（既定値が適用） |
+
+| API | 監査ログ保持期間の指定 | 出典 |
+|---|---|---|
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です | [API Reference](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) <!-- allow:naming - AWS の API 名 --> |
+| ONTAP `snaplock log create -retention-period` | **可** | [NetApp Docs](https://docs.netapp.com/us-en/ontap/snaplock/create-audit-log-task.html) |
+
+> **`AuditLogVolume=true` を AWS API で渡すと、保持期間は選べず既定値が適用されます。** 値を制御するには
+> ONTAP 側で作成する必要があります。**「最小値を設定する」運用ルールは、指定手段のない API では機能しません。**
+>
+> **Passing `AuditLogVolume=true` through the AWS API applies the default; the value cannot be chosen there.**
+> Controlling it requires creating the log configuration through ONTAP. **A "always use the minimum" policy
+> does not function on an API that cannot express the value.**
+
+> **6 か月より短い値が拒否されるかは実測していません**（`documented`）。試すには監査ログボリュームを
+> もう 1 本作る必要があり、失敗すれば同じロックが増えます。
+>
+> **Whether a value below six months is rejected was not measured** (`documented`). Testing it requires
+> creating another audit log volume, where a failed test adds another six-month lock.
+
+#### AWS API 経由では解除できません / The AWS API cannot release it
+
+| 操作 | 結果 |
 |---|---|
-| マウント位置 | **`/snaplock_audit_log` のみ**。他のジャンクションパスは拒否: `SnapLock audit log volume can only be mounted at the junction path /snaplock_audit_log` |
-| **AWS API での削除** | **できません。** `BypassSnaplockEnterpriseRetention=true` でも `Lifecycle` が `CREATED` に戻ります。理由: `Cannot delete the volume because it is configured as a SnapLock audit log volume` |
+| `delete-volume` | **`DELETING` に入ったのち `CREATED` に戻ります。エラーは返りません** |
+| `BypassSnaplockEnterpriseRetention=true` | **効きません**（同上） |
+| `SkipFinalBackup=true` との併用 | 効きません |
 | `AuditLogVolume=false` への変更 | 適用されませんでした |
 | SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
 
-Enterprise ボリュームの削除拒否メッセージは、阻害要因を 4 つ列挙します。**未期限の WORM ファイル、
-リーガルホールド下のファイル、未期限のロック済み Snapshot、未期限の監査ログボリューム**です。
-
-> **監査ログボリュームは作る前に置き場所を決めてください。** AWS API では取り消せません。
+> **ONTAP 側で指定を解除した後、AWS API は `AuditLogVolume: False` を返すようになりました。
+> しかしボリュームは依然として削除できません。** ONTAP 側の `snaplock.is_audit_log` は `true` のままで、
+> こちらが削除を阻害します。**AWS API の表示だけを見ると「監査ログボリュームではない」と読めるため、
+> 削除できない理由が消えたように見えます。** 実際には変わっていません。
 >
-> **Decide where an audit log volume goes before creating one.** The AWS API cannot undo it.
+> **After releasing the designation at the ONTAP level, the AWS API began reporting
+> `AuditLogVolume: False` — while the volume remained undeletable.** ONTAP's own `snaplock.is_audit_log`
+> is still `true`, and that is what blocks deletion. **Read only the AWS API and the volume no longer looks
+> like an audit log volume**, which makes the blocker appear to have gone. It has not.
+
+#### ONTAP REST では解除できますが、削除はできません / ONTAP REST releases the designation but not the volume
+
+**SVM 側の指定は ONTAP REST で解除できました。しかしそれでもボリュームは削除できません。**
+解除と削除可能性は別の話です。
+
+| # | 操作 | 結果 |
+|---|---|---|
+| 1 | `DELETE /api/storage/snaplock/audit-logs/{svm.uuid}`（マウント状態のまま） | **失敗**: `Current SnapLock audit log volume must be unmounted before modifying or deleting the log configuration.`（`13763189`） |
+| 2 | `PATCH /api/storage/volumes/{uuid}` で `nas.path` を空にしてアンマウント | 成功 |
+| 3 | 再度 `DELETE .../audit-logs/{svm.uuid}` | **成功**。SVM 側の指定は消え、`num_records` が 0 になりました |
+| 4 | `PATCH` で `snaplock.is_audit_log` を `false` に | **拒否**: `Field "snaplock.is_audit_log" cannot be set in this operation`（`262196`）。**読み取り専用です** |
+| 5 | ボリュームをオフラインにして `DELETE /api/storage/volumes/{uuid}` | **失敗**（下記 `525057`） |
+
+**ONTAP レベルの削除拒否メッセージは阻害要因を 5 つ列挙します。**
+
+> `Failed to delete the volume ... The volume has unexpired WORM files or it contains files under legal
+> hold or it contains unexpired locked snapshots or the volume is an unexpired SnapLock Enterprise audit
+> log volume or the volume must be made online in order to permit a pending WAFL scan to complete.`
+> （`525057`）
+
+未期限の WORM ファイル / リーガルホールド下のファイル / 未期限のロック済み Snapshot /
+**未期限の監査ログボリューム** / 保留中の WAFL スキャンのためオンラインが必要 — の 5 つです。
+
+> **順序が要ります。** SVM 側の指定解除には先にアンマウントが必要で、指定を解除しても
+> ボリューム側の `is_audit_log` は残ります。このフラグは読み取り専用なので、**保持期間の満了を待つ以外に
+> 削除する手段が見つかりませんでした。**
+>
+> **The order matters.** Releasing the SVM-level designation requires unmounting first, and releasing it
+> does not clear the volume's own `is_audit_log` flag. That field is read-only, so **no path to deletion
+> was found other than waiting out the retention period.**
+
+> **特権削除を恒久無効にしていると、ログファイル自体も消せません。** 本検証では
+> `PrivilegedDelete=PERMANENTLY_DISABLED` を先に設定していたため、WORM 状態のログファイルを
+> 特権削除で消す経路も残っていませんでした。**不可逆な操作を組み合わせた順序が、退路を狭めます。**
+>
+> **With privileged delete permanently disabled, the log files cannot be removed either.** This
+> verification had already set `PERMANENTLY_DISABLED`, so that route was closed too. **The order in
+> which irreversible operations are combined narrows the exits.**
+
+> **検証環境で試すときも、使い捨てのファイルシステムで行ってください。** ボリューム 1 本の
+> 作り直しでは済まず、**ファイルシステムごと 6 か月削除できなくなります。**
+>
+> **Even when testing, use a disposable file system.** The cost is not one volume to recreate — **the
+> whole file system becomes undeletable for six months.**
+
+### ボリューム削除の失敗理由は `LifecycleTransitionReason` にあります / The reason for a failed volume deletion is in `LifecycleTransitionReason`
+
+> **訂正**: 本節は当初「AWS API からは失敗理由が分からない」と記載していました。**誤りです。**
+> `DescribeVolumes` の **`LifecycleTransitionReason`** に理由が入ります。当初は `Lifecycle` と
+> `AdministrativeActions` しか読んでいませんでした。
+>
+> **Correction**: this section originally claimed the reason was unavailable from the AWS API. **That was
+> wrong.** It is in `LifecycleTransitionReason` on `DescribeVolumes`. Only `Lifecycle` and
+> `AdministrativeActions` had been read.
+
+**`delete-volume` の応答自体には理由が含まれず、`DELETING` を経て `CREATED` に戻ります。**
+理由は**その後の `DescribeVolumes`** で取得します。
+
+The `delete-volume` response itself carries no reason — the volume moves to `DELETING` and returns to
+`CREATED`. The reason is retrieved by a **subsequent `DescribeVolumes`**.
+
+| 観測点 | AWS API | ONTAP REST |
+|---|---|---|
+| 呼び出しの応答 | 成功（`DELETING`）。理由なし | `202` + ジョブ ID |
+| 失敗の通知 | `CREATED` に戻る（コンソールでは警告アイコン） | ジョブが `state: failure` |
+| 失敗理由 | **`LifecycleTransitionReason.Message`** | `message` に理由と ONTAP エラーコード |
+| `AdministrativeActions` | `null`（削除操作は記録されません） | — |
+
+本件で実際に返った値です。
+
+| フィールド | 値 |
+|---|---|
+| `Lifecycle` | `CREATED` |
+| **`LifecycleTransitionReason.Message`** | **`Cannot delete the volume because it contains unexpired log files.`** |
+
+> **AWS API のほうが的確でした。** ONTAP は 5 条件を列挙しますが、AWS は「未期限のログファイル」と
+> 原因を特定して返します。**取得手段がなかったのではなく、正しいフィールドを読んでいませんでした。**
+>
+> **The AWS API was the more precise of the two.** ONTAP enumerates five conditions; AWS names the actual
+> cause. **The information was not missing — the right field had not been read.**
+
+この挙動は AWS ドキュメントに記載があります。`DELETING` から `CREATED` へ戻るのが失敗のサインであり、
+コンソールでは警告アイコンから理由を確認できます。出典:
+[You can't delete a storage virtual machine or volume](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/cannot-delete-svm.html)
+
+> **ただし同ページは阻害要因として SnapLock 監査ログボリュームを挙げていません。** 列挙されているのは
+> ルートテーブル / ピア関係 / SnapMirror / Kerberos LIF / その他 / FlexCache です。**トラブルシューティング
+> ページだけを見ると、今回の原因には到達できません。**
+>
+> **That page does not list SnapLock audit log volumes among the causes**, however — it covers route
+> tables, peer relationships, SnapMirror, Kerberos LIFs, "other", and FlexCache. **The troubleshooting page
+> alone does not lead to this cause.**
+
+#### 阻害要因は 1 つずつしか出ません / Blockers surface one at a time
+
+**同一ボリュームで、解消するたびに別の理由が現れました。** 事前に一覧を得る方法はありませんでした。
+これは `LifecycleTransitionReason` でも ONTAP のジョブメッセージでも同じです。
+
+| 順 | ONTAP が返した理由 | コード | 実際の原因 |
+|---|---|---|---|
+| 1 | SnapMirror 関係の存在（`... is the destination or source endpoint of one or more SnapMirror relationships`） | `917858` | **残っていた Amazon FSx のバックアップ** <!-- allow:naming - AWS のサービス名 --> |
+| 2 | 未期限の監査ログボリューム（`525057` の 5 条件） | `525057` | SnapLock 監査ログの 6 か月保持 |
+
+**1 番目のメッセージは調査を誤った方向へ導きます。** SnapMirror 関係を疑って
+`GET /api/snapmirror/relationships/` を見ても、**該当ボリュームの関係は出てきませんでした。**
+
+| 確認 | 結果 |
+|---|---|
+| `/api/snapmirror/relationships/` | 1 件。ただし**別 SVM の無関係な関係**でした |
+| `/api/snapmirror/relationships/?list_destinations_only=true` | **0 件** |
+| ボリューム上の Snapshot | **`backup-<backup-id>` という名前の Snapshot** が存在 |
+| `describe-backups` | 同じ ID のバックアップが `AVAILABLE` / `USER_INITIATED` |
+
+**バックアップを削除すると、この理由は出なくなりました。** バックアップが内部的に SnapMirror を使うため、
+ユーザーに見える関係一覧には現れない形で削除を阻害します。
+
+> **診断の手がかりは Snapshot 名です。** Amazon FSx のバックアップはボリューム上に <!-- allow:naming - AWS のサービス名 -->
+> `backup-<backup-id>` という Snapshot を残します。**SnapMirror のエラーが出て関係一覧が空なら、
+> バックアップの残骸を疑ってください。**
+>
+> **The diagnostic fingerprint is the snapshot name.** A backup leaves a snapshot named
+> `backup-<backup-id>` on the volume. **If a SnapMirror error appears while the relationship list is
+> empty, suspect a leftover backup.**
+
+> **検証で作ったボリュームを消すときは `SkipFinalBackup=true` を付けてください。** 付けないと
+> 最終バックアップが作られ、**そのバックアップ自身が次の削除を阻害します。**
+>
+> **Delete verification volumes with `SkipFinalBackup=true`.** Otherwise a final backup is created, and
+> **that backup then blocks the next deletion.**
 
 ### `UpdateVolume` は非同期で痕跡を残さない / `UpdateVolume` is asynchronous and leaves no trace
 
@@ -231,8 +519,148 @@ Enterprise ボリュームの削除拒否メッセージは、阻害要因を 4 
 > "silently ignored" diagnosis — which happened once during this verification.
 
 検証環境 / Environment: `ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、HA ペア 1 組、スループット
-128 MBps、SSD 1,024 GiB。inode 検証のみ別ファイルシステム（同一構成、同一リージョン）で実施し、
-NFSv3 でマウントしました。**ONTAP バージョンは取得できていません。**
+128 MBps、SSD 1,024 GiB。
+
+| 検証 | ファイルシステム | ONTAP バージョン | 経路 | 検証日 |
+|---|---|---|---|---|
+| inode 枯渇 | 2 台のうち一方 | **未取得** | NFSv3 マウント | 2026-08-06 |
+| DP バックアップ / 階層化 / SnapLock | もう一方 | **未取得**（当時） | AWS CLI | 2026-08-06 |
+| Snapshot 上限 / SnapLock 監査ログの解除 | 上記と同じ一方 | **`9.17.1P7D1`** | ONTAP REST API | 2026-08-06 |
+
+**バージョンを取得できたのは 3 行目の検証のみです。** 1〜2 行目の結果にバージョンを付けて引用しないでください。
+
+**The version is known only for the third row.** Do not cite the first two rows as version-specific.
+
+---
+
+## Snapshot locking（Tamperproof Snapshot）/ Snapshot locking (Tamperproof Snapshot)
+
+**SnapLock 監査ログボリュームと同じ「削除できなくする」分類の機能です。** 監査ログボリュームより
+適用範囲が広く、**SnapLock ボリュームでなくても有効にできます。**
+
+The same "removes the ability to delete" class as the SnapLock audit log volume, with **wider reach: it can
+be enabled on volumes that are not SnapLock volumes at all.**
+
+> **本節は `documented` です。実測していません。** 有効化すると同種の削除ロックを新たに発生させるため、
+> 本リポジトリでは検証しません。
+>
+> **This section is `documented`, not measured.** Enabling it would create a fresh lock of the same kind, so
+> it is deliberately not verified here.
+
+### 「SnapLock を使っていない」は保護になりません / "We do not use SnapLock" is not protection
+
+| 項目 | 内容 |
+|---|---|
+| 対象ボリューム | **非 SnapLock ボリュームでも可**（ONTAP 9.12.1 以降） |
+| 必要なもの | SnapLock ライセンス（ONTAP One に含まれる）、**コンプライアンスクロックの初期化** |
+| 必要バージョン | ONTAP CLI は 9.12.1 以降、System Manager は 9.13.1 以降 |
+| **無効化** | **全ロック済み Snapshot が失効するまで不可** |
+| **ボリュームの削除** | **未期限のロック済み Snapshot があると不可** |
+| ボリュームの `expiry_time` | **ロック済み Snapshot の最大失効時刻**が設定されます |
+| ONTAP のダウングレード | 全ロック済み Snapshot 失効＋ locking 無効化までリバート不可 |
+| リストア | ロック済み Snapshot は**最新のものだけ**復元可。より新しい未期限 Snapshot があると失敗 |
+| FlexGroup | root constituent にロックがかかり、**その失効までボリュームを削除できません** |
+
+ONTAP CLI は有効化時に警告と確認を出します。**構造は監査ログボリュームと同一です。**
+
+> `Warning: snapshot locking is being enabled on volume "vol1" in Vserver "vs1". It cannot be disabled
+> until all locked snapshots are past their expiry time. A volume with unexpired locked snapshots cannot
+> be deleted.`
+
+**これは `525057` の 5 条件のうち「未期限のロック済み Snapshot」に対応します。** 監査ログボリュームと
+同じ経路で削除を阻害します。
+
+### 保持期間は短く設定できます / The retention period can be set short
+
+**監査ログボリュームとの決定的な違いです。** 監査ログには 6 か月の下限がありますが、Snapshot locking の
+保持期間は**時間単位まで**選べます。
+
+| 単位 | 範囲 |
+|---|---|
+| Years | 0 – 100 |
+| Months | 0 – 1200 |
+| Days | 0 – 36500 |
+| **Hours** | **0 – 24** |
+
+| 指定方法 | コマンド |
+|---|---|
+| ポリシーで一括 | `volume snapshot policy create -policy <name> -enabled true -schedule1 <sched> -count1 <n> -retention-period1 <period>` |
+| 個別 Snapshot（作成時） | `volume snapshot create -volume <vol> -snapshot <name> -snaplock-expiry-time <datetime>` |
+| 個別 Snapshot（既存） | `volume snapshot modify-snaplock-expiry-time -volume <vol> -snapshot <name> -snaplock-expiry-time <datetime>` |
+| SnapMirror 宛先の長期保持 | `snapmirror policy add-rule ... -retention-period "<n> months"` |
+
+> **短い値を選べるからこそ、値を決めずに有効化してはいけません。** 監査ログボリュームは「下限が許容できない」
+> ケースでしたが、Snapshot locking は「**選べたのに選ばなかった**」になり得ます。
+>
+> **Precisely because a short value is available, do not enable this without choosing one.** With the audit
+> log volume the floor itself was unacceptable; here the failure mode is **having had the choice and not
+> making it.**
+
+### 保持期間は世代数より優先されます — 1,023 上限との複合 / Retention overrides keep count, which compounds with the 1,023 ceiling
+
+**ロック済み Snapshot は、ポリシーの `count` を超えても削除されません。** 保持期間が世代数より優先されます。
+
+Locked snapshots are **not** reclaimed when the policy's keep count is exceeded — the retention period takes
+precedence.
+
+ここに実測値が効いてきます。
+
+| 要素 | 値 | 区分 |
+|---|---|---|
+| 1 ボリュームあたりの Snapshot 上限 | **1,023 個** | **実測**（[上記](#snapshot-は-1-ボリューム-1023-個で止まる--the-snapshot-ceiling-is-1023-per-volume)） |
+| Snapshot 1 個あたりのメタデータ | 空のボリュームで約 **150 KiB** | **実測** |
+| ロック済み Snapshot への `count` 適用 | **されません** | `documented` |
+
+> **毎時スケジュール × 長い保持期間で、世代数の上限が効かないまま 1,023 に近づきます。** そして
+> **到達したロック済み Snapshot は削除できません。** 新規 Snapshot の作成が止まり、
+> **保持期間の満了を待つ以外に復旧手段がありません。**
+>
+> **An hourly schedule with a long retention approaches 1,023 with the keep count not applying** — and the
+> locked snapshots that got there **cannot be deleted.** New snapshot creation stops, and **waiting out the
+> retention period is the only recovery.**
+>
+> 保持期間 × スケジュール頻度が 1,023 を超えないことを、有効化前に計算してください。
+> Calculate that retention × schedule frequency stays under 1,023 **before** enabling.
+
+### FabricPool との関係はドキュメント間で記述が異なります / The FabricPool relationship is stated differently across documents
+
+**FSx for ONTAP の容量プール階層化は FabricPool です。** そのため、この点は本サービスでは直接効きます。
+
+| 出典 | 記載 |
+|---|---|
+| [NetApp Docs: Lock an ONTAP snapshot](https://docs.netapp.com/us-en/ontap/snaplock/snapshot-lock-concept.html) | **Unsupported features** に FabricPool を挙げ、FabricPool は削除能力を要するため snapshot lock と同一ボリュームで併用できないと記載 |
+| [NetApp KB: Setting up Tamperproof or Snapshot locking fails for FabricPool volumes](https://kb.netapp.com/onprem/ontap/dp/SnapLock/Setting_up_Tamperproof_or_Snapshot_locking_fails_for_FabricPool_volumes) | 階層化ポリシーが `none` 以外、またはオブジェクトストアへ階層化済みのボリュームでは有効化できないと記載 |
+| [NetApp KB: Why is TPS supported on fabricpool volumes in FSx but not on-prem ONTAP](https://kb.netapp.com/on-prem/ontap/DP/SnapLock-KBs/Why_is_TPS_supported_on_fabricpool_volumes_in_FSx_but_not_on-prem_ONTAP%3F) | **FSx では** ONTAP インスタンスとオブジェクトストアが完全managedでアクセス不能なため、SnapLock Compliance と Tamperproof Snapshot Locking をサポートできると記載 |
+
+> **記述の緊張をそのまま記録します。断定しません。** オンプレミス ONTAP では階層化ポリシーが `none` で
+> かつ未階層のボリュームに限られる、という制約が示されており、FSx for ONTAP については別扱いという KB があります。
+> **本リポジトリでは実測していないため、どちらが FSx for ONTAP の正式な挙動かを断定しません。** AWS サポートに
+> 確認を依頼しています。
+>
+> **The tension is recorded as-is rather than resolved.** For on-premises ONTAP the constraint is a tiering
+> policy of `none` on a volume with nothing yet tiered; a separate KB treats FSx for ONTAP as an exception.
+> **This is not verified here, so no determination is made.** A clarification has been requested from AWS
+> Support.
+
+**実務上の含意は、どちらであっても同じ方向です。** 階層化を使う設計と Snapshot locking を使う設計は、
+少なくとも同一ボリューム上では衝突しうるため、**両方を前提にした設計をレビューで確認してください。**
+
+### Amazon FSx for NetApp ONTAP の API には該当パラメータがありません / The AWS API has no parameter for it
+
+| API | Snapshot locking の指定 |
+|---|---|
+| `CreateOntapVolumeConfiguration` | **不可。** フィールドは `StorageVirtualMachineId` / `AggregateConfiguration` / `CopyTagsToBackups` / `JunctionPath` / `OntapVolumeType` / `SecurityStyle` / `SizeInBytes` / `SizeInMegabytes` / `SnaplockConfiguration` / `SnapshotPolicy` / `StorageEfficiencyEnabled` / `TieringPolicy` / `VolumeStyle` <!-- allow:naming - AWS の API 名 --> |
+| `CreateSnaplockConfiguration` | **不可**（SnapLock 用の 6 フィールドのみ） |
+| ONTAP CLI / REST | **可**（`-snapshot-locking-enabled true`） |
+
+> **AWS API 側にパラメータがないということは、AWS 側のガードレールも効かないということです。**
+> IAM の条件キーやコンソールの警告で止められません。**ONTAP へ到達できる資格情報が、そのまま
+> 削除ロックを作れる権限になります。**
+>
+> **No AWS API parameter also means no AWS-side guardrail.** It cannot be gated by an IAM condition key or
+> a console warning. **Any credential that reaches ONTAP is a credential that can create this lock.**
+
+境界の整理は [IaC の境界は API の表面で決まる](../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。
 
 ---
 
@@ -240,7 +668,8 @@ NFSv3 でマウントしました。**ONTAP バージョンは取得できてい
 
 | 項目 | 理由 |
 |---|---|
-| Snapshot 1,023 個の上限 | **`CreateSnapshot` は FSx for OpenZFS 専用**です。ONTAP ボリュームでは `Unable to create a snapshot because the volume was not found` になります。ONTAP CLI / REST が必要で、`fsxadmin` の資格情報がありません |
+| **Snapshot locking の挙動全般** | **実施しません。** 有効化すると全ロック済み Snapshot の失効までボリュームを削除できなくなり、同種の削除ロックを新たに作ります。本リポジトリの[不可逆操作の承認ゲート](../../domains/security-governance/notes/irreversible-operations-need-separate-approval.md)に従い、値と範囲の合意なしには実行しません |
+| Snapshot locking と FabricPool の併用可否（FSx for ONTAP での正式な挙動） | 上記のとおりドキュメント間で記述が異なります。実測には有効化が必要なため行わず、AWS サポートに確認中です |
 | バックアップ 4,091 個の上限 | 現実的な回数ではありません |
 | SSD 90% / 98% での階層化の挙動変化 | **実施しませんでした。** 稼働ファイルシステムの SSD 層を意図的に埋める必要があり、同一ファイルシステムの全ボリュームに影響します。テストボリュームに隔離できません |
 | パッチ適用時の I/O 一時停止 | メンテナンスウィンドウの到来と、その間の継続的な I/O 負荷の両方が必要です |

@@ -27,7 +27,8 @@ lang: ja
 | ボリュームの inode 上限 | **ONTAP CLI のみ**（`volume modify -files`） |
 | FlexVol から FlexGroup への変換 | **ONTAP CLI のみ** |
 | **ONTAP ボリュームの Snapshot 作成** | **ONTAP CLI / REST のみ。** 実測で確認しました（下記） |
-| **SnapLock 監査ログボリュームの指定解除** | **ONTAP レベルのみ。** 実測で確認しました（下記） |
+| **SnapLock 監査ログボリュームの指定解除** | **ONTAP レベルのみ。** 実測で確認しました（下記）。**解除できても削除はできません** |
+| **ボリューム削除が失敗した理由の取得** | **ONTAP レベルのみ。** AWS API は理由を返しません（下記） |
 
 したがって **テンプレートが成功しても構成は完成していません。** 「IaC で全部管理する」という方針は、この境界を越えられません。設計すべきは境界の位置ではなく、**境界の向こう側をどう再現可能にするか**です。
 
@@ -44,7 +45,8 @@ lang: ja
 | 発見 | 内容 |
 |---|---|
 | **`CreateSnapshot` は FSx for OpenZFS 専用** | ONTAP ボリュームに対して実行すると `Unable to create a snapshot because the volume was not found` になります。**ボリュームは存在し `CREATED` です。** ONTAP の Snapshot は Snapshot ポリシーまたは ONTAP CLI / REST の領域です |
-| **SnapLock 監査ログボリュームは AWS API で削除できない** | 通常の削除も `BypassSnaplockEnterpriseRetention=true` も効きません。SVM 側の指定が API に露出していないため、解除には ONTAP レベルの操作が必要です |
+| **SnapLock 監査ログボリュームは AWS API で削除できない** | 通常の削除も `BypassSnaplockEnterpriseRetention=true` も効きません。SVM 側の指定は API に露出しておらず、**ONTAP REST でなら解除できます。ただし解除しても削除できるようにはなりません**（最低 6 か月の保持期間中は、ボリューム・SVM・ファイルシステムのいずれも削除不可）。詳細は [SnapLock は有効化とロックが別](../../../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#監査ログボリュームはファイルシステムごと-6-か月固定します) |
+| **ボリューム削除の失敗は応答では分かりません**（理由の取得先は AWS API 内にあります） | `delete-volume` は `DELETING` に入ったのち `CREATED` に戻り、**応答にはエラーが含まれません。** `AdministrativeActions` も `null` です。ただし**理由は `DescribeVolumes` の `LifecycleTransitionReason` に入ります**。ONTAP 側は必須ではありません |
 | **`UpdateVolume` は非同期で痕跡を残さない** | 反映は 30 秒では未確認、120〜180 秒で確認。**`AdministrativeActions` には記録されません**（`null`）。連続実行は `There is an update already in progress.` で拒否されます |
 
 **3 つ目が検証の設計に効きます。** API が成功を返しても反映されたことにはならず、記録も残らないため、**`DescribeVolumes` を読み直す以外に確認手段がありません。** この検証では短い待ち時間で状態を読み、一度「無視された」と誤診しました。
