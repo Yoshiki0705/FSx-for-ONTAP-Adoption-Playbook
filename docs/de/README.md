@@ -75,6 +75,12 @@ Der Einstieg, wenn die Frage lautet: „Ich muss dieses konkrete Thema recherchi
 | [`limits/`](../ja/reference/limits/) | Grenzwerte und Quotas mit Quelle und Prüfdatum |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP- und AWS-Terminologie |
 
+### Durchführung von Hands-on-Workshops — `workshop-studio/`
+
+| Verzeichnis | Inhalt |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Gemessene Laufzeiten und Modulauswahl, um einen öffentlichen AWS-Workshop-Studio-Workshop in die real verfügbare Zeit zu bringen (日本語) |
+
 </details>
 
 <details>

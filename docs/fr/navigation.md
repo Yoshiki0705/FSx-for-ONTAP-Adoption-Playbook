@@ -103,6 +103,12 @@ Rédigée en fichiers bilingues japonais et anglais.
 | [Limites et quotas](../ja/reference/limits/) | Il faut confirmer qu'une conception n'atteindra pas une limite |
 | [Glossaire](../ja/reference/glossary/) | Il faut la définition d'un terme ONTAP ou AWS |
 
+## Animation d'ateliers — `workshop-studio/`
+
+| Répertoire | Quand l'utiliser |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Durées mesurées et sélection des modules pour tenir un atelier public AWS Workshop Studio dans le temps réellement disponible (日本語) |
+
 ---
 
 ## Études de cas — `case-studies/`

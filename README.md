@@ -99,6 +99,12 @@
 | [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
 | [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
 
+### ハンズオン開催 — `workshop-studio/`
+
+| ディレクトリ | 概要 |
+|---|---|
+| [`workshop-studio/`](docs/ja/workshop-studio/) | AWS Workshop Studio の公開ワークショップを持ち時間に収めるための実測値と取捨選択 |
+
 </details>
 
 <details>

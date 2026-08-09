@@ -99,6 +99,12 @@ Enter here when your question is "I need to research this specific concern." The
 | [`limits/`](../ja/reference/limits/) | Limits and quotas, with sources and verification dates |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS terminology and definitions |
 
+### Hands-on delivery — `workshop-studio/`
+
+| Directory | Contents |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | Measured timings and module selection for fitting a public AWS Workshop Studio workshop into the time an event actually has (日本語) |
+
 </details>
 
 <details>

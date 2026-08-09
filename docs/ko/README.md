@@ -75,6 +75,12 @@
 | [`limits/`](../ja/reference/limits/) | 상한값·쿼터와 그 출처·검증일 |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS 용어의 정의 |
 
+### 핸즈온 진행 — `workshop-studio/`
+
+| 디렉터리 | 개요 |
+|---|---|
+| [`workshop-studio/`](../ja/workshop-studio/) | AWS Workshop Studio 공개 워크숍을 이벤트의 실제 진행 시간에 맞추기 위한 실측 시간과 모듈 선택 (日本語) |
+
 </details>
 
 <details>
