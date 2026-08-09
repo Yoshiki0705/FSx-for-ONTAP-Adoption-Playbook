@@ -59,6 +59,9 @@ jobs:
       - name: Check internal links
         run: python3 tools/check_links.py
 
+      - name: Check agent context budget
+        run: python3 scripts/check_agent_context_budget.py
+
   markdown-lint:
     name: markdown lint
     runs-on: ubuntu-latest

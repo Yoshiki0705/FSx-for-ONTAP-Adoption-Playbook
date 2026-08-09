@@ -2,7 +2,7 @@
 PY ?= python3
 
 .PHONY: help lint i18n-check switcher-check switcher-write audit links links-external all \
-        frontmatter markdown python format-python new-note stats clean
+        frontmatter markdown python format-python new-note stats drift clean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -64,8 +64,11 @@ links: ## Check internal link resolution
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check audit links ## Run every check (commit gate)
+all: lint i18n-check switcher-check audit links drift ## Run every check (commit gate)
 	@echo "All checks passed."
+
+drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship
+	@$(PY) scripts/check_agent_context_budget.py
 
 new-note: ## Scaffold a note. Usage: make new-note MODULE=domains/performance SLUG=my-slug
 	@test -n "$(MODULE)" || (echo "MODULE is required (e.g. MODULE=domains/performance)"; exit 1)
