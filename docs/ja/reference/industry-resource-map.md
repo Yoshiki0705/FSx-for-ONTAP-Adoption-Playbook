@@ -41,6 +41,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
+| 事例 | [NVIDIA](https://aws.amazon.com/jp/solutions/case-studies/nvidia-case-study/) | ハイブリッド EDA。オンプレ FlexCache をクラウドに拡張し 15-20 種のフローを同時実行。write-shunt filer で 5,000 並列ジョブ対応 |
 | 事例 | [Arm](https://aws.amazon.com/solutions/case-studies/arm-ltd-case-study/) | チップ設計ワークロードの性能スケール |
 | 技術資料 | [EDA ベストプラクティス（PDF）](https://d1.awsstatic.com/fsx/FSx_for_ONTAP_EDA_Best_Practices_2.pdf) | ボリューム設計・データ種別・サイジング |
 | 技術資料 | [EDA Scale with IBM LSF](https://aws.amazon.com/blogs/industries/eda-scale-with-fsx-for-netapp-ontap-and-ibm-lsf/) | バッチスケジューラとのスケール |
@@ -68,9 +69,10 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
+| 事例 | [PayPay カード](https://aws.amazon.com/jp/solutions/case-studies/paypay-card-case-study/) | クレジットカード基幹システムの AWS 移行。PCIDSS 準拠、Multi-AZ 構成、DR は大阪リージョン。FSx for ONTAP をファイル共有に採用 |
 | 事例 | [Banco Pan](https://aws.amazon.com/solutions/case-studies/banco-pan-case-study/) | コスト 51% 削減 |
 | 事例 | [AdvisorEngine](https://www.netapp.com/customers/advisorengine-amazon-fsx-ontap-case-study/) | SQL Server 再アーキテクチャ。コストと性能 |
-| 事例 | [S&P Global Market Intelligence](https://aws.amazon.com/fsx/netapp-ontap/customers/) | SQL Server FCI DR。SnapMirror で RPO 短縮 |
+| 事例 | [S&P Global Market Intelligence](https://aws.amazon.com/blogs/storage/why-sp-global-chose-amazon-fsx-for-netapp-ontap-to-achieve-high-availability-and-disaster-recovery-for-sql-server/) | SQL Server FCI DR。SnapMirror で RPO 短縮 |
 | 技術資料 | [FSI 向けサービス解説](https://aws.amazon.com/blogs/industries/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) / [日本語版](https://aws.amazon.com/jp/blogs/news/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) | 金融業界で問われる論点の整理 |
 | パターン | [UC2: financial-idp](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/financial-idp/) | 帳票 OCR・エンティティ抽出 |
 | ノート | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) | TCO の構造 |
@@ -98,7 +100,7 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | 事例 | [MYCOM OSI](https://aws.amazon.com/jp/blogs/news/how-mycom-osi-optimized-saas-storage-with-amazon-fsx-for-netapp-ontap/) | SaaS ストレージのコストパフォーマンス改善。Kubernetes 連携 |
-| 事例 | [Amdocs](https://aws.amazon.com/solutions/case-studies/amdocs-case-study/) | ストレージ性能スケーリング |
+| 事例 | [Amdocs](https://aws.amazon.com/solutions/case-studies/amdocs-case-study/) | ストレージ性能スケーリング。通信向け BSS/OSS |
 | パターン | [UC18: telecom-network-analytics](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/telecom-network-analytics/) | CDR/ネットワークログ分析 |
 | ノート | [監視は平均値で失敗する](../playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 待機系ノードが平均を引き下げる問題 |
 
@@ -131,7 +133,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| 事例 | [Allcargo](https://aws.amazon.com/blogs/storage/category/migration/aws-datasync) | VDI 3,500 ユーザーの移行。ログインストーム対策 |
+| 事例 | [Allcargo](https://aws.amazon.com/blogs/storage/how-allcargo-migrated-vdi-workload-to-amazon-fsx-using-aws-datasync/) | 3,500 VDI ユーザーの移行。ログインストーム・Outlook キャッシュ書き込みストーム対策。DataSync + SnapMirror |
 | パターン | [UC12: logistics-ocr](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/logistics-ocr/) | 配送伝票 OCR |
 | ノート | [メンテナンスは 14 日を超えて延期できない](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
 
@@ -155,6 +157,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
+| 事例 | [Hyland](https://aws.amazon.com/fsx/netapp-ontap/customers/) | エンタープライズコンテンツ管理 SaaS。2 PB → 14 PB にスケール（3 年間で 7 倍）。数百万の小さなファイルのレプリケーション |
 | 事例 | [Infor](https://www.netapp.com/customers/infor/) | シングルテナント構成の個別調整 |
 | 事例 | [MYCOM OSI](https://aws.amazon.com/jp/blogs/news/how-mycom-osi-optimized-saas-storage-with-amazon-fsx-for-netapp-ontap/) | Kubernetes + iSCSI でのコスト最適化 |
 | 技術資料 | [SaaS デプロイのコスト・TTM 削減](https://aws.amazon.com/blogs/apn/reduce-saas-deployment-costs-and-time-to-market-with-amazon-fsx-for-netapp-ontap/) | FlexClone によるテナント展開 |
