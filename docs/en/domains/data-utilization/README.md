@@ -22,6 +22,19 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 
 ---
 
+## Working implementations — sibling repositories
+
+Reference architectures that implement the concepts in this module. When you need concrete code beyond the knowledge notes, start here.
+
+| Project | What it does | Stack |
+|---|---|---|
+| [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | Collect via S3 API, consume via FlexCache NFS/SMB. No copy job, p50 8 ms propagation. Suited for HiL test benches, EDA, rendering, IoT | CFn + SAM. [Blog post](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| [File Portal UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | Browser access to NAS files without VPN + AI processing (classification, anomaly detection, semantic search). Works alongside Nextcloud | Amplify Gen2 + Bedrock. [Blog post](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
+| [Lakehouse integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Query files via Athena / Glue / Spark through S3 AP. Data stays on NAS | S3 AP + Glue / Athena |
+| [Agentic RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | RAG that respects NAS permissions. Propagates original ACLs to the AI pipeline | CDK + Bedrock |
+
+---
+
 ## Structure
 
 | Directory | Contents |

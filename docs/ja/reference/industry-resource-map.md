@@ -54,7 +54,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | FlexCache + S3 AP で ADAS HIL テスト。リファレンスアーキテクチャ |
+| パターン | [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | FlexCache + S3 AP で ADAS HIL テスト。リファレンスアーキテクチャ。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | パターン | [UC9: autonomous-driving](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/autonomous-driving/) | 映像/LiDAR 前処理パイプライン |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・リージョン等の制約 |
 
@@ -151,6 +151,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
+| パターン | [ファイルポータル UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | NAS 上のファイルにブラウザアクセス + AI 処理（分類・異常検知・セマンティック検索）。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
 | パターン | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | アクセス制御対応 Agentic RAG（CDK） |
 | 技術資料 | [SageMaker + FSx for ONTAP](https://docs.netapp.com/us-en/netapp-solutions-ai/cloud/ai-mlops-fsxn-sagemaker.html) | モデルトレーニングのデータソース |
 | 技術資料 | [Dremio Cloud + FSx for ONTAP](https://www.dremio.com/blog/from-file-systems-to-ai-insights-dremio-cloud-amazon-fsx-for-netapp-ontap/) | ファイルシステムから AI インサイトへ |
@@ -163,6 +164,7 @@ lang: ja
 | 事例 | [Hyland](https://aws.amazon.com/fsx/netapp-ontap/customers/) | エンタープライズコンテンツ管理 SaaS。2 PB → 14 PB にスケール（3 年間で 7 倍）。数百万の小さなファイルのレプリケーション |
 | 事例 | [Infor](https://www.netapp.com/customers/infor/) | シングルテナント構成の個別調整 |
 | 事例 | [MYCOM OSI](https://aws.amazon.com/jp/blogs/news/how-mycom-osi-optimized-saas-storage-with-amazon-fsx-for-netapp-ontap/) | Kubernetes + iSCSI でのコスト最適化 |
+| パターン | [ファイルポータル UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | NAS にブラウザアクセス + AI 処理。VPN 不要。Nextcloud との併用可。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
 | 技術資料 | [SaaS デプロイのコスト・TTM 削減](https://aws.amazon.com/blogs/apn/reduce-saas-deployment-costs-and-time-to-market-with-amazon-fsx-for-netapp-ontap/) | FlexClone によるテナント展開 |
 | ノート | [IaC の境界は API の表面で決まる](../playbooks/04-build/notes/what-iac-cannot-reach.md) | テンプレートが成功しても構成は完成しない |
 
@@ -186,6 +188,7 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | パターン | [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
+| パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 設計段階の制約 |
 
 ---
@@ -203,8 +206,8 @@ lang: ja
 
 | リポジトリ | 内容 | 形式 |
 |---|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 28 業種別 UC + OPS + GenAI + SAP | SAM + Python |
-| [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | ADAS HIL テスト。FlexCache + S3 AP | CFn + SAM |
+| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 28 業種別 UC + OPS + GenAI + SAP + [ファイルポータル UI](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | SAM + Amplify Gen2。[ポータル解説](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
+| [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | S3 で収集 → FlexCache NFS/SMB で利用。反映 p50 8 ms | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | アクセス制御対応 Agentic RAG | CDK |
 | [fsxn-cyber-resilience-patterns](https://github.com/Yoshiki0705/fsxn-cyber-resilience-patterns) | ARP + File Security + FPolicy 多層防御 | 実装パターン |
 | [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | 監査ログ → Datadog / Splunk 等 | Lambda + S3 AP |
