@@ -19,6 +19,7 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 | 3 | How to plan initial and incremental sync | [Baseline and incremental sync](notes/where-the-rollback-window-closes.md#baseline-sync-and-incremental-sync) (日本語) |
 | 4 | How to minimize cutover downtime | [The cutover sequence](notes/where-the-rollback-window-closes.md#cutover-sequence) (日本語) |
 | 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) (日本語) |
+| 6 | What to settle before choosing a method when the source is SaaS / cloud storage | [Migrating from SaaS starts with classifying the source](notes/saas-source-migration-scoping.md) |
 
 ---
 

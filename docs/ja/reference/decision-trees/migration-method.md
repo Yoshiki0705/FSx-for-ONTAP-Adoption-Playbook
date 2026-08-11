@@ -25,6 +25,8 @@ lang: ja
 **移行元が ONTAP でない場合**は、プロトコルと ACL 保持要件で分岐します。SMB で ACL を保持する
 必要があるなら、コピー元アカウントが読めない ACL を扱えるかどうかが方式選択の分かれ目になります。
 
+**この決定ツリーが扱うのは、移行元が ONTAP かオンプレミス NAS の場合です。** 移行元が SaaS / クラウドストレージ（Box、Dropbox、OneDrive、Google Drive、Wasabi、Nextcloud など）の場合は、方式選択の前に**移行元がストレージエンドポイントを公開しているか**の判定が入ります。判定手順と、方式の前に確定させる項目は [SaaS からの移行は転送方式より先に移行元の群を確定させる](../../playbooks/03-migrate/notes/saas-source-migration-scoping.md) にあります。
+
 > **Evidence**: `documented` — 方式の対応関係は AWS / ベンダーのドキュメントに基づきます。
 > 各方式のスループットや所要時間は環境に強く依存するため、必ず自環境で測定してください。
 
@@ -152,6 +154,7 @@ graph TD
 - [Playbook 01 — 評価](../../playbooks/01-assess/) — 移行前に測るべき項目
 - [容量が余っていても書けなくなる](../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — 方式を選ぶ前に数えるもの。ファイル数とディレクトリあたりの上限は移行ツールの完走に影響します
 - [Playbook 03 — 移行](../../playbooks/03-migrate/) — 各方式の実行手順
+- [SaaS からの移行は転送方式より先に移行元の群を確定させる](../../playbooks/03-migrate/notes/saas-source-migration-scoping.md) — 移行元が SaaS / クラウドストレージの場合。このツリーの前段に入る判定です
 - [Domain — マルチプロトコル・ID](../../domains/multiprotocol-identity/) — ACL と ID マッピング
 - [Domain — データ保護](../../domains/data-protection/) — SnapMirror の位置づけ
 - [知見の分類ポリシー](../../evidence-policy.md)

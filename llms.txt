@@ -84,6 +84,7 @@ claim in your own environment. All are Japanese; the English module READMEs link
 - [Volume security style decides the permission model](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md): Blocking ID mapping does not block SMB access on an NTFS-style volume, because that path evaluates the NTFS ACL directly.
 - [Throughput is not set by one value](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md): Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed a single HA pair regardless of how many pairs the file system has.
 - [FSx for ONTAP S3 access points are not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md): Same-account and same-Region prerequisites are plan-level constraints, and enabling access points lowers the volume-count ceiling.
+- [Migrating from SaaS starts with classifying the source](docs/en/playbooks/03-migrate/notes/saas-source-migration-scoping.md): What to settle before choosing a transfer method — whether the source exposes a storage endpoint, whether tenant admin authorization can be issued for the migration window, and how many sharing forms have no counterpart in an NFS or SMB ACL. Also the Assess numbers the later decisions need, including the largest file size, since above 50 GiB the file cannot be written through an S3 access point. Available in Japanese and English; the transfer mechanisms are deliberately left in the linked primary source rather than restated.
 
 ## Reference
 

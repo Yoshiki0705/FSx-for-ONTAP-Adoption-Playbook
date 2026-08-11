@@ -19,6 +19,7 @@ Before migrating, establish what exists on the current NAS and what will constra
 | 3 | The current state of permissions, ACLs, and ID mapping | [Inventory items worked back from the decisions](../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#棚卸し項目は後で戻せない判断から逆算する) (日本語) |
 | 4 | Which feature dependencies could block the migration | [Migration method decision tree](../../../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 5 | How to measure a baseline for performance requirements | [Record it so it stays comparable](../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#性能のベースラインは比較可能な形で取る) (日本語) |
+| 6 | What additional numbers to collect when the source is SaaS / cloud storage | [Numbers to collect during Assess](../03-migrate/notes/saas-source-migration-scoping.md#3-numbers-to-collect-during-assess) |
 
 ---
 

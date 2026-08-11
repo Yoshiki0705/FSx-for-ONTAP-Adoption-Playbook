@@ -9,6 +9,34 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A migrate-phase note for SaaS and cloud storage sources, carrying only the planning half.** The
+  transfer mechanisms — DataSync location types, each SaaS admin API, the S3 access point size
+  limits — stay in the sibling repository's document and are linked rather than restated, so what is
+  here is what to establish, what to measure, and where to stop.
+  - **Three checks classify the source before any method evaluation**: whether it exposes an
+    S3-compatible API, whether it is self-hosted open source, and — the one most often skipped —
+    whether the object storage is primary storage or an external mount. In a primary-storage
+    configuration the bucket holds only identifier-keyed bodies, so **copying it succeeds and still
+    cannot be restored**; the failure surfaces later as users unable to open their own files.
+  - **Tenant admin authorization is an organizational question, not a technical one.** The five main
+    collaboration SaaS products offer tenant-wide admin authorization, so per-user OAuth consent is
+    not required and the migration can be run centrally. What has to be established is whether the
+    organization can issue that credential for the migration window, and whether a revocation step
+    exists.
+  - **Two Assess numbers are added because discovering them late rebuilds the plan**: largest file
+    size, since above 50 GiB the file cannot be written through an S3 access point, and the count of
+    external shares, which sizes the un-mappable part of the permission model.
+  - **Go/No-Go is stated as three stop conditions**, deliberately without numeric thresholds: many
+    sharing forms with no ACL counterpart (the work is a redesign, not a migration), rate limits not
+    yet measured (**do not fix a downtime figure**), and an undecided system of record.
+  - **Whether migration is the requirement at all is checked first.** Bedrock Knowledge Bases managed
+    connectors provide cross-source search without moving bytes; the constraint is stated
+    symmetrically — content still leaves for embedding generation, so "not migrating" does not mean
+    the data stays put.
+  - Six items the primary source marks unconfirmed are carried over as unconfirmed, including that
+    the DataSync location and Bedrock connector coverage are a 2026-08 snapshot.
+  - Linked from the 03-migrate and 01-assess module READMEs in both languages, and from the migration
+    method decision tree, which covers only ONTAP and on-premises NAS sources.
 - **A `workshop-studio/` area, holding what a published workshop does not tell you.** The first
   scenario covers running the public FSx for ONTAP S3 access point workshop as a 90-minute community
   session. It deliberately does not restate the workshop's instructions — those are one click away —
