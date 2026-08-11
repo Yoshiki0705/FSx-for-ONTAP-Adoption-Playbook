@@ -18,7 +18,7 @@
 | 2 | ティアリングをどう設定するか | [階層化の既定値は作成方法で違う](notes/tiering-defaults-differ-by-creation-method.md) |
 | 3 | ストレージ効率（重複排除・圧縮）の効果をどう測るか | [効果をどう測るか](notes/tiering-defaults-differ-by-creation-method.md#ストレージ効率の効果をどう測るか) |
 | 4 | スループット設定を上げる前に確認すべきことは何か | [変更の順序は「戻せるか」で決める](notes/tiering-defaults-differ-by-creation-method.md#変更の順序は戻せるかで決める) |
-| 5 | コスト削減と可用性のトレードオフをどう置くか | [トレードオフの提示のしかた](../../domains/cost/notes/provisioned-versus-consumed.md#トレードオフの提示のしかた) |
+| 5 | コスト削減と可用性のトレードオフをどう置くか | [トレードオフの見比べかた](../../domains/cost/notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
 
 ---
 

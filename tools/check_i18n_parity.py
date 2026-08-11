@@ -7,6 +7,10 @@ catches that without requiring the translations themselves to be machine-compara
 
 Tier 1 = the language hubs, plus the docs/ files listed in `docs/i18n-manifest.txt`.
 Tier 2 (module READMEs under docs/<lang>/) is checked as ja + en only.
+Tier 3 (notes, checklists) is *optional* in English - but any file that exists in both languages is
+compared, because an English translation that silently stops matching its Japanese counterpart is
+worse than no translation at all: the reader cannot tell they are being given an older story. So the
+rule is not "translate everything", it is "a translation that exists must keep up".
 
 A document's language is its directory, not a filename suffix. The one exception is the Japanese
 hub: it is the repository-root README.md, because that is what GitHub renders on the landing page,
@@ -180,6 +184,29 @@ def main() -> int:
                     if lang != "ja"
                 ],
             )
+
+    # --- Tier 3: any document that happens to exist in both ja and en ---------
+    # Discovered from the English tree rather than declared, because English is opt-in here. A file
+    # only enters this check by being translated, so the check cannot block a Japanese-only note -
+    # it can only stop an existing translation from drifting. Tier 1 and 2 paths are skipped since
+    # they are already compared above, against a wider language set.
+    for path in sorted((ROOT / "docs" / "en").rglob("*.md")):
+        rel = path.relative_to(ROOT / "docs" / "en")
+        if any(part.startswith("_") for part in rel.parts):
+            continue
+        if rel.name == "README.md":
+            continue  # hub and module READMEs: covered by Tier 1 / Tier 2
+        if str(rel).replace("\\", "/") in {name for name, _ in read_manifest()}:
+            continue  # manifest entries: covered by Tier 1
+        reference = ROOT / "docs" / "ja" / rel
+        if not reference.exists():
+            errors.append(
+                f"docs/en/{rel}: no Japanese counterpart at docs/ja/{rel}; "
+                f"Japanese is the reference language, so a translation cannot lead it"
+            )
+            continue
+        checked += 1
+        errors += compare(f"docs/*/{rel}", reference, [("en", path)])
 
     if errors:
         print(f"i18n parity failed ({len(errors)} issue(s)):", file=sys.stderr)

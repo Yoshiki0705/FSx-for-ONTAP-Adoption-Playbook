@@ -18,7 +18,7 @@
 | 2 | ティアリングでどこまで下がるか | [階層化は「常に安くなる」わけではありません](notes/provisioned-versus-consumed.md#階層化は常に安くなるわけではありません) |
 | 3 | 見積もりが外れる典型的な前提は何か | [見積もりが外れる典型的な前提](notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) |
 | 4 | Snapshot が容量に与える影響をどう見るか | [Snapshot は容量として現れます](notes/provisioned-versus-consumed.md#snapshot-は容量として現れます) |
-| 5 | コストと可用性・性能のトレードオフをどう提示するか | [トレードオフの提示のしかた](notes/provisioned-versus-consumed.md#トレードオフの提示のしかた) |
+| 5 | コストと可用性・性能のトレードオフをどう見比べて決めるか | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
 
 ---
 

@@ -28,7 +28,7 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/03-migrate/checklists/) | Checklists for field use |
+| [`checklists/`](../../../ja/playbooks/03-migrate/checklists/) | Checklists for field use. [Cutover-day checklist](../../../ja/playbooks/03-migrate/checklists/cutover.md) (日本語) |
 
 ---
 
