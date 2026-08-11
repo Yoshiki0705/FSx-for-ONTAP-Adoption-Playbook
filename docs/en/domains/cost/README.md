@@ -18,7 +18,7 @@ Covers capacity, tiering, and the gap between estimates and measurements. Estima
 | 2 | How far tiering actually brings cost down | [Tiering does not always cost less](notes/provisioned-versus-consumed.md#tiering-does-not-always-save-money) (日本語) |
 | 3 | Which assumptions typically break an estimate | [The assumptions that break an estimate](notes/provisioned-versus-consumed.md#typical-estimation-assumptions-that-break) (日本語) |
 | 4 | How to account for Snapshot capacity impact | [Snapshots show up as capacity](notes/provisioned-versus-consumed.md#snapshots-consume-capacity) (日本語) |
-| 5 | How to present the cost-availability-performance trade-off | [Presenting the trade-off symmetrically](notes/provisioned-versus-consumed.md#how-to-present-trade-offs) (日本語) |
+| 5 | How to weigh the cost-availability-performance trade-off | [Weighing the trade-off symmetrically](notes/provisioned-versus-consumed.md#how-to-weigh-trade-offs) (日本語) |
 
 ---
 

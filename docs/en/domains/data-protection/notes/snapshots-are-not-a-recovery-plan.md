@@ -95,6 +95,37 @@ The first row is the most troublesome. **When backups are used alongside Snapsho
 
 **Design your retention policy by working backwards from the limits.** "Hourly Snapshots with no expiry" stops at 1,023.
 
+### 1,023 Is the Ceiling *Given Enough Space*
+
+**Reproduced by measurement.** A two-size control revealed that **on a small volume the space limit binds before the count limit.**
+
+| Volume size | Count where it stopped | Reason |
+|---|---|---|
+| 100 MiB | **694** | `No space left on device` (space) |
+| Same volume after expanding to 8 GiB | **1,023** | `Cannot exceed maximum number of snapshots.` (count) |
+
+**Even on an empty volume each Snapshot consumed roughly 150 KiB** (1,023 Snapshots came to about 149 MiB on an 8 GiB volume). The Snapshot reserve defaults to 5%.
+
+> **Planning retention on the assumption that Snapshots are nearly free will overrun the reserve.** And because the error raised when space runs out is `No space left on device`, **the message does not distinguish reaching the count limit from running out of space.** Check both.
+
+> **Evidence for this section**: `verified` (2026-08-06). `ap-northeast-1`, `SINGLE_AZ_1` (first generation), ONTAP `9.17.1P7D1`. **The Amazon FSx `CreateSnapshot` action is specific to FSx for OpenZFS**, so these were created through the ONTAP REST API. <!-- allow:naming - AWS の API 名 --> The record is in [Limits and quotas](../../../../ja/reference/limits/README.md).
+
+### Locking Snapshots Disables the Keep-Count Limit
+
+**With snapshot locking (Tamperproof Snapshot), the retention period takes precedence over the policy's `count`.** Snapshots therefore **accumulate past the keep count.**
+
+Combined with the 1,023 ceiling above, this can reach a state with no recovery path.
+
+| Element | Value |
+|---|---|
+| Ceiling per volume | **1,023** (measured) |
+| `count` applied to locked Snapshots | **Not applied** (`documented`) |
+| Deleting a locked Snapshot | **Not possible until retention expires** |
+
+> **An hourly schedule with a long retention reaches 1,023 with the keep count never applying.** What sits there are **Snapshots that cannot be deleted.** New creation stops, and **waiting is the only recovery.** Calculate that retention × frequency stays under 1,023 before enabling.
+
+**Locked Snapshots also block deletion of the volume itself.** Details are in [Irreversible operations need approval separate from approval of the work](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md#snaplock-を使っていないは保護になりません) (日本語).
+
 ---
 
 ## Restore Speed Depends on Generation

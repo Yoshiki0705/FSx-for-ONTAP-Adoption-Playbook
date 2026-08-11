@@ -9,6 +9,37 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The first two checklists outside the build phase**, both derived from notes that already exist so
+  that no new factual claim was introduced. Sources were re-pulled on 2026-08-11 and each checklist
+  states that date, because commands and limits move.
+  - **[Cutover-day checklist](docs/ja/playbooks/03-migrate/checklists/cutover.md)** is ordered by
+    position relative to the outage rather than by topic, since **downtime is only the interval
+    between stopping clients and resuming them** — the transfer completes before it. Everything that
+    can be done with clients still running is kept in a separate section, so moving an item into the
+    outage window is visible as a mistake. It names the four SnapMirror actions that force a fresh
+    baseline sync, and states plainly that no operation reverts a cutover: rollback is a decision
+    about data already written to the destination.
+  - **[Inventory checklist](docs/ja/playbooks/01-assess/checklists/inventory.md)** annotates every
+    item with the later irreversible decision it feeds, and excludes anything for which that use
+    cannot be written. Two items are called out as the ones most often missed — the largest file size
+    (above 50 GiB an S3 access point cannot be the write path) and the count of sharing forms that
+    have no ACL counterpart.
+- **`make i18n-check` now compares any document that exists in both Japanese and English**, not only
+  Tier 1 and Tier 2. Tier 3 English stays optional — a file enters the check only by being
+  translated, so the gate cannot block a Japanese-only note. What it can do is stop an existing
+  translation from drifting, **which it caught on its first run**: the English copy of "Having
+  snapshots is not the same as being able to recover" was missing two subsections, and they were the
+  two that matter most — that 1,023 is the ceiling only when there is space for the metadata, and
+  that locking snapshots disables the keep-count so an hourly schedule can reach 1,023 undeletable
+  snapshots. Both are now translated.
+  - The gate was verified in both directions before being trusted: it reports 20 groups in parity,
+    and appending one heading to an English file makes it fail with the file and the marker count.
+- **Glossary coverage for terms the notes already use**: HA pair, FlexVol, FlexGroup, constituent and
+  inode under storage structure; XDP, common snapshot and Compliance Clock under data protection; and
+  two new sections for identity (Active Directory, SID, LDAP, Kerberos, DACL/SACL) and for
+  performance and billing units (throughput capacity, baseline versus burst, SSD tier, capacity pool
+  tier, tiering policy). Every entry carries an inline link to the AWS or NetApp page it came from.
+
 - **A migrate-phase note for SaaS and cloud storage sources, carrying only the planning half.** The
   transfer mechanisms — DataSync location types, each SaaS admin API, the S3 access point size
   limits — stay in the sibling repository's document and are linked rather than restated, so what is
@@ -565,6 +596,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **`AGENTS.md` documented a `--verify-parity` flag that was never implemented.** The check it
+  described does exist and always has — `check_language_links()` in `sync_lang_switcher.py` runs
+  unconditionally and reports the offending file and line rather than a set difference — so the
+  correction is to describe the mechanism instead of the flag. The original spec item lived on in the
+  documentation after the implementation solved it differently, which left an agent reading
+  `AGENTS.md` to conclude the gate was missing.
+- **The English coverage policy is now stated rather than implied.** English is complete through
+  Tier 2 (hubs, guides, all twelve module READMEs) and opt-in below it, with two conditions for
+  translating a note: it answers a Tier 2 question an English reader will reach, and its content has
+  settled. The stopping point is deliberate — Tier 3 carries the numbers, thresholds, and
+  irreversible operations, where a mistranslation does not announce itself.
+- **`llms.txt` claimed three decision trees where one exists.** It listed flowcharts for protection
+  scheme and protocol selection alongside the migration method tree. Corrected to describe the one
+  that is actually written, rather than leaving a promise for a reader or a crawler to follow.
+- **Two questions in the 02-design module README were answered by sections that address something
+  else.** "How to divide file systems and SVMs" pointed at what happens when an HA pair is added, and
+  "how to size capacity and throughput" pointed at the ceiling of a single HA pair. Both questions are
+  now stated as what those sections do answer, and the original two are listed as `_未追加_` — the
+  first use in a module README of a marker the hubs have documented in all eight languages.
+- **A heading and its five referrers said "how to present trade-offs".** The section is about weighing
+  options for one's own decision, not explaining them to someone else, so it is now
+  「トレードオフの見比べかた」 / "How to weigh trade-offs".
 - **Every number was removed from the coverage statement.** The note and checklist counts had been
   rewritten twice in a single session, and the "some answers are still unwritten" qualifier became an
   understatement the moment the last question was answered. The statement now carries only the module

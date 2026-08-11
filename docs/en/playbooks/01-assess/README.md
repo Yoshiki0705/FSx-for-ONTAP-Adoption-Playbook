@@ -28,7 +28,7 @@ Before migrating, establish what exists on the current NAS and what will constra
 | Directory | Contents |
 |---|---|
 | [`notes/`](../../../ja/playbooks/01-assess/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/01-assess/checklists/) | Checklists for field use |
+| [`checklists/`](../../../ja/playbooks/01-assess/checklists/) | Checklists for field use. [Inventory checklist](../../../ja/playbooks/01-assess/checklists/inventory.md) (日本語) |
 
 ---
 

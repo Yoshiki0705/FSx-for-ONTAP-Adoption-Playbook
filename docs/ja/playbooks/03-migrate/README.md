@@ -28,7 +28,7 @@
 | ディレクトリ | 内容 |
 |---|---|
 | [`notes/`](notes/) | 知見の最小単位。1 ファイル = 1 論点。frontmatter に `evidence` 区分を持ちます |
-| [`checklists/`](checklists/) | 現場で使うチェックリスト |
+| [`checklists/`](checklists/) | 現場で使うチェックリスト。[切り替え当日のチェックリスト](checklists/cutover.md) |
 
 ---
 

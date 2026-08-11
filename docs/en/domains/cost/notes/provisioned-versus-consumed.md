@@ -123,9 +123,9 @@ The point about HA pair addition raising minimum throughput is in [Throughput is
 
 ---
 
-## How to present trade-offs
+## How to weigh trade-offs
 
-Cost discussions become actionable when **the amount saved and what is given up in exchange are presented symmetrically.** Showing only one side makes decisions impossible.
+A cost decision becomes possible when **the amount saved and what is given up in exchange are set side by side symmetrically.** Looking at only one side leaves the decision undecidable.
 
 | Choice | What decreases | What you accept |
 |---|---|---|

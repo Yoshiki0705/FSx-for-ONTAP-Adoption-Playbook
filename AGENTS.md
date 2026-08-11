@@ -58,9 +58,8 @@ python3 tools/check_i18n_parity.py               # Section structure/count acros
 python3 tools/audit_public_output.py             # Naming, neutrality, PII, internal IDs
 python3 tools/check_links.py                     # Internal link resolution
 python3 tools/check_links.py --external          # Include external URLs (network required)
-python3 tools/sync_lang_switcher.py              # Verify switcher blocks
+python3 tools/sync_lang_switcher.py              # Verify switcher blocks + cross-language links
 python3 tools/sync_lang_switcher.py --write      # Regenerate switcher blocks
-python3 tools/sync_lang_switcher.py --verify-parity   # JA/EN links must match modulo <lang>
 python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffold a note
 ```
 
@@ -347,8 +346,9 @@ exist; the counterpart of `docs/ja/domains/cost/README.md` is `docs/en/domains/c
 
 Because the two files sit at the same depth, **a translation is a copy plus text replacement — every
 relative link stays byte-identical**. If you find yourself adjusting `../` counts while translating,
-something is in the wrong place. `make switcher-check --verify-parity` enforces this: it compares the
-Japanese and English link target sets and fails on any difference beyond the language segment.
+something is in the wrong place. `make switcher-check` enforces the consequence: for every link it
+resolves the target's language, and if the *source* file's own language has that same page, the link
+must point there. A fallback into Japanese is allowed only while no counterpart exists.
 
 One exception: root `README.md` is the Japanese hub, so `docs/ja/README.md` does not exist and the
 "home" link resolves to a different depth per language. That link is generated, so it costs nothing.
@@ -361,7 +361,37 @@ Three tiers, enforced by `make i18n-check`:
 |---|---|---|
 | 1 | Root `README.md` + `docs/<lang>/README.md`, and the guides listed in `docs/i18n-manifest.txt` | per manifest; default all 8 |
 | 2 | Module `README` under `docs/<lang>/{playbooks,domains}/` | ja, en |
-| 3 | `notes/`, `checklists/`, `reference/` | ja (en optional) |
+| 3 | `notes/`, `checklists/`, `reference/` | ja; en optional per file, and gated once it exists |
+
+### What English covers, and what it deliberately does not
+
+**English is complete through Tier 2 and opt-in below it.** Every hub, guide, and module README
+exists in English, so an English reader can navigate the whole repository and read every question a
+module claims to answer. The answers themselves are Japanese unless a specific note has been
+translated.
+
+This is a deliberate stopping point, not a backlog:
+
+| | English | Why |
+|---|---|---|
+| Hubs, `navigation.md`, `evidence-policy.md` | Required | A reader must be able to find their way and read the confidence signals |
+| Module `README` (12 modules) | Required | The question list is the index. Without it, English readers cannot tell what is covered |
+| `notes/`, `checklists/` | Optional | These carry numbers, thresholds, and irreversible operations. A mistranslation here does not announce itself |
+| `reference/` | Not split | Written as bilingual single files; Japanese and English prose share the same tables |
+
+**Do not translate a note merely because it is untranslated.** Translate one when both hold:
+
+1. It is the primary answer to a Tier 2 question that an English reader will reach from a module README
+2. Its content has settled — a note still being corrected multiplies every later edit
+
+**Once an English counterpart exists, `make i18n-check` compares its section structure against the
+Japanese file on every commit.** That gate exists because the failure mode is invisible from the
+English side: a reader has no way to tell that the Japanese version gained two subsections last
+month. When it fires, the two honest options are to update the translation or to delete it — never to
+leave it behind while editing Japanese.
+
+A Japanese-only note is linked from English with a `(日本語)` marker, so a missing translation is a
+labelled link rather than a broken promise.
 
 ### What qualifies for eight languages
 
@@ -488,7 +518,8 @@ Surface findings explicitly and fix before finalizing.
 | Tier 1 doc updated in Japanese only | `make i18n-check` fails. Update every language the manifest names, in the same commit |
 | Adjusting `../` counts while translating a file | The counterpart belongs at the same depth under `docs/<lang>/`. Only the language segment may differ |
 | Hand-editing a switcher line, or adding a language to it manually | `make switcher-check` fails. Run `sync_lang_switcher.py --write` |
-| A link that resolves but sends the reader into another language | `make links` cannot see this. `sync_lang_switcher.py --verify-parity` can |
+| A link that resolves but sends the reader into another language | `make links` cannot see this. `make switcher-check` can, and it runs that check unconditionally |
+| Translating a note and then updating only the Japanese version later | `make i18n-check` compares every file that exists in both languages, not only Tier 1 and 2. A translation that exists has to keep up |
 | Creating `docs/en/reference/` for one file | `reference/` is bilingual single files today. Follow that style or split the whole tree deliberately |
 | Bare `FSx` or `FSxN` slipping into prose | `make audit` fails. Only "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" |
 | Suggesting BlueXP / Workload Factory / NetApp Console | Reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / Snapshot-FlexClone-SnapMirror |

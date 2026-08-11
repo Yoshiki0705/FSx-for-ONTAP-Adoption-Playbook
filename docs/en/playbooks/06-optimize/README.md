@@ -18,7 +18,7 @@ Performance and cost tuning once you are in steady state. Optimization cannot be
 | 2 | How to configure tiering | [Tiering defaults differ by creation method](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) |
 | 3 | How to measure storage efficiency gains | [How to measure the gain](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md#ストレージ効率の効果をどう測るか) (日本語) |
 | 4 | What to check before raising the throughput setting | [Order changes by whether they can be undone](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md#変更の順序は戻せるかで決める) (日本語) |
-| 5 | How to position the cost-versus-availability trade-off | [Presenting the trade-off symmetrically](../../../en/domains/cost/notes/provisioned-versus-consumed.md#how-to-present-trade-offs) (日本語) |
+| 5 | How to position the cost-versus-availability trade-off | [Weighing the trade-off symmetrically](../../../en/domains/cost/notes/provisioned-versus-consumed.md#how-to-weigh-trade-offs) (日本語) |
 
 ---
 
