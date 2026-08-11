@@ -131,6 +131,124 @@ Komprise と FSx for ONTAP を組み合わせた、ハイブリッドクラウ�
 
 ---
 
+### レガシーとモダンの橋渡し — S3 AP のサーバーレスパターン（Blog, 2026）
+
+NFS/SMB で稼働するレガシーアプリとクラウドネイティブアプリを、データ複製なしに同一ストレージから同時に利用する 3 パターン（ECS Fargate / Lambda / Step Functions）を解説。イベント駆動で AI 推論・ログ変換・データセット加工を自動起動する構成。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 「S3 API でできること」の範囲がアプリケーションアーキテクチャに拡大 | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) |
+| Fargate から S3 API で直接アクセスすれば NFS クライアント設定が不要 | [データ活用ドメイン — 動く実装](../domains/data-utilization/README.md#動く実装--sibling-リポジトリ) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/bridge-legacy-and-modern-applications-with-amazon-s3-access-points-for-amazon-fsx/)
+
+---
+
+### ハイブリッド HPC — 理研 × FlexCache × ParallelCluster（NetApp Blog）
+
+理化学研究所のチームが採用したハイブリッド HPC 構成。オンプレミスの ONTAP に保存された研究データをクラウドへ移動せず、FlexCache で AWS 上にキャッシュのみを展開。ParallelCluster で GPU/CPU ノードをオンデマンドに起動し、ジョブ完了後に自動スケールイン。1,000 ノード規模への拡大を検討中。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| FlexCache の「データを動かさない」特性が HPC バーストに有効な実例 | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
+| 書き込みワークロードにも対応可能（派生データを AWS 側で保持） | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) |
+
+出典: [NetApp Blog（日本語）](https://www.netapp.com/ja/blog/hybrid-hpc/)
+
+---
+
+### SFTP ファイル共有 — Transfer Family + S3 AP（Blog, 2026）
+
+金融機関のユースケース。内部ユーザーは SMB/NFS、外部パートナーは SFTP で**同一ファイル**にアクセスする構成。データコピー不要。Transfer Family の認証と S3 AP の固定ファイルシステム ID による二重のセキュリティレイヤー。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 「NFS/SMB + S3 + SFTP」の 4 プロトコル同時アクセスの構成例 | [AD への依存は参加時ではなく生涯続く](../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+| 金融機関のコンプライアンス要件との組み合わせ | [業種別リソースマップ — 金融](industry-resource-map.md#金融) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/secure-sftp-file-sharing-with-aws-transfer-family-amazon-fsx-for-netapp-ontap-and-s3-access-points/)
+
+---
+
+### Oracle HA — Multi-AZ + Auto Scaling + Lambda（Architecture Blog, 2026）
+
+FSx for ONTAP Multi-AZ を共有ストレージとして、EC2 Auto Scaling + Lambda + AWS Backup による Oracle HA を構築。RTO 2-5 分、RPO ≒ 0（同期 Multi-AZ レプリケーション）。AMI 管理を自動化し、フェイルオーバー後のインスタンスが最新構成で起動。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| Oracle HA でクラスタソフトウェアを使わないアプローチ | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
+| 共有ストレージ + Auto Scaling のパターンは SQL Server FCI と同構造 | [公開事例 — SQL Server](../case-studies/public-case-studies.md#ワークロードから探す) |
+
+出典: [AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/building-highly-available-oracle-databases-with-amazon-fsx-for-netapp-ontap/)
+
+---
+
+### データディスカバリー — S3 AP + S3 Tables + Athena（Blog, 2026）
+
+ファイルメタデータ（パス・サイズ・拡張子・最終アクセス日・エージ）を S3 AP 経由で収集し、Apache Iceberg テーブルとして Athena でクエリ可能にする CDK ソリューション。「どのフォルダが最も容量を消費しているか」「1 年以上アクセスされていないファイルはどれだけあるか」を SQL で即答。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 容量管理の判断材料を「推定」から「実測」に変える | [容量が余っていても書けなくなる](../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) |
+| 階層化ポリシーの最適化に必要なアクセス頻度データが得られる | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/data-discovery-how-to-find-out-whats-on-your-amazon-fsx-for-netapp-ontap-volumes/)
+
+---
+
+### AD 環境での AI 分析 — S3 AP + Active Directory + Quick Suite（Blog, 2026）
+
+Windows Active Directory 統合環境で S3 AP を構成し、AD グループ単位で AI 分析サービス（Amazon Quick Suite）へのアクセスを制御する方法。部門ごとにボリュームを分離し、AD グループで読み取り/書き込みを制御する構成例。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| S3 AP の「全リクエストを 1 つの ID で認可する」制約を AD グループで補完するパターン | [S3 AP は全リクエストを 1 つの ID で認可する](../domains/data-utilization/notes/reaching-data-without-copies.md) |
+| AD 参加 SVM での S3 AP 利用時の考慮事項 | [AD への依存は参加時ではなく生涯続く](../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/enabling-ai-powered-analytics-on-enterprise-file-data-configuring-s3-access-points-for-amazon-fsx-for-netapp-ontap-with-active-directory/)
+
+---
+
+### Multi-AZ ML トレーニング — FlexCache + SnapMirror（GitHub, 2026-03）
+
+GPU インスタンスが複数 AZ に分散する ML トレーニングで、FlexCache で読み取りキャッシュ、SnapMirror でチェックポイント非同期レプリケーションを行うアーキテクチャ。Single-AZ 2nd gen をオリジンに使い、コストを抑えつつ一貫したデータアクセスを実現。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| FlexCache の読み取りキャッシュは ML データ配信に有効（キャッシュミス時 1-2 ms） | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
+| チェックポイントを各 AZ のローカルボリュームに書き、SnapMirror で集約 | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) |
+
+出典: [GitHub — kyongki/fsxn-multi-az-ml-training](https://github.com/kyongki/fsxn-multi-az-ml-training)
+
+---
+
+### Microsoft Entra ID 統合 — Entra Domain Services + VPN ブリッジ（Blog, 2026）
+
+オンプレミス AD を廃止して Microsoft Entra ID に移行済みの環境で、FSx for ONTAP の SMB 認証を Entra Domain Services 経由で実現する構成。Entra ID → Entra Domain Services（マネージドドメインコントローラー）→ VPN → FSx for ONTAP SVM のドメイン参加。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| AD 廃止後も FSx for ONTAP の SMB 認証が可能に（ただし Entra Domain Services が必要） | [AD への依存は参加時ではなく生涯続く](../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+| PTR レコード構成が FSx for ONTAP のみ追加で必要 | [ボリュームのセキュリティスタイル](../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/integrating-amazon-fsx-for-netapp-ontap-and-amazon-fsx-for-windows-file-server-with-microsoft-entra-id/)
+
+---
+
+### ストレージクォータ管理 — qtree ベースの容量ガバナンス（Blog, 2026）
+
+共有ボリューム上のワークロードごとに容量上限を設定する構成。qtree + ツリークォータポリシールールで、ETL ジョブの暴走やログの肥大化による他ワークロードへの影響を防ぐ。ハードリミット・ソフトリミット・閾値アラートを組み合わせ、NFS/SMB 問わずストレージレイヤーで強制。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 「確保した量」の中をワークロードごとに区切れる | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) |
+| 容量計画を「推定」から「制御」に変える手段 | [容量が余っていても書けなくなる](../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) |
+| IaC で到達できない ONTAP レベルの設定の一例 | [IaC の境界は API の表面で決まる](../playbooks/04-build/notes/what-iac-cannot-reach.md) |
+
+出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/manage-storage-consumption-at-scale-with-quotas-on-amazon-fsx-for-netapp-ontap/)
+
+---
+
 ## 2025 年後半のアップデート（設計に長期的な影響）
 
 | 日付 | アップデート | 設計への影響 |
