@@ -19,6 +19,7 @@
 | 3 | 初期同期と差分同期をどう計画するか | [初期同期と差分同期](notes/where-the-rollback-window-closes.md#初期同期と差分同期) |
 | 4 | 切り替え時のダウンタイムをどう最小化するか | [切り替えの順序](notes/where-the-rollback-window-closes.md#切り替えの順序) |
 | 5 | どの時点まで、どうやって戻せるか | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](notes/where-the-rollback-window-closes.md) |
+| 6 | 移行元が SaaS / クラウドストレージの場合、方式の前に何を確定させるか | [SaaS からの移行は転送方式より先に移行元の群を確定させる](notes/saas-source-migration-scoping.md) |
 
 ---
 

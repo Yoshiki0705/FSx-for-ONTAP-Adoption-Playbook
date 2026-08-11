@@ -19,6 +19,7 @@
 | 3 | 権限・ACL・ID マッピングの現状はどうなっているか | [棚卸し項目の逆算表](notes/counting-bytes-is-not-counting-files.md#棚卸し項目は後で戻せない判断から逆算する) |
 | 4 | 移行のブロッカーになりうる機能依存は何か | [移行方式の決定木](../../reference/decision-trees/migration-method.md) |
 | 5 | 性能要件のベースラインをどう測るか | [比較可能な形で取る](notes/counting-bytes-is-not-counting-files.md#性能のベースラインは比較可能な形で取る) |
+| 6 | 移行元が SaaS / クラウドストレージの場合、追加で採取すべき数値は何か | [Assess フェーズで採取すべき数値](../03-migrate/notes/saas-source-migration-scoping.md#3-assess-フェーズで採取すべき数値) |
 
 ---
 
