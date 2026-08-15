@@ -37,11 +37,18 @@ npm install -g markdownlint-cli2      # not pip-installable
 brew install gitleaks                 # not pip-installable
 ```
 
-**`make lint` warns when the installed `ruff` differs from the pinned version. That warning means a
-local pass does not predict CI.** Rule sets widen between releases, so a newer `ruff` reports
-findings on code that has not changed, and an older one stays silent on code CI will reject. Install
-the pinned version rather than working past the warning — the alternative is discovering it as a red
-pull request.
+**Install all three. Every gate now fails when its tool is missing, rather than skipping.** Three
+of them used to degrade quietly — `make markdown` printed "skipping", `make audit` printed
+"skipping secret scan", and `make python` fell back to `py_compile` under the same name. A check
+whose tool is absent is indistinguishable from a check that passed, and the gitleaks half of
+`make audit` was in exactly that state inside CI on every run.
+
+**`make python` fails when the `ruff` first on `PATH` is not the pinned version.** Rule sets widen
+between releases, so a newer `ruff` reports findings on code that has not changed and an older one
+stays silent on code CI will reject. This used to be a warning, which was easy to walk past — the
+same silent divergence it was warning about. If it fires after installing the pin, check for a second
+binary earlier on `PATH` with `which -a ruff`; a package-manager copy shadowing the pinned one is the
+usual cause.
 
 ```bash
 make help          # List all targets
@@ -49,8 +56,11 @@ make lint            # markdownlint + frontmatter schema validation
 make i18n-check      # Tier 1 cross-language section parity
 make switcher-check  # Language switcher blocks match what exists on disk
 make audit           # Pre-publication audit (naming / neutrality / PII / internal IDs)
+make secrets         # gitleaks scan of the worktree (full history: gitleaks workflow)
 make links           # Broken link check (internal links offline, external opt-in)
-make all             # lint + i18n-check + switcher-check + audit + links
+make drift           # AGENTS.md size budget, steering loader thinness, index reachability
+make test            # Guardrail tests: guard contract, .PHONY, one break per doc gate
+make all             # everything above (commit gate)
 
 # Individual validators (also callable directly)
 python3 tools/validate_frontmatter.py            # Schema + evidence-tier rules
@@ -61,7 +71,13 @@ python3 tools/check_links.py --external          # Include external URLs (networ
 python3 tools/sync_lang_switcher.py              # Verify switcher blocks + cross-language links
 python3 tools/sync_lang_switcher.py --write      # Regenerate switcher blocks
 python3 tools/new_note.py --module domains/performance --slug my-slug   # Scaffold a note
+python3 scripts/guard_irreversible_ops.py --selftest   # block / ask / allow, both directions
 ```
+
+CI calls these Makefile targets rather than repeating the commands, and the linted path list lives
+once in the Makefile's `PY_PATHS`. Test directories live in `TEST_DIRS` for the same reason: a
+`tests/` directory that is not listed there runs nowhere, and `make test` fails when one exists
+outside the list.
 
 `make all` is the gate. Run it before every commit — and specifically **after the last edit**, not before it.
 
@@ -297,7 +313,16 @@ The lesson generalizes past SnapLock:
 `scripts/guard_irreversible_ops.py` enforces this mechanically — it blocks a matching mutating command and
 allows read-only inspection. Wire it to a `PreToolUse` hook. **If it blocks you, do not look for a call
 that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories. Verify it with
-`python3 scripts/guard_irreversible_ops.py --selftest` (26 cases, both directions).
+`python3 scripts/guard_irreversible_ops.py --selftest`, which covers all three verdicts — block
+(exit 2), ask (exit 0 plus a `permissionDecision` payload), and allow (exit 0, silent). Proving it
+blocks is not enough on its own: a guard that also stops ordinary work gets switched off.
+
+**The hook must point at this tracked file.** A copy under `.kiro/` or `$HOME` is invisible to
+collaborators and to CI, and it drifts. That is not hypothetical here — the wired copy once covered
+none of S3 Object Lock, Glacier Vault Lock, Backup Vault Lock, or EBS snapshot lock while this file
+listed all four, so ten documented block cases were silently permitted.
+`scripts/tests/test_hook_wiring.py` fails when no hook runs the tracked script, and
+`scripts/tests/test_guard_irreversible_ops.py` fails when a listed feature area has no block case.
 
 The cases live inside the script deliberately. Once the hook is active, **passing a sample locking command
 on the command line gets the verification run itself blocked** — which happened during development. Keeping
@@ -337,125 +362,18 @@ Executive-summary conclusion up front, FAQ / common misconceptions, a selection 
 fine), OT/IT security considerations where applicable, phased adoption steps, and a Related Documents
 section with back-links.
 
-## Localization
+## Task-specific references (not loaded every turn)
 
-### Path model
+This file is read on every turn, so material that only matters during one kind of work
+lives in tracked documents instead. They are public, versioned, and reviewed like any
+other doc — `.kiro/` only records when to read them.
 
-A document's language is its directory, never a filename suffix. `README.en.md` and friends do not
-exist; the counterpart of `docs/ja/domains/cost/README.md` is `docs/en/domains/cost/README.md`.
-
-Because the two files sit at the same depth, **a translation is a copy plus text replacement — every
-relative link stays byte-identical**. If you find yourself adjusting `../` counts while translating,
-something is in the wrong place. `make switcher-check` enforces the consequence: for every link it
-resolves the target's language, and if the *source* file's own language has that same page, the link
-must point there. A fallback into Japanese is allowed only while no counterpart exists.
-
-One exception: root `README.md` is the Japanese hub, so `docs/ja/README.md` does not exist and the
-"home" link resolves to a different depth per language. That link is generated, so it costs nothing.
-
-### Tiers
-
-Three tiers, enforced by `make i18n-check`:
-
-| Tier | Scope | Languages |
-|---|---|---|
-| 1 | Root `README.md` + `docs/<lang>/README.md`, and the guides listed in `docs/i18n-manifest.txt` | per manifest; default all 8 |
-| 2 | Module `README` under `docs/<lang>/{playbooks,domains}/` | ja, en |
-| 3 | `notes/`, `checklists/`, `reference/` | ja; en optional per file, and gated once it exists |
-
-### What English covers, and what it deliberately does not
-
-**English is complete through Tier 2 and opt-in below it.** Every hub, guide, and module README
-exists in English, so an English reader can navigate the whole repository and read every question a
-module claims to answer. The answers themselves are Japanese unless a specific note has been
-translated.
-
-This is a deliberate stopping point, not a backlog:
-
-| | English | Why |
-|---|---|---|
-| Hubs, `navigation.md`, `evidence-policy.md` | Required | A reader must be able to find their way and read the confidence signals |
-| Module `README` (12 modules) | Required | The question list is the index. Without it, English readers cannot tell what is covered |
-| `notes/`, `checklists/` | Optional | These carry numbers, thresholds, and irreversible operations. A mistranslation here does not announce itself |
-| `reference/` | Not split | Written as bilingual single files; Japanese and English prose share the same tables |
-
-**Do not translate a note merely because it is untranslated.** Translate one when both hold:
-
-1. It is the primary answer to a Tier 2 question that an English reader will reach from a module README
-2. Its content has settled — a note still being corrected multiplies every later edit
-
-**Once an English counterpart exists, `make i18n-check` compares its section structure against the
-Japanese file on every commit.** That gate exists because the failure mode is invisible from the
-English side: a reader has no way to tell that the Japanese version gained two subsections last
-month. When it fires, the two honest options are to update the translation or to delete it — never to
-leave it behind while editing Japanese.
-
-A Japanese-only note is linked from English with a `(日本語)` marker, so a missing translation is a
-labelled link rather than a broken promise.
-
-### What qualifies for eight languages
-
-Tier 1 is **first-touch material only**: how to find your way around, and how to read the confidence
-signals. A reader arriving in their own language needs to know where to go and how much to trust
-what they find — nothing beyond that.
-
-| Belongs in Tier 1 | Stays at ja + en or ja |
+| Document | Read it when |
 |---|---|
-| The hub, navigation, how to read the evidence tiers | Anything carrying a number, a limit, or a threshold |
-| Anonymization and contribution policy a reader must understand before acting | Anything describing an irreversible operation |
-| Labels and wording a reader meets before choosing a path | Notes, checklists, decision trees, comparison matrices |
-
-The dividing line is consequence. **A mistranslation in first-touch material sends someone to the
-wrong page, which they will notice. A mistranslation in a design judgment does not announce itself
-and can be acted on.** Deep technical material is therefore deliberately not promoted, even when a
-translation would be easy to produce.
-
-Promotion is also gated on stability. Translating a document that is still changing multiplies every
-later edit by eight. Promote when the content has settled, not when it is first written.
-
-### Declaring authority
-
-Every Tier 1 document states which version is authoritative, symmetrically:
-
-- The Japanese version states that it is the authoritative one for technical accuracy.
-- Every other language states that Japanese is authoritative and that discrepancies should be
-  reported.
-
-This is a plain paragraph, not a heading, so it does not affect section parity. It exists because
-translations here are produced with machine assistance and are not natively reviewed before
-publication — a reader deciding whether to act on a statement is entitled to know that.
-
-**The operating model is publish, then correct on report.** Waiting for native review before
-publishing would mean shipping nothing outside Japanese and English. Instead the limitation is
-stated, the report path is one click away, and a translation correction is treated as an ordinary
-correction rather than a special case. That trade is only honest while the notice stays visible and
-the scope stays narrow — which is why first-touch material is the boundary, not a starting point to
-expand from.
-
-Tier 1 requires matching section structure and count across the languages the manifest names for that
-file. When you change one language, change all of them in the same commit.
-
-`docs/ja/reference/**` is currently written as **bilingual single files** (Japanese and English prose
-sharing the same tables). It is therefore not split per language yet, and English pages link into
-`docs/ja/reference/`. When adding to `reference/`, follow the existing bilingual style rather than
-creating a partial `docs/en/reference/` tree.
-
-### Language switcher
-
-Never hand-write or hand-edit a switcher line. Each localized file carries a generated block:
-
-```markdown
-<!-- lang-switcher:start -->
-🌐 [日本語](…) | [English](…) | [🏠 リポジトリトップ](…)
-<!-- lang-switcher:end -->
-```
-
-`python3 tools/sync_lang_switcher.py --write` fills it from the filesystem, listing only languages
-that actually exist. The tool does not insert the marker pair — placement is a layout decision, so a
-new file needs the markers added once, after the H1 and at the end of the file.
-
-**Never translate**: file paths, commands, badge URLs, anchor IDs, product and technical terms
-(ONTAP, SnapMirror, FlexCache, FlexClone, SnapLock, FabricPool, S3 Access Point, SVM, LIF).
+| [`docs/agent/localization.md`](docs/agent/localization.md) | adding, translating, or restructuring a document under `docs/<lang>/` |
+| [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, regenerating, or exporting a diagram |
+| [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
+| [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
 
 ## Authoring Conventions
 
@@ -468,20 +386,6 @@ new file needs the markers added once, after the H1 and at the end of the file.
 - Japanese is the primary authoring language; code, identifiers, and commit messages are English.
 - Commit messages: conventional commits (`docs:`, `feat:`, `fix:`, `chore:`, `refactor:`, `ci:`), under 72 chars.
 - PR titles: `<type>: <description>`, under 70 chars. Enforced by `.github/workflows/pr-title-check.yml`.
-
-## Architecture Diagrams
-
-Follow the same standard as sibling repositories:
-
-- Official AWS Architecture Icons, current quarterly Asset Package only. Do **not** use draw.io's bundled `mxgraph.aws4` (2019 generation).
-- Service icons 80×80 (`Arch_*_64.svg` native), resource icons 48×48 (`Res_*_48.svg`). No rescaling, no mixing.
-- Labels use official service names with the `Amazon`/`AWS` prefix. No abbreviations (`ALB` → `Elastic Load Balancing`). Non-AWS elements (`NFS クライアント`, `Windows ファイルサーバー`) need no prefix.
-- Arrows: single-color preset open arrow only (`endArrow=open;endFill=0;strokeColor=#232F3E`). No color-coding or dashed-line semantics.
-- Sources live in `docs/_assets/diagrams/`, exports in `docs/_assets/images/` and `docs/_assets/images/png/`. Diagrams are language-neutral; the underscore marks the directory as not-content, which is also why the validators skip it.
-- Ship **both themes**: light is the default and what docs display; dark is generated from light with `Res_*_48_Dark` icon substitution and linked alongside.
-- Never commit the icon asset package itself — only diagrams with icons already embedded.
-- `ET.parse()` passing is not verification. **Render the PNG and look at it**, per language.
-- `@2x` exports exceed the 2000px read limit; downscale to a preview before reading.
 
 ## Verification Checklist
 
@@ -508,58 +412,6 @@ Run before the checklist above. Automated checks catch syntax; these catch desig
 4. **Regression risk** — did a link target move? Does another doc cite a number you just changed? Did a glossary term change meaning?
 
 Surface findings explicitly and fix before finalizing.
-
-## Common Pitfalls
-
-| Pitfall | Solution |
-|---|---|
-| `evidence: verified` without `verified_on` | `make lint` fails. Either add the date or downgrade the tier |
-| A measured number with no environment stated | Always state ONTAP version, region, and configuration next to the number |
-| Tier 1 doc updated in Japanese only | `make i18n-check` fails. Update every language the manifest names, in the same commit |
-| Adjusting `../` counts while translating a file | The counterpart belongs at the same depth under `docs/<lang>/`. Only the language segment may differ |
-| Hand-editing a switcher line, or adding a language to it manually | `make switcher-check` fails. Run `sync_lang_switcher.py --write` |
-| A link that resolves but sends the reader into another language | `make links` cannot see this. `make switcher-check` can, and it runs that check unconditionally |
-| Translating a note and then updating only the Japanese version later | `make i18n-check` compares every file that exists in both languages, not only Tier 1 and 2. A translation that exists has to keep up |
-| Creating `docs/en/reference/` for one file | `reference/` is bilingual single files today. Follow that style or split the whole tree deliberately |
-| Bare `FSx` or `FSxN` slipping into prose | `make audit` fails. Only "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" |
-| Suggesting BlueXP / Workload Factory / NetApp Console | Reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / Snapshot-FlexClone-SnapMirror |
-| **Enabling any immutability feature without an explicit instruction naming the retention value** | Stop and ask. See [Immutability (WORM) features](#immutability-worm-features-never-enable-one-on-your-own-judgement). A 128 MiB SnapLock audit log volume locked a whole file system for six months |
-| Reading the "how to enable" page but not the "how to delete" page | Reversibility is documented on the teardown page. Read the exit before the entry |
-| Assuming "use the minimum retention" is protection | Find the parameter that actually binds. A volume `RetentionPeriod` of `0 YEARS` did not prevent a six-month lock set by a *different* parameter the AWS API cannot even express |
-| Treating verification as a reason to skip the irreversibility gate | Use a disposable file system or account. The incident that created this rule was verification work |
-| Vendor-versus phrasing in a comparison | State trade-offs symmetrically and add a "how to choose" section |
-| Invented `**X Engineer lens**` callout | Relabel to a neutral topic note (`**Security note**`) |
-| Case study with a recognizable configuration | Abstract to industry + scale band; drop anything identifying |
-| Personal path `/Users/<name>/` in an example | Use `${PROJECT_DIR}` or a relative path |
-| Dark diagram not regenerated after a light edit | Regenerate; the light/dark pair must stay in sync |
-| Reading a `@2x` PNG directly | Exceeds the 2000px limit. Downscale to a preview first |
-| Working past the `ruff` version warning from `make lint` | Install the pinned version. A local pass with a different `ruff` does not predict CI, and the difference surfaces as a red pull request |
-| Citing another repo's finding without a link | Always link the source repository and doc |
-
-## FSx for ONTAP Domain Knowledge (carry-over)
-
-These are established findings from sibling repositories. Do not re-derive them; cite and link instead.
-
-### AD integration
-
-- AWS Managed Microsoft AD inserts an intermediate OU: `OU=Computers,OU=<ShortName>,DC=…`. Omitting it causes silent failures. Self-managed AD has no intermediate OU.
-- `FileSystemAdministratorsGroup` must be `Domain Admins`. `AWS Delegated FSx Administrators` has insufficient permissions for SVM join (verified failure → `MISCONFIGURED`).
-- SVM NetBIOS name: ≤15 chars, must differ from the domain ShortName, unique per AD domain. Never reuse a name after a failed join — AD retains the orphaned computer account.
-- Windows EC2 domain join: use a separate `AWS::SSM::Association` with the AWS-managed `AWS-JoinDirectoryServiceDomain` document. Never `SsmAssociations` on the instance, never a custom `aws:domainJoin` document.
-
-### S3 Access Points
-
-- IAM ARN must be access-point style: `arn:aws:s3:<region>:<account>:accesspoint/<name>` (and `/object/*`). Bucket-style ARNs do not work.
-- Dual-layer authorization: AWS side (IAM + AP policy) **and** ONTAP side (file system identity) must both allow.
-- `NetworkOrigin` is immutable after creation. `Internet` origin is not reachable via an S3 Gateway VPC Endpoint.
-- Size limits are **binary** despite docs saying "GB": single `PutObject` and per-`UploadPart` 5 GiB; whole object 50 GiB. The whole-object limit is checked only at `CompleteMultipartUpload`, after the full payload transfers — validate client-side first.
-- On an AD-joined SVM, **every** data operation requires AD DC reachability. `HeadBucket` succeeds even when AD is unreachable (false positive) — always verify with a data operation.
-
-### Documented constraints
-
-- No S3 Event Notifications → use EventBridge Scheduler polling or FPolicy.
-- SnapLock / tamperproof snapshot enablement is **irreversible**. Enabling the feature is not the same as auto-locking; a retention period on the policy is what triggers locking.
-- Volume names allow only alphanumerics and underscores.
 
 ## External Dependencies
 

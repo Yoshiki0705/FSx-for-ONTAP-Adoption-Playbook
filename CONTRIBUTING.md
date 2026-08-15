@@ -167,6 +167,9 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 | `make audit` | 命名 / 中立性 / 個人情報 / 内部 ID / シークレット |
 | `make links` | 内部リンクの解決（`llms.txt` を含む） |
 | `make links-external` | 外部 URL も含む（ネットワーク必要） |
+| `make secrets` | gitleaks によるワークツリーの秘密スキャン（未インストール時は失敗します） |
+| `make drift` | AGENTS.md のサイズ予算 / steering ローダーの薄さ / 索引の到達性と追跡状態 |
+| `make test` | ガードレールのテスト（block/ask/allow 契約、.PHONY、各ゲートの壊し検出） |
 | `make all` | 上記すべて。**コミット前の必須ゲート** |
 
 `make audit` の誤検知は行末のコメントで抑止できます。使う場合は理由が一目で分かる箇所に限定してください。

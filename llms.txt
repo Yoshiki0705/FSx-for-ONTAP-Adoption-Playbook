@@ -28,6 +28,10 @@ thereafter.
 - [Navigation guide](docs/en/navigation.md): How to pick an entry point for your question.
 - [Evidence policy](docs/en/evidence-policy.md): Definition of the four evidence tiers and what each requires.
 - [AGENTS.md](AGENTS.md): Conventions, prohibitions, and verification steps for coding agents.
+- [docs/agent/localization.md](docs/agent/localization.md): Path model, tiers, and switcher generation for the 8-language tree.
+- [docs/agent/architecture-diagrams.md](docs/agent/architecture-diagrams.md): Icon generation, sizes, labels, and export rules for diagrams.
+- [docs/agent/pitfalls.md](docs/agent/pitfalls.md): Failure modes each quality gate catches, and the fix for each.
+- [docs/agent/domain-knowledge.md](docs/agent/domain-knowledge.md): Established FSx for ONTAP findings carried over from sibling repositories.
 
 ## Languages and paths
 

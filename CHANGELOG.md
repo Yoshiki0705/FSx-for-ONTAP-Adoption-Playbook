@@ -7,7 +7,75 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ## [Unreleased]
 
+### Fixed
+
+- **Three gates reported success when the tool they depend on was absent.** `make markdown`
+  printed "skipping", `make audit` printed "skipping secret scan", and `make python` fell back to
+  `py_compile` — a weaker check under the same name. The second one mattered most: gitleaks is not
+  installed in CI's docs-quality job, so that half of `make audit` was decorative on every run
+  there. All three now exit non-zero with an install line. Secret scanning is split into
+  `make secrets` so the two questions cannot hide inside one target, and full-history scanning
+  stays in `.github/workflows/gitleaks.yml`. `scripts/tests/test_gate_integrity.py` runs each gate
+  with the tool removed from `PATH` and fails if it succeeds — which is how the `py_compile`
+  fallback was found, after the other two had already been fixed.
+- **The irreversibility guard that was actually running covered less than the one under review.**
+  The `PreToolUse` hook pointed at a copy under `$HOME/.kiro/`, not at the tracked
+  `scripts/guard_irreversible_ops.py`. Measured against the tracked file's own corpus, **10 of its
+  26 documented cases were permitted by the copy that ran**: S3 Object Lock, Glacier Vault Lock,
+  Backup Vault Lock, EBS snapshot lock, the ONTAP REST audit-log `POST`, a locking snapshot policy
+  with a retention period, `-snaplock-expiry-time` at snapshot creation, and a SnapMirror
+  long-term retention rule. `AGENTS.md` described mechanical enforcement and pointed at
+  `--selftest` for proof, so the artifact being verified was not the artifact being enforced.
+  The hook now runs the tracked file, and `scripts/tests/test_hook_wiring.py` fails if it stops
+  doing so. Confirmed by real firing: the guard blocked a verification command issued during this
+  change, which is the trap the in-file corpus exists to avoid.
+- **`scripts/check_agent_context_budget.py` skipped its own steering checks in CI.** They were
+  guarded by `if STEERING.exists()`, and `.kiro/` is gitignored, so the loader-thinness and
+  authority checks did nothing there while the target still printed `healthy`. Absence is now
+  reported on stdout instead of passing silently.
+- **A note whose filename began with `_` was never validated.** The scaffolding skip in
+  `tools/validate_frontmatter.py` tested every path component including the filename, so a
+  `_draft.md` inside a real `notes/` directory had no evidence tier checked and produced no
+  message. Scaffolding is now determined by directory only; `_template/` stays exempt.
+- **The pinned-`ruff` mismatch was a warning that was easy to walk past** — the same silent
+  divergence it warned about. `make python` now fails, and says to check `which -a ruff` for a
+  second binary shadowing the pinned one, which is what was happening locally (0.15.20 ahead of
+  the pinned 0.16.1 on `PATH`).
+
 ### Added
+
+- **`make test` (42 tests, stdlib `unittest`, no new dependencies), wired into `make all` and CI.**
+  The repository previously had no tests at all, so every gate was trusted on the evidence that it
+  printed success. Each suite is written to fail on a deliberate break rather than to confirm a
+  clean tree:
+  - the guard's **block / ask / allow** contract driven through a real subprocess and stdin event,
+    because exit 2 is the only code that blocks and any other non-zero silently continues;
+  - `.PHONY` completeness, since `docs/`, `scripts/`, and `tools/` exist as directories and an
+    undeclared target of the same name makes `make` report "up to date" without running anything;
+  - one synthetic break per documentation gate — evidence tier promoted without `verified_on`,
+    a role-labeled callout, forbidden naming, vendor-versus phrasing, cross-language section
+    drift, a broken internal link, a hand-edited language switcher;
+  - hook wiring: matchers that compile and match real tool names, no over-escaped `\\\\.` pattern,
+    no undocumented `$KIRO_*` variable, no command ending in `|| true`, block-intent hooks using a
+    `command` action on a trigger that can actually block;
+  - test discovery: every directory holding `test_*.py` must appear in the Makefile's `TEST_DIRS`.
+- **A third verdict in the guard: `ask`.** Destructive-or-opaque calls now prompt instead of
+  passing — `delete-file-system` / `delete-volume`, which can return success while silently not
+  deleting behind an unexpired WORM log, and `create-volume --cli-input-json file://…`, whose
+  payload the guard cannot read.
+
+### Changed
+
+- **Task-specific material moved out of `AGENTS.md` into tracked `docs/agent/`** (localization
+  workflow, architecture diagram standards, pitfalls, carried-over domain knowledge), reducing a
+  file read on every turn from 37.5 KB to 26.4 KB. `.kiro/steering/` now holds only thin loaders
+  recording when to read each one, and `AGENTS.md` keeps a one-line index. The 15.5 KB
+  always-loaded workspace steering file was replaced by a 0.75 KB loader: it restated rules that
+  `AGENTS.md` already carries, which is how two copies drift apart, and `.kiro/` is not published
+  so nothing there is available to a reader of the repository.
+- **CI calls Makefile targets instead of repeating their commands.** The linted path list lives
+  once in `PY_PATHS` and test directories in `TEST_DIRS`, so local and CI cannot inspect different
+  trees.
 
 - **The first two checklists outside the build phase**, both derived from notes that already exist so
   that no new factual claim was introduced. Sources were re-pulled on 2026-08-11 and each checklist
@@ -593,8 +661,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - `reference/`: migration-method decision tree, comparison and limits conventions, glossary
 - `llms.txt` and `AGENTS.md` for AI agent and crawler consumption
 - CI: docs quality gate, markdown lint, PR title check, gitleaks secret scan
-
-### Changed
 
 - **`AGENTS.md` documented a `--verify-parity` flag that was never implemented.** The check it
   described does exist and always has — `check_language_links()` in `sync_lang_switcher.py` runs

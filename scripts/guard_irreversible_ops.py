@@ -33,7 +33,12 @@ Exit codes: 0 allow, 2 block (stderr is shown to the agent).
 
 SELF-TEST
 ---------
-Run `python3 guard_irreversible_ops.py --selftest`. The cases live in this file rather than
+Run `python3 guard_irreversible_ops.py --selftest`. It covers all three verdicts — block
+(exit 2), ask (exit 0 plus a permissionDecision payload on stdout), and allow (exit 0,
+silent) — because a guard that only proves it blocks has not shown that it lets ordinary
+work through, and over-blocking is what gets guards switched off.
+
+The cases live in this file rather than
 in a separate harness for a concrete reason: once the guard is wired to a hook, **passing a
 sample locking command on the command line gets the test run itself blocked.** That happened
 during development. Keeping the cases inside the module means verifying the guard never
@@ -321,7 +326,8 @@ SELFTEST_CASES: list[tuple[int, str, str]] = [
         "unrelated volume creation",
         "aws fsx create-volume --name plain --ontap-configuration 'SizeInBytes=104857600'",
     ),
-    (0, "unrelated deletion", "aws fsx delete-volume --volume-id fsvol-123"),
+    # `aws fsx delete-volume` moved to ASK_CASES: it is not irreversible, but it
+    # is destructive and can silently not happen behind an unexpired WORM log.
     (
         0,
         "assign a plain snapshot policy",
@@ -329,6 +335,92 @@ SELFTEST_CASES: list[tuple[int, str, str]] = [
     ),
     (0, "an unrelated command", "make all"),
 ]
+
+# Tier 2 cases. Kept separate from SELFTEST_CASES because the third verdict did
+# not exist when that corpus was written, and renumbering it would invalidate
+# the "26 cases" figure quoted in AGENTS.md and CHANGELOG.md.
+ASK_CASES: list[tuple[str, str, str]] = [
+    (
+        "ask",
+        "file system deletion may silently not happen",
+        "aws fsx delete-file-system --file-system-id fs-0123456789abcdef0",
+    ),
+    (
+        "ask",
+        "volume deletion behind an unexpired WORM log",
+        "aws fsx delete-volume --volume-id fsvol-0123456789abcdef0",
+    ),
+    (
+        "ask",
+        "create-volume payload hidden in a file",
+        "aws fsx create-volume --cli-input-json file://volume.json",
+    ),
+    (
+        "allow",
+        "reading a file system is not a deletion",
+        "aws fsx describe-file-systems --file-system-id fs-0123456789abcdef0",
+    ),
+]
+
+
+# --------------------------------------------------------------------------
+# Tier 2: ASK. Not necessarily irreversible, but either destructive or opaque
+# to this guard — a Tier 1 pattern can be hiding inside a payload the guard
+# cannot read. Handing these to the human costs one prompt; guessing wrong
+# costs data. Emitted as permissionDecision:ask, which is exit 0 plus stdout.
+#
+# Kept strictly narrower than BLOCK: an ask that fires on ordinary work trains
+# people to click through, which is how a guard stops working without failing.
+# --------------------------------------------------------------------------
+ASK_PATTERNS: list[tuple[str, str]] = [
+    (
+        (
+            r"\bfsx\b[^|;&]{0,60}\bdelete-(?:file-system|storage-virtual-machine|volume)\b|"
+            r"\"?operation_?name\"?\W{0,4}Delete(?:FileSystem|StorageVirtualMachine|Volume)"
+        ),
+        (
+            "FSx のファイルシステム / SVM / ボリュームの削除はデータ損失を伴います。未満了の WORM "
+            "ファイルや監査ログがある場合、API は成功を返しながら無言で削除されません"
+            "（数十秒後の Lifecycle と LifecycleTransitionReason で判定してください。"
+            "効かないときにフラグを足して再試行しないこと）。"
+        ),
+    ),
+    (
+        r"\bcreate-volume\b[^|;&]{0,200}(?:--cli-input-json|file://)",
+        (
+            "create-volume の payload が外部ファイルにあり、このガードから中身が読めません。"
+            "SnaplockConfiguration が含まれていないか確認してください（含まれていれば不可逆です）。"
+        ),
+    ),
+]
+
+ASK_MESSAGE = """\
+CONFIRM REQUIRED: {why}
+
+続行する前に、対象リソース・影響範囲・復旧可否を会話の中で提示してください。
+"""
+
+
+def verdict(command: str) -> str:
+    """Return 'block', 'ask', or 'allow' for one command.
+
+    Order matters: BLOCK is evaluated first so a broader ASK pattern can never
+    downgrade an irreversible operation into a prompt the human might approve
+    without seeing the retention consequence.
+    """
+    if evaluate(command) == 2:
+        return "block"
+    for pattern, _why in ASK_PATTERNS:
+        if re.search(pattern, command, re.IGNORECASE):
+            return "ask"
+    return "allow"
+
+
+def ask_reason(command: str) -> str:
+    for pattern, why in ASK_PATTERNS:
+        if re.search(pattern, command, re.IGNORECASE):
+            return why
+    return ""
 
 
 def evaluate(command: str) -> int:
@@ -343,14 +435,16 @@ def evaluate(command: str) -> int:
 
 def selftest() -> int:
     failures = 0
-    for want, description, command in SELFTEST_CASES:
-        got = evaluate(command)
+    cases = [("block" if want == 2 else "allow", d, c) for want, d, c in SELFTEST_CASES]
+    cases += ASK_CASES
+    for want, description, command in cases:
+        got = verdict(command)
         if got == want:
             print(f"  pass ({got})  {description}")
         else:
             failures += 1
             print(f"  FAIL want={want} got={got}  {description}")
-    total = len(SELFTEST_CASES)
+    total = len(cases)
     print(f"\n{total - failures}/{total} cases passed")
     return 1 if failures else 0
 
@@ -358,6 +452,19 @@ def selftest() -> int:
 def main() -> int:
     if "--selftest" in sys.argv:
         return selftest()
+
+    # Run by hand with no piped input, json.load blocks on the terminal with no
+    # indication why. Kiro always supplies stdin, so this only affects someone
+    # verifying the guard manually — exactly when a silent hang is most
+    # confusing. Point at the self-test instead.
+    if sys.stdin.isatty():
+        print(
+            "This is a PreToolUse hook: it expects a JSON event on stdin.\n"
+            "  To verify block / ask / allow behaviour, run:\n"
+            "    python3 scripts/guard_irreversible_ops.py --selftest",
+            file=sys.stderr,
+        )
+        return 0
 
     raw = sys.stdin.read()
     try:
@@ -367,15 +474,35 @@ def main() -> int:
 
     command = extract_command(payload)
     areas, matches = find_matches(command)
-    # Inspection stays allowed: an agent that cannot read the current state will guess.
-    if evaluate(command) == 0:
+    decision = verdict(command)
+
+    if decision == "block":
+        print(
+            BLOCK_MESSAGE.format(areas=", ".join(areas), matches=", ".join(matches)),
+            file=sys.stderr,
+        )
+        return 2
+
+    if decision == "ask":
+        # exit 0 + this payload on stdout is the only documented way to prompt a
+        # human. A non-zero exit other than 2 is a warning and does not stop
+        # anything, so it must never be used to mean "ask".
+        json.dump(
+            {
+                "hookSpecificOutput": {
+                    "permissionDecision": "ask",
+                    "permissionDecisionReason": ASK_MESSAGE.format(
+                        why=ask_reason(command)
+                    ),
+                }
+            },
+            sys.stdout,
+        )
         return 0
 
-    print(
-        BLOCK_MESSAGE.format(areas=", ".join(areas), matches=", ".join(matches)),
-        file=sys.stderr,
-    )
-    return 2
+    # Inspection and unrelated work stay allowed: an agent that cannot read the
+    # current state will guess instead.
+    return 0
 
 
 if __name__ == "__main__":

@@ -62,9 +62,15 @@ def collect(root: Path) -> list[Path]:
     """
     selected: list[Path] = []
     for path in iter_markdown(root):
-        # Underscore-prefixed files and directories are scaffolding: they hold TODO placeholders
-        # on purpose, so validating them would make the gate fail by design.
-        if any(part.startswith("_") for part in path.relative_to(root).parts):
+        # Underscore-prefixed *directories* are scaffolding (`_template/`, `_assets/`): they hold
+        # TODO placeholders on purpose, so validating them would make the gate fail by design.
+        #
+        # The filename is deliberately excluded from this rule. Skipping on the filename too meant
+        # a note called `_draft.md` sitting in a real `notes/` directory was never validated at
+        # all — no evidence tier checked, no error printed. Scaffolding is a property of where a
+        # file lives, not of what it is called.
+        relative = path.relative_to(root)
+        if any(part.startswith("_") for part in relative.parts[:-1]):
             continue
         in_notes_dir = "notes" in path.parts
         if in_notes_dir:
