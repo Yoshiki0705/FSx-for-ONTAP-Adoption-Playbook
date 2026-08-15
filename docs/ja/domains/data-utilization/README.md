@@ -19,6 +19,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 3 | AI / RAG で権限をどう扱うか | [権限が平坦化されることの意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味) |
 | 4 | データコピーを増やさない設計とは | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) |
 | 5 | 読み取り加速をどこで効かせるか | [FlexCache が効く条件](notes/reaching-data-without-copies.md#flexcache-が効く条件) |
+| 6 | エンドユーザーにブラウザや SFTP で見せる経路はどれか | [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md) |
 
 ---
 

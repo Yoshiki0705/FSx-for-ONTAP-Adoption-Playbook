@@ -19,6 +19,7 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 | 3 | How to handle permissions in AI / RAG | [What flattened permissions mean](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) (日本語) |
 | 4 | What a copy-minimizing design looks like | [Three ways to reach data without copying](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) (日本語) |
 | 5 | Where read acceleration is worth applying | [When FlexCache helps](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) (日本語) |
+| 6 | Which path exposes data to end users over a browser or SFTP | [Four paths end users take to the data](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md) (日本語) |
 
 ---
 
