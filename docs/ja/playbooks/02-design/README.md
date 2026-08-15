@@ -19,8 +19,9 @@
 | 3 | ボリュームのセキュリティスタイルをどう選ぶか | [セキュリティスタイルが権限評価のモデルを決める](../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
 | 4 | マルチ AZ とシングル AZ をどう判断するか | [Multi-AZ と Single-AZ の判断](notes/deployment-type-is-decided-once.md#multi-az-と-single-az-の判断) |
 | 5 | 不可逆な設定はどれで、いつ決める必要があるか | [デプロイタイプは一度しか決められない](notes/deployment-type-is-decided-once.md) |
-| 6 | ファイルシステムと SVM をどの単位で分割するか | _未追加_ |
-| 7 | 容量とスループットの初期値をどう見積もるか | _未追加_ |
+| 6 | エンドユーザーがどうやってデータに届くか | [エンドユーザーがデータに届く経路は 4 つある](notes/how-end-users-reach-the-data.md) |
+| 7 | ファイルシステムと SVM をどの単位で分割するか | _未追加_ |
+| 8 | 容量とスループットの初期値をどう見積もるか | _未追加_ |
 
 ---
 

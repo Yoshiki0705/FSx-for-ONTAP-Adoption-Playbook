@@ -19,8 +19,9 @@ Turn assessment output into a target configuration. Capacity and throughput can 
 | 3 | How to choose volume security style | [Volume security style decides the permission model](../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | 4 | How to decide between Multi-AZ and Single-AZ | [Choosing between Multi-AZ and Single-AZ](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md#multi-az-と-single-az-の判断) (日本語) |
 | 5 | Which settings are irreversible, and when they must be decided | [Deployment type is decided once](../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語) |
-| 6 | At what granularity to divide file systems and SVMs | _未追加_ |
-| 7 | How to size the initial capacity and throughput | _未追加_ |
+| 6 | How end users actually reach the data | [Four paths end users take to the data](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md) (日本語) |
+| 7 | At what granularity to divide file systems and SVMs | _未追加_ |
+| 8 | How to size the initial capacity and throughput | _未追加_ |
 
 ---
 
