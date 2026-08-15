@@ -82,9 +82,28 @@ def read(path: Path) -> tuple[dict[str, str | list[str]] | None, str]:
     return parse(block), body
 
 
-def iter_markdown(
-    root: Path, *, skip: tuple[str, ...] = (".private", "node_modules", ".kiro")
-):
+# Directories that are never repository content. Every one of these is gitignored, which
+# is the property that matters: a validator walking into one reports findings about files
+# nobody here wrote and cannot fix. Creating a .venv used to make `make audit` fail on the
+# SBOM shipped inside an installed package, so the gate became something to work around.
+#
+# scripts/tests/test_ignored_dirs.py fails when a gitignored top-level directory exists on
+# disk but is missing from this tuple, so the next tool that needs one is covered too.
+IGNORED_DIRS: tuple[str, ...] = (
+    ".git",
+    ".private",
+    ".kiro",
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".mypy_cache",
+)
+
+
+def iter_markdown(root: Path, *, skip: tuple[str, ...] = IGNORED_DIRS):
     """Yield every tracked Markdown file under root, skipping excluded directories."""
     for path in sorted(root.rglob("*.md")):
         if any(part in skip for part in path.parts):

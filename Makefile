@@ -25,29 +25,46 @@ lint: frontmatter markdown python ## Frontmatter schema + Markdown lint + Python
 
 RUFF_PINNED := $(shell sed -n 's/^ruff==//p' requirements-dev.txt)
 
+# Prefer a project-local virtual environment over whatever is on PATH. Without this,
+# resolution depends on PATH order, and a package-manager copy installed for something
+# else silently wins: an 0.15.20 from Homebrew sat ahead of the pinned version here and
+# `make python` was linting with the wrong rule set. A .venv is gitignored, so this costs
+# nothing when there isn't one.
+RUFF := $(if $(wildcard .venv/bin/ruff),.venv/bin/ruff,$(shell command -v ruff 2>/dev/null))
+
+# The install line has to be one that works. `pip` is not always on PATH, and on a
+# Homebrew Python `pip install --user` is refused outright by PEP 668, so the instruction
+# this file used to print was a dead end on the machine it was written on. Both forms
+# below install exactly the pinned version.
+define TOOLCHAIN_HELP
+	echo "       Install the pinned version, either way:"; \
+	echo "         python3 -m venv .venv && .venv/bin/python -m pip install -r requirements-dev.txt"; \
+	echo "         pipx uninstall ruff; pipx install 'ruff==$(RUFF_PINNED)'"; \
+	echo "       A .venv is preferred and is used automatically when present."
+endef
+
 python: ## Lint and format-check tools/ and scripts/ (fails when ruff is absent or unpinned)
-	@command -v ruff >/dev/null 2>&1 || { \
+	@test -n "$(RUFF)" || { \
 		echo "error: ruff is not installed, so this gate would check nothing."; \
 		echo "       It used to fall back to py_compile and report success, which is a"; \
 		echo "       weaker check wearing the same name: every finding CI reports would"; \
 		echo "       still be there, just discovered later."; \
-		echo "       Install the pinned version:  pip install -r requirements-dev.txt"; \
+		$(TOOLCHAIN_HELP); \
 		exit 1; \
 	}
-	@installed=$$(ruff --version | awk '{print $$2}'); \
+	@installed=$$($(RUFF) --version | awk '{print $$2}'); \
 	if [ "$$installed" != "$(RUFF_PINNED)" ]; then \
-		echo "error: ruff $$installed is first on PATH, but CI pins $(RUFF_PINNED)."; \
+		echo "error: $(RUFF) is $$installed, but CI pins $(RUFF_PINNED)."; \
 		echo "       Rule sets differ between releases, so a local pass here does not"; \
 		echo "       mean CI passes -- and this used to be a warning that was easy to"; \
 		echo "       walk past, which is the same silent divergence it warned about."; \
-		echo "       Install the pinned version:  pip install -r requirements-dev.txt"; \
-		echo "       Then check for a second binary earlier on PATH:  which -a ruff"; \
+		$(TOOLCHAIN_HELP); \
 		exit 1; \
 	fi
-	@ruff check $(PY_PATHS) && ruff format --check $(PY_PATHS)
+	@$(RUFF) check $(PY_PATHS) && $(RUFF) format --check $(PY_PATHS)
 
 format-python: ## Apply ruff formatting to tools/ and scripts/
-	@ruff format $(PY_PATHS) && ruff check --fix $(PY_PATHS)
+	@$(RUFF) format $(PY_PATHS) && $(RUFF) check --fix $(PY_PATHS)
 
 frontmatter: ## Validate YAML frontmatter on all notes
 	@$(PY) tools/validate_frontmatter.py
