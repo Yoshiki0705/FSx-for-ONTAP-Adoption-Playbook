@@ -34,33 +34,43 @@ jobs:
       - name: Install ruff
         run: pip install -r requirements-dev.txt
 
-      # check and format are separate steps because formatting drift otherwise passes locally
-      # and only surfaces in CI, which is exactly the failure this ordering prevents.
-      - name: Lint Python tooling
-        run: ruff check tools scripts
+      # Every step below calls a Makefile target instead of repeating the command. The
+      # path list lives once, in the Makefile's PY_PATHS, so CI and a developer's machine
+      # cannot end up inspecting different trees -- a divergence that surfaces as "it
+      # passed locally" and costs a round trip to find. `make python` also fails when the
+      # ruff on PATH is not the pinned version, rather than warning and continuing.
+      #
+      # One target per step, so a failure names the concern that broke rather than
+      # reporting "make all failed".
+      - name: Lint and format-check Python tooling
+        run: make python
 
-      - name: Check Python formatting
-        run: ruff format --check tools scripts
-
-      # Each validator runs as its own step so a failure names the concern that broke,
-      # rather than reporting "make all failed".
       - name: Validate frontmatter
-        run: python3 tools/validate_frontmatter.py --stats
+        run: make frontmatter
 
       - name: Check i18n parity
-        run: python3 tools/check_i18n_parity.py
+        run: make i18n-check
 
       - name: Check language switchers and cross-language links
-        run: python3 tools/sync_lang_switcher.py
+        run: make switcher-check
 
       - name: Audit public output
-        run: python3 tools/audit_public_output.py
+        run: make audit
 
       - name: Check internal links
-        run: python3 tools/check_links.py
+        run: make links
 
+      # .kiro/ is gitignored, so the steering-loader half of this check cannot run here.
+      # The target reports that on stdout rather than skipping silently and printing
+      # "healthy", which is what it used to do.
       - name: Check agent context budget
-        run: python3 scripts/check_agent_context_budget.py
+        run: make drift
+
+      # Guardrail tests: the irreversibility guard's block / ask / allow contract, .PHONY
+      # completeness, and one deliberate break per documentation gate. Without these a
+      # gate can stop detecting anything and still report success.
+      - name: Run guardrail and gate tests
+        run: make test
 
   markdown-lint:
     name: markdown lint

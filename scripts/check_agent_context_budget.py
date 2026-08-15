@@ -1,112 +1,236 @@
 #!/usr/bin/env python3
-"""Check for drift between AGENTS.md and .kiro/steering/project-knowledge-base.md.
+"""Keep always-loaded agent context small, and keep the knowledge itself public.
 
-This script does NOT require content duplication — it checks that:
-1. AGENTS.md stays within a size budget (it is loaded every turn).
-2. The workspace steering file is a thin loader (< 50% of AGENTS.md size).
-3. Both declare the authority relationship ("AGENTS.md wins").
+Two failure modes, pulling in opposite directions
+------------------------------------------------
+1. `AGENTS.md` is read on every turn and cannot be made conditional. Material that
+   only matters during one kind of work — a pitfalls table, a translation
+   procedure, diagram export rules — is paid for on every turn where it is
+   irrelevant. Left alone it grows monotonically, because adding a section is
+   always locally justified.
 
-It is deliberately not checking content overlap or heading correspondence,
-because the two files serve different purposes: AGENTS.md is the public,
-comprehensive reference for all collaborators; the steering file is the
-workflow-oriented subset for Kiro sessions. Forcing them to mirror each
-other would create the very duplication that learned-constraints #1 warns
-against.
+2. The obvious fix is to move that material into `.kiro/steering/`. But `.kiro/`
+   is gitignored here (BLEA convention), so moving prose there *deletes it from
+   the published repository* while leaving the agent apparently well-informed.
+   Collaborators lose it, CI cannot check it, and nothing reports the loss.
 
-What this DOES catch:
-- AGENTS.md growing unchecked (the budget is generous — 45 KB — but exists).
-- The steering file growing into a second copy of AGENTS.md.
-- The authority relationship disappearing (which would leave ambiguity about
-  which file wins on disagreement).
+So the rule is: the body lives in a tracked file, `.kiro/steering/` holds only a
+thin loader recording when to read it, and `AGENTS.md` keeps a one-line index.
+This script checks all three ends of that arrangement, plus the reachability
+rules that decide whether a steering file is loaded at all.
+
+An earlier version guarded `.kiro/` with `if STEERING.exists()`, which meant the
+loader checks silently did nothing in CI — the exact "gate that never runs"
+shape it was written to prevent. Absence is now reported, not skipped.
 
 Run:  python3 scripts/check_agent_context_budget.py
 """
 
 from __future__ import annotations
 
+import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS_MD = ROOT / "AGENTS.md"
-STEERING = ROOT / ".kiro" / "steering" / "project-knowledge-base.md"
+STEERING_DIR = ROOT / ".kiro" / "steering"
+AGENT_DOCS_DIR = ROOT / "docs" / "agent"
 
-# Budgets (bytes). These are deliberately generous: the goal is to catch
-# unbounded growth, not to force minimalism.
-AGENTS_MAX_BYTES = 45_000  # ~45 KB
-STEERING_MAX_RATIO = 0.60  # steering must be < 60% of AGENTS.md size
+# Budgets in bytes. Set close to current size so growth is a decision, not a drift.
+# Raising one is allowed; doing it silently is what this prevents.
+AGENTS_MAX_BYTES = 30_000
+LOADER_MAX_BYTES = 2_000  # one steering file
+STEERING_MAX_TOTAL = 6_000  # all steering files together
 
-# Authority markers: at least one of these must appear in each file.
-AUTHORITY_MARKERS_AGENTS = [
+AUTHORITY_MARKERS_AGENTS = (
     "AGENTS.md wins",
     "This file is committed",
     "what collaborators and other agents actually receive",
-]
-AUTHORITY_MARKERS_STEERING = [
-    "AGENTS.md wins",
-    "When they disagree",
-    "committed equivalent",
-]
+)
+AUTHORITY_MARKERS_LOADER = ("AGENTS.md",)
+
+VALID_INCLUSION = {"always", "fileMatch", "manual", "auto"}
+FRONT_MATTER_FIELD = re.compile(r"^([a-zA-Z_][\w-]*)\s*:\s*(.*)$")
+MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+
+
+def front_matter(path: Path) -> dict[str, str]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}
+    fields: dict[str, str] = {}
+    for line in text[3:end].splitlines():
+        match = FRONT_MATTER_FIELD.match(line)
+        if match:
+            fields[match.group(1)] = match.group(2).strip()
+    return fields
+
+
+def tracked_paths() -> set[str]:
+    done = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=False
+    )
+    return set(done.stdout.split())
+
+
+def check_agents_md(problems: list[str]) -> None:
+    if not AGENTS_MD.exists():
+        problems.append("AGENTS.md not found at repository root")
+        return
+    size = AGENTS_MD.stat().st_size
+    if size > AGENTS_MAX_BYTES:
+        problems.append(
+            f"AGENTS.md is {size:,} bytes (budget {AGENTS_MAX_BYTES:,}). It is loaded on "
+            "every turn. Move task-specific material to docs/agent/, add a thin "
+            ".kiro/steering/ loader, and leave one index line here."
+        )
+    content = AGENTS_MD.read_text(encoding="utf-8")
+    if not any(marker in content for marker in AUTHORITY_MARKERS_AGENTS):
+        problems.append(
+            "AGENTS.md does not declare itself authoritative. Without that, a stale "
+            "copy in .kiro/ can silently win."
+        )
+
+
+def check_index_is_reachable_and_tracked(
+    problems: list[str], tracked: set[str]
+) -> None:
+    """Every indexed document must exist, and must be published.
+
+    An index line pointing into gitignored territory is worse than no index: it
+    reads as though the material is available to everyone.
+    """
+    if not AGENTS_MD.exists():
+        return
+    content = AGENTS_MD.read_text(encoding="utf-8")
+    indexed = {t for t in MD_LINK.findall(content) if t.startswith("docs/agent/")}
+
+    for target in sorted(indexed):
+        relative = target.split("#", 1)[0]
+        if not (ROOT / relative).exists():
+            problems.append(f"AGENTS.md indexes {relative}, which does not exist")
+        elif relative not in tracked:
+            problems.append(
+                f"AGENTS.md indexes {relative}, which is not tracked by git. "
+                "Readers of the public repository would not have it."
+            )
+
+    if AGENT_DOCS_DIR.is_dir():
+        for path in sorted(AGENT_DOCS_DIR.glob("*.md")):
+            relative = path.relative_to(ROOT).as_posix()
+            if relative not in indexed:
+                problems.append(
+                    f"{relative} exists but AGENTS.md does not index it, so nothing "
+                    "tells an agent when to read it."
+                )
+
+
+def check_steering_loaders(
+    problems: list[str], notes: list[str], tracked: set[str]
+) -> None:
+    if not STEERING_DIR.is_dir():
+        # Not a failure: .kiro/ is gitignored, so it is legitimately absent in CI.
+        # It must be stated, or a green run implies a check that did not happen.
+        notes.append(
+            ".kiro/steering/ is absent, so loader thinness and loader reachability were "
+            "NOT checked here. That is expected in CI (.kiro/ is gitignored) and a "
+            "problem locally — run `make drift` on a working copy that has it."
+        )
+        return
+
+    files = sorted(STEERING_DIR.glob("*.md"))
+    if not files:
+        problems.append(".kiro/steering/ exists but holds no steering file")
+        return
+
+    total = 0
+    for path in files:
+        where = f".kiro/steering/{path.name}"
+        size = path.stat().st_size
+        total += size
+        if size > LOADER_MAX_BYTES:
+            problems.append(
+                f"{where} is {size:,} bytes (loader budget {LOADER_MAX_BYTES:,}). "
+                "A steering file this size is holding content, not a pointer — and "
+                ".kiro/ is not published, so that content is invisible to everyone else."
+            )
+
+        fields = front_matter(path)
+        inclusion = fields.get("inclusion", "always")
+        if inclusion not in VALID_INCLUSION:
+            problems.append(f"{where}: inclusion '{inclusion}' is not a valid value")
+        if inclusion == "auto":
+            missing = [k for k in ("name", "description") if not fields.get(k)]
+            if missing:
+                problems.append(
+                    f"{where}: inclusion:auto without {' and '.join(missing)}. Kiro does "
+                    "not register the file, so it is never loaded and never errors."
+                )
+        if inclusion == "fileMatch" and not fields.get("fileMatchPattern"):
+            problems.append(f"{where}: inclusion:fileMatch without fileMatchPattern")
+
+        body = path.read_text(encoding="utf-8")
+        if not any(marker in body for marker in AUTHORITY_MARKERS_LOADER):
+            problems.append(
+                f"{where} does not point back at AGENTS.md as authoritative"
+            )
+
+        for target in MD_LINK.findall(body):
+            relative = target.split("#", 1)[0]
+            if relative.startswith(("http://", "https://")):
+                continue
+            resolved = (path.parent / relative).resolve()
+            try:
+                as_posix = resolved.relative_to(ROOT).as_posix()
+            except ValueError:
+                problems.append(f"{where} links outside the repository: {relative}")
+                continue
+            if not resolved.exists():
+                problems.append(f"{where} links to {as_posix}, which does not exist")
+            elif as_posix not in tracked:
+                problems.append(
+                    f"{where} links to {as_posix}, which is not tracked by git. The "
+                    "body of a loader must be published, or only this machine has it."
+                )
+
+    if total > STEERING_MAX_TOTAL:
+        problems.append(
+            f".kiro/steering/ totals {total:,} bytes (budget {STEERING_MAX_TOTAL:,})"
+        )
 
 
 def main() -> int:
     problems: list[str] = []
+    notes: list[str] = []
+    tracked = tracked_paths()
 
-    # 1. AGENTS.md size budget
-    if not AGENTS_MD.exists():
-        problems.append("AGENTS.md not found at repository root")
-    else:
-        size = AGENTS_MD.stat().st_size
-        if size > AGENTS_MAX_BYTES:
-            problems.append(
-                f"AGENTS.md is {size:,} bytes (budget: {AGENTS_MAX_BYTES:,}). "
-                "Consider extracting task-specific content to docs/ and leaving "
-                "an index line in AGENTS.md."
-            )
+    check_agents_md(problems)
+    check_index_is_reachable_and_tracked(problems, tracked)
+    check_steering_loaders(problems, notes, tracked)
 
-    # 2. Steering ratio
-    if STEERING.exists() and AGENTS_MD.exists():
-        s_size = STEERING.stat().st_size
-        a_size = AGENTS_MD.stat().st_size
-        ratio = s_size / a_size if a_size > 0 else 0
-        if ratio > STEERING_MAX_RATIO:
-            problems.append(
-                f".kiro/steering/ is {s_size:,} bytes ({ratio:.0%} of AGENTS.md). "
-                f"It should be a thin loader (< {STEERING_MAX_RATIO:.0%}). "
-                "Move prose to AGENTS.md and keep steering as workflow notes only."
-            )
-
-    # 3. Authority relationship
-    if AGENTS_MD.exists():
-        content = AGENTS_MD.read_text(encoding="utf-8")
-        if not any(m in content for m in AUTHORITY_MARKERS_AGENTS):
-            problems.append(
-                "AGENTS.md does not declare itself as the authoritative source. "
-                "Add a statement like 'This file is committed and travels with the repo.'"
-            )
-
-    if STEERING.exists():
-        content = STEERING.read_text(encoding="utf-8")
-        if not any(m in content for m in AUTHORITY_MARKERS_STEERING):
-            problems.append(
-                ".kiro/steering/ does not defer to AGENTS.md. "
-                "Add: 'When they disagree, AGENTS.md wins.'"
-            )
+    for note in notes:
+        print(f"drift: note: {note}")
 
     if problems:
         print(f"drift: {len(problems)} issue(s):")
-        for p in problems:
-            print(f"  - {p}")
+        for problem in problems:
+            print(f"  - {problem}")
         return 1
 
-    # Report sizes when healthy (informational)
-    a_size = AGENTS_MD.stat().st_size if AGENTS_MD.exists() else 0
-    s_size = STEERING.stat().st_size if STEERING.exists() else 0
-    ratio = s_size / a_size if a_size > 0 else 0
+    size = AGENTS_MD.stat().st_size if AGENTS_MD.exists() else 0
+    steering_total = (
+        sum(p.stat().st_size for p in STEERING_DIR.glob("*.md"))
+        if STEERING_DIR.is_dir()
+        else 0
+    )
     print(
-        f"drift: healthy "
-        f"(AGENTS.md {a_size:,}B / {AGENTS_MAX_BYTES:,}B budget, "
-        f"steering {ratio:.0%} ratio)"
+        f"drift: healthy (AGENTS.md {size:,}B / {AGENTS_MAX_BYTES:,}B budget, "
+        f"steering {steering_total:,}B / {STEERING_MAX_TOTAL:,}B)"
     )
     return 0
 
