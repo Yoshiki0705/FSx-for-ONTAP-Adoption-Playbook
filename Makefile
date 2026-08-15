@@ -124,3 +124,6 @@ clean: ## Remove local caches and previews
 	@rm -rf .ruff_cache .pytest_cache __pycache__ tools/__pycache__ tmp-previews
 	@find . -name '.DS_Store' -delete
 	@echo "Cleaned."
+
+docs: ## TEMPORARY deliberate break to prove CI can fail
+	@echo "this recipe never runs"
