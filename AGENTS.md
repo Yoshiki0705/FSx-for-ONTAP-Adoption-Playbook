@@ -32,10 +32,26 @@ trees, comparisons, limits, glossary — currently bilingual single files, see L
 ### Set up the pinned toolchain first
 
 ```bash
-pip install -r requirements-dev.txt   # ruff, exact-pinned
-npm install -g markdownlint-cli2      # not pip-installable
-brew install gitleaks                 # not pip-installable
+python3 -m venv .venv                                          # preferred
+.venv/bin/python -m pip install -r requirements-dev.txt        # ruff, exact-pinned
+npm install -g markdownlint-cli2                               # not pip-installable
+brew install gitleaks                                          # not pip-installable
 ```
+
+**`make python` uses `.venv/bin/ruff` when it exists, before anything on `PATH`.** That removes the
+failure this instruction used to produce: resolution by `PATH` order means a copy installed for
+something else can win silently, and a Homebrew `ruff` at 0.15.20 was in fact shadowing the pinned
+version here, so the gate linted with the wrong rule set while reporting success.
+
+A virtual environment is not required. Without one, install the pin globally and keep it matched:
+
+```bash
+pipx uninstall ruff && pipx install "ruff==$(sed -n 's/^ruff==//p' requirements-dev.txt)"
+```
+
+`pip install --user` is refused outright on a Homebrew Python (PEP 668), and plain `pip` is often
+not on `PATH` at all — so the older instruction was a dead end on the machine it was written on.
+That mattered once the gate stopped accepting a mismatch.
 
 **Install all three. Every gate now fails when its tool is missing, rather than skipping.** Three
 of them used to degrade quietly — `make markdown` printed "skipping", `make audit` printed

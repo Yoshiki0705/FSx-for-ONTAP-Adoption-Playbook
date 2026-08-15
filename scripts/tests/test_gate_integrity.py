@@ -84,7 +84,7 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
 
     def test_missing_tool_produces_a_non_zero_exit(self) -> None:
         """Run each gate with an empty PATH, so its tool cannot be found."""
-        for target in ("markdown", "secrets", "python"):
+        for target in ("markdown", "secrets"):
             with self.subTest(target=target):
                 done = subprocess.run(
                     ["make", target],
@@ -101,6 +101,41 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
                     0,
                     f"`make {target}` succeeded with its tool unavailable:\n"
                     f"{done.stdout}{done.stderr}",
+                )
+
+    def test_python_gate_fails_when_ruff_cannot_be_resolved(self) -> None:
+        """Emptying PATH is not enough for this one, deliberately.
+
+        `make python` resolves ruff from `.venv/bin` first, so on a machine with a
+        virtual environment the tool stays reachable with no PATH at all — which is
+        the point of that change. The failing branch is therefore driven by
+        overriding the resolved value, rather than by an environment trick that
+        only works when no venv exists.
+        """
+        done = subprocess.run(
+            ["make", "python", "RUFF="],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("would check nothing", done.stdout + done.stderr)
+
+    def test_python_gate_prefers_a_project_local_virtualenv(self) -> None:
+        """Otherwise resolution depends on PATH order, and a copy installed for
+        something else silently wins — which is how linting ran on 0.15.20 here
+        while the pin said otherwise."""
+        self.assertIn(".venv/bin/ruff", makefile_text())
+        for line in makefile_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#") or "RUFF :=" in stripped:
+                continue
+            with self.subTest(line=stripped):
+                self.assertNotRegex(
+                    stripped,
+                    r"^@?ruff\s",
+                    "invoke ruff through $(RUFF) so the venv is preferred",
                 )
 
     def test_secret_scanning_is_separate_from_the_output_audit(self) -> None:

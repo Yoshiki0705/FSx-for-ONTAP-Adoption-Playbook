@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The documented way to install the pinned toolchain did not work.** `pip install -r
+  requirements-dev.txt` assumes a `pip` on `PATH` and a Python that accepts `--user`; on a Homebrew
+  Python it is refused by PEP 668, and `pip` is often not present under that name at all. Harmless
+  while a version mismatch was only a warning, and a dead end once the gate started failing — which
+  is what happened on the first dependency bump after that change. `make python` now resolves
+  `.venv/bin/ruff` before anything on `PATH`, so `PATH` order stops deciding which linter runs, and
+  both a venv and a pinned `pipx` install are documented. This was the actual cause of the local
+  0.15.20 / 0.16.x divergence: a Homebrew copy was shadowing the pinned one.
+- **Validators walked into gitignored directories.** Creating a `.venv` made `make audit` fail on an
+  SBOM inside an installed package, where a build path looked like leaked PII — a real finding by
+  the rule, meaningless in substance, and the kind that turns a gate into something to work around.
+  The skip list is now shared from `tools/frontmatter.py`, and a test fails when a gitignored
+  top-level directory exists on disk but is missing from it, so the next tool needing a cache
+  directory is covered rather than discovered the same way.
 - **Three gates reported success when the tool they depend on was absent.** `make markdown`
   printed "skipping", `make audit` printed "skipping secret scan", and `make python` fell back to
   `py_compile` — a weaker check under the same name. The second one mattered most: gitleaks is not

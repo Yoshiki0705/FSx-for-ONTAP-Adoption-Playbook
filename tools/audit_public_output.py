@@ -35,7 +35,12 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKIP_DIRS = (".private", ".kiro", "node_modules", ".git", "tools")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from frontmatter import IGNORED_DIRS
+
+# `tools` is added on top of the shared list: these validators necessarily contain the
+# patterns they search for, so auditing them reports every rule as a violation of itself.
+SKIP_DIRS = (*IGNORED_DIRS, "tools")
 SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json"}
 
 CATEGORIES = ("naming", "neutrality", "pii", "role-label")
