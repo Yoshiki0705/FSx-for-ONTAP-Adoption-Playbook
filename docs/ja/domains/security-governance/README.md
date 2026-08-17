@@ -20,6 +20,7 @@
 | 4 | 規制ワークロードで問われる論点は何か | [問われる論点の整理](notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) |
 | 5 | OT / IT 境界をまたぐ場合の考慮事項は何か | [境界をまたぐときに使える仕組みと限界](notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) |
 | 6 | 取り消せない操作をどう統制するか | [不可逆な操作の承認は作業の承認とは別に取る](notes/irreversible-operations-need-separate-approval.md) |
+| 7 | S3 Access Point 経由のアクセスをどう絞るか。ポリシーをどう書くか | [アクセスポイントポリシーの Allow は上限にならない](notes/access-point-policy-allow-is-not-a-cap.md) |
 
 ---
 

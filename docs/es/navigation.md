@@ -48,6 +48,7 @@ Las ramas anteriores parten de «qué quiere saber». Use esta tabla para partir
 | Ya en marcha, ajustando el rendimiento | [Rendimiento](../en/domains/performance/) (English) | [Optimización](../en/playbooks/06-optimize/) (English) |
 | Ya en marcha, revisando los costes | [Coste](../en/domains/cost/) (English) | [Optimización](../en/playbooks/06-optimize/) (English) |
 | Comprobar si un diseño alcanza un límite | [Límites y cuotas](../ja/reference/limits/) | [Diseño](../en/playbooks/02-design/) (English) |
+| Acceder mediante la API de S3 o desde una plataforma de analítica | [Requisitos previos de FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Redactar la política del punto de acceso](../en/domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md) (English) |
 
 Dos cosas que conviene saber sobre los enlaces anteriores.
 

@@ -48,6 +48,7 @@ graph TD
 | 已在运行，希望优化性能 | [性能](../en/domains/performance/) (English) | [优化](../en/playbooks/06-optimize/) (English) |
 | 已在运行，希望重新审视成本 | [成本](../en/domains/cost/) (English) | [优化](../en/playbooks/06-optimize/) (English) |
 | 想确认设计是否触及上限值 | [上限值与配额](../ja/reference/limits/) | [设计](../en/playbooks/02-design/) (English) |
+| 想通过 S3 API 或分析平台访问 | [FSx for ONTAP S3 AP 的前提条件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [访问点策略的写法](../en/domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md) (English) |
 
 关于上述链接，有两点需要了解。
 

@@ -20,6 +20,7 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 | 4 | Which points come up for regulated workloads | [What gets asked, and what can be answered as fact](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) (日本語) |
 | 5 | Considerations when crossing the OT / IT boundary | [Mechanisms for crossing a segmented boundary, and their limits](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) (日本語) |
 | 6 | How to govern operations that cannot be undone | [Approval for an irreversible operation is separate from approval for the task](../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) |
+| 7 | How to restrict access through an S3 access point, and how to write the policy | [An Allow in an access point policy is not an upper bound](notes/access-point-policy-allow-is-not-a-cap.md) |
 
 ---
 
@@ -27,7 +28,7 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 
 | Directory | Contents |
 |---|---|
-| [`notes/`](../../../ja/domains/security-governance/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
+| [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
 | [`checklists/`](../../../ja/domains/security-governance/checklists/) | Checklists for field use |
 
 ---

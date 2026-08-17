@@ -34,12 +34,32 @@ the version, so the retrieval path is itself worth recording.
 | 経路 / Path | 結果 / Result |
 |---|---|
 | `aws fsx describe-file-systems` の `FileSystemTypeVersion` | **返りません**（`None`） |
-| ONTAP REST `GET /api/cluster?fields=version` | **`NetApp Release 9.17.1P7D1`** |
+| ONTAP REST `GET /api/cluster?fields=version` | **返ります**（2026-08-06 は `NetApp Release 9.17.1P7D1`、2026-08-17 は `NetApp Release 9.18.1P3D1`） |
 
 | 項目 | 値 | 出典 | 検証日 | 備考 |
 |---|---|---|---|---|
 | ONTAP バージョン | `9.17.1P7D1` | 実測 | 2026-08-06 | ビルド日時も併せて返ります |
-| ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 | 未認証は `401` |
+| ONTAP バージョン（同一ファイルシステム、再取得） | **`9.18.1P3D1`** | 実測 | 2026-08-17 | ビルド 2026-06-20。**11 日で世代が上がっています** |
+| ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 / 2026-08-17 | 未認証は `401` |
+
+> **記録したバージョンは古くなります。** 同じファイルシステムで 11 日後に再取得したら別の版でした。
+> ONTAP のパッチ適用はサービス側で実施され、14 日ごとに保守が発生するため、**バージョンを前提にした
+> 記述は取得日と一緒に読む必要があります。** 版に依存する挙動を書くときは、取得日を必ず添えてください。
+>
+> **A recorded version goes stale.** Re-reading the same file system 11 days later returned a different
+> release. ONTAP patching is performed by the service and maintenance occurs at least every 14 days, so
+> **any statement premised on a version has to be read together with the date it was read.** Always
+> attach that date when recording version-dependent behaviour.
+
+> **保存された資格情報は、実際のパスワードと無言で乖離します。** 2026-08-17 の再取得時、Secrets Manager に
+> 保存されていた `fsxadmin` の値は `401 User is not authorized` になりました。過去 3 バージョンを試しても
+> 同じでした。パスワード更新の管理アクションは完了しており、シークレットはその後に書き直されていた
+> ため、**「シークレットが最近更新されている」ことは、その値が通ることの証拠になりません。**
+>
+> **A stored credential diverges from the real password silently.** On 2026-08-17 the `fsxadmin` value
+> held in Secrets Manager returned `401 User is not authorized`, and so did the three preceding
+> versions — even though the password-update administrative action had completed and the secret had
+> been rewritten afterwards. **"The secret was updated recently" is not evidence that its value works.**
 
 > **取得したのは検証環境 2 台のうち 1 台だけです。** もう 1 台は管理エンドポイントが別 VPC にあり、
 > 本検証では取得していません。**以降の記述で「ONTAP 9.17.1P7D1」と書いてあるのは、この 1 台で
@@ -103,6 +123,36 @@ aws ssm start-session \
 > **Unit note**: Documentation says "5 GB" / "50 GB", but both measured values are **binary (GiB)**.
 
 検証環境 / Environment: `ap-northeast-1`
+
+---
+
+## FSx for ONTAP S3 AP — アクセスポイントポリシーのサイズ / Access point policy size
+
+**ドキュメント記載値と、拒否が始まる実際のバイト数が一致しない項目です。** 判定が**正規化後**の
+文書に対して行われるため、手元の JSON のバイト数を予算として使えません。
+
+This is an item where the documented value and the byte count at which rejection begins **do not
+line up**, because the check runs against the **normalized** document. The byte count of the JSON in
+your editor is therefore not a usable budget.
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| ポリシーの上限 | 20 KB | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) | — | ドキュメント記載。正規化後の文書に対する上限 |
+| 受理された最大 | 24,620 B | 実測 | 2026-08-17 | 整形なし JSON、`Allow` 文 102 個 |
+| 拒否された最小 | 24,861 B | 実測 | 2026-08-17 | `MalformedPolicy: Normalized policy document exceeds the maximum allowed size` |
+| Amazon FSx API のフィールド制約 | 1〜200,000 文字 | [AWS: CreateAndAttachS3AccessPoint](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) | — | **実効上限ではありません。** S3 側がこれよりはるかに早く拒否します <!-- allow:naming - AWS のサービス名 --> |
+
+> **設計上の注意**: 境界はポリシーの書き方で動きます。**上限に近づく設計を避け、Access Point を
+> 分けてください。** ポリシーを渡す API がフィールドとして受け付ける文字数は、通ることの保証では
+> ありません。
+>
+> **Design note**: the boundary moves with how the policy is written. **Avoid designs that approach
+> the limit; split into more access points instead.** The character count a field accepts is not a
+> guarantee that the document will be accepted.
+
+検証環境 / Environment: `ap-northeast-1`。測定手順と全パターンは
+[アクセスポイントポリシーの Allow は上限にならない](../../domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md)
+にあります。
 
 ---
 
