@@ -17,7 +17,8 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 - IAM ARN must be access-point style: `arn:aws:s3:<region>:<account>:accesspoint/<name>` (and `/object/*`). Bucket-style ARNs do not work.
 - Dual-layer authorization: AWS side (IAM + AP policy) **and** ONTAP side (file system identity) must both allow.
-- `NetworkOrigin` is immutable after creation. `Internet` origin is not reachable via an S3 Gateway VPC Endpoint.
+- `NetworkOrigin` is immutable after creation — confirmed structurally: the Amazon FSx API exposes only create, describe, and detach-and-delete for these attachments, with no update operation, so every field except the policy is fixed for the life of the attachment. <!-- allow:naming - AWS service name -->
+- **An `Internet` origin access point *was* reachable through an S3 Gateway VPC Endpoint** (measured 2026-08-17, `ap-northeast-1`). This line previously stated the opposite. The request from an in-VPC EC2 instance succeeded *and* carried `aws:SourceVpce`, which is only populated when the request traverses that endpoint — so it was not falling back to the internet path. The subnet also had an IGW default route, and the S3 prefix-list route to the gateway endpoint is the more specific match for S3 destinations. The earlier claim was not reproduced; treat "unreachable" as unverified rather than established. Full record: `.private/s3ap-policy-verification/RESULTS.md`.
 - Size limits are **binary** despite docs saying "GB": single `PutObject` and per-`UploadPart` 5 GiB; whole object 50 GiB. The whole-object limit is checked only at `CompleteMultipartUpload`, after the full payload transfers — validate client-side first.
 - On an AD-joined SVM, **every** data operation requires AD DC reachability. `HeadBucket` succeeds even when AD is unreachable (false positive) — always verify with a data operation.
 
