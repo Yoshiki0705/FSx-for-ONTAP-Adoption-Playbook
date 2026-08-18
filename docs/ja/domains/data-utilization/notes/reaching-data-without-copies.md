@@ -64,6 +64,8 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 | S3 層 | IAM（呼び出し元のプリンシパル） |
 | **ファイルシステム層** | **Access Point に設定した 1 つの ID** |
 
+2 つの層がどの順序で評価され、症状からどちらの層で落ちたかを逆引きする手順は [S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md) にあります。
+
 だから **「誰が読んだか」は IAM と CloudTrail で追えますが、「そのユーザーが元のファイルの ACL で読めたか」は評価されていません。**
 
 ### AI / RAG で何を設計するか
