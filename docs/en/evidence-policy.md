@@ -25,6 +25,26 @@ Promoting a tier (moving it toward higher confidence) requires adding the corres
 
 ---
 
+## What the tiers do not answer
+
+A tier classifies **where a statement comes from.** It is **not a degree of follow-up, nor a confidence scale.** This boundary is where meaning shifts when cross-linking with a repository that uses a different vocabulary.
+
+### `documented` does not imply measurement
+
+`documented` means only that a vendor or AWS document states it. **It carries no claim that the author confirmed the behaviour.** The only tier that claims measurement is `verified`.
+
+So "the primary source states it, but it was not chased on real hardware" belongs in `documented`. **Nothing is lost in that mapping**, precisely because `documented` never implied measurement. Where another repository names the same state something like `unverified`, it maps onto `documented` unchanged.
+
+### The absence of documentation is not a tier
+
+"We looked and could not find it stated in public sources" is **a statement about the state of the documentation, not about how the product behaves.** All four tiers classify what backs a statement; none of them expresses the absence of backing.
+
+Do not reach for `hypothesis` here. `hypothesis` means **a reasoned expectation exists.** Using it without one makes the note appear to hold reasoning it does not have.
+
+Write it in the body instead. **State the date and the scope of the search** — for example "as of 2026-08, no statement was found in the AWS documentation" — so a reader can tell when and where you looked. For limits and quotas, the place for it is the "Could not be measured" section of [Limits and quotas](../ja/reference/limits/) (日本語).
+
+---
+
 ## Why this distinction is necessary
 
 Information gathered in field technical-support work differs sharply in character:

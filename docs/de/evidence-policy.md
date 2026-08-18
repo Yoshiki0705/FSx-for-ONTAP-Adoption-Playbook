@@ -25,6 +25,26 @@ Eine Stufe höherzustufen, also in Richtung höherer Verlässlichkeit zu verschi
 
 ---
 
+## Was die Stufen nicht beantworten
+
+Eine Stufe klassifiziert **die Herkunft einer Aussage.** Sie ist **kein Grad der Nachverfolgung und keine Vertrauensskala.** An dieser Grenze verschiebt sich die Bedeutung, wenn auf ein Repository mit anderem Vokabular verlinkt wird.
+
+### `documented` bedeutet nicht, dass gemessen wurde
+
+`documented` besagt nur, dass ein Hersteller- oder AWS-Dokument es angibt. **Es enthält keine Aussage, dass der Autor das Verhalten bestätigt hat.** Die einzige Stufe, die eine Messung behauptet, ist `verified`.
+
+Somit gehört „die Primärquelle sagt es, aber es wurde nicht an echter Hardware nachverfolgt" zu `documented`. **Bei dieser Zuordnung geht nichts verloren** — gerade weil `documented` eine Messung nie implizierte. Nennt ein anderes Repository denselben Zustand etwa `unverified`, lässt er sich unverändert auf `documented` abbilden.
+
+### Das Fehlen von Dokumentation ist keine Stufe
+
+„Wir haben gesucht und in öffentlichen Quellen keine Angabe gefunden" ist **eine Aussage über den Zustand der Dokumentation, nicht über das Verhalten des Produkts.** Alle vier Stufen klassifizieren, was eine Aussage stützt; keine drückt das Fehlen einer Stützung aus.
+
+Greifen Sie hier nicht zu `hypothesis`. `hypothesis` bedeutet, **dass eine begründete Erwartung vorliegt.** Ohne eine solche verwendet, erscheint die Notiz so, als besäße sie eine Begründung, die sie nicht hat.
+
+Schreiben Sie es stattdessen in den Text. **Nennen Sie Datum und Umfang der Suche** — etwa „Stand 2026-08 keine Angabe in der AWS-Dokumentation gefunden" — damit erkennbar ist, wann und wo gesucht wurde. Bei Grenzwerten und Kontingenten ist der Ort der Abschnitt „Could not be measured" (die Überschrift dort ist japanisch und englisch) in [Grenzwerte und Kontingente](../ja/reference/limits/) (日本語).
+
+---
+
 ## Warum diese Einteilung nötig ist
 
 Informationen aus dem technischen Support sind ihrer Natur nach sehr unterschiedlich.

@@ -58,6 +58,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`evidence-policy.md`: what the tiers do not answer** — a new section in all eight languages,
+  prompted by a sibling repository whose own vocabulary distinguishes "documented but not chased on
+  hardware" and "searched and found nothing", and which asked whether tiers should be added here to
+  match. They should not, but the boundary was implicit and that is where a cross-repository link
+  changes meaning. Now stated: a tier records **where a claim comes from**, not how far it was
+  chased, so `documented` never implied that anyone reproduced it and the first of those two maps
+  onto it without loss. The second is a statement about the documentation rather than about the
+  product, so it is not a tier at all — it goes in the body with the date and scope of the search.
+  Reaching for `hypothesis` there is the specific error the section names, because `hypothesis`
+  asserts that a reasoned expectation exists. Summarized in `AGENTS.md` as well, since an agent
+  deciding a tier reads that file and not this one.
 - **The network layer of S3 access point authorization, and the two AWS pages that document it.**
   A sibling repository asked for one fact to be published so it could correct 15 documents against
   it: that an `Internet` origin access point *is* reachable through an S3 gateway endpoint. The note

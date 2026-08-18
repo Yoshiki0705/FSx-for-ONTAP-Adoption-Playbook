@@ -25,6 +25,26 @@ Elevar un nivel, es decir moverlo hacia una mayor fiabilidad, exige añadir la e
 
 ---
 
+## Lo que los niveles no responden
+
+Un nivel clasifica **de dónde procede una afirmación.** **No es un grado de seguimiento ni una escala de confianza.** En esta frontera es donde el significado se desplaza al enlazar con un repositorio que usa otro vocabulario.
+
+### `documented` no implica medición
+
+`documented` significa únicamente que un documento del proveedor o de AWS lo indica. **No conlleva ninguna afirmación de que el autor haya confirmado el comportamiento.** El único nivel que reclama una medición es `verified`.
+
+Así, «la fuente primaria lo indica, pero no se comprobó en equipo real» corresponde a `documented`. **Nada se pierde en esa correspondencia**, precisamente porque `documented` nunca implicó una medición. Cuando otro repositorio llama a ese mismo estado algo como `unverified`, se traslada sin cambios a `documented`.
+
+### La ausencia de documentación no es un nivel
+
+«Buscamos y no encontramos constancia en fuentes públicas» es **una afirmación sobre el estado de la documentación, no sobre cómo se comporta el producto.** Los cuatro niveles clasifican lo que respalda una afirmación; ninguno expresa la ausencia de respaldo.
+
+No recurra a `hypothesis` aquí. `hypothesis` significa **que existe una expectativa razonada.** Usarlo sin ella hace que la nota parezca sostener un razonamiento que no tiene.
+
+Escríbalo en el cuerpo del texto. **Indique la fecha y el alcance de la búsqueda** — por ejemplo «a fecha de 2026-08 no se encontró constancia en la documentación de AWS» — para que se sepa cuándo y dónde se buscó. Para límites y cuotas, el lugar es la sección «Could not be measured» (el encabezado allí está en japonés e inglés) de [Límites y cuotas](../ja/reference/limits/) (日本語).
+
+---
+
 ## Por qué es necesaria esta clasificación
 
 La información obtenida en el soporte técnico de campo es de naturaleza muy distinta.
