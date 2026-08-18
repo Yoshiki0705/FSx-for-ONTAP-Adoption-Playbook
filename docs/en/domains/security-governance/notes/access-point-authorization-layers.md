@@ -39,10 +39,17 @@ Within Layer 1 there is one point that misleads designs. **Within the same accou
 
 | Evaluation order | Why it matters here |
 |---|---|
+| 0. **Network origin check** | On a VPC-origin access point, a request that does not arrive through a VPC endpoint in the bound VPC is refused **before any policy is evaluated** |
 | 1. Default is an **implicit deny** | Nothing gets through if nothing is written |
 | 2. **One explicit `Deny` anywhere settles it as a deny** | **This is how you narrow within Layer 1** |
 | 3. Organizations RCPs / SCPs | Access can be stopped from outside the account |
 | 4. Identity-based and resource-based (**union within an account, both required across accounts**) | **Writing a narrow `Allow` is not narrowing** |
+| 4'. **VPC endpoint policy** | If the request traverses a VPC endpoint, **that policy must allow it too**. The default allows everything, so it only bites once you scope it |
+
+> **The VPC endpoint policy is the easiest layer to miss.** Its default allows all S3 actions on all
+> resources, so it is invisible in an environment that has not scoped it. **Scope the endpoint policy
+> first and add an access point later, and the new access point ARN is not in the allowed set —
+> `AccessDenied`.** This layer is documented by AWS; it was not measured here.
 
 The whole order, and a table that works back from a symptom to the layer that refused, is in [How a request through an S3 access point is decided](../../../../ja/reference/decision-trees/access-point-authorization.md) (日本語). **This note covers the confirmation of each of those steps in a live environment, and how to write the policy.**
 
@@ -224,16 +231,30 @@ Add `s3:PutObject` to the `Allow` action list in example 1 and leave the `Deny` 
 }
 ```
 
-Both sides were measured from the same client (an EC2 instance inside the VPC), changing only the condition value.
+**The access point measured here has `NetworkOrigin: Internet`** (`VpcConfiguration` null), reached from an EC2 instance inside the VPC **through an S3 Gateway endpoint**. Both sides were measured from the same client, changing only the condition value.
 
-| Condition value | From EC2 in the VPC | From outside the VPC |
+| Condition value | From EC2 in the VPC (via the gateway endpoint) | From outside the VPC |
 |---|---|---|
 | The real gateway endpoint ID | `ListBucket` and `GetObject` both succeed | denied |
 | A non-existent endpoint ID | **denied** | — |
 
+**The second row is the control.** Without it, the first row's success would not distinguish "the value matched" from "the condition is not evaluated on an Internet-origin access point". **Changing only the value to a non-existent ID denied the same EC2 instance**, so `aws:SourceVpce` really is populated with the gateway endpoint ID.
+
+The caller subnet's route table carries **both an IGW default route and an S3 prefix-list route**; for S3 destinations the prefix-list route is the more specific match.
+
+> **An `Internet` origin access point is not unreachable from a gateway endpoint.** The rows above are
+> measured on one (measured 2026-08-17, reproduced 2026-08-18 with the control added). **What decides
+> reachability is the caller subnet's routing, not the origin type.** AWS also states that using
+> `aws:SourceVpc` with an internet-origin access point requires a VPC endpoint, because otherwise the
+> key is not populated ([source](#primary-sources)).
+>
+> **Gateway endpoints do not route traffic that enters the VPC from outside.** Callers arriving over
+> VPN, Direct Connect, Transit Gateway or VPC peering need an **Interface** endpoint. If only
+> on-premises callers get `AccessDenied`, this is the likely cause. That is documented by AWS.
+
 The denial text contains `with an explicit deny in a resource-based policy`, which **separates this cause from a missing IAM grant.** Worth remembering as a triage signal.
 
-**This is a different mechanism from `NetworkOrigin`.** `NetworkOrigin` cannot be changed after creation; this condition lives in the policy and can.
+**This is a different mechanism from `NetworkOrigin`.** `NetworkOrigin` cannot be changed after creation; this condition lives in the policy and can. **A VPC origin behaves as an explicit deny for requests whose `aws:SourceVpc` does not match the bound VPC** (documented by AWS). The same result can be written as a policy, but then maintaining the deny statement is the author's responsibility.
 
 ### 4. Restrict to your organization
 
@@ -356,6 +377,23 @@ The last row is the point. **An explicit `Deny` written with `Principal: "*"` ap
 | `aws:PrincipalOrgID` | Organization membership | **both sides confirmed** (measured with a principal in another organization's account) |
 | `s3:prefix` | The scope of `ListBucket` | **both sides confirmed** |
 | `aws:SecureTransport` | Transport encryption | **the Deny branch was never reached** (below) |
+
+### A condition key can only be compared when it is present on the request
+
+**On a path where the key is absent, an `Allow` guarded by `StringEquals` does not hold, and a `Deny` guarded by `StringNotEquals` does.** The result flips with which side you write it on, so check availability first. **The table below is documented by AWS, not measured here** — only that `aws:SourceVpce` is populated via a VPC endpoint was measured.
+
+| Condition key | Present on the request |
+|---|---|
+| `aws:SourceVpc` | **Only when the request goes through a VPC endpoint** |
+| `aws:SourceVpce` | **Only when the request goes through a VPC endpoint** (the endpoint's ID) |
+| `aws:VpcSourceIp` | **Only when the request goes through a VPC endpoint.** **The key name is case-sensitive** |
+| `aws:SourceIp` | **Only when the request does not go through a VPC endpoint** |
+
+> **`aws:SourceIp` and `aws:VpcSourceIp` are mutually exclusive.** Writing `aws:SourceIp` to
+> restrict by source address on a request that traverses a VPC endpoint means **the key is absent and
+> the intended comparison never happens.** Use `aws:VpcSourceIp` through an endpoint and
+> `aws:SourceIp` from the internet. This applies to access point policies, VPC endpoint policies and
+> identity-based policies alike.
 
 ### `aws:SecureTransport` never reaches its Deny branch
 
@@ -690,6 +728,11 @@ The diagram carries the same content as the tables above: **pick a condition key
 | The file system identity can be swapped later | There is no update API. It means re-creating the access point |
 | Re-creating the access point restores everything | The name can be reused, but **the alias changes** |
 | Changing the policy can also change the `NetworkOrigin` restriction | Different mechanisms. `NetworkOrigin` cannot be changed after creation |
+| An `Internet` origin access point cannot be reached from an S3 gateway endpoint | **It can** (measured). What decides it is the **caller subnet's routing**, not the origin type |
+| With a gateway endpoint in place, on-premises callers also take the private path | They do not. **Traffic entering the VPC over VPN, Direct Connect, Transit Gateway or peering is not affected by gateway endpoint routes.** An Interface endpoint is required |
+| `aws:SourceIp` can restrict a request that goes through a VPC endpoint | It cannot. **`aws:SourceIp` is absent on that path.** Use `aws:VpcSourceIp` (the two are mutually exclusive) |
+| Fixing the access point policy and the identity policy is enough | If the request traverses a VPC endpoint, **the endpoint policy must allow it too.** The default allows everything, so this only bites once scoped |
+| Permissions an AWS service created for itself can be used as-is | They may reference the access point **alias as a bucket-form ARN**, which returns `AccessDenied`. Change it to the **access point ARN form** |
 | With no `s3:` action in the access point policy, the files cannot be touched | They can. **The two layers are independent.** If the identity-based policy allows it and the bound identity holds the file permission, it goes through |
 | A UNIX identity needs LDAP, and a Windows identity needs an AD join | Neither is required. **Measured with an SVM-local UNIX user and a workgroup-mode local Windows user** |
 | The audit log tells you the calling IAM principal | It does not. Only the **SID of the identity bound to the access point** remains, and the name is not resolved. **Identifying the caller requires correlating with CloudTrail** |
@@ -707,6 +750,8 @@ The diagram carries the same content as the tables above: **pick a condition key
 - **The reason SLAG caused the UNIX identity path to be denied is unconfirmed.** The effect was confirmed in both directions (denied on add, restored on remove), but **the cause was not tested.**
 - **The Windows identity path was measured with a workgroup-mode local user.** How the audit record looks on an AD-joined SVM — whether `SubjectUserName` resolves — is **not part of this measurement.**
 - Auditing was measured in one configuration: **`file_operations` events, `xml` format.** Other event classes and log formats record different fields.
+- **The VPC endpoint policy layer and the condition-key availability table are documented by AWS, not measured here.** What was measured is that `aws:SourceVpce` is populated through an S3 gateway endpoint.
+- **Interface endpoints were not measured**, only a gateway endpoint. Neither was an on-premises path.
 - Measurements come from **one Region (`ap-northeast-1`) and one file system**.
 
 ---
@@ -716,6 +761,9 @@ The diagram carries the same content as the tables above: **pick a condition key
 | Topic | Source |
 |---|---|
 | Dual-layer authorization, Block Public Access being unchangeable, `s3:PutAccessPointPolicy`, the configuration paths at creation and afterwards | [AWS: Managing access point access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) |
+| **The full list of authorizing layers (origin check → VPC endpoint policy → access point policy → identity policy → SCP), that same-account access needs only one of the two to allow, that an Allow-only policy does not restrict, condition-key availability and mutual exclusivity, that gateway endpoints do not route traffic entering the VPC from outside, and that VPC origin behaves as an explicit deny on `aws:SourceVpc`** | [AWS: Configuring network access for Amazon S3 access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html) |
+| Access point ARN form (`arn:aws:s3:<region>:<account-id>:accesspoint/<name>`, objects as `/object/<key>`), and the alias form being immutable | [AWS: Referencing access points with ARNs, aliases, or virtual-hosted-style URIs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/referencing-access-points-for-fsxn.html) |
+| **That automatically created service roles cause `AccessDenied` by using a bucket-form ARN (`arn:aws:s3:::<alias>`), and must be changed to the access point ARN form** | [AWS: Troubleshooting S3 access point issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
 | 20 KB policy limit, VPC configuration immutable after creation, HTTPS-only with an HTTP redirect, 10,000 access points per account per Region | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 | Properties specified when creating an access point, the volume needing a junction path | [AWS: Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) |
 | `CreateAndAttachS3AccessPoint` parameters and constraints | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
