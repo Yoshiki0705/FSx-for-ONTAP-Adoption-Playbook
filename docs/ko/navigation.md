@@ -48,7 +48,7 @@ graph TD
 | 이미 운영 중이며 성능을 개선하고 싶다 | [성능](../en/domains/performance/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 상한값에 걸리지 않는지 확인하고 싶다 | [상한값·쿼터](../ja/reference/limits/) | [설계](../en/playbooks/02-design/) (English) |
-| S3 API나 분석 플랫폼에서 접근하고 싶다 | [FSx for ONTAP S3 AP 전제 조건](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [액세스 포인트 정책 작성 방법](../en/domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md) (English) |
+| S3 API나 분석 플랫폼에서 접근하고 싶다 | [FSx for ONTAP S3 AP 전제 조건](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [액세스 포인트 정책 작성 방법](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
 위 링크에 대해 알아 두실 두 가지입니다.
 

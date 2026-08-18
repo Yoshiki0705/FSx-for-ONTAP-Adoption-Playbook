@@ -151,8 +151,32 @@ your editor is therefore not a usable budget.
 > guarantee that the document will be accepted.
 
 検証環境 / Environment: `ap-northeast-1`。測定手順と全パターンは
-[アクセスポイントポリシーの Allow は上限にならない](../../domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md)
+[S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../domains/security-governance/notes/access-point-authorization-layers.md)
 にあります。
+
+---
+
+## FSx for ONTAP — SVM の数はスループット容量で決まる / The SVM count depends on throughput capacity
+
+**SVM の上限はファイルシステム単位の固定値ではなく、スループット容量に紐づきます。** 検証用に
+SVM を追加しようとして拒否され、エラー本文に上限とその根拠が含まれていました。
+
+The SVM ceiling is **not a fixed per-file-system number** — it is tied to the file system's
+throughput capacity. The refusal message states both the ceiling and what it depends on.
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| 128 MBps 構成の SVM 上限 | 6 | 実測 | 2026-08-18 | `ServiceLimitExceeded: ... more than 6 storage virtual machines for an ONTAP file system with 128 MBps of throughput capacity` |
+
+> **設計上の注意**: **SVM を増やす計画は、スループット容量の計画と同時に決めてください。** 上限に
+> 当たったときの選択肢はスループット容量の引き上げで、これは課金に直結します。**検証や一時的な
+> 用途で SVM を消費すると、後から本番用の SVM を追加できなくなります。**
+>
+> **Design note**: **plan SVM count together with throughput capacity.** The remedy when you hit the
+> ceiling is to raise throughput capacity, which changes the bill. **Consuming SVMs for verification
+> or temporary purposes can block adding a production SVM later.**
+
+検証環境 / Environment: `ap-northeast-1`、ONTAP `9.18.1P3D1`。
 
 ---
 

@@ -58,6 +58,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The file-system half of S3 access point authorization, measured.** The access point note
+  previously covered only AWS-side policy evaluation, which left the most common `AccessDenied` —
+  the one with no policy involved at all — unexplained. Added, each with a control in the same
+  session: changing only the volume root's owner and mode bits flips `PutObject` between
+  `AccessDenied` and success with no access point policy attached, so the two layers are
+  independent; neither LDAP nor an Active Directory join is required, since an SVM-local UNIX user
+  and a **workgroup-mode** local Windows user both served reads and writes, which is broader than
+  the AWS troubleshooting page states; ONTAP file access auditing records only the SID of the bound
+  identity, with `SubjectUserName` unresolved and a `SubjectIP` that is an AWS service address
+  varying between two requests of one session, so neither the caller nor its address is recoverable
+  from the audit log alone; and a UNIX-style volume carrying only mode bits produced **zero** audit
+  records with auditing enabled on the SVM, while the NTFS control produced two — attaching an audit
+  ACE via SLAG then broke the data path in both directions, for reasons left explicitly unconfirmed.
+- **`reference/limits/`: the SVM ceiling depends on throughput capacity** — 6 SVMs at 128 MBps,
+  measured from the refusal message. Recorded because the remedy for hitting it is raising
+  throughput capacity, so verification SVMs consumed early can block a production one later.
 - **`make test` (42 tests, stdlib `unittest`, no new dependencies), wired into `make all` and CI.**
   The repository previously had no tests at all, so every gate was trusted on the evidence that it
   printed success. Each suite is written to fail on a deliberate break rather than to confirm a
@@ -80,6 +96,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **The access point note was retitled, renamed, and reorganized around the two layers, and its
+  vocabulary now follows the AWS Japanese documentation.** The previous title asserted a conclusion
+  in the negative ("an Allow is not an upper bound"), and the filename asserted it too, which fixes
+  a conclusion into a path that outlives it. Both now name the subject: **evaluation order and the
+  two layers that narrow access**. `上限` for a permission ceiling is a literal translation that does
+  not appear in the AWS Japanese documentation and has been replaced throughout, along with
+  `和` → `結合` and `暗黙の拒否` → `暗黙的な拒否`, in the note and in the decision tree so the two read as
+  one vocabulary. Sections are ordered Layer 1 model → Layer 1 how-to → Layer 2 → audit, removing a
+  jump back and forth between the layers. **The old path
+  `notes/access-point-policy-allow-is-not-a-cap.md` no longer exists**; every reference in the
+  repository was updated, including the eight `navigation.md` files and `llms.txt`.
 - **Task-specific material moved out of `AGENTS.md` into tracked `docs/agent/`** (localization
   workflow, architecture diagram standards, pitfalls, carried-over domain knowledge), reducing a
   file read on every turn from 37.5 KB to 26.4 KB. `.kiro/steering/` now holds only thin loaders

@@ -23,20 +23,20 @@ lang: ja
 
 | 段 | 何が判定するか | 落ちたときの症状 |
 |---|---|---|
-| **Layer 1: AWS 側** | 明示的な `Deny` → Organizations の RCP / SCP → identity-based ポリシーと Access Point ポリシー | `AccessDenied`。resource-based の明示 `Deny` に当たった場合はエラー本文に `with an explicit deny in a resource-based policy` が入ります |
+| **Layer 1: AWS 側** | 明示的な拒否 → Organizations の RCP / SCP → identity-based ポリシーと Access Point ポリシー | `AccessDenied`。resource-based の明示 `Deny` に当たった場合はエラー本文に `with an explicit deny in a resource-based policy` が入ります |
 | **Layer 2: ファイルシステム側** | Access Point に紐づく**1 つのファイルシステム ID** の、対象パスに対する権限 | `AccessDenied`。**IAM 側は許可しているのに失敗するのはここです** |
 
 **最も間違いやすいのは、同一アカウントとクロスアカウントで規則が違う点です。**
 
 | 呼び出し元 | 規則 |
 |---|---|
-| Access Point と**同じアカウント** | identity-based と Access Point ポリシーの **いずれかが** `Allow` すれば通ります（**和**） |
+| Access Point と**同じアカウント** | identity-based と Access Point ポリシーの **いずれかが** `Allow` すれば通ります（**結合**） |
 | **別アカウント** | Access Point ポリシーと相手側 identity-based の **両方が** `Allow` する必要があります |
 
-> **Evidence**: `documented` — 評価順序と、同一アカウントが和・クロスアカウントが両方であることは
+> **Evidence**: `documented` — 評価順序と、同一アカウントが結合・クロスアカウントが両方であることは
 > AWS の公式ドキュメントの記載です（[出典](#参照した一次情報)）。
 > **この順序を FSx for ONTAP の S3 Access Point で確認した実測**は
-> [アクセスポイントポリシーの Allow は上限にならない](../../domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md)
+> [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../domains/security-governance/notes/access-point-authorization-layers.md)
 > にあり、そちらが `verified` です。本ツリーは仕組みの整理で、測定値は持ちません。
 
 ---
@@ -45,10 +45,10 @@ lang: ja
 
 ```mermaid
 graph TD
-    REQ[S3 API リクエスト] --> DEF[既定は暗黙の拒否]
-    DEF --> DENY{どこかに明示的な Deny があるか}
+    REQ[S3 API リクエスト] --> DEF[既定は暗黙的な拒否]
+    DEF --> DENY{どこかに明示的な拒否があるか}
 
-    DENY -->|ある| D1["Deny 確定<br/>ここで評価は終わる"]
+    DENY -->|ある| D1["拒否で確定<br/>ここで評価は終わる"]
     DENY -->|ない| ORG{"Organizations の RCP / SCP が<br/>この操作を Allow しているか"}
 
     ORG -->|していない| D2[Deny]
@@ -58,7 +58,7 @@ graph TD
     ACCT -->|別アカウント| CROSS{"Access Point ポリシーと<br/>相手側 identity-based の<br/>両方が Allow しているか"}
 
     SAME -->|いずれかが Allow| L2[Layer 2 の評価へ]
-    SAME -->|どちらも Allow でない| D3["Deny<br/>暗黙の拒否のまま"]
+    SAME -->|どちらも Allow でない| D3["拒否<br/>暗黙的な拒否のまま"]
 
     CROSS -->|両方 Allow| L2
     CROSS -->|片方だけ Allow| D4[Deny]
@@ -68,15 +68,15 @@ graph TD
 
 | # | ステップ | 判定 | 設計上の含意 |
 |---|---|---|---|
-| 1 | 既定 | 暗黙の拒否 | 何も書かなければ通りません |
-| 2 | **明示的な `Deny`** | 1 つでもあれば **Deny 確定** | **絞る手段はこれだけです。** `Allow` を狭く書くことは絞ることではありません |
-| 3 | Organizations の RCP / SCP | `Allow` が無ければ Deny | アカウントの外側から止められます。AP ポリシーを直しても通りません |
-| 4a | 同一アカウント | identity-based と AP ポリシーの **和** | **AP ポリシーは上限になりません。** 呼び出し元の権限だけで通ります |
+| 1 | 既定 | 暗黙的な拒否 | 何も書かなければ通りません |
+| 2 | **明示的な拒否** | 1 つでもあれば **拒否で確定** | **Layer 1 で絞る手段はこれです。** `Allow` を狭く書くことは絞ることではありません |
+| 3 | Organizations の RCP / SCP | `Allow` が無ければ拒否 | アカウントの外側から止められます。AP ポリシーを直しても通りません |
+| 4a | 同一アカウント | identity-based と AP ポリシーの **結合** | **AP ポリシーの `Allow` を狭くしても絞り込みになりません。** 呼び出し元の権限だけで通ります |
 | 4b | 別アカウント | **両方**が必要 | AP ポリシーで許可すれば別アカウントから読めます。相手側の権限も必要です |
 | 5 | permissions boundary / session policy | 存在すればすべてが `Allow` する必要あり | 一時認証情報を使う経路で効きます |
 
 **2 と 4a が対になっています。** 「`Allow` に書いた範囲しか通らない」と読むと 4a を見落とし、
-「明示的な `Deny` を書かないと絞れない」という結論に到達できません。
+「明示的な拒否を書かないと絞れない」という結論に到達できません。
 
 ---
 
@@ -126,8 +126,8 @@ graph TD
 
 | 症状 | 落ちている可能性が高い段 | 最初に見るもの |
 |---|---|---|
-| エラー本文に `with an explicit deny in a resource-based policy` | Layer 1 のステップ 2 | Access Point ポリシーの `Deny` 文と、その `Condition` |
-| 絞ったつもりの主体が通ってしまう | Layer 1 のステップ 4a | **`Allow` しか書いていないこと。** 明示的な `Deny` を足します |
+| エラー本文に `with an explicit deny in a resource-based policy` | Layer 1 のステップ 2 | Access Point ポリシーの明示的な拒否の文と、その `Condition` |
+| 絞ったつもりの主体が通ってしまう | Layer 1 のステップ 4a | **`Allow` しか書いていないこと。** 明示的な拒否を足します |
 | 別アカウントから `AccessDenied` | Layer 1 のステップ 4b | AP ポリシー側だけでなく、**相手側の identity-based ポリシー** |
 | 組織内なのに全員 `AccessDenied` | Layer 1 のステップ 3 | RCP / SCP。AP ポリシーを直しても変わりません |
 | `ListBucket` は通るが `GetObject` が落ちる | Layer 2 | 対象パスの実効権限。`Resource` の粒度も併せて確認します |
@@ -140,21 +140,22 @@ graph TD
 
 | 誤解 | 実際 |
 |---|---|
-| Access Point ポリシーに書いた範囲しか通らない | 同一アカウントでは和で評価されます。絞るには明示的な `Deny` が必要です |
+| Access Point ポリシーに書いた範囲しか通らない | 同一アカウントでは結合で評価されます。絞るには明示的な拒否が必要です |
 | ポリシーを付けていない Access Point は誰も使えない | 呼び出し元の identity-based ポリシーが許可していれば使えます |
-| 評価の順序は関係ない | 明示的な `Deny` は最初に見られ、当たった時点で終わります |
-| 同一アカウントとクロスアカウントで規則は同じ | 違います。和と両方です |
+| 評価の順序は関係ない | 明示的な拒否は最初に見られ、当たった時点で終わります |
+| 同一アカウントとクロスアカウントで規則は同じ | 違います。結合と両方です |
 | 同一アカウント所有が必須だから別アカウントからは読めない | 制約は Access Point を**作る**側です。ポリシーで許可すれば読めます |
 | IAM で許可すればデータに届く | Layer 2 が別に評価します |
 | ファイルごとの ACL が S3 経由でも効く | 効きません。1 つの ID として評価されます |
+| 監査ログを見れば呼び出し元が分かる | Layer 2 の ID として記録されます。呼び出し元の特定には CloudTrail との突き合わせが必要です |
 
 ---
 
 ## このツリーの限界
 
-- **Layer 1 の順序は AWS の公開ドキュメントの記載で、本ツリー自身は測定していません。** FSx for ONTAP の S3 Access Point で確認した範囲は [対応するノート](../../domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md)にあり、そこに実測日と環境が書かれています。
+- **Layer 1 の順序は AWS の公開ドキュメントの記載で、本ツリー自身は測定していません。** FSx for ONTAP の S3 Access Point で確認した範囲は [対応するノート](../../domains/security-governance/notes/access-point-authorization-layers.md)にあり、そこに実測日と環境が書かれています。
 - **permissions boundary と session policy の分岐は実測していません。** 図に入れてあるのは、順序を欠けたまま示すと「boundary があるのに通った / 通らない」の切り分けができなくなるためです。
-- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。
+- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログには誰が記録されるか)）。監査の構成そのものは [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) で扱っています。
 
 ---
 
@@ -162,8 +163,8 @@ graph TD
 
 | 論点 | 出典 |
 |---|---|
-| 評価順序（暗黙の拒否 → 明示的な `Deny` → RCP / SCP → 各ポリシー）、明示的な `Deny` が `Allow` を上書きすること | [AWS: How AWS enforcement code logic evaluates requests](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-denyallow.html) |
-| 同一アカウントは identity-based と resource-based の**和**で評価されること | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
+| 評価順序（暗黙的な拒否 → 明示的な拒否 → RCP / SCP → 各ポリシー）、明示的な拒否が `Allow` を上書きすること | [AWS: How AWS enforcement code logic evaluates requests](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-denyallow.html) |
+| 同一アカウントは identity-based と resource-based の**結合**で評価されること | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
 | 同一アカウントで片方だけが許可しても許可されること | [AWS: Policy evaluation for requests within a single account](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-basics.html) |
 | クロスアカウントは**両方**の評価が真である必要があること | [AWS: Cross-account policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic-cross-account.html) |
 | 二段階認可モデル、ファイルシステム ID による認可、Block Public Access が固定であること | [AWS: Managing access point access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) |
@@ -173,7 +174,7 @@ graph TD
 
 ## 関連ドキュメント
 
-- [アクセスポイントポリシーの Allow は上限にならない](../../domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md) — **本ツリーの各ステップを実環境で確認した結果とポリシー設定例**
+- [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../domains/security-governance/notes/access-point-authorization-layers.md) — **本ツリーの各ステップを実環境で確認した結果とポリシー設定例**
 - [S3 Access Point は全リクエストを 1 つの ID で認可する](../../domains/data-utilization/notes/reaching-data-without-copies.md) — Layer 2 が索引設計に効く理由
 - [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../../domains/data-utilization/notes/s3-access-point-constraints.md) — Access Point を作る前の前提条件
 - [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--認可が-3-層になる) — ブラウザ経路では認証の層がもう 1 つ増えます
