@@ -172,6 +172,8 @@ lang: ja
 - `evidence: field-observation` のとき本文に「再現未確認」相当の記述があること
 - `evidence: hypothesis` のとき本文に「未検証」相当の記述があること
 - `lifecycle` / `domains` の値が定義済みの語彙に含まれること
+- `evidence: verified` のとき `region` があること（**環境を書けないなら区分が違います**）
+- frontmatter のキーが既知の集合に含まれること（**綴り間違いは値が無いのと同じで、しかも読者には見えます**）
 
 ---
 

@@ -4,6 +4,7 @@ lifecycle: [assess, build]
 domains: [data-utilization, performance]
 evidence: verified
 verified_on: 2026-08-07
+region: ap-northeast-1
 lang: ja
 ---
 

@@ -172,6 +172,8 @@ lang: ja
 - 为 `evidence: field-observation` 时正文中有相当于"未确认可复现"的表述
 - 为 `evidence: hypothesis` 时正文中有相当于"未验证"的表述
 - `lifecycle` / `domains` 的取值包含在已定义的词汇中
+- `evidence: verified` 时存在 `region`（**若无法写明环境，则说明等级选错了**）
+- frontmatter 的键包含在已知集合中（**拼写错误等同于没有该值，却仍会被读者看到**）
 
 ---
 

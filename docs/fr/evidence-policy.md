@@ -172,6 +172,8 @@ Ce que `make lint` vérifie :
 - pour `evidence: field-observation`, une mention équivalente à « non reproduit » dans le corps du texte
 - pour `evidence: hypothesis`, une mention équivalente à « non vérifié » dans le corps du texte
 - que les valeurs de `lifecycle` et `domains` figurent dans le vocabulaire défini
+- `region` est présent lorsque `evidence: verified` (**si l'environnement ne peut être nommé, c'est le niveau qui est faux**)
+- chaque clé du frontmatter appartient à l'ensemble connu (**une faute de frappe équivaut à une absence, tout en restant visible au lecteur**)
 
 ---
 

@@ -92,6 +92,39 @@ class GateStillDetects(unittest.TestCase):
         with temp_files(probe):
             self.assert_rejected(run_gate("validate_frontmatter.py"), "verified_on")
 
+    def test_verified_without_region_is_rejected(self) -> None:
+        """A measurement whose environment is not named cannot be compared against."""
+        body = (
+            "---\n"
+            "title: gate probe\n"
+            "lifecycle: [optimize]\n"
+            "domains: [cost]\n"
+            "evidence: verified\n"
+            "verified_on: 2026-01-01\n"
+            "lang: ja\n"
+            "---\n\n# gate probe\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(run_gate("validate_frontmatter.py"), "region")
+
+    def test_misspelled_frontmatter_key_is_rejected(self) -> None:
+        """A typo leaves the value visible to a reader and invisible to every gate."""
+        body = (
+            "---\n"
+            "title: gate probe\n"
+            "lifecycle: [optimize]\n"
+            "domains: [cost]\n"
+            "evidence: verified\n"
+            "verified_on: 2026-01-01\n"
+            "regoin: ap-northeast-1\n"
+            "lang: ja\n"
+            "---\n\n# gate probe\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(
+                run_gate("validate_frontmatter.py"), "unknown frontmatter key"
+            )
+
     def test_role_labeled_callout_is_rejected(self) -> None:
         """A job-title label implies a review that did not happen."""
         body = (

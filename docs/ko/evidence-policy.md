@@ -172,6 +172,8 @@ lang: ja
 - `evidence: field-observation`일 때 본문에 "재현 미확인"에 상당하는 기술이 있을 것
 - `evidence: hypothesis`일 때 본문에 "미검증"에 상당하는 기술이 있을 것
 - `lifecycle` / `domains`의 값이 정의된 어휘에 포함될 것
+- `evidence: verified`일 때 `region`이 있을 것 (**환경을 적을 수 없다면 등급이 잘못된 것입니다**)
+- frontmatter의 키가 알려진 집합에 포함될 것 (**철자 오류는 값이 없는 것과 같으면서 독자에게는 보입니다**)
 
 ---
 
