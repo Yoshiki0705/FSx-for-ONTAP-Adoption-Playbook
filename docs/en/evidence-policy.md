@@ -174,6 +174,8 @@ What `make lint` checks:
 - When `evidence: field-observation`, that the body states the observation was not reproduced
 - When `evidence: hypothesis`, that the body states it is untested
 - That `lifecycle` and `domains` values come from the defined vocabulary
+- `region` is present when `evidence: verified` (**if the environment cannot be named, the tier is wrong**)
+- every frontmatter key is in the known set (**a misspelling is as good as absent, and still visible to a reader**)
 
 ---
 

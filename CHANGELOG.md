@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Two schema rules were stated but not enforced, which is worse than not stating them.**
+  `AGENTS.md` had asked for `region` on a measured finding since the schema was written, and
+  `validate_frontmatter.py` never read the key — so a note whose title is literally about measured
+  timings had been sitting in the tree with no region, its environment recorded only in prose where
+  no gate could see it. A stated-but-unchecked rule reads as enforced, so nobody looks. `region` is
+  now required whenever `evidence: verified`, and the error names the alternative: if the
+  environment cannot be named, the tier is wrong rather than the field optional. Two notes were
+  filled in from values their own bodies already stated.
+- **A misspelled frontmatter key passed silently.** `regoin: ap-northeast-1` satisfied nothing and
+  failed nothing: the value sits in the file where a reviewer reads it as present, while every gate
+  ignores it. That is strictly worse than the key being absent, which at least fails a required-key
+  check. Keys are now validated against a known set, `industry` and `scale_band` included for case
+  studies, and an unrecognized key is an error rather than an extension point. Raised by a sibling
+  repository weighing whether to add measurement metadata to its own frontmatter — the missing
+  known-key check was the reason to say not yet.
 - **The documented way to install the pinned toolchain did not work.** `pip install -r
   requirements-dev.txt` assumes a `pip` on `PATH` and a Python that accepts `--user`; on a Homebrew
   Python it is refused by PEP 668, and `pip` is often not present under that name at all. Harmless

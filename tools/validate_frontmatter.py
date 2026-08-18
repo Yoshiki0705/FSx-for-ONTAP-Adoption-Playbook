@@ -4,10 +4,14 @@
 The evidence tier is the central discipline of this repository, so the rules that tie a tier
 to its supporting metadata are enforced here rather than left to review:
 
-    evidence: verified   -> requires verified_on (a real ISO date, not in the future)
+    evidence: verified   -> requires verified_on (a real ISO date, not in the future) and region
     evidence: documented -> requires source
     field-observation    -> must be labeled as unreproduced in the body
     hypothesis           -> must be labeled as untested in the body
+
+Keys are also checked against a known set. A misspelled key is worse than a missing one: the
+value is present in the file, so a human reviewer reads the note as carrying it, while every
+gate silently ignores it. `regoin: ap-northeast-1` used to pass.
 
 Run:  python3 tools/validate_frontmatter.py [--stats]
 """
@@ -37,6 +41,25 @@ EVIDENCE = {"verified", "documented", "field-observation", "hypothesis"}
 LANGS = {"ja", "en", "ko", "zh-CN", "zh-TW", "fr", "de", "es"}
 
 REQUIRED = ("title", "lifecycle", "domains", "evidence", "lang")
+
+# Every key the schema recognizes. Anything else is a typo or an undocumented extension, and both
+# read as data to a human while being invisible to every gate — so both are errors rather than
+# warnings. `industry` and `scale_band` belong to case studies (docs/ja/case-studies/_template/).
+KNOWN_KEYS = frozenset(
+    {
+        "title",
+        "lifecycle",
+        "domains",
+        "evidence",
+        "lang",
+        "verified_on",
+        "source",
+        "ontap_version",
+        "region",
+        "industry",
+        "scale_band",
+    }
+)
 
 # Body must make the limitation explicit for the two low-confidence tiers.
 UNREPRODUCED_MARKERS = (
@@ -111,6 +134,12 @@ def validate(path: Path) -> tuple[list[str], str | None]:
         if key not in meta or not meta[key]:
             errors.append(f"{rel}: missing required key '{key}'")
 
+    for key in sorted(set(meta) - KNOWN_KEYS):
+        errors.append(
+            f"{rel}: unknown frontmatter key {key!r} "
+            f"(allowed: {', '.join(sorted(KNOWN_KEYS))})"
+        )
+
     title = meta.get("title")
     if isinstance(title, str) and title.strip().startswith("TODO"):
         errors.append(f"{rel}: title is still a TODO placeholder")
@@ -159,6 +188,15 @@ def validate(path: Path) -> tuple[list[str], str | None]:
                 # disagree between a local run and CI.
                 if parsed > dt.datetime.now(dt.UTC).date():
                     errors.append(f"{rel}: 'verified_on' {raw_date} is in the future")
+        # `verified` claims the author reproduced this somewhere, and a reader cannot tell
+        # whether their own environment differs without knowing where. AGENTS.md has asked for
+        # this since the schema was written; nothing enforced it, and a note with measured
+        # timings and no region had been sitting in the tree.
+        if not meta.get("region"):
+            errors.append(
+                f"{rel}: evidence 'verified' requires 'region' (where it was reproduced); "
+                f"downgrade the tier if the environment cannot be named"
+            )
     elif tier == "documented":
         if not meta.get("source"):
             errors.append(

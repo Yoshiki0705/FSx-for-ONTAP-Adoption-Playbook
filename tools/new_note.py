@@ -48,7 +48,8 @@ lang: {lang}
 # TODO - same as title
 
 > **Evidence**: `hypothesis` - 未検証の推論です。検証したら `evidence` を昇格し、
-> `verified_on` と検証環境（ONTAP バージョン / リージョン / 構成）を追記してください。
+> `verified_on` と `region` を frontmatter に追記してください（**どちらも必須で、`make lint` が検査します**）。
+> ONTAP バージョンと構成は本文に書いてください。
 
 ## 結論
 

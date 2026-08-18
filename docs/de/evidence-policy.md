@@ -172,6 +172,8 @@ Was `make lint` prüft:
 - bei `evidence: field-observation`, dass im Text eine Angabe im Sinne von „nicht reproduziert" steht
 - bei `evidence: hypothesis`, dass im Text eine Angabe im Sinne von „ungeprüft" steht
 - dass die Werte von `lifecycle` und `domains` im definierten Vokabular enthalten sind
+- `region` ist vorhanden, wenn `evidence: verified` (**lässt sich die Umgebung nicht benennen, ist die Stufe falsch**)
+- jeder Frontmatter-Schlüssel gehört zur bekannten Menge (**ein Tippfehler wirkt wie ein fehlender Wert und bleibt für Lesende sichtbar**)
 
 ---
 

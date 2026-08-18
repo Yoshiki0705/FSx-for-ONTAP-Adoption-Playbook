@@ -4,6 +4,7 @@ lifecycle: [build, operate]
 domains: [data-utilization, security-governance]
 evidence: verified
 verified_on: 2026-08-07
+region: ap-northeast-1
 lang: ja
 ---
 

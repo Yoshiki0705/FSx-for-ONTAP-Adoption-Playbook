@@ -161,12 +161,19 @@ lifecycle: [assess|design|migrate|build|operate|optimize]   # ≥1
 domains: [data-protection|data-utilization|security-governance|performance|cost|multiprotocol-identity]  # ≥1
 evidence: verified | documented | field-observation | hypothesis
 verified_on: YYYY-MM-DD        # required iff evidence == verified
+region: ap-northeast-1         # required iff evidence == verified
 source: <URL or "vendor documentation">  # required iff evidence == documented
 ontap_version: 9.17.1P7D1      # optional; required for version-specific behavior
-region: ap-northeast-1         # optional; required for measured numbers
 lang: ja
 ---
 ```
+
+Case studies additionally carry `industry` and `scale_band` (see `docs/ja/case-studies/_template/`).
+**No other key is accepted.** An unrecognized key is an error, not an extension: a misspelled
+`regoin:` leaves the value plainly visible to a reviewer while every gate ignores it, which is worse
+than the key being absent. `region` is required on `verified` because a reader cannot judge whether
+their environment differs without knowing where the result came from — if the environment cannot be
+named, the tier is wrong rather than the field optional.
 
 ### Evidence tiers — the central discipline of this repository
 
