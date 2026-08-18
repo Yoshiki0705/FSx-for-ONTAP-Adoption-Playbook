@@ -204,6 +204,7 @@ Windows Active Directory 統合環境で S3 AP を構成し、AD グループ単
 |---|---|
 | S3 AP の「全リクエストを 1 つの ID で認可する」制約を AD グループで補完するパターン | [S3 AP は全リクエストを 1 つの ID で認可する](../domains/data-utilization/notes/reaching-data-without-copies.md) |
 | AD 参加 SVM での S3 AP 利用時の考慮事項 | [AD への依存は参加時ではなく生涯続く](../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+| **AD は S3 AP の前提ではありません。** この構成例は AD グループで認可を分ける 1 つのパターンで、**S3 AP 自体はローカルユーザーでも成立します**（実測）。また **AD グループで分けても、ファイルアクセス監査には AP に紐づく ID しか残りません** | [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../domains/security-governance/notes/access-point-authorization-layers.md) |
 
 出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/enabling-ai-powered-analytics-on-enterprise-file-data-configuring-s3-access-points-for-amazon-fsx-for-netapp-ontap-with-active-directory/)
 

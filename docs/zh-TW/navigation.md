@@ -48,7 +48,7 @@ graph TD
 | 已在運行，希望調整效能 | [效能](../en/domains/performance/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | 已在運行，希望重新檢視成本 | [成本](../en/domains/cost/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | 想確認設計是否觸及上限值 | [上限值與配額](../ja/reference/limits/) | [設計](../en/playbooks/02-design/) (English) |
-| 想透過 S3 API 或分析平台存取 | [FSx for ONTAP S3 AP 的前提條件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [存取點政策的寫法](../en/domains/security-governance/notes/access-point-policy-allow-is-not-a-cap.md) (English) |
+| 想透過 S3 API 或分析平台存取 | [FSx for ONTAP S3 AP 的前提條件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [存取點政策的寫法](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
 關於上述連結，有兩點需要了解。
 

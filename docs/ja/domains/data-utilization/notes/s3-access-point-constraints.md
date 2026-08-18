@@ -54,7 +54,7 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 | 対応する S3 API 操作 | バケット向け Access Point と同一ではありません。**対応操作の一覧を確認してください** |
 | ストレージクラス | FSx for ONTAP ボリューム上のファイルは `StorageClass` が `FSX_ONTAP` として識別されます。`STANDARD` 等を前提にした処理は動きません |
 | クロスアカウント（AP の**作成**） | 不可。ファイルシステムと AP は同一アカウント所有が必須です |
-| クロスアカウント（AP 経由の**データアクセス**） | **可能です。** AP ポリシーで許可すれば別アカウント・別組織のプリンシパルから読めます（実測）。[アクセスポイントポリシーの Allow は上限にならない](../../security-governance/notes/access-point-policy-allow-is-not-a-cap.md#クロスアカウントのデータアクセスは成立する) を参照 |
+| クロスアカウント（AP 経由の**データアクセス**） | **可能です。** AP ポリシーで許可すれば別アカウント・別組織のプリンシパルから読めます（実測）。[S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../security-governance/notes/access-point-authorization-layers.md#クロスアカウントのデータアクセスは成立する) を参照 |
 | S3 Event Notifications | 使えません。イベント駆動が必要なら Amazon EventBridge Scheduler によるポーリングか FPolicy を選びます |
 
 **`StorageClass` を条件分岐に使っている既存コードは、そのままでは動きません。** 分析基盤やデータパイプラインを繋ぐ前に確認してください。
