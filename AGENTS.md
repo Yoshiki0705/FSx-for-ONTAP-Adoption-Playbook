@@ -179,6 +179,12 @@ lang: ja
 
 Never promote a tier without adding the corresponding evidence. Downgrading is always allowed.
 
+A tier records **where a claim comes from**, not how far it was chased. So `documented` carries no claim
+that anyone reproduced it, and "we searched and found nothing stated" is not a tier at all — it is a
+statement about the documentation, so write it in the body with the date and scope of the search.
+Reaching for `hypothesis` there asserts reasoning the note does not have. See
+[`docs/ja/evidence-policy.md`](docs/ja/evidence-policy.md).
+
 **Distinctions that must never blur** (repeat them inline where relevant):
 
 - "sample run" vs "production estimate"

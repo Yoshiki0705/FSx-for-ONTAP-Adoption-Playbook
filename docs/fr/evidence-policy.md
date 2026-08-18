@@ -25,6 +25,26 @@ Toute connaissance de ce dépôt porte un niveau `evidence` à quatre degrés. E
 
 ---
 
+## Ce à quoi les niveaux ne répondent pas
+
+Un niveau classe **la provenance d'une affirmation.** Ce n'est **ni un degré d'investigation, ni une échelle de confiance.** C'est à cette frontière que le sens se déplace lors d'un lien croisé avec un dépôt utilisant un autre vocabulaire.
+
+### `documented` n'implique pas une mesure
+
+`documented` signifie seulement qu'un document de l'éditeur ou d'AWS l'énonce. **Il ne porte aucune affirmation selon laquelle l'auteur a confirmé le comportement.** Le seul niveau qui revendique une mesure est `verified`.
+
+Ainsi, « la source primaire l'énonce, mais cela n'a pas été vérifié sur du matériel réel » relève de `documented`. **Rien n'est perdu dans cette correspondance**, précisément parce que `documented` n'a jamais impliqué une mesure. Lorsqu'un autre dépôt nomme ce même état `unverified` ou similaire, il se transpose tel quel en `documented`.
+
+### L'absence de documentation n'est pas un niveau
+
+« Nous avons cherché sans trouver d'énoncé dans les sources publiques » est **une affirmation sur l'état de la documentation, non sur le comportement du produit.** Les quatre niveaux classent ce qui étaye une affirmation ; aucun n'exprime l'absence d'étaiement.
+
+N'utilisez pas `hypothesis` ici. `hypothesis` signifie **qu'une attente raisonnée existe.** L'employer sans en avoir une donne à la note l'apparence d'un raisonnement qu'elle ne possède pas.
+
+Écrivez-le dans le corps du texte. **Indiquez la date et le périmètre de la recherche** — par exemple « en date de 2026-08, aucun énoncé trouvé dans la documentation AWS » — afin que le lecteur sache quand et où vous avez cherché. Pour les limites et quotas, la place est la section « Could not be measured » (le titre y est en japonais et en anglais) de [Limites et quotas](../ja/reference/limits/) (日本語).
+
+---
+
 ## Pourquoi cette classification est nécessaire
 
 Les informations issues du support technique de terrain sont de nature très différente.
