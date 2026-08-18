@@ -58,6 +58,30 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The network layer of S3 access point authorization, and the two AWS pages that document it.**
+  A sibling repository asked for one fact to be published so it could correct 15 documents against
+  it: that an `Internet` origin access point *is* reachable through an S3 gateway endpoint. The note
+  did not record which origin the `aws:SourceVpce` rows were measured on, and the records that would
+  have settled it were not available — so it was re-measured from scratch rather than inferred, with
+  the control the first run lacked. Changing only the condition value to a non-existent endpoint ID
+  denies the same EC2 instance, which is what separates "the value matched" from "the condition is
+  not evaluated on an Internet-origin access point". Reachability is decided by the caller subnet's
+  routing, not by the origin type.
+- **A layer the note was missing: the VPC endpoint policy.** Found while looking for the ARN
+  primary source. [Configuring network access for Amazon S3 access
+  points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html)
+  enumerates the authorizing layers and independently documents the same-account union this
+  repository had measured, so the central claim now carries both a measurement and a citation. Added
+  with it: condition-key availability — `aws:SourceVpc` / `aws:SourceVpce` / `aws:VpcSourceIp` exist
+  only on a request that traversed a VPC endpoint, `aws:SourceIp` only on one that did not, and the
+  last two are mutually exclusive, so restricting by source IP through an endpoint with
+  `aws:SourceIp` compares nothing. Also that gateway endpoints do not route traffic entering the VPC
+  from VPN, Direct Connect, Transit Gateway or peering, which is the documented explanation for
+  on-premises callers being denied while in-VPC callers succeed.
+- **A primary source for the access point ARN form**, which had been carried as unverified agent
+  knowledge. The troubleshooting page names it as a failure mode: service roles created
+  automatically by other AWS services may reference the alias as a bucket-form ARN, and the fix is
+  the access point ARN form.
 - **The file-system half of S3 access point authorization, measured.** The access point note
   previously covered only AWS-side policy evaluation, which left the most common `AccessDenied` —
   the one with no policy involved at all — unexplained. Added, each with a control in the same

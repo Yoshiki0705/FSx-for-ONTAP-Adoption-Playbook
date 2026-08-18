@@ -37,10 +37,17 @@ Layer 1 の中では、設計を誤らせやすい点が 1 つあります。**�
 
 | 評価される順序 | このノートに効く点 |
 |---|---|
+| 0. **ネットワーク origin のチェック** | VPC origin の AP では、束縛先 VPC の VPC エンドポイント経由でなければ**ポリシー評価の前に**拒否されます |
 | 1. 既定は**暗黙的な拒否** | 何も書かなければ通りません |
 | 2. **明示的な拒否が 1 つでもあれば拒否で確定** | **Layer 1 で絞る手段はこれです** |
 | 3. Organizations の RCP / SCP | アカウントの外側から止められます |
 | 4. identity-based と resource-based（**同一アカウントは結合 / クロスアカウントは両方**） | **`Allow` を狭く書くことは、絞ることではありません** |
+| 4'. **VPC エンドポイントポリシー** | VPC エンドポイントを経由する場合、**そのポリシーも許可していなければ通りません**。既定では全許可なので、絞った場合だけ効きます |
+
+> **VPC エンドポイントポリシーは見落としやすい層です。** 既定が「全 S3 アクション / 全リソースを許可」
+> なので、絞っていない環境では存在に気づきません。**エンドポイントポリシーを絞ったあとに AP を
+> 追加すると、AP の ARN が許可対象に入っておらず `AccessDenied` になります。** この層は AWS の
+> ドキュメント記載で、本ノートでは実測していません。
 
 評価順序の全体像と、症状から落ちた段を逆引きする表は
 [S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md)
@@ -222,16 +229,29 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 }
 ```
 
-実測は同一クライアント（VPC 内の EC2）で条件値だけを変えて両側を取りました。
+**実測した AP は `NetworkOrigin` が `Internet`（`VpcConfiguration` は null）です。** 到達経路は VPC 内の EC2 から **S3 ゲートウェイエンドポイント**経由でした。同一クライアントで条件値だけを変えて両側を取っています。
 
-| 条件の値 | VPC 内の EC2 から | VPC 外から |
+| 条件の値 | VPC 内の EC2 から（ゲートウェイエンドポイント経由） | VPC 外から |
 |---|---|---|
 | 実在するゲートウェイエンドポイントの ID | `ListBucket` / `GetObject` ともに成功 | 拒否 |
 | 存在しないエンドポイントの ID | **拒否** | — |
 
-拒否時のエラー本文に `with an explicit deny in a resource-based policy` が入るため、**IAM 側の許可漏れと切り分けられます。** 切り分けの手がかりとして覚えておくと早いです。
+**下の行がコントロールです。** これが無いと、上の行の成功が「値が一致したから」なのか「Internet origin では条件が評価されないから」なのかを区別できません。**同じ EC2 から、条件値だけを存在しない ID に変えると拒否されました。** つまり `aws:SourceVpce` は**実際にゲートウェイエンドポイントの ID で埋まっています。**
 
-**`NetworkOrigin` による制限とは別の仕組みです。** `NetworkOrigin` は作成後に変更できませんが、この条件はポリシーなので後から変えられます。
+呼び出し元サブネットのルートテーブルには **IGW のデフォルトルートと S3 プレフィックスリストのルートの両方**があり、S3 宛てにはプレフィックスリスト側がより具体的な一致になります。
+
+> **`Internet` origin は「ゲートウェイエンドポイントからは到達しない」わけではありません。** 上記は
+> Internet origin の AP に対する実測です（2026-08-17 に測定し、2026-08-18 にコントロールを足して再現）。
+> **到達可否を決めるのは origin の種別ではなく、呼び出し元サブネットのルーティングです。**
+> AWS も、Internet origin で `aws:SourceVpc` を使うには VPC エンドポイントが必要（キーが埋まらないため）と
+> 明記しています（[出典](#参照した一次情報)）。
+>
+> **ゲートウェイエンドポイントは、VPC の外から入ってくるトラフィックを経路制御しません。** VPN /
+> Direct Connect / Transit Gateway / ピア接続で入る呼び出し元には**インターフェイスエンドポイントが
+> 必要**です。オンプレミスからのアクセスだけが `AccessDenied` になる場合、原因はここである可能性が
+> 高いです。これは AWS のドキュメント記載です。
+
+**`NetworkOrigin` による制限とは別の仕組みです。** `NetworkOrigin` は作成後に変更できませんが、この条件はポリシーなので後から変えられます。**VPC origin は、`aws:SourceVpc` が束縛先 VPC と一致しないリクエストを拒否する明示的な拒否と同等に振る舞います**（AWS のドキュメント記載）。同じ結果をポリシーで書くこともできますが、その場合は書き手が拒否文を維持する責任を持ちます。
 
 ### ④ 組織内に限定する
 
@@ -354,6 +374,22 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 | `aws:PrincipalOrgID` | 組織のメンバーシップ | **Allow / Deny 両側を確認**（別組織のアカウントのプリンシパルで実測） |
 | `s3:prefix` | `ListBucket` の対象範囲 | **Allow / Deny 両側を確認** |
 | `aws:SecureTransport` | 通信の暗号化 | **Deny 分岐に到達しませんでした**（後述） |
+
+### 条件キーは「リクエストに載っているとき」しか比較できません
+
+**条件キーが載らない経路では、`StringEquals` 側の許可は成立せず、`StringNotEquals` 側の拒否は成立します。** どちらに書くかで結果が反転するため、可用性を先に確認してください。**次の表は AWS のドキュメント記載で、本ノートの実測ではありません**（`aws:SourceVpce` が VPC エンドポイント経由で載ることだけは実測済み）。
+
+| 条件キー | リクエストに載る条件 |
+|---|---|
+| `aws:SourceVpc` | **VPC エンドポイント経由のときだけ** |
+| `aws:SourceVpce` | **VPC エンドポイント経由のときだけ**（経由したエンドポイントの ID） |
+| `aws:VpcSourceIp` | **VPC エンドポイント経由のときだけ**。**キー名は大文字小文字を区別します** |
+| `aws:SourceIp` | **VPC エンドポイントを経由しないときだけ**。経由する場合は載りません |
+
+> **`aws:SourceIp` と `aws:VpcSourceIp` は相互排他です。** VPC エンドポイント経由のリクエストを
+> 送信元 IP で絞ろうとして `aws:SourceIp` を書くと、**キーが載らないため意図した比較が行われません。**
+> エンドポイント経由なら `aws:VpcSourceIp`、インターネット経由なら `aws:SourceIp` です。これは
+> アクセスポイントポリシー、VPC エンドポイントポリシー、identity-based ポリシーのすべてに効きます。
 
 ### `aws:SecureTransport` は Deny 分岐に到達しない
 
@@ -688,6 +724,11 @@ graph TD
 | あとで AP のファイルシステム ID を差し替えればよい | 変更 API がありません。AP の作り直しになります |
 | AP を作り直せば元に戻る | 名前は再利用できますが、**エイリアスは変わります** |
 | ポリシーを変えれば `NetworkOrigin` の制限も変えられる | 別の仕組みです。`NetworkOrigin` は作成後に変更できません |
+| `Internet` origin の AP は S3 ゲートウェイエンドポイントからは到達しない | **到達します**（実測）。決めるのは origin の種別ではなく**呼び出し元サブネットのルーティング**です |
+| ゲートウェイエンドポイントがあれば、オンプレミスからのアクセスも私設経路を通る | 通りません。**VPN / Direct Connect / Transit Gateway / ピア接続で VPC に入るトラフィックは経路制御されません。** インターフェイスエンドポイントが必要です |
+| VPC エンドポイント経由のリクエストを `aws:SourceIp` で絞れる | 絞れません。**エンドポイント経由では `aws:SourceIp` が載りません。** `aws:VpcSourceIp` を使います（両者は相互排他） |
+| AP ポリシーと identity-based を直せば経路は通る | VPC エンドポイントを経由する場合、**エンドポイントポリシーも許可している必要があります。** 既定は全許可なので、絞った環境だけで効きます |
+| サービスロールが自動で作った権限はそのまま使える | S3 AP のエイリアスを**バケット形式の ARN** で参照している場合があり、`AccessDenied` になります。**アクセスポイント ARN 形式**に直します |
 | AP ポリシーに `s3:` のアクションが 1 つも無ければ、ファイルには触れられない | 触れられます。**Layer 1 と Layer 2 は独立です。** identity-based ポリシーが許可し、AP の ID がファイル権限を持てば通ります |
 | UNIX ID を使うには LDAP、Windows ID を使うには AD 参加が必要 | どちらも必須ではありません。**SVM のローカルユーザー、および workgroup モードのローカル Windows ユーザーで実測しました** |
 | 監査ログを見れば呼び出し元の IAM プリンシパルが分かる | 分かりません。残るのは **AP に固定した ID の SID** だけで、名前も解決されません。**呼び出し元の特定には CloudTrail 側との突き合わせが必要です** |
@@ -705,6 +746,8 @@ graph TD
 - **SLAG を付けると UNIX ID 経路が拒否された原因は未確認です。** 現象は両方向（追加で拒否、削除で復帰）で確認していますが、**理由は検証していません。**
 - **Windows ID の経路は workgroup モードのローカルユーザーで実測しました。** AD 参加済み SVM での監査記録の見え方（`SubjectUserName` が解決されるか）は、**この検証には含みません。**
 - 監査の測定は **`file_operations` イベント、XML 形式**の 1 構成です。他のイベント種別やログ形式では記録されるフィールドが異なります。
+- **VPC エンドポイントポリシーの層と、条件キーの可用性の表は AWS のドキュメント記載で、本ノートでは実測していません。** 実測したのは `aws:SourceVpce` が S3 ゲートウェイエンドポイント経由で埋まることだけです。
+- **インターフェイスエンドポイント経由は測っていません。** ゲートウェイエンドポイント経由のみです。オンプレミスからの経路も測っていません。
 - 実測は **1 リージョン（`ap-northeast-1`）、1 ファイルシステム**での結果です。
 
 ---
@@ -714,6 +757,9 @@ graph TD
 | 論点 | 出典 |
 |---|---|
 | 二層認可モデル、Block Public Access が変更不可、`s3:PutAccessPointPolicy` が必要、作成時と変更時の設定経路 | [AWS: Managing access point access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) |
+| **認可される層の一覧（origin チェック → VPC エンドポイントポリシー → AP ポリシー → identity-based → SCP）、同一アカウントはどちらか一方の許可で足りること、`Allow` だけでは絞れないこと、条件キーの可用性と相互排他、ゲートウェイエンドポイントは VPC 外から入るトラフィックを経路制御しないこと、VPC origin が `aws:SourceVpc` の明示的な拒否と同等に振る舞うこと** | [AWS: Configuring network access for Amazon S3 access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html) |
+| アクセスポイント ARN の形式（`arn:aws:s3:<region>:<account-id>:accesspoint/<name>`、オブジェクトは `/object/<key>`）、エイリアスの形式と変更不可 | [AWS: Referencing access points with ARNs, aliases, or virtual-hosted-style URIs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/referencing-access-points-for-fsxn.html) |
+| **自動作成されるサービスロールがバケット形式の ARN（`arn:aws:s3:::<alias>`）を使うために `AccessDenied` になること、アクセスポイント ARN 形式に直す必要があること** | [AWS: Troubleshooting S3 access point issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
 | AP ポリシーは 20 KB、VPC 設定は作成後に変更不可、HTTPS のみ対応で HTTP はリダイレクト、10,000 AP / アカウント / リージョン | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 | AP 作成時に指定するプロパティ、ボリュームに junction path が必要 | [AWS: Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) |
 | `CreateAndAttachS3AccessPoint` のパラメータと制約 | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
