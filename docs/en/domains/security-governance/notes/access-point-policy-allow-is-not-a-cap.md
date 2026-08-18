@@ -24,17 +24,20 @@ lang: en
 
 **There is no "bucket policy" for an Amazon FSx for NetApp ONTAP S3 Access Point.** No S3 bucket sits behind it, so there is nothing for `put-bucket-policy` to target. What you configure is an **access point policy** (an IAM resource policy).
 
-With that settled, one behaviour will mislead a design. **Within the same account, an `Allow` in an access point policy is not an upper bound on permissions.**
+With that settled, one consequence will mislead a design. **Within the same account, an `Allow` in an access point policy is not an upper bound on permissions.**
 
-| Situation measured | Result |
+**This is not FSx-for-ONTAP-specific behaviour.** In AWS policy evaluation, a same-account request is decided on the **union** of the identity-based and the resource-based policy: if either allows it, it goes through. An access point policy is a resource-based policy, so **the caller's own permissions are enough on their own.**
+
+| Evaluation order | Why it matters here |
 |---|---|
-| No policy attached at all; a same-account IAM user with S3 permissions calls the access point | **Succeeds.** An access point policy is not required |
-| Policy allows only a role; an IAM user *not* named in it calls the access point | **Succeeds.** Principals you did not name are not excluded |
-| `s3:PutObject` is absent from the `Allow` action list; the role calls `PutObject` | **Succeeds.** The set of actions is not capped either |
+| 1. Default is an implicit deny | Nothing gets through if nothing is written |
+| 2. **One explicit `Deny` anywhere settles it as Deny** | **This is the only way to narrow** |
+| 3. Organizations RCPs / SCPs | Access can be stopped from outside the account |
+| 4. Identity-based and resource-based (**union within an account, both required across accounts**) | **Writing a narrow `Allow` is not narrowing** |
 
-Same-account evaluation is the **union** of identity-based and resource-based allows. So **if you want to narrow access, you write an explicit `Deny`.**
+The whole order, and a table that works back from a symptom to the layer that refused, is in [How a request through an S3 access point is decided](../../../../ja/reference/decision-trees/access-point-authorization.md) (日本語). **This note covers the confirmation of each of those steps in a live environment, and how to write the policy.**
 
-**And the way you write that `Deny` matters.** Building an exception with `NotPrincipal` **denied the very principal it was meant to exempt.** The form to use is a `Condition` with `StringNotEquals` on `aws:PrincipalArn`.
+So **if you want to narrow access, you write an explicit `Deny`. And the way you write that `Deny` matters.** Building an exception with `NotPrincipal` **denied the very principal it was meant to exempt.** The form to use is a `Condition` with `StringNotEquals` on `aws:PrincipalArn`.
 
 > **Evidence**: `verified` (2026-08-17, `ap-northeast-1`, ONTAP `9.18.1P3D1`, a UNIX-security-style
 > volume, three access points across Internet and VPC origins, four principals: an IAM user, an
@@ -61,19 +64,21 @@ Same-account evaluation is the **union** of identity-based and resource-based al
 
 ---
 
-## An Allow Does Not Cap Anything
+## An Allow Does Not Cap Anything — What the Union Implies
 
-**Designing on the assumption that "only what the access point policy lists gets through" leaves more open than intended.**
+**Designing on the assumption that "only what the access point policy lists gets through" leaves more open than intended.** All five rows below are predictable from step 4, the same-account union. **Read them as a record of the model holding, not as surprises.**
 
-| Policy | Caller | Operation | Result |
-|---|---|---|---|
-| none | IAM user | `GetObject` | succeeds |
-| none | IAM user | `ListObjectsV2` | succeeds |
-| `Allow` role only (`GetObject`, `ListBucket`) | IAM user (**not listed**) | `GetObject` | **succeeds** |
-| same | role | `GetObject` | succeeds |
-| same | role | `PutObject` (**action not listed**) | **succeeds** |
+| Policy | Caller | Operation | Result | Explained by |
+|---|---|---|---|---|
+| none | IAM user | `GetObject` | succeeds | step 4 (the identity-based policy alone supplies the `Allow`) |
+| none | IAM user | `ListObjectsV2` | succeeds | same |
+| `Allow` role only (`GetObject`, `ListBucket`) | IAM user (**not listed**) | `GetObject` | **succeeds** | step 4 (absent from the access point policy, present in the identity-based one) |
+| same | role | `GetObject` | succeeds | step 4 |
+| same | role | `PutObject` (**action not listed**) | **succeeds** | step 4 (the action set is decided by the union too) |
 
 If the caller's identity-based policy permits the action, the request goes through. **An access point policy is a place to grant additional access, not a place to narrow it down.**
+
+**The place to narrow is step 2.** An explicit `Deny` is evaluated first and stops the evaluation when it matches. So the narrowing operation is "write a `Deny`", not "write a tighter `Allow`".
 
 > **Security note**: "I created the access point and allowed reads only, so nothing can write
 > through it" does not hold. A principal with administrative permissions writes anyway.
@@ -368,6 +373,8 @@ Row 3 exists as the control, and that matters. **Without it, the refusal in row 
 
 ## Cross-Account Data Access Does Work
 
+**This too follows from step 4.** Across accounts the rule is not a union but **both**: here the resource side (the access point policy) allowed it and the caller's own identity-based policy allowed it as an administrator, so both halves were present and the request went through.
+
 **"Same-account ownership is required" constrains who can *create* the access point, not who can *use* it.**
 
 | Question | Reality |
@@ -529,6 +536,8 @@ graph TD
 
 The diagram carries the same content as the tables above: **pick a condition key per thing you are restricting, and in every case do not stop at `Allow`.** Only when "what may be done" has to be firmly blocked do you move the guarantee out of the policy and into the file system identity.
 
+**This diagram is for choosing what to write.** The order in which what you wrote gets *decided* is in [How a request through an S3 access point is decided](../../../../ja/reference/decision-trees/access-point-authorization.md) (日本語). **Start there when working back from a symptom to a cause.**
+
 ---
 
 ## Verify It in Your Own Environment
@@ -591,6 +600,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 ## Related Documents
 
+- [How a request through an S3 access point is decided](../../../../ja/reference/decision-trees/access-point-authorization.md) (日本語) — **the evaluation order, and working back from a symptom to the layer that refused. Start here to read mechanism-first**
 - [Domain — Security & Governance](../README.md) — the hub for this module
 - [S3 Access Point authorizes every request as one identity](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) — file-system-side authorization. **This note covers the AWS side only**
 - [FSx for ONTAP S3 AP is not simply "S3"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) — prerequisites before creating an access point
