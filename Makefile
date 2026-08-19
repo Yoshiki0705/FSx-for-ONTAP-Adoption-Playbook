@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: help lint i18n-check switcher-check switcher-write audit links links-external all \
+.PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors all \
         frontmatter markdown python format-python new-note stats drift test secrets clean
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
@@ -117,10 +117,13 @@ secrets: ## Secret scan of the worktree (fails when gitleaks is not installed)
 links: ## Check internal link resolution
 	@$(PY) tools/check_links.py
 
+anchors: ## Check that externally cited section anchors have not been renamed
+	@$(PY) tools/check_anchor_contract.py
+
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check audit secrets links drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check audit secrets links anchors drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship

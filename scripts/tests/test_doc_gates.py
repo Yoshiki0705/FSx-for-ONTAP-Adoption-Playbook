@@ -125,6 +125,35 @@ class GateStillDetects(unittest.TestCase):
                 run_gate("validate_frontmatter.py"), "unknown frontmatter key"
             )
 
+    def test_renaming_an_externally_cited_heading_is_rejected(self) -> None:
+        """A renamed heading silently redirects an outside citation to the top of the page."""
+        target = (
+            ROOT
+            / "docs/ja/domains/security-governance/notes/access-point-authorization-layers.md"
+        )
+        original = target.read_text(encoding="utf-8")
+        first_h2 = next(line for line in original.split("\n") if line.startswith("## "))
+        try:
+            target.write_text(
+                original.replace(first_h2, f"{first_h2} renamed", 1), encoding="utf-8"
+            )
+            self.assert_rejected(run_gate("check_anchor_contract.py"), "GONE")
+        finally:
+            target.write_text(original, encoding="utf-8")
+
+    def test_table_literal_drift_between_languages_is_rejected(self) -> None:
+        """A stale number in a translation keeps the heading fingerprint identical."""
+        target = (
+            ROOT
+            / "docs/en/domains/security-governance/notes/access-point-authorization-layers.md"
+        )
+        original = target.read_text(encoding="utf-8")
+        try:
+            target.write_text(original.replace("24,861", "24,681", 1), encoding="utf-8")
+            self.assert_rejected(run_gate("check_i18n_parity.py"), "24,681")
+        finally:
+            target.write_text(original, encoding="utf-8")
+
     def test_role_labeled_callout_is_rejected(self) -> None:
         """A job-title label implies a review that did not happen."""
         body = (

@@ -21,6 +21,26 @@ all eight languages deliberately. Without it, either every new doc blocks the co
 eight translations exist, or the gate has to be switched off - and a gate that is switched off
 stops catching the drift it was built for.
 
+Heading structure is not the whole story. A table row carrying a measured value can change in one
+language while the other keeps the old number, and the section fingerprint stays identical. So the
+*literals* inside table cells are compared as well - condition keys, S3 actions, region codes,
+versions and multi-digit numbers - the tokens that read the same in every language.
+
+Two decisions in that comparison were forced by measurement rather than taste:
+
+  * Sets, not counts. How often prose mentions `755` legitimately differs between languages.
+  * Table cells only, matched line by line. A first attempt stripped comments and link targets from
+    the whole file with multi-line regexes; the link pattern spans newlines, so it deleted entire
+    table rows and then reported the deleted values as "English only". Every hit it produced was
+    fabricated. Line-scoped extraction cannot do that.
+
+  * One direction only. A translation may omit a value; it may not introduce one the reference
+    lacks. Six hubs carry a deliberately reduced table, and requiring both directions reported
+    every measurement they legitimately leave out.
+
+Row counts are deliberately not compared either: the English navigation carries a table explaining
+the (日本語) markers that the Japanese file has no reason to contain.
+
 Run:  python3 tools/check_i18n_parity.py
 """
 
@@ -103,6 +123,66 @@ def module_readme(lang: str, group: str, module: str) -> Path:
     return ROOT / "docs" / lang / group / module / "README.md"
 
 
+# Literals that read identically in every language, so a difference between two translations means
+# a fact changed rather than a translation choice: condition keys, S3 actions, region codes, dotted
+# versions, thousands-separated numbers, decimals, and numbers of three digits or more. Short
+# integers are excluded on purpose - they are list ordinals far more often than measurements.
+LITERAL = re.compile(
+    r"(?:aws:[A-Za-z]+)"
+    r"|(?:s3:[A-Za-z*]+)"
+    r"|(?:[a-z]{2}-[a-z]+-\d)"
+    r"|(?:\d+\.\d+\.\d+[A-Za-z0-9]*)"
+    r"|(?:\d{1,3}(?:,\d{3})+)"
+    r"|(?:\d+\.\d+)"
+    r"|(?:\b\d{3,}\b)"
+)
+INLINE_LINK = re.compile(r"\]\([^)\n]*\)")
+TABLE_DIVIDER = re.compile(r"^\s*\|[\s|:-]+\|?\s*$")
+
+
+def table_literals(path: Path) -> set[str]:
+    """Evidence-bearing literals inside table cells.
+
+    Line-scoped deliberately; see the module docstring on why whole-file regex preprocessing
+    fabricated differences.
+    """
+    found: set[str] = set()
+    in_fence = False
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence or not line.lstrip().startswith("|"):
+            continue
+        if TABLE_DIVIDER.match(line):
+            continue
+        found |= set(LITERAL.findall(INLINE_LINK.sub("](  )", line)))
+    return found
+
+
+def compare_table_literals(
+    label: str, reference: Path, others: list[tuple[str, Path]]
+) -> list[str]:
+    errors: list[str] = []
+    expected = table_literals(reference)
+    for lang, path in others:
+        if not path.exists():
+            continue  # a missing translation is reported by compare()
+        # Only one direction is an error. Japanese is the reference language, so a translation
+        # may say less - the six non-ja/en hubs carry a deliberately reduced table - but it must
+        # not carry a value the reference does not. That asymmetry is what catches the drift this
+        # check exists for: when a number is corrected in Japanese and the translation keeps the
+        # old one, the stale value shows up here as a literal the reference no longer has.
+        extra = sorted(table_literals(path) - expected)
+        if extra:
+            errors.append(
+                f"{label}: {lang} table cells carry literal(s) the reference does not: "
+                f"{', '.join(extra)} - a translation may omit a value but may not introduce one "
+                f"({path.relative_to(ROOT)})"
+            )
+    return errors
+
+
 def compare(label: str, reference: Path, others: list[tuple[str, Path]]) -> list[str]:
     errors: list[str] = []
     expected = structure(reference)
@@ -128,7 +208,7 @@ def compare(label: str, reference: Path, others: list[tuple[str, Path]]) -> list
                     f"reference has '{want}' ({path.relative_to(ROOT)})"
                 )
                 break
-    return errors
+    return errors + compare_table_literals(label, reference, others)
 
 
 def main() -> int:
