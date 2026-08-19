@@ -74,6 +74,7 @@ make switcher-check  # Language switcher blocks match what exists on disk
 make audit           # Pre-publication audit (naming / neutrality / PII / internal IDs)
 make secrets         # gitleaks scan of the worktree (full history: gitleaks workflow)
 make links           # Broken link check (internal links offline, external opt-in)
+make anchors         # Externally cited section anchors have not been renamed
 make drift           # AGENTS.md size budget, steering loader thinness, index reachability
 make test            # Guardrail tests: guard contract, .PHONY, one break per doc gate
 make all             # everything above (commit gate)
@@ -424,12 +425,15 @@ Before submitting changes:
 2. `make audit` — zero naming, neutrality, PII, or internal-ID hits
 3. `make i18n-check` — Tier 1 parity holds
 4. `make switcher-check` — switcher blocks match the languages on disk
-5. `make links` — no broken internal links
+5. `make links` and `make anchors` — no broken internal links, no renamed external anchor
 6. New note → frontmatter complete, `evidence` tier honest, environment stated for any number
 7. New case study → anonymization table in `docs/ja/case-studies/_template/` fully applied
 8. Changed a Tier 1 doc → every language the manifest names updated in the same commit
 9. Added a translation → `sync_lang_switcher.py --write`, never a hand-edited switcher line
-10. Changed a diagram → light and dark regenerated, PNG visually confirmed
+10. Renamed a heading in a document another repository cites → tell them, note it in `CHANGELOG.md`,
+    then `check_anchor_contract.py --write`. GitHub answers an unknown fragment with the top of the
+    page, so the citing side never observes a broken link
+11. Changed a diagram → light and dark regenerated, PNG visually confirmed
 
 ## Self-Review (4-Axis Check)
 

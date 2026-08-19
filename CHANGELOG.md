@@ -73,6 +73,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Table literals are now compared across languages, and externally cited anchors are pinned.**
+  Both came from a sibling repository reporting a defect it had hit itself: it corrected an evidence
+  attribution in Japanese, left the English row stale, and `make i18n-check` stayed green because it
+  compares heading structure only. Reproducing the exposure here went wrong first, instructively. A
+  whole-file tokenizer stripping link targets with a pattern that spans newlines deleted entire table
+  rows, then reported the deleted values as "English only" - every finding it produced was
+  fabricated. Counting occurrences was wrong too: how often prose mentions a number legitimately
+  differs between languages. What survives is line-scoped, table-cell-only, and compares sets in
+  **one direction** - a translation may omit a value but may not carry one the Japanese reference
+  lacks, which is precisely the shape of a stale translated row. Six hubs carry a deliberately
+  reduced table, and requiring both directions reported every measurement they leave out. Broken
+  three ways before being trusted.
+- **`make anchors`** records the section anchors of documents other repositories cite. A renamed
+  heading now fails the gate instead of failing silently elsewhere: GitHub answers an unknown
+  fragment with the top of the page, so the citing side keeps rendering a link that lands in the
+  wrong place, and neither repository's link checker can see it - one resolves anchors only inside
+  its own tree, the other does not have the tree. The snapshot duplicates data on purpose; that
+  duplication is what turns a rename into a diff someone has to acknowledge.
 - **Read-only through the bound identity alone, and the message that tells you which layer refused.**
   A sibling repository is changing its access point template default from UID 0 to a non-root user
   and asked for the measurement behind it, having only "root is a measurement condition, not a
