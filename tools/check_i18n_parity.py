@@ -34,6 +34,9 @@ Two decisions in that comparison were forced by measurement rather than taste:
     table rows and then reported the deleted values as "English only". Every hit it produced was
     fabricated. Line-scoped extraction cannot do that.
 
+  * Locale digit grouping is collapsed. German groups thousands with "." where Japanese groups with
+    ",", so 24.861 and 24,861 are the same measurement written two ways; reporting them as different
+    would claim a value changed when only the locale did.
   * One direction only. A translation may omit a value; it may not introduce one the reference
     lacks. Six hubs carry a deliberately reduced table, and requiring both directions reported
     every measurement they legitimately leave out.
@@ -131,22 +134,48 @@ LITERAL = re.compile(
     r"(?:aws:[A-Za-z]+)"
     r"|(?:s3:[A-Za-z*]+)"
     r"|(?:[a-z]{2}-[a-z]+-\d)"
+    # Digit-grouped numbers come first, and accept either separator. German, Spanish and French
+    # group with "." where Japanese and English use "," - 24.861 and 24,861 are the same value, and
+    # reporting them as different would say a measurement changed when only the locale did. Placed
+    # ahead of the version pattern so 1.234.567 is read as a number rather than a version string,
+    # and ahead of the bare-integer pattern so a comma inside a group cannot act as a word boundary
+    # and split 300,000,000 into 300 / 000 / 000.
+    r"|(?:\d{1,3}(?:[.,]\d{3})+)"
     r"|(?:\d+\.\d+\.\d+[A-Za-z0-9]*)"
-    r"|(?:\d{1,3}(?:,\d{3})+)"
     r"|(?:\d+\.\d+)"
     r"|(?:\b\d{3,}\b)"
 )
+GROUPED_NUMBER = re.compile(r"^\d{1,3}(?:[.,]\d{3})+$")
+
+
+def canonical(token: str) -> str:
+    """Collapse locale digit grouping so the same value compares equal in every language.
+
+    Deliberately biased towards missing a difference rather than inventing one: a decimal with
+    exactly three fractional digits (1.234) is indistinguishable from a grouped thousand here and
+    is normalized too. A checker that fabricates differences gets switched off, which costs more
+    than the narrow case it would have caught.
+    """
+    return GROUPED_NUMBER.sub(
+        lambda m: m.group(0).replace(",", "").replace(".", ""), token
+    )
+
+
 INLINE_LINK = re.compile(r"\]\([^)\n]*\)")
 TABLE_DIVIDER = re.compile(r"^\s*\|[\s|:-]+\|?\s*$")
 
 
-def table_literals(path: Path) -> set[str]:
-    """Evidence-bearing literals inside table cells.
+def table_literals(path: Path) -> dict[str, str]:
+    """Evidence-bearing literals inside table cells, keyed by canonical form.
+
+    Comparison uses the canonical key, so locale digit grouping does not read as a value change.
+    The stored value is the literal as written, because an operator reading `24681` in a failure
+    message cannot find it in a file that says `24,681`.
 
     Line-scoped deliberately; see the module docstring on why whole-file regex preprocessing
     fabricated differences.
     """
-    found: set[str] = set()
+    found: dict[str, str] = {}
     in_fence = False
     for line in path.read_text(encoding="utf-8").split("\n"):
         if line.lstrip().startswith("```"):
@@ -156,7 +185,8 @@ def table_literals(path: Path) -> set[str]:
             continue
         if TABLE_DIVIDER.match(line):
             continue
-        found |= set(LITERAL.findall(INLINE_LINK.sub("](  )", line)))
+        for token in LITERAL.findall(INLINE_LINK.sub("](  )", line)):
+            found.setdefault(canonical(token), token)
     return found
 
 
@@ -173,7 +203,8 @@ def compare_table_literals(
         # not carry a value the reference does not. That asymmetry is what catches the drift this
         # check exists for: when a number is corrected in Japanese and the translation keeps the
         # old one, the stale value shows up here as a literal the reference no longer has.
-        extra = sorted(table_literals(path) - expected)
+        actual = table_literals(path)
+        extra = sorted(actual[key] for key in actual.keys() - expected.keys())
         if extra:
             errors.append(
                 f"{label}: {lang} table cells carry literal(s) the reference does not: "

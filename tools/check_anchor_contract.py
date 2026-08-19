@@ -42,29 +42,23 @@ HEADER = """\
 
 
 def tracked_files() -> list[Path]:
-    """Documents known to be cited by section from outside this repository."""
+    """Documents cited by section from outside this repository.
+
+    Confirmed rather than guessed. The citing repository counted 19 anchored links into the Japanese
+    file and 18 into the English one, and reported that it references the decision tree and the
+    evidence policy in prose only. Both of those were listed here at first and have been removed: a
+    contract claiming an anchor is externally cited when it is not makes the gate fire on renames
+    that break nothing, and friction without benefit is how a gate ends up switched off.
+    """
     return [
         ROOT
         / "docs"
-        / "ja"
+        / lang
         / "domains"
         / "security-governance"
         / "notes"
-        / "access-point-authorization-layers.md",
-        ROOT
-        / "docs"
-        / "en"
-        / "domains"
-        / "security-governance"
-        / "notes"
-        / "access-point-authorization-layers.md",
-        ROOT
-        / "docs"
-        / "ja"
-        / "reference"
-        / "decision-trees"
-        / "access-point-authorization.md",
-        ROOT / "docs" / "ja" / "evidence-policy.md",
+        / "access-point-authorization-layers.md"
+        for lang in ("ja", "en")
     ]
 
 
