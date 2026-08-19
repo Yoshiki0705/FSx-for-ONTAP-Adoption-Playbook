@@ -52,7 +52,15 @@ python: ## Lint and format-check tools/ and scripts/ (fails when ruff is absent 
 		$(TOOLCHAIN_HELP); \
 		exit 1; \
 	}
-	@installed=$$($(RUFF) --version | awk '{print $$2}'); \
+	@reported=$$($(RUFF) --version 2>/dev/null) || { \
+		echo "error: $(RUFF) is present but does not run."; \
+		echo "       Its exit status was discarded here until a sibling repository pointed"; \
+		echo "       out that a pipeline reports the last command's status, so a broken"; \
+		echo "       install was misread as a version mismatch and sent you to the wrong fix."; \
+		$(TOOLCHAIN_HELP); \
+		exit 1; \
+	}; \
+	installed=$${reported##* }; \
 	if [ "$$installed" != "$(RUFF_PINNED)" ]; then \
 		echo "error: $(RUFF) is $$installed, but CI pins $(RUFF_PINNED)."; \
 		echo "       Rule sets differ between releases, so a local pass here does not"; \
