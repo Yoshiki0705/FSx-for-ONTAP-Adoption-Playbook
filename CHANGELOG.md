@@ -73,6 +73,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Read-only through the bound identity alone, and the message that tells you which layer refused.**
+  A sibling repository is changing its access point template default from UID 0 to a non-root user
+  and asked for the measurement behind it, having only "root is a measurement condition, not a
+  recommendation" so far. Measured: on a root-owned `755` volume, an access point bound to `nobody`
+  **with no policy attached** serves `GetObject` and refuses `PutObject`, while the root-identity
+  control on the same volume from the same caller writes. Read-only holds in Layer 2 on its own.
+  Answering the question also turned up the trap it invites: this repository's own "read-only"
+  access point does carry a non-root identity, yet what stops writes there is an explicit deny in its
+  policy — **binding a non-root identity is not by itself read-only**, and the name says nothing
+  about which layer acts. The three denials are now distinguishable from the error text, all three
+  measured in one environment: an unqualified `Access Denied` is Layer 2, so searching the policy for
+  it wastes the triage. Added to the decision tree's symptom table for the same reason.
 - **`evidence-policy.md`: what the tiers do not answer** — a new section in all eight languages,
   prompted by a sibling repository whose own vocabulary distinguishes "documented but not chased on
   hardware" and "searched and found nothing", and which asked whether tiers should be added here to
