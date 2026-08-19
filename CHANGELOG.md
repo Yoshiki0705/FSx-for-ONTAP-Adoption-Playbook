@@ -88,6 +88,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The claim that a tool is copyable is now a test.** `AGENTS.md` invites a reader to copy
+  `guard_irreversible_ops.py` into their own repository, and two more tools were described the same
+  way to a sibling repository. Those were promises, and a promise breaks silently: the moment a
+  portable file reaches for a project path or a sibling helper it stops being portable while every
+  other test still passes. The pattern comes from that sibling repository, which wraps its own
+  copyable block in a test that executes it in an isolated namespace. Applying it here found a defect
+  in the first minute: the instruction given for `check_anchor_contract.py` named one helper to copy
+  alongside it, and that helper has a dependency of its own — following the instruction produced an
+  `ImportError`. Each copy set is now staged into a temporary directory outside the repository and
+  imported there, because import success inside this tree answers a different question. The test also
+  fails when a set lists a file that is not needed, so the list does not quietly grow past the truth.
 - **Table literals are now compared across languages, and externally cited anchors are pinned.**
   Both came from a sibling repository reporting a defect it had hit itself: it corrected an evidence
   attribution in Japanese, left the English row stale, and `make i18n-check` stayed green because it

@@ -342,7 +342,8 @@ The lesson generalizes past SnapLock:
 
 `scripts/guard_irreversible_ops.py` enforces this mechanically — it blocks a matching mutating command and
 allows read-only inspection. Wire it to a `PreToolUse` hook. **If it blocks you, do not look for a call
-that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories. Verify it with
+that evades it.** It is stdlib-only and project-agnostic; copy it into other repositories — that file
+alone, nothing else. Verify it with
 `python3 scripts/guard_irreversible_ops.py --selftest`, which covers all three verdicts — block
 (exit 2), ask (exit 0 plus a `permissionDecision` payload), and allow (exit 0, silent). Proving it
 blocks is not enough on its own: a guard that also stops ordinary work gets switched off.
@@ -404,6 +405,20 @@ other doc — `.kiro/` only records when to read them.
 | [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, regenerating, or exporting a diagram |
 | [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
 | [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
+
+### Tools other repositories copy
+
+Three tools are described as portable. **The copy set is what a reader must take, and it is enforced
+by `scripts/tests/test_copyability_claims.py`** rather than trusted — a portable file stops being
+portable the moment it reaches for a project path or a sibling helper, and every other test still
+passes. The test also fails when a set lists a file that is not actually needed, so the list stays
+believable.
+
+| Tool | Copy set |
+|---|---|
+| `scripts/guard_irreversible_ops.py` | itself only; `--selftest` must pass from wherever it lands |
+| `tools/check_i18n_parity.py` | itself only |
+| `tools/check_anchor_contract.py` | **itself + `tools/check_links.py` + `tools/frontmatter.py`** — it borrows `anchors_of()` rather than duplicating anchor extraction, because two implementations could disagree and pin an anchor the link checker thinks is absent |
 
 ## Authoring Conventions
 
