@@ -9,6 +9,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The ruff gate misdiagnosed a broken install as a version mismatch.** It read the version through
+  `ruff --version | awk '{print $2}'`, and a pipeline reports its *last* command's exit status, so a
+  ruff that cannot execute produced an empty version string. The gate then refused — correctly — while
+  saying `is , but CI pins 0.16.3` and pointing at the pinning instructions, which are not the fix for
+  a binary that does not run. The version is now read without a pipeline and the two causes are
+  reported separately. A sibling repository found the same masking in its own commit gate, in a worse
+  shape: a pipeline chained with `&&`, which looks connected and never propagates a failure. Both are
+  one fact — `&&` and `||` see the pipeline's status, not the interesting command's — and the same fact
+  explains three commits in this session that landed over a failing `make all`, where `make` and
+  `git commit` were separated by a newline rather than `&&`.
 - **Locale digit grouping read as a changed measurement.** German, Spanish and French group
   thousands with `.` where Japanese and English use `,`, so `24.861` and `24,861` are one value
   written two ways - and the literal comparison would have reported the translation as carrying a
