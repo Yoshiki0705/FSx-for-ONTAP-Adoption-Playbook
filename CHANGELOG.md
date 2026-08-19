@@ -88,6 +88,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`make pr-verify PR=<n>` confirms CI passed for the commit a pull request will actually merge.**
+  `gh pr checks` answers a different question: it reports the latest results rather than results for
+  the current head, so pushing one more commit and re-reading it returns the previous commit's verdict
+  with nothing marking it stale. Both halves of that failure happened here — #53 was merged over a
+  failing gate, and #55 nearly consumed a stale result after a CHANGELOG commit landed between reading
+  the checks and merging. A procedure that must be remembered at exactly one moment is more expensive
+  than a command, an argument made by the sibling repository that had reached the same conclusion.
+  Every lookup is keyed on the head SHA, **a workflow that has not started for that SHA is a failure
+  rather than a pass** (that being precisely what a stale read produces), and a path-filtered workflow
+  is reported as filtered rather than missing so the gate does not claim a false absence. Verified
+  against #53, which it refuses, and #55, which it accepts.
+- **Past merges were audited by SHA rather than from memory.** Prompted by the sibling repository
+  auditing its own seven: memory does not retain which commit a check result belonged to, so
+  "I read the checks every time" is not an answer. Thirteen merged pull requests were re-checked with
+  the merged head SHA as the key. One had failed (#53, already corrected); the other twelve had passed
+  against the commit that was merged.
 - **The claim that a tool is copyable is now a test.** `AGENTS.md` invites a reader to copy
   `guard_irreversible_ops.py` into their own repository, and two more tools were described the same
   way to a sibling repository. Those were promises, and a promise breaks silently: the moment a
