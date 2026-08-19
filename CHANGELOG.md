@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Locale digit grouping read as a changed measurement.** German, Spanish and French group
+  thousands with `.` where Japanese and English use `,`, so `24.861` and `24,861` are one value
+  written two ways - and the literal comparison would have reported the translation as carrying a
+  number the reference does not. With eight languages that is the most dangerous false positive
+  available, because it claims a measurement moved. Grouped numbers are now canonicalized before
+  comparison while the message still quotes the literal as written; `24681` in a failure message
+  cannot be found in a file that says `24,861`. Reported by a sibling repository that hit the same
+  class in its own copy. Its third finding - a comma inside a group acting as a word boundary and
+  splitting `300,000,000` into `300` - does not reproduce here: the grouped-number alternative is
+  ordered ahead of the bare-integer one, which consumes the whole number first.
+- **The anchor contract claimed two documents were cited externally when they were not.** The citing
+  repository confirmed all 37 of its anchored links land on the two access point notes, and that it
+  references the decision tree and the evidence policy in prose only. Those two are removed, 89
+  anchors down to 66. A contract that over-claims makes the gate fire on renames that break nothing,
+  and friction without benefit is how a gate ends up switched off.
 - **Two schema rules were stated but not enforced, which is worse than not stating them.**
   `AGENTS.md` had asked for `region` on a measured finding since the schema was written, and
   `validate_frontmatter.py` never read the key — so a note whose title is literally about measured
