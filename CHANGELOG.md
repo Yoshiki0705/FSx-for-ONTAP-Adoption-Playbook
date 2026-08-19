@@ -88,6 +88,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A suppression marker that suppresses nothing is now an error.** `audit_public_output.py` holds the
+  category vocabulary twice: as `CATEGORIES`, and as alternatives inside the regex that parses a line's
+  `<!-- allow:... -->` marker. Only one direction was checked — the file-level `audit-file-allow`
+  rejects an unknown category, while the line-level marker accepted whatever the regex matched.
+  Demonstrated rather than assumed: renaming the category in the tuple and in the reporting side while
+  leaving the regex alone leaves `allow:role-label` parsing successfully, joining the allowed set, and
+  matching no finding, so an author who believed they had suppressed a finding still sees it reported.
+  The harm is not the visible failure but the lost decision — the marker is a claim that someone read
+  the finding and accepted it, and a dead marker discards that, leaving the next person with a CI
+  failure and no record of why it was once allowed. Found by a sibling repository in its own copy of
+  this file; the duplication is kept for the reason they gave, that a regex is not a list and
+  assembling it at import time hides it from where a reader looks.
 - **The declared vocabularies are now checked against the directory tree.** `LIFECYCLE`, `DOMAINS` and
   the two language lists restate what the layout already shows — `docs/ja/playbooks/01-assess` and
   `lifecycle: assess` are one fact written twice — and nothing noticed if they stopped matching. All
