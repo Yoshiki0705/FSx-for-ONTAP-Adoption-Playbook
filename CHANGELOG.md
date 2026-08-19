@@ -88,6 +88,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The declared vocabularies are now checked against the directory tree.** `LIFECYCLE`, `DOMAINS` and
+  the two language lists restate what the layout already shows — `docs/ja/playbooks/01-assess` and
+  `lifecycle: assess` are one fact written twice — and nothing noticed if they stopped matching. All
+  four happened to agree; the exposure was that agreement could not be observed. Prompted by a sibling
+  repository finding the same shape in its own tooling, a repository name held as a constant that git
+  already knew.
+  **Deriving would have been the wrong fix, and the difference matters.** Their constant had an
+  authoritative source. These do not: the vocabulary *is* the authority and the tree conforms to it, so
+  reading it off disk would invert that and a directory created with a typo would silently widen what
+  the validator accepts instead of being rejected by it. The duplication stays and the divergence became
+  an error. Both directions are checked, because each catches a different mistake — a declared value
+  with no directory is usually a leftover rename, while an undeclared directory is a typo whose notes
+  would be rejected with a confusing message. The two language lists are also compared with each other,
+  since two tools carrying one list is how one of them falls behind.
 - **`make pr-verify PR=<n>` confirms CI passed for the commit a pull request will actually merge.**
   `gh pr checks` answers a different question: it reports the latest results rather than results for
   the current head, so pushing one more commit and re-reading it returns the previous commit's verdict
