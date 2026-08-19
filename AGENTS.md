@@ -75,6 +75,7 @@ make audit           # Pre-publication audit (naming / neutrality / PII / intern
 make secrets         # gitleaks scan of the worktree (full history: gitleaks workflow)
 make links           # Broken link check (internal links offline, external opt-in)
 make anchors         # Externally cited section anchors have not been renamed
+make pr-verify PR=n  # CI passed for the commit this PR will merge, keyed on its head SHA
 make drift           # AGENTS.md size budget, steering loader thinness, index reachability
 make test            # Guardrail tests: guard contract, .PHONY, one break per doc gate
 make all             # everything above (commit gate)
@@ -266,6 +267,8 @@ State the effect, not the activity: `docs: add environment-first entry`, not `do
 
 **Merge strategy affects how long a branch name lives.** A squash merge keeps the pull request title and number in `main`; the branch name survives only on the pull request page. A merge commit embeds the branch name in `main` permanently. Squash is the default here — the pull request body carries the detail, and `main` stays readable.
 
+**Before merging, run `make pr-verify PR=<number>` rather than reading `gh pr checks`.** That command reports the latest results, not results for the current head, so pushing one more commit and re-reading it returns the previous commit's verdict with nothing marking it stale. A pull request here was merged over a failing gate, and the next one nearly consumed a stale result the same way. `make pr-verify` keys every lookup on the head SHA and treats a workflow that has not started as a failure.
+
 ### Do not invent role-labeled review notes
 
 Do **not** write inline callouts labeled with a job title or persona name (`> **AppSec lens**:`,
@@ -400,14 +403,15 @@ Before submitting changes:
 3. `make i18n-check` — Tier 1 parity holds
 4. `make switcher-check` — switcher blocks match the languages on disk
 5. `make links` and `make anchors` — no broken internal links, no renamed external anchor
-6. New note → frontmatter complete, `evidence` tier honest, environment stated for any number
-7. New case study → anonymization table in `docs/ja/case-studies/_template/` fully applied
-8. Changed a Tier 1 doc → every language the manifest names updated in the same commit
-9. Added a translation → `sync_lang_switcher.py --write`, never a hand-edited switcher line
-10. Renamed a heading in a document another repository cites → tell them, note it in `CHANGELOG.md`,
+6. Merging → `make pr-verify PR=<number>` passed for the **current** head SHA
+7. New note → frontmatter complete, `evidence` tier honest, environment stated for any number
+8. New case study → anonymization table in `docs/ja/case-studies/_template/` fully applied
+9. Changed a Tier 1 doc → every language the manifest names updated in the same commit
+10. Added a translation → `sync_lang_switcher.py --write`, never a hand-edited switcher line
+11. Renamed a heading in a document another repository cites → tell them, note it in `CHANGELOG.md`,
     then `check_anchor_contract.py --write`. GitHub answers an unknown fragment with the top of the
     page, so the citing side never observes a broken link
-11. Changed a diagram → light and dark regenerated, PNG visually confirmed
+12. Changed a diagram → light and dark regenerated, PNG visually confirmed
 
 ## Self-Review (4-Axis Check)
 

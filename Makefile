@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors all \
+.PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors pr-verify all \
         frontmatter markdown python format-python new-note stats drift test secrets clean
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
@@ -119,6 +119,10 @@ links: ## Check internal link resolution
 
 anchors: ## Check that externally cited section anchors have not been renamed
 	@$(PY) tools/check_anchor_contract.py
+
+pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
+	@test -n "$(PR)" || { echo "usage: make pr-verify PR=<number>" >&2; exit 2; }
+	@$(PY) scripts/verify_pr_checks.py $(PR)
 
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
