@@ -202,6 +202,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **`AGENTS.md` gave itself 341 bytes of headroom, which is not headroom.** The size budget was
+  restored by trimming prose in the commit that broke it, and a sibling repository pointed out what
+  that leaves behind: with the budget nearly full, the next edit to a file read on every turn gets
+  spent shortening sentences rather than saying more, so the document gets worse instead of shorter.
+  They had measured their own at 88 bytes remaining and moved a section out. Same fix here — the
+  documentation design principles are authoring guidance, needed when restructuring a README and not
+  on every turn, so they now live in `docs/agent/documentation-design.md` with one index line left
+  behind. Headroom 341 bytes to 1,307. The drift check earned its keep twice while doing it: it
+  refused the move until the new file was tracked by git, and again until the steering loader pointed
+  at a tracked body.
+- **`CONTRIBUTING.md` states which translation drift the gates do not catch.** Previously that limit
+  existed only in a merged pull request body and a tool docstring, which is to say nowhere a
+  contributor reads first. Value drift fails `make i18n-check`; a change to a claim's *backing* -
+  "documented" becoming "observed once" - moves no literal and passes every check. The section says
+  so, records that this was published once, and gives the only remedy available: touch `ja` and `en`
+  in the same commit.
 - **The access point note was retitled, renamed, and reorganized around the two layers, and its
   vocabulary now follows the AWS Japanese documentation.** The previous title asserted a conclusion
   in the negative ("an Allow is not an upper bound"), and the filename asserted it too, which fixes
