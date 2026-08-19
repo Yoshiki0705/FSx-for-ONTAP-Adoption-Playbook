@@ -600,6 +600,36 @@ Name resolution on the SVM was in this state during the measurement. **No extern
 > **A design that narrows in Layer 2 has to be settled before the access point is created**, which
 > in practice means one access point per use case.
 
+### Binding a non-root identity stops writes with no policy at all
+
+**An access point becomes read-only through its identity alone, with no policy attached.** On a root-owned `755` volume (others get `r-x`), an access point was created with the non-root UNIX user `nobody` (uid 65535) and no policy, then measured from the same caller.
+
+| Identity bound to the access point | Access point policy | `GetObject` | `PutObject` |
+|---|---|---|---|
+| `nobody` (uid 65535) | **none** | **succeeds** (598 bytes) | **`AccessDenied`** |
+| `root` (uid 0, control) | **none** | succeeds | **succeeds** |
+
+**Same volume, same caller, no policy on either — the only difference is the identity.** Read-only therefore holds in Layer 2 on its own.
+
+### `AccessDenied` tells you which layer refused
+
+**Three different denials are distinguishable from the message.** All three were measured in the same environment.
+
+| Message | Layer that refused | Meaning |
+|---|---|---|
+| `Access Denied` (**and nothing more**) | **Layer 2** | File permissions are insufficient. Searching the policy will not find the cause |
+| `... with an explicit deny in a resource-based policy` | Layer 1 | An explicit deny in the access point policy matched |
+| `... because no identity-based policy allows the s3:GetObject action` | Layer 1 | Nothing allowed it (still an implicit deny) |
+
+**The first is the misleading one.** An unqualified `Access Denied` means **look at file permissions, not at the policy.**
+
+> **Design note**: a "read-only access point" can mean **read-only in Layer 1** (an explicit deny on
+> writes in the policy) or **read-only in Layer 2** (the identity holds no write permission), and
+> **the name does not say which.** The "read-only" access point in this verification environment did
+> carry a non-root identity, yet what stopped writes was the explicit deny in its policy. **Binding a
+> non-root identity is not by itself read-only** — if that identity holds write permission on the
+> volume, it writes. **Decide the two separately and verify them separately.**
+
 ---
 
 ## Who Appears in the Audit Log
@@ -733,6 +763,9 @@ The diagram carries the same content as the tables above: **pick a condition key
 | `aws:SourceIp` can restrict a request that goes through a VPC endpoint | It cannot. **`aws:SourceIp` is absent on that path.** Use `aws:VpcSourceIp` (the two are mutually exclusive) |
 | Fixing the access point policy and the identity policy is enough | If the request traverses a VPC endpoint, **the endpoint policy must allow it too.** The default allows everything, so this only bites once scoped |
 | Permissions an AWS service created for itself can be used as-is | They may reference the access point **alias as a bucket-form ARN**, which returns `AccessDenied`. Change it to the **access point ARN form** |
+| A "read-only access point" means writes are stopped | **The name does not say which layer stops them.** An explicit deny in the policy, or the identity's file permissions — verify separately |
+| Binding a non-root identity makes it read-only | It does not. **If that identity holds write permission on the volume, it writes.** Confirm that writes actually fail |
+| `AccessDenied` can be diagnosed from the policy | An unqualified `Access Denied` is **Layer 2** (file permissions). Searching the policy will not find the cause |
 | With no `s3:` action in the access point policy, the files cannot be touched | They can. **The two layers are independent.** If the identity-based policy allows it and the bound identity holds the file permission, it goes through |
 | A UNIX identity needs LDAP, and a Windows identity needs an AD join | Neither is required. **Measured with an SVM-local UNIX user and a workgroup-mode local Windows user** |
 | The audit log tells you the calling IAM principal | It does not. Only the **SID of the identity bound to the access point** remains, and the name is not resolved. **Identifying the caller requires correlating with CloudTrail** |

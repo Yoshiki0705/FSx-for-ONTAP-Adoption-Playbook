@@ -132,6 +132,7 @@ graph TD
 | 組織内なのに全員 `AccessDenied` | Layer 1 のステップ 3 | RCP / SCP。AP ポリシーを直しても変わりません |
 | `ListBucket` は通るが `GetObject` が落ちる | Layer 2 | 対象パスの実効権限。`Resource` の粒度も併せて確認します |
 | IAM で許可しているのに落ちる | Layer 2 | Access Point に紐づく ID の権限 |
+| エラー本文が修飾のない `Access Denied` だけ | **Layer 2** | ファイル権限。**ポリシーを探しても原因はありません**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#accessdenied-はメッセージで層を切り分けられます)） |
 | `HeadBucket` は成功するがデータ操作が落ちる | Layer 2（AD 参加済み SVM） | ドメインコントローラへの到達性 |
 
 ---
