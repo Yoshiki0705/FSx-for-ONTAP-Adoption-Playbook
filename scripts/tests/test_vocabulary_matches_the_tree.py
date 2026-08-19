@@ -30,8 +30,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from check_i18n_parity import TIER1_LANGS  # noqa: E402
-from validate_frontmatter import DOMAINS, LANGS, LIFECYCLE  # noqa: E402
+from check_i18n_parity import TIER1_LANGS
+from validate_frontmatter import DOMAINS, LANGS, LIFECYCLE
 
 # Directories under docs/ that are not languages.
 NON_LANGUAGE = {"_assets", "agent"}
