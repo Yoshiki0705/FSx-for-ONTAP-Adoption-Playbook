@@ -408,17 +408,9 @@ other doc — `.kiro/` only records when to read them.
 
 ### Tools other repositories copy
 
-Three tools are described as portable. **The copy set is what a reader must take, and it is enforced
-by `scripts/tests/test_copyability_claims.py`** rather than trusted — a portable file stops being
-portable the moment it reaches for a project path or a sibling helper, and every other test still
-passes. The test also fails when a set lists a file that is not actually needed, so the list stays
-believable.
-
-| Tool | Copy set |
-|---|---|
-| `scripts/guard_irreversible_ops.py` | itself only; `--selftest` must pass from wherever it lands |
-| `tools/check_i18n_parity.py` | itself only |
-| `tools/check_anchor_contract.py` | **itself + `tools/check_links.py` + `tools/frontmatter.py`** — it borrows `anchors_of()` rather than duplicating anchor extraction, because two implementations could disagree and pin an anchor the link checker thinks is absent |
+Three tools are portable. **The copy set for each lives in `COPY_SETS` in
+[`scripts/tests/test_copyability_claims.py`](scripts/tests/test_copyability_claims.py)**, which stages
+it outside the repository and imports it there. Recorded where it is enforced, not repeated here.
 
 ## Authoring Conventions
 
