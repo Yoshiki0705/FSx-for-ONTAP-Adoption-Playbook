@@ -359,40 +359,6 @@ The cases live inside the script deliberately. Once the hook is active, **passin
 on the command line gets the verification run itself blocked** — which happened during development. Keeping
 them internal means checking the guard never requires a matching string to cross the shell.
 
-## Documentation Design Principles
-
-### Hub & Spoke
-
-- `README.md` is a hub: it links out, it does not contain details inline.
-- Each `docs/` file answers **one** question in depth.
-- Max visible content in a README before `<details>` expansion: ~150 lines.
-
-### Progressive disclosure
-
-- Wrap anything not needed on first read in `<details><summary>`.
-- First-time reader needs: what is this / how do I start / where are the details.
-- Returning reader needs: what changed / where is the specific doc.
-
-### Action-first headings
-
-- Use "はじめる" / "Get Started", not "前提条件" / "Prerequisites".
-- The first visible section is a Get Started table with time estimates.
-
-### 7±2 rule
-
-- No more than 7 items visible at one navigation level. More than 7 rows → collapse into `<details>`.
-
-### No dead weight
-
-- Development history → `CHANGELOG.md`, not README.
-- If content will never be updated again, it does not belong in a README.
-
-### Technical reference docs must include
-
-Executive-summary conclusion up front, FAQ / common misconceptions, a selection flowchart (mermaid is
-fine), OT/IT security considerations where applicable, phased adoption steps, and a Related Documents
-section with back-links.
-
 ## Task-specific references (not loaded every turn)
 
 This file is read on every turn, so material that only matters during one kind of work
@@ -405,6 +371,7 @@ other doc — `.kiro/` only records when to read them.
 | [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, regenerating, or exporting a diagram |
 | [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
 | [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
+| [`docs/agent/documentation-design.md`](docs/agent/documentation-design.md) | creating or restructuring a README, a module hub, or a technical reference document. **A README that carries detail inline instead of linking out is the failure it prevents** |
 
 ### Tools other repositories copy
 
