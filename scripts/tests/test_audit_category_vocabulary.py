@@ -38,7 +38,9 @@ WILDCARD = "all"
 def alternatives_in(pattern: re.Pattern[str]) -> set[str]:
     """Category names the `allow:` pattern accepts, read from the pattern itself."""
     group = re.search(r"allow:\(([^)]+)\)", pattern.pattern)
-    assert group, f"the allow pattern no longer has a single alternation group: {pattern.pattern}"
+    assert group, (
+        f"the allow pattern no longer has a single alternation group: {pattern.pattern}"
+    )
     return set(group.group(1).split("|"))
 
 
