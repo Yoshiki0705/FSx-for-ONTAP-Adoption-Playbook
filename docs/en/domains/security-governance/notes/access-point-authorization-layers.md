@@ -660,6 +660,32 @@ These are the fields from `PutObject` and `GetObject` through a `WINDOWS`-type a
 > all as the same subject.** Where per-subject tracing of file operations is a requirement,
 > **the granularity of the audit trail is decided by how access points are split.**
 
+### FPolicy does not see this path at all
+
+**Auditing records the operation; FPolicy is not notified of it.** These are two separate
+mechanisms and they answer differently, so one cannot stand in for the other.
+
+Measured 2026-08-26 on ONTAP 9.18.1P3D1, with an FPolicy policy carrying one event per protocol
+the release accepts, every file operation enabled, scoped to the volume under test.
+
+| Path | FPolicy notification | Blocked by a `mandatory` policy | ONTAP audit | Detected by ARP |
+|---|---|---|---|---|
+| NFS / SMB | fires | **yes** — `Permission denied` | records | yes |
+| Through the access point | **none** | **no** — `PutObject`, `GetObject`, `ListObjectsV2` and `DeleteObject` all succeeded | records | yes |
+
+An FPolicy event accepts only `cifs`, `nfsv3` and `nfsv4` as its protocol; `s3` is rejected with
+HTTP 400. There is no configuration that puts the S3 path under FPolicy.
+
+**Consequence for a design.** Real-time controls built on FPolicy — ransomware detection, DLP, and
+a `mandatory` policy intended to deny an operation — do not apply to writes that arrive through an
+access point. For ransomware specifically, ARP does cover this path (measured: 150 high-entropy
+objects written through an access point were recorded as ARP suspects). For blocking, the boundary
+has to be expressed on the S3 side, in the access point policy and IAM.
+
+One more detail for anyone parsing these logs: a `ListObjectsV2` is audited with `Source=S3`, not
+`Source=HTTP`, and against the volume root rather than an object. Six `HeadObject` calls produced
+no audit record at all.
+
 ### On a UNIX-security-style volume, enabling auditing records nothing
 
 **Enabling auditing on the SVM is not sufficient.** UNIX mode bits carry no audit information, so **with no ACE designating what to record, not a single event is emitted.**

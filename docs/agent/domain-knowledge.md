@@ -24,6 +24,6 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 ## Documented constraints
 
-- No S3 Event Notifications → use EventBridge Scheduler polling or FPolicy.
+- No S3 Event Notifications, and **FPolicy is not a substitute for them**: measured 2026-08-26 on ONTAP 9.18.1P3D1, data operations arriving through an access point raise no FPolicy notification, and are not blocked even by a `mandatory` synchronous policy, while the same volume over NFS or SMB is. An FPolicy event accepts only `cifs` / `nfsv3` / `nfsv4` as its protocol; there is no value for the S3 path. Use EventBridge Scheduler polling, or the ONTAP native audit log, which **does** record these operations as `Source=HTTP` (objects) and `Source=S3` (LIST) — without the requester identity. ARP also sees this path. See [the access point authorization note](../ja/domains/security-governance/notes/access-point-authorization-layers.md) and the measurement record in the observability repository.
 - SnapLock / tamperproof snapshot enablement is **irreversible**. Enabling the feature is not the same as auto-locking; a retention period on the policy is what triggers locking.
 - Volume names allow only alphanumerics and underscores.
