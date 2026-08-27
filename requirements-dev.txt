@@ -10,7 +10,7 @@
 # finds, and commit both together.
 #
 # The validators in tools/ are stdlib-only by design and are not listed here.
-ruff==0.16.3
+ruff==0.16.5
 
 # Not installable via pip — install separately, see CONTRIBUTING.md:
 #   markdownlint-cli2   npm install -g markdownlint-cli2@0.22.1
