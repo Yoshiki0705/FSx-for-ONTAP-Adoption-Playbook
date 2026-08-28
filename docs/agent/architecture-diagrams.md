@@ -10,6 +10,7 @@ Follow the same standard as sibling repositories:
 - Service icons 80×80 (`Arch_*_64.svg` native), resource icons 48×48 (`Res_*_48.svg`). No rescaling, no mixing.
 - Labels use official service names with the `Amazon`/`AWS` prefix. No abbreviations (`ALB` → `Elastic Load Balancing`). Non-AWS elements (`NFS クライアント`, `Windows ファイルサーバー`) need no prefix.
 - Arrows: single-color preset open arrow only (`endArrow=open;endFill=0;strokeColor=#232F3E`). No color-coding or dashed-line semantics.
+- **Diagrams are generated from a spec, never hand-edited.** `tools/build_diagrams.py` holds the geometry and the `LABELS` table; `make diagrams` regenerates every language and theme and exports SVG + PNG, and `make diagrams-check` fails when a committed file no longer matches the spec. Both need the icon package, so neither is part of `make all`. Editing the XML directly is what `--check` exists to catch.
 - Sources live in `docs/_assets/diagrams/`, exports in `docs/_assets/images/` and `docs/_assets/images/png/`. Diagrams are language-neutral; the underscore marks the directory as not-content, which is also why the validators skip it.
 - Ship **both themes**: light is the default and what docs display; dark is generated from light with `Res_*_48_Dark` icon substitution and linked alongside.
 - Never commit the icon asset package itself — only diagrams with icons already embedded.

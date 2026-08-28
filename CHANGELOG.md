@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Dark-theme edge labels exported blank.** draw.io puts an opaque white plate behind every edge
+  label by default. On the dark canvas the plate stayed white while the text turned white with it,
+  so each label rendered as an empty rectangle. The XML parsed, `--check` passed, and only opening
+  the PNG showed it — which is why the diagram standard says to look at the picture. The generator
+  now sets `labelBackgroundColor` from the theme.
+
 - **The ruff gate misdiagnosed a broken install as a version mismatch.** It read the version through
   `ruff --version | awk '{print $2}'`, and a pipeline reports its *last* command's exit status, so a
   ruff that cannot execute produced an empty version string. The gate then refused — correctly — while
@@ -97,6 +103,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the pinned 0.16.1 on `PATH`).
 
 ### Added
+
+- **The cross-Region backup copy diagram, generated rather than drawn.** The backup-copies note and
+  both article drafts carried an ASCII-art figure. It is now a draw.io diagram built from a spec in
+  `tools/build_diagrams.py`, with official AWS Architecture Icons from the current quarterly package
+  embedded as data URIs, shipped in four files: Japanese and English, light and dark. `make diagrams`
+  regenerates and exports; `make diagrams-check` fails on a hand edit. Neither is in `make all`,
+  because both need the icon package and the package is never committed.
+  The figure draws two paths rather than one, which is the point: the native `CopyBackup` reaches
+  another Region inside one account with no scheduler, and AWS Backup reaches another Region and
+  another account on a plan. The single arrow in the ASCII version is how a reader came away thinking
+  cross-account copies arrived with the native path.
+  Backups and recovery points are named boxes, not icons. The only backup marks in the AWS package
+  are AWS Backup marks, and using one for the native copy would attribute the native path to AWS
+  Backup — the exact confusion the figure exists to remove.
 
 - **Backup copies across Regions and accounts, verified end to end.** New note
   `docs/ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md`, covering the
