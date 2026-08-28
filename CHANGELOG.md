@@ -104,6 +104,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **AWS Backup's cross-Region copy and restore for FSx for ONTAP, measured.** The note previously
+  described that path from documentation only. Both halves are now measured on the same Tokyo to
+  Osaka route: an on-demand backup (4 m 02 s) plus an on-demand copy job (8 m 35 s), and a
+  plan-triggered backup (30 m 06 s, of which about 24 minutes was the start window) whose copy rule
+  fired on its own (6 m 31 s), then a console restore (16 m 16 s). All five sha256 values matched,
+  and the symlink, `0640` mode, UTF-8 filename, nested directories and mtimes survived.
+  Four behaviours that change how the console is used: a plan-triggered job waits in `CREATED`
+  inside the start window; the AWS Backup restore form checks "Enable storage efficiency" by
+  default even when the source had it off, unlike the FSx for ONTAP console which pre-selects the
+  source value; `SecurityStyle` comes back empty, which reproduces on this path what had been seen once on
+  the other; and `BackupSizeInBytes` reads 0 while restore progress sits at `0.00%` for the whole
+  16 minutes, so neither is a signal to alert on.
+  Teardown carries a trap: an `EXPIRED` recovery point blocks vault deletion for several minutes
+  while the underlying FSx for ONTAP backup is still `AVAILABLE`, and `delete-backup-vault` refuses
+  with "contains recovery points" during that window.
+  7 masked console screenshots under `docs/_assets/images/png/awsbackup-copies/`. English console,
+  unlike the Japanese FSx for ONTAP screens, and said so where they appear.
+
 - **The cross-Region backup copy diagram, generated rather than drawn.** The backup-copies note and
   both article drafts carried an ASCII-art figure. It is now a draw.io diagram built from a spec in
   `tools/build_diagrams.py`, with official AWS Architecture Icons from the current quarterly package
@@ -304,6 +322,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   payload the guard cannot read.
 
 ### Changed
+
+- **`復元` became `リストア` throughout the data-protection note, and `ネイティブ` was replaced with the
+  service name.** "Native" names no service, so the paths are now called `CopyBackup` and AWS Backup.
+  No externally cited anchor used either word, so `make anchors` still passes; the note's own
+  internal link moved with its heading.
 
 - **The backup-copy diagram draws the AWS Backup restore path too, and says the restore constraint is
   shared.** Both paths land on the same requirement — an existing file system and SVM in the
