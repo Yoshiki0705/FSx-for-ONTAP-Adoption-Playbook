@@ -237,15 +237,43 @@ than a CLI default.
 
 | 属性 | ソース | 復元後 | 出典 | 検証日 |
 |---|---|---|---|---|
-| `StorageEfficiencyEnabled` | `false` | **`true`** | 実測 | 2026-08-28 |
-| `SecurityStyle` | `UNIX` | **API 応答では空** | 実測 | 2026-08-28 |
+| `StorageEfficiencyEnabled` | `false` | **`true`**（CLI で省略時）/ `false`（明示時） | 実測 | 2026-08-28 |
+| `SecurityStyle` | `UNIX` | **API 応答では空**（CLI・コンソールの両方） | 実測 | 2026-08-28 |
 | `VolumeStyle` | `FLEXVOL` | `FLEXVOL` | [AWS: using-backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) | — |
+| ボリュームサイズ（コンソールの既定） | 1 GiB | **1 TiB** | 実測 | 2026-08-28 |
 
-`SecurityStyle` が空になる件は **一度のみの観測で、再現確認は未実施です。** NFS 経由のパーミッション
-動作は UNIX として正しく、フィールドのみ空でした。
+> **訂正**: `StorageEfficiencyEnabled` は当初「引き継がれない」と記載していました。**誤りです。**
+> コンソールから復元するとバックアップ元の値が初期選択され、そのまま `false` で復元されました。
+> 最初に `true` になったのは **CLI でこのフィールドを省略したため**で、復元の挙動ではなく API の既定値です。
+>
+> **Correction**: this row originally read as "not carried over". **That was wrong.** Restoring through the
+> console pre-selects the source value and it restored as `false`. The initial `true` came from **omitting
+> the field in the CLI call** — an API default, not restore behaviour.
 
-The empty `SecurityStyle` was **observed once and not reproduced.** UNIX mode bits behaved correctly over
-NFS; only the field was empty.
+`SecurityStyle` が空になる件は **CLI とコンソールの 2 経路で同じ結果**です。ただしソースボリュームは
+同一（UNIX）で、他のセキュリティスタイルでは確認していません。NFS 経由のパーミッション動作は UNIX
+として正しく、フィールドのみ空でした。
+
+The empty `SecurityStyle` reproduced across **both the CLI and the console**, though against the same
+UNIX-style source volume; other security styles were not tested. UNIX mode bits behaved correctly over
+NFS — only the field was empty.
+
+**コンソールのサイズ既定は事故になりえます。** ソースが 1 GiB でも既定は 1 TiB で、1,024 GiB の
+宛先ファイルシステムではこれで容量を使い切ります。
+
+**The console's size default is a hazard.** It is 1 TiB even for a 1 GiB source, which fills a
+1,024 GiB destination file system on its own.
+
+### コンソール操作時の挙動 / Console-specific behaviour
+
+| 項目 | 挙動 | 出典 | 検証日 |
+|---|---|---|---|
+| コピー画面の送信先リージョン既定 | **同一リージョン**。別リージョンは明示的な変更が必要 | 実測 | 2026-08-28 |
+| 宛先リージョン変更時の KMS キー表示 | **宛先リージョンの既定キーに切り替わる** | 実測 | 2026-08-28 |
+| 復元ダイアログの必須項目 | ファイルシステムに加えて **SVM が必須** | 実測 | 2026-08-28 |
+| 復元中のボリューム詳細 | 「作成」+ `DP` を表示。RW を明示していても同じ | 実測 | 2026-08-28 |
+| 復元完了時の詳細画面 | **自動更新されません。** 再読み込みまで `DP` のまま表示 | 実測 | 2026-08-28 |
+| 復元ダイアログの SnapLock | **この画面から有効化できます**（不可逆。有効化は別承認） | 実測 | 2026-08-28 |
 
 ### FlexGroup — バックアップ作成が非同期で失敗しました / FlexGroup backup creation failed asynchronously
 
