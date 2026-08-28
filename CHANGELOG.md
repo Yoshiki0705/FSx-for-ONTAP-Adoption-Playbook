@@ -116,6 +116,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   with the caveat that at 9.4 MiB fixed overhead dominates and incrementality could not be
   demonstrated. Copy limits and the transient-`DP` behaviour are also recorded in
   `docs/ja/reference/limits/README.md`.
+- **Console-only behaviour recorded for the copy and restore paths.** Six observations that the CLI does not
+  surface, measured 2026-08-28: the copy form's destination Region **defaults to the current Region**, so
+  leaving it produces an in-Region copy; changing the destination **switches the displayed KMS key to that
+  Region's default key**, which is what "incrementality requires the same KMS key" means in practice; the
+  restore dialog makes the **SVM a required field** on top of the file system; **the volume size field
+  defaults to 1 TiB** even for a 1 GiB source, which alone fills a 1,024 GiB destination; the volume detail
+  page shows `DP` during a restore even when RW was selected in the form; and that page **does not
+  auto-refresh**, so it kept showing `DP` after the API had returned `RW`. The restore dialog also offers to
+  enable SnapLock, which is called out as not a field to set in passing.
 - **`recent-updates.md` gained a section on how updates are tracked.** This capability has two What's
   New posts and **no entry in the ONTAP User Guide document history**, which is how the stale
   constraint recorded under Corrected survived. Following the document history alone is not sufficient,
@@ -954,6 +963,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Corrected
 
+- **`StorageEfficiencyEnabled` is not "lost by a restore" — it is a CLI default.** The backup-copy note and
+  the limits reference both stated the attribute was not carried over, on the evidence that a restored
+  volume read `true` while its source read `false`. Running the same restore through the console showed the
+  field **pre-selected to the source value**, and it restored as `false`. The `true` came from omitting the
+  field in the CLI `--ontap-configuration`; it is the API default when the field is absent, not restore
+  behaviour. Both documents now say so. **This is the second claim in this work that a single observation on
+  a single interface got wrong** — the first being the transient `DP` volume type — and both were caught the
+  same way: by performing the operation a second way rather than by re-reading the first result.
+- **`SecurityStyle` reads empty on a restored volume through both interfaces.** Previously recorded as a
+  single unreproduced observation. It now reproduces across the CLI and the console, so the caveat narrows
+  rather than disappears: both runs used the same UNIX-style source volume, and other security styles were
+  not tested.
 - **"Backups cannot protect against a Region-level failure" was true and is now false.** Three documents
   stated it as a constraint — `docs/ja/reference/comparison/data-protection-methods.md` and the JA and EN
   copies of `snapshots-are-not-a-recovery-plan.md` — in the comparison tables, the misconception tables,
