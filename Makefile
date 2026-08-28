@@ -6,7 +6,8 @@ PY ?= python3
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors pr-verify all \
-        frontmatter markdown python format-python new-note stats drift test secrets clean
+        frontmatter markdown python format-python new-note stats drift test secrets clean \
+        diagrams diagrams-check
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -151,6 +152,13 @@ new-note: ## Scaffold a note. Usage: make new-note MODULE=domains/performance SL
 
 stats: ## Count notes by evidence tier
 	@$(PY) tools/validate_frontmatter.py --stats
+# Not part of `all`: both need the AWS Architecture Icons package, which is never committed. The
+# generated .drawio files and the exported images are the committed artefacts, so a contributor
+# without the package can still run the gate.
+diagrams: ## Regenerate the .drawio sources and export SVG + PNG (needs the AWS icon package)
+	@$(PY) tools/build_diagrams.py --write --export
+diagrams-check: ## Verify the committed diagrams still match the spec (needs the AWS icon package)
+	@$(PY) tools/build_diagrams.py --check
 
 clean: ## Remove local caches and previews
 	@rm -rf .ruff_cache .pytest_cache __pycache__ tools/__pycache__ tmp-previews
