@@ -305,6 +305,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **The backup-copy diagram draws the AWS Backup restore path too, and says the restore constraint is
+  shared.** Both paths land on the same requirement — an existing file system and SVM in the
+  destination Region, and a new volume — so the figure now runs an arrow from the backup vault into
+  the same "created when recovering" frame rather than from the native copy alone. Drawing the
+  constraint once per path was what made it look specific to `CopyBackup`.
+  Diagram wording follows the article: 復元 became リストア, and "the native CopyBackup" became "the
+  FSx for ONTAP CopyBackup", because "native" names no service.
+
 - **`AGENTS.md` gave itself 341 bytes of headroom, which is not headroom.** The size budget was
   restored by trimming prose in the commit that broke it, and a sibling repository pointed out what
   that leaves behind: with the budget nearly full, the next edit to a file read on every turn gets
