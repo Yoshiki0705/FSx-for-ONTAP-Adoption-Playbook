@@ -257,23 +257,30 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "CreateVolumeFromBackup",
         "en": "CreateVolumeFromBackup",
     },
+    # AWS Backup restores through its own StartRestoreJob, and it lands on the same requirement:
+    # an existing file system and SVM in the destination Region, and a new volume. Drawing both
+    # arrows into one frame is the point — the constraint is not specific to the native path.
+    "restore_backup_svc": {
+        "ja": "AWS Backup のリストア",
+        "en": "Restore via AWS Backup",
+    },
     "note": {
         "ja": (
             "<b>補足</b><br>"
-            "※1 <b>復元先はバックアップが保存されているリージョンに限られる</b><br>"
-            "大阪で復元するには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る"
+            "※1 <b>リストア先はバックアップが保存されているリージョンに限られる（2 経路で共通）</b><br>"
+            "大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る"
             "（実測 20 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）<br>"
-            "※2 <b>ネイティブの CopyBackup は同一アカウント内のみ・手動</b><br>"
+            "※2 <b>FSx for ONTAP の CopyBackup は同一アカウント内のみ・手動</b><br>"
             "定期実行と別アカウントは AWS Backup 経由（別アカウントは AWS Organizations が前提）<br>"
             "※3 <b>この図は SnapMirror の代わりではない</b><br>"
             "分単位の RPO と切り戻しが要件なら宛先にファイルシステムを常時持つ構成になる"
         ),
         "en": (
             "<b>Notes</b><br>"
-            "*1 <b>A backup restores only into the Region it is stored in</b><br>"
+            "*1 <b>A backup restores only into the Region it is stored in (both paths)</b><br>"
             "Restoring in Osaka needs a file system and an SVM there, and creating them lands on "
             "the RTO (20 minutes measured; ap-northeast-3, SINGLE_AZ_1, 128 MBps)<br>"
-            "*2 <b>The native CopyBackup is manual and same-account only</b><br>"
+            "*2 <b>The FSx for ONTAP CopyBackup is manual and same-account only</b><br>"
             "Scheduling and cross-account copies go through AWS Backup, which requires AWS "
             "Organizations for the cross-account case<br>"
             "*3 <b>This is not a replacement for SnapMirror</b><br>"
@@ -464,7 +471,15 @@ def _backup_copy() -> Diagram:
                 exit_at=(0.5, 1.0),
                 entry_at=(0.5, 0.0),
             ),
-            Edge("e7", "fsx_dst", "vol_dst"),
+            Edge(
+                "e7",
+                "vault",
+                "recovery",
+                "restore_backup_svc",
+                exit_at=(0.5, 0.0),
+                entry_at=(0.5, 1.0),
+            ),
+            Edge("e8", "fsx_dst", "vol_dst"),
         ),
         notes=(Note("note", "note", 40, 560, 1140, 140),),
     )
