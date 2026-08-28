@@ -39,11 +39,11 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 | ランサムウェアによる暗号化 | ○ | ○ | ○ | △（複製済みなら伝播しうる） |
 | **ボリュームの削除** | **✕** | ○ | ○ | ○ |
 | **ファイルシステムの削除** | **✕** | △ | **○** | ○ |
-| リージョン障害 | ✕ | ✕ | 構成次第 | ○（別リージョンへ複製時） |
+| リージョン障害 | ✕ | △（**別リージョンへコピーすれば可**） | 構成次第 | ○（別リージョンへ複製時） |
 
 **AWS Backup で作成したユーザー起動バックアップは、対象のボリュームやファイルシステムを削除しても保持されます。** ここが Snapshot との決定的な差です。
 
-そして**バックアップの復元先は、そのバックアップが保存されているリージョンと同じリージョンのファイルシステム**に限られます。バックアップだけでリージョン障害に備えることはできません。別リージョンへの備えが必要なら SnapMirror の構成が前提になります。
+**バックアップの復元先は、そのバックアップが保存されているリージョンと同じリージョンのファイルシステム**に限られます。この制約は現在も変わっていません。**変わったのはバックアップを置ける場所です。** 2026 年 8 月から別リージョン・別アカウントへコピーできるようになったため、「バックアップではリージョン障害に備えられない」は成り立たなくなりました。ただし復旧するには**コピー先のリージョンにファイルシステムと SVM が必要**で、その作成時間が RTO に乗ります。経路と実測は [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) にあります。
 
 ---
 
@@ -160,6 +160,7 @@ graph TD
     V --> V1[バックアップ<br/>または AWS Backup]
     FS --> FS1[AWS Backup<br/>削除後も保持される]
     R --> R1[SnapMirror で別リージョンへ]
+    R --> R2["バックアップを別リージョンへコピー<br/>復旧時に FS と SVM を作る"]
 
     R1 --> WARN[複製先はバックアップ対象外<br/>バックアップは複製元で取る]
     V1 --> RET[上限と保持期間から<br/>ポリシーを逆算]
@@ -192,7 +193,7 @@ graph TD
 | 誤解 | 実際 |
 |---|---|
 | Snapshot を取っていれば復旧できる | Snapshot は同一ファイルシステム内にあります。**ボリュームやファイルシステムが失われると一緒に失われます** |
-| バックアップがあればリージョン障害にも備えられる | 復元先は同一リージョンのファイルシステムに限られます。別リージョンは SnapMirror の構成が前提です |
+| バックアップだけではリージョン障害に備えられない | **別リージョンへコピーできます**（2026 年 8 月以降）。ただし復元先はバックアップと同一リージョンのままなので、**そのリージョンにファイルシステムを作る時間が RTO に乗ります** |
 | SnapMirror の複製先をバックアップすればよい | **複製先（DP ボリューム）はバックアップ対象外です。** バックアップは複製元で取ります |
 | 復元はいつでも実行できる | 新しい Snapshot がバックアップに紐づいていると拒否されます。先に整理が必要です |
 | Snapshot は無期限に増やせる | 1 ボリュームあたり 1,023 が上限です。到達したら削除が必要になります |
@@ -207,6 +208,7 @@ graph TD
 | 論点 | 出典 |
 |---|---|
 | バックアップの対象ボリューム種別、復元先が同一リージョンであること、DP / LSM / FlexCache / SnapMirror 宛先が対象外 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| バックアップを別リージョン・別アカウントへコピーできること（2026 年 8 月） | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
 | 最新バックアップの削除条件、オフラインボリューム、復元中の削除でキャンセル | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
 | AWS Backup のバックアップはボリューム / ファイルシステム削除後も保持される | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
 | Snapshot が同一ファイルシステム内にあり、データ移動を伴わないこと | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
@@ -219,6 +221,7 @@ graph TD
 ## 関連ドキュメント
 
 - [Domain — データ保護](../README.md) — このモジュールのハブ
+- [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — 別リージョン・別アカウントへの経路と実測
 - [ACL 保持は権限の問題であってツールの問題ではない](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) — 復元後の ACL 比較に同じ手順が使えます
 - [Playbook 05 — 運用](../../../playbooks/05-operate/) — 復元訓練は運用に組み込む項目です
 - [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md) — 復元を実際に試す項目を含めています

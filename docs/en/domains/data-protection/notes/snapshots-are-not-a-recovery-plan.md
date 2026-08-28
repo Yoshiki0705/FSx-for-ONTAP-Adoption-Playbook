@@ -40,11 +40,11 @@ Snapshots, backups, and SnapMirror **protect against different scopes of failure
 | Ransomware encryption | ○ | ○ | ○ | △ (may propagate if already replicated) |
 | **Volume deletion** | **✕** | ○ | ○ | ○ |
 | **File system deletion** | **✕** | △ | **○** | ○ |
-| Region-level failure | ✕ | ✕ | Depends on configuration | ○ (when replicating to another region) |
+| Region-level failure | ✕ | △ (**possible once copied to another Region**) | Depends on configuration | ○ (when replicating to another region) |
 
 **User-initiated backups created through AWS Backup are retained even after the source volume or file system is deleted.** This is the decisive difference from Snapshots.
 
-And **a backup can only be restored to a file system in the same region where the backup is stored.** Backups alone cannot protect against region-level failures. If you need cross-region protection, a SnapMirror configuration is required.
+**A backup can only be restored to a file system in the same Region where the backup is stored.** That constraint still holds. **What changed is where a backup can be stored.** Since August 2026, backups can be copied to another Region and to another account, so "backups cannot protect against a Region-level failure" no longer holds. Recovering there still requires a file system and an SVM in the destination Region, and the time to create them counts against your RTO. See [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html).
 
 ---
 
@@ -151,6 +151,7 @@ graph TD
     V --> V1[Backup<br/>or AWS Backup]
     FS --> FS1[AWS Backup<br/>Retained after deletion]
     R --> R1[SnapMirror to another region]
+    R --> R2["Copy backups to another Region<br/>create FS and SVM at recovery time"]
 
     R1 --> WARN[Replica is not eligible for backup<br/>Take backups at the source]
     V1 --> RET[Work backwards from limits<br/>and retention to design policy]
@@ -183,7 +184,7 @@ Step 4 is frequently overlooked. **The same ACL comparison procedure described i
 | Misconception | Reality |
 |---|---|
 | Taking Snapshots means we can recover | Snapshots exist within the same file system. **If the volume or file system is lost, they are lost too** |
-| Having backups means we are protected against region failures | Restore targets are limited to file systems in the same region. Cross-region requires a SnapMirror configuration |
+| Backups alone cannot protect against a Region failure | **They can be copied to another Region** (since August 2026). The restore target is still the same Region as the backup, so **creating a file system there counts against your RTO** |
 | We can just back up the SnapMirror destination | **Destination (DP) volumes are not eligible for backup.** Take backups at the source |
 | Restore can be executed at any time | If a newer Snapshot is associated with a backup, restore is rejected. Cleanup is needed first |
 | Snapshots can grow indefinitely | The limit is 1,023 per volume. Once reached, deletions are required |
@@ -198,6 +199,7 @@ Step 4 is frequently overlooked. **The same ACL comparison procedure described i
 | Topic | Source |
 |---|---|
 | Eligible volume types for backup, restore target limited to same region, DP / LSM / FlexCache / SnapMirror destinations ineligible | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| Backups can be copied to another Region and another account (August 2026) | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
 | Conditions for deleting the most recent backup, offline volumes, cancellation on deletion during restore | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
 | AWS Backup backups are retained after volume / file system deletion | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
 | Snapshots exist within the same file system and involve no data movement | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |

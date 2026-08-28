@@ -180,6 +180,104 @@ throughput capacity. The refusal message states both the ceiling and what it dep
 
 ---
 
+## FSx for ONTAP — バックアップのリージョン間コピー / Cross-Region backup copies
+
+**2026 年 8 月に追加された経路です。** それ以前は同一リージョン・同一アカウントでの作成と復元に
+限られていました。**復元先がバックアップと同一リージョンである制約は変わっていません。**
+
+A path added in August 2026. Before it, creation and restore were confined to the file system's own
+Region and account. **The constraint that a restore target must sit in the backup's Region is unchanged.**
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| 同時コピー数（1 ボリューム・1 宛先リージョン・1 KMS キー） | 5 件 | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) | — | ドキュメント記載。**未実測** |
+| 同時コピー数（アカウント単位） | 1,000 件 | 同上 | — | 超過分は拒否。**未実測** |
+| パーティション跨ぎ | 不可 | 同上 | — | 商用 / 中国 / GovCloud の 3 セット間。**未実測** |
+| FlexGroup バックアップのコピー | 非対応 | 同上 | — | **踏めていません**（下記） |
+| 別アカウントコピー | AWS Backup + AWS Organizations が前提 | 同上 | — | FSx for ONTAP の API 単体では不可。**未実測** |
+| 初回コピー | 別リージョンへの初回は必ずフル | 同上 | — | 以降は同一 KMS キーかつ既存コピー保持が条件で増分 |
+| コピー中のソース削除 | **拒否** | 実測 | 2026-08-28 | `BadRequest ... is being copied, can't be deleted` |
+| 削除済みボリュームのバックアップのコピー | **成功** | 実測 | 2026-08-28 | `Volume.Lifecycle: DELETED` のバックアップをコピーできました |
+| コピー所要時間（9.4 MiB） | 7 分 15 秒 | 実測 | 2026-08-28 | `ap-northeast-1` → `ap-northeast-3` |
+| 同一宛先への 2 回目（11.4 MiB） | 6 分 01 秒 | 実測 | 2026-08-28 | **増分かどうかはこの規模では判定できません** |
+| コピー済みバックアップからの復元（`CREATED` まで） | 13 分 21 秒 | 実測 | 2026-08-28 | 第 1 世代 `SINGLE_AZ_1` / 128 MBps、データ 9.4 MiB |
+| 宛先ファイルシステムの作成 | 約 20 分 | 実測 | 2026-08-28 | **復旧手順に含める場合、この時間が RTO に乗ります** |
+
+> **所要時間は固定オーバーヘッドが支配しています。** 9.4 MiB のデータに対する値であり、**サイズ依存の
+> 部分はほとんど見えていません。自環境の RTO の根拠には使えません。** 公式ドキュメントは復元を
+> 「数分から数時間」とし、サイズ依存であることを明記しています。
+>
+> **These durations are dominated by fixed overhead.** They were measured against 9.4 MiB, so the
+> size-dependent component is essentially invisible. **They cannot serve as an RTO basis for another
+> environment.** AWS documents restore as taking "a few minutes to a few hours", depending on size.
+
+### 復元中は `OntapVolumeType` が `DP` と返ります / `OntapVolumeType` reads `DP` mid-restore
+
+| 状態 | `OntapVolumeType` | 出典 | 検証日 |
+|---|---|---|---|
+| 復元中（`CREATING`） | **`DP`** | 実測 | 2026-08-28 |
+| 復元完了後（`CREATED`） | `RW` | 実測 | 2026-08-28 |
+
+`CREATED` 直後の値を読んで `DP` と記録し、恒久的な性質と誤読しかけました。**クライアントからの書き込みは
+成功し**、読み直すと `RW` でした。`OntapVolumeType: RW` を明示した 2 回目の復元でも `CREATING` の間は
+`DP` を返したため、CLI の既定値ではなく過渡状態です。
+
+An initial reading taken right at `CREATED` caught `DP` and looked like a permanent property. **A write
+from the client succeeded**, and a re-read returned `RW`. A second restore that stated
+`OntapVolumeType: RW` explicitly also reported `DP` while `CREATING`, so the value is transient rather
+than a CLI default.
+
+> **この値を自動化の判定に使う場合、復元中は `DP` を見ます。** DP ボリュームはバックアップ対象外なので、
+> 「復元直後に自動でバックアップを取る」処理は状態に依存して結果が揺れます。
+>
+> **Automation that reads this field sees `DP` during a restore.** Since DP volumes are not backupable, a
+> "back up immediately after restore" step behaves differently depending on when it reads.
+
+### 復元で引き継がれない属性 / Attributes not carried over by a restore
+
+| 属性 | ソース | 復元後 | 出典 | 検証日 |
+|---|---|---|---|---|
+| `StorageEfficiencyEnabled` | `false` | **`true`** | 実測 | 2026-08-28 |
+| `SecurityStyle` | `UNIX` | **API 応答では空** | 実測 | 2026-08-28 |
+| `VolumeStyle` | `FLEXVOL` | `FLEXVOL` | [AWS: using-backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) | — |
+
+`SecurityStyle` が空になる件は **一度のみの観測で、再現確認は未実施です。** NFS 経由のパーミッション
+動作は UNIX として正しく、フィールドのみ空でした。
+
+The empty `SecurityStyle` was **observed once and not reproduced.** UNIX mode bits behaved correctly over
+NFS; only the field was empty.
+
+### FlexGroup — バックアップ作成が非同期で失敗しました / FlexGroup backup creation failed asynchronously
+
+**ドキュメントの制約はコピーに掛かっており、作成には言及がありません。** 検証では作成側で止まりました。
+
+| 操作 | 結果 | 出典 | 検証日 |
+|---|---|---|---|
+| FlexGroup への `CreateBackup`（API 応答） | **受理**（`CREATING`） | 実測 | 2026-08-28 |
+| 約 30 秒後の状態 | **`FAILED`**。`Backup failed. Please delete the backup and try again.` | 実測 | 2026-08-28 |
+| 対照: FlexVol RW への `CreateBackup` | **成功**（`USER_INITIATED`） | 実測 | 2026-08-28 |
+| SnapLock FlexGroup のバックアップ | 不可 | [AWS: using-backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) | — |
+
+> **1 ボリュームでの 1 回の観測で、再現確認は未実施です。一般化しません。** 対象は単一コンスティチュエント・
+> 1 アグリゲート・113 GiB プロビジョンの非 SnapLock FlexGroup で、対照の FlexVol は同一セッション・同一
+> 資格情報で成功しています。公式ドキュメントは FlexGroup バックアップの**復元**挙動を記述しており、
+> 作成できない前提とは読めません。**`AVAILABLE` な FlexGroup バックアップが得られなかったため、
+> ドキュメント記載のコピー制約そのものは踏めていません。**
+>
+> **Observed once on one volume and not reproduced; not generalized.** The target was a non-SnapLock
+> FlexGroup with a single constituent on one aggregate, 113 GiB provisioned, and the FlexVol control
+> succeeded in the same session with the same credentials. AWS documentation describes the *restore*
+> behaviour of FlexGroup backups, which does not read as creation being unsupported. **Because no
+> `AVAILABLE` FlexGroup backup was produced, the documented copy restriction itself was never exercised.**
+
+検証環境 / Environment: コピー元 `ap-northeast-1`、コピー先 `ap-northeast-3`、いずれも第 1 世代
+`SINGLE_AZ_1` / SSD 1,024 GiB / 128 MBps、既定 KMS キー（`aws/fsx`）、同一アカウント。
+ONTAP `9.17.1P7D1`。詳細は
+[バックアップコピーは復元するまでファイルシステムを持たない](../../domains/data-protection/notes/backup-copies-across-regions-and-accounts.md)
+にあります。
+
+---
+
 ## FSx for ONTAP — 既定の inode 容量 / Default inode capacity
 
 **ドキュメント記載値と実測値が食い違う項目です。** 上の記載ルールに従い両方を残します。
