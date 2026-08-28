@@ -18,7 +18,7 @@ lang: ja
 **4 つの方式は代替関係ではなく、守れる障害の範囲が違います。** 選ぶのではなく、どこまで守るかを決めて組み合わせる対象です。
 
 - **Snapshot** は同一ファイルシステム内。最速で戻せますが、**ボリュームやファイルシステムが失われると一緒に失われます。**
-- **ボリュームバックアップ**はボリューム削除に耐えます。ただし復元先は**同一リージョン**です。
+- **ボリュームバックアップ**はボリューム削除に耐えます。**別リージョン・別アカウントへコピーできます**（2026 年 8 月以降）。ただし復元先は**バックアップが保存されているリージョン**です。
 - **AWS Backup のユーザー起動バックアップ**は、**ボリュームやファイルシステムを削除しても保持されます。**
 - **SnapMirror** は別ファイルシステム・別リージョンへ複製できます。ただし**複製先はバックアップ対象外**です。
 
@@ -36,8 +36,8 @@ lang: ja
 | **ファイル誤削除** | ○ 最速 | ○ | ○ | △ 複製先から取り出す |
 | **ボリューム削除** | **✕** | ○ | ○ | ○ |
 | **ファイルシステム削除** | **✕** | △ | **○ 保持される** | ○ |
-| **リージョン障害** | ✕ | ✕ 復元先は同一リージョン | 構成次第 | ○ 別リージョンへ複製時 |
-| **トレードオフ** | 同一ファイルシステム内にあるため、その障害に共倒れする | 復元先が同一リージョンに限られる | 別サービスの設定と権限が増える | **複製先は読み取り専用**で、かつ**バックアップできない** |
+| **リージョン障害** | ✕ | △ **コピーすれば可**。復旧時に宛先 FS が必要 | 構成次第 | ○ 別リージョンへ複製時 |
+| **トレードオフ** | 同一ファイルシステム内にあるため、その障害に共倒れする | 復元先はバックアップと同一リージョン。**別リージョンで復旧するにはそこに FS と SVM を作る時間が乗る**（実測 20 分） | 別サービスの設定と権限が増える | **複製先は読み取り専用**で、かつ**バックアップできない** |
 | **前提条件** | ボリュームの容量と inode を消費する | **読み書き（RW）ボリュームのみ** | 同左 | クラスタ間ピアリング。**NAT 非対応** |
 | **運用負荷** | 保持数の設計（1 ボリューム 1,023 個の上限） | 保持期間の設計（自動は最大 90 日） | ライフサイクルとボールトの管理 | 関係の監視と、切り替え・切り戻し手順 |
 | **コスト特性** | ボリューム容量として現れる | 消費量課金・**増分** | 同左 | 複製先の容量とスループット |
@@ -62,7 +62,7 @@ lang: ja
 |---|---|---|
 | 1 | 守りたい障害はどこまでか（ファイル / ボリューム / ファイルシステム / リージョン） | **これだけで必要な方式が決まります。** 上の比較表の該当行を見ます |
 | 2 | ファイルシステムを削除しても残す必要があるか | 必要なら **AWS Backup のユーザー起動バックアップ**が前提になります |
-| 3 | 別リージョンに備える必要があるか | 必要なら **SnapMirror** が前提。バックアップだけでは届きません |
+| 3 | 別リージョンに備える必要があるか | 必要なら **SnapMirror** か **バックアップコピー**です。分単位の RPO と切り戻しが要件なら SnapMirror、隔離された保管が要件ならコピーが起点になります（[比較](../../domains/data-protection/notes/backup-copies-across-regions-and-accounts.md#snapmirror-との選び分け)） |
 | 4 | SnapMirror を使うか | 使うなら **バックアップは複製元で取る**設計になります |
 | 5 | 経路に NAT があるか | あると SnapMirror は使えません。経路設計を先に確認します |
 | 6 | 保持したい世代数と期間 | Snapshot は 1 ボリューム 1,023 個、自動バックアップは最大 90 日が上限です。**1,023 は容量が足りている場合の上限で、小さいボリュームでは先に容量で止まります**（[実測](../limits/)） |
@@ -98,7 +98,8 @@ graph TD
     V -->|さらに| FS{ファイルシステム削除}
     FS -->|備える| AB["AWS Backup<br/>削除後も保持される"]
     FS -->|さらに| R{リージョン障害}
-    R -->|備える| SM[SnapMirror で別リージョンへ]
+    R -->|分単位の RPO と切り戻し| SM[SnapMirror で別リージョンへ]
+    R -->|隔離された保管| BC["バックアップを別リージョンへコピー<br/>復旧時に FS と SVM を作る"]
 
     SM --> DP["複製先は DP ボリューム<br/>バックアップできない"]
     DP --> SRC["バックアップは複製元で取る"]
@@ -121,7 +122,8 @@ graph TD
 | 誤解 | 実際 |
 |---|---|
 | Snapshot があれば復旧できる | 同一ファイルシステム内にあります。**ボリューム削除には対応できません** |
-| バックアップがあればリージョン障害にも備えられる | 復元先は**同一リージョン**のファイルシステムに限られます |
+| バックアップだけではリージョン障害に備えられない | **別リージョンへコピーできます**（2026 年 8 月以降）。復元先はバックアップと同一リージョンのままなので、**そこに FS を作る時間が RTO に乗ります** |
+| 別リージョンへコピーすれば、そこから直接復元できる | 復元にはコピー先リージョンの**ファイルシステムと SVM が必要**です |
 | SnapMirror の複製先をバックアップすればよい | **複製先はバックアップ対象外**です。複製元で取ります |
 | 4 つのうちどれか 1 つを選ぶ | 守れる範囲が違います。**組み合わせる対象**です |
 | どの方式でも同じ RTO を名乗れる | 世代で変わります。第 2 世代は復元開始から数分で読めます |
@@ -136,6 +138,7 @@ graph TD
 | 論点 | 出典 |
 |---|---|
 | バックアップ対象が RW ボリュームのみであること、`DP` / LSM / FlexCache / SnapMirror 宛先が対象外であること、復元先が同一リージョンであること、増分であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| バックアップを別リージョン・別アカウントへコピーできること、バックアップコピーと SnapMirror の RPO / RTO の目安 | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) / [Copying backups within the same AWS account](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copying-backups-same-account.html) |
 | AWS Backup のユーザー起動バックアップがボリューム / ファイルシステム削除後も保持されること | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
 | Snapshot が同一ファイルシステム内にあり、データ移動を伴わないこと | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
 | 複製先が読み取り専用であること、SnapMirror が NAT 非対応であること | [AWS Storage Blog: Cross-region disaster recovery](https://aws.amazon.com/blogs/storage/cross-region-disaster-recovery-with-amazon-fsx-for-netapp-ontap/) / [AWS re:Post: Optimize SnapMirror performance](https://repost.aws/knowledge-center/fsx-ontap-optimize-snapmirror) |
@@ -147,7 +150,9 @@ graph TD
 
 ## 比較時点
 
-2026-08-06 時点の情報です。**機能は変わります。** 設計に使う前に各出典の現行版を確認してください。
+2026-08-28 時点の情報です。**機能は変わります。** 設計に使う前に各出典の現行版を確認してください。
+
+**この表は一度実際に変わりました。** 2026 年 8 月まで「バックアップの復元先は同一リージョン」を「バックアップではリージョン障害に備えられない」と書いていましたが、別リージョンへのコピーが可能になり、前提が崩れました。しかも [ONTAP ユーザーガイドの Document History には項目がありません](../recent-updates.md#更新の追跡方法)。
 
 ---
 
@@ -155,6 +160,7 @@ graph TD
 
 - [比較マトリクス](README.md) — このディレクトリのハブ
 - [Snapshot があることと復旧できることは別](../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 各方式の守備範囲の詳細
+- [バックアップコピーは復元するまでファイルシステムを持たない](../../domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) — 別リージョン・別アカウントへの経路と実測
 - [SnapLock は有効化とロックが別](../../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) — 不可逆な選択
 - [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) — SnapMirror の切り替えと切り戻し
 - [課金は「確保した量」と「使った量」に分かれる](../../domains/cost/notes/provisioned-versus-consumed.md) — 各方式のコスト特性

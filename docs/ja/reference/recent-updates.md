@@ -1,7 +1,7 @@
 ---
 title: 直近のアップデートと設計への影響 — 2026 年 5〜8 月
 lifecycle: [design, build, operate]
-domains: [performance, cost, security-governance, data-utilization]
+domains: [performance, cost, security-governance, data-utilization, data-protection]
 evidence: documented
 source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html
 lang: ja
@@ -15,11 +15,12 @@ lang: ja
 
 ## 結論
 
-**2026 年 5〜8 月に、設計判断に影響するアップデートが 3 つの軸で出ています。**
+**2026 年 5〜8 月に、設計判断に影響するアップデートが 4 つの軸で出ています。**
 
-1. **リージョン拡張と世代制限の緩和** — 第 2 世代が使えるリージョンが増え、性能上限の格差が縮まりつつある
-2. **マルチプロトコル統合の拡大** — Transfer Family (SFTP/FTPS/FTP) が S3 AP 経由で FSx for ONTAP に接続可能に
-3. **VMware 移行パスの追加** — AWS Transform と Amazon EVS が FSx for ONTAP をストレージターゲットとしてサポート
+1. **データ保護の到達範囲** — バックアップを別リージョン・別アカウントへコピー可能に。**既存の制約記述が 1 つ無効になりました**
+2. **リージョン拡張と世代制限の緩和** — 第 2 世代が使えるリージョンが増え、性能上限の格差が縮まりつつある
+3. **マルチプロトコル統合の拡大** — Transfer Family (SFTP/FTPS/FTP) が S3 AP 経由で FSx for ONTAP に接続可能に
+4. **VMware 移行パスの追加** — AWS Transform と Amazon EVS が FSx for ONTAP をストレージターゲットとしてサポート
 
 以下は各アップデートの概要と、このリポジトリの既存ノートとの対応です。
 
@@ -29,6 +30,28 @@ lang: ja
 ---
 
 ## FSx for ONTAP 本体のアップデート
+
+### バックアップを別リージョン・別アカウントへコピー可能に（2026-08）
+
+**それ以前は、ファイルシステムと同一リージョン・同一アカウントでバックアップを作成し復元することしかできませんでした。** 別リージョンへの退避は SnapMirror が唯一の経路で、そのために宛先でファイルシステムを起動し続ける必要がありました。
+
+| 経路 | 手段 |
+|---|---|
+| 別リージョン・同一アカウント | FSx for ONTAP のコンソール / CLI / API (`CopyBackup`) |
+| 別アカウント（fan-in / fan-out） | **AWS Backup + AWS Organizations**（FSx for ONTAP の API 単体では不可） |
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| **平常時にコピー先のファイルシステムを持たなくてよくなった。** 復旧時に作る時間（実測 20 分）が RTO に乗る | [バックアップコピーは復元するまでファイルシステムを持たない](../domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) |
+| 「バックアップではリージョン障害に備えられない」が成り立たなくなった。**復元先が同一リージョンである制約は変わっていない** | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#何から守れるのか) |
+| SnapMirror との選び分けが「可用性か保管か」で分かれる。**切り戻し経路はバックアップコピーにはない** | [データ保護方式の比較](comparison/data-protection-methods.md) |
+| 隔離アカウントへの退避が、資格情報の漏洩や KMS キーの侵害への層として使える | [プラットフォームが与えるものと自分に残るもの](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) |
+
+出典: [What's New — FSx for ONTAP 側](https://aws.amazon.com/about-aws/whats-new/2026/08/fsx-ontap-cross-region-backup-copy/)、[What's New — AWS Backup 側](https://aws.amazon.com/about-aws/whats-new/2026/08/aws-backup-amazon-fsx-netapp-cross-account-region/)、[Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html)
+
+**東京から大阪へのコピーと、コピー先での復元・内容照合を実測しました**（2026-08-28）。所要時間と、復元中に `OntapVolumeType` が `DP` として返る挙動は上記ノートにあります。
+
+---
 
 ### Nitro ベースの転送時暗号化 — 全リージョン対応（2026-07-20）
 
@@ -257,6 +280,20 @@ GPU インスタンスが複数 AZ に分散する ML トレーニングで、Fl
 | 2025-09-30 | **Dual-stack IPv6 対応** | IPv6 クライアントからのアクセスが可能に。既存ファイルシステムのネットワークタイプを変更可能 |
 | 2025-08-14 | **SSD ストレージ容量の縮小が可能**（第 2 世代） | コスト最適化で「一度確保したら下げられない」制約がなくなった |
 | 2025-11-05 | **Secrets Manager 統合** | AD 資格情報を Secrets Manager で管理可能に。ローテーション運用が改善 |
+
+---
+
+## 更新の追跡方法
+
+**Document History だけを追うと取りこぼします。** バックアップの別リージョン・別アカウントコピー（2026-08）は What's New が 2 本出ている一方で、**ONTAP ユーザーガイドの Document History には項目がありません**。このリポジトリは「復元先は同一リージョン」という記述を制約として複数のドキュメントに書いていたため、前提が崩れたことに気づくのが遅れました。
+
+| 情報源 | 追う理由 |
+|---|---|
+| [Document History](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html) | ドキュメント本文の変更が日付付きで並ぶ。**ただし全件ではありません** |
+| What's New（FSx for ONTAP と **AWS Backup の両方**） | 機能追加の一次情報。周辺サービス側にしか出ない項目があります |
+| ユーザーガイドの該当ページ本文 | **制約を引用している箇所は、引用元の現行版を読み直す**。History に出ない改訂があります |
+
+**制約を根拠に設計判断を書いている箇所は、定期的に出典の現行版と突き合わせてください。** 「できない」という記述は、機能追加によって静かに古くなります。
 
 ---
 

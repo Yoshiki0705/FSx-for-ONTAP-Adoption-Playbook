@@ -19,6 +19,8 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 3 | WORM / SnapLock をどう使い、何が不可逆か | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) |
 | 4 | 復旧手順をどう検証するか | [復元を実際に試す手順](notes/snapshots-are-not-a-recovery-plan.md#自分の環境で確かめる) |
 | 5 | ランサムウェア対策として何が有効か | [ランサムウェア対策は層で考える](notes/snaplock-and-layered-ransomware-readiness.md#ランサムウェア対策は層で考える) |
+| 6 | 別リージョン・別アカウントへどう退避するか | [バックアップコピーは復元するまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) |
+| 7 | バックアップコピーと SnapMirror をどう選び分けるか | [SnapMirror との選び分け](notes/backup-copies-across-regions-and-accounts.md#snapmirror-との選び分け) |
 
 ---
 

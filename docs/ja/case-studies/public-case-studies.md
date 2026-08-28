@@ -65,7 +65,7 @@ lang: ja
 | ソフトウェア / DevOps | [Atlassian](https://aws.amazon.com/partners/success/atlassian-netapp/) | — |
 | AI / ドキュメント | [Vaultedge](https://aws.amazon.com/fsx/netapp-ontap/customers/) | ドキュメント AI スタートアップ。データのスケーラビリティ・永続性・可用性を確保 |
 | SaaS / 計画プラットフォーム | [Anaplan](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 6 か月間に複数の重大障害を経験後に移行。グローバルスケール。前ベンダーのパブリッククラウド不足が契機 |
-| 旅行 | [Ávoris](https://aws.amazon.com/fsx/netapp-ontap/customers/) | Astra Trident + コンテナで数百の同時 DevOps プロジェクトを展開。顧客需要変化への迅速な適応 |
+| 旅行 | [Ávoris](https://aws.amazon.com/fsx/netapp-ontap/customers/) | Astra Trident + コンテナで数百の同時 DevOps プロジェクトを展開。需要変化への迅速な適応 |
 | SAP | [Inventum](https://aws.amazon.com/fsx/netapp-ontap/customers/) | SAP HANA 環境。SnapMirror で環境の即時コピー。「将来に備えた SAP 環境」 |
 | エンジニアリング / 建設 | [Ayesa](https://aws.amazon.com/fsx/netapp-ontap/customers/) | Global File Cache で拠点間ファイル共有。自動階層化でコスト最適化 |
 | 環境サービス | [Veolia](https://aws.amazon.com/fsx/netapp-ontap/customers/) | IaC + 自動階層化でオンプレミスより高いスケーラビリティとコスト効率。アプリケーション変更なしで移行 |

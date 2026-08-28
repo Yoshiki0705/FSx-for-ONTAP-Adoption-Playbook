@@ -98,6 +98,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Backup copies across Regions and accounts, verified end to end.** New note
+  `docs/ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md`, covering the
+  August 2026 capability and the boundary around it: the restore target is still confined to the
+  backup's own Region, so the destination file system and SVM have to be created at recovery time and
+  that lands on RTO — 20 minutes measured. A Tokyo → Osaka copy and restore were reproduced
+  (`ap-northeast-1` → `ap-northeast-3`, 2026-08-28): copy 7 m 15 s, restore 13 m 21 s, all five sha256
+  digests matching after restore, with mode bits, symlink target, and a UTF-8 filename preserved, and a
+  file added after the backup correctly absent. A backup whose source volume had already been deleted
+  copied successfully. Two observations corrected working assumptions: **`OntapVolumeType` reads `DP`
+  while a restore is in progress and becomes `RW` on completion** — caught only because a write probe
+  from the client succeeded, and confirmed transient by a second restore that stated `RW` explicitly
+  and still reported `DP` while `CREATING`; and **`CreateBackup` on a FlexGroup volume is accepted and
+  then fails asynchronously** with a message that names no cause, recorded as a single unreproduced
+  observation rather than a general claim, since the documented restriction is on *copying* FlexGroup
+  backups and no `AVAILABLE` FlexGroup backup was ever produced to exercise it. Durations are stated
+  with the caveat that at 9.4 MiB fixed overhead dominates and incrementality could not be
+  demonstrated. Copy limits and the transient-`DP` behaviour are also recorded in
+  `docs/ja/reference/limits/README.md`.
+- **`recent-updates.md` gained a section on how updates are tracked.** This capability has two What's
+  New posts and **no entry in the ONTAP User Guide document history**, which is how the stale
+  constraint recorded under Corrected survived. Following the document history alone is not sufficient,
+  and the AWS Backup What's New feed carries items that never appear on the FSx for ONTAP side.
 - **A suppression marker that suppresses nothing is now an error.** `audit_public_output.py` holds the
   category vocabulary twice: as `CATEGORIES`, and as alternatives inside the regex that parses a line's
   `<!-- allow:... -->` marker. Only one direction was checked — the file-level `audit-file-allow`
@@ -932,6 +954,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Corrected
 
+- **"Backups cannot protect against a Region-level failure" was true and is now false.** Three documents
+  stated it as a constraint — `docs/ja/reference/comparison/data-protection-methods.md` and the JA and EN
+  copies of `snapshots-are-not-a-recovery-plan.md` — in the comparison tables, the misconception tables,
+  the decision flows, and the how-to-choose steps. Backups can be copied to another Region and account as
+  of August 2026, so the conclusion drawn from the constraint no longer follows. **The underlying sentence
+  was never wrong and still is not**: a restore target is confined to the Region where the backup is
+  stored. What changed is which Regions a backup can be stored in, so all four places now separate "where
+  a backup can live" from "where it can be restored to", and say that creating the destination file system
+  lands on RTO. A reader who designed against the earlier text and concluded that SnapMirror was the only
+  cross-Region option was reading a claim that held when it was written. **This is the failure mode the
+  evidence tiers do not catch**: `documented` was the correct tier, the source was cited correctly, and the
+  citation went stale underneath it without the document history recording a change.
 - **A failed volume deletion *can* be diagnosed from the AWS API.** An earlier entry in this release claimed
   it could not, and that only the ONTAP job message carried the reason. That was wrong, and it was the same
   class of mistake as the incident it was describing: concluding without reading what was already available.
