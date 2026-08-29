@@ -484,7 +484,7 @@ graph TD
 - [Domain — データ保護](../README.md) — このモジュールのハブ
 - [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 各仕組みの守備範囲
 - [SnapLock は有効化とロックが別](snaplock-and-layered-ransomware-readiness.md) — 不可逆な選択
-- [データ保護方式の比較](../../../reference/comparison/data-protection-methods.md) — 方式の選定
+- [データ保護方式の比較](../../../reference/comparison/data-protection-methods.md) — 方式の選定と、[レプリケーションとコピーの違い](../../../reference/comparison/data-protection-methods.md#レプリケーションとコピーは別の操作)を 4 方式の表の中で見る場合
 - [直近のアップデートと設計への影響](../../../reference/recent-updates.md) — このアップデートの位置づけ
 - [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — バックアップの課金特性
 - [知見の分類ポリシー](../../../evidence-policy.md)
