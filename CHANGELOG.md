@@ -456,6 +456,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **Three pieces of wording that read as jargon or as blame.** "床" was a metaphor for the minimum
+  monthly charge and is now named as that; the English "floor" was doing double duty for a cost
+  minimum and for a lower-bound duration, so the cost sense became "minimum monthly charge" and the
+  duration sense became "at least" or "lower bound". "本番へ戻す" did not say which direction data
+  moves, and is now "スタンバイ系からアクティブ系へのデータの切り戻し", with the English
+  correspondingly explicit. And "払わされる" — along with the English "swallow the higher bill" and
+  "what `All` tiering costs you" — framed a documented minimum as something imposed on the reader;
+  those now state the constraint without the grievance. No figure or claim changed.
 - **`復元` became `リストア` throughout the data-protection note, and `ネイティブ` was replaced with the
   service name.** "Native" names no service, so the paths are now called `CopyBackup` and AWS Backup.
   No externally cited anchor used either word, so `make anchors` still passes; the note's own
