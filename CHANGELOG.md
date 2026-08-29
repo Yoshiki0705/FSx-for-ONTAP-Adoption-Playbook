@@ -104,6 +104,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The data-protection comparison matrix carries the replication-versus-copy split too.** The table
+  already used 複製 for SnapMirror and コピー for backup copies, but never said the two words describe
+  different operations, so a reader could take both rows as answers to the same question. The new
+  section states what sits at the destination in each case and links to the note. `復元` became
+  `リストア` in the same file, so the two documents no longer disagree on the word.
+
 - **Replication and copy are separated as terms, not just as mechanisms.** A new section in the
   data-protection note states what sits at the destination in each case: SnapMirror replication puts
   a `DP` volume there that follows the source, while an AWS Backup or `CopyBackup` copy puts a
