@@ -1,6 +1,6 @@
 ---
 title: FSx for ONTAP S3 AP は「S3 として使える」わけではない — 前提条件と S3 との差分を先に確認する
-lifecycle: [assess, design, build]
+lifecycle: [assess, design, build, operate]
 domains: [data-utilization, security-governance]
 evidence: documented
 source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-restrictions-limitations-naming-rules.html
@@ -74,6 +74,46 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 最後の 1 点が運用に効きます。**クライアント側で事前にサイズを検証してください。** サーバー側の判定を待つと、大きいオブジェクトほど失敗コストが大きくなります。
 
 実測の詳細と再現手順は [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) にあります。**このリポジトリでは数値を再掲せずリンクします。** 実測値は測定環境と一体で意味を持つため、切り離して引用すると誤用されます。
+
+---
+
+## 撤去のときに詰まる — ボリュームは AWS 側からしか消せなくなる
+
+**ここも実測です。** 導入時ではなく撤去時に効くため、検証環境を作る前に知っておく価値があります。
+
+**S3 AP を一度取り付けたボリュームは、AP を全部外した後も ONTAP 側からは削除できません。**
+
+```text
+Cannot delete volume "..." in SVM "..." because it is associated with the following
+object store NAS buckets: "amazon-fsx-<volume-id>"
+```
+
+| 確認したこと | 結果 |
+|---|---|
+| バケット名の由来 | **ボリューム ID と完全一致。** AP 単位ではなくボリューム単位に作られ、AP を外しても残ります |
+| AP を全部削除したあと | 拒否は続きます。数時間後も同じです |
+| ボリュームを online・マウント済みに戻す | 拒否は続きます |
+| AP を再取り付けして正しい順序で外す | 拒否は続きます。**AP のライフサイクルとは独立しています** |
+| `aws fsx delete-volume` | **成功します。** ボリュームとバケットが一緒に消えます |
+
+**運用手順書への含意は 1 つです。S3 AP を取り付けたボリュームの撤去は、AWS 側の API で行ってください。** ONTAP CLI の `volume delete` を前提にした手順書は、この経路では詰まります。ONTAP 側で offline にしてから AWS 側で消す、という順序も不要です（online のまま `aws fsx delete-volume` で通ります）。
+
+### 見えないものを「無い」と読まないこと
+
+この件で測れた副産物があり、こちらのほうが応用範囲が広いです。
+
+| リーダー | このバケット / S3 サーバをどう見せるか |
+|---|---|
+| ONTAP REST `/protocols/s3/buckets` | 列挙しない |
+| ONTAP CLI `vserver object-store-server bucket show` | 列挙しない |
+| ONTAP REST `/svm/svms`（`s3` フィールド） | S3 サーバを `enabled` として**見せる** |
+| ONTAP REST `/protocols/s3/services` | 同じ SVM を**列挙しない** |
+
+**AWS が管理するオブジェクトは、標準の ONTAP S3 ビューから隠れています。** バケットの不在を 2 つのリーダーで確認しても、両方が同じ盲点を持っていました。
+
+NetApp が文書化している [NAS バケット構成の削除手順](https://docs.netapp.com/us-en/ontap/revert/remove-nas-bucket-task.html) は `vserver object-store-server bucket delete -vserver <svm> -bucket <bucket>` を使いますが、**対象を列挙できないのでこの経路には適用できません。** 同種の症状の KB は [Cannot delete volume "because this volume is associated with object store bucket"](https://kb.netapp.com/onprem/ontap/da/S3/Cannot_delete_volume_%22because_this_volume_is_associated_with_object_store_bucket%22) にありますが、解決手順の本文は NetApp Support のログインが必要で、本ノート作成時点では参照できていません。
+
+> **Evidence**: この節は `verified`（実測）です。AWS / NetApp のドキュメントには、S3 AP を取り付けたボリュームの削除順序についての記載を見つけられていません。**未確認は「そう仕様である」ことを意味しません。** 自環境で撤去手順を通してから本番設計に組み込んでください。
 
 ---
 
