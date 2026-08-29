@@ -66,16 +66,23 @@ NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
 
 # Bare "FSx" that is prose rather than part of an accepted phrase or an identifier.
 BARE_FSX = re.compile(
+    r"(?<!Amazon\s)"  # "Amazon FSx" is the official family name, not an abbreviation
     r"\bFSx\b"
     r"(?!\s+for\s+(?:NetApp\s+)?ONTAP)"  # FSx for ONTAP / FSx for NetApp ONTAP
     r"(?!\s+for\s+(?:Windows|Lustre|OpenZFS))"  # sibling AWS services are legitimate
     r"(?!-for-ONTAP)"  # repo / URL slugs
     r"(?![-\w]*\.(?:md|py|ya?ml|json|svg|png|drawio))"  # filenames
 )
-# Contexts where "FSx" is a token, not prose.
+# Contexts where "FSx" is a token, not prose. Matched against the same span as BARE_FSX
+# rather than the whole line: as a line-wide test, one URL or one backticked identifier
+# exempted every bare "FSx" beside it, and prose next to a link went unreported for as
+# long as the rule existed. Links are common in these notes, so that was most of them.
 IDENT_CONTEXT = re.compile(
-    r"FSx[A-Za-z0-9_]*\s*[=:]|AWS::FSx|aws\s+fsx|\bfsx-|FSxOntap|FSX_|github\.com|https?://"
+    r"FSx[A-Za-z0-9_]*\s*[=:]|AWS::FSx|aws\s+fsx|\bfsx-|FSxOntap|FSX_"
 )
+# Spans where prose rules do not apply, removed before the prose tests run. Replaced with
+# spaces so that reported column offsets and the "Amazon " lookbehind stay meaningful.
+NON_PROSE = re.compile(r"https?://\S+|`[^`]*`")
 
 # ---------------------------------------------------------------- neutrality
 
@@ -184,8 +191,12 @@ def audit_line(
         for pattern, message in NAMING_RULES:
             if pattern.search(line):
                 findings.append(("naming", message))
-        if BARE_FSX.search(line) and not IDENT_CONTEXT.search(line):
-            findings.append(("naming", "bare 'FSx'; use 'FSx for ONTAP'"))
+        prose = NON_PROSE.sub(lambda m: " " * len(m.group()), line)
+        for match in BARE_FSX.finditer(prose):
+            window = prose[max(0, match.start() - 12) : match.end() + 12]
+            if not IDENT_CONTEXT.search(window):
+                findings.append(("naming", "bare 'FSx'; use 'FSx for ONTAP'"))
+                break
 
     if "neutrality" not in allowed:
         for pattern, message in NEUTRALITY_RULES:

@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The bare-`FSx` naming rule exempted the cases it most needed to catch.** Its
+  "is this an identifier rather than prose?" test ran against the whole line, so one URL or one
+  backticked token anywhere on a line exempted every bare `FSx` beside it. These notes cite sources
+  constantly, so that covered most prose, and `make audit` reported a clean tree throughout. The
+  test now runs against a window around each match, with URLs and code spans blanked out first.
+  Tightening it surfaced one violation that had been in `docs/ja/reference/limits/` for as long as
+  the rule existed. `Amazon FSx` is now recognized as the official family name rather than the
+  forbidden abbreviation. `scripts/tests/test_bare_fsx_detection.py` asserts both directions,
+  because a rule that only ever passes and a rule that flags `AWS::FSx::Volume` both end up switched
+  off.
+- **The transfer-charge billing account was stated as settled when two AWS sources disagree.** The
+  developer guide says the *destination* account sees the cross-Region transfer charge for a resource
+  type AWS Backup does not fully manage; the pricing page says the charge goes to the account
+  transferring the data out, which is the source. FSx for ONTAP is exactly such a resource type, so
+  the disagreement lands on this case. Both are now quoted side by side and the point is marked
+  `unverified`, with the advice to run one copy and read the bill.
 - **The note block's longest line ran off the exported canvas.** With `whiteSpace=wrap` a long line
   wraps at the geometry width, but it is drawn starting from `spacingLeft`, so it overruns the right
   edge by that much — and the 12px export border does not cover the overrun. In the English diagram
@@ -110,6 +126,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The crossover volume moves with provisioned throughput, so the comparison is now two-dimensional.**
+  Stating a single crossover implied the always-on side has one cost, when throughput is most of its
+  floor. The note says the crossover rises with provisioned throughput and falls toward the minimum,
+  so a comparison has to pair a data volume with a throughput rather than quote one number.
+- **A DR standby belongs on the first generation, and that is a decision taken before it exists.**
+  The first generation offers 128 / 256 / 512 / 1,024 / 2,048 MBps where the second starts at
+  384 MBps, and a standby is sized for the replication transfer and the reads just after failover,
+  not for production load. The deployment type cannot be changed after creation, so moving between
+  generations means a restore or a migration.
+- **What "no destination file system in steady state" is exchanged for.** Not paying for throughput
+  and SSD is a real advantage, and the counterweight is that the same work arrives at failover:
+  creating the file system (20 minutes measured) and the SVM, restoring the volume (13-16 minutes
+  measured), then recreating export policies and SMB shares, rejoining the new SVM to Active
+  Directory, and repointing clients because the new file system has different DNS names and IPs. The
+  first three finish on their own; the rest need a person, during an incident. A SnapMirror design
+  skips the first three and has the SVM already joined.
+- **The native `CopyBackup` path has no cross-Region transfer charge that could be found.** The
+  `AmazonFSx` price list contains no transfer usage type at all, for any Amazon FSx file system type,
+  and the FSx for ONTAP pricing page scopes its data transfer line to S3 Access Point access.
+  Backups live in AWS-managed S3 rather than in the customer VPC, so the copy is not egress from an
+  ENI and does not have the shape those charges apply to. Recorded as `unverified` rather than as
+  "free": absence from a price list is not proof, and it was not reconciled against a bill.
 - **The data-protection comparison matrix carries the replication-versus-copy split too.** The table
   already used 複製 for SnapMirror and コピー for backup copies, but never said the two words describe
   different operations, so a reader could take both rows as answers to the same question. The new
