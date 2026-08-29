@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The note block's longest line ran off the exported canvas.** With `whiteSpace=wrap` a long line
+  wraps at the geometry width, but it is drawn starting from `spacingLeft`, so it overruns the right
+  edge by that much — and the 12px export border does not cover the overrun. In the English diagram
+  the wrap landed mid-phrase and `16 s through AWS Backup, at 9 MB` was cut off the image. Every
+  note line now carries its own `<br>` instead of relying on the wrap. This is the second defect in
+  this generator found only by opening the PNG: the XML parsed and `--check` passed both times.
 - **Dark-theme edge labels exported blank.** draw.io puts an opaque white plate behind every edge
   label by default. On the dark canvas the plate stayed white while the text turned white with it,
   so each label rendered as an empty rectangle. The XML parsed, `--check` passed, and only opening

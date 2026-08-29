@@ -264,12 +264,16 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "AWS Backup のリストア",
         "en": "Restore via AWS Backup",
     },
+    # Every line here carries its own <br>. Left to draw.io's whiteSpace=wrap, a long line wraps at
+    # the geometry width but is drawn from spacingLeft, so it overruns the right edge by that much
+    # and the export border does not cover the overrun — the EN note lost "16 s ... at 9 MB" off the
+    # canvas that way. The XML parsed and --check passed; only the PNG showed it.
     "note": {
         "ja": (
             "<b>補足</b><br>"
             "※1 <b>リストア先はバックアップが保存されているリージョンに限られる（2 経路で共通、実測）</b><br>"
-            "大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る"
-            "（実測 20〜22 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）。"
+            "大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る<br>"
+            "（実測 20〜22 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）<br>"
             "リストア自体は CopyBackup 経由で 13 分 21 秒、AWS Backup 経由で 16 分 16 秒（9 MB）<br>"
             "※2 <b>FSx for ONTAP の CopyBackup は同一アカウント内のみ・手動</b><br>"
             "定期実行と別アカウントは AWS Backup 経由（別アカウントは AWS Organizations が前提）<br>"
@@ -280,8 +284,10 @@ LABELS: dict[str, dict[str, str]] = {
             "<b>Notes</b><br>"
             "*1 <b>A backup restores only into the Region it is stored in (both paths, measured)</b><br>"
             "Restoring in Osaka needs a file system and an SVM there, and creating them lands on "
-            "the RTO (20-22 minutes measured; ap-northeast-3, SINGLE_AZ_1, 128 MBps). The restore "
-            "itself took 13 m 21 s through CopyBackup and 16 m 16 s through AWS Backup, at 9 MB<br>"
+            "the RTO<br>"
+            "(20-22 minutes measured; ap-northeast-3, SINGLE_AZ_1, 128 MBps)<br>"
+            "The restore itself took 13 m 21 s through CopyBackup and 16 m 16 s through AWS Backup, "
+            "at 9 MB<br>"
             "*2 <b>The FSx for ONTAP CopyBackup is manual and same-account only</b><br>"
             "Scheduling and cross-account copies go through AWS Backup, which requires AWS "
             "Organizations for the cross-account case<br>"
@@ -483,7 +489,7 @@ def _backup_copy() -> Diagram:
             ),
             Edge("e8", "fsx_dst", "vol_dst"),
         ),
-        notes=(Note("note", "note", 40, 560, 1140, 140),),
+        notes=(Note("note", "note", 40, 560, 1140, 170),),
     )
 
 

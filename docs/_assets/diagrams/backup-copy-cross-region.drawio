@@ -65,8 +65,8 @@
         <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=11;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="fsx_dst" target="vol_dst" parent="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="note" value="&lt;b&gt;補足&lt;/b&gt;&lt;br&gt;※1 &lt;b&gt;リストア先はバックアップが保存されているリージョンに限られる（2 経路で共通、実測）&lt;/b&gt;&lt;br&gt;大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る（実測 20〜22 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）。リストア自体は CopyBackup 経由で 13 分 21 秒、AWS Backup 経由で 16 分 16 秒（9 MB）&lt;br&gt;※2 &lt;b&gt;FSx for ONTAP の CopyBackup は同一アカウント内のみ・手動&lt;/b&gt;&lt;br&gt;定期実行と別アカウントは AWS Backup 経由（別アカウントは AWS Organizations が前提）&lt;br&gt;※3 &lt;b&gt;この図は SnapMirror の代わりではない&lt;/b&gt;&lt;br&gt;分単位の RPO と切り戻しが要件なら宛先にファイルシステムを常時持つ構成になる" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor=#666666;fillColor=#F5F5F5;fontColor=#333333;fontSize=11;align=left;verticalAlign=top;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="560" width="1140" height="140" as="geometry" />
+        <mxCell id="note" value="&lt;b&gt;補足&lt;/b&gt;&lt;br&gt;※1 &lt;b&gt;リストア先はバックアップが保存されているリージョンに限られる（2 経路で共通、実測）&lt;/b&gt;&lt;br&gt;大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る&lt;br&gt;（実測 20〜22 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）&lt;br&gt;リストア自体は CopyBackup 経由で 13 分 21 秒、AWS Backup 経由で 16 分 16 秒（9 MB）&lt;br&gt;※2 &lt;b&gt;FSx for ONTAP の CopyBackup は同一アカウント内のみ・手動&lt;/b&gt;&lt;br&gt;定期実行と別アカウントは AWS Backup 経由（別アカウントは AWS Organizations が前提）&lt;br&gt;※3 &lt;b&gt;この図は SnapMirror の代わりではない&lt;/b&gt;&lt;br&gt;分単位の RPO と切り戻しが要件なら宛先にファイルシステムを常時持つ構成になる" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor=#666666;fillColor=#F5F5F5;fontColor=#333333;fontSize=11;align=left;verticalAlign=top;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="560" width="1140" height="170" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
