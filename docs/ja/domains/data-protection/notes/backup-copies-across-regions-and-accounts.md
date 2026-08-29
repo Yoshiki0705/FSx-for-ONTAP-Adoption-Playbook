@@ -40,8 +40,25 @@ lang: ja
 | 経路 | 以前 | 現在 | 手段 |
 |---|---|---|---|
 | 同一リージョン・同一アカウント | 可 | 可 | FSx for ONTAP のコンソール / CLI / API |
-| **別リージョン・同一アカウント** | **不可** | **可** | FSx for ONTAP のコンソール / CLI / API (`CopyBackup`) |
+| **別リージョン・同一アカウント** | **不可**（下の注を参照） | **可** | FSx for ONTAP のコンソール / CLI / API (`CopyBackup`) |
+| **別リージョン**（AWS Backup 経由） | **不可** | **可**（オンデマンド / ポリシーベース） | **AWS Backup** |
 | **別アカウント**（fan-in / fan-out） | **不可** | **可** | **AWS Backup + AWS Organizations** |
+
+> **「以前」の行には別の読みがあります。** NetApp Community の
+> [Cross-Region and Cross-Account Backup for Amazon FSx for NetApp ONTAP](https://community.netapp.com/community/discussion/468353/cross-region-and-cross-account-backup-for-amazon-fsx-for-netapp-ontap)
+> は、同一アカウント内のクロスリージョン `CopyBackup` を**以前から可能**としています。この表が「不可」と
+> しているのは、次の 3 点に基づきます。ONTAP ユーザーガイドの
+> [2026-07-05 時点のアーカイブ](https://web.archive.org/web/20260705094204/https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html)
+> には下位ページに **Copying backups が存在せず**（あるのは Copying tags to backups）、本文はリストア先を
+> 同一リージョンに限っていること。ONTAP ガイドの `copy-backups.html` に Internet Archive の
+> スナップショットが 1 件も無いこと。FSx for ONTAP 側の What's New が「以前は同一リージョン・同一アカウントで
+> 作成しリストアできた」と書いていること。
+>
+> **確認できないのは、launch 前に `CopyBackup` API が ONTAP のバックアップを受理したかどうかです。**
+> この API は FSx for ONTAP 専用ではなく、FSx for Windows File Server と FSx for Lustre では以前から
+> クロスリージョンコピーに対応しています。**ドキュメントの沈黙と API の拒否は別**なので、ここは `unverified` として置きます。
+> いずれの読みでも、**AWS Backup 経由のクロスリージョンコピーと、あらゆるクロスアカウントコピーが
+> 2026 年 8 月 27 日から**という点は変わりません。
 
 **別アカウントへのコピーは FSx for ONTAP の API だけでは行えません。** AWS Backup を経由し、アカウントの境界は AWS Organizations のポリシーで定義されます。fan-in は複数の本番アカウントから 1 つの隔離アカウントへ集約する形、fan-out は 1 つの本番アカウントから複数の隔離アカウントへ配る形です。
 
@@ -205,6 +222,32 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 > **別アカウントへのコピーは実測していません**（`documented`）。AWS Organizations が前提のため、
 > この検証は同一アカウント内に限っています。
+
+### 別アカウントコピーには CMK が必要で、その判断はファイルシステム作成前に来ます
+
+**AWS Backup が完全に管理していないリソースタイプでは、AWS 管理キーでの別アカウントコピーがサポートされません。** AWS 管理キーのキーポリシーは変更できず、アカウント間で共有できないためです（[Encryption for backups in AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/encryption.html)、`documented`）。FSx for ONTAP はこの「完全には管理されていない」側にあたります。
+
+**この検証はその条件を満たしていません。** 宛先ボールトを既定のまま作ったため、キーは `alias/aws/backup`（`KeyManager: AWS`、2026-08-29 に `describe-key` で確認）でした。**それでもクロスリージョンコピーは成功しました**（`verified`）。ドキュメントの一般記述より緩い挙動なので、別アカウントとクロスリージョンを同じ条件で語れません。
+
+| 経路 | 使ったキー | 結果 |
+|---|---|---|
+| クロスリージョンコピー（同一アカウント） | ソース FS も宛先ボールトも既定（`aws/fsx` / `aws/backup`） | **成功**（`verified`、2026-08-29） |
+| クロスアカウントコピー | AWS 管理キーでは不可 | **未実測。** ドキュメントとしてサポート外（`documented`） |
+
+**設計上の帰結**: ファイルシステムの KMS キーは作成時に決まり、`update-file-system` にキーを変更する引数はありません（AWS CLI で確認、`verified`）。**別アカウントコピーを将来行う可能性があるなら、CMK はファイルシステムを作る前に決める判断になります。** 宛先側では既定のボールトが使えません（キーを共有できないため、`documented`）。
+
+### リージョンの例外は個別に列挙されています
+
+[AWS Backup feature availability](https://docs.aws.amazon.com/aws-backup/latest/devguide/backup-feature-availability.html) に例外が並んでいます（`documented`、2026-08-29 参照）。
+
+| 例外 | 対象 |
+|---|---|
+| クロスリージョンコピー**非対応** | 中東（バーレーン）、中東（UAE）。FSx for ONTAP / Lustre / Windows File Server / OpenZFS |
+| クロスリージョン**および**クロスアカウントコピー**非対応** | アジアパシフィック（ニュージーランド）、中国（北京）、中国（寧夏）。FSx for ONTAP |
+
+> **中国リージョンは読み分けが必要です。** AWS Backup のドキュメント履歴には同じ 2026 年 8 月 27 日付で
+> 「中国リージョンでクロスアカウントバックアップコピーと管理に対応」という項目も並びますが、これは
+> AWS Backup 全体の話で、**FSx for ONTAP は上表のとおり中国リージョンでは対象外**です。
 
 ---
 

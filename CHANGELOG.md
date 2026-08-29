@@ -110,6 +110,34 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   section states what sits at the destination in each case and links to the note. `復元` became
   `リストア` in the same file, so the two documents no longer disagree on the word.
 
+- **The KMS key for a cross-account backup copy is decided before the file system exists.** AWS
+  Backup does not support a cross-account copy under an AWS managed key for a resource type it does
+  not fully manage, because an AWS managed key's policy cannot be edited or shared across accounts —
+  and FSx for ONTAP sits on that side. The measured cross-Region copy here did *not*
+  meet that condition: the destination vault was left at its default, so the key was
+  `alias/aws/backup` with
+  `KeyManager: AWS`, and the copy still succeeded. That is looser than the general documented
+  statement, so the two paths cannot be described under one condition. The design consequence is on
+  ordering, not on configuration: a file system's KMS key is fixed at creation and
+  `update-file-system` has no argument that changes it, so a customer-managed key is a decision that
+  precedes the file system. Recorded with the cross-Region result as `verified` and the
+  cross-account restriction as `documented`, since it was not measured.
+- **Region exceptions to the copy paths are enumerated rather than summarized.** Cross-Region copy
+  is unavailable for FSx for ONTAP, Lustre, Windows File Server and OpenZFS in Middle East (Bahrain)
+  and Middle East (UAE); both cross-Region and cross-account copy are unavailable for FSx for ONTAP
+  in Asia Pacific (New Zealand), China (Beijing) and China (Ningxia). The China entry needs the
+  narrower reading: AWS Backup's own document history carries a same-day item about cross-account
+  copy in the China Regions, which is about AWS Backup as a whole and does not extend to
+  FSx for ONTAP.
+- **The "previously not possible" row now carries the reading that disagrees with it.** A NetApp
+  Community article holds that same-account cross-Region `CopyBackup` worked before the launch. The
+  note states the three pieces of material behind the table's "not possible" — the 2026-07-05 archive
+  of the ONTAP user guide lists no Copying backups subpage and limits restores to the same Region,
+  `copy-backups.html` has no Internet Archive snapshot at all, and the What's New text describes the
+  prior state as same-Region and same-account — and then says plainly what is not established:
+  whether the API accepted an ONTAP backup before the launch. Documentation silence is not an API
+  refusal, so that point stays `unverified`, and neither reading changes the date for AWS Backup
+  cross-Region copy or for any cross-account copy.
 - **Replication and copy are separated as terms, not just as mechanisms.** A new section in the
   data-protection note states what sits at the destination in each case: SnapMirror replication puts
   a `DP` volume there that follows the source, while an AWS Backup or `CopyBackup` copy puts a
