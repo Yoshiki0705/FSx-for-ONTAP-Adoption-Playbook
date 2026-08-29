@@ -417,6 +417,29 @@ Backup failed. Please delete the backup and try again.
 
 > **デプロイタイプは作成後に変更できません**（`documented`）。第 1 世代（`SINGLE_AZ_1`）から第 2 世代（`SINGLE_AZ_2`）へ移るには、バックアップからのリストアか、SnapMirror / AWS DataSync での移行が必要です。**待機系を作る前に世代を決めてください。**
 
+**ただし規模が大きいと、この判断は逆になります。** リストアの所要時間が効くためです（下記）。
+
+### リストアの所要時間は容量に比例し、スループット容量が上限になります
+
+AWS はリストアのレートを **大きいファイル中心で 250 MBps、小さいファイル中心で 100 MBps** と公開しています（`documented`、[Backup and restore performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html)）。前提が 2 つあり、どちらも所要時間を長い側に振ります。
+
+| 前提 | 効き方 |
+|---|---|
+| **複数の同時リストアを合わせた値** | 単発 1 本がこのレートで走るとは書かれていません |
+| **バックアップとリストアは背景処理で、未使用のスループット容量しか使わない** | **スループット容量がそのまま上限になります。** 128 MBps のファイルシステムで 250 MBps は出ません |
+
+したがって `min(公開レート, スループット容量)` が上限で、**クライアント I/O がある時間帯はさらに遅くなります。** 数 TB を超えると時間単位、数十 TB では日単位になります。**小さいファイル中心のデータセットは 100 MBps が先に効くため、スループットを上げても縮みません。**
+
+> **10 TB 以上の実測値は公開情報の中に見つけられませんでした**（`unverified`）。AWS ブログ、re:Post、ナレッジセンター、公式ドキュメントを対象に探し、**容量と所要時間の両方を明記した実測の公開例はありませんでした**（2026-08-29 時点）。所要時間が RTO に効く環境では、**本番相当の容量とファイル構成で自分で測るしかありません。**
+
+**この所要時間が「待機系は第 1 世代で足りる」を覆す場合があります。** 第 2 世代は**リストア中でも読み取りできます**（メタデータのロード後）。メタデータはバックアップデータの **1〜7%**（小さいファイルほど多い）と記載されているため、**大容量でも先にマウントして読み始められます。** 第 1 世代はリストア完了まで読めません（`documented`）。
+
+| データ量と RTO | 選択 |
+|---|---|
+| 数 TB 以下、または RTO が日単位 | 第 1 世代（床が安い） |
+| **10 TB 以上で RTO が時間単位** | **第 2 世代。** リストア中読み取りが床の差を正当化します |
+| 分単位の RPO / RTO | どちらでもなく SnapMirror（宛先ボリュームが既に存在します） |
+
 ### 「平常時ゼロ」が引き換えにしているもの
 
 **宛先ファイルシステムを平常時に持たない構成では、スループット容量と SSD 容量の課金が発生しません。** 月額では明確な利点です。**引き換えになるのは、同じ作業がフェイルオーバの瞬間に集まることです。**
@@ -446,12 +469,13 @@ Backup failed. Please delete the backup and try again.
 
 **AWS Backup 経由のコピーには転送料の項目があります。** AWS Backup の料金ページは、Amazon FSx を含む Resource Group 3 について、**通常のボールトと論理エアギャップボールトで転送単価は同じ**としています（`documented`）。
 
-**ネイティブの `CopyBackup` については、転送料の課金項目が見つかりませんでした**（`unverified`）。根拠は 2 点です。
+**ネイティブの `CopyBackup` は、転送料がかかる前提で見積もってください**（`unverified`）。
 
-1. **`AmazonFSx` の料金表に転送の課金項目が存在しません。** Price List API の `usagetype` は `Storage` / `ProvisionedSSDIOPS` / `ThroughputCapacity` / `Requests` / `BackupUsage` / `MetadataIOPS` のみで、`Transfer` や `CrossRegion` を含むものは Amazon FSx のどのファイルシステムタイプにもありません（2026-08-29 取得）。クロスリージョン転送の SKU は `AWSBackup` 側にあります
-2. **[FSx for ONTAP の料金ページ](https://aws.amazon.com/fsx/netapp-ontap/pricing/) が挙げるデータ転送は「S3 Access Point 経由のアクセス」に限定**されており、リージョン間のバックアップコピーは挙がっていません
+**「Amazon FSx の料金表に転送項目が無いから課金されない」は成り立ちません。** リージョン間転送は**発生元サービスの料金表ではなく `AWSDataTransfer` 側に載ります。** `AWSDataTransfer` にはサービスを問わない汎用の SKU があり、東京 → 大阪の送出は `APN1-APN3-AWS-Out-Bytes`、受信は `APN1-APN3-AWS-In-Bytes` で $0.00 です（Price List API、2026-08-29 取得）。AWS Backup 側の Amazon FSx 向け SKU と同じ単価が汎用 SKU にも現れます。
 
-**バックアップはお客様の VPC ではなく AWS 管理の S3 に保存されるため**（`documented`）、`CopyBackup` はお客様の VPC を経由しません。ENI からの egress ではないので、EC2 のようなリージョン間データ転送課金の対象になる形をしていません。**ただし「料金表に無い」は「無料である」の証明ではありません。** 請求内訳との照合をしていないため `unverified` として置きます。**判断に使う前に、小さいボリュームで 1 回コピーして Cost Explorer で `UsageType` を確認してください。**
+**同型の先行事例が反証になります。** EBS スナップショットも AWS 管理領域にあってお客様の VPC を経由しませんが、**クロスリージョンコピーには AWS Data Transfer の課金が発生します。** AWS Storage Blog はその転送料を Cost Explorer で追う手順を示しており、使用タイプは `USW2-USE1-AWS-Out-Byte`、サービスは「EC2 - Other」です（`documented`、[Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/)）。**「VPC を経由しないから課金されない」という推論は、この事例で否定されます。**
+
+**確定はしていません。** 請求内訳との照合をしていないため `unverified` として置きます。**小さいボリュームで 1 回コピーして Cost Explorer の `UsageType` を確認するのが最短です。** 見積もりでは初回フルコピーの容量 × 汎用 SKU の単価、以降は増分 × 同単価を置いてください。
 
 > **転送料の請求先について、AWS の 2 つの記述が食い違っています。** FSx for ONTAP は完全に管理されるリソースタイプではないので、この差がそのまま効きます。
 >
@@ -602,6 +626,9 @@ graph TD
 | 大阪リージョンの SSD・スループット・バックアップストレージ料率、容量プール Standard が Single-AZ ではバックアップストレージより低く Multi-AZ ではほぼ同額になること、東京と大阪が同額であること | AWS Price List API（`AmazonFSx`、`ap-northeast-1` / `ap-northeast-3`、effective 2026-07-01、2026-08-29 取得） |
 | AWS Backup が完全に管理しないリソースタイプではストレージ課金が各サービス側に出ること、論理エアギャップボールトでは AWS Backup 側に出ること、転送料の請求先を「宛先アカウント」としていること | [AWS Backup: Metering, costs, and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html) |
 | 転送単価が通常のボールトと論理エアギャップボールトで同じこと、転送料の請求先を「データを送り出すアカウント」としていること（上記と食い違う点） | [AWS Backup 料金](https://aws.amazon.com/backup/pricing/) |
+| EBS スナップショットのクロスリージョンコピーに AWS Data Transfer の課金が発生すること、その使用タイプが `*-AWS-Out-Byte` で「EC2 - Other」に出ること（VPC を経由しない転送でも課金される反証） | [AWS Storage Blog: Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/) |
+| サービスを問わない汎用のリージョン間転送 SKU（`APN1-APN3-AWS-Out-Bytes` / `-In-Bytes`）が存在すること | AWS Price List API（`AWSDataTransfer`、effective 2026-06-01、2026-08-29 取得） |
+| リストアのレート（大きいファイル 250 MBps / 小さいファイル 100 MBps）、バックアップのレート、背景処理として未使用スループットのみを使うこと、第 2 世代はリストア中に読めること、メタデータがバックアップデータの 1〜7% であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
 | 課金対象が 5 つ＋ S3 リクエストとデータ転送であり、そのデータ転送が S3 Access Point 経由のアクセスに限定されていること | [AWS: FSx for ONTAP 料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
 | 第 1 世代・第 2 世代で選べるスループット値、デプロイタイプが作成後に変更できないこと | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | フルマネージドバックアップと、容量プールに向けた SnapVault の GB 単価の比較 | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
