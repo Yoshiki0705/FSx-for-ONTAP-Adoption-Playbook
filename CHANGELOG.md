@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"Not in the price list, so not charged" was wrong about `CopyBackup` cross-Region transfer.** The
+  reasoning was that backups sit in AWS-managed S3 and never traverse the customer VPC, so an
+  EC2-style inter-Region charge cannot apply. EBS snapshots refute it: they are also in AWS-managed
+  storage, also never traverse a VPC, and their cross-Region copies do incur AWS Data Transfer,
+  billed as `*-AWS-Out-Byte` under "EC2 - Other". The check behind the claim was also unsound —
+  inter-Region transfer bills under `AWSDataTransfer`, not under the originating service's price
+  list, and there is a generic service-agnostic SKU at the same rate as the AWS Backup Amazon FSx one. The
+  note now says to budget as though it is charged, still `unverified` because it was not reconciled
+  against a bill.
+- **The measured restore duration was left without its scaling.** 13 to 16 minutes was a 9.4 MiB
+  volume, and quoting it in an RTO table invited extrapolation. Restore is a background process
+  bounded by unused throughput capacity, so `min(published rate, throughput capacity)` governs:
+  multi-TB volumes take hours and tens of TB take days, and a small-file data set does not speed up
+  with more throughput because the published 100 MBps binds first.
 - **The bare-`FSx` naming rule exempted the cases it most needed to catch.** Its
   "is this an identifier rather than prose?" test ran against the whole line, so one URL or one
   backticked token anywhere on a line exempted every bare `FSx` beside it. These notes cite sources
@@ -126,6 +140,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Restore duration can reverse the first-generation recommendation.** The second generation lets
+  clients mount and read while a restore is still running, once metadata loads — and metadata is 1-7%
+  of the backup data. At small volumes that buys little against a higher floor. At tens of TB it is
+  the difference between waiting for the whole restore and serving users after a fraction of it, so
+  the recommendation is now conditional on data volume and on whether the RTO is measured in hours or
+  days. Neither generation reaches SnapMirror, where the destination volume already exists.
+- **No public measurement of a large restore was found, and the note says so.** AWS blogs, re:Post,
+  the knowledge center and the documentation were searched for a restore duration stated together
+  with a data volume at 10 TB or above; none was found as of 2026-08-29. Recorded as an absence with
+  its date and scope rather than filled with a derived figure presented as measured.
 - **The crossover volume moves with provisioned throughput, so the comparison is now two-dimensional.**
   Stating a single crossover implied the always-on side has one cost, when throughput is most of its
   floor. The note says the crossover rises with provisioned throughput and falls toward the minimum,
