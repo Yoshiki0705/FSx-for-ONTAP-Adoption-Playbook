@@ -830,7 +830,7 @@ precedence.
 |---|---|
 | [NetApp Docs: Lock an ONTAP snapshot](https://docs.netapp.com/us-en/ontap/snaplock/snapshot-lock-concept.html) | **Unsupported features** に FabricPool を挙げ、FabricPool は削除能力を要するため snapshot lock と同一ボリュームで併用できないと記載 |
 | [NetApp KB: Setting up Tamperproof or Snapshot locking fails for FabricPool volumes](https://kb.netapp.com/onprem/ontap/dp/SnapLock/Setting_up_Tamperproof_or_Snapshot_locking_fails_for_FabricPool_volumes) | 階層化ポリシーが `none` 以外、またはオブジェクトストアへ階層化済みのボリュームでは有効化できないと記載 |
-| [NetApp KB: Why is TPS supported on fabricpool volumes in FSx but not on-prem ONTAP](https://kb.netapp.com/on-prem/ontap/DP/SnapLock-KBs/Why_is_TPS_supported_on_fabricpool_volumes_in_FSx_but_not_on-prem_ONTAP%3F) | **FSx では** ONTAP インスタンスとオブジェクトストアが完全managedでアクセス不能なため、SnapLock Compliance と Tamperproof Snapshot Locking をサポートできると記載 |
+| [NetApp KB: Why is TPS supported on fabricpool volumes in FSx but not on-prem ONTAP](https://kb.netapp.com/on-prem/ontap/DP/SnapLock-KBs/Why_is_TPS_supported_on_fabricpool_volumes_in_FSx_but_not_on-prem_ONTAP%3F) <!-- allow:naming --> | **FSx for ONTAP では** ONTAP インスタンスとオブジェクトストアが完全にマネージドでアクセス不能なため、SnapLock Compliance と Tamperproof Snapshot Locking をサポートできると記載 |
 
 > **記述の緊張をそのまま記録します。断定しません。** オンプレミス ONTAP では階層化ポリシーが `none` で
 > かつ未階層のボリュームに限られる、という制約が示されており、FSx for ONTAP については別扱いという KB があります。
