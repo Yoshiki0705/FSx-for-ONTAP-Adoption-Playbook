@@ -116,6 +116,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   section states what sits at the destination in each case and links to the note. `復元` became
   `リストア` in the same file, so the two documents no longer disagree on the word.
 
+- **"Running a destination file system costs more" holds only below a certain data volume.** The
+  SnapMirror comparison listed paying for destination capacity and throughput as a standing
+  trade-off, which reads as though a minute-level RPO always costs more. It does not, and the reason
+  is in the rate structure: the Standard capacity pool rate is below the backup storage rate, backups
+  accumulate across retained generations while the file system stores one copy, and the provisioned
+  charges have minimums that put a fixed floor under the always-on side. The floor divided by the
+  per-GB gap is a crossover volume; above it the always-on destination is the lower monthly figure
+  while still carrying the better RPO, RTO and failback path. Two qualifiers travel with it: the
+  capacity-pool advantage is Single-AZ only, since the Multi-AZ rate is close to backup storage, and
+  `All` tiering does not remove the floor because file metadata always stays on SSD. The second
+  generation's minimum throughput is three times the first's at a higher rate, so the same "minimum"
+  standby file system has a very different floor - pick the generation before sizing. No unit prices
+  are tabulated in the note; rates are revised, and the cost note already set that convention.
+- **Going through AWS Backup does not change the backup storage rate.** FSx for ONTAP is not a
+  resource type AWS Backup fully manages, so the storage charge appears under FSx for ONTAP rather
+  than under AWS Backup - only a logically air-gapped vault moves all storage and transfer to
+  AWS Backup. The same document states that for those resource types the cross-Region transfer is
+  billed to the *destination* account, which decides where the bill lands in a cross-account design.
 - **The KMS key for a cross-account backup copy is decided before the file system exists.** AWS
   Backup does not support a cross-account copy under an AWS managed key for a resource type it does
   not fully manage, because an AWS managed key's policy cannot be edited or shared across accounts —

@@ -383,6 +383,38 @@ Backup failed. Please delete the backup and try again.
 
 両方を使う構成も成立します。**SnapMirror で可用性を、バックアップコピーで隔離された保管を担う**という分担です。この場合、SnapMirror の宛先は `DP` ボリュームでバックアップ対象外なので、**バックアップは複製元で取り、そのバックアップをコピーします**（[Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#バックアップできないボリュームがある)）。
 
+### 「宛先を常時起動するほうが高い」は規模で逆転します
+
+**上表の「宛先の容量とスループットを常時支払う」を、常に不利なトレードオフとして読まないでください。** データ量が一定を超えると、常時起動のほうが月額が下がります。単価の構造がそうなっています（`documented`）。
+
+| 要素 | 効き方 |
+|---|---|
+| **容量プール Standard の単価は、バックアップストレージの単価より低い** | 常時起動側の GB あたりが安くなる。ただし **Single-AZ に限った差で、Multi-AZ ではほぼ同額になります** |
+| **バックアップは世代数ぶん積み上がる** | 保持世代 × 変更率のぶん、課金対象が論理データ量を超える |
+| **確保課金に最小値がある**（SSD 容量・スループット容量） | 常時起動側に固定費の床ができる。**`All` 階層化にしても、メタデータが SSD に残るため最小 SSD 容量は確保したままです** |
+
+固定費の床を、GB あたりの差で割った量が逆転点です。**それを下回る規模ではバックアップコピーが安く、上回る規模では常時起動が安くなります。** どちらの側でも RPO / RTO と切り戻し経路は上表のままなので、**規模が大きい環境では「RPO 分単位を選ぶと高くなる」という前提が成り立ちません。**
+
+床の値を決める最小値は次のとおりです（`documented`、[Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html)）。
+
+| 制約 | 値 |
+|---|---|
+| 最小 SSD 容量 | 1,024 GiB / HA ペア |
+| 最小スループット容量（第 1 世代） | 128 MBps |
+| 最小スループット容量（第 2 世代・1 HA ペア） | **384 MBps** |
+
+**第 2 世代は最小スループットが 3 倍で、単価も第 1 世代より高いため、同じ「最小構成」でも床が大きく変わります。** DR 用の待機ファイルシステムを設計するときは、世代を先に決めてください。
+
+> **単価はこのドキュメントに載せません。** 料金は改定されるため、
+> [FSx for ONTAP 料金ページ](https://aws.amazon.com/fsx/netapp-ontap/pricing/) と
+> [AWS Backup 料金ページ](https://aws.amazon.com/backup/pricing/) で現在値を確認してください。
+> 課金対象の分類と、階層化が常に安くならない理由は
+> [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) にあります。
+
+**AWS Backup を経由してもバックアップストレージの単価は変わりません。** FSx for ONTAP は AWS Backup が完全に管理するリソースタイプではないため、**ストレージ課金は AWS Backup ではなく FSx for ONTAP 側に出ます**（`documented`、[Metering, costs, and billing for AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html)）。論理エアギャップボールトを使う場合だけ、ストレージと転送のすべてが AWS Backup 側に出ます。同じドキュメントに、**完全に管理されないリソースタイプではリージョン間転送料が宛先アカウント側に出る**と書かれています。クロスアカウント構成では、集約先アカウントに請求が乗る前提で設計してください。
+
+**待機系を `All` 階層化で安く保つ場合の引き換えを書いておきます。** `All` は読まれたブロックを SSD に引き戻さないため、**フェイルオーバ直後の読み取りは容量プールから始まり、SSD 前提の本番と同じ性能にはなりません**（`documented`）。待機中の月額と、切り替え直後の性能のどちらを取るかという判断です。
+
 ---
 
 ## 国内 DR という観点
@@ -518,7 +550,10 @@ graph TD
 | AWS Backup のバックアッププランでコピー先リージョンを指定できること | [AWS Backup: Creating backup copies across AWS Regions](https://docs.aws.amazon.com/aws-backup/latest/devguide/cross-region-backup.html) |
 | SnapMirror の切り戻し手順（関係の削除と `snapmirror resync`） | [AWS Storage Blog: Implementing HA and DR for SQL Server Always-On FCI](https://aws.amazon.com/blogs/storage/implementing-ha-and-dr-for-sql-server-always-on-failover-cluster-instance-using-amazon-fsx-for-netapp-ontap/) |
 | `snapmirror resync` でユーザー作成 Snapshot が複製されないこと | [AWS re:Post: Why does the snapshot policy stop working after snapmirror resync?](https://repost.aws/knowledge-center/fsx-ontap-snapmirror-resync) |
-| 大阪リージョンの SSD・スループット・バックアップストレージ料率 | AWS Price List API（`AmazonFSx`、`ap-northeast-3`、effective 2026-07-01） |
+| 大阪リージョンの SSD・スループット・バックアップストレージ料率、容量プール Standard が Single-AZ ではバックアップストレージより低く Multi-AZ ではほぼ同額になること、東京と大阪が同額であること | AWS Price List API（`AmazonFSx`、`ap-northeast-1` / `ap-northeast-3`、effective 2026-07-01、2026-08-29 取得） |
+| AWS Backup が完全に管理しないリソースタイプではストレージ課金が各サービス側に出ること、論理エアギャップボールトでは AWS Backup 側に出ること、リージョン間転送料が宛先アカウント側に出ること | [AWS Backup: Metering, costs, and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html) |
+| フルマネージドバックアップと、容量プールに向けた SnapVault の GB 単価の比較 | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
+| `All` 階層化が読まれたブロックを SSD に引き戻さないこと、メタデータが常に SSD に残ること | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
 
 ---
 
