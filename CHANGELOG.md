@@ -104,6 +104,19 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Replication and copy are separated as terms, not just as mechanisms.** A new section in the
+  data-protection note states what sits at the destination in each case: SnapMirror replication puts
+  a `DP` volume there that follows the source, while an AWS Backup or `CopyBackup` copy puts a
+  recovery point there that does not. The consequence is on the RTO — replication promotes a volume
+  that already exists, a copy starts from creating a file system and an SVM.
+  AWS's own wording splits the same way, and the console confirms it: Copy jobs, Copy rule and
+  `Copy type` (observed 2026-08-29). Replication is the word for mechanisms whose destination tracks
+  the source, as in Amazon S3 Cross-Region Replication. So "cross-Region replication with AWS
+  Backup" reads as a tracking volume that is not there, and calling SnapMirror a backup misses that
+  a file deleted on the source leaves the destination's current state after the next transfer.
+  SnapVault is named as a third mechanism, and the note says plainly that backup copies do not
+  create an ONTAP SnapVault relationship.
+
 - **AWS Backup's cross-Region copy and restore for FSx for ONTAP, measured.** The note previously
   described that path from documentation only. Both halves are now measured on the same Tokyo to
   Osaka route: an on-demand backup (4 m 02 s) plus an on-demand copy job (8 m 35 s), and a
