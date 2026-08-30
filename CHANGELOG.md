@@ -140,6 +140,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Japanese section headings are now required to be noun phrases, which supersedes the Japanese half
+  of the action-first heading rule.** `はじめる` and `自分の環境で確かめる` were what "action-first"
+  produced in Japanese, and a verb form, a question form, or a full predicate reads as a sentence
+  fragment where a Japanese reader expects a label. Action-first still governs the *subject* of a
+  heading — `はじめかた`, not `前提条件`. The nominalization has to keep the assertion: a heading here
+  often carries the finding, so `監査は 2 つの面に分かれ、片方に穴があります` →
+  `監査の 2 つの面と片方の穴` would degrade "there is a hole" to the noun "hole"; the claim is carried
+  by a suffix instead (`片方の穴の存在`). The H1 and the frontmatter `title` are exempt, being a
+  one-line claim by a separate convention. Recorded in `CONTRIBUTING.md`, with the conversion table
+  and the anchor procedure in `docs/agent/documentation-design.md`.
+  **151 headings across 34 files predate the rule and are not yet converted** — 100 verb or question
+  forms and 51 predicates, of which 15 are listed in `docs/agent/external-anchor-contract.txt`. The
+  bulk conversion is deliberately a separate change so this one stays readable, and the mechanical
+  check comes with it rather than before it: a gate that fails on 151 pre-existing headings is a gate
+  that gets switched off. Documents added from here on comply, so the two spellings coexist until the
+  migration lands — that is visible inconsistency, accepted deliberately rather than by omission.
 - **Restore duration can reverse the first-generation recommendation.** The second generation lets
   clients mount and read while a restore is still running, once metadata loads — and metadata is 1-7%
   of the backup data. At small volumes that buys little against a higher floor. At tens of TB it is
