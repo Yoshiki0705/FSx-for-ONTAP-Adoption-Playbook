@@ -45,32 +45,27 @@ FENCE = re.compile(r"^\s*(?:```|~~~)")
 ALLOW = re.compile(r"<!--\s*allow:heading-style\s*-->")
 JAPANESE = re.compile(r"[ぁ-んァ-ヶ一-龠]")
 
-# Verb (dictionary form), polite predicate, and question endings. The character class is hiragana
-# only on purpose: it is the う-row, which is where a Japanese verb ends. Katakana `ク` in `リスク`
-# and `グ` in `ログ` must not match, and they do not.
-# `ない` is listed separately from the character class rather than folded into a blanket `い$`:
-# a plain negative predicate (`…できない`) is a sentence, while `問い` and `扱い` are nouns that also
-# end in い. Without this entry the checker passes a whole class of predicate headings, which it did
-# on the first run.
-# The character class is exactly the う-row, which is where a Japanese verb's dictionary form ends.
-# Two boundaries were wrong on the first draft and are worth keeping visible:
+# Verb (dictionary form), polite predicate, and question endings. Katakana is out of scope: `ク` in
+# `リスク` and `グ` in `ログ` are not verb endings, and the hiragana-only class keeps them out.
 #
-#   `れ` is え-row, not う-row, so no dictionary-form verb ends in it. A bare `れ` ending is a
-#   nominalized 連用形 — `流れ`, `崩れ`, `遅れ`, `ずれ` are all nouns. Including it flagged an
-#   open-ended class of nouns, and no allowlist could have closed that set.
+# Two boundaries were wrong on the first draft, in opposite directions, and each was found only by
+# running the checker against a whole tree rather than by reading the pattern:
 #
-#   `ない` is listed by name rather than as a blanket `い$`, because a plain negative predicate
-#   (`…できない`) is a sentence while `問い` and `扱い` are nouns. Omitting it passed twelve
-#   predicate headings on the first run.
+#   `れ` was in the character class. It is え-row, not う-row, so no dictionary-form verb ends in it —
+#   a bare `れ` ending is a nominalized 連用形, and `流れ`, `崩れ`, `遅れ`, `ずれ` are all nouns. It
+#   flagged an open-ended class of nouns that no allowlist could have closed.
+#
+#   `ない` was missing. It is listed by name rather than as a blanket `い$`, because a plain negative
+#   predicate (`…できない`) is a sentence while `問い` and `扱い` are nouns. Omitting it silently
+#   passed twelve predicate headings.
+#
+# There is deliberately no noun allowlist. An earlier draft had one, and the moment `れ` left the
+# class it stopped firing entirely: every entry in it — 問い, 扱い, こと, もの, 選び方 — already fails
+# to match this pattern, so the list protected nothing while looking like protection. The
+# load-bearing decision is `ない` as a literal instead of `い$`, and the test file asserts that, so
+# widening it fails loudly rather than being rediscovered.
 VERBAL = re.compile(
     r"(?:ます|ません|ました|でした|です|ください|でしょうか|のか|か|ない|[うくぐすずつぬふぶむる])$"
-)
-
-# Nouns whose last character falls inside the VERBAL pattern. Only the い group needs listing now
-# that れ is out of the class. Kept short on purpose: a long allowlist is how a checker stops
-# catching things.
-NOUN_TAIL = re.compile(
-    r"(?:問い|扱い|こと|もの|ちがい|違い|使い|作り|やり方|考え方|選び方)$"
 )
 
 
@@ -89,8 +84,6 @@ def violations(text: str) -> list[tuple[int, str, str]]:
             continue
         heading = ALLOW.sub("", match.group(2)).strip()
         if not JAPANESE.search(heading):
-            continue
-        if NOUN_TAIL.search(heading):
             continue
         if VERBAL.search(heading):
             found.append((number, match.group(1), heading))

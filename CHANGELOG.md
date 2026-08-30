@@ -9,6 +9,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The heading checker's noun allowlist never fired, and removing it is the honest state.** It listed
+  問い, 扱い, こと, もの, 選び方 and six more as nouns that the verb pattern might catch. Once `れ` left
+  the character class, none of them could match it any more — measured across the whole tree, the
+  allowlist overturned zero verdicts. A gate carrying a list that protects nothing states a guarantee
+  it is not providing, and a later maintainer widening the pattern to a blanket `い$` would have
+  assumed eleven listed words covered an open class. What actually keeps those nouns clean is that
+  `ない` is a literal rather than `い$`, so that boundary is now asserted directly in
+  `scripts/tests/test_heading_style_detection.py` and fails loudly if it is widened.
+
 - **"Not in the price list, so not charged" was wrong about `CopyBackup` cross-Region transfer.** The
   reasoning was that backups sit in AWS-managed S3 and never traverse the customer VPC, so an
   EC2-style inter-Region charge cannot apply. EBS snapshots refute it: they are also in AWS-managed
