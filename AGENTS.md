@@ -391,6 +391,7 @@ it outside the repository and imports it there. Recorded where it is enforced, n
 - Code blocks always carry a language tag.
 - Internal links are relative paths. Blog-facing images use absolute `raw.githubusercontent.com` URLs.
 - Japanese is the primary authoring language; code, identifiers, and commit messages are English.
+- **Japanese section headings (`##` and deeper) are noun phrases.** `自環境での確認手順`, not `自分の環境で確かめる`; `この区分が必要な理由`, not `なぜこの区分が必要か`. Nominalizing must keep the assertion — suffix it (`片方の穴の存在`) rather than drop it. The H1 and frontmatter `title` are exempt, being a one-line claim by convention. Table and procedure: `docs/agent/documentation-design.md`.
 - Commit messages: conventional commits (`docs:`, `feat:`, `fix:`, `chore:`, `refactor:`, `ci:`), under 72 chars.
 - PR titles: `<type>: <description>`, under 70 chars. Enforced by `.github/workflows/pr-title-check.yml`.
 
