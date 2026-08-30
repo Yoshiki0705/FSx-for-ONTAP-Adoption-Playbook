@@ -156,6 +156,39 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   check comes with it rather than before it: a gate that fails on 151 pre-existing headings is a gate
   that gets switched off. Documents added from here on comply, so the two spellings coexist until the
   migration lands — that is visible inconsistency, accepted deliberately rather than by omission.
+- **Two notes on hosting AI/ML training data, taken from a semiconductor defect-classification write-up
+  and then checked against the AWS documentation.** The source article is explicit that it is an
+  educational mimic — no ONTAP runs in it, and neither the FlexClone capacity saving nor the FlexGroup
+  throughput was measured — so it is cited as the source for where the workflow friction sits, not for
+  any behaviour. The primitives it maps to (Snapshot for dataset versions, FlexClone for experiment
+  branches, FlexGroup for the image repository) each turned out to carry a constraint the article does
+  not mention, and those constraints are what the notes are about.
+- **A dataset version placed on the default snapshot policy is deleted by rotation within days.** The
+  `default` policy keeps six hourly, two daily and two weekly snapshots and rotates them, so a
+  three-month-old version does not exist. Two further ways a version disappears: the 1,023-per-volume
+  ceiling, after which no new snapshot can be taken until one is deleted, and autodelete, which
+  removes snapshots when the volume runs low on space — meaning versions vanish on the day capacity
+  gets tight, and nobody notices until an experiment fails to reproduce.
+- **Experiment branching with FlexClone runs out of volumes, not capacity, and clones do not inherit
+  the parent's QoS.** The ceiling is 500 volumes per HA pair and 1,000 across all pairs, with FlexGroup
+  constituents counting toward it at a default of eight per aggregate — so branches can exhaust the
+  budget the production volumes need. Separately, a QoS policy group set on the parent does not carry
+  to the clone, which makes "the production volume is throttled, so we are safe" false: thirty clones
+  place thirty clones' worth of demand. Bounding the total requires a shared policy group, and
+  `is-shared` cannot be changed on an existing policy.
+- **Expanding a FlexGroup invalidates every dataset version taken before it.** Adding constituents
+  turns all earlier snapshots into partial copies that cannot restore the volume, and breaks
+  incrementality for Amazon FSx backups, AWS Backup and SnapMirror. Constituents cannot be removed.
+  Growing the image repository and being able to reproduce an earlier experiment are therefore
+  traded off by a single operation, so expansion has to be treated as a version boundary and decided
+  before, not after.
+- **The governed self-service model is recorded as `hypothesis`, with its audit gap named.** Each
+  component has a source — `vsadmin` scoping, the ONTAP REST API path, QoS policy groups, the volume
+  ceiling — but the combination has not been built or run here. Whether an operation issued through
+  the ONTAP REST API appears in CloudTrail was **not** verified; CloudTrail records Amazon FSx API
+  calls, and an HTTPS request to an SVM management endpoint is not one, so a design that assumes
+  CloudTrail alone may leave self-service operations recorded nowhere. That check is the first
+  verification step in the note rather than an assertion in its body.
 - **Restore duration can reverse the first-generation recommendation.** The second generation lets
   clients mount and read while a restore is still running, once metadata loads — and metadata is 1-7%
   of the backup data. At small volumes that buys little against a higher floor. At tens of TB it is

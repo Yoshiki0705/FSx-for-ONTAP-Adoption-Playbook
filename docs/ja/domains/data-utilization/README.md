@@ -20,6 +20,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 4 | データコピーを増やさない設計とは | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) |
 | 5 | 読み取り加速をどこで効かせるか | [FlexCache が効く条件](notes/reaching-data-without-copies.md#flexcache-が効く条件) |
 | 6 | エンドユーザーにブラウザや SFTP で見せる経路はどれか | [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md) |
+| 7 | AI / ML の学習データセットの版と実験ブランチをどう扱うか | [学習データセットの版をスケジュール Snapshot に載せると消える](notes/dataset-versions-and-experiment-branches.md) |
 
 ---
 

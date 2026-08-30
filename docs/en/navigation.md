@@ -51,6 +51,7 @@ rest gives a reading order.
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
 | Reaching the data over the S3 API or from an analytics platform | [Prerequisites for FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Writing the access point policy](domains/security-governance/notes/access-point-authorization-layers.md) |
+| Hosting AI/ML training data and branching it per experiment | [Constraints on dataset versions and experiment branches](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [The three things to bound when handing out branches](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
 
 Two things to know about the links above.
 
