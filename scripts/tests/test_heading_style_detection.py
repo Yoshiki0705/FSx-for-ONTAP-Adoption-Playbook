@@ -108,6 +108,24 @@ class HeadingStyleDetection(unittest.TestCase):
             with self.subTest(depth=depth):
                 self.assertEqual(len(violations(f"{'#' * depth} 設定を確認する")), 1)
 
+    def test_negative_endings_are_a_literal_and_not_a_blanket_i(self) -> None:
+        """This is the load-bearing decision, and there is no allowlist behind it.
+
+        An earlier draft carried a noun allowlist. Once `れ` left the character class it stopped
+        firing entirely, because every word in it already failed to match — it protected nothing
+        while looking like protection, so it was removed. What actually keeps `問い` and `扱い` clean
+        is that `ない` is a literal rather than `い$`. Widening it would break an open class of
+        nouns that no list could close, so assert the boundary directly.
+        """
+        from check_heading_style import VERBAL
+
+        for noun in ("問い", "扱い", "違い", "使い", "気付き", "重み"):
+            with self.subTest(noun=noun):
+                self.assertIsNone(VERBAL.search(noun))
+        for predicate in ("できない", "見ていない", "出ない"):
+            with self.subTest(predicate=predicate):
+                self.assertIsNotNone(VERBAL.search(predicate))
+
     def test_the_tools_selftest_asserts_both_directions(self) -> None:
         """A selftest with no negative cases would let an over-eager pattern through."""
         self.assertTrue(any(flag for _, flag, _ in SELFTEST_CASES))
