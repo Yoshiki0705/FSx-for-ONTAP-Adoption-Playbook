@@ -21,6 +21,7 @@
 | 5 | OT / IT 境界をまたぐ場合の考慮事項は何か | [境界をまたぐときに使える仕組みと限界](notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) |
 | 6 | 取り消せない操作をどう統制するか | [不可逆な操作の承認は作業の承認とは別に取る](notes/irreversible-operations-need-separate-approval.md) |
 | 7 | S3 Access Point 経由のアクセスをどう絞るか。ポリシーをどう書くか | [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](notes/access-point-authorization-layers.md) |
+| 8 | 管理者権限を渡さずに Snapshot とクローンを使わせるには何を縛るか | [実験ブランチを配るときに縛る対象は権限だけではない](notes/self-service-without-storage-admin.md) |
 
 ---
 

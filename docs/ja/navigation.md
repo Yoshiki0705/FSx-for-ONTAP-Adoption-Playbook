@@ -49,6 +49,7 @@ graph TD
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
+| AI / ML の学習データを置き、実験ごとに分岐させたい | [学習データセットの版と実験ブランチの制約](domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | [実験ブランチを配るときに縛る 3 つの対象](domains/security-governance/notes/self-service-without-storage-admin.md) |
 
 **どの行でも、読んだ内容をそのまま本番に適用しないでください。** 各ノートの `evidence` 区分を確認し、[本番に取り入れる前の確認](evidence-policy.md#本番に取り入れる前の確認) の手順を通してください。
 

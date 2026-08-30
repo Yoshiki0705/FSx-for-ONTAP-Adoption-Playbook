@@ -148,6 +148,8 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 「検証環境をクローンで用意する」運用と「コスト削減で SSD を縮小する」運用が同時に走ると、後者が止まります。
 
+**クローンを利用者に作らせる場合は、この相互作用に加えて QoS の非継承とボリューム数の上限も効きます。** まとめは [学習データセットの版をスケジュール Snapshot に載せると消える](../../../domains/data-utilization/notes/dataset-versions-and-experiment-branches.md#実験ブランチ--flexclone-の効果と-3-つの制約) にあります。
+
 ### FlexVol と FlexGroup の変換
 
 | 項目 | 内容 |

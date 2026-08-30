@@ -48,7 +48,10 @@ lang: ja
 | 技術資料 | [EDA ベストプラクティス（PDF）](https://d1.awsstatic.com/fsx/FSx_for_ONTAP_EDA_Best_Practices_2.pdf) | ボリューム設計・データ種別・サイジング |
 | 技術資料 | [EDA Scale with IBM LSF](https://aws.amazon.com/blogs/industries/eda-scale-with-fsx-for-netapp-ontap-and-ibm-lsf/) | バッチスケジューラとのスケール |
 | パターン | [UC6: semiconductor-eda](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/semiconductor-eda/) | GDS/OASIS バリデーション |
+| 技術資料 | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) | 欠陥分類 AI のデータ層の摩擦と自己サービス運用モデルの整理。**educational mimic であり実測値の出典ではありません** |
 | ノート | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わる |
+| ノート | [学習データセットの版をスケジュール Snapshot に載せると消える](../domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | 欠陥分類 AI のデータセット版管理と実験ブランチの制約 |
+| ノート | [実験ブランチを配るときに縛る対象は権限だけではない](../domains/security-governance/notes/self-service-without-storage-admin.md) | 解析エンジニアに管理者権限を渡さない運用モデル |
 
 ### 自動車 / ADAS / 自動運転
 
