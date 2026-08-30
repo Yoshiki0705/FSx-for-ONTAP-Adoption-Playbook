@@ -132,7 +132,7 @@ graph TD
 | 組織内なのに全員 `AccessDenied` | Layer 1 のステップ 3 | RCP / SCP。AP ポリシーを直しても変わりません |
 | `ListBucket` は通るが `GetObject` が落ちる | Layer 2 | 対象パスの実効権限。`Resource` の粒度も併せて確認します |
 | IAM で許可しているのに落ちる | Layer 2 | Access Point に紐づく ID の権限 |
-| エラー本文が修飾のない `Access Denied` だけ | **Layer 2** | ファイル権限。**ポリシーを探しても原因はありません**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#accessdenied-はメッセージで層を切り分けられます)） |
+| エラー本文が修飾のない `Access Denied` だけ | **Layer 2** | ファイル権限。**ポリシーを探しても原因はありません**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#accessdenied-のメッセージによる層の切り分け)） |
 | `HeadBucket` は成功するがデータ操作が落ちる | Layer 2（AD 参加済み SVM） | ドメインコントローラへの到達性 |
 
 ---
@@ -156,7 +156,7 @@ graph TD
 
 - **Layer 1 の順序は AWS の公開ドキュメントの記載で、本ツリー自身は測定していません。** FSx for ONTAP の S3 Access Point で確認した範囲は [対応するノート](../../domains/security-governance/notes/access-point-authorization-layers.md)にあり、そこに実測日と環境が書かれています。
 - **permissions boundary と session policy の分岐は実測していません。** 図に入れてあるのは、順序を欠けたまま示すと「boundary があるのに通った / 通らない」の切り分けができなくなるためです。
-- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログには誰が記録されるか)）。監査の構成そのものは [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) で扱っています。
+- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログに記録される主体)）。監査の構成そのものは [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) で扱っています。
 
 ---
 
@@ -178,7 +178,7 @@ graph TD
 - [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../domains/security-governance/notes/access-point-authorization-layers.md) — **本ツリーの各ステップを実環境で確認した結果とポリシー設定例**
 - [S3 Access Point は全リクエストを 1 つの ID で認可する](../../domains/data-utilization/notes/reaching-data-without-copies.md) — Layer 2 が索引設計に効く理由
 - [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../../domains/data-utilization/notes/s3-access-point-constraints.md) — Access Point を作る前の前提条件
-- [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--認可が-3-層になる) — ブラウザ経路では認証の層がもう 1 つ増えます
+- [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) — ブラウザ経路では認証の層がもう 1 つ増えます
 - [決定ツリー一覧](README.md)
 - [知見の分類ポリシー](../../evidence-policy.md)
 

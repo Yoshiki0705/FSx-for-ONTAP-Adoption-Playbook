@@ -124,7 +124,7 @@ Combined with the 1,023 ceiling above, this can reach a state with no recovery p
 
 > **An hourly schedule with a long retention reaches 1,023 with the keep count never applying.** What sits there are **Snapshots that cannot be deleted.** New creation stops, and **waiting is the only recovery.** Calculate that retention × frequency stays under 1,023 before enabling.
 
-**Locked Snapshots also block deletion of the volume itself.** Details are in [Irreversible operations need approval separate from approval of the work](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md#snaplock-を使っていないは保護になりません) (日本語).
+**Locked Snapshots also block deletion of the volume itself.** Details are in [Irreversible operations need approval separate from approval of the work](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md#snaplock-を使っていないの保護としての不成立) (日本語).
 
 ---
 

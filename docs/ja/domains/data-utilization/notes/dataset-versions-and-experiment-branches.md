@@ -67,7 +67,7 @@ FSx for ONTAP には両方に対応する仕組みがあります。**ただし�
 
 autodelete については選択肢が 2 つあります。**無効にするか、`snap_reserve`（スナップショット予約）を基準に発動させるかです。** 空き容量を基準にしたままにすると、容量が減った時点で版が削除対象になります。
 
-そして Snapshot は差分で SSD 容量を消費します。**版を増やすことは容量を増やすことです。** 容量としての現れ方は [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md#snapshot-は容量として現れます) にあります。
+そして Snapshot は差分で SSD 容量を消費します。**版を増やすことは容量を増やすことです。** 容量としての現れ方は [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md#容量として現れる-snapshot) にあります。
 
 ### 版のロックに必要な別の承認
 
@@ -89,7 +89,7 @@ autodelete については選択肢が 2 つあります。**無効にするか�
 |---|---|---|
 | **QoS を継承しない** | **親ボリュームに設定した QoS ポリシーグループの制限は、クローンに引き継がれません** | **実験ブランチが本番の IOPS と帯域を食います。** 30 人が 30 本クローンすれば 30 本分の要求が乗ります |
 | ボリューム数の上限 | **1 HA ペアあたり 500 本、全 HA ペア合計 1,000 本。** FlexGroup のコンスティチュエントも同じ枠を使い、既定は 1 アグリゲートあたり 8 本 | 「実験 1 本 = クローン 1 本」は上限のある設計です。**枠を先に数えてください** |
-| SSD 縮小操作を止める | **SSD 容量の縮小操作を開始した後にクローンを作ると、縮小操作が一時停止します。** 再開には、そのクローンの削除が必要です | コスト削減作業と実験ブランチの運用が同時に走ると、前者が止まります。詳細は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md#flexclone-には運用上の相互作用があります) |
+| SSD 縮小操作を止める | **SSD 容量の縮小操作を開始した後にクローンを作ると、縮小操作が一時停止します。** 再開には、そのクローンの削除が必要です | コスト削減作業と実験ブランチの運用が同時に走ると、前者が止まります。詳細は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md#flexclone-の運用上の相互作用) |
 
 **作成経路は ONTAP CLI と ONTAP REST API です。** テンプレートからは届きません。境界の考え方は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。
 
@@ -267,11 +267,11 @@ graph TD
 - [Domain — データ活用](../README.md) — このモジュールのハブ
 - [実験ブランチを配るときに縛る対象は権限だけではない](../../security-governance/notes/self-service-without-storage-admin.md) — 誰にこの操作をさせるか
 - [S3 Access Point は全リクエストを 1 つの ID で認可する](reaching-data-without-copies.md) — コピーを増やさない 3 つの手段と FlexCache
-- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md#flexclone-には運用上の相互作用があります) — FlexClone と SSD 縮小操作の相互作用
+- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md#flexclone-の運用上の相互作用) — FlexClone と SSD 縮小操作の相互作用
 - [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — FlexVol の上限と FlexGroup のコンスティチュエント配置
 - [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — Snapshot が守る故障の範囲
 - [不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md) — 版のロックを自動化しない理由
-- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md#snapshot-は容量として現れます) — 版が容量として現れる形
+- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md#容量として現れる-snapshot) — 版が容量として現れる形
 - [EDA ログのゼロコピー分析を 90 分に収める](../../../workshop-studio/eda-s3-access-points-90min/README.md) — 同じデータを分析側から使うハンズオン
 - [業種別リソースマップ](../../../reference/industry-resource-map.md#半導体--eda) — 半導体 / EDA の事例と技術資料
 - [知見の分類ポリシー](../../../evidence-policy.md)

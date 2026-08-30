@@ -25,7 +25,7 @@ lang: ja
 
 > **区分**: `verified`（検証日 2026-08-28）。`ap-northeast-1` から `ap-northeast-3` へのコピーと、
 > コピー先でのリストア・内容照合までを実測しました。**別アカウントへのコピーは実測していません**（`documented`）。
-> 内訳は [何を実測し、何を実測していないか](#何を実測し何を実測していないか) にあります。
+> 内訳は [何を実測し、何を実測していないか](#実測した範囲と実測していない範囲) にあります。
 
 ![東京から大阪へのバックアップコピー。FSx for ONTAP の CopyBackup と AWS Backup のコピールールが別経路であること、リストアはどちらも宛先の既存ファイルシステムと SVM を要すること、大阪側は復旧時までファイルシステムを持たないことを示す図](../../../../_assets/images/backup-copy-cross-region.svg)
 
@@ -35,7 +35,7 @@ lang: ja
 
 ---
 
-## 何が変わったか
+## 変わった点
 
 | 経路 | 以前 | 現在 | 手段 |
 |---|---|---|---|
@@ -70,7 +70,7 @@ lang: ja
 
 ---
 
-## リストアの制約は変わっていない
+## リストアの制約の不変
 
 ここを混ぜると設計を誤ります。**変わったのは「バックアップをどこに置けるか」で、「どこへリストアできるか」は同じです。**
 
@@ -139,7 +139,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 もう 1 点、リストアダイアログには **SnapLock を有効にする選択肢があります。** WORM は不可逆で影響範囲が対象ボリュームより広いため、この画面から有効にしないでください（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)）。
 
-### リストア中は `RW` ではなく `DP` に見える
+### リストア中の表示 — `RW` ではなく `DP`
 
 **リストア中のボリュームは `OntapVolumeType` が `DP` として返り、完了時に `RW` へ変わります。**
 
@@ -223,7 +223,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 > **別アカウントへのコピーは実測していません**（`documented`）。AWS Organizations が前提のため、
 > この検証は同一アカウント内に限っています。
 
-### 別アカウントコピーには CMK が必要で、その判断はファイルシステム作成前に来ます
+### 別アカウントコピーに必要な CMK — 判断はファイルシステム作成前
 
 **AWS Backup が完全に管理していないリソースタイプでは、AWS 管理キーでの別アカウントコピーがサポートされません。** AWS 管理キーのキーポリシーは変更できず、アカウント間で共有できないためです（[Encryption for backups in AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/encryption.html)、`documented`）。FSx for ONTAP はこの「完全には管理されていない」側にあたります。
 
@@ -236,7 +236,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 **設計上の帰結**: ファイルシステムの KMS キーは作成時に決まり、`update-file-system` にキーを変更する引数はありません（AWS CLI で確認、`verified`）。**別アカウントコピーを将来行う可能性があるなら、CMK はファイルシステムを作る前に決める判断になります。** 宛先側では既定のボールトが使えません（キーを共有できないため、`documented`）。
 
-### リージョンの例外は個別に列挙されています
+### 個別に列挙されたリージョンの例外
 
 [AWS Backup feature availability](https://docs.aws.amazon.com/aws-backup/latest/devguide/backup-feature-availability.html) に例外が並んでいます（`documented`、2026-08-29 参照）。
 
@@ -293,7 +293,7 @@ Backup failed. Please delete the backup and try again.
 
 **経路が成立することと、運用に載ることは別です。** 実測で経路は通りましたが、本番投入には以下を決める必要があります。
 
-### 定期実行の仕組みは、`CopyBackup` にはありません
+### `CopyBackup` における定期実行の仕組みの不在
 
 公式ドキュメントは FSx for ONTAP の `CopyBackup` を "**manually** copy volume backups" と記述しています。**コンソール / CLI / API から都度実行する形で、スケジューラを持ちません。**
 
@@ -306,7 +306,7 @@ Backup failed. Please delete the backup and try again.
 
 **`AUTOMATIC` タイプの自動バックアップをコピーできるかは未確認です。** What's New は「新規および既存のバックアップ」と書いていますが、種別への明示がありません。自動バックアップを退避の起点にする設計なら、1 世代で確認してから組んでください。
 
-### リストアは CloudFormation で宣言できます
+### CloudFormation で宣言できるリストア
 
 **`AWS::FSx::Volume` には `BackupId` プロパティがあります**（「新しいボリュームを作るのに使うバックアップの ID」）。ファイルシステム・SVM・バックアップからのリストアを 1 テンプレートで書けるため、**宛先リージョンに未デプロイのテンプレートを置いておく**形が取れます。平常時の課金はゼロで、復旧時は 1 回のデプロイになります。
 
@@ -323,7 +323,7 @@ Backup failed. Please delete the backup and try again.
 
 3 行目には運用上の含意があります。**業務のピークにバックアップを重ねると、どちらも遅くなります。**
 
-### アプリケーション整合性は別の問題です
+### 別の問題としてのアプリケーション整合性
 
 **バックアップはボリュームのポイントインタイムのコピーで、アプリケーションの静止点を取る仕組みではありません。** データベースを載せている構成で「別リージョンへコピーしているので DR は済んでいる」と読むと、リストアできてもデータベースが起動しない可能性があります。DB 側のバックアップ、またはバックアップ前の静止処理と組み合わせてください。
 
@@ -381,9 +381,9 @@ Backup failed. Please delete the backup and try again.
 > **`snapmirror resync` の注意点**: ユーザー作成の Snapshot は resync では複製されません。
 > XDP 関係では `preserve` パラメータが使えます（`documented`）。
 
-両方を使う構成も成立します。**SnapMirror で可用性を、バックアップコピーで隔離された保管を担う**という分担です。この場合、SnapMirror の宛先は `DP` ボリュームでバックアップ対象外なので、**バックアップは複製元で取り、そのバックアップをコピーします**（[Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#バックアップできないボリュームがある)）。
+両方を使う構成も成立します。**SnapMirror で可用性を、バックアップコピーで隔離された保管を担う**という分担です。この場合、SnapMirror の宛先は `DP` ボリュームでバックアップ対象外なので、**バックアップは複製元で取り、そのバックアップをコピーします**（[Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#バックアップできないボリュームの存在)）。
 
-### 「宛先を常時起動するほうが高い」は規模で逆転します
+### 「宛先を常時起動するほうが高い」の規模による逆転
 
 **上表の「宛先の容量とスループットを常時支払う」を、常に不利なトレードオフとして読まないでください。** データ量が一定を超えると、常時起動のほうが月額が下がります。単価の構造がそうなっています（`documented`）。
 
@@ -419,7 +419,7 @@ Backup failed. Please delete the backup and try again.
 
 **ただし規模が大きいと、この判断は逆になります。** リストアの所要時間が効くためです（下記）。
 
-### リストアの所要時間は容量に比例し、スループット容量が上限になります
+### リストア所要時間の容量比例と、スループット容量という上限
 
 AWS はリストアのレートを **大きいファイル中心で 250 MBps、小さいファイル中心で 100 MBps** と公開しています（`documented`、[Backup and restore performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html)）。前提が 2 つあり、どちらも所要時間を長い側に振ります。
 
@@ -465,7 +465,7 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 
 **AWS Backup を経由してもバックアップストレージの単価は変わりません。** FSx for ONTAP は AWS Backup が完全に管理するリソースタイプではないため、**ストレージ課金は AWS Backup ではなく FSx for ONTAP 側に出ます**（`documented`、[Metering, costs, and billing for AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html)）。論理エアギャップボールトを使う場合だけ、ストレージと転送のすべてが AWS Backup 側に出ます。
 
-### リージョン間転送料は、経路で扱いが違います
+### 経路によるリージョン間転送料の扱いの差
 
 **AWS Backup 経由のコピーには転送料の項目があります。** AWS Backup の料金ページは、Amazon FSx を含む Resource Group 3 について、**通常のボールトと論理エアギャップボールトで転送単価は同じ**としています（`documented`）。
 
@@ -573,7 +573,7 @@ graph TD
 
 ---
 
-## 何を実測し、何を実測していないか
+## 実測した範囲と実測していない範囲
 
 | 項目 | 区分 |
 |---|---|
@@ -591,7 +591,7 @@ graph TD
 
 ---
 
-## 自分の環境で確かめる
+## 自環境での確認手順
 
 | # | 手順 | 確認できること |
 |---|---|---|

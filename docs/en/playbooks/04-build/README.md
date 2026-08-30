@@ -17,7 +17,7 @@ A hand-built environment cannot be reproduced. Infrastructure as code and automa
 | 1 | What to manage in IaC and what to leave out | [The IaC boundary is set by the API surface](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) (日本語) |
 | 2 | How to automate Active Directory integration | [Automating Active Directory integration](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md#active-directory-連携の自動化) (日本語) |
 | 3 | How to handle secrets | [Handling secrets](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md#シークレットの扱い) (日本語) |
-| 4 | How to automate post-build verification | [Verifying in two layers](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md#構築後の検証を自動化する) (日本語) |
+| 4 | How to automate post-build verification | [Verifying in two layers](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md#構築後検証の自動化) (日本語) |
 | 5 | How to clone environments for dev and test | [Cloning environments](../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md#開発検証環境の複製) (日本語) |
 
 ---

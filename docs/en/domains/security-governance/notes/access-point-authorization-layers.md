@@ -839,7 +839,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 - [Domain — Security & Governance](../README.md) — the hub for this module
 - [S3 Access Point authorizes every request as one identity](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) — a deeper look at the Layer 2 mechanism
 - [FSx for ONTAP S3 AP is not simply "S3"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) — prerequisites before creating an access point
-- [Four paths end users take to the data](../../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--認可が-3-層になる) (日本語) — the authorization layers as a whole
+- [Four paths end users take to the data](../../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) (日本語) — the authorization layers as a whole
 - [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — the irreversible items, `NetworkOrigin` among them
 - [Limits and quotas](../../../../ja/reference/limits/) (日本語) — the measured policy-size and object-size values
 - [Evidence policy](../../../evidence-policy.md)

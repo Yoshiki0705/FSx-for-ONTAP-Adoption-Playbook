@@ -43,7 +43,7 @@ lang: ja
 | 設計への影響 | 関連ノート |
 |---|---|
 | **平常時にコピー先のファイルシステムを持たなくてよくなった。** 復旧時に作る時間（実測 20 分）が RTO に乗る | [バックアップコピーは復元するまでファイルシステムを持たない](../domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) |
-| 「バックアップではリージョン障害に備えられない」が成り立たなくなった。**復元先が同一リージョンである制約は変わっていない** | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#何から守れるのか) |
+| 「バックアップではリージョン障害に備えられない」が成り立たなくなった。**復元先が同一リージョンである制約は変わっていない** | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#守れる対象) |
 | SnapMirror との選び分けが「可用性か保管か」で分かれる。**切り戻し経路はバックアップコピーにはない** | [データ保護方式の比較](comparison/data-protection-methods.md) |
 | 隔離アカウントへの退避が、資格情報の漏洩や KMS キーの侵害への層として使える | [プラットフォームが与えるものと自分に残るもの](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) |
 
@@ -134,7 +134,7 @@ AWS Storage Blog にて、FSx for ONTAP 上の SQL Server ワークロード向�
 
 | 設計への影響 | 関連ノート |
 |---|---|
-| SQL Server FCI + FSx for ONTAP のリファレンス構成が公式化 | [公開事例 — SQL Server](../case-studies/public-case-studies.md#ワークロードから探す) |
+| SQL Server FCI + FSx for ONTAP のリファレンス構成が公式化 | [公開事例 — SQL Server](../case-studies/public-case-studies.md#ワークロードからの探し方) |
 | FlexClone による dev/test パターンは SaaS テナント設計と同じ発想 | [IaC の境界は API の表面で決まる](../playbooks/04-build/notes/what-iac-cannot-reach.md) |
 
 出典: [AWS Storage Blog](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/)
@@ -200,7 +200,7 @@ FSx for ONTAP Multi-AZ を共有ストレージとして、EC2 Auto Scaling + La
 | 設計への影響 | 関連ノート |
 |---|---|
 | Oracle HA でクラスタソフトウェアを使わないアプローチ | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
-| 共有ストレージ + Auto Scaling のパターンは SQL Server FCI と同構造 | [公開事例 — SQL Server](../case-studies/public-case-studies.md#ワークロードから探す) |
+| 共有ストレージ + Auto Scaling のパターンは SQL Server FCI と同構造 | [公開事例 — SQL Server](../case-studies/public-case-studies.md#ワークロードからの探し方) |
 
 出典: [AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/building-highly-available-oracle-databases-with-amazon-fsx-for-netapp-ontap/)
 

@@ -18,7 +18,7 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 | 2 | What SnapMirror protects and what it does not | [Having snapshots is not the same as being able to recover](notes/snapshots-are-not-a-recovery-plan.md#what-each-mechanism-protects-against) (日本語) |
 | 3 | How to use WORM / SnapLock and what is irreversible | [Enabling SnapLock is not the same as locking](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) |
 | 4 | How to verify the recovery procedure | [Actually exercising a restore](notes/snapshots-are-not-a-recovery-plan.md#verify-in-your-own-environment) (日本語) |
-| 5 | What is effective as ransomware readiness | [Ransomware readiness is layered](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#ランサムウェア対策は層で考える) (日本語) |
+| 5 | What is effective as ransomware readiness | [Ransomware readiness is layered](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#層で考えるランサムウェア対策) (日本語) |
 
 ---
 

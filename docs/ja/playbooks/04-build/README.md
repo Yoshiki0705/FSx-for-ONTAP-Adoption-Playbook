@@ -17,7 +17,7 @@
 | 1 | IaC で何を管理し、何を管理しないか | [IaC の境界は API の表面で決まる](notes/what-iac-cannot-reach.md) |
 | 2 | Active Directory 連携をどう自動化するか | [Active Directory 連携の自動化](notes/what-iac-cannot-reach.md#active-directory-連携の自動化) |
 | 3 | シークレットをどう扱うか | [シークレットの扱い](notes/what-iac-cannot-reach.md#シークレットの扱い) |
-| 4 | 構築後の検証をどう自動化するか | [構築後の検証を自動化する](notes/what-iac-cannot-reach.md#構築後の検証を自動化する) |
+| 4 | 構築後の検証をどう自動化するか | [構築後の検証を自動化する](notes/what-iac-cannot-reach.md#構築後検証の自動化) |
 | 5 | 環境の複製（開発・検証）をどう作るか | [開発・検証環境の複製](notes/what-iac-cannot-reach.md#開発検証環境の複製) |
 
 ---
