@@ -80,7 +80,8 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 - [ ] **Amazon CloudWatch のメトリクスとアラームを設定した**。少なくとも SSD 使用率、スループット、IOPS、レイテンシ
 - [ ] **SSD 使用率 80% に対するアラームがある**。到達してから気づく設計になっていないか確認してください
 - [ ] **性能が出ないときの切り分け手順を決めた**。プロビジョニング値に張り付いている場合はスロットリングが起きています
-- [ ] **S3 Access Point を使う場合、イベント駆動の方式を決めた**。S3 Event Notifications は使えません。Amazon EventBridge Scheduler によるポーリングか FPolicy を選択します
+- [ ] **S3 Access Point を使う場合、イベント駆動の方式を決めた**。S3 Event Notifications は使えず、**FPolicy も代替になりません**（AP 経由の操作は通知されません）。Amazon EventBridge Scheduler によるポーリングか、ONTAP ネイティブ監査ログを起点にします
+- [ ] **S3 Access Point を使う場合、FPolicy 前提のリアルタイム制御に穴がないか確認した**。ランサムウェア検知・DLP・`mandatory` による遮断は AP 経由の書き込みに効きません。ランサムウェア検知は ARP が代替になります
 
 ---
 

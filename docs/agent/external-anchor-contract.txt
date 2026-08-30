@@ -25,6 +25,7 @@ docs/en/domains/security-governance/notes/access-point-authorization-layers.md#c
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#configuration-examples--six-patterns
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#cross-account-data-access-does-work
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#decision-flow
+docs/en/domains/security-governance/notes/access-point-authorization-layers.md#fpolicy-does-not-see-this-path-at-all
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#layer-1--what-the-union-implies
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#layer-2--file-system-permissions-are-what-narrow-access
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#layer-2-prerequisite--the-identity-bound-to-the-access-point-must-exist-on-the-file-system
@@ -44,6 +45,7 @@ docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#a
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#awsprincipalorgid-組織の内外
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#awssecuretransport-は-deny-分岐に到達しない
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#cloudformation
+docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#fpolicy-はこの経路をまったく見ていない
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#layer-1--結合で評価されることの帰結
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#layer-1-で絞る--明示的な拒否の-2-つの書き方notprincipal-は避ける
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#layer-2--ファイルシステム側の権限が絞り込みを担う

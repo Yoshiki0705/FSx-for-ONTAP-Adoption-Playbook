@@ -52,7 +52,7 @@ translated — `ONTAP`, `SnapMirror`, and similar stay in the original form.
 | FSx for ONTAP S3 AP | ボリュームへの S3 API アクセスを提供する Access Point / An access point providing S3 API access to a volume |
 | Export policy | NFS クライアントのアクセス制御ルール / Access control rules for NFS clients |
 | Name mapping | SMB・Kerberos・UNIX の各 ID を相互に対応付ける設定。NFS クライアントから来ても SMB クライアントから来ても適切な権限を得るために使われる / Configuration mapping SMB, Kerberos, and UNIX identities to one another, so that correct access is obtained whether the request arrives from an NFS or an SMB client ([NetApp](https://docs.netapp.com/us-en/ontap/nfs-admin/how-name-mappings-used-concept.html)) |
-| FPolicy | ファイル操作イベントを外部に通知する仕組み / A mechanism for notifying external systems of file operation events |
+| FPolicy | ファイル操作イベントを外部に通知する仕組み。監視できるのは NFS / SMB のみで、S3 Access Point 経由の操作は対象外 / A mechanism for notifying external systems of file operation events. It can watch NFS and SMB only; operations through an S3 access point are outside its scope |
 
 ---
 
