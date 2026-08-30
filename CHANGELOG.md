@@ -140,6 +140,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The noun-phrase heading rule now names the genres it does not apply to.** The rule assumes a
+  heading is a label, and three genres break that assumption: chronological narrative, advice whose
+  imperative mood *is* the content, and a stated goal or intention. Nominalizing those destroys the
+  content — `心身の状態を整えておく` becomes `心身の状態の調整`, which is no longer advice. The test is
+  whether the heading could serve as an entry in an index. The genres were found by surveying 109
+  personal blog posts from 2019 to 2023; **none of them exist in this repository**, so the exemption
+  changes nothing here today. It is recorded because a mechanical check cannot tell narrative from a
+  label, and without it the next reader converts a timeline.
 - **Japanese section headings are now required to be noun phrases, which supersedes the Japanese half
   of the action-first heading rule.** `はじめる` and `自分の環境で確かめる` were what "action-first"
   produced in Japanese, and a verb form, a question form, or a full predicate reads as a sentence

@@ -54,6 +54,25 @@ sentence and belongs in the body.**
 in `AGENTS.md`, so `課金は「確保した量」と「使った量」に分かれる` is correct as a title and would be
 wrong as a section heading.
 
+### Also exempt: headings that are deliberately not labels
+
+The rule assumes a heading is a label. Three genres break that assumption, and nominalizing them
+destroys the content rather than tidying it.
+
+| Genre | Example | Why it is exempt |
+|---|---|---|
+| Chronological narrative | `15:29 チェックイン時にパスポートが無い事に気付く` | A sequence of events. Nominalizing removes the passage of time |
+| Advice or instruction whose mood *is* the content | `心身の状態を整えておく` | `心身の状態の調整` is no longer advice |
+| A goal or a stated intention | `Kubernetes の学習を通じてインフラの理解を深める` | A declaration of intent stops being one once nominalized |
+
+**The test: could the heading serve as an entry in an index?** If yes it is a label, so nominalize
+it. If skipping it would lose the meaning of the surrounding text, it is narrative — leave it.
+
+These genres were found by surveying 109 personal blog posts from 2019 to 2023, none of which are in
+this repository. **No exempt heading exists here today.** The exemption is recorded because a
+mechanical check cannot tell narrative from a label, so without it the next reader converts a
+timeline.
+
 English headings are unaffected — `Deleting a volume` and `How to choose` are both fine.
 
 **Renaming a heading renames its anchor.** Update inbound links, and follow the external-anchor
