@@ -69,7 +69,7 @@ The decision cannot be made on per-GB cost alone.
 
 Tiering also has a capacity prerequisite. **All writes land on SSD first regardless of tiering policy, and metadata always remains on SSD.** The rule of thumb is SSD : capacity pool = 1 : 10.
 
-This means **SSD consumption never reaches zero even with `All` tiering policy.** Details are in [SSD is still used even with `All` tiering policy](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#階層化ポリシーを-all-にしても-ssd-は使われます).
+This means **SSD consumption never reaches zero even with `All` tiering policy.** Details are in [SSD is still used even with `All` tiering policy](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#階層化ポリシー-all-でも使われる-ssd).
 
 ---
 
@@ -102,7 +102,7 @@ Snapshots consume **volume capacity**, not capacity pool. And when a Snapshot ho
 
 Note that Snapshots are not always the cause. **Immediately after deleting large amounts of data or directories, free space takes time to update.** Blocks are not returned to free space until the block ownership calculation process completes. This is expected behavior and does not affect volume performance. **Before attributing "deleted but not freed" to Snapshots, wait and re-check.**
 
-Retention policies directly affect capacity estimates. The relationship with limits is described in [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods), and inode consumption is in [Running out of space despite available capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#snapshot-も-inode-を消費します).
+Retention policies directly affect capacity estimates. The relationship with limits is described in [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods), and inode consumption is in [Running out of space despite available capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#inode-を消費する-snapshot).
 
 ---
 

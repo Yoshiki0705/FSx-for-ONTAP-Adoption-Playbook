@@ -55,8 +55,8 @@ A collection of success stories is worth less than it looks. **The points where 
 
 | Route | Where to look |
 |---|---|
-| **By industry** | [Public case studies — by industry](../../ja/case-studies/public-case-studies.md#業種から探す) (日本語) — energy, semiconductor/EDA, financial services, healthcare, medical devices, telecom, public health and education, media, IT |
-| **By workload** | [Public case studies — by workload](../../ja/case-studies/public-case-studies.md#ワークロードから探す) (日本語) — NAS migration, SQL Server, EDA, SaaS tenancy, hybrid and branch caching, media production, multi-Region |
+| **By industry** | [Public case studies — by industry](../../ja/case-studies/public-case-studies.md#業種からの探し方) (日本語) — energy, semiconductor/EDA, financial services, healthcare, medical devices, telecom, public health and education, media, IT |
+| **By workload** | [Public case studies — by workload](../../ja/case-studies/public-case-studies.md#ワークロードからの探し方) (日本語) — NAS migration, SQL Server, EDA, SaaS tenancy, hybrid and branch caching, media production, multi-Region |
 | **Industry-specific design material** | [Design material by industry](../../ja/case-studies/public-case-studies.md#業種固有の設計資料) (日本語) — EDA, financial services, EHR |
 | **Learn from a judgement that went wrong** | The table below (this repository's own cases) |
 

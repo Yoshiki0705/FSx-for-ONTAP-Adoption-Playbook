@@ -19,7 +19,7 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 | 3 | When win-unix / unix-win mapping is consulted | [same note](../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | 4 | What it takes to share the same data over NFS and SMB | [Three layers of conditions](../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md#同一データを-nfs-と-smb-で共有する条件) (日本語) |
 | 5 | What breaks when AD becomes unreachable | [The AD dependency lasts the lifetime, not just the join](../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) (日本語) |
-| 6 | How many authorization layers a browser path introduces | [Authorization becomes three layers](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--認可が-3-層になる) (日本語) |
+| 6 | How many authorization layers a browser path introduces | [Authorization becomes three layers](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) (日本語) |
 
 ---
 

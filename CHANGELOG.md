@@ -513,6 +513,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **163 Japanese section headings across 36 files are now noun phrases, and `make lint` enforces it.**
+  The rule landed in #77 and #79 with nothing enforcing it and every pre-existing heading in breach;
+  this is the conversion plus `tools/check_heading_style.py`. They ship together on purpose: a gate
+  that fails on 163 headings it did not cause is a gate that gets switched off. Assertions are carried
+  by a suffix rather than dropped — `監査は 2 つの面に分かれ、片方に穴があります` became
+  `監査の 2 つの面と、片方の穴の存在`, not `監査の 2 つの面と片方の穴`. 115 inbound anchor references
+  were rewritten in the same commit.
+- **Two boundaries in the detector were wrong, in opposite directions, and each was found only by
+  running it against the whole tree.** `れ` was in the verb-ending character class; it is え-row, not
+  う-row, so no dictionary-form verb ends in it and a bare `れ` ending is a nominalized 連用形 —
+  `流れ`, `崩れ`, `遅れ` are nouns. That flagged an open-ended class no allowlist could have closed.
+  In the other direction `ない` was missing, because it ends in い and the class excludes い so that
+  `問い` and `扱い` stay clean; listing `ない` by name found twelve predicate headings the first run
+  had passed. `make headings` now runs `--selftest` before the real check, so the gate proves it can
+  still flag before it reports a clean tree.
+- **20 anchors in the external contract moved, and no external citation actually consumed them.**
+  The contract records every anchor of an externally cited *document*, not the anchors that are
+  cited, so a `GONE` entry is a possible break rather than a confirmed one. The citing repository
+  links to the two documents at file level with no fragment — checked against its current `main` —
+  so nothing on that side lands anywhere new. The conservatism is worth keeping: the failure it
+  guards against is silent, because GitHub answers an unknown fragment with the top of the page.
+
 - **Three pieces of wording that read as jargon or as blame.** "床" was a metaphor for the minimum
   monthly charge and is now named as that; the English "floor" was doing double duty for a cost
   minimum and for a lower-bound duration, so the cost sense became "minimum monthly charge" and the

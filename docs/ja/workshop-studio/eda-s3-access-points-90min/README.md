@@ -124,7 +124,7 @@ Generate EDA Data ──> 1,952 個のログファイル
 |---|---|
 | リージョンを揃える | 本家は `us-east-1`（または `us-west-2`）前提で、IAM とアクセスポイントのポリシー ARN に `us-east-1` が直接書かれています。Workshop Studio のイベントとして開催するならイベント側のリージョンに合わせれば整合します。自アカウントで東京リージョンを使うなら全モジュールで置換が必要です |
 | Amazon Quick のサインアップを事前に完了 | 初回サインアップとサービスロール設定を当日やると、それだけで 15 分の枠を使い切ります |
-| **Quick の「Quick access to AWS services」で Amazon S3 を有効化** | **本家の手順に書かれていない設定です。**これが無いと IAM とアクセスポイントのポリシーを正しく設定してもナレッジベース作成が失敗します。詳細は[落とし穴](facilitation-risks.md#amazon-quick-は-iam-だけでは-s3-に届かない) |
+| **Quick の「Quick access to AWS services」で Amazon S3 を有効化** | **本家の手順に書かれていない設定です。**これが無いと IAM とアクセスポイントのポリシーを正しく設定してもナレッジベース作成が失敗します。詳細は[落とし穴](facilitation-risks.md#iam-だけでは-s3-に届かない-amazon-quick) |
 | アクセスポイントのエイリアスを Quick のバケット一覧に登録 | 一覧には実バケットしか出ないため、自由入力で追加する必要があります |
 | ナレッジベースの同期を前日までに完了させる（任意） | 実測 11.5 分超。当日の最大の不確実要因を消せます。`aws quicksight create-knowledge-base` は CLI に存在します |
 | Quick の画面導線を一度たどる | 本家の「Explore → Knowledge」は現行 UI では **More → Knowledge** です |

@@ -64,7 +64,7 @@ translated — `ONTAP`, `SnapMirror`, and similar stay in the original form.
 | SID (Security Identifier) | Windows の ID を表す識別子。**SMB の資格情報は 1 つの主 SID と、所属グループに対応する複数のグループ SID から成る** / The identifier representing a Windows identity. **An SMB credential consists of one primary SID plus group SIDs for the groups the user belongs to** ([NetApp](https://docs.netapp.com/us-en/ontap/nfs-admin/smb-access-nfs-clients-concept.html)) |
 | LDAP | ユーザー・グループ・netgroup を格納するディレクトリへのアクセスプロトコル。**Active Directory に参加していなくても、LDAP でドメインに参加した SVM では Kerberos による転送時暗号化が使える** / A protocol for accessing a directory holding users, groups, and netgroups. **Kerberos-based encryption in transit is available on an SVM joined to a domain over LDAP, not only on one joined to Active Directory** ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/data-protection.html)) |
 | Kerberos | NFS・SMB の転送時暗号化に使う認証方式。**SVM が Active Directory または LDAP でドメインに参加していることが前提** / The authentication mechanism used for encryption in transit over NFS and SMB. **Requires the SVM to be joined to a domain through Active Directory or LDAP** ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html)) |
-| DACL / SACL | NTFS のアクセス許可（DACL）と監査設定（SACL）。**移行ツールの既定では SACL が落ちることがある** / NTFS access permissions (DACL) and audit settings (SACL). **Migration tool defaults can omit the SACL** ([移行時の ACL 保持](../../playbooks/03-migrate/notes/preserving-acls-during-migration.md#何が落ちるのか)) |
+| DACL / SACL | NTFS のアクセス許可（DACL）と監査設定（SACL）。**移行ツールの既定では SACL が落ちることがある** / NTFS access permissions (DACL) and audit settings (SACL). **Migration tool defaults can omit the SACL** ([移行時の ACL 保持](../../playbooks/03-migrate/notes/preserving-acls-during-migration.md#落ちるもの)) |
 
 ---
 

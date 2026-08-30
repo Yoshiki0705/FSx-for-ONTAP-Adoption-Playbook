@@ -14,10 +14,10 @@
 
 | # | 問い | ノート |
 |---|---|---|
-| 1 | 何が課金対象で、何が課金されないか | [何が課金対象か](notes/provisioned-versus-consumed.md#何が課金対象か) |
-| 2 | ティアリングでどこまで下がるか | [階層化は「常に安くなる」わけではありません](notes/provisioned-versus-consumed.md#階層化は常に安くなるわけではありません) |
+| 1 | 何が課金対象で、何が課金されないか | [何が課金対象か](notes/provisioned-versus-consumed.md#課金対象) |
+| 2 | ティアリングでどこまで下がるか | [階層化は「常に安くなる」わけではありません](notes/provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由) |
 | 3 | 見積もりが外れる典型的な前提は何か | [見積もりが外れる典型的な前提](notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) |
-| 4 | Snapshot が容量に与える影響をどう見るか | [Snapshot は容量として現れます](notes/provisioned-versus-consumed.md#snapshot-は容量として現れます) |
+| 4 | Snapshot が容量に与える影響をどう見るか | [Snapshot は容量として現れます](notes/provisioned-versus-consumed.md#容量として現れる-snapshot) |
 | 5 | コストと可用性・性能のトレードオフをどう見比べて決めるか | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
 
 ---

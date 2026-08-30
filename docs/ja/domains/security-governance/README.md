@@ -15,8 +15,8 @@
 | # | 問い | ノート |
 |---|---|---|
 | 1 | 暗号化の選択肢とその境界はどこか | [保存時は自動、転送時は既定で無効](notes/what-the-platform-gives-and-what-stays-yours.md#プラットフォームが提供するものと自分に残るもの) |
-| 2 | 誰が何をしたかをどう記録するか | [監査は 2 つの面に分かれ、片方に穴があります](notes/what-the-platform-gives-and-what-stays-yours.md#監査は-2-つの面に分かれ片方に穴があります) |
-| 3 | 権限設計をどう最小権限に寄せるか | [管理者を分ける](notes/what-the-platform-gives-and-what-stays-yours.md#権限設計管理者を分ける) |
+| 2 | 誰が何をしたかをどう記録するか | [監査は 2 つの面に分かれ、片方に穴があります](notes/what-the-platform-gives-and-what-stays-yours.md#監査の-2-つの面と片方の穴の存在) |
+| 3 | 権限設計をどう最小権限に寄せるか | [管理者を分ける](notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) |
 | 4 | 規制ワークロードで問われる論点は何か | [問われる論点の整理](notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) |
 | 5 | OT / IT 境界をまたぐ場合の考慮事項は何か | [境界をまたぐときに使える仕組みと限界](notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) |
 | 6 | 取り消せない操作をどう統制するか | [不可逆な操作の承認は作業の承認とは別に取る](notes/irreversible-operations-need-separate-approval.md) |

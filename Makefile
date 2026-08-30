@@ -6,7 +6,7 @@ PY ?= python3
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors pr-verify all \
-        frontmatter markdown python format-python new-note stats drift test secrets clean \
+        frontmatter markdown headings python format-python new-note stats drift test secrets clean \
         diagrams diagrams-check
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
@@ -22,7 +22,7 @@ help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-lint: frontmatter markdown python ## Frontmatter schema + Markdown lint + Python lint
+lint: frontmatter markdown headings python ## Frontmatter schema + Markdown lint + heading style + Python lint
 
 RUFF_PINNED := $(shell sed -n 's/^ruff==//p' requirements-dev.txt)
 
@@ -125,6 +125,10 @@ secrets: ## Secret scan of the worktree (fails when gitleaks is not installed)
 
 links: ## Check internal link resolution
 	@$(PY) tools/check_links.py
+
+headings: ## Check that Japanese section headings are noun phrases
+	@$(PY) tools/check_heading_style.py --selftest >/dev/null
+	@$(PY) tools/check_heading_style.py
 
 anchors: ## Check that externally cited section anchors have not been renamed
 	@$(PY) tools/check_anchor_contract.py

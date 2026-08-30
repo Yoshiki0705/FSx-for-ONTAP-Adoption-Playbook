@@ -135,7 +135,7 @@ The last row matters operationally. **If transfers are slower than expected, the
 | 3 | Time the full `quiesce` → `break` → mount sequence | **Actual downtime.** A measurement, not an estimate |
 | 4 | Add `Last Transfer End Timestamp` verification to the runbook | Prevents cutting over with stale data |
 | 5 | Confirm the source is intact after break | The premise for rollback. Verify you can actually read it |
-| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自分の環境で確かめる) |
+| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自環境での確認手順) |
 | 7 | Run the rollback procedure once in the test environment | **Whether the written procedure actually works.** Do not try it for the first time in production |
 
 Many migration plans skip step 7. **A rollback procedure — even one you hope never to use — must be verified to work.**

@@ -15,10 +15,10 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | # | 問い | ノート |
 |---|---|---|
 | 1 | Snapshot ポリシーをどう設計するか | [上限と保持期間から逆算する](notes/snapshots-are-not-a-recovery-plan.md#上限と保持期間) |
-| 2 | SnapMirror で何が守られ、何が守られないか | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md#何から守れるのか) |
+| 2 | SnapMirror で何が守られ、何が守られないか | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md#守れる対象) |
 | 3 | WORM / SnapLock をどう使い、何が不可逆か | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) |
-| 4 | 復旧手順をどう検証するか | [復元を実際に試す手順](notes/snapshots-are-not-a-recovery-plan.md#自分の環境で確かめる) |
-| 5 | ランサムウェア対策として何が有効か | [ランサムウェア対策は層で考える](notes/snaplock-and-layered-ransomware-readiness.md#ランサムウェア対策は層で考える) |
+| 4 | 復旧手順をどう検証するか | [復元を実際に試す手順](notes/snapshots-are-not-a-recovery-plan.md#自環境での確認手順) |
+| 5 | ランサムウェア対策として何が有効か | [ランサムウェア対策は層で考える](notes/snaplock-and-layered-ransomware-readiness.md#層で考えるランサムウェア対策) |
 | 6 | 別リージョン・別アカウントへどう退避するか | [バックアップコピーは復元するまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) |
 | 7 | バックアップコピーと SnapMirror をどう選び分けるか | [SnapMirror との選び分け](notes/backup-copies-across-regions-and-accounts.md#snapmirror-との選び分け) |
 | 8 | Snapshot をデータセットの「版」として使えるか | [版を Snapshot に載せるときの 3 つの落とし穴](../data-utilization/notes/dataset-versions-and-experiment-branches.md#版を-snapshot-に載せるときの-3-つの落とし穴) |

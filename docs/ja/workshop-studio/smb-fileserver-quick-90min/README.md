@@ -81,10 +81,10 @@ Athena を外すと「同じデータが SQL からも読める」話と、AI �
 | SVM の AD 参加 | 2〜5 分 | 失敗時は `MISCONFIGURED` からの再試行が必要 |
 | NTFS ボリュームと SMB 共有の作成 | 5 分 | |
 | ドメイン参加した Windows クライアント | 5〜10 分 | 参加者が文書を置くために必要 |
-| Quick のサインアップと S3 有効化 | 15 分 | [EDA ログ版と同じ落とし穴](../eda-s3-access-points-90min/facilitation-risks.md#amazon-quick-は-iam-だけでは-s3-に届かない)があります |
+| Quick のサインアップと S3 有効化 | 15 分 | [EDA ログ版と同じ落とし穴](../eda-s3-access-points-90min/facilitation-risks.md#iam-だけでは-s3-に届かない-amazon-quick)があります |
 | 集計 CSV の準備 | 5 分 | Athena を残す場合のみ |
 
-### SVM に既存の ONTAP S3 サーバーがあると作成できない
+### 既存の ONTAP S3 サーバーがある SVM での作成の不可
 
 **事前に必ず確認してください。** 検証中、AD 参加済みの SVM でアクセスポイント作成が
 37 秒後に `FAILED` になりました。

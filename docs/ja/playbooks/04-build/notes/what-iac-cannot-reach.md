@@ -34,7 +34,7 @@ lang: ja
 
 > **Evidence**: `documented` — 各操作の経路とテンプレートの更新挙動は AWS 公式ドキュメントと CloudFormation リファレンスの記載に基づきます。
 > **特定のツール構成の推奨はしません。** 自環境での確認手順は
-> 「[自分の環境で確かめる](#自分の環境で確かめる)」にあります。
+> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
 
 ---
 
@@ -45,7 +45,7 @@ lang: ja
 | 発見 | 内容 |
 |---|---|
 | **`CreateSnapshot` は FSx for OpenZFS 専用** | ONTAP ボリュームに対して実行すると `Unable to create a snapshot because the volume was not found` になります。**ボリュームは存在し `CREATED` です。** ONTAP の Snapshot は Snapshot ポリシーまたは ONTAP CLI / REST の領域です |
-| **SnapLock 監査ログボリュームは AWS API で削除できない** | 通常の削除も `BypassSnaplockEnterpriseRetention=true` も効きません。SVM 側の指定は API に露出しておらず、**ONTAP REST でなら解除できます。ただし解除しても削除できるようにはなりません**（最低 6 か月の保持期間中は、ボリューム・SVM・ファイルシステムのいずれも削除不可）。詳細は [SnapLock は有効化とロックが別](../../../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#監査ログボリュームはファイルシステムごと-6-か月固定します) |
+| **SnapLock 監査ログボリュームは AWS API で削除できない** | 通常の削除も `BypassSnaplockEnterpriseRetention=true` も効きません。SVM 側の指定は API に露出しておらず、**ONTAP REST でなら解除できます。ただし解除しても削除できるようにはなりません**（最低 6 か月の保持期間中は、ボリューム・SVM・ファイルシステムのいずれも削除不可）。詳細は [SnapLock は有効化とロックが別](../../../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#監査ログボリュームによるファイルシステム全体の-6-か月固定) |
 | **ボリューム削除の失敗は応答では分かりません**（理由の取得先は AWS API 内にあります） | `delete-volume` は `DELETING` に入ったのち `CREATED` に戻り、**応答にはエラーが含まれません。** `AdministrativeActions` も `null` です。ただし**理由は `DescribeVolumes` の `LifecycleTransitionReason` に入ります**。ONTAP 側は必須ではありません |
 | **`UpdateVolume` は非同期で痕跡を残さない** | 反映は 30 秒では未確認、120〜180 秒で確認。**`AdministrativeActions` には記録されません**（`null`）。連続実行は `There is an update already in progress.` で拒否されます |
 
@@ -84,13 +84,13 @@ SVM のルートボリュームのセキュリティスタイルは `UNIX` / `NT
 
 `FsxAdminPassword` には制約があります。**8〜50 文字で、改行や特定の制御文字を含められません。** 自動生成のパスワードポリシーがこの範囲を外れていると、作成時に失敗します。
 
-### `SvmAdminPassword` を省略すると最小権限が崩れます
+### `SvmAdminPassword` の省略による最小権限の崩れ
 
 **`SvmAdminPassword` を指定しないと、その SVM の管理は `fsxadmin` で行うことになります。**
 
 `fsxadmin` はファイルシステム全体の管理者です。つまり SVM 1 つの運用担当者に、ファイルシステム全体の権限を渡すことになります。
 
-**指定すれば、その SVM を `vsadmin` で ONTAP CLI / REST API から管理できます。** 最小権限で運用するなら、SVM 作成時に指定してください。権限の分け方は [管理者を分ける](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計管理者を分ける) にあります。
+**指定すれば、その SVM を `vsadmin` で ONTAP CLI / REST API から管理できます。** 最小権限で運用するなら、SVM 作成時に指定してください。権限の分け方は [管理者を分ける](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) にあります。
 
 ---
 
@@ -110,7 +110,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 ---
 
-## 構築後の検証を自動化する
+## 構築後検証の自動化
 
 **IaC の成功は構成の完成を意味しません。** 上で見たとおり、ONTAP レベルの設定はテンプレートの外にあります。したがって検証は 2 層必要です。
 
@@ -140,7 +140,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 | バックアップから新しいボリュームへ復元 | Amazon FSx の API で実行できます。同一リージョン内が対象です <!-- allow:naming - AWS の API 名 --> |
 | SnapMirror | 別ファイルシステム・別リージョンへ複製できます |
 
-### FlexClone には運用上の相互作用があります
+### FlexClone の運用上の相互作用
 
 **SSD 容量の縮小操作を開始した後に FlexClone を作成すると、縮小操作が一時停止します。** ONTAP がボリューム移動時にクローン関係を分割するため、新しいディスク上でストレージが二重になるのを避けるためです。
 
@@ -191,7 +191,7 @@ graph TD
 
 ---
 
-## 自分の環境で確かめる
+## 自環境での確認手順
 
 **最初に確かめるのは、テンプレートの外にある設定がいくつあるかです。**
 

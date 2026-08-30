@@ -19,7 +19,7 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 | 3 | win-unix / unix-win マッピングはいつ参照されるか | [同上](notes/security-style-and-permission-evaluation.md#セキュリティスタイルと権限評価の対応) |
 | 4 | 同一データを NFS と SMB で共有する条件は何か | [共有する条件は 3 層あります](notes/ad-dependency-lasts-the-lifetime.md#同一データを-nfs-と-smb-で共有する条件) |
 | 5 | AD が到達不能になると何が壊れるか | [AD への依存は参加時ではなく生涯続く](notes/ad-dependency-lasts-the-lifetime.md) |
-| 6 | ブラウザ経由で見せると認可の層はいくつになるか | [認可が 3 層になる](../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--認可が-3-層になる) |
+| 6 | ブラウザ経由で見せると認可の層はいくつになるか | [認可が 3 層になる](../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) |
 
 ---
 
