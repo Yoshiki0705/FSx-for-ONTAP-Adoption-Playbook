@@ -18,6 +18,13 @@ answer for this one.
 Runs skipped by a path filter are reported as filtered rather than missing, because a gate that
 reports a false absence gets ignored.
 
+One head SHA can carry several runs of the same workflow, and only the newest is the verdict. Editing
+a pull request title re-runs `pr-title-check` against the unchanged head, so the earlier failure and
+the later success both sit under that SHA. Counting every run made the failure permanent: the title
+was fixed, the new run passed, and this command still refused the merge with no way to clear it short
+of pushing a commit. Keying on the SHA is what keeps a *different* commit's result from answering, and
+that is untouched here — within one SHA, the latest run per workflow is the answer.
+
 Run:  python3 scripts/verify_pr_checks.py <pr-number>
       make pr-verify PR=<pr-number>
 """
@@ -31,6 +38,27 @@ import sys
 # Workflows expected on every commit. Anything outside this set is reported but not required, so a
 # path-filtered workflow does not read as a missing check.
 REQUIRED = ("ci", "gitleaks", "pr-title-check")
+
+
+def latest_per_workflow(runs: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Split runs into the newest per workflow name and the ones it supersedes.
+
+    Callers pass runs already filtered to one head SHA. `createdAt` is an ISO 8601 UTC string from
+    `gh run list`, so it sorts lexicographically. Ties keep the order `gh` returned, which is
+    newest-first, so the first occurrence wins.
+    """
+    newest: dict[str, dict] = {}
+    for run in runs:
+        name = str(run["name"])
+        current = newest.get(name)
+        if current is None or str(run.get("createdAt", "")) > str(
+            current.get("createdAt", "")
+        ):
+            newest[name] = run
+    kept = list(newest.values())
+    kept_ids = {id(r) for r in kept}
+    superseded = [r for r in runs if id(r) not in kept_ids]
+    return kept, superseded
 
 
 def gh_json(*args: str) -> object:
@@ -55,10 +83,22 @@ def main() -> int:
     print(f"PR #{number} head {head[:8]} ({pr['state']}): {pr['title']}")
 
     runs = gh_json(
-        "run", "list", "--limit", "200", "--json", "headSha,name,status,conclusion"
+        "run",
+        "list",
+        "--limit",
+        "200",
+        "--json",
+        "headSha,name,status,conclusion,createdAt",
     )
     assert isinstance(runs, list)
-    mine = [r for r in runs if r["headSha"] == head]
+    at_head = [r for r in runs if r["headSha"] == head]
+    mine, superseded = latest_per_workflow(at_head)
+
+    for run in sorted(superseded, key=lambda r: (str(r["name"]), str(r["createdAt"]))):
+        print(
+            f"  skip  {run['name']}: {run['conclusion'] or run['status']}"
+            f" (superseded by a later run of the same workflow)"
+        )
 
     problems: list[str] = []
     seen: set[str] = set()
