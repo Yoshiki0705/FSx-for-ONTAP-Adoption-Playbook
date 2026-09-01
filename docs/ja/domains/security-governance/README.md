@@ -23,7 +23,7 @@
 | 7 | S3 Access Point 経由のアクセスをどう絞るか。ポリシーをどう書くか | [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](notes/access-point-authorization-layers.md) |
 | 8 | 管理者権限を渡さずに Snapshot とクローンを使わせるには何を縛るか | [実験ブランチを配るときに縛る対象は権限だけではない](notes/self-service-without-storage-admin.md) |
 | 9 | SMB のログオン成功・失敗・ログオフは監査ログに残るか | [4624 は記録される。ただし数えられるのはセッション](notes/smb-logon-audit-event-coverage.md) |
-| 10 | 監査を有効化すると可用性に何が起きるか | [監査ログの空き容量不足はクライアントアクセスを止める](notes/audit-log-space-denies-client-access.md) |
+| 10 | 監査を有効化すると可用性に何が起きるか | [監査ログの空き容量不足はクライアントアクセスを止める](notes/audit-log-space-and-client-access.md) |
 
 ---
 

@@ -525,10 +525,33 @@ minutes to more than seven.
 | 数分で反映されたボリューム | 4 件 | 実測 | 2026-09-01 | 同一ファイルシステム、同一セッション |
 | 7 分以上経っても未反映のボリューム | 1 件 | 実測 | 2026-09-01 | 15 秒間隔で 28 回ポーリングして未出現。作成自体は成功しています |
 
+**削除の方向でも同じずれが起きて、そちらは SVM の削除を止めます。** ONTAP CLI でボリュームを
+削除すると、Amazon FSx API 側の在庫にはしばらく残ります。その状態で SVM を削除しようとすると、
+**存在しないボリュームを理由に拒否されます。**
+
+**The same lag occurs in the delete direction, and there it blocks the SVM deletion.** A volume
+deleted through the ONTAP CLI lingers in the Amazon FSx API's inventory. Deleting the SVM in that
+state is refused, **citing volumes that no longer exist.**
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| ONTAP から削除後も Amazon FSx API に残った時間 | **5 分以上** | 実測 | 2026-09-01 | 20 秒間隔で 9 回ポーリングして消えず。ONTAP 側は `volume show` で消えている |
+| その間の `DeleteStorageVirtualMachine` | **拒否** | 実測 | 2026-09-01 | `Cannot delete storage virtual machine while it has non-root volumes: fsvol-...` |
+| 残った Amazon FSx 側レコードへの `aws fsx delete-volume` | **成功し、約 1 分で解消** | 実測 | 2026-09-01 | 削除済みボリュームに対しても受理されます |
+
 > **自動化への含意**: **ONTAP CLI で作成し、その ID を Amazon FSx API から取得する処理には待機と
 > 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散に負けます。ボリューム ID を
 > 直後に必要とする処理（S3 Access Point のアタッチなど）は、**Amazon FSx API 側でボリュームを作る**
 > ほうが確実です。
+>
+> **撤去も Amazon FSx API 側で行ってください。** ONTAP CLI で消すと在庫がずれ、SVM の削除が
+> 「存在しないボリュームがある」という理由で止まります。**両方の経路を混ぜたときに一番詰まります。**
+>
+> **Implication for automation**: **a step that creates a volume via the ONTAP CLI and then reads its
+> ID from the Amazon FSx API needs waiting and retry.** A fixed timeout loses to the spread. When the
+> volume ID is needed immediately — attaching an S3 Access Point, for instance — creating the volume
+> through the Amazon FSx API is the more reliable path. **Delete through the Amazon FSx API as well**:
+> deleting through the ONTAP CLI desynchronises the inventory and stalls the SVM deletion.
 >
 > **Implication for automation**: **a step that creates a volume via the ONTAP CLI and then reads its
 > ID from the Amazon FSx API needs waiting and retry.** A fixed timeout loses to the spread. When the

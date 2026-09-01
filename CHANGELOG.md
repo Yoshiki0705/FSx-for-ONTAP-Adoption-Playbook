@@ -9,6 +9,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"The audit log filling up denies client access" was asserted from the defaults and is wrong at the
+  destination volume.** Measured on a purpose-built throwaway SVM: with the audit destination at 99%
+  and client writes to it already failing with `ENOSPC`, every SMB operation on the *audited* volume
+  succeeded — logon, list, create, read, delete. **And no records were lost**: all 13 events generated
+  during the full period reached the destination once space was freed, timestamps and order intact.
+  The documented failure is real but gated on the **staging** volume, which Amazon FSx does not expose. The
+  note is retitled and the causality corrected: destination utilisation is not itself the fault, it is
+  the only observable precursor to a staging backlog you cannot see — so "make the destination bigger"
+  does not make this safe. Also measured: the audit subsystem still wrote a 68 KB rotation file while
+  client writes were failing, so a shared destination starves its co-tenant before it starves
+  auditing; and there is no audit-specific EMS event, only `monitor.volume.full` /
+  `monitor.volume.nearlyFull` / `wafl.vol.full`. File renamed to `audit-log-space-and-client-access.md`
+  because the old name asserted the thing that turned out not to hold.
+- **"4634 only on a graceful client logoff" was right but incomplete, and one reading of it was an
+  artefact of collecting too early.** Six teardown paths measured: destroying the client SMB session
+  (`Restart-Service LanmanWorkstation`) and the client process exiting both emit 4634 — the latter
+  about three seconds later. Removing the *share mapping* (`net use /delete`, `Remove-SmbMapping`)
+  emits nothing at that moment because the authenticated session survives; the event arrives when the
+  session is finally destroyed. An orphaned session after connection loss is reaped server-side in
+  about three minutes and still emits nothing, which now rests on observing the session disappear
+  rather than on a short window. Four of the six paths are silent. The note records the collection-
+  window trap, because reading "`Remove-SmbMapping` produces no 4634" out of a too-early collection is
+  exactly the mistake it invites.
 - **"A volume that had an S3 Access Point attached" understated when the bucket association appears.**
   The association is created even when `CreateAndAttachS3AccessPoint` never reaches `AVAILABLE`:
   reproduced on 2026-09-01 with an attach that ended `FAILED`, where detaching succeeded, the
@@ -174,10 +197,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `volume recovery-queue purge` is run. Relevant to any create-and-delete verification loop, where the
   space appears released and is not.
 - **Volumes created through the ONTAP CLI reach the Amazon FSx API asynchronously, with an
-  inconsistent delay.** Four surfaced in `DescribeVolumes` within minutes while a fifth had not
-  appeared after 28 polls over more than seven minutes, in the same session on the same file system.
-  Automation that creates a volume via the CLI and then needs its ID from the Amazon FSx API — to
-  attach an S3 Access Point, for instance — needs retry rather than a fixed timeout.
+  inconsistent delay — and the same lag on deletion blocks the SVM deletion.** Four surfaced in
+  `DescribeVolumes` within minutes while a fifth had not appeared after 28 polls over more than seven
+  minutes, in the same session on the same file system. In the delete direction a volume removed
+  through the ONTAP CLI lingered in the Amazon FSx inventory for over five minutes, and
+  `DeleteStorageVirtualMachine` refused the whole SVM citing volumes that no longer existed;
+  `aws fsx delete-volume` against the stale record is accepted and clears it. Automation should
+  create *and* delete through the Amazon FSx API — mixing the two paths is what stalls.
 - **SMB logon auditing, measured end to end on a workgroup SVM.** `cifs-logon-logoff` does write
   4624 / 4625 / 4634 to EVTX, on an AD-joined SVM and on a workgroup SVM with local users alike.
   Four notes carry it: what each audit category actually emits, why the audit destination filling up
