@@ -136,7 +136,7 @@ N+M 日経過かつ申し立てなし → 棚卸し一覧に載せ、承認を�
 | ユーザーの一元管理 | **SVM ごとに独立**。使い回せない | ドメイン単位 |
 | 監査ログ容量の管理責任 | 棚卸しのために負う | 棚卸し目的では不要 |
 
-**どちらが適しているかはアカウント数と増減の頻度で決まります。** ローカルユーザーが数十以上あり異動に伴う増減が頻繁なら AD 参加、少数で固定的ならワークグループと台帳管理、が目安です。**棚卸しの自動化のために監査ログを常時有効化すると、[容量枯渇によるアクセス断のリスク](../../security-governance/notes/audit-log-space-denies-client-access.md)を運用に持ち込みます。** そのコストと AD 運用のコストを比べる形になります。
+**どちらが適しているかはアカウント数と増減の頻度で決まります。** ローカルユーザーが数十以上あり異動に伴う増減が頻繁なら AD 参加、少数で固定的ならワークグループと台帳管理、が目安です。**棚卸しの自動化のために監査ログを常時有効化すると、[容量枯渇によるアクセス断のリスク](../../security-governance/notes/audit-log-space-and-client-access.md)を運用に持ち込みます。** そのコストと AD 運用のコストを比べる形になります。
 
 ---
 
@@ -167,6 +167,6 @@ N+M 日経過かつ申し立てなし → 棚卸し一覧に載せ、承認を�
 ## 関連
 
 - [SMB ログオン監査 — 4624 は記録される](../../security-governance/notes/smb-logon-audit-event-coverage.md)
-- [監査ログの空き容量不足はクライアントアクセスを止める](../../security-governance/notes/audit-log-space-denies-client-access.md)
+- [監査ログの空き容量不足はクライアントアクセスを止める](../../security-governance/notes/audit-log-space-and-client-access.md)
 - [AD への依存は参加時ではなく生涯続く](ad-dependency-lasts-the-lifetime.md)
 - [SMB を提供できない SVM がある](smb-service-absent-on-early-svms.md)
