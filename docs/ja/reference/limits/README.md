@@ -479,6 +479,62 @@ volume the space limit binds first.** Run as a two-size control.
 |---|---|
 | `SNAPSHOT_ONLY` / 2 → `AUTO` / 45 | 適用された。`Lifecycle` は一貫して `CREATED` |
 
+### 削除したボリュームは 12 時間ぶん容量を保持します / A deleted volume holds its space for 12 hours
+
+**`volume delete` は容量を即座に返しません。** ボリュームは recovery queue に入り、保持期間の経過後に
+初めて容量が解放されます。**検証で作って消す運用では、消したつもりの容量がアグリゲートを占め続けます。**
+
+**`volume delete` does not return the space immediately.** The volume enters a recovery queue and its
+space is reclaimed only after the retention period. **When you create and delete volumes for
+verification, space you believe you released stays consumed.**
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| 既定の保持時間 | **12 時間** | 実測 | 2026-09-01 | `volume delete` の応答本文と `volume recovery-queue show` の `Retention Hours` が一致 |
+| キューの参照 | `volume recovery-queue show` | 実測 | 2026-09-01 | **advanced 特権が必要**。`set -privilege advanced` を前置します |
+| 即時解放 | `volume recovery-queue purge -vserver <svm> -volume <queued-name>` | 実測 | 2026-09-01 | キュー内の名前は `<元の名前>_<数値>` に変わります。元の名前では指定できません |
+
+`volume delete` の応答が手順を案内します。
+
+```text
+Info: Volume "<name>" in Vserver "<svm>" will be marked as deleted and placed in the
+      volume recovery queue. The space used by the volume will be recovered only after
+      the retention period of 12 hours has completed.
+```
+
+> **運用上の注意**: **`purge` は取り消せません。** 保持期間は誤削除からの復旧手段であり、
+> `purge` はそれを放棄する操作です。検証で自分が作ったボリュームだと確認できている場合にのみ
+> 使ってください。**アグリゲートの空き容量が想定より少ないときは、まず recovery queue を
+> 確認してください。**
+>
+> **Operational note**: **`purge` cannot be undone.** The retention period exists to recover from an
+> accidental deletion, and purging gives that up. **When free aggregate space is lower than expected,
+> check the recovery queue first.**
+
+### ONTAP CLI で作ったボリュームの Amazon FSx API への反映は非同期 / Volumes created via the ONTAP CLI appear in the Amazon FSx API asynchronously
+
+**ONTAP CLI で作成したボリュームは Amazon FSx API からも参照できますが、即座ではありません。**
+`DescribeVolumes` に現れるまでの待ち時間は一定ではなく、**同一セッション内で数分と 7 分超が混在しました。**
+
+**Volumes created through the ONTAP CLI do surface in the Amazon FSx API, but not immediately.** The
+delay before `DescribeVolumes` lists them is not consistent — within one session it ranged from a few
+minutes to more than seven.
+
+| 項目 | 値 | 出典 | 検証日 | 備考 |
+|---|---|---|---|---|
+| 数分で反映されたボリューム | 4 件 | 実測 | 2026-09-01 | 同一ファイルシステム、同一セッション |
+| 7 分以上経っても未反映のボリューム | 1 件 | 実測 | 2026-09-01 | 15 秒間隔で 28 回ポーリングして未出現。作成自体は成功しています |
+
+> **自動化への含意**: **ONTAP CLI で作成し、その ID を Amazon FSx API から取得する処理には待機と
+> 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散に負けます。ボリューム ID を
+> 直後に必要とする処理（S3 Access Point のアタッチなど）は、**Amazon FSx API 側でボリュームを作る**
+> ほうが確実です。
+>
+> **Implication for automation**: **a step that creates a volume via the ONTAP CLI and then reads its
+> ID from the Amazon FSx API needs waiting and retry.** A fixed timeout loses to the spread. When the
+> volume ID is needed immediately — attaching an S3 Access Point, for instance — creating the volume
+> through the Amazon FSx API is the more reliable path.
+
 ### SnapLock の不可逆性 / SnapLock irreversibility
 
 | 項目 | 結果 |

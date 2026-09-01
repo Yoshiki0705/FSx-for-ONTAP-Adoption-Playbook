@@ -101,7 +101,18 @@ object store NAS buckets: "amazon-fsx-<volume-id>"
 | AP を再取り付けして正しい順序で外す | 拒否は続きます。**AP のライフサイクルとは独立しています** |
 | `aws fsx delete-volume` | **成功します。** ボリュームとバケットが一緒に消えます |
 
-**運用手順書への含意は 1 つです。S3 AP を取り付けたボリュームの撤去は、AWS 側の API で行ってください。** ONTAP CLI の `volume delete` を前提にした手順書は、この経路では詰まります。ONTAP 側で offline にしてから AWS 側で消す、という順序も不要です（online のまま `aws fsx delete-volume` で通ります）。
+**取り付けが失敗した場合も同じ状態になります。** 2026-09-01 に再現しました。`CreateAndAttachS3AccessPoint` が `AVAILABLE` に到達せず `FAILED` で終わった AP でも、バケットの関連付けは作られていました。
+
+| 確認したこと | 結果 |
+|---|---|
+| AP の `Lifecycle` | **`FAILED`**（同一 SVM の ONTAP S3 サーバが理由。[前節](#aws-ドキュメントに載っていない実測の制約)の併存不可） |
+| `DetachAndDeleteS3AccessPoint` | 成功。`DescribeS3AccessPointAttachments` から消えます |
+| その後の ONTAP `volume delete` | **拒否**。`amazon-fsx-<volume-id>` を理由に挙げます |
+| `aws fsx delete-volume` | **成功** |
+
+**「作成に失敗したのだから何も残っていない」は成立しません。** 失敗した AP のために作ったボリュームを片付ける段で詰まります。検証環境を何度も作り直す場面ほど当たりやすい経路です。
+
+**運用手順書への含意は 1 つです。S3 AP を取り付けた、あるいは取り付けようとしたボリュームの撤去は、AWS 側の API で行ってください。** ONTAP CLI の `volume delete` を前提にした手順書は、この経路では詰まります。ONTAP 側で offline にしてから AWS 側で消す、という順序も不要です（online のまま `aws fsx delete-volume` で通ります）。
 
 ### 見えないものを「無い」と読まないこと
 

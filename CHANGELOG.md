@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"A volume that had an S3 Access Point attached" understated when the bucket association appears.**
+  The association is created even when `CreateAndAttachS3AccessPoint` never reaches `AVAILABLE`:
+  reproduced on 2026-09-01 with an attach that ended `FAILED`, where detaching succeeded, the
+  attachment was gone from `DescribeS3AccessPointAttachments`, and ONTAP still refused to delete the
+  volume. "The create failed, so nothing was left behind" does not hold — which bites hardest in a
+  verification environment that is rebuilt repeatedly.
 - **The auditable-SMB-event list was presented as the whole set when it is one category.** The
   enumeration in `what-the-platform-gives-and-what-stays-yours.md` (open, delete, read/write,
   hard link, rename, unlink) is the file-access category, copied from the AWS table — which omits the
@@ -155,6 +161,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`fsxadmin` locks out, and over REST the lockout is indistinguishable from a stale password.** Both
+  return `401`, so a correct stored credential looks like a wrong one; only SSH says
+  `Account currently locked`. Recovery is the Amazon FSx API password reset — ONTAP's
+  `security login unlock` needs an admin login, which is circular — and the reset cleared the lock.
+  What makes this easy to cause: `fsxadmin` is a separate account per file system but the username is
+  shared, so trying the wrong secret records a failed login against a real account elsewhere. SSH
+  reports the running total as `Unsuccessful login attempts since last login`; REST does not.
+- **A deleted volume holds its space for 12 hours, and the recovery queue is only visible at advanced
+  privilege.** `volume delete` places the volume in a recovery queue under a renamed key
+  (`<name>_<number>`), so aggregate free space does not move until the retention period elapses or
+  `volume recovery-queue purge` is run. Relevant to any create-and-delete verification loop, where the
+  space appears released and is not.
+- **Volumes created through the ONTAP CLI reach the Amazon FSx API asynchronously, with an
+  inconsistent delay.** Four surfaced in `DescribeVolumes` within minutes while a fifth had not
+  appeared after 28 polls over more than seven minutes, in the same session on the same file system.
+  Automation that creates a volume via the CLI and then needs its ID from the Amazon FSx API — to
+  attach an S3 Access Point, for instance — needs retry rather than a fixed timeout.
 - **SMB logon auditing, measured end to end on a workgroup SVM.** `cifs-logon-logoff` does write
   4624 / 4625 / 4634 to EVTX, on an AD-joined SVM and on a workgroup SVM with local users alike.
   Four notes carry it: what each audit category actually emits, why the audit destination filling up
