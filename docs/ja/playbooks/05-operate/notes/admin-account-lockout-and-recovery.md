@@ -35,8 +35,9 @@ GET /api/cluster
 
 > **Evidence**: `verified`（2026-09-01、`ap-northeast-1`、ONTAP `9.18.1P3D1`）。
 > ロック状態の 1 ファイルシステムで、SSH と REST の両方の応答を確認し、`UpdateFileSystem` による
-> パスワード再設定の前後で SSH ログインの成否を測りました。**ロックに至る失敗回数の閾値と、
-> 時間経過による自動解除の有無は測っていません**（後述）。
+> パスワード再設定の前後で SSH ログインの成否を測りました。**閾値と自動解除の有無は、ロールの
+> 設定値を読み取って確認しています**（[後述](#閾値と自動解除の設定値)）— 意図的にロックさせた
+> わけではありません。
 
 ---
 
@@ -44,7 +45,7 @@ GET /api/cluster
 
 **`fsxadmin` はファイルシステムごとに独立したアカウントですが、ユーザー名は共通です。** 複数のファイルシステムを 1 つのアカウントで運用している場合、**認証情報を取り違えると、別のファイルシステムの実アカウントに失敗ログインが記録されます。**
 
-SSH はログイン時に累積回数を表示します。
+**許容される失敗は 5 回で、時間が経っても戻りません**（[設定値](#閾値と自動解除の設定値)）。SSH はログイン時に累積回数を表示します。
 
 ```text
 FsxIdEXAMPLE::> version
@@ -100,12 +101,44 @@ aws secretsmanager put-secret-value --secret-id <secret> \
 
 ---
 
+## 閾値と自動解除の設定値
+
+**アカウントをロックさせずに、ロール設定から読み取れます。** advanced 特権の `-instance` 表示に含まれます。
+
+```text
+FsxIdEXAMPLE::> set -privilege advanced -confirmations off
+FsxIdEXAMPLE::> security login role config show -role fsxadmin -instance
+                  Maximum Number of Failed Attempts: 5
+       Delay after Each Failed Login Attempt (Secs): 4
+Account Lockout Duration (ISO 8601 Duration Format): -
+         (DEPRECATED)-Maximum Lockout Period (Days): 0
+                   Minimum Password Length Required: 8
+                             Password Alpha-Numeric: enabled
+                         Disallow Last 'N' Passwords: 6
+                         Password Expires In (Days): unlimited
+```
+
+| 項目 | 値 | 意味 |
+|---|---|---|
+| `Maximum Number of Failed Attempts` | **5** | この回数の失敗でロックされます |
+| `Delay after Each Failed Login Attempt` | **4 秒** | 失敗するたびに遅延が入ります。総当たりは遅くなりますが、**回数は積まれます** |
+| `Account Lockout Duration` | **未設定（`-`）** | **時間経過による自動解除がありません。** 放置しても戻りません |
+
+**5 回で止まる、そして自動では戻らない。** つまり「どのシークレットか分からないので順に試す」は、2 つのシークレットを持つ環境では容易に到達します。**そして戻す手段はパスワード再設定だけです。**
+
+`Disallow Last 'N' Passwords: 6` があるため、再設定では直近 6 世代と同じ値を使えません。復旧手順を自動化する場合は毎回新しい値を生成してください。
+
+> **注意**: 上記は検証環境（`ap-northeast-1`、ONTAP `9.18.1P3D1`）の値です。**設定値であって
+> 仕様上の固定値ではありません。** 自環境では同じコマンドで確認してください。
+
+---
+
 ## 未確認
 
-- **ロックに至る失敗回数の閾値。** 観測できたのは「7 回の失敗が記録された状態でログインできた」ことと、別のファイルシステムがロック済みだったことだけです。閾値は測っていません
-- **時間経過による自動解除の有無。** ロック状態を放置して再試行する検証はしていません
+- **ロックまでの回数が実際に 5 回であること。** 設定値を読み取っただけで、意図的に 5 回失敗させて確認したわけではありません（共有ファイルシステムのため実施していません）
 - **`vsadmin` が同じ挙動をするか。** 測っていません。`vsadmin` のパスワード再設定は `UpdateStorageVirtualMachine` で可能ですが、ロック解除を兼ねるかは未確認です
 - **ロック解除がパスワード再設定の副作用か、明示的な仕様か。** AWS / NetApp のドキュメントに記載を見つけられていません。**再設定でロックが解除されたのは 1 回の観測です**
+- **`Account Lockout Duration` を設定した場合の挙動。** 既定が未設定であることは確認しましたが、値を入れて自動解除させる検証はしていません
 
 ---
 

@@ -184,6 +184,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The lockout threshold and the absence of an automatic unlock are readable from the role config,
+  without locking anything.** `security login role config show -role fsxadmin -instance` at advanced
+  privilege reports `Maximum Number of Failed Attempts: 5`, `Delay after Each Failed Login Attempt:
+  4 secs`, and `Account Lockout Duration: -` — unset, so a locked account does not come back on its
+  own. Five attempts is easy to reach in an account holding two `fsxadmin` secrets that share a
+  username, and the only way back is the password reset. `Disallow Last 'N' Passwords: 6` also means a
+  recovery routine must generate a fresh value each time.
 - **`fsxadmin` locks out, and over REST the lockout is indistinguishable from a stale password.** Both
   return `401`, so a correct stored credential looks like a wrong one; only SSH says
   `Account currently locked`. Recovery is the Amazon FSx API password reset — ONTAP's
