@@ -19,6 +19,7 @@
 | 3 | 性能劣化の切り分け手順はどうなるか | [切り分け順](notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) |
 | 4 | ONTAP のバージョン更新をどう扱うか | [メンテナンスは 14 日を超えて延期できない](notes/maintenance-cannot-be-deferred.md) |
 | 5 | インシデント時の初動をどう定義するか | [インシデント時の初動](notes/maintenance-cannot-be-deferred.md#インシデント時の初動) |
+| 6 | 管理者アカウントで認証できなくなったとき何を疑うか | [fsxadmin はロックされる。REST では原因が判別できない](notes/admin-account-lockout-and-recovery.md) |
 
 ---
 
