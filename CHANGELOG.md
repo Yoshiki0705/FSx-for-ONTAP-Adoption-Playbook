@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The auditable-SMB-event list was presented as the whole set when it is one category.** The
+  enumeration in `what-the-platform-gives-and-what-stays-yours.md` (open, delete, read/write,
+  hard link, rename, unlink) is the file-access category, copied from the AWS table — which omits the
+  Logon and Logoff rows that the same AWS page's prose describes as a default category. A reader
+  checking whether SMB logons can be audited would have concluded they cannot. The section now names
+  the category it is listing and links the measured logon-event note.
 - **The heading checker's noun allowlist never fired, and removing it is the honest state.** It listed
   問い, 扱い, こと, もの, 選び方 and six more as nouns that the verb pattern might catch. Once `れ` left
   the character class, none of them could match it any more — measured across the whole tree, the
@@ -149,6 +155,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **SMB logon auditing, measured end to end on a workgroup SVM.** `cifs-logon-logoff` does write
+  4624 / 4625 / 4634 to EVTX, on an AD-joined SVM and on a workgroup SVM with local users alike.
+  Four notes carry it: what each audit category actually emits, why the audit destination filling up
+  denies client access, why local-user inventory has no source other than the audit log, and why some
+  SVMs cannot serve SMB at all. The measurements that most change a design: **4624 counts SMB
+  sessions, not logins** — three `net use` / `net use /delete` cycles produced one 4624, because
+  `net use /delete` drops the share mapping and leaves the authenticated session up — and **4634 only
+  appears when the client sends a graceful logoff**, not on connection loss and not on an
+  administrative `vserver cifs session close`. NTFS volumes also need a SACL before any file-access
+  event appears at all, and applying a security descriptor from the ONTAP CLI replaces the DACL,
+  which denied access to a user that had been reading the share moments earlier.
+- **`data-cifs` on a data LIF is decided at SVM creation and cannot be added afterwards.** Three SVMs
+  in the verification account cannot serve SMB: 445 stays closed even though `allowed-protocols`
+  includes `cifs`, `vserver cifs create` succeeds and the CIFS server reports `up`. The fsxadmin role
+  pins `network interface service-policy` to `readonly`, so neither the CLI, the ONTAP REST API, nor
+  the Amazon FSx API can add it — the only route is a new SVM and a data migration. Nine SVMs across
+  two file systems place the change between 2026-06-09 and 2026-06-24; a non-AD SVM created on
+  2026-09-01 does get it, which is what rules out the AD-versus-non-AD explanation.
 - **The noun-phrase heading rule now names the genres it does not apply to.** The rule assumes a
   heading is a label, and three genres break that assumption: chronological narrative, advice whose
   imperative mood *is* the content, and a stated goal or intention. Nominalizing those destroys the
