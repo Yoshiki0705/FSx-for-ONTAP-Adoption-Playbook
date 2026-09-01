@@ -9,19 +9,42 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
-- **"The audit log filling up denies client access" was asserted from the defaults and is wrong at the
-  destination volume.** Measured on a purpose-built throwaway SVM: with the audit destination at 99%
-  and client writes to it already failing with `ENOSPC`, every SMB operation on the *audited* volume
-  succeeded — logon, list, create, read, delete. **And no records were lost**: all 13 events generated
-  during the full period reached the destination once space was freed, timestamps and order intact.
-  The documented failure is real but gated on the **staging** volume, which Amazon FSx does not expose. The
-  note is retitled and the causality corrected: destination utilisation is not itself the fault, it is
-  the only observable precursor to a staging backlog you cannot see — so "make the destination bigger"
-  does not make this safe. Also measured: the audit subsystem still wrote a 68 KB rotation file while
-  client writes were failing, so a shared destination starves its co-tenant before it starves
-  auditing; and there is no audit-specific EMS event, only `monitor.volume.full` /
-  `monitor.volume.nearlyFull` / `wafl.vol.full`. File renamed to `audit-log-space-and-client-access.md`
-  because the old name asserted the thing that turned out not to hold.
+- **"The audit log filling up denies client access" is correct, and an earlier version of this entry
+  said it was not — because that measurement was under-loaded.** The first pass drove five SMB
+  operations against a destination at 99% and concluded access does not stop. Re-measured on the same
+  purpose-built throwaway SVM with a 10,000-file workload: the client created **794** files and was
+  then denied with `{Audit Failed} An attempt to generate a security audit failed.` (Windows system
+  error 606), which also blocks `net use` session setup, not just writes. **The variable is not how
+  full the destination is, it is how many operations occur while consolidation is stalled** — five fit
+  in the buffer, 757 did not. Timeline (UTC 2026-09-01): `wafl.vol.full` at `19:41:06` (audit asked
+  for 1.01 MB, 752 KB free), last record reaching the destination at `19:42:05.63` (422 records,
+  files 1–37), then **4,538 records generated over ~16 s with the client still succeeding and nothing
+  written**, denial at `19:42:22`, still denied at `19:50:05` so it does not self-heal, space freed at
+  `19:51:22`, consolidation resuming ~1 s later, client confirmed working by `19:53:30`. **No records
+  were lost at either load**: the final count is files 1–794, **zero gaps**, original timestamps and
+  order preserved — `-strict-guarantee true` trades availability for completeness exactly as designed.
+  Two things stayed silent throughout: `event log show -message-name *audit*` returned nothing, and
+  `vserver audit show` kept reporting `Auditing State: true` while access was denied, so destination
+  volume utilisation is the only advance warning and it leads the outage by about 65 seconds. **The
+  cause of the stop is explicitly not attributed**: it happened after ~5 MB of buffered records, far
+  below the 2 GB staging volume the documentation describes, and `MDV_AUD_*` is not visible from
+  `fsxadmin`, so staging exhaustion is not established. Also recorded: writes to the destination
+  volume itself produced zero audit records, so there is no self-amplification by default; and reading
+  the 5,246,976-byte EVTX through the ONTAP REST file API in one request returned a **truncated
+  multipart body with no error**, so large reads must be chunked and the size checked afterwards.
+  **The blast radius is the audited path, not the SVM.** A second volume was added to the same SVM
+  with no SACL and shared from the same CIFS server, same data LIF, same local user. With the
+  destination exhausted the audited volume was denied at operation 57 while the non-audited volume
+  completed **5,000/5,000** — and contributed zero audit records, confirming it was genuinely outside
+  the audited set. So auditing an SVM does not make its unaudited shares fragile; it makes the audited
+  ones the first to stop, which is the opposite of convenient when auditing is the compliance
+  requirement. **And the grace period does not reproduce**: the same configuration and workload gave
+  794 successful operations in one run and 56 in the next, because how much buffer the preceding audit
+  activity had already consumed is not observable. Nothing about the window should be designed
+  against. `-client-session-timeout 60` also did not reap an idle local-user SMB session within
+  9m17s, so that setting is not a mechanism for producing a 4634 on idleness.
+  File renamed to `audit-log-space-and-client-access.md` in the earlier pass; the name is neutral on
+  the outcome and stays.
 - **"4634 only on a graceful client logoff" was right but incomplete, and one reading of it was an
   artefact of collecting too early.** Six teardown paths measured: destroying the client SMB session
   (`Restart-Service LanmanWorkstation`) and the client process exiting both emit 4634 — the latter
@@ -31,7 +54,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   about three minutes and still emits nothing, which now rests on observing the session disappear
   rather than on a short window. Four of the six paths are silent. The note records the collection-
   window trap, because reading "`Remove-SmbMapping` produces no 4634" out of a too-early collection is
-  exactly the mistake it invites.
+  exactly the mistake it invites. **A seventh path is now measured: idleness terminates nothing.** With
+  `Client Session Timeout` lowered from the 900 s default to 60 s, a mapped local-user session left
+  completely untouched survived **17m30s** — `idle-time` rising monotonically, so no client request was
+  reaching the server — and emitted no 4634. That is the only session timeout the SVM exposes, so
+  "no activity for N minutes produces a logoff event" does not hold at any setting. Five of the seven
+  paths are silent. The first attempt at this measurement was invalidated by an unrelated
+  `net use * /delete /y` from a concurrent test, which destroyed the session and made timeout
+  indistinguishable from teardown; the note records that too, since an idle test is exactly the kind
+  that other work silently ruins.
 - **"A volume that had an S3 Access Point attached" understated when the bucket association appears.**
   The association is created even when `CreateAndAttachS3AccessPoint` never reaches `AVAILABLE`:
   reproduced on 2026-09-01 with an attach that ended `FAILED`, where detaching succeeded, the
