@@ -40,7 +40,15 @@ AGENT_DOCS_DIR = ROOT / "docs" / "agent"
 
 # Budgets in bytes. Set close to current size so growth is a decision, not a drift.
 # Raising one is allowed; doing it silently is what this prevents.
-AGENTS_MAX_BYTES = 30_000
+#
+# Raised from 30,000 to 31,000 on 2026-09-02. The file had reached 29,992 — eight bytes of
+# headroom — so adding the missing `workshop-studio/` line to the repository layout meant either
+# shaving an unrelated comment to pay for it or bumping the ceiling. The former makes each future
+# edit a scavenger hunt and muddies its diff with cosmetic churn; this comment records the latter
+# as the deliberate decision the tool is built to demand. 31,000 restores working room without
+# inviting sprawl: the file is read every turn, so the next approach at the ceiling is still a
+# prompt to move material to docs/agent/, not to raise this again by reflex.
+AGENTS_MAX_BYTES = 31_000
 LOADER_MAX_BYTES = 2_000  # one steering file
 STEERING_MAX_TOTAL = 6_000  # all steering files together
 

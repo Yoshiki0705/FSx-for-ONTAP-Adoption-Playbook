@@ -9,6 +9,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`AGENTS.md`'s repository layout omitted `docs/ja/workshop-studio/`.** Six files live there, and the
+  root README, `ja/navigation.md`, and `en/navigation.md` all link to it, but an agent reading the
+  layout to orient itself would not know the subtree exists. Added one line. The file had eight bytes
+  of headroom, so the context budget was raised 30,000 → 31,000 rather than shaving an unrelated
+  comment to pay for the line — the reasoning is recorded at the constant in
+  `scripts/check_agent_context_budget.py`, which is the deliberate, visible bump the tool is built to
+  require. The ceiling still sits close enough that the next approach to it is a prompt to move
+  material to `docs/agent/`, not to raise it again by reflex.
+
 - **The `(日本語)` marker rule was stated, unenforced, and half-observed.** `docs/agent/localization.md`
   promises that a Japanese-only note is linked from English with a marker "so a missing translation is
   a labelled link rather than a broken promise". Nothing checked it, so it held in module README
