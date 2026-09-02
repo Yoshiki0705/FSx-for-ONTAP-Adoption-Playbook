@@ -9,6 +9,10 @@ lang: ja
 
 # IaC の境界は好みではなく API の表面で決まる
 
+<!-- lang-switcher:start -->
+🌐 [日本語](what-iac-cannot-reach.md) | [English](../../../../en/playbooks/04-build/notes/what-iac-cannot-reach.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
 
 ---
@@ -38,7 +42,7 @@ lang: ja
 
 ---
 
-## 実測で見つかった 3 つの境界
+## 実測で見つかった境界
 
 **いずれも「テンプレートや AWS CLI から届かない」ことを実際に試して確認しました。**
 
@@ -49,12 +53,12 @@ lang: ja
 | **ボリューム削除の失敗は応答では分かりません**（理由の取得先は AWS API 内にあります） | `delete-volume` は `DELETING` に入ったのち `CREATED` に戻り、**応答にはエラーが含まれません。** `AdministrativeActions` も `null` です。ただし**理由は `DescribeVolumes` の `LifecycleTransitionReason` に入ります**。ONTAP 側は必須ではありません |
 | **`UpdateVolume` は非同期で痕跡を残さない** | 反映は 30 秒では未確認、120〜180 秒で確認。**`AdministrativeActions` には記録されません**（`null`）。連続実行は `There is an update already in progress.` で拒否されます |
 
-**3 つ目が検証の設計に効きます。** API が成功を返しても反映されたことにはならず、記録も残らないため、**`DescribeVolumes` を読み直す以外に確認手段がありません。** この検証では短い待ち時間で状態を読み、一度「無視された」と誤診しました。
+**`UpdateVolume` の非同期性が検証の設計に効きます。** API が成功を返しても反映されたことにはならず、記録も残らないため、**`DescribeVolumes` を読み直す以外に確認手段がありません。** この検証では短い待ち時間で状態を読み、一度「無視された」と誤診しました。
 
 > **区分**: `verified`（検証日 2026-08-06、`ap-northeast-1`、`SINGLE_AZ_1`）。
 > 記録は [上限値・クォータ](../../../reference/limits/) にあります。
 
-**構築後の検証を自動化するなら、この 3 つ目を前提に組んでください。** 「API が 200 を返したか」ではなく「読み直して意図した値になっているか」を判定条件にします。
+**構築後の検証を自動化するなら、この非同期性を前提に組んでください。** 「API が 200 を返したか」ではなく「読み直して意図した値になっているか」を判定条件にします。
 
 ---
 
@@ -254,3 +258,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](what-iac-cannot-reach.md) | [English](../../../../en/playbooks/04-build/notes/what-iac-cannot-reach.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

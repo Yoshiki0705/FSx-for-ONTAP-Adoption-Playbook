@@ -104,7 +104,7 @@ What has to be established is not technical feasibility but **whether the organi
 
 **Items 3 and 5 are the easiest to overlook, and discovering them late means rebuilding the plan.**
 
-The pitfalls of counting itself — counting bytes is not counting files — are in [Free space does not mean you can still write](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語).
+The pitfalls of counting itself — counting bytes is not counting files — are in [Free space does not mean you can still write](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md).
 
 ---
 
@@ -201,7 +201,7 @@ If the objective is only search, confirm this before evaluating a migration.
 - [Migration Method Decision Tree](../../../../ja/reference/decision-trees/migration-method.md) (日本語) — Method selection when the source is ONTAP or an on-premises NAS
 - [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — From an on-premises NAS, ACLs can be carried. From SaaS, they have to be created
 - [The rollback window closes the moment a client writes](where-the-rollback-window-closes.md) — Cutover and rollback design
-- [Free space does not mean you can still write](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語) — Pitfalls of counting
+- [Free space does not mean you can still write](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Pitfalls of counting
 - [FSx for ONTAP S3 access points are not "S3 you can use as S3"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) — Constraints when choosing it as the write path
 - [Evidence Classification Policy](../../../evidence-policy.md)
 

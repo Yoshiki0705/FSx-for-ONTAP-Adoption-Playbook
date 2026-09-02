@@ -9,6 +9,10 @@ lang: ja
 
 # デプロイタイプは一度しか決められない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](deployment-type-is-decided-once.md) | [English](../../../../en/playbooks/02-design/notes/deployment-type-is-decided-once.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 02 — 設計](../README.md)
 
 ---
@@ -207,3 +211,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 02 — 設計](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](deployment-type-is-decided-once.md) | [English](../../../../en/playbooks/02-design/notes/deployment-type-is-decided-once.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

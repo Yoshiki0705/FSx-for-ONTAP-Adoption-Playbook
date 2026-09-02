@@ -176,7 +176,7 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 - [Playbook 03 — Migration](../README.md) — Module hub
 - [Migration Method Decision Tree](../../../../ja/reference/decision-trees/migration-method.md) — Method selection and version compatibility
 - [ACL Preservation Is a Permissions Problem, Not a Tooling Problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — Post-migration ACL comparison steps
-- [Running Out of Space Despite Spare Capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — What to count before migration
+- [Running Out of Space Despite Spare Capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — What to count before migration
 - [Having Snapshots and Being Able to Recover Are Different Things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — The destination is not a backup target
 - [Monitoring Fails on Averages](../../05-operate/notes/monitoring-fails-on-averages.md) — Diagnosing slow transfers
 - [Evidence Classification Policy](../../../evidence-policy.md)

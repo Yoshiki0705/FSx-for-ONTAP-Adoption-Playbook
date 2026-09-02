@@ -9,6 +9,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A section heading counted three findings and the table under it listed four.** In
+  `what-iac-cannot-reach.md`, the heading said 3 while the table carried four rows, and the sentence
+  that followed referred to "the third" while describing the fourth — the asynchrony of
+  `UpdateVolume`. Found while translating, because a translation has to decide which item the sentence
+  points at. The count is dropped from the heading and the finding is named instead, so the reference
+  cannot drift again when a row is added. No inbound link cited that anchor.
+
 - **"Some SVMs cannot serve SMB, and only recreating the SVM fixes it" was wrong on the cause, the
   remedy and the indicator.** The vendor reproduced the behaviour and identified it: `data-cifs` is
   granted to **every** SVM at creation regardless of AD membership, and it is **removed when a CIFS
@@ -329,6 +336,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the pinned 0.16.1 on `PATH`).
 
 ### Added
+
+- **English counterparts for the three remaining settled primary notes.**
+  `counting-bytes-is-not-counting-files.md` (Assess Q1), `deployment-type-is-decided-once.md`
+  (Design Q1), and `what-iac-cannot-reach.md` (Build Q1). With the previous pair, **every module whose
+  first question has a settled answer now has one in English.** `data-utilization` Q1 is still
+  Japanese-only on purpose: its primary note changed the same day, so it fails the settled-content
+  condition, and substituting a different note would answer a question nobody asked.
+  - Twenty inbound links moved off their Japanese fallback, with **eleven Japanese anchors mapped to
+    English headings** across three notes plus two outbound targets translated earlier.
+  - **The bulk-prefix mistake from the previous batch is now structurally avoided.** File links are
+    rewritten one filename at a time; the shared `notes/` directory link is rewritten unconditionally,
+    because a directory link cannot 404 once the English directory exists. That split is what the
+    earlier three broken links were teaching.
+  - Also fixed while translating: the relinking pass rewrote the *new* English file's own switcher,
+    pointing its 日本語 link into English. Regenerating with `sync_lang_switcher.py` restores it, but
+    the pass now skips its own target.
 
 - **English counterparts for two notes that were the primary answer to a module's first question.**
   `security-style-and-permission-evaluation.md` (Multiprotocol & Identity, question 1) and

@@ -92,7 +92,7 @@ To lower the bill, you need to **reduce provisioned capacity** by the amount fre
 | Duplicate data in backups | Backups are incremental — no double billing |
 | Minimum usage fee or setup fee | None |
 
-**Estimating Multi-AZ with a separate inter-AZ transfer charge overstates its cost.** For the actual decision factors, the throughput ceiling and HA pair constraints in [Deployment type can only be chosen once](../../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md#multi-az-と-single-az-の判断) carry more weight.
+**Estimating Multi-AZ with a separate inter-AZ transfer charge overstates its cost.** For the actual decision factors, the throughput ceiling and HA pair constraints in [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md#choosing-between-multi-az-and-single-az) carry more weight.
 
 ---
 
@@ -102,7 +102,7 @@ Snapshots consume **volume capacity**, not capacity pool. And when a Snapshot ho
 
 Note that Snapshots are not always the cause. **Immediately after deleting large amounts of data or directories, free space takes time to update.** Blocks are not returned to free space until the block ownership calculation process completes. This is expected behavior and does not affect volume performance. **Before attributing "deleted but not freed" to Snapshots, wait and re-check.**
 
-Retention policies directly affect capacity estimates. The relationship with limits is described in [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods), and inode consumption is in [Running out of space despite available capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#inode-を消費する-snapshot).
+Retention policies directly affect capacity estimates. The relationship with limits is described in [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods), and inode consumption is in [Running out of space despite available capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#snapshots-that-consume-inodes).
 
 ---
 
@@ -213,11 +213,11 @@ Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space"
 ## Related documents
 
 - [Domain — Cost](../README.md) — This module's hub
-- [Deployment type can only be chosen once](../../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
+- [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
 - [Throughput is not determined by a single setting](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA pair addition raises minimum throughput
 - [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Tiering and background task behavior
 - [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — Retention design and capacity
-- [Running out of space despite available capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Inodes and Snapshots
+- [Running out of space despite available capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Inodes and Snapshots
 - [Limits and quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 
