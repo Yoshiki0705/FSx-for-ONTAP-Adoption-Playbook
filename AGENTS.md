@@ -132,6 +132,7 @@ gate after that last edit.
 │   │   ├── case-studies/
 │   │   │   ├── _template/case-study.md   # Anonymization-enforcing template
 │   │   │   └── README.md
+│   │   ├── workshop-studio/         # Workshop Studio timings + module mapping (ja only)
 │   │   └── reference/
 │   │       ├── decision-trees/      # Mermaid flowcharts
 │   │       ├── comparison/          # Option matrices (symmetric trade-offs)
