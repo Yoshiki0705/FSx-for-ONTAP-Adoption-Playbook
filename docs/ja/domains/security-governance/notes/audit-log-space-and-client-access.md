@@ -299,7 +299,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 | 保持 | 要件に合わせて `-retention-duration` か `-rotate-limit` を**明示** | 既定はどちらも無制限で、**放置すれば必ずアクセス断に至ります** |
 | `-rotate-size` | 100 MB 程度 | 1 ファイルの肥大を避け、回収と解析を扱いやすくします |
 | 宛先ボリュームの使用率アラーム | **有効化と同時に、95% で入れる** | 予告信号はこれだけですが、**99% から停止までは実測で 19〜65 秒**しかありません |
-| 自動拡張（`-autosize`） | 併せて検討 | **19 秒では人手もアラーム経由の自動化も間に合いません** |
+| 自動拡張（ONTAP CLI の `volume autosize`） | 併せて検討 | **19 秒では人手もアラーム経由の自動化も間に合いません。** 使用率のしきい値で自動的にボリュームを拡張します（FSx for ONTAP の既定である FlexVol で利用可、AWS サポート確認済み・2026-09-02） |
 | アグリゲートの空き | 併せて監視 | ステージング領域の代理指標 |
 | `-strict-guarantee` | **既定 `true` のまま**を基本にする | 後述 |
 
@@ -432,6 +432,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 - NetApp: [`vserver audit modify`](https://docs.netapp.com/us-en/ontap-cli/vserver-audit-modify.html) — `-rotate-limit` と `-retention-duration` が択一である旨の記載
 - NetApp: [ONTAP SVM の監査設定を計画する](https://docs.netapp.com/ja-jp/ontap/nas-audit/plan-auditing-config-concept.html) — 既定のログサイズ 100 MB、保存先は専用ボリュームまたは qtree
 - AWS: [FSx for ONTAP ボリュームメトリクス](https://docs.aws.amazon.com/ja_jp/fsx/latest/ONTAPGuide/volume-metrics.html) — `StorageUsed` / `StorageCapacityUtilization`
+- AWS: [自動サイズ調整の有効化](https://docs.aws.amazon.com/ja_jp/fsx/latest/ONTAPGuide/enable-volume-autosizing.html) — `volume autosize`（FlexVol）による使用率しきい値での自動拡張
 
 ---
 
