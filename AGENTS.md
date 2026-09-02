@@ -71,6 +71,7 @@ make help          # List all targets
 make lint            # markdownlint + frontmatter schema validation
 make i18n-check      # Tier 1 cross-language section parity
 make switcher-check  # Language switcher blocks match what exists on disk
+make ja-markers      # English links into Japanese-only pages carry (日本語)
 make audit           # Pre-publication audit (naming / neutrality / PII / internal IDs)
 make secrets         # gitleaks scan of the worktree (full history: gitleaks workflow)
 make links           # Broken link check (internal links offline, external opt-in)

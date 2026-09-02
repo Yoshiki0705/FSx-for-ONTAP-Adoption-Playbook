@@ -192,7 +192,7 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 - [Playbook 05 — Operate](../README.md) — this module's hub
 - [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — how the limits themselves are set. The FlexVol-to-aggregate relationship is there
 - [Having Snapshots and being able to recover are different things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — retention design is the same problem as capacity design
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) — includes an item for confirming monitoring is in place
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — includes an item for confirming monitoring is in place
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 

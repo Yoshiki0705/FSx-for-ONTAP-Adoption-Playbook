@@ -114,7 +114,7 @@ Needing to exceed it — large-scale EDA, seismic analysis, clustered databases,
 
 ## Irreversible items that are not on the checklist
 
-[Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) covers the irreversible items at volume and SVM level. **File-system-level irreversible items are this note's scope.**
+[Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) (日本語) covers the irreversible items at volume and SVM level. **File-system-level irreversible items are this note's scope.**
 
 | Item | Changeable | If you want to change it |
 |---|---|---|
@@ -205,7 +205,7 @@ Step 5 **belongs in a test environment.** An added HA pair cannot be removed.
 - [Playbook 02 — Design](../README.md) — this module's hub
 - [Throughput is not determined by a single setting](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — sharing at HA pair level and the FlexVol constraint
 - [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — the inventory items that feed this design
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — irreversible items at volume and SVM level
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) (日本語) — irreversible items at volume and SVM level
 - [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md) — migration routes when changing the deployment type
 - [Having Snapshots and being able to recover are different things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — what AZ and region failures cover
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates

@@ -135,7 +135,7 @@ The last row matters operationally. **If transfers are slower than expected, the
 | 3 | Time the full `quiesce` → `break` → mount sequence | **Actual downtime.** A measurement, not an estimate |
 | 4 | Add `Last Transfer End Timestamp` verification to the runbook | Prevents cutting over with stale data |
 | 5 | Confirm the source is intact after break | The premise for rollback. Verify you can actually read it |
-| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自環境での確認手順) |
+| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自環境での確認手順) (日本語) |
 | 7 | Run the rollback procedure once in the test environment | **Whether the written procedure actually works.** Do not try it for the first time in production |
 
 Many migration plans skip step 7. **A rollback procedure — even one you hope never to use — must be verified to work.**
@@ -175,7 +175,7 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 
 - [Playbook 03 — Migration](../README.md) — Module hub
 - [Migration Method Decision Tree](../../../../ja/reference/decision-trees/migration-method.md) — Method selection and version compatibility
-- [ACL Preservation Is a Permissions Problem, Not a Tooling Problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — Post-migration ACL comparison steps
+- [ACL Preservation Is a Permissions Problem, Not a Tooling Problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — Post-migration ACL comparison steps
 - [Running Out of Space Despite Spare Capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — What to count before migration
 - [Having Snapshots and Being Able to Recover Are Different Things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — The destination is not a backup target
 - [Monitoring Fails on Averages](../../05-operate/notes/monitoring-fails-on-averages.md) — Diagnosing slow transfers
