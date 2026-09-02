@@ -9,6 +9,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The localization tiers did not classify `case-studies/` or `workshop-studio/`.** Both sit under
+  `docs/<lang>/` with a `README.md`, which reads as Tier 2 — yet neither is a module whose question
+  list is the index, so requiring English through Tier 2 would have been wrong. The tier table now
+  places both explicitly in Tier 3, and records that the `case-studies/README.md` already in English is
+  there as reachable navigation, not because the tier demands the tree. This matches what
+  `check_i18n_parity.py` already enforces (its Tier 2 scan covers only `playbooks` and `domains`);
+  the rule was correct and unwritten, which is what invited re-deciding it each pass. No files moved
+  or were translated — the remaining Japanese-only material under these two trees is Tier 3 and
+  optional by design.
+
 - **`AGENTS.md`'s repository layout omitted `docs/ja/workshop-studio/`.** Six files live there, and the
   root README, `ja/navigation.md`, and `en/navigation.md` all link to it, but an agent reading the
   layout to orient itself would not know the subtree exists. Added one line. The file had eight bytes

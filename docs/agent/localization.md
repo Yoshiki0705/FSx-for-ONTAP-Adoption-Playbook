@@ -26,7 +26,15 @@ Three tiers, enforced by `make i18n-check`:
 |---|---|---|
 | 1 | Root `README.md` + `docs/<lang>/README.md`, and the guides listed in `docs/i18n-manifest.txt` | per manifest; default all 8 |
 | 2 | Module `README` under `docs/<lang>/{playbooks,domains}/` | ja, en |
-| 3 | `notes/`, `checklists/`, `reference/` | ja; en optional per file, and gated once it exists |
+| 3 | `notes/`, `checklists/`, `reference/`, and everything under `case-studies/` and `workshop-studio/` | ja; en optional per file, and gated once it exists |
+
+`case-studies/` and `workshop-studio/` sit under `docs/<lang>/` but are Tier 3, not Tier 2: their
+`README.md` is a section index rather than a module's question list, and the files beneath it are not
+the primary answer to any Tier 2 question. So the `case-studies/README.md` that already exists in
+English is there because it is reachable navigation, not because the tier requires the tree — the
+findings and workshop material below it stay Japanese-only, linked with a `(日本語)` marker, until a
+specific file earns translation on its own merits. This is written down because the tree shape
+(`README.md` under `docs/<lang>/`) otherwise reads as Tier 2 and invites re-litigating it each time.
 
 ## What English covers, and what it deliberately does not
 
