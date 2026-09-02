@@ -218,6 +218,18 @@ Windows から `net use` と `net use /delete` を 3 回繰り返した結果で
 
 **「監査を有効にしたのにログが空」の最も多い原因はここです。** AWS のドキュメントには監査ポリシー設定の手順がありますが、設定しない場合にイベントが 0 件になるという因果は明示されていません。
 
+> **仕様上の位置づけに関する注意**: この点をドキュメントに明記してほしいと AWS サポートに要望したところ、
+> **SACL の設定は現行の記載でも "You need to configure audit policies on the files and folders that you
+> want audited" として必須であり、必須設定が不備である場合の具体的な動作は仕様としてお約束している
+> ものではない**、という回答でした（2026-09-02）。
+>
+> **つまり上の「0 件」は実測された挙動であって、保証された挙動ではありません。**
+> 「イベントが 0 件だからアクセスが無かった」と読む監査ロジックを組まないでください。
+> **0 件は「アクセスが無かった」「SACL が無い」「カテゴリが無い」のいずれとも整合します。**
+> AWS サポートは、想定どおり記録されない場合に SACL 設定の不備を疑う手がかりをトラブルシューティング
+> 項目として追加できないか、および CLI での SACL 設定が DACL を置き換える点の注意喚起を、担当部署へ
+> フィードバックするとしています。
+
 **そして ONTAP CLI でセキュリティ記述子を適用すると、SACL だけでなく DACL も置き換わります。**
 
 ```text
@@ -270,8 +282,9 @@ NT_STATUS_ACCESS_DENIED listing \*
 
 ## 参照した一次情報
 
-- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html)
+- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) — SACL については [Configuring file and folder audit policies](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html#file-audit-policies)
 - NetApp: [SMB events that ONTAP can audit](https://docs.netapp.com/us-en/ontap/nas-audit/smb-events-audit-concept.html)
+- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応。**AWS のドキュメントにはこの対応表が無く、AWS サポートはこの PDF への導線を追加する方向で検討中です**（2026-09-02）
 
 ---
 

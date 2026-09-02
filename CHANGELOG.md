@@ -9,6 +9,49 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"There is no audit-specific EMS event" was a statement about the pattern I searched, not about
+  ONTAP.** The query was `event log show -message-name *audit*`, and `adt.stgvol.*` cannot match it.
+  ONTAP does define `adt.stgvol.nospace` (severity `EMERGENCY`) for staging exhaustion, plus
+  `monitor.volume.full` / `nearlyFull` against `MDV_aud_*` — surfaced by AWS Support in reply to the
+  documentation case. **Re-queried with `adt.*` and `*stgvol*`: still zero across both denials**, in a
+  log window that still holds the `monitor.volume.full` from each, so the absence is not retention
+  expiry. That inverts what the finding is worth: it is now positive evidence *against* staging
+  exhaustion as the cause, since the event that would announce it never fired and `MDV_aud_*` never
+  reached 95% either. The note keeps the mechanism unattributed and now says why. Also re-measured:
+  across the whole window the only other events are an unrelated workload's `secd.nfsAuth.noNameMap`
+  every ~5.5 min, and **nothing records the client denial itself**. The advance warning does not
+  reproduce any better than the grace window did — 65 s in the first run, **19 s in the second, where
+  `nearlyFull` (95%), `wafl.vol.full` and `full` (99%) all landed in the same second.** Alarming at
+  95% to buy reaction time assumes a gap that is not always there.
+- **"No AWS or NetApp documentation covers the deletion order for a volume that had an S3 Access
+  Point" now has a vendor answer.** AWS Support reproduced the orphaned association and explained it:
+  the bucket is `amazon-fsx-fsvol-<volume ID>`, it survives both detach and a failed create, and its
+  removal is part of **Amazon FSx's** volume-deletion path — which is why ONTAP CLI refuses and
+  `aws fsx delete-volume` works. There is no user-facing path to delete the bucket on its own. The
+  error wording is emitted by ONTAP, so Amazon FSx cannot change it. The note is re-tiered
+  accordingly: behaviour `verified`, mechanism from Support, and **still absent from public
+  documentation** — a submitted feedback is not a published one.
+- **The note referenced an object-store-server conflict in a section that never stated it.** That gap
+  is closed with the constraint itself plus what AWS Support added: it applies **per SVM**, there is
+  no workaround inside the same SVM, and the way around it is to attach the access point to a volume
+  on a different SVM (which needs `vserver add-protocols -protocols s3`). The mechanism is that
+  attaching creates a management object store server on the volume's SVM, so an existing one collides.
+  **The workaround does not cover the case that led here**: an audit destination must sit in the
+  audited volume's own SVM namespace, so reading EVTX through an access point cannot be moved to
+  another SVM. Either drop the existing object store server or read the logs another way — the ONTAP
+  REST file API works without mounting. Raised on the case as well, since documenting only "use a
+  different SVM" would not tell an operator that the audit-log use case is excluded.
+- **"SACL missing means zero events" is measured behaviour, not a guarantee.** AWS Support declined to
+  document it as such: the SACL requirement is already stated ("You need to configure audit
+  policies…"), and behaviour when a required setting is absent is not a specified contract. Recorded
+  inline, because the consequence is concrete — **zero events is equally consistent with "no access",
+  "no SACL" and "no category", so no audit logic may read it as "nobody touched this".**
+- **`is not a recognized command` for a role-restricted command is ONTAP behaviour rather than
+  anything specific to FSx for ONTAP.** Same wording as a misspelled command, so it invites debugging
+  the spelling; the NetApp KB
+  attributing it to the role or privilege level is now cited where the restriction is documented, with
+  the check that actually answers it (`security login role show -role <role>`).
+
 - **"The audit log filling up denies client access" is correct, and an earlier version of this entry
   said it was not — because that measurement was under-loaded.** The first pass drove five SMB
   operations against a destination at 99% and concluded access does not stop. Re-measured on the same

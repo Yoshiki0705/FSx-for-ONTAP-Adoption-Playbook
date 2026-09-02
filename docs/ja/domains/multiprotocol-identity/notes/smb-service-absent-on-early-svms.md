@@ -51,6 +51,17 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 **特権不足ではありません。** 同じ経路で `set -privilege advanced` は機能します（advanced 専用コマンドが通ることを確認済み）。ロールが当該コマンドファミリを `readonly` にしているためです。
 
+> **エラー文言に関する補足**: ロールで制限されたコマンドを CLI で叩くと、権限の話ではなく
+> **`"<command>" is not a recognized command`** が返ります。**存在しないコマンドを打ったときと
+> 同じ文言なので、綴りを疑って時間を使うことになります。** これは FSx for ONTAP 固有ではなく
+> ONTAP の挙動で、NetApp KB
+> [Command fails with "Command is not recognized command"](https://kb-ja.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
+> が原因を「正しいロールまたは権限レベル `advanced` でコマンドを実行できなかった」と説明しています
+> （AWS サポートからも同じ切り分けの案内あり、2026-09-02）。**綴りが正しいのに認識されないときは、
+> `security login role show -role <role>` で当該コマンドファミリの `access` を確認してください。**
+
+**なお `fsxadmin` で `readonly` / `none` になるコマンドファミリの一覧は公開されていません。** AWS サポートに一覧の掲載を要望済みで、改善要望として検討する旨の回答を得ています（2026-09-02）。**現時点では上記のとおり自環境で `security login role show` を読むしかありません。**
+
 **FSx for ONTAP の API / コンソールにも、既存 SVM の SMB を有効化する操作がありません。** 回避策は**新しい SVM を作ってデータを移行する**ことだけです。
 
 > **Evidence**: `verified`（2026-09-01、`ap-northeast-1`、ONTAP `9.18.1P3D1`）。
