@@ -44,7 +44,7 @@ rest gives a reading order.
 | Source is ONTAP (on premises or another cloud) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) → [Design](playbooks/02-design/) |
 | Source is a Windows file server (SMB, NTFS ACLs must be preserved) | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Multiprotocol identity](domains/multiprotocol-identity/) |
 | Source is a non-ONTAP NAS | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) |
-| NFS and SMB against the same data | [Security style determines the permission model](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [Security and governance](domains/security-governance/) |
+| NFS and SMB against the same data | [Security style determines the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [Security and governance](domains/security-governance/) |
 | Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
 | Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |

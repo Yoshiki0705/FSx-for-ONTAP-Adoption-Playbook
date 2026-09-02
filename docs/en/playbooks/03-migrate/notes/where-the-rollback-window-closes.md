@@ -120,7 +120,7 @@ To avoid issues with Snapshot policy replication, **the `preserve` parameter is 
 | Destination volume size | To keep it the same as or slightly larger than the source, enabling autogrow with `volume autosize` is recommended |
 | Contention with background tasks | Client traffic is prioritized, so transfers slow during peak hours |
 
-The last row matters operationally. **If transfers are slower than expected, the cause may be prioritization, not bandwidth.** The mechanism is described in [Monitoring fails on averages](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md).
+The last row matters operationally. **If transfers are slower than expected, the cause may be prioritization, not bandwidth.** The mechanism is described in [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md).
 
 ---
 
@@ -178,7 +178,7 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 - [ACL Preservation Is a Permissions Problem, Not a Tooling Problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — Post-migration ACL comparison steps
 - [Running Out of Space Despite Spare Capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — What to count before migration
 - [Having Snapshots and Being Able to Recover Are Different Things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — The destination is not a backup target
-- [Monitoring Fails on Averages](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Diagnosing slow transfers
+- [Monitoring Fails on Averages](../../05-operate/notes/monitoring-fails-on-averages.md) — Diagnosing slow transfers
 - [Evidence Classification Policy](../../../evidence-policy.md)
 
 ---
