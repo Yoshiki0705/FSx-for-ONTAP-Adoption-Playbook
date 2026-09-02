@@ -9,6 +9,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`CONTRIBUTING.md` still told contributors that a missing tool means a skipped check.** It called
+  `markdownlint-cli2` optional and said the gate skips when it is absent, which stopped being true
+  when every gate was changed to fail instead — so the quickstart promised the one behaviour the
+  gates were rewritten to remove. It now states that all three external tools are required, and
+  carries the toolchain detail that `AGENTS.md` has no room for: the pinned `ruff`, how to bump it,
+  and the non-virtualenv route. **Including that a `uv`-created `.venv` has no `pip`**, so the
+  documented `.venv/bin/python -m pip install -r requirements-dev.txt` fails with
+  `No module named pip` — hit while bumping `ruff` to 0.16.5, which is exactly when a contributor
+  first needs the command to work.
+
 - **"There is no audit-specific EMS event" was a statement about the pattern I searched, not about
   ONTAP.** The query was `event log show -message-name *audit*`, and `adt.stgvol.*` cannot match it.
   ONTAP does define `adt.stgvol.nospace` (severity `EMERGENCY`) for staging exhaustion, plus
