@@ -9,6 +9,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The audit note's `-autosize` row named a parameter but not the command.** Following up on the
+  documentation case, AWS Support confirmed FlexVol autosizing is available on FSx for ONTAP via the
+  ONTAP CLI `volume autosize`, which is the actionable form — the row now names the command and links
+  the AWS page, so a reader can act on "grow it before it fills" rather than just be told to consider
+  it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
+  measured at 19–65 seconds and does not reproduce, so detect-then-react cannot be relied on.
+
 - **The localization tiers did not classify `case-studies/` or `workshop-studio/`.** Both sit under
   `docs/<lang>/` with a `README.md`, which reads as Tier 2 — yet neither is a module whose question
   list is the index, so requiring English through Tier 2 would have been wrong. The tier table now
