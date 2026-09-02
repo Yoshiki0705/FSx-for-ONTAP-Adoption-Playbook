@@ -87,7 +87,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 | `19:51:23` | **統合再開。** 5,246,976 バイトの EVTX がローテーション出力される |
 | `19:53:30` | **クライアント復旧を確認**（5 ファイル作成＋読み出しが成功） |
 
-**宛先が満杯だと判定されてから停止までは約 65 秒、そのうちクライアントが無記録で成功し続けたのは約 16 秒でした。** ただしこれは**このワークロードの操作レートに依存する値**であり、時間ではなく操作量で決まります。
+**宛先が満杯だと判定されてから停止までは約 65 秒、そのうちクライアントが無記録で成功し続けたのは約 16 秒でした。** ただしこれは**このワークロードの操作レートに依存する値**であり、時間ではなく操作量で決まります。2 回目はこの猶予が **19 秒**でした。
 
 復旧の正確な瞬間は挟み込めていません。**統合の再開は空き回復から約 1 秒**（ローテーションファイルのタイムスタンプ）、**クライアント復旧は 19:53:30 までに成立**（それより早い可能性があります）。
 
@@ -157,19 +157,33 @@ gaps in range    : 0
 **この一致が停止の閾値と関係するかは切り分けられていません。** NetApp のドキュメントはステージングボリュームがアグリゲート単位で 2 GB 確保されると記載していますが、**今回停止したのは 5 MB 相当を吸収した時点であり、2 GB には遠く及びません。** したがって**停止の直接原因をステージング枯渇と断定できません。** 測れたのは外から見える挙動だけです。
 
 - ステージングボリューム `MDV_AUD_*` は `fsxadmin` から参照できないため、占有量を直接確認できません
-- 停止時に監査固有の EMS イベントは出ないため、ONTAP 側の理由も読み取れません
 - 滞留量・経過時間・ローテーションサイズのどれが閾値かを分離する試験は行っていません
+
+**さらに、ステージング枯渇を否定する側の証拠が 1 つあります。** ONTAP にはステージング枯渇を示す専用の EMS イベント `adt.stgvol.nospace`（severity `EMERGENCY`）が定義されています。**2 回の停止を通じて、このイベントは 1 件も記録されませんでした。**
+
+```text
+FsxIdEXAMPLE::> event log show -message-name adt.stgvol*
+There are no entries matching your query.
+
+FsxIdEXAMPLE::> event log show -message-name adt.*
+There are no entries matching your query.
+```
+
+同じログには 2 回の枯渇試験の `monitor.volume.full` が両方とも残っているため、**保持期間の都合で消えたのではありません。** また `MDV_aud_*` に対する `monitor.volume.full` / `monitor.volume.nearlyFull` も記録されていません。**したがって少なくとも今回の 2 回については、停止時点でステージングは 95% にも達していなかったと読めます。** 停止の直接原因は別にあります。
+
+> **検出パターンに関する注意**: 最初にこれを調べたとき、私が使ったのは
+> `event log show -message-name *audit*` だけでした。**`adt.stgvol.*` はこのパターンに
+> 一致しません。** 「監査に関する EMS は無い」という結論は、実際には「`*audit*` に一致する
+> イベントは無い」でした。上の 0 件は `adt.*` と `*stgvol*` で取り直したものです。
+> **何を検索したかは結果の一部です。**
 
 ---
 
 ## 観測できる信号
 
-**監査固有の EMS イベントはありませんでした。** 停止の前後を通じて 0 件です。
+**2 回の停止を通じて記録されたのは、宛先ボリュームの容量イベントだけでした。クライアントの拒否そのものに対応する EMS イベントはありません。**
 
 ```text
-FsxIdEXAMPLE::> event log show -message-name *audit*
-There are no entries matching your query.
-
 FsxIdEXAMPLE::> event log show -message-name *wafl.vol.full*
 ALERT  wafl.vol.full: Insufficient space on volume auddest@vserver:... to perform
        operation. 1.01MB was requested but only 752KB was available.
@@ -179,17 +193,38 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
        (using or reserving 99% of space and 4% of inodes).
 ```
 
+停止時刻を含む区間の EMS を全件見ると、上記の容量イベントのほかは、**本検証と無関係な別ワークロードの `secd.nfsAuth.noNameMap` が約 5.5 分間隔で出ているだけ**でした。監査に関するもの、ステージングに関するもの、拒否に関するものはいずれも 0 件です。
+
+**ただし「監査に関する EMS が存在しない」わけではありません。** ONTAP には次の 2 系統が定義されています（NetApp の EMS リファレンス。AWS サポートからも同内容の案内あり）。
+
+| イベント | severity | 意味 |
+|---|---|---|
+| `adt.stgvol.nospace` | `EMERGENCY` | ステージングボリュームに空きが無く、監査ログ用のファイル / ディレクトリを作成できない |
+| `monitor.volume.full` / `monitor.volume.nearlyFull`（`MDV_aud_*` 対象） | `ALERT` / `ERROR` | ステージングボリュームが 98% / 95% に到達 |
+
+**今回はこのどちらも記録されませんでした。** ステージングは参照できませんが、**この 2 系統は `MDV_aud_*` の逼迫を外から知る唯一の手段であり、監視対象に入れる価値があります。**
+
 **そして `vserver audit show` は停止中も `Auditing State: true` を返し続けました。** 監査が自動的に無効化されるわけではなく、**停止していることを示すフィールドがありません。**
 
 | 監視対象 | 何を示すか |
 |---|---|
-| 宛先ボリュームの使用率（95% / 99% の EMS、CloudWatch のボリュームメトリクス） | **アクセス断の唯一の予告信号。実測では停止の約 65 秒前に発火** |
-| `wafl.vol.full` の EMS | 監査が EVTX の伸長に失敗した瞬間。**停止の約 76 秒前** |
+| 宛先ボリュームの使用率（95% / 99% の EMS、CloudWatch のボリュームメトリクス） | **アクセス断の予告信号。ただし猶予は 19〜65 秒**（下記） |
+| `wafl.vol.full` の EMS | 監査が EVTX の伸長に失敗した瞬間 |
+| `adt.stgvol.nospace` の EMS | ステージング枯渇。**今回は発火せず**、`MDV_aud_*` の逼迫を外から知る唯一の手段 |
 | アグリゲートの空き容量 | ステージング領域が確保できる余地 |
-| `event log show -message-name *audit*` | **何も出ません。** 監査の健全性を問い合わせる経路として使えません |
 | `vserver audit show` の `Auditing State` | **停止中も `true`。** 健全性の判定に使えません |
+| クライアント拒否に対応する EMS | **ありません。** 拒否はサーバー側のログに残りません |
 
-**「監査が書けているか」を直接問える経路がありません。** 宛先ボリュームの使用率を、監査の健全性とアクセス可用性の代理として監視することになります。**65 秒の猶予は自動対処には足りず、埋まり始める段階（95%）で動く必要があります。**
+**「監査が書けているか」を直接問える経路がありません。** 宛先ボリュームの使用率を、監査の健全性とアクセス可用性の代理として監視することになります。
+
+**そして予告の長さも再現しません。**
+
+| | 満杯 EMS | クライアント停止 | 猶予 |
+|---|---|---|---|
+| 1 回目 | `04:41:17`（JST） | `04:42:22` | **約 65 秒** |
+| 2 回目 | `05:20:27` | `05:20:46` | **約 19 秒** |
+
+2 回目は `monitor.volume.nearlyFull`（95%）・`wafl.vol.full`・`monitor.volume.full`（99%）が**すべて同じ秒に記録され**、19 秒後に停止しました。**95% と 99% の間に人間が動ける時間があるとは限りません。** 検知してから対処する設計ではなく、埋まらないようにする設計（保持の明示・自動拡張・余裕のある初期サイズ）が必要です。
 
 ---
 
@@ -239,8 +274,8 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 | SACL の適用範囲 | **監査が必要なパスに限る** | **停止するのは SACL を付けたパスだけです。** 広く付けるほど、容量枯渇で止まる範囲が広がります |
 | 保持 | 要件に合わせて `-retention-duration` か `-rotate-limit` を**明示** | 既定はどちらも無制限で、**放置すれば必ずアクセス断に至ります** |
 | `-rotate-size` | 100 MB 程度 | 1 ファイルの肥大を避け、回収と解析を扱いやすくします |
-| 宛先ボリュームの使用率アラーム | **有効化と同時に、95% で入れる** | **アクセス断の唯一の予告信号。99% から停止までは約 65 秒しかありません** |
-| 自動拡張（`-autosize`） | 併せて検討 | 65 秒では人手の介入が間に合いません |
+| 宛先ボリュームの使用率アラーム | **有効化と同時に、95% で入れる** | 予告信号はこれだけですが、**99% から停止までは実測で 19〜65 秒**しかありません |
+| 自動拡張（`-autosize`） | 併せて検討 | **19 秒では人手もアラーム経由の自動化も間に合いません** |
 | アグリゲートの空き | 併せて監視 | ステージング領域の代理指標 |
 | `-strict-guarantee` | **既定 `true` のまま**を基本にする | 後述 |
 
@@ -287,9 +322,10 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 > **運用に関する補足**: アクセスポイントの作成が `FAILED` で終わった後、アタッチメントを削除しても
 > ボリューム側に FSx for ONTAP 管理のオブジェクトストア関連付けが残り、**ONTAP からボリュームを
-> 削除できなくなりました。** エラーが指すバケットは ONTAP 側から参照できません（advanced 特権でも
-> 現れない）。`aws fsx delete-volume` を使うと削除できました。監査用ボリュームを作り直す運用では
-> ここで詰まります。
+> 削除できなくなります。** `aws fsx delete-volume` を使うと削除できます。監査用ボリュームを
+> 作り直す運用ではここで詰まります。機構と AWS サポートによる再現確認は
+> [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../../data-utilization/notes/s3-access-point-constraints.md#aws-サポートによる再現確認と機構)
+> にあります。
 
 ---
 
@@ -328,7 +364,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 | 1 | `vserver audit show -instance` で 4 つの既定値を読む | `Auditing State` / `Strict Guarantee` / `Rotation Limit` / `Retention Duration` の現状 |
 | 2 | `volume show -volume *MDV*` を実行する | ステージングボリュームが見えないこと。**見えないのが正常です** |
 | 3 | 宛先ボリュームの使用量を数日測り、増加ペースを出す | 保持期間に必要な容量。**有効化前の見積もりでは足りません** |
-| 4 | 宛先ボリュームの使用率アラームを 95% で入れる | **停止の約 65 秒前ではなく、埋まり始めた段階で気づけること** |
+| 4 | 宛先ボリュームの使用率アラームを 95% で入れる | **停止直前ではなく、埋まり始めた段階で気づけること。95% と 99% が同じ秒に出る場合があります** |
 | 5 | 保持方式を明示して設定し、`show` で反映を確認する | 既定の無制限から抜けたこと |
 | 6 | 使い捨ての SVM で、宛先を埋めてから負荷をかける | **自環境の操作レートで、無記録のまま成功し続ける時間** |
 
@@ -336,7 +372,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 ## 未確認
 
-- **停止の直接原因**。`{Audit Failed}` で止まることは実測しましたが、**それがステージング枯渇によるものかは確認できていません。** 停止したのは約 5 MB 相当（4,538 レコード）を吸収した時点で、ドキュメントが示す 2 GB のステージングサイズには遠く及びません。滞留量・経過時間・`-rotate-size` のどれが閾値かを分離していません
+- **停止の直接原因**。`{Audit Failed}` で止まることは実測しましたが、**その機構は特定できていません。** 停止したのは約 5 MB 相当（4,538 レコード）を吸収した時点で、ドキュメントが示す 2 GB のステージングサイズには遠く及びません。**ステージング枯渇を示す `adt.stgvol.nospace` が 2 回とも記録されていないため、ステージング枯渇ではないと読める**一方で、では何が閾値なのか（滞留量・経過時間・`-rotate-size`・別の内部キュー）は分離していません。**「ステージング枯渇以外の要因でも停止し得るか」「その状態を示す EMS があるか」はベンダーに照会中で、回答は得られていません**
 - **滞留の上限値**。今回吸収された 4,538 レコードは、この構成・この時点での観測値です。**上限として一般化できません**
 - **長時間の滞留でレコードが落ち始めるか**。今回は約 10 分で空きを回復させ、全件が回収されました。**それより長く滞留させた場合の挙動は測っていません**
 - **クライアント復旧の正確な所要時間**。空き回復から 2 分 8 秒後に成功を確認しただけで、それより早い可能性を排除していません
@@ -352,6 +388,9 @@ S3 Access Point を使う場合の条件が 2 つあります。
 - AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html)
 - NetApp: [Troubleshoot ONTAP auditing and staging volume space issues](https://docs.netapp.com/us-en/ontap/nas-audit/troubleshoot-auditing-staging-volume-concept.html)
 - NetApp KB: [What happens if the destination volume or staging volume is out of space in NAS auditing](https://kb.netapp.com/onprem/ontap/da/NAS/What_happens_if_the_destination_volume_or_staging_volume_is_out_of_space_in_NAS_auditing)
+- NetApp EMS: [`adt.stgvol` events](https://docs.netapp.com/us-en/ontap-ems/adt-stgvol-events.html) — `adt.stgvol.nospace` の定義
+- NetApp EMS: [`monitor.volume` events](https://docs.netapp.com/us-en/ontap-ems/monitor-volume-events.html) — `full` は 98%、`nearlyFull` は 95% が目安
+- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応
 
 ---
 
