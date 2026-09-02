@@ -9,6 +9,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The lockout note framed the risk as using the wrong credential, and a correct one locked the
+  account anyway.** Reproduced on 2026-09-02 while investigating whether an unrelated automation was
+  the cause: authentication succeeded at `06:00:57` with the value from the secret, and the account was
+  locked by `06:08:27`. In between, the only authentication attempts used that same working password
+  over an SSM port-forward that had stopped responding — `nc` reported the port open and the next `ssh`
+  got `Connection refused`. **Attempts that never complete appear to count toward the five**, so a few
+  retries through a flapping tunnel reach a threshold that has no automatic release. The note now says
+  to confirm tunnel stability with spaced probes and then send exactly one authentication, and prefers
+  a single REST request over SSH when the path is suspect. What the ONTAP counter actually counts is in
+  the unverified list: the account cannot be read while locked, and unlocking resets the counter, so
+  there is no after-the-fact check.
+- **Two diagnostic corrections in the same note.** `LastAccessedDate` was offered as the way to find
+  who reads a shared secret; it is daily granularity and useless against a five-minute schedule, so
+  CloudTrail `GetSecretValue` replaces it — it yields time, caller and which secret. And **reading a
+  secret is not authenticating with it**: the automation suspected here reads both `fsxadmin` secrets
+  on a schedule, and its own logs end in "0 rows examined" every run with no sign of reaching ONTAP.
+  Recorded because the earlier working hypothesis blamed it on the read alone.
+- **The recovery procedure told you to log in immediately after resetting the password.** `Lifecycle`
+  stays `AVAILABLE` while the change moves `PENDING` → `IN_PROGRESS` → `COMPLETED`, so it is not the
+  signal that the reset landed — and testing early spends one of the five attempts on the account you
+  are trying to recover. The procedure now polls `AdministrativeActions[0].Status` first; the reset
+  measured about 44 seconds.
+
 - **`CONTRIBUTING.md` still told contributors that a missing tool means a skipped check.** It called
   `markdownlint-cli2` optional and said the gate skips when it is absent, which stopped being true
   when every gate was changed to fail instead — so the quickstart promised the one behaviour the
