@@ -14,15 +14,37 @@
 git clone https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook.git
 cd FSx-for-ONTAP-Adoption-Playbook
 
-# 任意: Markdown lint（未インストールならスキップされます）
-npm install -g markdownlint-cli2
-
 make help          # 利用可能なターゲット
 make new-note MODULE=domains/performance SLUG=my-concern
 make all           # コミット前に必ず実行
 ```
 
 `tools/` は Python 3.12 以降の標準ライブラリのみで動きます。追加の依存はありません。CI は 3.14 で実行しています。
+
+### 外部ツール 3 つのインストール
+
+**3 つとも必須です。未インストールのゲートは失敗します（スキップされません）。** ツールが無いゲートは、通ったゲートと見分けがつきません。
+
+```bash
+npm install -g markdownlint-cli2        # pip では入りません
+brew install gitleaks                   # pip では入りません
+uv venv .venv && uv pip install --python .venv/bin/python -r requirements-dev.txt
+```
+
+`ruff` は `requirements-dev.txt` でバージョンを固定しています。**`make python` は固定値と一致しない `ruff` を拒否します。** リリース間で既定のルールセットが変わるため、不一致を許すとゲートの判定が実行日に依存します。
+
+| 状況 | 手順 |
+|---|---|
+| 仮想環境を使う（推奨） | 上記の `uv venv` + `uv pip install` |
+| 仮想環境を使わない | `pipx uninstall ruff && pipx install "ruff==$(sed -n 's/^ruff==//p' requirements-dev.txt)"` |
+| 固定値を上げる | `requirements-dev.txt` を編集し、同じ手順で入れ直し、`make lint` が通ることを確認して両方を 1 つのコミットにする |
+
+> **`uv` で作った仮想環境には `pip` が入りません。** `.venv/bin/python -m pip` は
+> `No module named pip` で失敗します。`uv pip install --python .venv/bin/python` を使ってください
+> （`python3 -m venv` で作った場合は `.venv/bin/python -m pip` が使えます）。
+>
+> **`make python` は `PATH` より先に `.venv/bin/ruff` を見ます。** 別用途で入れた `ruff` が
+> `PATH` の先頭にあっても固定版が使われるため、`which -a ruff` で複数見つかること自体は問題ありません。
 
 ---
 
