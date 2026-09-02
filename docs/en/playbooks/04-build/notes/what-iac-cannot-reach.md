@@ -52,7 +52,7 @@ So **a successful template does not mean a finished configuration.** A policy of
 | Finding | Detail |
 |---|---|
 | **`CreateSnapshot` is FSx for OpenZFS only** | Run against an ONTAP volume it returns `Unable to create a snapshot because the volume was not found`. **The volume exists and is `CREATED`.** ONTAP Snapshots are the domain of Snapshot policies or ONTAP CLI / REST |
-| **A SnapLock audit log volume cannot be deleted through the AWS API** | Neither an ordinary delete nor `BypassSnaplockEnterpriseRetention=true` works. The SVM-side designation is not exposed in the API, and **ONTAP REST can clear it — but clearing it does not make deletion possible** (during the minimum six-month retention, neither the volume, the SVM, nor the file system can be deleted). Details in [SnapLock enabling and locking are separate](../../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#監査ログボリュームによるファイルシステム全体の-6-か月固定) |
+| **A SnapLock audit log volume cannot be deleted through the AWS API** | Neither an ordinary delete nor `BypassSnaplockEnterpriseRetention=true` works. The SVM-side designation is not exposed in the API, and **ONTAP REST can clear it — but clearing it does not make deletion possible** (during the minimum six-month retention, neither the volume, the SVM, nor the file system can be deleted). Details in [SnapLock enabling and locking are separate](../../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#監査ログボリュームによるファイルシステム全体の-6-か月固定) (日本語) |
 | **A failed volume deletion is not visible in the response** (the reason does live inside the AWS API) | `delete-volume` enters `DELETING`, returns to `CREATED`, and **the response carries no error.** `AdministrativeActions` is `null` too. However **the reason is in `LifecycleTransitionReason` from `DescribeVolumes`**. The ONTAP side is not required |
 | **`UpdateVolume` is asynchronous and leaves no trace** | The change was not observed at 30 seconds and was confirmed at 120 to 180 seconds. **It is not recorded in `AdministrativeActions`** (`null`). Running it again in succession is rejected with `There is an update already in progress.` |
 
@@ -97,7 +97,7 @@ An SVM's root volume security style is chosen from `UNIX` / `NTFS` / `MIXED`. **
 
 `fsxadmin` is the administrator for the whole file system. So the operator of a single SVM is handed privileges over the entire file system.
 
-**With it specified, that SVM can be administered as `vsadmin` from ONTAP CLI / REST API.** To operate with least privilege, specify it when creating the SVM. How the privileges divide is in [Separating administrators](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離).
+**With it specified, that SVM can be administered as `vsadmin` from ONTAP CLI / REST API.** To operate with least privilege, specify it when creating the SVM. How the privileges divide is in [Separating administrators](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) (日本語).
 
 ---
 
@@ -130,12 +130,12 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 
 | Item | Why check it |
 |---|---|
-| Tiering policy and cooling period | **The default differs by creation route.** [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) |
+| Tiering policy and cooling period | **The default differs by creation route.** [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) |
 | Inode ceiling | The default stops growing past 648 GiB. [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) |
 | Required SMB encryption | Disabled at the time the SVM is created |
 | Volume style | The default varies between FlexVol and FlexGroup with the HA pair count |
 
-The items to clear before going to production are collected in [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md). **Confirm restore and monitoring by "we tried it", not by "we configured it".**
+The items to clear before going to production are collected in [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語). **Confirm restore and monitoring by "we tried it", not by "we configured it".**
 
 ---
 
@@ -155,7 +155,7 @@ The items to clear before going to production are collected in [Pre-production r
 
 If "provide test environments as clones" and "shrink SSD to cut cost" run at the same time, the latter stops.
 
-**Where users create their own clones, QoS non-inheritance and the volume count ceiling apply on top of this interaction.** The summary is in [Putting training dataset versions on a scheduled Snapshot loses them](../../../../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md#実験ブランチ--flexclone-の効果と-3-つの制約).
+**Where users create their own clones, QoS non-inheritance and the volume count ceiling apply on top of this interaction.** The summary is in [Putting training dataset versions on a scheduled Snapshot loses them](../../../../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md#実験ブランチ--flexclone-の効果と-3-つの制約) (日本語).
 
 ### Converting between FlexVol and FlexGroup
 
@@ -250,11 +250,11 @@ Step 1 is the most valuable. **"The list of settings not in the template" is exa
 ## Related documents
 
 - [Playbook 04 — Build](../README.md) — this module's hub
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) — items to clear after building
-- [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) — the representative case of defaults varying by creation route
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — items to clear after building
+- [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) — the representative case of defaults varying by creation route
 - [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — the inode ceiling is set from ONTAP CLI
 - [The deployment type is decided once](../../02-design/notes/deployment-type-is-decided-once.md) — the premise behind choosing FlexGroup
-- [Encryption at rest is automatic; in transit is off by default](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — SMB encryption and separating administrators
+- [Encryption at rest is automatic; in transit is off by default](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — SMB encryption and separating administrators
 - [A volume's security style determines the permission model](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — the premise behind a choice that carries Replacement
 - [Evidence classification policy](../../../evidence-policy.md)
 

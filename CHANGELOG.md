@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The `(日本語)` marker rule was stated, unenforced, and half-observed.** `docs/agent/localization.md`
+  promises that a Japanese-only note is linked from English with a marker "so a missing translation is
+  a labelled link rather than a broken promise". Nothing checked it, so it held in module README
+  question tables and drifted everywhere else: **20 links changed language with no warning**, and 13 of
+  those were added by the two translation batches merged earlier the same day. Markers added to all 20,
+  and `make ja-markers` (`tools/check_ja_only_markers.py`) now enforces it inside `make all`.
+  - The gate deliberately does not ask for a marker on links into `docs/ja/reference/**` (bilingual
+    single files, so the English prose is already there), on directory links (`switcher-check` already
+    owns which language's directory to point at), on the generated switcher block, or on links whose
+    text already says 日本語. Each of those would announce a translation that is not missing.
+  - The rule in `docs/agent/localization.md` now says explicitly that it covers every link rather than
+    only the index positions, which is the ambiguity the drift grew in.
+  - Wired with a break case in `scripts/tests/test_doc_gates.py` and a `--selftest` covering all seven
+    accept/reject shapes, because a gate that only passes on a clean tree proves nothing about whether
+    it can still detect anything.
+
 - **A section heading counted three findings and the table under it listed four.** In
   `what-iac-cannot-reach.md`, the heading said 3 while the table carried four rows, and the sentence
   that followed referred to "the third" while describing the fourth — the asynchrony of

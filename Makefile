@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: help lint i18n-check switcher-check switcher-write audit links links-external anchors pr-verify all \
+.PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
         diagrams diagrams-check
 
@@ -103,6 +103,10 @@ i18n-check: ## Check Tier 1 cross-language section parity
 switcher-check: ## Verify language switchers, and that no page links to the wrong language
 	@$(PY) tools/sync_lang_switcher.py
 
+ja-markers: ## Check that English links into Japanese-only pages are labelled
+	@$(PY) tools/check_ja_only_markers.py --selftest >/dev/null
+	@$(PY) tools/check_ja_only_markers.py
+
 switcher-write: ## Regenerate language switcher blocks from what exists on disk
 	@$(PY) tools/sync_lang_switcher.py --write
 
@@ -140,7 +144,7 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check audit secrets links anchors drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check ja-markers audit secrets links anchors drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship

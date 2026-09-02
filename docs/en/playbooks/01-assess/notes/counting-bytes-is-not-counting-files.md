@@ -134,12 +134,12 @@ Put the other way round, **the items you did not measure show up as settings you
 | File count and average file size | Whether the inode default suffices, or the volume must be split | Above in this note |
 | Files per directory | Whether the migration tool runs to completion | Above in this note |
 | Protocols actually in use | **The volume's security style.** It changes how permissions are evaluated | [Security style and permission evaluation](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
-| Whether the migration account can read ACLs | Whether ACLs go missing while the job reports "success" | [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#必要な特権) |
+| Whether the migration account can read ACLs | Whether ACLs go missing while the job reports "success" | [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#必要な特権) (日本語) |
 | Source ONTAP version | Whether SnapMirror is usable, or an upgrade comes first | [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md#バージョン互換性の確認移行元が-ontap-の場合) |
 | Region and generation | **The throughput and IOPS ceilings themselves.** First generation is halved outside four regions | [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md#the-ceiling-varies-by-generation-configuration-and-region) |
 | Amount of metadata | SSD capacity. It stays on SSD regardless of the tiering policy | [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md#ssd-used-even-with-tiering-policy-all) |
 | Throughput needed in a single namespace | Whether a FlexVol suffices or a FlexGroup is needed | [The unit of sharing is the HA pair](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md#the-unit-of-sharing-is-the-ha-pair) |
-| Active Directory dependencies | The SVM's join requirements: domain name, DNS, OU, administrators group | [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) |
+| Active Directory dependencies | The SVM's join requirements: domain name, DNS, OU, administrators group | [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) |
 | Performance baseline | Makes "it got slower" after migration verifiable | Below in this note |
 
 ---
@@ -249,7 +249,7 @@ Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP 
 - [Playbook 01 — Assess](../README.md) — this module's hub
 - [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md) — choosing a method from the inventory results
 - [Security style and permission evaluation](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — a decision that follows from actual protocol use
-- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — permissions to confirm before migrating
+- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — permissions to confirm before migrating
 - [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — region and generation change the ceilings
 - [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) — why the baseline is taken as maximums
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates

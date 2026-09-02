@@ -248,6 +248,22 @@ class GateStillDetects(unittest.TestCase):
         with temp_files(probe):
             self.assert_rejected(run_gate("sync_lang_switcher.py"), PROBE)
 
+    def test_unlabelled_link_into_japanese_prose_is_rejected(self) -> None:
+        """An English reader must not reach Japanese prose without being told first.
+
+        The rule is written in `docs/agent/localization.md` and was unenforced, so it held in module
+        READMEs and drifted in body prose. A link that silently changes language is the failure the
+        marker exists to prevent, so the gate has to reject one.
+        """
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n\n"
+            + "See [ACL preservation]"
+            + "(../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md).\n"
+        )
+        with temp_files({f"docs/en/domains/cost/notes/{PROBE}.md": en}):
+            self.assert_rejected(run_gate("check_ja_only_markers.py"), PROBE)
+
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""
         dirty = subprocess.run(

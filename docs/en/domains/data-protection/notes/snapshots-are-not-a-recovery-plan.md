@@ -175,7 +175,7 @@ graph TD
 
 Whether you exercise step 5 during normal operations significantly changes the time required during an actual incident.
 
-Step 4 is frequently overlooked. **The same ACL comparison procedure described in [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) can be used.**
+Step 4 is frequently overlooked. **The same ACL comparison procedure described in [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) can be used.**
 
 ---
 
@@ -212,9 +212,9 @@ Step 4 is frequently overlooked. **The same ACL comparison procedure described i
 ## Related Documents
 
 - [Domain — Data Protection](../README.md) — Hub for this module
-- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — The same procedure can be used for ACL comparison after restore
+- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — The same procedure can be used for ACL comparison after restore
 - [Playbook 05 — Operate](../../../playbooks/05-operate/) — Restore drills are an operational item
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) — Includes items for actually testing restores
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — Includes items for actually testing restores
 - [Limits and Quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 

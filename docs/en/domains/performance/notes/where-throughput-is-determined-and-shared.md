@@ -166,7 +166,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 - [Domain — Performance](../README.md) — This module's hub
 - [Domain — Cost](../../cost/) — Adding HA pairs also raises minimum throughput
 - [Playbook 02 — Design](../../../playbooks/02-design/) — Generation, AZ configuration, and volume type are design-time decisions
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) — Throughput and SSD utilization verification items
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — Throughput and SSD utilization verification items
 - [Limits and quotas](../../../../ja/reference/limits/) — Ceiling values with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 

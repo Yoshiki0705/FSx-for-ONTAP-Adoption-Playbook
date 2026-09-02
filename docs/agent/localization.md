@@ -58,6 +58,28 @@ leave it behind while editing Japanese.
 A Japanese-only note is linked from English with a `(日本語)` marker, so a missing translation is a
 labelled link rather than a broken promise.
 
+**The marker applies to every link, not only the ones in a module README's question table.** That
+distinction was left implicit, and the rule accordingly held in the index positions and drifted
+everywhere else — a reader following a link out of body prose changed language with no warning, and
+one afternoon of translation added thirteen such links. `make ja-markers` now enforces it.
+
+What the gate deliberately does not ask for a marker on, because each would announce a translation
+that is not missing:
+
+| Not flagged | Why |
+|---|---|
+| Links into `docs/ja/reference/**` | Bilingual single files by design. The English prose is already there |
+| Directory links such as `notes/` | These resolve to a listing, and `switcher-check` already decides which language's directory to point at |
+| The generated switcher block | It names the language in its own link text |
+| A link whose text already contains 日本語 | The warning is present, spelled differently |
+
+The marker goes after the closing parenthesis, ahead of any sentence punctuation, because that is
+where a reader meets it:
+
+```markdown
+The items to clear are in [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語).
+```
+
 ## What qualifies for eight languages
 
 Tier 1 is **first-touch material only**: how to find your way around, and how to read the confidence
