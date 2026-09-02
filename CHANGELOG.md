@@ -9,6 +9,45 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"Some SVMs cannot serve SMB, and only recreating the SVM fixes it" was wrong on the cause, the
+  remedy and the indicator.** The vendor reproduced the behaviour and identified it: `data-cifs` is
+  granted to **every** SVM at creation regardless of AD membership, and it is **removed when a CIFS
+  server is deleted** — which includes detaching an Active Directory configuration. Recreating the CIFS
+  server with ONTAP CLI `vserver cifs create` succeeds, reports a healthy server, and **does not restore
+  it**; recreating it through ONTAP REST `POST /api/protocols/cifs/services` does. The broken state's
+  service list matched the affected SVM exactly, and the provisioning code has no date-dependent
+  branch.
+  - **The remedy was the costliest error.** The note said data migration to a new SVM was the only
+    option. It is recoverable in place by deleting the CIFS server and recreating it over REST.
+  - **The date claim is refuted by this repository's own data.** Six SVMs on one file system, ordered by
+    creation: 2026-05-14 has `data-cifs`, 2026-05-22 does not. There is no threshold. What correlates is
+    whether a CIFS server exists. The apparent date boundary was age acting as a proxy for having had a
+    CIFS server deleted — and the control that convinced me, a freshly created SVM that had it, had it
+    because nothing had deleted a CIFS server yet.
+  - **`Endpoints.Smb` was recommended as the check and does not work.** It follows AD membership, not
+    `data-cifs`: the vendor observed an SVM with `data-cifs`, a running CIFS server and port 445 open
+    reporting `Endpoints.Smb: null` because it was not AD-joined. A workgroup SVM reads as `null` when
+    healthy. Judge by whether `services` contains `data-cifs`. The two agreed in my sample only because
+    it contains no non-AD SVM with a working CIFS server.
+  - Renamed to `smb-service-lost-on-cifs-server-delete.md`; the old name asserted the refuted cause.
+    The mechanism and the recovery are the vendor's and are **not** reproduced here — doing so means
+    deleting a CIFS server on a shared file system — and neither is publicly documented yet.
+- **"The cause is the absence of a name mapping" is withdrawn.** For an S3 access point with a `UNIX`
+  `FileSystemIdentity` against an NTFS-security-style volume, the vendor tested with an explicit name
+  mapping present *and* the mapped user permitted by the NTFS ACL, and access still failed. So "add the
+  mapping and it works" does not follow, and the inference rested on an EMS line the note already
+  flagged as belonging to a different workload. Whether that combination is supported at all is open
+  with the vendor. What does exist in the documentation is the pairing guidance — UNIX identity with
+  UNIX security style, Windows identity with NTFS — now cited; what is missing is what happens when you
+  pair them the other way.
+- **The retention section stopped at "the two are exclusive".** Added, from vendor verification on the
+  same ONTAP build: REST rejects the combination too (`400` on `POST` and `PATCH` of
+  `/api/protocols/audit`), so the exclusivity is inside ONTAP rather than CLI argument parsing — and
+  **setting `retention.count` alone silently reverts `retention.duration` to `PT0S`**, meaning one
+  choice disables the other. Also the part that makes the choice actionable: `-rotate-size` defaults to
+  100 MB, `-rotate-limit` bounds the total at `rotate-size × rotate-limit` plus the active file, and
+  the retention that `-rotate-limit` gives up is observable by watching the oldest file's timestamp.
+
 - **The lockout note framed the risk as using the wrong credential, and a correct one locked the
   account anyway.** Reproduced on 2026-09-02 while investigating whether an unrelated automation was
   the cause: authentication succeeded at `06:00:57` with the value from the secret, and the account was

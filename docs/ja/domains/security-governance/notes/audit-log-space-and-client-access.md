@@ -261,7 +261,31 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 **同時に指定できません。** 期間だけを指定すると本数に上限が無く、**設計時に容量の上界を押さえられません。** 逆に本数だけを指定すると、アクセス量が増えた期間は保持期間が短くなります。
 
-3 か月の棚卸し要件のように期間が規程で決まっている場合は `-retention-duration 90d` が要件に一致しますが、**容量の上界は別途「宛先ボリュームのサイズ」と「宛先ボリュームの使用率監視」で担保することになります。**
+**この排他は CLI の引数解析ではなく ONTAP の内部実装です。** AWS サポートが同一バージョンで REST を検証し、`POST /api/protocols/audit` と `PATCH /api/protocols/audit` のいずれも `retention.count` と `retention.duration` の同時指定で **400 Bad Request** になることを確認しています（2026-09-02）。**Amazon FSx 側でこの制約を解除することは困難**との回答です。NetApp の CLI リファレンスでも、この 2 つは波括弧と縦棒で囲まれた択一のオプションとして記載されています。
+
+> **設定変更に関する注意**: **`retention.duration` を設定した状態から `retention.count` だけを指定すると、
+> `retention.duration` は `PT0S` に戻ります**（AWS サポートによる検証、2026-09-02）。
+> `PT0S` は「期間による削除をしない」という意味です。**片方を設定する操作が、もう片方を無効化します。**
+> 保持方式を切り替えるときは、切り替え後に `vserver audit show -instance` で両方の値を読んでください。
+
+### 方式ごとの上界と検知方法
+
+**どちらを選んでも、選ばなかった側は監視で担保することになります。** AWS サポートから提示された指針です。
+
+| 選ぶ基準 | 設定 | 確定するもの | 確定しないものの担保 |
+|---|---|---|---|
+| 保持期間が規程で固定 | `-retention-duration` | 保持期間 | **容量の上界** → 宛先ボリュームのサイズと使用率監視 |
+| 容量の上界を設計時に確定させたい | `-rotate-limit` + `-rotate-size` | **`-rotate-size` × `-rotate-limit` + 書き込み中の 1 本** | **保持期間** → 最古のログファイルの日時を監視 |
+
+**`-rotate-size` の既定値は 100 MB です。** 監査ログは既定でサイズに基づいてローテーションされます。
+
+`-rotate-limit` を選んだ場合、**保持期間が要件を下回ったことは検知できます。** 宛先ディレクトリ内の最も古いログファイルの日時を読み、そこから現在までの期間が要件を下回っていないかを見ます。下回った時点が `-rotate-limit` の引き上げか宛先ボリュームの拡張を検討する契機です。
+
+`-retention-duration` を選んだ場合の容量側は、**宛先を専用ボリュームにしておけば** Amazon CloudWatch のボリュームメトリクス（`StorageUsed` / `StorageCapacityUtilization`、ディメンションは `FileSystemId` と `VolumeId`）にアラームを設定して、満杯に至る前に検知できます。NetApp のドキュメントも保存先を専用のボリュームまたは qtree とすることを想定しています。
+
+**ただし前述のとおり、99% から停止までの猶予は実測で 19〜65 秒でした。** 検知は「埋まりつつある」段階（95% 以下）で効かせてください。停止直前の検知では間に合いません。
+
+3 か月の棚卸し要件のように期間が規程で決まっている場合は `-retention-duration 90d` が要件に一致します。
 
 ---
 
@@ -300,9 +324,23 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 S3 Access Point を使う場合の条件が 2 つあります。
 
-1. **宛先ボリュームのセキュリティスタイルと、アクセスポイントに固定した ID が整合していること。** NTFS スタイルのボリュームに UNIX ID のアクセスポイントを張ると、呼び出し元が管理者権限でも `AccessDenied` になりました。同一アクセスポイントのままセキュリティスタイルを `unix` に変更したら `ListObjectsV2` と `GetObject` が通りました。原因は名前マッピングの不在です。
+1. **宛先ボリュームのセキュリティスタイルと、アクセスポイントに固定した ID が整合していること。** NTFS スタイルのボリュームに UNIX ID のアクセスポイントを張ると、呼び出し元が管理者権限でも `AccessDenied` になりました。同一アクセスポイントのままセキュリティスタイルを `unix` に変更したら `ListObjectsV2` と `GetObject` が通りました。
 
-   **この失敗は S3 側のエラーからは原因が分かりませんが、ONTAP の EMS には出ます。** 同一クラスタの `event log show` に次が記録されていました（**この行は別のワークロードのものです。私の呼び出しに対応する 1 件として特定したわけではありません**）。`AccessDenied` の切り分けでは、IAM ではなくこの経路を確認してください。
+   > **原因帰属の訂正**: このノートは以前、原因を「名前マッピングの不在」と書いていました。
+   > **取り下げます。** AWS サポートが自環境で試したところ、**明示的な name-mapping が存在し、
+   > マッピング先のユーザーが NTFS ACL で許可されていても、`FileSystemIdentity` が `UNIX` の場合は
+   > NTFS セキュリティスタイルのボリュームへ S3 Access Point 経由でアクセスできませんでした**
+   > （2026-09-02）。**つまり「マッピングを足せば通る」とは言えません。** この組み合わせがそもそも
+   > 対応構成なのかを AWS が確認中で、不可であればその旨を、可能であれば必要な設定を
+   > ドキュメントに追記する方針とのことです。**現時点では、整合する組み合わせを選ぶのが確実な回避策です。**
+   >
+   > 一方、AWS のドキュメントには
+   > [File system user identity and authorization](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html#fsxn-file-system-user-identity)
+   > に「UNIX identity は UNIX セキュリティスタイルのボリュームに、Windows identity は NTFS
+   > セキュリティスタイルのボリュームに使う」という対応が既に書かれています。**組み合わせの指針は
+   > 存在します。** 未記載なのは、不整合な組み合わせを選んだときに何が起きるかです。
+
+   **この失敗は S3 側のエラーからは原因が分かりません。** 同一クラスタの `event log show` には名前マッピングの失敗が記録されていましたが、**次の行は別のワークロードのものです。私の呼び出しに対応する 1 件として特定したわけではなく、上記のとおり原因の説明としても採用しません。** `AccessDenied` の切り分けで ONTAP の EMS を見る価値はありますが、**この行を根拠に「マッピングを足せば直る」と結論しないでください。**
 
    ```text
    ERROR secd.nfsAuth.noNameMap: vserver (<svm>) Cannot map UNIX name to CIFS name.
@@ -391,6 +429,9 @@ S3 Access Point を使う場合の条件が 2 つあります。
 - NetApp EMS: [`adt.stgvol` events](https://docs.netapp.com/us-en/ontap-ems/adt-stgvol-events.html) — `adt.stgvol.nospace` の定義
 - NetApp EMS: [`monitor.volume` events](https://docs.netapp.com/us-en/ontap-ems/monitor-volume-events.html) — `full` は 98%、`nearlyFull` は 95% が目安
 - NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応
+- NetApp: [`vserver audit modify`](https://docs.netapp.com/us-en/ontap-cli/vserver-audit-modify.html) — `-rotate-limit` と `-retention-duration` が択一である旨の記載
+- NetApp: [ONTAP SVM の監査設定を計画する](https://docs.netapp.com/ja-jp/ontap/nas-audit/plan-auditing-config-concept.html) — 既定のログサイズ 100 MB、保存先は専用ボリュームまたは qtree
+- AWS: [FSx for ONTAP ボリュームメトリクス](https://docs.aws.amazon.com/ja_jp/fsx/latest/ONTAPGuide/volume-metrics.html) — `StorageUsed` / `StorageCapacityUtilization`
 
 ---
 

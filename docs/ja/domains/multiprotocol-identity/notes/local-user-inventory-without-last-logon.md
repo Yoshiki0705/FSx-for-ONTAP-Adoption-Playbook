@@ -175,4 +175,4 @@ N+M 日経過かつ申し立てなし → 棚卸し一覧に載せ、承認を�
 - [SMB ログオン監査 — 4624 は記録される](../../security-governance/notes/smb-logon-audit-event-coverage.md)
 - [監査ログの空き容量不足はクライアントアクセスを止める](../../security-governance/notes/audit-log-space-and-client-access.md)
 - [AD への依存は参加時ではなく生涯続く](ad-dependency-lasts-the-lifetime.md)
-- [SMB を提供できない SVM がある](smb-service-absent-on-early-svms.md)
+- [SMB を提供できない SVM がある](smb-service-lost-on-cifs-server-delete.md)
