@@ -56,7 +56,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) (日本語) | Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed one HA pair |
 | [p99 cannot be read from the CloudWatch metrics](../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) (日本語) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) (日本語) | Tiering carries per-request charges, and deduplication does not lower the bill |
-| [Volume security style decides the permission model](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
+| [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
 | [The AD dependency lasts the lifetime, not just the join](../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) (日本語) | An expired service account is symptomless until the next maintenance window |
 
 ---
