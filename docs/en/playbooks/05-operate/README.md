@@ -14,9 +14,9 @@ Covers monitoring, capacity management, incident response, and change management
 
 | # | Question | Notes |
 |---|---|---|
-| 1 | What to monitor and where to set thresholds | [Monitoring fails on averages](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語) |
-| 2 | How to detect impending capacity exhaustion | [The SSD utilization bands and what changes at each](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#ssd-利用率の帯域と各点で変わること) (日本語) |
-| 3 | How to triage performance degradation | [Triage order](../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) (日本語) |
+| 1 | What to monitor and where to set thresholds | [Monitoring fails on averages](notes/monitoring-fails-on-averages.md) |
+| 2 | How to detect impending capacity exhaustion | [The SSD utilization bands and what changes at each](notes/monitoring-fails-on-averages.md#the-ssd-utilisation-bands-and-what-changes-at-each-point) |
+| 3 | How to triage performance degradation | [Triage order](notes/monitoring-fails-on-averages.md#order-for-isolating-a-performance-regression) |
 | 4 | How to handle ONTAP version updates | [Maintenance cannot be deferred past 14 days](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) |
 | 5 | How to define first-response actions during an incident | [First response during an incident](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md#インシデント時の初動) (日本語) |
 
@@ -26,7 +26,7 @@ Covers monitoring, capacity management, incident response, and change management
 
 | Directory | Contents |
 |---|---|
-| [`notes/`](../../../ja/playbooks/05-operate/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
+| [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
 | [`checklists/`](../../../ja/playbooks/05-operate/checklists/) | Checklists for field use |
 
 ---

@@ -45,7 +45,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [The rollback window closes when clients start writing](playbooks/03-migrate/notes/where-the-rollback-window-closes.md) (日本語) | There is no operation that undoes a cutover, and incremental sync depends on the common snapshot |
 | [The IaC boundary is set by the API surface](../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) (日本語) | A successful template is not a complete configuration — ONTAP-level settings are out of reach |
 | [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | Checklist of the irreversible settings and what to actually exercise before going live |
-| [Monitoring fails on averages](../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) (日本語) | Why the statistic is decided before the threshold — standby nodes pull the average down |
+| [Monitoring fails on averages](playbooks/05-operate/notes/monitoring-fails-on-averages.md) | Why the statistic is decided before the threshold — standby nodes pull the average down |
 | [Maintenance cannot be deferred past 14 days](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
 | [Tiering defaults differ by creation method](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) | The console and IaC do not produce the same default policy. Order changes by whether they can be undone |
 | [Having snapshots is not the same as being able to recover](domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) (日本語) | Each mechanism covers a different failure. A snapshot is lost along with its volume |

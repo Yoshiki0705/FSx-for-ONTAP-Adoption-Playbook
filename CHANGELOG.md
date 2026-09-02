@@ -330,6 +330,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **English counterparts for two notes that were the primary answer to a module's first question.**
+  `security-style-and-permission-evaluation.md` (Multiprotocol & Identity, question 1) and
+  `monitoring-fails-on-averages.md` (Operate question 1, and Optimize question 1 links to the same
+  note). Both satisfy the two conditions in `docs/agent/localization.md`: primary answer reachable from
+  a module README, and content settled — unchanged since 2026-08-30. **The notes corrected this week
+  are deliberately excluded**; translating a note that is still moving multiplies every later edit.
+  - Adding a counterpart is mostly not translation. It moved **sixteen inbound links** off their
+    Japanese fallback, which `switcher-check` requires, and **four of those carried Japanese anchors**
+    that had to be mapped to the English headings. The `(日本語)` markers on those rows are dropped
+    with them.
+  - Section parity is now enforced for both pairs. **Verified by removing a heading from an English
+    file and confirming `check_i18n_parity.py` fails**, rather than assuming the gate reaches Tier 3.
+  - One trap worth recording: rewriting the shared `notes/` directory prefix in bulk also redirected
+    links to *untranslated* notes in the same directory, which `make links` caught as three missing
+    files. A per-file rewrite is not safe; the target must exist in English first.
+
 - **The lockout threshold and the absence of an automatic unlock are readable from the role config,
   without locking anything.** `security login role config show -role fsxadmin -instance` at advanced
   privilege reports `Maximum Number of Failed Attempts: 5`, `Delay after Each Failed Login Attempt:

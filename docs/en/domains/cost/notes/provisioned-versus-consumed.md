@@ -69,7 +69,7 @@ The decision cannot be made on per-GB cost alone.
 
 Tiering also has a capacity prerequisite. **All writes land on SSD first regardless of tiering policy, and metadata always remains on SSD.** The rule of thumb is SSD : capacity pool = 1 : 10.
 
-This means **SSD consumption never reaches zero even with `All` tiering policy.** Details are in [SSD is still used even with `All` tiering policy](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md#階層化ポリシー-all-でも使われる-ssd).
+This means **SSD consumption never reaches zero even with `All` tiering policy.** Details are in [SSD is still used even with `All` tiering policy](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#ssd-used-even-with-tiering-policy-all).
 
 ---
 
@@ -135,7 +135,7 @@ A cost decision becomes possible when **the amount saved and what is given up in
 | Shorten Snapshot retention | Capacity consumption | Fewer recovery point options |
 | Keep provisioned IOPS at 3 IOPS/GB | IOPS-month charges | Less headroom for random I/O-heavy workloads |
 
-**Each option pairs "cost reduction" with "something given up."** The mechanism by which background tasks get deprioritized is in [Monitoring fails on averages](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md).
+**Each option pairs "cost reduction" with "something given up."** The mechanism by which background tasks get deprioritized is in [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md).
 
 ---
 
@@ -215,7 +215,7 @@ Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space"
 - [Domain — Cost](../README.md) — This module's hub
 - [Deployment type can only be chosen once](../../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
 - [Throughput is not determined by a single setting](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA pair addition raises minimum throughput
-- [Monitoring fails on averages](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Tiering and background task behavior
+- [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Tiering and background task behavior
 - [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — Retention design and capacity
 - [Running out of space despite available capacity](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Inodes and Snapshots
 - [Limits and quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
