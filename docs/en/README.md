@@ -39,11 +39,11 @@ Each note is one concern per file, and always carries **its primary sources** an
 
 | Finding | What it answers |
 |---|---|
-| [Free space does not mean you can still write](../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) (日本語) | Why an inventory has to count files, not just bytes — the default inode count stops growing past 648 GiB |
-| [Deployment type is decided once](../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) (日本語) | The availability choice also sets the scale-out ceiling. Multi-AZ is fixed at one HA pair |
+| [Free space does not mean you can still write](playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | Why an inventory has to count files, not just bytes — the default inode count stops growing past 648 GiB |
+| [Deployment type is decided once](playbooks/02-design/notes/deployment-type-is-decided-once.md) | The availability choice also sets the scale-out ceiling. Multi-AZ is fixed at one HA pair |
 | [ACL preservation is a privilege problem, not a tool problem](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Run with the defaults and ACLs are dropped silently, while the job still reports success |
 | [The rollback window closes when clients start writing](playbooks/03-migrate/notes/where-the-rollback-window-closes.md) (日本語) | There is no operation that undoes a cutover, and incremental sync depends on the common snapshot |
-| [The IaC boundary is set by the API surface](../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) (日本語) | A successful template is not a complete configuration — ONTAP-level settings are out of reach |
+| [The IaC boundary is set by the API surface](playbooks/04-build/notes/what-iac-cannot-reach.md) | A successful template is not a complete configuration — ONTAP-level settings are out of reach |
 | [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | Checklist of the irreversible settings and what to actually exercise before going live |
 | [Monitoring fails on averages](playbooks/05-operate/notes/monitoring-fails-on-averages.md) | Why the statistic is decided before the threshold — standby nodes pull the average down |
 | [Maintenance cannot be deferred past 14 days](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
