@@ -173,6 +173,8 @@ AWS サポートは、AP 作成失敗時・削除時に関連付けを確実に�
 
 **AWS が管理するオブジェクトは、標準の ONTAP S3 ビューから隠れています。** バケットの不在を 2 つのリーダーで確認しても、両方が同じ盲点を持っていました。
 
+**そしてこの盲点は Amazon FSx for NetApp ONTAP が管理するオブジェクトに固有です。** AWS サポートが確認したところ、**利用者が手動で作成した `type nas` のバケットは `/protocols/s3/buckets` にも `vserver object-store-server bucket show` にも現れました**（2026-09-02）。つまり「S3 のビューに何も出ないからバケットは無い」という切り分けは、利用者作成のバケットでは正しく、FSx for ONTAP 管理のバケットでは誤ります。**同じコマンドで自分の作ったバケットが見えるぶん、FSx for ONTAP 管理のバケットが見えないことに気づきにくくなります。**
+
 NetApp が文書化している [NAS バケット構成の削除手順](https://docs.netapp.com/us-en/ontap/revert/remove-nas-bucket-task.html) は `vserver object-store-server bucket delete -vserver <svm> -bucket <bucket>` を使いますが、**対象を列挙できないのでこの経路には適用できません。** 同種の症状の KB は [Cannot delete volume "because this volume is associated with object store bucket"](https://kb.netapp.com/onprem/ontap/da/S3/Cannot_delete_volume_%22because_this_volume_is_associated_with_object_store_bucket%22) にありますが、解決手順の本文は NetApp Support のログインが必要で、本ノート作成時点では参照できていません。
 
 > **Evidence**: 挙動は `verified`（実測）で、**機構と「FSx for ONTAP API から削除する」という対処は AWS サポートの

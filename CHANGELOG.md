@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The S3 Access Point note said the FSx for ONTAP managed bucket is hidden, without saying what *is*
+  visible.** AWS Support confirmed that a `type nas` bucket created by hand does appear in both
+  `/protocols/s3/buckets` and `vserver object-store-server bucket show`, so the blind spot is specific
+  to objects FSx for ONTAP manages rather than a property of those readers. That asymmetry is what
+  makes the absence hard to notice: the same two commands that fail to list the managed bucket do list
+  the operator's own, so "nothing in the S3 view means no bucket" reads as a confirmed negative. The
+  note now states the contrast, because a reader who has ever created a bucket there has already seen
+  those commands work.
+- **The service-policy note recorded only `fsxadmin`, leaving "try another role" open as a workaround.**
+  AWS Support confirmed `network interface service-policy` is `readonly` under all eight roles
+  available on FSx for ONTAP (`fsxadmin`, `fsxadmin-readonly`, and the six `vsadmin*` roles), and that
+  no role exists that can change a service policy. The measured evidence still covers `fsxadmin` alone,
+  so the addition is attributed to Support rather than folded into the reading — but the recovery path
+  is now stated as bounded, so nobody spends time enumerating roles. Also records that an operator who
+  *can* edit the policy directly is on a different ONTAP footing, which is why procedures written for
+  those environments do not transfer.
 - **The audit note's `-autosize` row named a parameter but not the command.** Following up on the
   documentation case, AWS Support confirmed FlexVol autosizing is available on FSx for ONTAP via the
   ONTAP CLI `volume autosize`, which is the actionable form — the row now names the command and links

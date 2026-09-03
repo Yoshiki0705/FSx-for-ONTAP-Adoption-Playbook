@@ -187,6 +187,13 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 **なお `fsxadmin` で `readonly` / `none` になるコマンドファミリの一覧は公開されていません。** AWS サポートに一覧の掲載を要望済みで、改善要望として検討する旨の回答を得ています（2026-09-02）。**現時点では自環境で `security login role show` を読むしかありません。**
 
+**別のロールを使えば直せる、という抜け道もありません。** AWS サポートが確認したところ、`network interface service-policy` は `fsxadmin`、`fsxadmin-readonly`、`vsadmin`、`vsadmin-backup`、`vsadmin-protocol`、`vsadmin-readonly`、`vsadmin-snaplock`、`vsadmin-volume` の**いずれのロールでも `readonly`** で、**FSx for ONTAP で使えるロールにサービスポリシーを変更できるものは存在しません**（2026-09-02）。上の実測は `fsxadmin` だけを見たものですが、ロールを変えて回避する試みは不要です。
+
+> **オンプレミス ONTAP との差分に関する補足**: 管理者がサービスポリシーを直接編集できる環境では、
+> この症状はポリシーを直せば終わります。**その手順が使えないのは FSx for ONTAP 固有の制約**で、
+> だからこそ復旧経路が「CIFS サーバーを REST で作り直す」に限られます。他の ONTAP 環境向けの
+> 手順を読むときは、この差分を織り込んでください。
+
 ---
 
 ## 影響と回避
