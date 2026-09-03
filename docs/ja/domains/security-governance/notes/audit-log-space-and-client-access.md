@@ -154,12 +154,18 @@ gaps in range    : 0
 
 滞留を吸収した量として観測できたのは **4,538 レコード**でした。復旧時に出力された EVTX は 5,246,976 バイトで、**`-rotate-size` の 5 MB とほぼ一致します。**
 
-**この一致が停止の閾値と関係するかは切り分けられていません。** NetApp のドキュメントはステージングボリュームがアグリゲート単位で 2 GB 確保されると記載していますが、**今回停止したのは 5 MB 相当を吸収した時点であり、2 GB には遠く及びません。** したがって**停止の直接原因をステージング枯渇と断定できません。** 測れたのは外から見える挙動だけです。
+**この一致が停止の閾値と関係するかは切り分けられていません。** NetApp のドキュメントはステージングボリュームがアグリゲート単位で 2 GB 確保されると記載していますが、**今回停止したのは 5 MB 相当を吸収した時点であり、2 GB には遠く及びません。** 当初はこれを「ステージング枯渇では説明できない」根拠として扱っていましたが、**下記のとおり要因はそもそもステージングではなく宛先の枯渇でした。** 測れたのは外から見える挙動だけです。
 
 - ステージングボリューム `MDV_AUD_*` は `fsxadmin` から参照できないため、占有量を直接確認できません
 - 滞留量・経過時間・ローテーションサイズのどれが閾値かを分離する試験は行っていません
 
-**さらに、ステージング枯渇を否定する側の証拠が 1 つあります。** ONTAP にはステージング枯渇を示す専用の EMS イベント `adt.stgvol.nospace`（severity `EMERGENCY`）が定義されています。**2 回の停止を通じて、このイベントは 1 件も記録されませんでした。**
+**そして停止の要因は、ステージングではなく宛先の枯渇でした。** AWS サポートが確認したところ、**ステージングボリュームの枯渇のほかに、監査ログの保存先ボリュームが枯渇した場合にもクライアントアクセスの失敗が発生し得ます**（2026-09-03）。本検証で埋めたのは宛先ボリュームです。NetApp の KB [監査ログのデスティネーションがフルのため、CIFS 共有でデータが提供されていません](https://kb-ja.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) が扱っているのも同じ症状です。**したがって「2 GB のステージングに遠く及ばないのに停止した」ことは矛盾ではありません。ステージングは関係していませんでした。**
+
+これを直接示す EMS イベントも定義されています。`adt.dest.directory.full`（severity `EMERGENCY`）で、説明文には **SACL を設定したオブジェクトでサービス拒否に至り得る**と明記されています。本検証は SMB 経路に SACL を付けて行ったため、観測した症状と一致します。
+
+### 観測できないイベントの不在を根拠にしないこと
+
+**本ノートは当初、ここで誤った推論をしていました。** ステージング枯渇を示す `adt.stgvol.nospace` が 2 回とも 0 件だったことを「ステージング枯渇ではない証拠」として挙げていました。
 
 ```text
 FsxIdEXAMPLE::> event log show -message-name adt.stgvol*
@@ -169,7 +175,9 @@ FsxIdEXAMPLE::> event log show -message-name adt.*
 There are no entries matching your query.
 ```
 
-同じログには 2 回の枯渇試験の `monitor.volume.full` が両方とも残っているため、**保持期間の都合で消えたのではありません。** また `MDV_aud_*` に対する `monitor.volume.full` / `monitor.volume.nearlyFull` も記録されていません。**したがって少なくとも今回の 2 回については、停止時点でステージングは 95% にも達していなかったと読めます。** 停止の直接原因は別にあります。
+**この 0 件は何の証拠にもなりません。** AWS サポートの確認によれば、**`adt.stgvol.nospace` と `adt.dest.directory.full` はいずれも利用者側から参照できない仕様**です（2026-09-03。前者は同サポートが前回「監視に利用できる可能性がある」と案内した後の訂正）。**発火し得ないイベントなので、0 件であることは枯渇の有無と無関係です。** 結論（ステージングは関係しない）は AWS の回答によって別経路で裏付けられましたが、**当時それを支えていた論拠は成立していませんでした。**
+
+一方、`MDV_aud_*` を対象とした `monitor.volume.full` / `monitor.volume.nearlyFull` は**利用者側から参照できることが想定される**と案内されています。こちらも 2 回を通じて 0 件でした。**ただし「参照できる」は AWS の想定であり、当方は確認していません**（ステージングを意図的に埋める手段が無いため）。**したがってこの 0 件を「ステージングは 95% に達していなかった」と読むこともできません。**
 
 > **検出パターンに関する注意**: 最初にこれを調べたとき、私が使ったのは
 > `event log show -message-name *audit*` だけでした。**`adt.stgvol.*` はこのパターンに
@@ -181,7 +189,7 @@ There are no entries matching your query.
 
 ## 観測できる信号
 
-**2 回の停止を通じて記録されたのは、宛先ボリュームの容量イベントだけでした。クライアントの拒否そのものに対応する EMS イベントはありません。**
+**2 回の停止を通じて記録されたのは、宛先ボリュームの容量イベントだけでした。書き込み失敗そのものを示すイベントは定義されていますが、利用者からは参照できません**（下記）。
 
 ```text
 FsxIdEXAMPLE::> event log show -message-name *wafl.vol.full*
@@ -195,14 +203,16 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 
 停止時刻を含む区間の EMS を全件見ると、上記の容量イベントのほかは、**本検証と無関係な別ワークロードの `secd.nfsAuth.noNameMap` が約 5.5 分間隔で出ているだけ**でした。監査に関するもの、ステージングに関するもの、拒否に関するものはいずれも 0 件です。
 
-**ただし「監査に関する EMS が存在しない」わけではありません。** ONTAP には次の 2 系統が定義されています（NetApp の EMS リファレンス。AWS サポートからも同内容の案内あり）。
+**ただし「監査に関する EMS が存在しない」わけではありません。定義はあり、そのうち肝心の 2 つが利用者から見えません。**
 
-| イベント | severity | 意味 |
-|---|---|---|
-| `adt.stgvol.nospace` | `EMERGENCY` | ステージングボリュームに空きが無く、監査ログ用のファイル / ディレクトリを作成できない |
-| `monitor.volume.full` / `monitor.volume.nearlyFull`（`MDV_aud_*` 対象） | `ALERT` / `ERROR` | ステージングボリュームが 98% / 95% に到達 |
+| イベント | severity | 意味 | 利用者から参照 |
+|---|---|---|---|
+| `adt.dest.directory.full` | `EMERGENCY` | 宛先ディレクトリが満杯で監査ログを書けない。**SACL 付きオブジェクトでサービス拒否に至り得る** | **不可**（AWS 確認、2026-09-03） |
+| `adt.stgvol.nospace` | `EMERGENCY` | ステージングボリュームに空きが無く、監査ログ用のファイル / ディレクトリを作成できない | **不可**（同上） |
+| `monitor.volume.full` / `monitor.volume.nearlyFull`（`MDV_aud_*` 対象） | `ALERT` / `ERROR` | ステージングボリュームが 98% / 95% に到達 | 可と**想定**（AWS 案内。当方未確認） |
+| `monitor.volume.full` / `monitor.volume.nearlyFull` / `wafl.vol.full`（宛先ボリューム対象） | `ALERT` / `ERROR` | 宛先が 98% / 95% に到達、または伸長に失敗 | **可**（実測） |
 
-**今回はこのどちらも記録されませんでした。** ステージングは参照できませんが、**この 2 系統は `MDV_aud_*` の逼迫を外から知る唯一の手段であり、監視対象に入れる価値があります。**
+**書き込み失敗を直接示す 2 つのイベントは、どちらも設計として参照できません。** 本ノートが「監査が書けているかを直接問える経路がない」と書いているのは、当方が見つけられなかったからではなく、**そのように作られているためです。** 残る手段は容量側の代理指標だけになります。
 
 **そして `vserver audit show` は停止中も `Auditing State: true` を返し続けました。** 監査が自動的に無効化されるわけではなく、**停止していることを示すフィールドがありません。**
 
@@ -210,10 +220,11 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 |---|---|
 | 宛先ボリュームの使用率（95% / 99% の EMS、CloudWatch のボリュームメトリクス） | **アクセス断の予告信号。ただし猶予は 19〜65 秒**（下記） |
 | `wafl.vol.full` の EMS | 監査が EVTX の伸長に失敗した瞬間 |
-| `adt.stgvol.nospace` の EMS | ステージング枯渇。**今回は発火せず**、`MDV_aud_*` の逼迫を外から知る唯一の手段 |
+| `adt.dest.directory.full` / `adt.stgvol.nospace` の EMS | 書き込み失敗を直接示すイベント。**どちらも利用者から参照できません**（AWS 確認）。監視対象に置けません |
+| `monitor.volume.*`（`MDV_aud_*` 対象）の EMS | ステージング逼迫。**参照できると想定されるが当方未確認。** 意図的に埋める手段が無いため検証できていません |
 | アグリゲートの空き容量 | ステージング領域が確保できる余地 |
 | `vserver audit show` の `Auditing State` | **停止中も `true`。** 健全性の判定に使えません |
-| クライアント拒否に対応する EMS | **ありません。** 拒否はサーバー側のログに残りません |
+| クライアント拒否に対応する EMS | **利用者からは参照できません。** 拒否そのものを示すイベントは定義されていますが（`adt.dest.directory.full`）、参照経路がありません |
 
 **「監査が書けているか」を直接問える経路がありません。** 宛先ボリュームの使用率を、監査の健全性とアクセス可用性の代理として監視することになります。
 
@@ -410,7 +421,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 ## 未確認
 
-- **停止の直接原因**。`{Audit Failed}` で止まることは実測しましたが、**その機構は特定できていません。** 停止したのは約 5 MB 相当（4,538 レコード）を吸収した時点で、ドキュメントが示す 2 GB のステージングサイズには遠く及びません。**ステージング枯渇を示す `adt.stgvol.nospace` が 2 回とも記録されていないため、ステージング枯渇ではないと読める**一方で、では何が閾値なのか（滞留量・経過時間・`-rotate-size`・別の内部キュー）は分離していません。**「ステージング枯渇以外の要因でも停止し得るか」「その状態を示す EMS があるか」はベンダーに照会中で、回答は得られていません**
+- **停止に至る内部の閾値**。要因が宛先ボリュームの枯渇であることは AWS サポートの確認で判明しました（2026-09-03。上記）。**ただし何が停止の引き金なのか**（滞留レコード数・経過時間・`-rotate-size`・別の内部キュー）**は分離していません。** 4,538 レコードを吸収した時点で停止しましたが、この数値が閾値である証拠はありません
 - **滞留の上限値**。今回吸収された 4,538 レコードは、この構成・この時点での観測値です。**上限として一般化できません**
 - **長時間の滞留でレコードが落ち始めるか**。今回は約 10 分で空きを回復させ、全件が回収されました。**それより長く滞留させた場合の挙動は測っていません**
 - **クライアント復旧の正確な所要時間**。空き回復から 2 分 8 秒後に成功を確認しただけで、それより早い可能性を排除していません
@@ -427,6 +438,8 @@ S3 Access Point を使う場合の条件が 2 つあります。
 - NetApp: [Troubleshoot ONTAP auditing and staging volume space issues](https://docs.netapp.com/us-en/ontap/nas-audit/troubleshoot-auditing-staging-volume-concept.html)
 - NetApp KB: [What happens if the destination volume or staging volume is out of space in NAS auditing](https://kb.netapp.com/onprem/ontap/da/NAS/What_happens_if_the_destination_volume_or_staging_volume_is_out_of_space_in_NAS_auditing)
 - NetApp EMS: [`adt.stgvol` events](https://docs.netapp.com/us-en/ontap-ems/adt-stgvol-events.html) — `adt.stgvol.nospace` の定義
+- NetApp EMS: [`adt.dest` events](https://docs.netapp.com/us-en/ontap-ems/adt-dest-events.html) — `adt.dest.directory.full` の定義。**SACL 付きオブジェクトでサービス拒否に至り得る**旨の記載
+- NetApp KB: [監査ログのデスティネーションがフルのため、CIFS 共有でデータが提供されていません](https://kb-ja.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) — 宛先枯渇による共有停止
 - NetApp EMS: [`monitor.volume` events](https://docs.netapp.com/us-en/ontap-ems/monitor-volume-events.html) — `full` は 98%、`nearlyFull` は 95% が目安
 - NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応
 - NetApp: [`vserver audit modify`](https://docs.netapp.com/us-en/ontap-cli/vserver-audit-modify.html) — `-rotate-limit` と `-retention-duration` が択一である旨の記載

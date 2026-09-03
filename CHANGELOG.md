@@ -9,6 +9,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
+  for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
+  stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
+  guidance from an earlier reply in the same case that had suggested monitoring it, which this note had
+  adopted. A detector that cannot fire says nothing when it is silent, so the inference never held.
+  The conclusion survives on other grounds: Support confirmed that exhausting the **destination**
+  volume alone causes the failure, which is what the test did, and a NetApp KB documents that exact
+  symptom. The note now attributes the cause and separately marks the internal threshold as unisolated.
+  Also removes `adt.stgvol.nospace` from the monitoring table, where it had been listed as "the only way
+  to see staging pressure from outside" — it is not a way at all.
+- **`adt.dest.directory.full` was missing, and it is the event that matches the symptom.** Its ONTAP
+  definition states it can lead to denial of service on SACL-enabled objects, which is precisely what
+  was measured over SMB. It is also not customer-visible. That makes the note's central claim stronger
+  and differently grounded: no path exists to ask whether auditing is still writing, not because the
+  search missed one, but because both events that would answer it are unreachable. The observable-signal
+  table now separates what was measured, what AWS expects to be visible but is unverified here
+  (`monitor.volume.*` on `MDV_aud_*`, since staging cannot be filled deliberately), and what is
+  unreachable.
 - **The S3 Access Point note said the FSx for ONTAP managed bucket is hidden, without saying what *is*
   visible.** AWS Support confirmed that a `type nas` bucket created by hand does appear in both
   `/protocols/s3/buckets` and `vserver object-store-server bucket show`, so the blind spot is specific
