@@ -44,6 +44,9 @@ graph TD
 | 移行元が ONTAP 以外の NAS | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) |
 | NFS と SMB を同じデータに対して使う | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [セキュリティ・ガバナンス](domains/security-governance/) |
 | Active Directory 連携が前提 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | [設計](playbooks/02-design/) |
+| SMB のユーザー管理と監査を設計したい | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) | [マルチプロトコル・ID](domains/multiprotocol-identity/) |
+| SMB が急に提供できなくなった | [SMB を提供できない SVM がある](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) |
+| 監査ログを有効化したい / ローカルユーザーを棚卸ししたい | [監査宛先の枯渇はアクセスを止める](domains/security-governance/notes/audit-log-space-and-client-access.md) | [最終ログオン属性は無い](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | 新規構築（移行元なし） | [設計](playbooks/02-design/) | [構築](playbooks/04-build/) → [運用](playbooks/05-operate/) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |

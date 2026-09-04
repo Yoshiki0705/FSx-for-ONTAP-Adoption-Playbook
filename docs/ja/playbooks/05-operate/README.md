@@ -20,6 +20,9 @@
 | 4 | ONTAP のバージョン更新をどう扱うか | [メンテナンスは 14 日を超えて延期できない](notes/maintenance-cannot-be-deferred.md) |
 | 5 | インシデント時の初動をどう定義するか | [インシデント時の初動](notes/maintenance-cannot-be-deferred.md#インシデント時の初動) |
 | 6 | 管理者アカウントで認証できなくなったとき何を疑うか | [fsxadmin はロックされる。REST では原因が判別できない](notes/admin-account-lockout-and-recovery.md) |
+| 7 | 稼働中の SVM が SMB を提供できなくなったとき何を見るか | [SMB を提供できない SVM がある](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |
+| 8 | 監査を有効化したまま運用すると可用性に何が起きるか | [監査宛先の枯渇はアクセスを止める](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
+| 9 | ローカルユーザーの棚卸しをどう回すか | [最終ログオン属性は無い。監査ログから起こすしかない](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 
 ---
 

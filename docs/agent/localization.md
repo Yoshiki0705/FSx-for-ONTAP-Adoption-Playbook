@@ -130,10 +130,37 @@ expand from.
 Tier 1 requires matching section structure and count across the languages the manifest names for that
 file. When you change one language, change all of them in the same commit.
 
-`docs/ja/reference/**` is currently written as **bilingual single files** (Japanese and English prose
-sharing the same tables). It is therefore not split per language yet, and English pages link into
-`docs/ja/reference/`. When adding to `reference/`, follow the existing bilingual style rather than
-creating a partial `docs/en/reference/` tree.
+### `reference/` — bilingual hubs, per-language leaves
+
+`docs/ja/reference/` is split in two layers, and they follow different rules.
+
+| Layer | Files | Rule |
+|---|---|---|
+| **Hubs** | `reference/README.md`, and the `README.md` of `decision-trees/`, `comparison/`, `glossary/`, `limits/` | **Stay bilingual single files.** Japanese and English prose share the same cells. Do not create `docs/en/reference/**/README.md` |
+| **Leaves** | Individual decision trees, comparison matrices, limits pages | **Split per language as each one is translated**, with a generated switcher block. Untranslated leaves stay Japanese-only |
+
+The hubs stay bilingual because they already contain the English text. Copying them under `docs/en/`
+would put the same English in two files, and the copy that nobody edits is the one readers find.
+`limits/README.md` carries its Japanese and English headings paired on one line (`### 日本語 / English`)
+for the same reason.
+
+A split leaf cannot keep its links byte-identical, which is the one place the copy-plus-replace rule
+above does not hold: the English leaf's breadcrumb has to reach a hub that exists only under
+`docs/ja/`. That is a deliberate exception, not a misplaced file.
+
+**Link to a hub as `…/README.md`, never as a bare directory.** `sync_lang_switcher.py` normalizes
+`dir` and `dir/README.md` to the same target, then asks whether the source language has it. Once one
+leaf is translated the language's directory exists, so a bare-directory link is reported as needing to
+point at a hub that was deliberately never created — while the same link written as `README.md`
+resolves to a file with no counterpart and is correctly treated as an allowed fallback. Two links in
+`docs/en/` hit this when the first leaf was split.
+
+`check_ja_only_markers.py` does not require a `(日本語)` marker on links into `docs/ja/reference/**`,
+because the hubs are bilingual and a marker there would announce a translation that is not missing.
+That exemption is structural — its pattern only covers `notes/` and `checklists/` — so it also skips a
+Japanese-only *leaf*. **`switcher-check` is what catches a stale link to a leaf that has since been
+translated.** The pattern is deliberately not widened to `reference/`: two gates enforcing one rule
+drift apart, and this one already has the case covered.
 
 ## Language switcher
 

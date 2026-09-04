@@ -19,6 +19,10 @@ Covers monitoring, capacity management, incident response, and change management
 | 3 | How to triage performance degradation | [Triage order](notes/monitoring-fails-on-averages.md#order-for-isolating-a-performance-regression) |
 | 4 | How to handle ONTAP version updates | [Maintenance cannot be deferred past 14 days](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) |
 | 5 | How to define first-response actions during an incident | [First response during an incident](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md#インシデント時の初動) (日本語) |
+| 6 | What to suspect when the admin account can no longer authenticate | [fsxadmin gets locked, and REST cannot tell you why](../../../ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) (日本語) |
+| 7 | What to look at when a running SVM stops serving SMB | [An SVM that cannot serve SMB](../../../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) |
+| 8 | What happens to availability when auditing runs continuously | [Destination exhaustion stops access](../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) |
+| 9 | How to run an inventory of local users | [No last-logon attribute exists; the inventory has to come from audit logs](../../../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 
 ---
 

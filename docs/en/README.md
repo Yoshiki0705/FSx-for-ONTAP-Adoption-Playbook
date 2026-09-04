@@ -94,7 +94,7 @@ Enter here when your question is "I need to research this specific concern." The
 
 | Directory | Contents |
 |---|---|
-| [`decision-trees/`](../ja/reference/decision-trees/) | Selection flowcharts (migration method, protection scheme, protocol) |
+| [`decision-trees/`](../ja/reference/decision-trees/README.md) | Selection flowcharts (migration method, protection scheme, protocol, SMB identity and auditing) |
 | [`comparison/`](../ja/reference/comparison/) | Option comparison matrices (trade-offs stated symmetrically) |
 | [`limits/`](../ja/reference/limits/) | Limits and quotas, with sources and verification dates |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS terminology and definitions |

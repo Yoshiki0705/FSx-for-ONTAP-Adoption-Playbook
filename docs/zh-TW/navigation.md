@@ -44,6 +44,9 @@ graph TD
 | 遷移來源為非 ONTAP 的 NAS | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [評估](../en/playbooks/01-assess/) (English) |
 | 對同一份資料同時使用 NFS 與 SMB | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [安全與治理](../en/domains/security-governance/) (English) |
 | 以 Active Directory 整合為前提 | [多協定與身分](../en/domains/multiprotocol-identity/) (English) | [設計](../en/playbooks/02-design/) (English) |
+| 想設計 SMB 使用者管理與稽核 | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) | [多協定與身分](../en/domains/multiprotocol-identity/) (English) |
+| SMB 突然無法提供服務 | [無法提供 SMB 的 SVM](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
+| 想啟用稽核日誌 / 想清查本機使用者 | [稽核目的地耗盡會中斷存取](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [不存在最後登入屬性](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 | 全新建置（無遷移來源） | [設計](../en/playbooks/02-design/) (English) | [建置](../en/playbooks/04-build/) → [運維](../en/playbooks/05-operate/) (English) |
 | 已在運行，希望調整效能 | [效能](../en/domains/performance/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | 已在運行，希望重新檢視成本 | [成本](../en/domains/cost/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
