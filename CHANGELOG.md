@@ -874,7 +874,19 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
-- **`reference/` now splits per language at the leaf, with the hubs staying bilingual.** The workflow doc
+- **The two VMware paths were described as one, and one of them had moved to GA.** `recent-updates.md`
+  listed "AWS Transform and Amazon EVS support FSx for ONTAP as a storage target" in a single line, which
+  reads as one capability with two entry points. They are different paths in different states: AWS
+  Transform targets **data volumes during an EC2 rehost** and reached GA on 2026-08-30, while Amazon EVS
+  offers FSx for ONTAP as an **external datastore for VMware you keep running**. Conflating them invites
+  a reader to plan a datastore migration on the entry that cannot provide one. The Transform entry now
+  states the GA scope explicitly — boot volumes always stay on EBS — and adds the constraints that bind at
+  design time: agent-based replication only, five file systems per account, several LUNs inside one volume
+  rather than the 1:1 ONTAP recommends, ONTAP settings not carried over, and Finalize being irreversible.
+  The EVS entry drops the unsupported "GA" label: the 2025-06 What's New says public preview, the current
+  user guide carries no preview notice, and **no GA announcement was found** as of 2026-09-04 — so the
+  entry says that, with the search scope, rather than picking a status. The minimum ONTAP version for the
+  Transform path is likewise recorded as not found in public documentation rather than guessed. The workflow doc
   claimed the whole tree was bilingual single files; only the hubs were, and the leaves were
   Japanese-only, so translating a leaf had no written rule. Hubs stay bilingual because copying them
   under `docs/en/` would put the same English in two files, and the copy nobody edits is the one readers
