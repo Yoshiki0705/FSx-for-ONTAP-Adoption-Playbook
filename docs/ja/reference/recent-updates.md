@@ -20,7 +20,7 @@ lang: ja
 1. **データ保護の到達範囲** — バックアップを別リージョン・別アカウントへコピー可能に。**既存の制約記述が 1 つ無効になりました**
 2. **リージョン拡張と世代制限の緩和** — 第 2 世代が使えるリージョンが増え、性能上限の格差が縮まりつつある
 3. **マルチプロトコル統合の拡大** — Transfer Family (SFTP/FTPS/FTP) が S3 AP 経由で FSx for ONTAP に接続可能に
-4. **VMware 移行パスの追加** — AWS Transform と Amazon EVS が FSx for ONTAP をストレージターゲットとしてサポート
+4. **VMware 関連パスの追加** — 経路が 2 つあり、役割も状態も異なる。AWS Transform は **EC2 リホスト時のデータボリュームのターゲットストレージ**（2026-08-30 GA）、Amazon EVS は **VMware を継続したままの外部データストア**（2025-06 に public preview として告知、GA 告知は未確認）
 
 以下は各アップデートの概要と、このリポジトリの既存ノートとの対応です。
 
@@ -99,32 +99,50 @@ AWS Transfer Family 経由で **SFTP / FTPS / FTP** を使って FSx for ONTAP �
 
 ---
 
-### AWS Transform が FSx for ONTAP をサポート（Public Preview, 2026-06）
+### AWS Transform が FSx for ONTAP をサポート（GA, 2026-08）
 
-AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロックストレージのマイグレーション先として **FSx for ONTAP を選択可能**に。EBS に加えて FSx for ONTAP をターゲットにでき、VMware ワークロードの移行で NAS ストレージの継続利用が可能。
+AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロックストレージのマイグレーション先として **FSx for ONTAP を選択可能**に。EBS に加えて FSx for ONTAP をターゲットにでき、VMware ワークロードの移行で ONTAP のストレージ機能を移行直後から利用できる。2026-06 に Public Preview として告知され、**2026-08-30 に GA**。
+
+**スコープの限定**: GA したのは「**データボリューム**のターゲットストレージ種別」としての対応であり、VMware の**データストア**として FSx for ONTAP を提示する機能ではない。後者は次節の Amazon EVS の経路で、状態も異なる。ブートボリュームは常に EBS に残り、データボリュームが iSCSI で接続される。
 
 | 設計への影響 | 関連ノート |
 |---|---|
 | VMware からの移行で「一度 EBS に移して後から NAS を構成する」手順が不要に | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) |
 | MGN ベースの自動化と FSx for ONTAP の組み合わせで、SnapMirror 以外の移行パスが増えた | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
+| 移行後の LUN 配置が ONTAP の推奨と異なるため、移行後に整える工程が必要 | 下記「移行時に見積もる制約」 |
 
-出典: [What's New — 2026/06](https://aws.amazon.com/about-aws/whats-new/2026/06/aws-transform-vmware-fsx-for-ontap-preview/)
+**移行時に見積もる制約**: GA 済みだが、設計時に効く制約がある。
 
-**注意**: Public Preview であり、本番利用には GA を待つことを推奨。
+| 制約 | 内容 |
+|---|---|
+| ブートボリューム | 常に EBS。FSx for ONTAP から直接ブートはできない |
+| レプリケーション方式 | エージェント型のみ |
+| ファイルシステム数 | 1 アカウントで同時に最大 5 台 |
+| LUN 配置 | 1 ソースサーバー = 1 ボリューム内に複数 LUN。ONTAP 推奨の 1:1 ではないため、スナップショットポリシーや階層化をディスク単位に分けるには移行後に `lun move start` で移設する |
+| ONTAP 設定の引き継ぎ | アクセス権限・quota・スナップショットポリシー・スケジュールは移行されない。ターゲット側で再設定する |
+| Finalize | **不可逆**。FlexClone を親から分離しレプリケーションを停止する。実行前に受け入れテストを完了させる |
+| 事前に無効化する設定 | 自動バックアップ（Finalize を阻害しうる）と ARP（レプリケーションボリューム削除を阻害しうる）。いずれもファイルシステム単位の設定であり、同一ファイルシステム上の他ボリュームにも影響する |
+
+出典: [What's New — 2026/09](https://aws.amazon.com/about-aws/whats-new/2026/09/aws-transform-fsx-netapp-ontap-support/)、[AWS Transform Change log — 2026-08-30](https://docs.aws.amazon.com/transform/latest/userguide/change-log.html)、[FSx for ONTAP configuration（MGN ユーザーガイド）](https://docs.aws.amazon.com/mgn/latest/ug/fsx-ontap.html)
+
+**検証レポート**: スコープの確定と実機での API レベル確認は sibling repo の [ATX FSx for ONTAP GA 検証レポート](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap/blob/main/docs/ja/atx-fsxn-ga-verification.md) にある。最小 ONTAP バージョン要件は公開ドキュメントに記載が見つかっていない（2026-09-04 調査）。
 
 ---
 
-### Amazon EVS が FSx for ONTAP と統合（2025-06、GA）
+### Amazon EVS が FSx for ONTAP と統合（2025-06 告知）
 
-Amazon Elastic VMware Service（EVS）— VPC 内で VMware Cloud Foundation を実行するサービス — が、FSx for ONTAP を **NFS 外部データストア**として利用可能に。コンピュートとストレージの独立スケーリング、自動階層化によるコスト最適化が可能。
+Amazon Elastic VMware Service（EVS）— VPC 内で VMware Cloud Foundation を実行するサービス — が、FSx for ONTAP を**外部データストア**として利用可能に。コンピュートとストレージの独立スケーリング、自動階層化によるコスト最適化が可能。前節の AWS Transform とは異なり、**VMware を継続利用したままストレージだけを FSx for ONTAP に寄せる**経路である。
+
+**状態**: 2025-06 の What's New は public preview と記載している。現在の EVS ユーザーガイドに preview の表記はなく、検証済み機能として NFS v3 / NFS v4.1 / NVMe / iSCSI VMFS の各データストア、ゲスト mount の iSCSI ディスク、SnapCenter Plug-in for VMware vSphere、Expansion VLAN 経由のデプロイが列挙されている。ただし **GA 告知は確認できていない**（2026-09-04 調査、What's New と EVS ユーザーガイドを対象）。本番採用前に最新の提供状態を確認すること。
 
 | 設計への影響 | 関連ノート |
 |---|---|
 | VMware から EC2 への全面移行を選ばなくても、FSx for ONTAP のストレージ機能が使える | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
+| ブロックは iSCSI と NVMe/TCP のどちらでも VMFS データストアになる。NVMe/TCP は第 2 世代かつ HA ペア 6 以下が条件 | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
 | Oracle Database on EVS + FSx for ONTAP の構成ガイドが出ている（re:Post） | [公開事例](../case-studies/public-case-studies.md) |
 | SnapMirror による cross-region DR が EVS 構成でも利用可能 | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) |
 
-出典: [What's New — 2025/06](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-elastic-vmware-service-fsx-netapp-ontap/)、[AWS Blog](https://aws.amazon.com/blogs/aws/introducing-amazon-elastic-vmware-service-for-running-vmware-cloud-foundation-on-aws)
+出典: [What's New — 2025/06](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-elastic-vmware-service-fsx-netapp-ontap/)、[Run high-performance workloads with Amazon FSx for NetApp ONTAP（EVS ユーザーガイド）](https://docs.aws.amazon.com/evs/latest/userguide/fsx-ontap.html)、[Configure FSx for NetApp ONTAP as a block datastore](https://docs.aws.amazon.com/evs/latest/userguide/config-fsx-iscsi-datastore.html)、[AWS Blog](https://aws.amazon.com/blogs/aws/introducing-amazon-elastic-vmware-service-for-running-vmware-cloud-foundation-on-aws)
 
 ---
 
