@@ -46,6 +46,9 @@ rest gives a reading order.
 | Source is a non-ONTAP NAS | [Migration method decision tree](../ja/reference/decision-trees/migration-method.md) (日本語) | [Assess](playbooks/01-assess/) |
 | NFS and SMB against the same data | [Security style determines the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [Security and governance](domains/security-governance/) |
 | Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
+| Designing SMB user management and auditing | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) | [Multiprotocol identity](domains/multiprotocol-identity/) |
+| SMB stopped being served without warning | [An SVM that cannot serve SMB](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) |
+| Enabling audit logs / inventorying local users | [Destination exhaustion stops access](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [No last-logon attribute exists](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 | Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
@@ -102,7 +105,7 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 
 | Directory | When to use it |
 |---|---|
-| [Decision trees](../ja/reference/decision-trees/) | Several options exist and you need to pick one |
+| [Decision trees](../ja/reference/decision-trees/README.md) | Several options exist and you need to pick one |
 | [Comparison matrices](../ja/reference/comparison/) | You need the trade-offs against other options laid out |
 | [Limits and quotas](../ja/reference/limits/) | You need to confirm a design will not hit a limit |
 | [Glossary](../ja/reference/glossary/) | You need the definition of an ONTAP or AWS term |

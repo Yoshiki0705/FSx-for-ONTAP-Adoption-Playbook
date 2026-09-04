@@ -44,6 +44,9 @@ graph TD
 | 마이그레이션 원본이 ONTAP 이외의 NAS | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) (日本語) | [평가](../en/playbooks/01-assess/) (English) |
 | NFS와 SMB를 같은 데이터에 사용 | [보안 스타일이 권한 평가 모델을 결정한다](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [보안·거버넌스](../en/domains/security-governance/) (English) |
 | Active Directory 연동이 전제 | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) (English) | [설계](../en/playbooks/02-design/) (English) |
+| SMB 사용자 관리와 감사를 설계하고 싶다 | [SMB 사용자 관리와 감사 결정 트리](../en/reference/decision-trees/smb-identity-and-audit.md) (English) | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) (English) |
+| SMB가 갑자기 제공되지 않게 되었다 | [SMB를 제공할 수 없는 SVM](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB 사용자 관리와 감사 결정 트리](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
+| 감사 로그를 활성화하고 싶다 / 로컬 사용자를 정리하고 싶다 | [감사 대상 소진은 액세스를 멈춘다](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [최종 로그온 속성은 없다](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 | 신규 구축 (마이그레이션 원본 없음) | [설계](../en/playbooks/02-design/) (English) | [구축](../en/playbooks/04-build/) → [운영](../en/playbooks/05-operate/) (English) |
 | 이미 운영 중이며 성능을 개선하고 싶다 | [성능](../en/domains/performance/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |

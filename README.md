@@ -21,6 +21,7 @@
 |---|---|---|
 | このリポジトリの歩き方を知る | [ナビゲーションガイド](docs/ja/navigation.md) | 3 分 |
 | 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) | 10 分 |
+| SMB の ID 管理と監査を設計する | [SMB のユーザー管理と監査 決定ツリー](docs/ja/reference/decision-trees/smb-identity-and-audit.md) | 10 分 |
 | 検証済みの上限値を確認する | [上限値・クォータ](docs/ja/reference/limits/) | 5 分 |
 | 選択肢のトレードオフを比べる | [比較マトリクス](docs/ja/reference/comparison/) | 10 分 |
 | 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
@@ -58,6 +59,8 @@
 | [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |
 | [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
 | [AD への依存は参加時ではなく生涯続く](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | 資格情報の失効は平常時に無症状で、次のメンテナンスで顕在化します |
+| [SMB を提供できない SVM がある](docs/ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | 原因は作成時期ではなく CIFS サーバーの削除です。ONTAP REST で作り直せば戻ります |
+| [監査宛先の枯渇はアクセスを止める](docs/ja/domains/security-governance/notes/audit-log-space-and-client-access.md) | 止まるのは満杯の瞬間ではなく、書き込み失敗を示す EMS は参照できません |
 
 ---
 

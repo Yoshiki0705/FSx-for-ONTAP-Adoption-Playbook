@@ -18,6 +18,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 |---|---|
 | [移行方式の選択](migration-method.md) | ONTAP 間か否か、ACL 保持要件、停止時間から移行方式を選ぶ / Choosing a migration method from source type, ACL requirements, and downtime tolerance |
 | [S3 Access Point 経由のリクエストはどう判定されるか](access-point-authorization.md) | 二段の認可の評価順序を追い、症状から落ちた段を逆引きする / Following the two-layer authorization evaluation order, and working back from a symptom to the layer that refused |
+| [SMB のユーザー管理と監査は 2 つの選択で決まる](smb-identity-and-audit.md) | ID をワークグループと AD 参加のどちらに置くか、監査を常時有効にするか。各枝が引き受ける制約を選択前に示す / Choosing between a workgroup and AD membership, and whether auditing runs continuously, with what each branch commits you to shown before the choice。**英語版あり / [English version](../../../en/reference/decision-trees/smb-identity-and-audit.md)** |
 
 ---
 

@@ -9,9 +9,14 @@ translations added in one afternoon introduced thirteen such links without any g
 
 What is deliberately NOT flagged, and why each exclusion matters:
 
-  `reference/`   - written as bilingual single files by design (`docs/agent/localization.md`), so the
+  `reference/`   - its hubs are bilingual single files by design (`docs/agent/localization.md`), so the
                    Japanese and English prose share the same tables. A marker there would announce a
-                   missing translation that is not missing.
+                   missing translation that is not missing. The exemption is structural rather than a
+                   listed exclusion: the pattern below only covers `notes/` and `checklists/`. It
+                   therefore also skips a Japanese-only *leaf* under `reference/`, which the hubs
+                   argument does not justify. `switcher-check` is what reports a link left pointing at
+                   a leaf that has since been translated, and widening this pattern to `reference/`
+                   would put one rule behind two gates that then drift apart.
   Directory links - `notes/` and `checklists/` resolve to a listing, not to Japanese prose. The
                    localized directory is chosen by `sync_lang_switcher.py`; that is its concern.
   Switcher blocks - the generated `🌐 [日本語](…)` line names the language in the link text already.

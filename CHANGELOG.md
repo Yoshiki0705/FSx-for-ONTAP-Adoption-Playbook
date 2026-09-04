@@ -413,6 +413,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A decision tree for SMB identity and auditing, in Japanese and English.** Five notes covering CIFS
+  authentication, local-user inventory, and audit logging were reachable only through two different
+  module READMEs — four of the five had no link from the root README, `llms.txt`, or `navigation.md`, and
+  three carried `lifecycle: [operate]` while the operate module referenced none of them. The tree at
+  `reference/decision-trees/smb-identity-and-audit.md` gives them one entry: two decisions (where
+  identities live; whether auditing runs continuously) with what each branch commits you to shown before
+  the choice. It carries **no measurements of its own** — `evidence: documented` covers which options
+  exist, and every consequence links to the note that measured it, matching how the sibling trees
+  delegate. Root README gains a row in `はじめかた` plus the two findings a reader most needs at the top
+  level; `navigation.md` gains three rows in all eight languages; `05-operate` gains the three questions,
+  and its English counterpart also gains the admin-lockout question it had been missing.
 - **English counterparts for the three remaining settled primary notes.**
   `counting-bytes-is-not-counting-files.md` (Assess Q1), `deployment-type-is-decided-once.md`
   (Design Q1), and `what-iac-cannot-reach.md` (Build Q1). With the previous pair, **every module whose
@@ -863,6 +874,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **`reference/` now splits per language at the leaf, with the hubs staying bilingual.** The workflow doc
+  claimed the whole tree was bilingual single files; only the hubs were, and the leaves were
+  Japanese-only, so translating a leaf had no written rule. Hubs stay bilingual because copying them
+  under `docs/en/` would put the same English in two files, and the copy nobody edits is the one readers
+  find. Recorded with the consequence that bit during the first split: `sync_lang_switcher.py` normalizes
+  `dir` and `dir/README.md` to one target, so once a language's directory exists a bare-directory link is
+  reported as needing a hub that was deliberately never created, while the same link written as
+  `README.md` is correctly treated as a fallback. Two links in `docs/en/` were repointed. Also records why
+  `check_ja_only_markers.py` is *not* widened to `reference/` even though its pattern skips a
+  Japanese-only leaf: `switcher-check` already covers that case, and one rule behind two gates drifts
+  apart.
 - **163 Japanese section headings across 36 files are now noun phrases, and `make lint` enforces it.**
   The rule landed in #77 and #79 with nothing enforcing it and every pre-existing heading in breach;
   this is the conversion plus `tools/check_heading_style.py`. They ship together on purpose: a gate
