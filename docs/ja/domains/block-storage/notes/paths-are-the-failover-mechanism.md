@@ -1,5 +1,5 @@
 ---
-title: パスはフェイルオーバーの仕組みそのもの — 手順どおりに作ると推奨の 4 倍のパスが立つ
+title: パスはフェイルオーバーの仕組みそのもの — セッション数は既定でも上限でもなく、帯域から決める値
 lifecycle: [build, operate, design]
 domains: [block-storage, performance]
 evidence: verified
@@ -19,11 +19,15 @@ lang: ja
 
 **ブロックストレージでは、ファイルサーバーが切り替わったときに I/O を継続させる仕組みはホスト側の multipath です。** ストレージ側は複数のパスを見せるところまでで、どれを使うかを決めるのはホストです。**この分界線がファイル共有との一番大きな違いです。**
 
-そして **AWS の手順どおりに構成すると、NetApp が推奨する上限の 4 倍のパスが立ちます。**
+そして **パス数は既定では決まりません。どのセッション数を選んだかで 2 本から 24 本まで動きます。**
 
-検証環境で AWS の指示（1 ノードあたり 8 セッション）に従うと、**LIF 2 本 × 8 セッション = 16 セッション**になり、**1 LUN あたり 16 パス**が現れました。ALUA の優先度で **prio=50 の 8 本（active）と prio=10 の 8 本（enabled）**に分かれます。Windows でも同じで、**16 パスが Active/Optimized 8 本と Active/Unoptimized 8 本**に分かれました。
+**Linux では 8 セッションの手順は `(Optional)` と明記されています。** AWS の Linux 手順で `node.session.nr_sessions` を 8 にする段は、**「EC2 の単一クライアント上限 5 Gbps を超えるスループットが必要な場合」**という条件付きの任意手順です。適用せずに接続すると **2 パス**でした（[クイックスタート](../quickstart.md)の実測）。適用すると **LIF 2 本 × 8 セッション = 16 パス**です。
 
-**一方 NetApp の Linux SAN ホスト構成のドキュメントは、AFF/FAS について「1 つの LUN に 4 パス超は必要なく、4 本を超えると障害時に問題を起こしうる」と記載しています。** どちらも公式の記載で、噛み合っていません。
+**Windows では 8 が手順に埋め込まれた既定値です。** AWS が公開しているスクリプトは `$RecommendedConnectionCount = 8` を持ち、ポータル 2 つに対して回すので **16 セッション**になります。AWS 自身が公開している構成チェックスクリプトの成功例も、**2 ノードにまたがる 16 セッションを正常な状態として表示します。**
+
+**この 16 パスは NetApp の推奨に反しません。** ONTAP の SAN 構成ドキュメントは **「ホストからクラスタの各ノードへのパスは 8 を超えないこと」**としており、1 HA ペア（2 ノード）で 1 ノードあたり 8 パスはこの範囲です。
+
+**「1 LUN に 4 パス超」という別の記載があり、これは適用範囲が違います。** NetApp の Linux SAN ホスト構成ドキュメントの当該記述は **ASA / AFF / FAS 構成**についてのもので、FSx for ONTAP はこのいずれでもありません。**FSx for ONTAP に対する 4 パスの推奨は、確認した範囲では公開されていません。**
 
 さらに **接続手順は冪等ではありません。** Windows で 8 接続のループを同じポータルに対してもう一度回すと、**セッションが 16 から 24 に、パスも 24 本に増えました。** 警告は出ません。
 
@@ -45,13 +49,17 @@ lang: ja
 パス数 = LIF の本数 × 1 LIF あたりのセッション数
 ```
 
-| 設定 | 検証結果 |
-|---|---|
-| LIF 2 本、セッション数の既定（1） | 2 パス |
-| LIF 2 本、AWS 指示の 8 セッション | **16 パス** |
-| 上に 8 接続のループをもう 1 回 | **24 パス** |
+| 設定 | 検証結果 | AWS の手順での位置づけ |
+|---|---|---|
+| LIF 2 本、セッション数の既定（1） | 2 パス | Linux で任意手順を適用しない場合 |
+| LIF 2 本、8 セッション | **16 パス** | Linux では `(Optional)`、**Windows ではスクリプトの既定値** |
+| 上に 8 接続のループをもう 1 回 | **24 パス** | 手順の想定外。冪等でないことによる |
 
-**AWS が 8 という数を出している根拠は帯域です。** 1 セッションあたり最大 625 MBps、8 セッションで 40 Gbps / 5,000 MBps とし、**「最上位のスループット容量 4,000 MBps を賄える」**と書かれています。**4,000 MBps は第 1 世代の上限です。** 第 2 世代の上限は Multi-AZ で 6,144 MBps、Single-AZ で 73,728 MBps なので、**この 8 という数は第 1 世代を前提にした計算です。**
+**AWS が 8 という数を出している根拠は帯域です。** 1 セッションあたり最大 625 MBps、8 セッションで 40 Gbps / 5,000 MBps とし、**「最上位のスループット容量 4,000 MBps を賄える」**と書かれています。
+
+**この 4,000 MBps という数値と、現行のクォータの記載が一致していません。** クォータのページは第 2 世代の上限を Multi-AZ 6,144 MBps、Single-AZ 73,728 MBps としています。**したがって第 2 世代で上限近くまで使う場合、8 という数の根拠をそのまま流用できません。**
+
+> **セッション数は自分の構成から計算してください。** 1 セッションあたり 625 MBps を目安に、必要なスループットを満たす本数を出します。**手順に書かれた 8 をそのまま使わないでください。** 8 の根拠として挙げられている 4,000 MBps は、[クォータ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html)の第 2 世代の値と一致しません（両ページを 2026-09-05 に確認）。
 
 ---
 
@@ -128,12 +136,26 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 | 出典 | 記載 |
 |---|---|
 | NetApp: Multipathing | **1 ノードあたり 8 パスを超えないこと。** LUN あたり reporting node ごとに最低 2 パス。Selective LUN Map、portset、igroup、FC ゾーニングでパス数を制限すること |
-| NetApp: Linux SAN host configuration | **AFF/FAS では 1 LUN に 4 パス超は必要なく、4 本を超えると障害時に問題を起こしうる** |
-| AWS: Provisioning iSCSI | **1 ノード・1 AZ あたり 8 セッション** |
+| NetApp: SAN host multipathing（プラットフォーム非依存） | **ホストからクラスタの各ノードへのパスは 8 を超えないこと** |
+| NetApp: Linux SAN host configuration | **ASA / AFF / FAS 構成では 1 LUN に 4 パス超は不要で、4 本超は障害時に問題を起こしうる。** FSx for ONTAP はこのいずれでもありません |
+| AWS: Provisioning iSCSI | **1 ノード・1 AZ あたり 8 セッション**（Linux では `(Optional)`、Windows ではスクリプトの既定値） |
 
-**「1 ノードあたり 8 パス」と「1 LUN あたり 4 パス」は別の数え方です。** LIF が 2 本ある構成で 1 ノードあたり 8 パスにすると、1 LUN あたりは 16 パスになります。**AWS の指示は前者の上限に張り付き、後者の推奨を 4 倍超えます。**
+**「1 ノードあたり 8 パス」と「1 LUN あたり 4 パス」は別の数え方で、しかも適用範囲が違います。** 前者はプラットフォーム非依存の ONTAP SAN 構成ドキュメントの記載で、1 HA ペアで 8 セッションにすると 1 ノードあたり 8 パス、**この上限の内側**です。後者は ASA / AFF / FAS 構成についての記載で、**FSx for ONTAP を対象に含めていません。**
 
-**判断はトレードオフです。** 帯域が要るなら AWS の 8 セッションに根拠があり、パス数を抑えたいなら NetApp の 4 に根拠があります。**どちらを採ったかと、その理由を設計文書に書いてください。** 帯域の見積りが第 2 世代の上限に対して行われているかも確認してください（AWS の 8 は第 1 世代の 4,000 MBps を前提にしています）。
+**したがって「AWS の手順は NetApp の推奨に反する」とは言えません。** 確認した範囲では、FSx for ONTAP に対して 1 LUN あたり 4 パスを推奨する記載は見つかりませんでした。
+
+**決めるべきことは残ります。** セッション数は必要な帯域から決める値で、既定でも上限でもありません。
+
+**ただしファイルシステム側のスループット容量だけから割ると、届かない数になります。** 1 セッションあたり 625 MBps は EC2 の 1 フローあたり 5 Gbps に対応する値なので、**クライアントの帯域が先に天井になります。**
+
+```text
+必要セッション数 = 必要帯域 ÷ 625 MBps
+上限            = min(1 ノードあたり 8 パス, クライアントの帯域 ÷ 625 MBps)
+```
+
+例として、スループット容量 6,144 MBps を割り切るには約 10 セッションですが、**10 Gbps のインスタンスでは 2 フロー分（約 1,250 MB/s）しか通りません。** 単一クライアントで容量を使い切ることは前提にできません。この関係は [単一接続で測った値はストレージの性能ではない](../../performance/notes/a-single-connection-measures-the-client.md) にあります。
+
+**そして決めた数と理由を設計文書に書き残してください。** 手順書に「8」と固定値で書くと、次に読む人がなぜ 8 なのかを判断できません。
 
 **Selective LUN Map は既定で有効でした。** 検証環境の LUN マップは reporting node として **所有ノードと HA パートナーの 2 ノード**を列挙していました。1 HA ペアの構成ではこれが全ノードです。**HA ペアが複数ある構成では、これがパス数を抑える仕組みとして効きます。**
 
@@ -266,8 +288,9 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 |---|---|
 | フェイルオーバーはストレージ側が面倒を見る | **I/O を継続させるのはホスト側の multipath です** |
 | multipath は任意 | **AWS のドキュメントは自動フェイルオーバーのために必須としています** |
-| パスは多いほうが安全 | NetApp は **AFF/FAS で 1 LUN に 4 パス超は問題を起こしうる**としています |
-| AWS の 8 セッションが常に正しい | **第 1 世代の 4,000 MBps を前提にした計算です。** 第 2 世代では再計算が必要です |
+| パスは多いほうが安全 | **多いほど良くはありません。** ONTAP は 1 ノードあたり 8 パスを超えないこととしています。ASA / AFF / FAS 構成では 1 LUN あたり 4 パス超が障害時に問題を起こしうるとされています（**FSx for ONTAP はこのいずれでもありません**） |
+| AWS の手順に従うと NetApp の推奨に反する | **反しません。** 1 HA ペアで 8 セッションは、1 ノードあたり 8 パスというプラットフォーム非依存の上限の内側です |
+| AWS の 8 セッションが常に正しい | **8 は「必要な帯域から決める値」です。** 根拠として書かれている 4,000 MBps は現行のクォータの第 2 世代上限と一致しません。自分の構成から計算してください |
 | iSCSI の LIF は 1 ファイルシステムに 2 本 | **SVM 単位で 2 本です。** SVM を増やすと増えます |
 | iSCSI と NVMe/TCP は別の LIF を使う | **同じ LIF が両方の service を持っています** |
 | 接続スクリプトは何度流しても同じ | **冪等ではありません。** 16 → 24 に増えました |
@@ -308,7 +331,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 | Windows の MPIO 機能、`New-MSDSMSupportedHW`、`Set-MPIOSetting`、round robin、ポータルあたり 8 接続、`CheckiSCSI.ps1` | [AWS: Provisioning iSCSI for Windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-windows.html) |
 | NVMe/TCP の手順、`nvme connect-all -l 1800`、`/sys/module/nvme_core/parameters/multipath` の確認、前提クライアントが RHEL 9.3 であること、iSCSI と NVMe/TCP が同じ LIF を使うこと | [AWS: Provisioning NVMe/TCP for Linux](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) |
 | ONTAP が iSCSI で ALUA、NVMe で ANA を使うこと。1 ノードあたり 8 パスを超えないこと。LUN あたり最低 2 パス。Selective LUN Map と portset でパスを絞ること | [NetApp: Multipathing](https://docs.netapp.com/us-en/ontap/san-config/host-support-multipathing-concept.html) |
-| 0 バイトの `/etc/multipath.conf` が推奨であること、推奨パラメータの一覧、AFF/FAS で 1 LUN に 4 パス超が問題を起こしうること | [NetApp: Linux SAN host configuration](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html) |
+| 0 バイトの `/etc/multipath.conf` が推奨であること、推奨パラメータの一覧、**ASA / AFF / FAS 構成で** 1 LUN に 4 パス超が問題を起こしうること（FSx for ONTAP はこのいずれでもありません） | [NetApp: Linux SAN host configuration](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |
 | スループット容量の変更に伴うフェイルオーバーが NFS / SMB / iSCSI に透過的であること。ファイルサーバーが直列に置き換わること。フェイルオーバーの試験手段がスループット容量の変更であること | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
 | フェイルオーバーの契機が 4 つあること、通常 60 秒未満で完了すること、**透過的な対象として NFS と SMB のみを挙げていること**（上のページは iSCSI も挙げています） | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |

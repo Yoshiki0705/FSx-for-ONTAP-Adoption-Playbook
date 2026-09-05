@@ -37,7 +37,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +73,7 @@ class Row:
     probe: str
     what: str
     line: int
+    ref: str = "main"
 
 
 def strip_code(text: str) -> str:
@@ -138,6 +139,23 @@ def parse_table() -> tuple[list[Row], list[str]]:
             continue
         rows.append(Row(citing, repo, path, probe, what, offset))
     return rows, problems
+
+
+def refs_in_prose() -> dict[tuple[str, str], str]:
+    """Map each cited (repo, path) to the ref the citing prose pins it to.
+
+    Every citation points at `blob/main` today. A citation pinned to a commit is the
+    ordinary response to a source that keeps moving, and verifying that against `main`
+    would check a revision the reader never sees.
+    """
+    found: dict[tuple[str, str], str] = {}
+    for path in prose_files():
+        body = strip_code(path.read_text(encoding="utf-8"))
+        for match in BLOB_LINK.finditer(body):
+            found.setdefault(
+                (match.group("repo"), match.group("path")), match.group("ref")
+            )
+    return found
 
 
 def check_offline(rows: list[Row]) -> list[str]:
@@ -224,13 +242,13 @@ def check_repo_names() -> list[str]:
 
 def check_external(rows: list[Row]) -> list[str]:
     problems: list[str] = []
-    cache: dict[tuple[str, str], str | None] = {}
+    cache: dict[tuple[str, str, str], str | None] = {}
     for row in rows:
-        key = (row.repo, row.path)
+        # Fetch the ref the citation actually points at. Assuming `main` would verify a
+        # commit-pinned citation against a different file than the reader is sent to.
+        key = (row.repo, row.ref, row.path)
         if key not in cache:
-            url = (
-                f"https://raw.githubusercontent.com/{OWNER}/{row.repo}/main/{row.path}"
-            )
+            url = f"https://raw.githubusercontent.com/{OWNER}/{row.repo}/{row.ref}/{row.path}"
             request = urllib.request.Request(
                 url, headers={"User-Agent": "cross-repo-check"}
             )
@@ -245,7 +263,7 @@ def check_external(rows: list[Row]) -> list[str]:
             continue
         if row.probe not in body:
             problems.append(
-                f"{row.repo}/{row.path}: the probe {row.probe!r} is gone. Either the claim moved "
+                f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} is gone. Either the claim moved "
                 f"or it was retracted — check before adjusting {row.citing}."
             )
     return problems
@@ -262,6 +280,9 @@ def main() -> int:
 
     rows, problems = parse_table()
     problems += check_offline(rows)
+
+    pinned = refs_in_prose()
+    rows = [replace(row, ref=pinned.get((row.repo, row.path), row.ref)) for row in rows]
     if args.external and not problems:
         problems += check_repo_names()
         problems += check_external(rows)

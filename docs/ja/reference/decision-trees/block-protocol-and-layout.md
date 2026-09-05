@@ -19,7 +19,7 @@ lang: ja
 
 1. **デプロイタイプと世代** — NVMe/TCP は第 2 世代のみ。作成後に変更できません
 2. **HA ペア数** — 6 組を超えるとブロックプロトコルが使えなくなり、増やした HA ペアは削除できません
-3. **ホスト OS** — Windows で NVMe/TCP を使う手順は AWS のドキュメントに見当たりません
+3. **ホスト OS** — **Windows Server との NVMe/TCP は ONTAP 側で非対応です**（AWS 固有の制約ではありません）
 4. **LUN のレイアウト** — 決めているのは復旧の粒度です
 5. **容量** — 3 か所で数えられ、足りなくなると LUN が read-only に落ちます
 6. **整合性** — 既定は crash-consistent です
@@ -51,7 +51,7 @@ graph TD
     HA -->|ない| OS{ホスト OS}
 
     OS -->|Linux| PROTO{プロトコルの選択}
-    OS -->|Windows| WIN["iSCSI を選ぶ<br/>NVMe-TCP の手順は未文書"]
+    OS -->|Windows| WIN["iSCSI を選ぶ<br/>NVMe/TCP は ONTAP 側で非対応"]
 
     PROTO -->|レイテンシ重視・MPIO を単純にしたい| KERNEL{"カーネルに<br/>CONFIG_NVME_MULTIPATH があるか"}
     PROTO -->|実績と手順の豊富さ| ISCSI["iSCSI<br/>ポート 3260 を開ける"]
@@ -105,7 +105,9 @@ graph TD
 | iSCSI は世代を問わない | 「HA ペア 6 組以下のすべてのファイルシステム」 | 同上 |
 | デプロイタイプは変更不可 | 変更操作が存在せず、移行手段はバックアップ復元・SnapMirror・DataSync・サードパーティ | [AWS: Availability and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | 7 組目でブロックが使えなくなる。HA ペアは削除不可 | 「6 組を超えるファイルシステムではサポートされません」 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
-| Windows の NVMe/TCP 手順が未文書 | ブロックの手順として列挙されているのは iSCSI for Linux / iSCSI for Windows / NVMe/TCP for Linux の 3 つ | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| **Windows Server との NVMe/TCP は ONTAP 側で非対応** | Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られる。回避策として挙げられている NVMe/FC は、FC を提供しない FSx for ONTAP では使えません | [NetApp KB: Does ONTAP SAN support NVMe/TCP with Windows Server](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server) |
+| AWS が列挙しているブロックの手順は 3 つ | iSCSI for Linux / iSCSI for Windows / NVMe/TCP for Linux | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| Windows 版が無いことを欠落と見なさない判断 | **これは当方の推論で、出典の記述ではありません。** 上流が非対応であることから、AWS 側に手順が無いことは説明が付く、という読みです | — |
 | NVMe/TCP は MPIO の構成が単純 | 「iSCSI に比べて multi-path IO の構成を単純にする」 | [AWS: NVMe-over-TCP support](https://aws.amazon.com/about-aws/whats-new/2024/07/amazon-fsx-netapp-ontap-nvme-over-tcp) |
 | **カーネルに `CONFIG_NVME_MULTIPATH` が無いとフェイルオーバーが効かない** | Amazon Linux 2023（kernel 6.18.44）では無効で、1 つの namespace が同じ `wwid` の 2 デバイスとして現れます。フェイルオーバーの実測で、iSCSI が 1,161 サンプル失敗 0 の一方、NVMe/TCP は 423.8 秒使えませんでした | [パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー)（`verified`） |
 | NVMe/TCP は 8009 も要る | discovery が 8009、データが 4420 | [Multi-AZ が動かすのはアドレスではなくルート](../../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md)（`verified`） |

@@ -140,10 +140,17 @@ Put a conditions table in the body.
 
 **測定環境を撤去したら、そのことを書いてください。** 「再現できます」と「再現手順があります」は別です。
 
-**予算の目安**: 1 モジュールあたり実測に $50 以内、実測項目 4 件以上。**超えるなら `evidence: documented` で出し、何を測っていないかを明記します。**
+**予算の目安**: 1 モジュールあたり実測に $50 以内、実測項目 4 件以上。
 
-**Budget**: up to $50 of measurement per module, four measured items or more. Beyond that, publish
-as `documented` and state plainly what was not measured.
+**超えた場合に選ぶ区分は、測れなかった理由では決まりません。出どころで決まります。**
+一次資料があれば `documented`、測定環境を持つ別プロジェクトの記録があれば `documented`（条件の転記が必要）、
+どちらも無く推論で書くなら **`hypothesis`** です。**「予算を超えたから `documented`」は誤りです。**
+区分の選び方は [知見の分類ポリシー](../../evidence-policy.md) にあります。
+
+**Budget**: up to $50 of measurement per module, four measured items or more. **When that is
+exceeded, the tier is decided by provenance, not by why the measurement did not happen** — vendor
+documentation or a sibling project's record makes it `documented`, and reasoning with neither behind
+it is `hypothesis`. See the evidence policy.
 
 ---
 

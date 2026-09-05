@@ -23,7 +23,7 @@ lang: ja
 |---|---|
 | **世代** | **NVMe/TCP は第 2 世代のみ。** 第 1 世代では作り直し以外に道がありません |
 | **HA ペア数** | **どちらも 6 組以下。** 7 組目を足すと両方使えなくなり、**足した HA ペアは削除できません** |
-| **ホスト OS** | **Windows で NVMe/TCP を使う手順は AWS のドキュメントに見当たりません** |
+| **ホスト OS** | **Windows Server で NVMe/TCP は ONTAP 側で非対応です。** AWS に手順が無いのはその反映で、AWS 固有の制約ではありません（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)） |
 
 **世代と HA ペア数は作成後に変えられません。** プロトコルの比較を始める前にここを確認してください。
 
@@ -75,6 +75,8 @@ lang: ja
 | 8009 | NVMe/TCP の discovery | **載っていません** |
 
 **4420 は手順ページの出力例と re:Post の前提条件にだけ現れます。** 要件表だけを見てセキュリティグループを書くと、NVMe/TCP は通りません。**そして通らないときの症状はタイムアウトなので、規則ではなくホストの問題に見えます。**
+
+> **必要なポートは、要件表ではなく使うプロトコルの手順ページから拾ってください。** [要件表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html)は TCP 3260 までで、4420 と 8009 は手順ページと re:Post 側にあります（2026-09-05 確認）。**要件表を網羅リストとして使うと、NVMe/TCP はタイムアウトします。**
 
 ---
 
@@ -135,7 +137,11 @@ Linux 側は `linux` です。igroup の `os_type` は LUN の `os_type` とは�
 
 ## Windows の NVMe/TCP
 
-**AWS のドキュメントに Windows 向けの NVMe/TCP 手順は見当たりませんでした。** ブロックの手順として列挙されているのは 3 つです。
+**先に結論を書きます。ONTAP は Windows Server との NVMe/TCP をサポートしていません。** NetApp の KB が明示しており、Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られるとされています。回避策として NVMe/FC が挙げられていますが、**FSx for ONTAP は FC を提供しないので、この回避策は使えません。** Windows Server Insider Builds でのプレビューはあるものの、コマンドラインのみ・マルチパス無しという制約付きです（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)、2026-09-05 に確認）。
+
+**この KB は NetApp の `on-prem/` 名前空間に置かれています。** ホスト OS のサポート可否はプラットフォームに依存しない性質だと読めますが、**FSx for ONTAP を明示的に対象としているわけではありません。** 断定の強さはここまでにとどめてください。
+
+**そして「AWS に手順が無いのは上流の非対応の反映だ」という因果は、この KB の記述ではなく当方の推論です。** KB はサポート状況を述べているだけです。**実務上の帰結は同じで、Windows で NVMe/TCP を使う計画は立てられません。** 実際、AWS がブロックの手順として列挙しているのは 3 つです。
 
 - Provisioning iSCSI for Linux
 - Provisioning iSCSI for Windows

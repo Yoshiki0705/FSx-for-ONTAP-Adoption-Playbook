@@ -9,6 +9,102 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A cited claim was retracted upstream while this change was in review, and the gate caught it.**
+  The performance note said three single-connection measurements across two products all hit the
+  same ceiling — the EC2 per-flow limit. The sibling project has since corrected that: **Amazon EFS
+  at 499.79 MB/s matches EFS's own documented per-client quota of 500 MiBps, not 5 Gbps.** Similar
+  figures, different causes.
+  - **The two remedies differ, which is why the error mattered.** Added connections pass a per-flow
+    limit and do not pass a per-client quota, so the triage tree was routing readers of other
+    storage services to a fix that cannot work for them. The tree now splits on which service is
+    being measured before it gives that advice.
+  - The 1.18x spread between products is a ratio of two different ceilings, not two readings of one.
+  - **This is the first time the citation gate paid for itself.** `make cross-repo-external`
+    reported the probe gone; nothing else would have. Registering the citation is what made the
+    retraction visible.
+  - Four probes were bare identifiers — `nconnect`, `tcp-max-xfer-size`,
+    `max_connections_per_session`, `auto_vdbench` — which survive any rewrite that reverses the
+    finding, the one property the index says a probe must not have. Replaced with claim-bearing
+    literals.
+- **`evidence: documented` was being used for a sibling project's measurement, which the policy did
+  not define.** `docs/ja/evidence-policy.md` defined the tier as vendor or AWS documentation. It now
+  covers a cited measurement explicitly, with the three conditions that come with one: transcribe
+  every measurement condition, carry across what the source itself leaves unmeasured, and register
+  the citation so a retraction is detectable. **Both `_template` READMEs told future authors to
+  publish as `documented` when measurement exceeded the budget** — that is `hypothesis`, and no gate
+  can catch a mis-tiered note. Corrected to say the tier follows provenance, not the reason the
+  measurement did not happen.
+- **The replacement session-count rule ignored the ceiling the same change establishes.** Deriving
+  session count from provisioned throughput capacity at 625 MBps each gives about ten sessions for
+  6,144 MBps — unreachable from a client whose NIC binds first, and 625 MBps *is* the per-flow
+  limit. The formula now carries the client term.
+- **A causal claim was attributed to a source that does not make it.** The NetApp KB states that
+  ONTAP does not support NVMe/TCP with Windows Server; "so AWS has no page for it" is this
+  repository's inference. Labelled as inference, and the KB's `on-prem/` namespace is now stated
+  rather than assumed away.
+- **`check_cross_repo.py` captured a citation's ref and then fetched `main` regardless**, so a
+  commit-pinned citation would have been verified against a revision the reader never sees. Also
+  added its two break tests — the gate had none while every other doc gate does — and a weekly
+  workflow, because the external half ran only when someone remembered to run it, which is exactly
+  how seven repository renames stayed invisible.
+- **The resource map listed a resolved question inside its disagreements table**, with a verdict cell
+  reading "this is not a disagreement". Moved to a separate table so a reader scanning for open
+  disagreements does not have to read to the end of a cell to learn it is closed.
+
+- **A sweep for the same class of error found four more, and one of them was pointed the wrong way
+  entirely.** After correcting the path-count claim, every assertion of the form "the vendor does not
+  document this", "this is not supported", or "these two pages disagree" was re-checked against
+  primary sources on 2026-09-05.
+  - **"No AWS procedure exists for NVMe/TCP on Windows" was attributing an upstream limit to AWS.**
+    A NetApp KB answers the question directly: **ONTAP SAN does not support NVMe/TCP with Windows
+    Server**, with Windows support limited to native NVMe disks. The workaround it gives is NVMe/FC,
+    which FSx for ONTAP cannot offer because it has no FC. So the missing AWS page reflects the
+    support status, not a documentation gap. Corrected in five files, including a decision-tree
+    branch whose stated reason was wrong. **This is the case the guidance warns about: an
+    ONTAP-side answer already existed and was reachable by one search.**
+  - **Two third-party capability claims had no version.** The absence of an `nvme_subsystem` resource
+    in the NetApp Terraform provider is now pinned to v2.7.1 with the date the `docs/resources/`
+    listing was checked, and says to re-check the current release. Trident's NVMe/TCP being
+    REST-only likewise carries its check date. **Resources get added; a capability claim without a
+    version silently becomes false.**
+  - **Two AWS-side inconsistencies are recorded as what a reader has to do about them**, not as
+    verdicts: the Price List API returning a `unit` that disagrees with its own `description`, and
+    the security group requirements table omitting the NVMe/TCP ports. Each states what the page or
+    response contains, the date it was checked, and the operation that avoids the problem —
+    reconcile `unit` against `description`, take ports from the procedure page.
+    - **An earlier revision of this entry wrote that no documentation feedback had been filed.**
+      That is a record of an action not taken, which belongs in working notes rather than in a
+      published document: it is process metadata, and it moves the problem to the reader instead of
+      to the vendor. Removed. Raising these with AWS is tracked outside the repository, and a
+      reference is added here only once an attributable answer exists.
+  - Claims re-verified and left standing: the two AWS pages that differ on iSCSI failover
+    transparency, the ports absent from the requirements table, and the failover-detection `sysctl`
+    tuning being scoped to Single-AZ NFS.
+
+- **The claim that following AWS's iSCSI procedure exceeds NetApp's recommendation by four times was
+  wrong, and it was the headline of a note.** It set AWS's 8-sessions-per-node guidance against a
+  NetApp statement that a single LUN should not require more than four paths. Re-reading both primary
+  sources on 2026-09-05:
+  - **The NetApp four-path statement is scoped to ASA, AFF and FAS configurations.** FSx for ONTAP is
+    none of the three, and **no four-path recommendation for FSx for ONTAP was found.** The note had
+    that scope in its body and dropped it in the comparison, which is the whole error.
+  - **The platform-independent guidance is eight paths per node**, in the ONTAP SAN configuration
+    documentation. One HA pair with eight sessions is eight paths per node — **inside that limit, not
+    outside it.** There is no AWS-versus-NetApp contradiction here to report.
+  - **On Linux the eight-session step is marked `(Optional)`**, conditioned on needing more than the
+    5 Gbps single-client EC2 maximum. Without it the result is **two paths**, which is what this
+    repository's own quickstart measured. "Following the procedure gives 16 paths" contradicted a
+    measurement already published here. On Windows eight *is* the shipped script's default, and AWS's
+    own configuration checker prints 16 sessions across two nodes as a successful state.
+  - The note, the resource map's disagreement table and the pre-cutover checklist are corrected. The
+    note's title changes from "手順どおりに作ると推奨の 4 倍のパスが立つ" to what is actually true:
+    **session count is neither a default nor a ceiling; it is derived from required bandwidth.**
+- **A documentation inconsistency was being presented as a settled defect.** The eight-session
+  rationale cites 4,000 MBps as the highest throughput capacity, while the quotas page gives
+  second-generation ceilings above it. Both readings are recorded with the date they were checked,
+  and the text now gives the operation that avoids the problem — compute session count from your own
+  provisioned throughput capacity — rather than a verdict on which page is wrong.
+
 - **Seven sibling repositories had been renamed, and every link here still used the old name.**
   `s3-burst-on-ontap-files`, `fsxn-cyber-resilience-patterns`, `fsxn-observability-integrations`,
   `fsxn-lakehouse-integrations`, `ontap-edge-to-cloud-ai`, `vmware-migration-ec2-ontap` and
@@ -506,9 +602,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   anchor it, and a sibling project had just produced them. **The numbers are cited, not
   re-measured** — one environment, one set of numbers, and this repository translates them into
   design guidance.
-  - **Three configurations across two products and two protocols all landed between 4.0 and 4.7 Gbps
-    on one connection**, against a documented per-flow limit of 5 Gbps. The 1.18x spread that a
-    product comparison would have reported was two measurements of the same ceiling.
+  - **Three configurations across two products and two protocols landed between 499.79 and
+    591.62 MB/s on one connection, and the ceilings they hit are not the same one.** The two
+    FSx for ONTAP figures sit against the documented EC2 per-flow limit of 5 Gbps; EFS at
+    499.79 MB/s matches EFS's own per-client quota of 500 MiBps. The 1.18x spread a product
+    comparison would have reported is a ratio of two different ceilings, and the remedy differs —
+    added connections pass a per-flow limit and do not pass a per-client quota.
   - **The same configuration measured twice differed by 45%**, cache state being the only variable.
     That is recorded as a property of the storage rather than a benchmarking defect, which is why
     the note refuses to state a single throughput figure for the file system.

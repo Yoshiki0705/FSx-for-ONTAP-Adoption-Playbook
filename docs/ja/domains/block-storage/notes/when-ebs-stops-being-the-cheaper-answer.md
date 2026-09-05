@@ -51,6 +51,7 @@ lang: ja
 **第 2 世代のスループット容量は第 1 世代より単価が高いことに注意してください**（Single-AZ で $2.013 対 $0.906）。第 2 世代でしか使えない機能（NVMe/TCP、Single-AZ の HA ペア複数）と引き換えです。
 
 > **単位表記の注意**: Price List API の `gp3` 追加スループットのエントリは、単位が `GiBps-mo` で価格が $49.152 と返ります。説明文は「per provisioned MiBps-month $0.048」です（49.152 ÷ 1024 = 0.048）。**API の `unit` と `description` で単位が違うので、`pricePerUnit` だけを引き抜くと 1,024 倍ずれます。** FSx for ONTAP のスループットも同様に `unit` が `MiBps-Mo`、説明文は MBps です。
+> **`pricePerUnit` を単体で使わず、必ず `unit` と `description` を突き合わせてから計算してください。** 上の 2 項目は 2026-09-05 の応答で単位が食い違っており、突き合わせを飛ばすと 1,024 倍ずれます。
 
 ---
 

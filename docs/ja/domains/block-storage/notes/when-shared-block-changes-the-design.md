@@ -89,7 +89,7 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 | **制御面が 2 つ** | LUN・igroup・NVMe subsystem は AWS の API に存在しません | [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) |
 | **既定の Snapshot は crash-consistent** | アプリケーションを静止させる仕組みは別に必要です | [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) |
 | **最小構成のコスト** | SSD 1,024 GiB + スループット 384 MBps が下限です | 小さい要件には Amazon EBS を使う |
-| **NVMe/TCP は第 2 世代のみ** | 第 1 世代では作り直し以外に道がありません。Windows 向けの手順も見当たりません | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) |
+| **NVMe/TCP は第 2 世代のみ** | 第 1 世代では作り直し以外に道がありません。**Windows Server との NVMe/TCP は ONTAP 側で非対応です** | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) |
 | **スループットは HA ペア単位で共有** | NFS・SMB・S3 Access Point と同じ帯域を分け合います | [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) |
 
 ---

@@ -84,10 +84,10 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 |---|---|---|
 | **ONTAP CLI**（SSH） | すべて | — |
 | **ONTAP REST API** | すべて。`/api/storage/luns`、`/api/protocols/san/igroups`、`/api/protocols/san/lun-maps`、`/api/protocols/nvme/subsystems`、`/api/storage/namespaces`、`/api/protocols/nvme/subsystem-maps` | — |
-| **NetApp Terraform provider** | `netapp-ontap_lun` / `_san_igroup` / `_san_lun-map` / `_iscsi_service` / `_nvme_namespace` | **`nvme_subsystem` と subsystem マップのリソースがありません。** namespace は作れてもマップできません |
+| **NetApp Terraform provider** | `netapp-ontap_lun` / `_san_igroup` / `_san_lun-map` / `_iscsi_service` / `_nvme_namespace` | **`nvme_subsystem` と subsystem マップのリソースがありません**（v2.7.1、2026-09-05 に `docs/resources/` を確認）。namespace は作れてもマップできません |
 | **Ansible `netapp.ontap`** | `na_ontap_lun` / `_lun_map` / `_lun_map_reporting_nodes` / `_igroup` / `_igroup_initiator` / `_iscsi` / `_nvme` / `_nvme_namespace` / `_nvme_subsystem` | 確認した範囲では NVMe を含めて揃っています |
 
-**NVMe/TCP を Terraform だけで完結させることは、現時点ではできません。** namespace の作成は `netapp-ontap_nvme_namespace` で書けますが、**subsystem の作成と namespace のマップは別の手段が必要です。** iSCSI であれば Terraform provider で LUN からマップまで届きます。
+**NVMe/TCP を Terraform だけで完結させることは、provider v2.7.1 の時点ではできません。** **リソースは追加されるので、使う前に現行版の `docs/resources/` を確認してください。** namespace の作成は `netapp-ontap_nvme_namespace` で書けますが、**subsystem の作成と namespace のマップは別の手段が必要です。** iSCSI であれば Terraform provider で LUN からマップまで届きます。
 
 **Terraform を使う場合、AWS provider と NetApp provider の 2 つを同じ構成に置くことになります。** AWS provider の `aws_fsx_ontap_volume` までが片側で、`netapp-ontap_lun` からが反対側です。**この 2 つは依存関係を持つので、適用順序が構成に現れます。**
 
@@ -179,7 +179,7 @@ graph TD
 | 2 | CloudFormation の Amazon FSx のリソースタイプ一覧を開き、6 種類であることを確認する | テンプレートで到達できる範囲 |
 | 3 | `ssh fsxadmin@<management endpoint>` で接続し、`lun show` が動くことを確認する | ONTAP 側の到達経路 |
 | 4 | ONTAP REST API に `GET /api/storage/luns` を投げる | 自動化に使える経路 |
-| 5 | Terraform を使う場合、NetApp provider のリソース一覧に `nvme_subsystem` がないことを確認する | **NVMe/TCP を Terraform だけで完結できないこと** |
+| 5 | Terraform を使う場合、**現行版の** NetApp provider のリソース一覧に `nvme_subsystem` があるかを確認する | **v2.7.1 では NVMe/TCP を Terraform だけで完結できないこと。追加されていれば前提が変わります** |
 | 6 | 検証環境で LUN をマップしたままボリュームを削除しようとし、返るエラーを記録する | 削除順序の依存関係と、AWS 側から理由が返らないこと |
 | 7 | 構築手順書を読み返し、AWS の資格情報と `fsxadmin` の資格情報の受け渡しが書かれているかを確認する | 手順書が制御面をまたげているか |
 
@@ -193,7 +193,7 @@ graph TD
 |---|---|
 | テンプレートを適用すればブロックが使える状態になる | **ボリュームまでです。** LUN 以降はリソースタイプが存在しません |
 | Amazon FSx の API に LUN の操作がどこかにある | **1 つもありません。** アクション一覧はボリューム・SVM・Snapshot・バックアップ・S3 Access Point で終わります |
-| Terraform なら NVMe/TCP も全部書ける | **`nvme_subsystem` のリソースがありません。** namespace は作れてもマップできません |
+| Terraform なら NVMe/TCP も全部書ける | **v2.7.1 に `nvme_subsystem` のリソースがありません**（2026-09-05 確認）。namespace は作れてもマップできません |
 | ONTAP CLI と REST で到達範囲が違う | 確認した範囲ではどちらもブロックオブジェクト全体に届きます |
 | CloudFormation のドリフト検出で LUN の変更も分かる | **見ていません。** ONTAP 側は別に確認する必要があります |
 | セキュリティグループの要件表に従えばブロックは通る | **NVMe/TCP の 4420 と 8009 は要件表に載っていません** |
@@ -212,7 +212,7 @@ graph TD
 | セキュリティグループの要件表に 3260 があり 4420 がないこと | [AWS: Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) |
 | NVMe/TCP のポート 4420 が必要であること | [AWS re:Post: Use NVMe/TCP to mount FSx for ONTAP on Linux](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nvme-tcp) |
 | ONTAP REST API のブロックオブジェクトのパス | [LUNs](https://docs.netapp.com/us-en/ontap-restapi/ontap/storage_luns_endpoint_overview.html) · [igroups](https://docs.netapp.com/us-en/ontap-restapi/ontap/protocols_san_igroups_endpoint_overview.html) · [LUN maps](https://docs.netapp.com/us-en/ontap-restapi/ontap/protocols_san_lun-maps_endpoint_overview.html) · [NVMe subsystems](https://docs.netapp.com/us-en/ontap-restapi/ontap/protocols_nvme_subsystems_endpoint_overview.html) · [namespaces](https://docs.netapp.com/us-en/ontap-restapi/ontap/storage_namespaces_endpoint_overview.html) |
-| NetApp Terraform provider のリソース名と `nvme_subsystem` の不在 | [NetApp/terraform-provider-netapp-ontap](https://github.com/NetApp/terraform-provider-netapp-ontap) |
+| NetApp Terraform provider のリソース名と、v2.7.1 における `nvme_subsystem` の不在 | [NetApp/terraform-provider-netapp-ontap](https://github.com/NetApp/terraform-provider-netapp-ontap)（`docs/resources/`、2026-09-05 確認） |
 | Ansible `netapp.ontap` のブロック関連モジュール | [ansible-collections/netapp.ontap](https://github.com/ansible-collections/netapp.ontap) |
 
 ---

@@ -1,0 +1,47 @@
+name: cross-repo external
+
+# The per-PR gate (`make cross-repo`) only checks that citations are registered. The half that
+# detects decay needs the network: it fetches each cited file to confirm the probe string is still
+# there, and resolves every sibling repository name to catch one that only still works because
+# GitHub redirects it.
+#
+# Neither can run on a pull request without making a merge depend on a sibling repository being
+# reachable at that moment. So it runs on a schedule, where a transient failure costs nobody a
+# merge — and where the two failures it exists for actually surface:
+#
+#   - A cited claim is retracted upstream. Nothing on this side changes, so nothing reports it.
+#     This has already happened once: a sibling corrected a measurement's explanation, and the
+#     probe caught it only because someone ran the check by hand.
+#   - A sibling repository is renamed. The old name keeps resolving, so the link checker reports
+#     every URL reachable while two documents spell the same repository differently. Seven
+#     renames went undetected this way.
+on:
+  schedule:
+    # Weekly. Decay upstream is not urgent, but it is silent, so it needs a clock rather than a
+    # person remembering to look.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: citation probes and repository names
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      # Not `make cross-repo-external`: the Makefile target depends on the offline check, and a
+      # scheduled run should report the network findings even when an unrelated registration
+      # problem is already failing the pull-request gate.
+      - name: Verify probes and repository names
+        run: python3 tools/check_cross_repo.py --external
