@@ -47,6 +47,33 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 **AWS のドキュメントのブロック手順が、どれも `ssh fsxadmin@<management endpoint>` から始まるのはこのためです。**
 
+### ボリュームは両方から作れるが、作った側で見え方が変わること
+
+**ボリュームの行が「両方に届く」になっているのは、選択の余地があるという意味です。そしてどちらで作るかが監視とバックアップを変えます。**
+
+検証環境で AWS の API で 2 ボリューム、ONTAP の CLI で 2 ボリュームを作った結果です。
+
+| 数え方 | 結果 |
+|---|---|
+| `aws fsx describe-volumes` | **3 件**（root + AWS で作った 2 件） |
+| ONTAP の `volume show` | **5 件** |
+| `aws cloudwatch list-metrics` の `VolumeId` の値 | **3 件** |
+
+**ONTAP 側で作ったボリュームには `fsvol-` の ID が付きません。** そのため次のすべてから外れます。
+
+| 外れるもの | 理由 |
+|---|---|
+| CloudWatch の `VolumeId` 次元 | ID が無い |
+| AWS の API によるタグ付け | 同上 |
+| AWS Backup の選択対象 | 同上 |
+| タグベースのコスト配分 | タグが付かない |
+
+**LUN は ONTAP 側にしか作れませんが、その容器であるボリュームは AWS 側で作れます。** 監視とバックアップを AWS 側で回すなら、**ボリュームは AWS の API、LUN は ONTAP** という分け方が噛み合います。**「ブロックだから全部 ONTAP 側」にすると、監視から静かに外れます。**
+
+> **区分**: `verified`（検証日 2026-09-05、`ap-northeast-1`、`MULTI_AZ_2` 第 2 世代 1 HA ペア、ONTAP 9.18.1P5）— 件数の不一致と `VolumeId` 次元の不在。
+
+監視側から見た同じ話は [ブロックの監視で見えるものと見えないもの](what-block-monitoring-shows.md) にあります。
+
 ---
 
 ## 境界の向こう側に届くツール

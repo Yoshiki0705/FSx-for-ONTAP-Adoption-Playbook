@@ -153,7 +153,10 @@ graph TD
 | iSCSI のセッション数 | [Provisioning iSCSI](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-windows.html): 8 セッションで 5,000 MBps、これで**最上位のスループット容量 4,000 MBps を賄える** | [Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html): 第 2 世代の上限は Multi-AZ 6,144 MBps / Single-AZ 73,728 MBps | **8 セッションの指針は第 1 世代を前提に書かれています。** 第 2 世代で上限まで使うならセッション数の再計算が必要 |
 | ホストあたりのパス数 | [AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html): ノード・AZ あたり 8 セッション | [NetApp](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html): AFF/FAS では **1 LUN に 4 パス超は障害時に問題を起こしうる** | セッション数とパス数は別の数え方です。[パスはフェイルオーバーの仕組みそのもの](../domains/block-storage/notes/paths-are-the-failover-mechanism.md) を参照 |
 | NVMe/TCP のポート | [Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html): 4420 の記載なし | [Provisioning NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) と [re:Post](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nvme-tcp): 4420 が必要 | **セキュリティグループの要件表は NVMe/TCP について不完全です。** iSCSI 用に書いた規則では NVMe/TCP は通りません |
-| フェイルオーバーの透過性 | [Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html): NFS / SMB / **iSCSI** に透過的 | NVMe/TCP については記載なし。[Provisioning NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) が controller loss timeout 1800 秒を指示 | **NVMe/TCP の透過性は文書化されていません。** 未記載であることを未対応と読み替えないこと |
+| フェイルオーバーの透過性の対象 | [Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html): NFS / SMB / **iSCSI** に透過的 | [Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html): **NFS と SMB のみ**を挙げ、iSCSI に触れない | **同じ AWS の 2 ページで対象の範囲が違います。** 実測では iSCSI は透過的でした（1,161 サンプルで失敗 0）。[パスはフェイルオーバーの仕組みそのもの](../domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) を参照 |
+| NVMe/TCP の透過性 | どちらのページも **NVMe/TCP を名指ししていません** | [Provisioning NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) は controller loss timeout に 1800 秒を指示 | **未記載を非対応と読み替えないこと。** 実測では Amazon Linux 2023 で透過的になりませんでしたが、**原因はカーネルの `CONFIG_NVME_MULTIPATH` 無効**です。1800 秒の指示は、コントローラが戻るまで待つための値と整合します |
+| LUN を置くボリュームの snapshot 予約 | [AWS: Creating LUNs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-luns.html): ボリュームを LUN より **5% 大きく**すること（API 既定も 5%） | [NetApp: LUN を含む FlexVol の指針](https://docs.netapp.com/us-en/ontap-system-manager-classic/online-help-96-97/concept_guidelines_working_with_volumes_that_contain_luns.html): 既定の 5% を挙げた上で、**Snapshot 用の予約を 0 にする**こと（自動 Snapshot スケジュールの停止も含む。**ONTAP 9.7 以前の System Manager classic の記載**） | **予約は「先に取るか後で取るか」の違いです。** どちらでも Snapshot は容量を使います。**0 にした場合、Snapshot の消費は active file system 側から出ます。** [容量は 3 か所で数えられる](../domains/block-storage/notes/capacity-is-counted-in-three-places.md) を参照 |
+| フェイルオーバー検知を速くする調整 | [Troubleshooting I/O errors and NFS lock reclaim failures](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/nfs-failover-issues.html): クライアントの `sysctl` で 55〜60 秒を 15〜20 秒に。**対象は Single-AZ の NFS** | Multi-AZ とブロックについての記載はありません | **あの調整は ARP の学び直しを速くするものです。** Multi-AZ の floating アドレスはルートテーブルの書き換えで移り、**iSCSI のアドレスは動きません。** どちらもこの調整が効く場面ではありません。[Multi-AZ が動かすのはアドレスではなくルート](../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) を参照 |
 
 ---
 
@@ -169,6 +172,10 @@ graph TD
 | ノート | [LUN の Snapshot は既定で crash-consistent](../domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | 整合性の定義と SnapCenter の位置 |
 | ノート | [共有ブロックが設計を変える条件](../domains/block-storage/notes/when-shared-block-changes-the-design.md) | 選択肢の比較と、公開ベンチマークの読み方 |
 | ノート | [Kubernetes のブロック PV はボリューム数の上限に当たる](../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | `ontap-san` と `ontap-san-economy` の分岐点 |
+| ノート | [Multi-AZ が動かすのはアドレスではなくルート](../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | floating と非 floating の分離、Transit Gateway の要否、最適パスの向き |
+| ノート | [igroup の外側にある 2 つの制御](../domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | CHAP と portset。`fsxadmin` で使える範囲 |
+| ノート | [LUN に載せた DB は静止させずに復旧した](../domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | consistency group の write fence と、DB 自身による復旧 |
+| ノート | [ブロックの監視で見えるものと見えないもの](../domains/block-storage/notes/what-block-monitoring-shows.md) | CloudWatch の次元、1 ボリューム 1 LUN の監視上の理由 |
 | ノート | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) | HA ペア 6 組の天井がここで決まります |
 | 決定木 | [ブロックプロトコルとレイアウトの決定木](decision-trees/block-protocol-and-layout.md) | 上の判断を 1 枚にまとめたもの |
 | 比較 | [ブロックストレージの選択肢の比較](comparison/block-storage-options.md) | EBS などとの対称なトレードオフ |
@@ -177,7 +184,7 @@ graph TD
 
 ## AI エージェントに渡すときの注意
 
-**このページを検索して数値だけを引き抜くと誤ります。** 上の「資料間の食い違い」に挙げた 5 点は、どれも片方だけを読むと成り立つ記述です。
+**このページを検索して数値だけを引き抜くと誤ります。** 上の「資料間の食い違い」に挙げた 7 点は、どれも片方だけを読むと成り立つ記述です。
 
 | 引き抜きやすい値 | そのままでは誤る理由 |
 |---|---|

@@ -27,8 +27,8 @@ lang: ja
 
 さらに **接続手順は冪等ではありません。** Windows で 8 接続のループを同じポータルに対してもう一度回すと、**セッションが 16 から 24 に、パスも 24 本に増えました。** 警告は出ません。
 
-> **区分**: `verified`（検証日 2026-09-05、`ap-northeast-1`、`SINGLE_AZ_2` 第 2 世代 1 HA ペア、ONTAP 9.18.1P5、Amazon Linux 2023 と Windows Server 2022）— パス数・ALUA の分かれ方・冪等でないこと・各既定値。
-> **フェイルオーバーの所要時間は測れていません（`documented`）。** ホスト側からパス障害を誘発する試みが 2 回失敗し、パスが落ちなかったため測定になっていません。詳細は [測れなかったこと](#測れなかったこと) にあります。
+> **区分**: `verified`（検証日 2026-09-05、`ap-northeast-1`、`SINGLE_AZ_2` および `MULTI_AZ_2` の第 2 世代 1 HA ペア、ONTAP 9.18.1P5、Amazon Linux 2023 と Windows Server 2022）— パス数・ALUA の分かれ方・冪等でないこと・各既定値・**フェイルオーバー時の I/O 継続と所要時間**。
+> **フェイルオーバーは Multi-AZ 環境で 1 回測りました。** 結果は [実測したフェイルオーバー](#実測したフェイルオーバー) にあります。**iSCSI は無停止、NVMe/TCP は 423.8 秒の断**でした。
 > **性能値は含めません。** 自環境での確認手順は [自環境での確認手順](#自環境での確認手順) にあります。
 
 ---
@@ -175,20 +175,66 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 ---
 
-## 測れなかったこと
+## 実測したフェイルオーバー
 
-**フェイルオーバーの所要時間は測れていません。** ホスト側からパス障害を誘発する試みが 2 回失敗しました。
+**ホスト側から誘発する試みは 2 回失敗しました。**
 
 | 試み | 結果 |
 |---|---|
-| Windows のファイアウォールで 1 つのポータル宛の TCP 3260 を outbound で遮断 | **パス数は 16 のまま。** 確立済みの iSCSI セッションは影響を受けませんでした。20 秒間の書き込み 40 回で失敗 0 |
+| Windows のファイアウォールで 1 つのポータル宛の TCP 3260 を outbound で遮断 | **パス数は 16 のまま。** 確立済みの iSCSI セッションは影響を受けませんでした |
 | そのポータルへの接続に対する `Disconnect-IscsiTarget` | **セッション数は 16 のまま** |
 
-**80 回の書き込みで失敗が 0 でしたが、パスが落ちていないので、これはフェイルオーバーの証拠ではありません。** 「何も壊れていない間、書き込みが通り続けた」ことの証拠です。
+**誘発できる方法は 1 つだけです。スループット容量の変更です。** `storage failover takeover` は使えません。**FSx for ONTAP は HA の状態を `fsxadmin` に見せておらず、`storage failover show` は空のテーブルを返します。** そして **第 2 世代はスループット容量の変更の間に 6 時間のクールダウンがあるので、1 つの環境で測れるのは 1 回だけです。**
 
-**LIF を管理面から落とす方法は試していません。** Amazon FSx が管理する LIF の状態を変更する操作であり、検証の副作用が読み切れないため行いませんでした。
+Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の両方に負荷を掛けた状態で 1 秒間隔の 4 KiB の direct write を記録しました。**
 
-**AWS のドキュメントは、スループット容量の変更に伴うフェイルオーバーが NFS / SMB / iSCSI に透過的であると記載しています。** NVMe/TCP は名指しされていません。**未記載を非対応と読み替えないでください。**
+| 対象 | サンプル数 | 失敗 | 最も遅い 1 回 | 断の長さ |
+|---|---|---|---|---|
+| iSCSI の LUN（`dm-multipath` 経由） | 1,161 | **0** | **2.101 秒** | **なし** |
+| NVMe/TCP の namespace（デバイスノード 1 つ、カーネルのネイティブ multipath 無効） | 752 | 11 | **412.741 秒** | **423.8 秒** |
+
+**同時に走らせていた PostgreSQL の負荷は止まらず、約 390 万行まで進みました。**
+
+時系列です。
+
+| 時刻（UTC） | 出来事 |
+|---|---|
+| 07:27:40 | スループット容量の変更を要求 |
+| 07:28:10 → 07:28:31 の間 | NFS / SMB の floating アドレスの `/32` ルートのターゲットが 1a の ENI から 1c の ENI に書き換わる |
+| 07:28:46 | **ANA が反転。** 1c 側の LIF が `optimized`、1a 側が `non-optimized` に。**要求から約 66 秒** |
+| 07:28:48 → 07:29:11 | `dm-multipath` が追従。片方のパスグループが `prio=0` になり、やがて落ちる |
+| 07:29:26 | **両プロトコルで唯一の遅い書き込み。** iSCSI 2.101 秒、NVMe/TCP 2.201 秒 |
+| 07:29:33 | **`nvme3`（1a 側 LIF のコントローラ）が `connecting` に。** 進行中の NVMe の書き込みがブロック |
+| 07:29:41 → 07:36:20 | ノード -01 の置き換えの間、`nvme3` は `connecting` のまま |
+| 07:36:22 | **iSCSI が 2 つのパスグループに復帰** |
+| 07:36:27 → 07:36:37 | `nvme3` が `live` に戻り、ANA は `change` を経て `non-optimized`。**NVMe の書き込みが再開** |
+| 07:39:26 → 07:39:52 の間 | floating アドレスの `/32` ルートが 1a の ENI に戻る（フェイルバック） |
+| 07:49:38 | 変更が完了。**要求から約 22 分** |
+
+**スループット容量の変更は単なるフェイルオーバーではありません。** AWS は **ファイルサーバーを直列に置き換える**と記載しており、順序は「フェイルオーバー → フェイルバック → 2 台目の置き換え」です。**だから全体で 22 分かかり、ノード 1 台が不在の時間が約 7 分になりました。** 文書にある「通常 60 秒未満」はフェイルオーバーそのものの時間で、**ANA が反転するまでの約 66 秒がそれに対応します。**
+
+### iSCSI と NVMe/TCP で結果が分かれた理由
+
+**iSCSI は透過的でした。** `dm-multipath` が 2 本目のパスに切り替え、**エラーは 1 度も出ず、コストは約 2.1 秒の停止だけ**でした。AWS がスループット容量のページで iSCSI を透過的と書いている内容と一致します。
+
+**NVMe/TCP は透過的ではありませんでした。** ただし **原因は FSx for ONTAP 側ではなくホストのカーネル構成です。**
+
+| 段階 | 起きたこと |
+|---|---|
+| 原因 | Amazon Linux 2023 のカーネルが **`CONFIG_NVME_MULTIPATH` 無効**でビルドされている |
+| 帰結 1 | 1 つの namespace が **同じ `wwid` を持つ 2 つのデバイスノード**として現れる |
+| 帰結 2 | アプリケーションはそのうち片方に紐づく。**切り替える先が存在しない** |
+| 観測 | コントローラが落ちた側のデバイスへの書き込みが **412.741 秒ブロックしたのちエラー**になり、以後もコントローラが戻るまで失敗 |
+
+**AWS が NFS / SMB / iSCSI を名指しして NVMe/TCP を名指ししていない理由が、ここに現れています。**
+
+**「NVMe/TCP はフェイルオーバーできない」ではありません。** ネイティブ multipath が有効なカーネルなら 2 つのコントローラが 1 つのデバイスにまとまり、ANA に従って切り替わります。**ただしそれはこの検証で確認していません。** 確認したのは **AL2023 の既定のカーネルでは切り替わらない**ことです。
+
+**NVMe/TCP を使うなら、カーネルの `CONFIG_NVME_MULTIPATH` を構築前に確認してください。** 無効なら、iSCSI を選ぶか、ネイティブ multipath が有効なディストリビューションを選ぶ判断になります。
+
+**なお AWS の NVMe/TCP の手順は controller loss timeout を 1800 秒に指示しています。** 検証環境の断が 423.8 秒だったことと合わせると、**この値はコントローラが戻るまで待つための設定です。** 待てるかどうかはアプリケーション側の要件です。
+
+**LIF を管理面から落とす方法は試していません。** Amazon FSx for ONTAP が管理する LIF の状態を変更する操作であり、検証の副作用が読み切れないため行いませんでした。
 
 ---
 
@@ -207,9 +253,10 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 | 9 | `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **NVMe/TCP で multipath が成立するか** |
 | 10 | NVMe/TCP 接続後、`nvme list` で同じ `wwid` のデバイスが複数出ていないかを確認する | multipath が効いていない兆候 |
 | 11 | `lun mapping show -fields reporting-nodes` | Selective LUN Map が絞っている範囲 |
-| 12 | 検証環境で LIF を落とすかネットワークを切り、I/O が継続するかと所要時間を測る | **このノートで測れなかった部分。検証環境で行ってください** |
+| 12 | 検証環境でスループット容量を変更し、**両プロトコルに負荷を掛けた状態で** 1 秒間隔の direct write の成否と所要時間を記録する | **フェイルオーバー時に I/O が継続するか。第 2 世代は変更間に 6 時間のクールダウンがあり、1 環境で 1 回しか測れません** |
+| 13 | 同時に `nvme ana-log` とコントローラの `state` を 2 秒間隔で記録する | **ANA が反転した時点** |
 
-手順 8 と 12 は**検証環境で行ってください。** 手順 8 は本番でパス数を倍にします。
+手順 8 と 12 は**検証環境で行ってください。** 手順 8 は本番でパス数を倍にします。**手順 12 はプローブを先に動かし、記録先を確認してから変更を要求してください。** やり直しは 6 時間後です。
 
 ---
 
@@ -228,7 +275,11 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 | `mpathconf --enable` が NetApp 推奨の設定を作る | **NetApp は 0 バイトのファイルを推奨しています。** `mpathconf` は 334 バイトを作りました |
 | NVMe/TCP なら multipath は自動 | **Amazon Linux 2023 ではカーネルで無効です。** 同じ namespace が 2 デバイスに見えます |
 | `/sys/module/nvme_core/parameters/multipath` を見れば分かる | **AL2023 にはこのファイルがありません** |
-| このノートでフェイルオーバー時間が分かる | **測れていません。** 誘発の試みが 2 回失敗しました |
+| フェイルオーバーは iSCSI でも I/O エラーになる | **1,161 サンプルで失敗 0 でした。** 約 2.1 秒の停止のみ |
+| NVMe/TCP も iSCSI と同様に透過的 | **AL2023 では透過的ではありませんでした。** 423.8 秒の断です。原因はカーネルの `CONFIG_NVME_MULTIPATH` 無効 |
+| NVMe/TCP はフェイルオーバーできない | **カーネル構成の問題です。** ネイティブ multipath が有効な環境での挙動はこの検証では未確認 |
+| `storage failover takeover` でフェイルオーバーを試せる | **`storage failover show` が空テーブルを返します。** 誘発手段はスループット容量の変更だけです |
+| スループット容量の変更 = 60 秒未満のフェイルオーバー | **全体で約 22 分でした。** ファイルサーバーを直列に置き換えるためです。60 秒未満はフェイルオーバー単体の時間で、ANA の反転は約 66 秒でした |
 
 ---
 
@@ -238,7 +289,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 |---|---|
 | ONTAP バージョン | 9.18.1P5 |
 | リージョン | `ap-northeast-1` |
-| デプロイタイプ | `SINGLE_AZ_2`（第 2 世代、1 HA ペア） |
+| デプロイタイプ | パス数・ALUA・冪等性・既定値は `SINGLE_AZ_2`。**フェイルオーバーの実測は `MULTI_AZ_2`**（どちらも第 2 世代、1 HA ペア） |
 | スループット容量 | 384 MBps |
 | Linux クライアント | Amazon Linux 2023、kernel 6.18.44-99.149.amzn2023.x86_64 |
 | Windows クライアント | Windows Server 2022 Datacenter |
@@ -259,7 +310,8 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 | ONTAP が iSCSI で ALUA、NVMe で ANA を使うこと。1 ノードあたり 8 パスを超えないこと。LUN あたり最低 2 パス。Selective LUN Map と portset でパスを絞ること | [NetApp: Multipathing](https://docs.netapp.com/us-en/ontap/san-config/host-support-multipathing-concept.html) |
 | 0 バイトの `/etc/multipath.conf` が推奨であること、推奨パラメータの一覧、AFF/FAS で 1 LUN に 4 パス超が問題を起こしうること | [NetApp: Linux SAN host configuration](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |
-| スループット容量の変更に伴うフェイルオーバーが NFS / SMB / iSCSI に透過的であること | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
+| スループット容量の変更に伴うフェイルオーバーが NFS / SMB / iSCSI に透過的であること。ファイルサーバーが直列に置き換わること。フェイルオーバーの試験手段がスループット容量の変更であること | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
+| フェイルオーバーの契機が 4 つあること、通常 60 秒未満で完了すること、**透過的な対象として NFS と SMB のみを挙げていること**（上のページは iSCSI も挙げています） | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | 第 2 世代のスループット上限（Multi-AZ 6,144 MBps、Single-AZ 73,728 MBps） | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | NVMe/TCP が iSCSI に比べ MPIO の構成を単純にすること | [AWS: FSx for ONTAP supports NVMe-over-TCP](https://aws.amazon.com/about-aws/whats-new/2024/07/amazon-fsx-netapp-ontap-nvme-over-tcp) |
 
@@ -268,6 +320,8 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 ## 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
+- [Multi-AZ が動かすのはアドレスではなくルート](multi-az-moves-a-route-not-an-address.md) — フェイルオーバーで書き換わるものと、動かないアドレス
+- [igroup の外側にある 2 つの制御](igroups-are-not-the-only-access-control.md) — portset でパス数を絞る方法
 - [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) — LIF とポートの前提
 - [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) — 3 つ目の制御面としてのホスト
 - [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) — Selective LUN Map と `lun move`
