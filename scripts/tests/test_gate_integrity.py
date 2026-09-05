@@ -86,7 +86,11 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
 
     def test_missing_tool_produces_a_non_zero_exit(self) -> None:
         """Run each gate with an empty PATH, so its tool cannot be found."""
-        for target in ("markdown", "secrets", "shell", "cfn"):
+        # "shell" and "cfn" are not listed here: on some runners their tools live in /usr/bin,
+        # which this PATH keeps reachable, so the premise "its tool cannot be found" does not
+        # hold. scripts/tests/test_example_gates.py checks those two with an empty PATH and an
+        # absolute make instead.
+        for target in ("markdown", "secrets"):
             with self.subTest(target=target):
                 done = subprocess.run(
                     ["make", target],
