@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Two S3 access point behaviours were recorded as measured limits without saying whether they were
+  intended.** The note listed Unicode characters rejected in object tags and `UploadPartCopy` failing
+  inside one access point among the constraints that are not in public documentation, which leaves a
+  reader to design a permanent workaround around each. AWS Support has since classified both as
+  defects: the tag rejection is an ONTAP defect tracked as NetApp KB CONTAP-771956 with a fix planned
+  in a future ONTAP version, and the `UploadPartCopy` failure is an AWS-side defect, triggered when the
+  copy-source key contains a character that is percent-encoded in the request, with a fix in progress.
+  The note now separates the two from the genuine constraints and says what to do until each is fixed.
+  The distinction matters for key layout in particular: restricting tag values to ASCII and avoiding
+  `/` in a copy-source key are temporary, so writing them into a design as permanent would outlive
+  their cause. Also records that AWS confirmed the object-size limits are binary values and that the
+  "GB" wording in public documentation is being corrected, and that whether
+  `CompleteMultipartUpload` sends periodic bytes during assembly is still unanswered, so no
+  `read_timeout` guidance is given either way.
 - **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
   for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
   stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
