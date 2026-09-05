@@ -21,7 +21,9 @@ because of where it looked rather than because the tree was clean.
 from __future__ import annotations
 
 import contextlib
+import shutil
 import subprocess
+import tempfile
 import unittest
 from collections.abc import Iterator
 from pathlib import Path
@@ -165,6 +167,41 @@ class GatesCoverEveryArtifact(unittest.TestCase):
                 "__pycache__",
             }
         )
+
+
+class GatesFailWhenTheirToolIsAbsent(unittest.TestCase):
+    """A gate whose tool is missing must say so, because silence is indistinguishable from passing.
+
+    The tool is hidden with an empty PATH and an absolute path to make, rather than by narrowing
+    PATH to /usr/bin:/bin. That narrowing is not a reliable way to hide a tool: on a GitHub runner
+    shellcheck is installed in /usr/bin, so it stayed reachable and the gate legitimately passed
+    while the test claimed the tool was unavailable.
+    """
+
+    def test_absent_tool_produces_a_non_zero_exit(self) -> None:
+        make_bin = shutil.which("make")
+        self.assertIsNotNone(make_bin, "make is not on PATH; this test cannot run")
+        for target in ("shell", "cfn"):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as empty:
+                done = subprocess.run(
+                    [str(make_bin), target],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                    env={"PATH": empty, "HOME": str(Path.home())},
+                    check=False,
+                )
+                self.assertNotEqual(
+                    done.returncode,
+                    0,
+                    f"`make {target}` succeeded with its tool unreachable:\n"
+                    f"{done.stdout}{done.stderr}",
+                )
+                self.assertIn(
+                    "not installed",
+                    done.stdout + done.stderr,
+                    f"`make {target}` failed without saying which tool is missing",
+                )
 
 
 class AuditReachesShellScripts(unittest.TestCase):
