@@ -65,6 +65,7 @@ See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 ## Related
 
 - [Browse by lifecycle](../../navigation.md#lifecycle-axis--playbooks)
+- [Observability](../observability/) — choosing the route the performance numbers come through
 - [Comparison Matrices](../../../ja/reference/comparison/)
 - [Navigation Guide](../../navigation.md)
 - [Glossary](../../../ja/reference/glossary/)

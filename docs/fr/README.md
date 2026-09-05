@@ -66,6 +66,7 @@ L'entrée à privilégier quand la question est « je dois creuser ce sujet pré
 | [`cost/`](../en/domains/cost/) | Capacité, tiering, et l'écart entre estimations et mesures |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | Coexistence NFS / SMB, intégration Active Directory, mappage d'identités |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, disposition des LUN, multipathing, comptage de la capacité |
+| [`observability/`](../en/domains/observability/) | Choix de la voie de supervision, Harvest / Prometheus, résidence des données |
 
 ### Référence transversale — `reference/`
 

@@ -56,6 +56,7 @@ rest gives a reading order.
 | **A measured throughput figure is lower than expected** | [Working out what a measured throughput figure actually measured](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [Levers for raising throughput](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
+| **Deciding how to set up monitoring** | [Monitoring route decision tree](../ja/reference/decision-trees/observability-route.md) (日本語) | [Observability](domains/observability/) |
 | **Working out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [Industry index](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
 | Reaching the data over the S3 API or from an analytics platform | [Prerequisites for FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Writing the access point policy](domains/security-governance/notes/access-point-authorization-layers.md) |
@@ -104,6 +105,7 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 | [Cost](domains/cost/) | Why estimates and measurements diverge |
 | [Multiprotocol & identity](domains/multiprotocol-identity/) | Why permissions disagree between NFS and SMB |
 | [Block storage](domains/block-storage/) | What is already decided before you choose iSCSI or NVMe-oF |
+| [Observability](domains/observability/) | Which route to monitor through, and where the data may be stored |
 
 ---
 

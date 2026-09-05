@@ -104,6 +104,7 @@
 | [`cost/`](docs/ja/domains/cost/) | 容量・ティアリング・見積もりと実測の差分 |
 | [`multiprotocol-identity/`](docs/ja/domains/multiprotocol-identity/) | NFS / SMB 共存・Active Directory 連携・ID マッピング |
 | [`block-storage/`](docs/ja/domains/block-storage/) | iSCSI / NVMe-oF・LUN レイアウト・マルチパス・容量の数え方 |
+| [`observability/`](docs/ja/domains/observability/) | 監視経路の選定・Harvest / Prometheus・データの所在 |
 
 ### 横断リファレンス — `reference/`
 

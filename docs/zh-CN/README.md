@@ -66,6 +66,7 @@
 | [`cost/`](../en/domains/cost/) | 容量、分层，以及估算与实测之间的差异 |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 共存、Active Directory 集成、ID 映射 |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF、LUN 布局、多路径、容量计算方式 |
+| [`observability/`](../en/domains/observability/) | 监控路径的选择、Harvest / Prometheus、数据存放地 |
 
 ### 横向参考 — `reference/`
 

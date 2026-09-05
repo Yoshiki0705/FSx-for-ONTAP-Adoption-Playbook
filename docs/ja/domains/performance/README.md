@@ -65,6 +65,7 @@
 ## 関連
 
 - [ライフサイクル軸で探す](../../navigation.md#ライフサイクル軸--playbooks)
+- [可観測性](../observability/) — 性能の数値をどの経路で取るかの選定
 - [比較マトリクス](../../reference/comparison/)
 - [ナビゲーションガイド](../../navigation.md)
 - [用語集](../../reference/glossary/)

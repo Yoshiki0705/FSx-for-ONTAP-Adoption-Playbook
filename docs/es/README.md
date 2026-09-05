@@ -66,6 +66,7 @@ La entrada cuando la pregunta es «necesito investigar este asunto concreto». S
 | [`cost/`](../en/domains/cost/) | Capacidad, tiering y la diferencia entre estimaciones y mediciones |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | Coexistencia NFS / SMB, integración con Active Directory, mapeo de identidades |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, disposición de LUN, multipathing, cómputo de la capacidad |
+| [`observability/`](../en/domains/observability/) | Elección de la vía de monitorización, Harvest / Prometheus, residencia de los datos |
 
 ### Referencia transversal — `reference/`
 

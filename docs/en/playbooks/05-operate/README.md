@@ -23,6 +23,8 @@ Covers monitoring, capacity management, incident response, and change management
 | 7 | What to look at when a running SVM stops serving SMB | [An SVM that cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |
 | 8 | What happens to availability when auditing runs continuously | [Destination exhaustion stops access](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
 | 9 | How to run an inventory of local users | [No last-logon attribute exists; the inventory has to come from audit logs](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
+| 10 | Which route to monitor through | [Monitoring route decision tree](../../../ja/reference/decision-trees/observability-route.md) (日本語) / [Route selection checklist](../../../ja/domains/observability/checklists/route-selection.md) (日本語) |
+| 11 | What operational risk monitoring itself introduces | [The number of monitored targets sets the blast radius of a lockout](../../../ja/domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) (日本語) |
 
 ---
 

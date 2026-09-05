@@ -50,6 +50,7 @@ Die Verzweigungen oben gehen von „was möchten Sie wissen" aus. Nutzen Sie sta
 | Neuaufbau, nichts zu migrieren | [Design](../en/playbooks/02-design/) (English) | [Aufbau](../en/playbooks/04-build/) → [Betrieb](../en/playbooks/05-operate/) (English) |
 | Läuft bereits, Performance soll optimiert werden | [Performance](../en/domains/performance/) (English) | [Optimierung](../en/playbooks/06-optimize/) (English) |
 | Läuft bereits, Kosten sollen überprüft werden | [Kosten](../en/domains/cost/) (English) | [Optimierung](../en/playbooks/06-optimize/) (English) |
+| **Entscheiden, wie das Monitoring aufgebaut wird** | [Entscheidungsbaum — Monitoring-Weg](../ja/reference/decision-trees/observability-route.md) (日本語) | [Observability](../en/domains/observability/) (English) |
 | Prüfen, ob ein Design an einen Grenzwert stößt | [Grenzwerte und Kontingente](../ja/reference/limits/) | [Design](../en/playbooks/02-design/) (English) |
 | Über die S3-API oder von einer Analyseplattform zugreifen | [Voraussetzungen für FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Die Access-Point-Richtlinie schreiben](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
@@ -94,6 +95,7 @@ Der Einstieg, der von einem Thema ausgeht. Wird über alle Lebenszyklusphasen hi
 | [Kosten](../en/domains/cost/) | Warum Schätzung und Messung auseinandergehen |
 | [Multiprotokoll und Identität](../en/domains/multiprotocol-identity/) | Warum Berechtigungen zwischen NFS und SMB abweichen |
 | [Blockspeicher](../en/domains/block-storage/) | Was bereits entschieden ist, bevor Sie iSCSI oder NVMe-oF wählen |
+| [Observability](../en/domains/observability/) | Über welchen Weg überwachen und wo die Daten liegen dürfen |
 
 ---
 

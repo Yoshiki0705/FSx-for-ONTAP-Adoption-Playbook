@@ -23,6 +23,8 @@
 | 7 | 稼働中の SVM が SMB を提供できなくなったとき何を見るか | [SMB を提供できない SVM がある](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |
 | 8 | 監査を有効化したまま運用すると可用性に何が起きるか | [監査宛先の枯渇はアクセスを止める](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
 | 9 | ローカルユーザーの棚卸しをどう回すか | [最終ログオン属性は無い。監査ログから起こすしかない](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
+| 10 | どの経路で監視するかを決めたい | [監視経路の選択 決定木](../../reference/decision-trees/observability-route.md) / [経路選定チェックリスト](../../domains/observability/checklists/route-selection.md) |
+| 11 | 監視の導入が管理面に持ち込むリスクは何か | [ロック時の影響範囲を決める収集対象数](../../domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) |
 
 ---
 

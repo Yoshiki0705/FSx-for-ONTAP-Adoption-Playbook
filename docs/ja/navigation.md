@@ -54,6 +54,7 @@ graph TD
 | **測ったスループットが想定より低い** | [手元のスループット値は何を測ったのかを判定する](reference/decision-trees/measured-throughput-triage.md) | [スループットを上げる手段の比較](reference/comparison/throughput-levers.md) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
+| **監視をどう構成するか決めたい** | [監視経路の選択 決定木](reference/decision-trees/observability-route.md) | [可観測性](domains/observability/) |
 | **自分の業種から、何を決めればよいか調べたい** | [業種別リソースマップ — 読む順序](reference/industry-resource-map.md#業種から入ったときの読む順序) | [業種別索引](reference/industry-resource-map.md#業種別索引) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
@@ -91,6 +92,7 @@ graph TD
 | [コスト](domains/cost/) | 見積もりと実測がなぜずれるか |
 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | NFS と SMB で権限がなぜ食い違うか |
 | [ブロックストレージ](domains/block-storage/) | iSCSI / NVMe-oF で LUN を出すとき何が先に決まるか |
+| [可観測性](domains/observability/) | どの経路で監視するか / データをどこに置けるか |
 
 ---
 

@@ -50,6 +50,7 @@ graph TD
 | 신규 구축 (마이그레이션 원본 없음) | [설계](../en/playbooks/02-design/) (English) | [구축](../en/playbooks/04-build/) → [운영](../en/playbooks/05-operate/) (English) |
 | 이미 운영 중이며 성능을 개선하고 싶다 | [성능](../en/domains/performance/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
+| **모니터링을 어떻게 구성할지 정하고 싶다** | [모니터링 경로 결정 트리](../ja/reference/decision-trees/observability-route.md) (日本語) | [가관측성](../en/domains/observability/) (English) |
 | 상한값에 걸리지 않는지 확인하고 싶다 | [상한값·쿼터](../ja/reference/limits/) | [설계](../en/playbooks/02-design/) (English) |
 | S3 API나 분석 플랫폼에서 접근하고 싶다 | [FSx for ONTAP S3 AP 전제 조건](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [액세스 포인트 정책 작성 방법](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
@@ -94,6 +95,7 @@ graph TD
 | [비용](../en/domains/cost/) | 견적과 실측이 왜 어긋나는가 |
 | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) | NFS와 SMB에서 권한이 왜 어긋나는가 |
 | [블록 스토리지](../en/domains/block-storage/) | iSCSI / NVMe-oF로 LUN을 제공할 때 무엇이 먼저 결정되는가 |
+| [가관측성](../en/domains/observability/) | 어떤 경로로 모니터링하는가 / 데이터를 어디에 둘 수 있는가 |
 
 ---
 

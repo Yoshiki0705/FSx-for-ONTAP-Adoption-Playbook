@@ -66,6 +66,7 @@
 | [`cost/`](../en/domains/cost/) | 용량·티어링과 견적 대비 실측의 차이 |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 공존·Active Directory 연계·ID 매핑 |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF·LUN 배치·멀티패스·용량 계산 방식 |
+| [`observability/`](../en/domains/observability/) | 모니터링 경로 선정·Harvest / Prometheus·데이터 소재 |
 
 ### 횡단 참조 — `reference/`
 

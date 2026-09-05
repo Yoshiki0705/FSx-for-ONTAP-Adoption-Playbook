@@ -66,6 +66,7 @@ Der Einstieg, wenn die Frage lautet: „Ich muss dieses konkrete Thema recherchi
 | [`cost/`](../en/domains/cost/) | Kapazität, Tiering und die Lücke zwischen Schätzung und Messung |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS- / SMB-Koexistenz, Active-Directory-Integration, ID-Mapping |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, LUN-Layout, Multipathing, Kapazitätsberechnung |
+| [`observability/`](../en/domains/observability/) | Wahl des Monitoring-Wegs, Harvest / Prometheus, Datenresidenz |
 
 ### Übergreifende Referenz — `reference/`
 

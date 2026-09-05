@@ -50,6 +50,7 @@ graph TD
 | 全新构建（无迁移源） | [设计](../en/playbooks/02-design/) (English) | [构建](../en/playbooks/04-build/) → [运维](../en/playbooks/05-operate/) (English) |
 | 已在运行，希望优化性能 | [性能](../en/domains/performance/) (English) | [优化](../en/playbooks/06-optimize/) (English) |
 | 已在运行，希望重新审视成本 | [成本](../en/domains/cost/) (English) | [优化](../en/playbooks/06-optimize/) (English) |
+| **希望决定如何搭建监控** | [监控路径决策树](../ja/reference/decision-trees/observability-route.md) (日本語) | [可观测性](../en/domains/observability/) (English) |
 | 想确认设计是否触及上限值 | [上限值与配额](../ja/reference/limits/) | [设计](../en/playbooks/02-design/) (English) |
 | 想通过 S3 API 或分析平台访问 | [FSx for ONTAP S3 AP 的前提条件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [访问点策略的写法](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
@@ -94,6 +95,7 @@ graph TD
 | [成本](../en/domains/cost/) | 估算与实测为何出现偏差 |
 | [多协议与身份](../en/domains/multiprotocol-identity/) | NFS 与 SMB 的权限为何不一致 |
 | [块存储](../en/domains/block-storage/) | 以 iSCSI / NVMe-oF 提供 LUN 时，哪些条件已经先被决定 |
+| [可观测性](../en/domains/observability/) | 通过哪条路径监控 / 数据可以存放在哪里 |
 
 ---
 

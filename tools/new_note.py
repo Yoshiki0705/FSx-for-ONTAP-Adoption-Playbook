@@ -34,6 +34,7 @@ VALID_DOMAINS = {
     "performance",
     "cost",
     "multiprotocol-identity",
+    "observability",
 }
 
 SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")

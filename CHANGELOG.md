@@ -574,6 +574,37 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`domains/observability/` — an eighth topic module, for choosing a monitoring route.** The two
+  neighbouring modules answer different questions: `domains/performance/` covers how throughput and
+  latency are determined, and `playbooks/05-operate/` covers what to monitor and where thresholds go.
+  Neither covered which collection route the values arrive through, which is where the constraints
+  that cannot be undone later sit. Four routes are compared without picking a winner — Amazon
+  CloudWatch, NetApp Harvest with Prometheus and Grafana, SaaS observability, and calling the ONTAP
+  REST API directly — with a decision tree at
+  `reference/decision-trees/observability-route.md` and a matrix at
+  `reference/comparison/observability-routes.md`.
+  Every note is `documented`, sourced, and dated 2026-09-05; **none of it is measured**, and the
+  "verify in your own environment" sections are written as steps for the reader to run.
+  Four findings drove the module: the shipped Harvest dashboards are not all usable (10 unsupported,
+  8 supported but disabled by default, and the absence of Health and Headroom changes operational
+  design, unlike the absence of Disk, Shelf, and Power); Harvest is scraped rather than pushing, so
+  Amazon Managed Service for Prometheus needs a scraper plus SigV4 in between; cross-account
+  monitoring is a network reachability problem rather than an IAM one, because the target is the
+  ONTAP management LIF, and extending past AWS changes the layout to a collector per site; and
+  Amazon Managed Grafana supports neither anonymous access nor IdP-initiated login, so a plan built
+  on embedding it in a company portal does not stand.
+  Two claims in circulation are corrected rather than repeated: **ZAPI end of availability was
+  deferred indefinitely** (CPC-00410, June 2024), so writing "ZAPI is deprecated, migrate to REST"
+  is itself misinformation — the reason to prefer REST is feature coverage and parity from ONTAP
+  9.12.1. And the **sizing guidance disagrees between sources**, so both are shown side by side with
+  why they differ: the AWS table has no memory column and assumes the default configuration, and its
+  500 MB is disk, not memory.
+  Data residency is treated as a property of the SaaS route as a whole rather than of one product,
+  since the same questions apply to every vendor. Seven questions to answer are listed; **whether
+  they are satisfied is left to the reader and their legal function.** Regions move, so the note says
+  it reflects a 2026-09-05 survey and asks the reader to check current documentation.
+  Registered in `DOMAINS` and `VALID_DOMAINS`, added to the navigation and hub tables in all eight
+  languages, with the module README in Japanese and English as with every other module.
 - **A reading order for readers entering from an industry**, in
   [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序).
   The map indexed published case studies and sibling implementations well enough, but it answered
