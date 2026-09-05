@@ -25,11 +25,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     listing was checked, and says to re-check the current release. Trident's NVMe/TCP being
     REST-only likewise carries its check date. **Resources get added; a capability claim without a
     version silently becomes false.**
-  - **Two AWS-side inconsistencies now say that nothing has been filed.** The Price List API
-    returning a `unit` that disagrees with its own `description`, and the security group requirements
-    table omitting the NVMe/TCP ports. Both are recorded as observations with their date, and both
-    state that no documentation feedback and no Support confirmation exist — so neither reads as a
-    defect the reader can assume is being fixed.
+  - **Two AWS-side inconsistencies are recorded as what a reader has to do about them**, not as
+    verdicts: the Price List API returning a `unit` that disagrees with its own `description`, and
+    the security group requirements table omitting the NVMe/TCP ports. Each states what the page or
+    response contains, the date it was checked, and the operation that avoids the problem —
+    reconcile `unit` against `description`, take ports from the procedure page.
+    - **An earlier revision of this entry wrote that no documentation feedback had been filed.**
+      That is a record of an action not taken, which belongs in working notes rather than in a
+      published document: it is process metadata, and it moves the problem to the reader instead of
+      to the vendor. Removed. Raising these with AWS is tracked outside the repository, and a
+      reference is added here only once an attributable answer exists.
   - Claims re-verified and left standing: the two AWS pages that differ on iSCSI failover
     transparency, the ports absent from the requirements table, and the failover-detection `sysctl`
     tuning being scoped to Single-AZ NFS.
