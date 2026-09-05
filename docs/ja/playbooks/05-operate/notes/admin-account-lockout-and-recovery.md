@@ -202,3 +202,4 @@ Account Lockout Duration (ISO 8601 Duration Format): -
 - [権限設計 — 管理者の分離](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離)
 - [IaC の境界は API の表面で決まる](../../04-build/notes/what-iac-cannot-reach.md)
 - [不可逆な操作の承認は作業の承認とは別に取る](../../../domains/security-governance/notes/irreversible-operations-need-separate-approval.md)
+- [ロック時の影響範囲を決める収集対象数](../../../domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) — 監視の収集が同じ資格情報を使うとき

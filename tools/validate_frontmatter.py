@@ -37,6 +37,7 @@ DOMAINS = {
     "performance",
     "cost",
     "multiprotocol-identity",
+    "observability",
 }
 EVIDENCE = {"verified", "documented", "field-observation", "hypothesis"}
 LANGS = {"ja", "en", "ko", "zh-CN", "zh-TW", "fr", "de", "es"}

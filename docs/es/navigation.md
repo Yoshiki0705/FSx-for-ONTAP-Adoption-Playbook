@@ -50,6 +50,7 @@ Las ramas anteriores parten de «qué quiere saber». Use esta tabla para partir
 | Despliegue nuevo, sin nada que migrar | [Diseño](../en/playbooks/02-design/) (English) | [Construcción](../en/playbooks/04-build/) → [Operación](../en/playbooks/05-operate/) (English) |
 | Ya en marcha, ajustando el rendimiento | [Rendimiento](../en/domains/performance/) (English) | [Optimización](../en/playbooks/06-optimize/) (English) |
 | Ya en marcha, revisando los costes | [Coste](../en/domains/cost/) (English) | [Optimización](../en/playbooks/06-optimize/) (English) |
+| **Decidir cómo montar la monitorización** | [Árbol de decisión — vía de monitorización](../ja/reference/decision-trees/observability-route.md) (日本語) | [Observabilidad](../en/domains/observability/) (English) |
 | Comprobar si un diseño alcanza un límite | [Límites y cuotas](../ja/reference/limits/) | [Diseño](../en/playbooks/02-design/) (English) |
 | Acceder mediante la API de S3 o desde una plataforma de analítica | [Requisitos previos de FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Redactar la política del punto de acceso](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
@@ -94,6 +95,7 @@ El punto de entrada que parte de un tema. Se referencia en todas las fases del c
 | [Coste](../en/domains/cost/) | Por qué divergen la estimación y la medición |
 | [Multiprotocolo e identidad](../en/domains/multiprotocol-identity/) | Por qué difieren los permisos entre NFS y SMB |
 | [Almacenamiento de bloques](../en/domains/block-storage/) | Qué está ya decidido antes de elegir iSCSI o NVMe-oF |
+| [Observabilidad](../en/domains/observability/) | Por qué vía monitorizar y dónde pueden almacenarse los datos |
 
 ---
 

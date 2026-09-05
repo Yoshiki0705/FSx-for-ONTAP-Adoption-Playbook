@@ -101,6 +101,7 @@ Enter here when your question is "I need to research this specific concern." The
 | [`cost/`](domains/cost/) | Capacity, tiering, and the gap between estimates and measurements |
 | [`multiprotocol-identity/`](domains/multiprotocol-identity/) | NFS / SMB coexistence, Active Directory integration, ID mapping |
 | [`block-storage/`](domains/block-storage/) | iSCSI / NVMe-oF, LUN layout, multipathing, how capacity is counted |
+| [`observability/`](domains/observability/) | Choosing a monitoring route, Harvest / Prometheus, data residency |
 
 ### Cross-cutting reference — `reference/`
 

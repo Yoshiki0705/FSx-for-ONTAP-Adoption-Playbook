@@ -50,6 +50,7 @@ Les branches ci-dessus partent de « que voulez-vous savoir ». Utilisez plutôt
 | Nouveau déploiement, rien à migrer | [Conception](../en/playbooks/02-design/) (English) | [Construction](../en/playbooks/04-build/) → [Exploitation](../en/playbooks/05-operate/) (English) |
 | Déjà en production, réglage des performances | [Performance](../en/domains/performance/) (English) | [Optimisation](../en/playbooks/06-optimize/) (English) |
 | Déjà en production, révision des coûts | [Coût](../en/domains/cost/) (English) | [Optimisation](../en/playbooks/06-optimize/) (English) |
+| **Décider comment mettre en place la supervision** | [Arbre de décision — voie de supervision](../ja/reference/decision-trees/observability-route.md) (日本語) | [Observabilité](../en/domains/observability/) (English) |
 | Vérifier qu'une conception n'atteint pas une limite | [Limites et quotas](../ja/reference/limits/) | [Conception](../en/playbooks/02-design/) (English) |
 | Accéder aux données via l'API S3 ou depuis une plateforme d'analyse | [Prérequis de FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Rédiger la politique de point d'accès](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 
@@ -94,6 +95,7 @@ Le point d'entrée qui part d'un sujet. Référencé à toutes les phases du cyc
 | [Coût](../en/domains/cost/) | Pourquoi les estimations et les mesures divergent |
 | [Multiprotocole et identité](../en/domains/multiprotocol-identity/) | Pourquoi les permissions diffèrent entre NFS et SMB |
 | [Stockage bloc](../en/domains/block-storage/) | Ce qui est déjà décidé avant de choisir iSCSI ou NVMe-oF |
+| [Observabilité](../en/domains/observability/) | Par quelle voie superviser et où les données peuvent résider |
 
 ---
 
