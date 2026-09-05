@@ -43,7 +43,11 @@ from frontmatter import IGNORED_DIRS
 # `tools` is added on top of the shared list: these validators necessarily contain the
 # patterns they search for, so auditing them reports every rule as a violation of itself.
 SKIP_DIRS = (*IGNORED_DIRS, "tools")
-SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json"}
+# `.sh` is here because examples/ ships shell scripts. Leaving it out would have created the
+# failure mode this repository has already hit twice: a detector that is silent because of its scan
+# range rather than because the tree is clean. A script's comments carry exactly the naming, vendor
+# and private-address content this audit exists to catch.
+SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json", ".sh"}
 
 CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
 ALLOW = re.compile(r"allow:(naming|neutrality|pii|role-label|support-referral|all)")

@@ -69,6 +69,8 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
             "audit",
             "frontmatter",
             "links",
+            "shell",
+            "cfn",
         ):
             body = recipe(target)
             if not TOOL_PROBE.search(body):
@@ -84,7 +86,7 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
 
     def test_missing_tool_produces_a_non_zero_exit(self) -> None:
         """Run each gate with an empty PATH, so its tool cannot be found."""
-        for target in ("markdown", "secrets"):
+        for target in ("markdown", "secrets", "shell", "cfn"):
             with self.subTest(target=target):
                 done = subprocess.run(
                     ["make", target],

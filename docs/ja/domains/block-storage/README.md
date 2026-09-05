@@ -8,6 +8,8 @@
 
 iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築・運用を扱います。ファイル共有と違い、**整合性とパスの面倒はホスト側の責任として残ります。** その分界線がこのモジュールの中心です。
 
+**まず動かしたい場合は [ブロックストレージを 30 分で動かす手順](quickstart.md) から。** CloudFormation 1 本と ONTAP REST を使うシェル 3 本で、LUN 1 つに iSCSI でマルチパス接続する状態まで到達します（[`examples/block-storage/`](../../../../examples/block-storage/)）。
+
 ---
 
 ## このモジュールが扱う問い
@@ -29,6 +31,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 13 | 複数 LUN にまたがる DB を止めずにバックアップできるか | [LUN に載せた DB は静止させずに復旧した](notes/a-database-on-luns-recovers-without-quiescing.md) |
 | 14 | ブロックの監視で何が見えるか。LUN 単位で見られるか | [ブロックの監視で見えるものと見えないもの](notes/what-block-monitoring-shows.md) |
 | 15 | Fibre Channel は使えるか | _未追加_（[用語集の FC の項](../../reference/glossary/README.md) に記載範囲があります） |
+| 16 | とりあえず動かして確かめたい | [ブロックストレージを 30 分で動かす手順](quickstart.md) |
 
 ---
 
@@ -37,6 +40,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | ディレクトリ | 内容 |
 |---|---|
 | [`notes/`](notes/) | 知見の最小単位。1 ファイル = 1 論点。frontmatter に `evidence` 区分を持ちます |
+| [`quickstart.md`](quickstart.md) | 最小構成を動かす手順。実行可能な一式は [`examples/block-storage/`](../../../../examples/block-storage/) |
 | [`checklists/`](checklists/) | 現場で使うチェックリスト |
 
 ---

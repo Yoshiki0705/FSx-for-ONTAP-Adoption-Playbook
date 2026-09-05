@@ -12,6 +12,12 @@
 # The validators in tools/ are stdlib-only by design and are not listed here.
 ruff==0.16.5
 
+# Validates the CloudFormation template under examples/. Pinned for the same reason as ruff:
+# cfn-lint adds rules between minor versions, so an unpinned copy makes the verdict depend on
+# the day it runs.
+cfn-lint==1.52.1
+
 # Not installable via pip — install separately, see CONTRIBUTING.md:
 #   markdownlint-cli2   npm install -g markdownlint-cli2@0.22.1
 #   gitleaks            brew install gitleaks
+#   shellcheck          brew install shellcheck

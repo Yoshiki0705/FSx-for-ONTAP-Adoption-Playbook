@@ -31,8 +31,15 @@ jobs:
       # resolves to the latest release, so a ruff version that widens its default rule set
       # turns this gate red without any commit — and disagrees with whatever developers
       # have locally. requirements-dev.txt is the single declared version.
-      - name: Install ruff
+      - name: Install ruff and cfn-lint
         run: pip install -r requirements-dev.txt
+
+      # shellcheck is not pip-installable, so it cannot live in requirements-dev.txt with the
+      # others. ubuntu-latest ships it preinstalled; this step fails loudly if that ever stops
+      # being true, rather than letting `make shell` report a missing tool as a red gate with a
+      # confusing message.
+      - name: Check shellcheck is available
+        run: shellcheck --version
 
       # Every step below calls a Makefile target instead of repeating the command. The
       # path list lives once, in the Makefile's PY_PATHS, so CI and a developer's machine
@@ -47,6 +54,16 @@ jobs:
 
       - name: Validate frontmatter
         run: make frontmatter
+
+      # examples/ ships a template and scripts that readers run against their own accounts. A
+      # quoting bug or an invalid property there is a defect delivered, not a lint finding, and
+      # a template that only fails at CreateStack time costs the reader a twenty-minute file
+      # system creation to discover.
+      - name: Lint shell scripts
+        run: make shell
+
+      - name: Lint CloudFormation templates
+        run: make cfn
 
       - name: Check i18n parity
         run: make i18n-check
