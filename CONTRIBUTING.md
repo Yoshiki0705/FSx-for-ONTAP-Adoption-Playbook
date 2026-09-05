@@ -36,6 +36,8 @@ uv venv .venv && uv pip install --python .venv/bin/python -r requirements-dev.tx
 
 **`shellcheck` が増えたのは `examples/` を置いたためです。** そこにあるのは読者が自分のアカウントに対して実行するスクリプトなので、引用符の付け忘れは lint の指摘ではなく出荷した不具合になります。`cfn-lint` も同じ理由で、CreateStack 時にしか落ちないテンプレートは読者の 17 分を無駄にします。
 
+**`shellcheck` は `--severity=style` で走らせます。** バージョン間で報告する所見が変わるため（CI 側が info の SC2015 を出し、手元の新しい版は出さない、という食い違いが実際に起きました）、しきい値を最下段まで下げて差を吸収しています。**`shellcheck` はバージョン固定していません。** 版差を完全には消せないので、CI が手元と違う指摘をしたら版差を疑ってください。
+
 | 状況 | 手順 |
 |---|---|
 | 仮想環境を使う（推奨） | 上記の `uv venv` + `uv pip install` |
@@ -226,7 +228,7 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 | `make links` | 内部リンクの解決（`llms.txt` を含む） |
 | `make links-external` | 外部 URL も含む（ネットワーク必要） |
 | `make secrets` | gitleaks によるワークツリーの秘密スキャン（未インストール時は失敗します） |
-| `make shell` | `SH_PATHS` 配下のシェルスクリプト（`shellcheck`。未インストール時は失敗します） |
+| `make shell` | `SH_PATHS` 配下のシェルスクリプト（`shellcheck --severity=style`。未インストール時は失敗します） |
 | `make cfn` | `CFN_PATHS` 配下の CloudFormation テンプレート（`cfn-lint`。同上） |
 | `make drift` | AGENTS.md のサイズ予算 / steering ローダーの薄さ / 索引の到達性と追跡状態 |
 | `make test` | ガードレールのテスト（block/ask/allow 契約、.PHONY、各ゲートの壊し検出） |
