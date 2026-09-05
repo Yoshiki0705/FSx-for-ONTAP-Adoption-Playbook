@@ -26,6 +26,7 @@
 | Learn how to read the confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
 | Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
 | Find a case study for your industry or workload | [Published FSx for ONTAP case studies](../ja/case-studies/public-case-studies.md) (日本語) | 10 min |
+| **Work out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | 10 min |
 | Learn from a judgement that went wrong | [Case studies](case-studies/README.md) | 10 min |
 | Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
 
@@ -110,6 +111,8 @@ Enter here when your question is "I need to research this specific concern." The
 | [`limits/`](../ja/reference/limits/) | Limits and quotas, with sources and verification dates |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS terminology and definitions |
 | [`block-storage-resource-map.md`](../ja/reference/block-storage-resource-map.md) (日本語) | Index of block primary sources and public infrastructure as code, and where they disagree |
+| [`industry-resource-map.md`](../ja/reference/industry-resource-map.md) (日本語) | Reading order when entering from an industry, plus a cross-index of case studies, implementation patterns and design notes |
+| [`cross-repo-index.md`](../ja/reference/cross-repo-index.md) (日本語) | Which claim is cited from which sibling repository, with a probe string per citation |
 
 ### Hands-on delivery — `workshop-studio/`
 
@@ -225,9 +228,9 @@ Issues and Pull Requests are welcome. See [CONTRIBUTING.md](../../CONTRIBUTING.m
 | Repository | Contents |
 |---|---|
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 45+ serverless processing patterns over S3 Access Points |
-| [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | Observability integrations (metrics, alerts, automated response) |
-| [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Lakehouse integrations (Databricks / Snowflake / Athena / Glue / EMR) |
-| [vmware-migration-ec2-ontap](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap) | VMware → EC2 + FSx for ONTAP migration |
+| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Observability integrations (metrics, alerts, automated response) |
+| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse integrations (Databricks / Snowflake / Athena / Glue / EMR) |
+| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP migration |
 
 ---
 

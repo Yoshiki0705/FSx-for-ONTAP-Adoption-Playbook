@@ -22,6 +22,10 @@ External (opt-in)
     supposed to name the claim, not the heading, so that a retraction fails the gate rather than
     passing it.
 
+    Every sibling repository named anywhere in prose is also resolved, and a name that only works
+    because GitHub redirects it fails. A rename is normal; the old name continuing to resolve is
+    what makes it invisible, and the table above keys on the name.
+
 The table is the single source. A separate machine-readable copy would be a second file to keep in
 step, which is the failure this repository has already documented elsewhere.
 """
@@ -49,6 +53,11 @@ TABLE_END = "<!-- cross-repo-table:end -->"
 BLOB_LINK = re.compile(
     rf"https://github\.com/{OWNER}/(?P<repo>[A-Za-z0-9._-]+)/blob/(?P<ref>[^/\s)]+)/(?P<path>[^\s)\"'#]+)"
 )
+
+# Any reference to a sibling repository, citation or not. A rename leaves the old name working
+# through GitHub's redirect, so a stale name has no symptom until someone compares two documents
+# that spell the same repository differently.
+REPO_REF = re.compile(rf"https://github\.com/{OWNER}/(?P<repo>[A-Za-z0-9._-]+)")
 
 # Files whose prose can carry citations. Code and templates are excluded: a citation belongs next to
 # the claim it supports, and neither of those states claims.
@@ -172,6 +181,47 @@ def check_offline(rows: list[Row]) -> list[str]:
     return problems
 
 
+def check_repo_names() -> list[str]:
+    """Fail on a repository name that only still works because GitHub redirects it.
+
+    Renames are normal. What is not survivable is that the old name keeps resolving, so two
+    documents can name the same repository differently and neither looks broken. The citation
+    table keys on the name, so a stale one there also silently splits one repository into two.
+    """
+    problems: list[str] = []
+    seen: dict[str, list[str]] = {}
+    for path in prose_files():
+        rel = path.relative_to(ROOT).as_posix()
+        body = strip_code(path.read_text(encoding="utf-8"))
+        for match in REPO_REF.finditer(body):
+            repo = match.group("repo").rstrip(".")
+            if repo == THIS_REPO:
+                continue
+            seen.setdefault(repo, [])
+            if rel not in seen[repo]:
+                seen[repo].append(rel)
+
+    for repo, files in sorted(seen.items()):
+        url = f"https://github.com/{OWNER}/{repo}"
+        request = urllib.request.Request(
+            url, headers={"User-Agent": "cross-repo-check"}
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                final = response.url
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
+            problems.append(f"{repo}: cannot resolve ({exc})")
+            continue
+        canonical = final.rstrip("/").rsplit("/", 1)[-1]
+        if canonical != repo:
+            listed = ", ".join(files[:4]) + (" …" if len(files) > 4 else "")
+            problems.append(
+                f"{repo} has been renamed to {canonical}. The old name still resolves through a "
+                f"redirect, so nothing else reports it. Update: {listed}"
+            )
+    return problems
+
+
 def check_external(rows: list[Row]) -> list[str]:
     problems: list[str] = []
     cache: dict[tuple[str, str], str | None] = {}
@@ -213,6 +263,7 @@ def main() -> int:
     rows, problems = parse_table()
     problems += check_offline(rows)
     if args.external and not problems:
+        problems += check_repo_names()
         problems += check_external(rows)
 
     if problems:

@@ -54,6 +54,7 @@ graph TD
 | **測ったスループットが想定より低い** | [手元のスループット値は何を測ったのかを判定する](reference/decision-trees/measured-throughput-triage.md) | [スループットを上げる手段の比較](reference/comparison/throughput-levers.md) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
+| **自分の業種から、何を決めればよいか調べたい** | [業種別リソースマップ — 読む順序](reference/industry-resource-map.md#業種から入ったときの読む順序) | [業種別索引](reference/industry-resource-map.md#業種別索引) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
 | AI / ML の学習データを置き、実験ごとに分岐させたい | [学習データセットの版と実験ブランチの制約](domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | [実験ブランチを配るときに縛る 3 つの対象](domains/security-governance/notes/self-service-without-storage-admin.md) |
@@ -99,6 +100,8 @@ graph TD
 |---|---|
 | [決定ツリー](reference/decision-trees/) | 選択肢が複数あり、どれを選ぶか決めたい |
 | [比較マトリクス](reference/comparison/) | 他の選択肢とのトレードオフを整理したい |
+| [業種別リソースマップ](reference/industry-resource-map.md) | 業種を入口に、読むモジュールと公開リソースを引きたい |
+| [プロジェクト間の引用索引](reference/cross-repo-index.md) | ある数値をどのリポジトリから引いているか確かめたい |
 | [上限値・クォータ](reference/limits/) | 設計が上限に当たらないか確認したい |
 | [用語集](reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |
 

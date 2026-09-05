@@ -108,7 +108,7 @@ AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロック
 | 設計への影響 | 関連ノート |
 |---|---|
 | VMware からの移行で「一度 EBS に移して後から NAS を構成する」手順が不要に | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) |
-| MGN ベースの自動化と FSx for ONTAP の組み合わせで、SnapMirror 以外の移行パスが増えた | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
+| MGN ベースの自動化と FSx for ONTAP の組み合わせで、SnapMirror 以外の移行パスが増えた | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（VMware-Migration-EC2-ONTAP） |
 | 移行後の LUN 配置が ONTAP の推奨と異なるため、移行後に整える工程が必要 | [LUN の並べ方が決めているのは復旧の粒度](../domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) |
 | **Finalize で物理容量が最大になる。移行データ 1 本分の追加容量が一時的に必要** | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](../playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) |
 
@@ -126,7 +126,7 @@ AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロック
 
 出典: [What's New — 2026/09](https://aws.amazon.com/about-aws/whats-new/2026/09/aws-transform-fsx-netapp-ontap-support/)、[AWS Transform Change log — 2026-08-30](https://docs.aws.amazon.com/transform/latest/userguide/change-log.html)、[FSx for ONTAP configuration（MGN ユーザーガイド）](https://docs.aws.amazon.com/mgn/latest/ug/fsx-ontap.html)
 
-**検証レポート**: スコープの確定と実機での API レベル確認は sibling repo の [ATX FSx for ONTAP GA 検証レポート](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap/blob/main/docs/ja/atx-fsxn-ga-verification.md) にある。レプリケーションから Finalize までを通した実測は [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](../playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) に昇格させた。**SNAPSHOT フェーズがボリューム Snapshot、LAUNCH フェーズが FlexClone の作成である**ことも、そちらで時刻を突き合わせて確定している。最小 ONTAP バージョン要件は公開ドキュメントに記載が見つかっていない（2026-09-04 調査）。
+**検証レポート**: スコープの確定と実機での API レベル確認は sibling repo の [ATX FSx for ONTAP GA 検証レポート](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/atx-fsxn-ga-verification.md) にある。レプリケーションから Finalize までを通した実測は [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](../playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) に昇格させた。**SNAPSHOT フェーズがボリューム Snapshot、LAUNCH フェーズが FlexClone の作成である**ことも、そちらで時刻を突き合わせて確定している。最小 ONTAP バージョン要件は公開ドキュメントに記載が見つかっていない（2026-09-04 調査）。
 
 ---
 
@@ -138,7 +138,7 @@ Amazon Elastic VMware Service（EVS）— VPC 内で VMware Cloud Foundation を
 
 | 設計への影響 | 関連ノート |
 |---|---|
-| VMware から EC2 への全面移行を選ばなくても、FSx for ONTAP のストレージ機能が使える | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
+| VMware から EC2 への全面移行を選ばなくても、FSx for ONTAP のストレージ機能が使える | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（VMware-Migration-EC2-ONTAP） |
 | ブロックは iSCSI と NVMe/TCP のどちらでも VMFS データストアになる。NVMe/TCP は第 2 世代かつ HA ペア 6 以下が条件 | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](../domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) |
 | Oracle Database on EVS + FSx for ONTAP の構成ガイドが出ている（re:Post） | [公開事例](../case-studies/public-case-studies.md) |
 | SnapMirror による cross-region DR が EVS 構成でも利用可能 | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) |
@@ -193,7 +193,7 @@ NFS/SMB で稼働するレガシーアプリとクラウドネイティブアプ
 | 設計への影響 | 関連ノート |
 |---|---|
 | FlexCache の「データを動かさない」特性が HPC バーストに有効な実例 | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
-| 書き込みワークロードにも対応可能（派生データを AWS 側で保持） | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) |
+| 書き込みワークロードにも対応可能（派生データを AWS 側で保持） | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) |
 
 出典: [NetApp Blog（日本語）](https://www.netapp.com/ja/blog/hybrid-hpc/)
 

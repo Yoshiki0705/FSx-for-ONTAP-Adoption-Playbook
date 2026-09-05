@@ -156,7 +156,7 @@ graph TD
 
 - **Layer 1 の順序は AWS の公開ドキュメントの記載で、本ツリー自身は測定していません。** FSx for ONTAP の S3 Access Point で確認した範囲は [対応するノート](../../domains/security-governance/notes/access-point-authorization-layers.md)にあり、そこに実測日と環境が書かれています。
 - **permissions boundary と session policy の分岐は実測していません。** 図に入れてあるのは、順序を欠けたまま示すと「boundary があるのに通った / 通らない」の切り分けができなくなるためです。
-- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログに記録される主体)）。監査の構成そのものは [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) で扱っています。
+- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログに記録される主体)）。監査の構成そのものは [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) で扱っています。
 
 ---
 

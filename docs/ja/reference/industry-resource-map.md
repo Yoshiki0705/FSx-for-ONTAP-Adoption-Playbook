@@ -15,17 +15,61 @@ lang: ja
 
 ## 結論
 
-**自分の業種を見つけ、3 つの列を左から読んでください。**
+**業種から入る道は 2 本あります。**
+
+- **決めることから知りたいなら** → [業種から入ったときの読む順序](#業種から入ったときの読む順序)。このリポジトリのどのモジュールへ戻るかの対応です
+- **材料を集めたいなら** → [業種別索引](#業種別索引)。3 種類のリソースを並べています
+
+索引の 3 種類は次のものです。
 
 - **公開事例** — AWS または NetApp が publish した導入事例。何が達成されたかの概要
 - **実装パターン** — 動くテンプレートを含む sibling リポジトリへのリンク
 - **設計ノート** — このリポジトリ内の、業種を問わず当たる判断基準
+
+**UC の実装はこのリポジトリに置きません。** 同じ実装を 2 か所に置くと、片方だけが更新されて古い側が新しい側を上書きします。分担の原則は [プロジェクト間の引用索引](cross-repo-index.md) にあります。
 
 事例は導入した組織が同意した範囲で書かれており、多くは ONTAP バージョン・リージョン・構成を明記していません。数値を設計の根拠にする前に自環境で測ってください。
 
 **ブロックストレージ（iSCSI / NVMe-oF）の一次情報は業種軸ではなく [ブロックストレージ横断リソースマップ](block-storage-resource-map.md) に集めています。**
 
 > **区分**: `documented` — 各事例 URL の所在と、sibling リポジトリへのリンクを記載しています。
+
+---
+
+## 業種から入ったときの読む順序
+
+**この索引は sibling リポジトリへのリンク集としては働きますが、それだけでは「で、自分は何を決めればいいのか」に答えません。** 下の表は、業種を入口にしたときにこのリポジトリのどこへ戻るかの対応です。
+
+**先に 1 つ断っておきます。読むモジュールを決めているのは業種ではなく、ワークロードの形です。** 大量の小さなファイルか、少数の巨大なファイルか、複数ホストから同じデータを読むのか、ブロックで出すのか。**だから自分の業種が表に無くても、形が近い行を読む価値があります。** 逆に、同じ業種でも形が違えば別の行を読んでください。
+
+| 業種 | 最初に読む | 次に読む | この業種で判断が集中するところ |
+|---|---|---|---|
+| エネルギー | [移行](../playbooks/03-migrate/) | [設計](../playbooks/02-design/) | 切り戻せる時点がいつ閉じるか。**巨大な逐次読みは単一接続で測ると上限を測ります**（[切り分け](decision-trees/measured-throughput-triage.md)） |
+| 半導体 / EDA | [性能](../domains/performance/) | [データ活用](../domains/data-utilization/) | 並列度と接続数。**設定 1 つで最も大きく動いたのは接続数でした**（[手段の比較](comparison/throughput-levers.md)） |
+| 自動車 / ADAS / 自動運転 | [データ活用](../domains/data-utilization/) | [性能](../domains/performance/) | 収集と利用でプロトコルが変わること。S3 AP の制約は設計段階で効きます |
+| 製造 | [評価](../playbooks/01-assess/) | [データ活用](../domains/data-utilization/) | **ファイル数の棚卸し。容量が余っていても書けなくなります** |
+| 金融 | [ブロックストレージ](../domains/block-storage/) | [データ保護](../domains/data-protection/) | **不可逆な保持設定と、戻したあとにアプリが起動するか**（[本番投入前レビュー](../playbooks/04-build/checklists/pre-production-review.md)） |
+| 保険 | [移行](../playbooks/03-migrate/) | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | 権限が移行先に持ち越されるか |
+| ヘルスケア / 医療 | [データ保護](../domains/data-protection/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **Snapshot があることと復旧できることが別だという点** |
+| 通信 | [運用](../playbooks/05-operate/) | [性能](../domains/performance/) | **監視が平均値で失敗すること。p99 は CloudWatch から出せません** |
+| 防衛 / 公共 | [セキュリティ・ガバナンス](../domains/security-governance/) | [データ保護](../domains/data-protection/) | 責任境界と、不可逆な設定の承認手順 |
+| メディア / エンタメ | [設計](../playbooks/02-design/) | [性能](../domains/performance/) | **デプロイタイプは一度しか決められません。** 同時台数はデータを共有するかで 5.5 倍変わります |
+| 教育 | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | [コスト](../domains/cost/) | 利用者が多いときの ID の置き方と、確保した量への課金 |
+| 物流 | [移行](../playbooks/03-migrate/) | [運用](../playbooks/05-operate/) | ログインストームのような同時アクセスの山 |
+| スポーツ / 小売 | [データ活用](../domains/data-utilization/) | [コスト](../domains/cost/) | **容量プール階層のリクエスト課金。読み直すデータを下げると高くなります** |
+| AI / 機械学習 | [データ活用](../domains/data-utilization/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **元の ACL が AI パイプラインに引き継がれないこと** |
+| SaaS / マルチテナント | [ブロックストレージ](../domains/block-storage/) | [コスト](../domains/cost/) | **詰まるのは容量ではなくボリューム数の上限です** |
+| サイバーレジリエンス（業種横断） | [データ保護](../domains/data-protection/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **有効化とロックが別だという点。** 不可逆な選択が 3 段あります |
+| 可観測性（業種横断） | [性能](../domains/performance/) | [セキュリティ・ガバナンス](../domains/security-governance/) | 何が見えないか。SMB 監査は最初の読みと書きしか記録しません |
+| データレイク / Lakehouse（業種横断） | [データ活用](../domains/data-utilization/) | [性能](../domains/performance/) | S3 AP の制約と、接続数で当たる上限が変わること |
+
+**どの業種でも共通して先に通すもの**があります。業種の行より優先してください。
+
+| 通すもの | なぜ全業種か |
+|---|---|
+| [本番投入前レビュー](../playbooks/04-build/checklists/pre-production-review.md) | **後から変えられない項目**は業種を問いません。SnapLock、Snapshot locking、セキュリティスタイル、`NetworkOrigin` |
+| [知見の分類ポリシー](../evidence-policy.md) | 事例の数値をそのまま設計根拠にしないための区分 |
+| [上限値・クォータ](limits/) | 上限に当たるかどうかは構成で決まり、業種では決まりません |
 
 ---
 
@@ -59,9 +103,10 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | FlexCache + S3 AP で ADAS HIL テスト。リファレンスアーキテクチャ。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| パターン | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | FlexCache + S3 AP で ADAS HIL テスト。リファレンスアーキテクチャ。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | パターン | [UC9: autonomous-driving](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/autonomous-driving/) | 映像/LiDAR 前処理パイプライン |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・リージョン等の制約 |
+| ノート | [単一接続で測った値はストレージの性能ではない](../domains/performance/notes/a-single-connection-measures-the-client.md) | **HIL テストのように多数のクライアントから読む形では、当たる上限がデータを共有しているかで変わります** |
 
 ### 製造
 
@@ -69,7 +114,7 @@ lang: ja
 |------|----------|------|
 | 事例 | [Komprise + FSx for ONTAP](https://www.komprise.com/blog/manufacturing-case-study-komprise-amazon-fsx-for-ontap/) | 3 PB 移行、コスト 50% 以上削減 |
 | パターン | [UC3: manufacturing-analytics](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/manufacturing-analytics/) | IoT センサー・品質検査画像分析 |
-| パターン | [ontap-edge-to-cloud-ai](https://github.com/Yoshiki0705/ontap-edge-to-cloud-ai) | エッジデバイスデータの集約と AI 活用 |
+| パターン | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | エッジデバイスデータの集約と AI 活用 |
 | ノート | [容量が余っていても書けなくなる](../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | ファイル数の棚卸し |
 
 ### 金融
@@ -139,6 +184,8 @@ lang: ja
 |------|----------|------|
 | 事例 | [Pearson](https://www.netapp.com/blog/aws-fsxo-blg-customer-success-stories-with-amazon-fsx-for-netapp-ontap/) | アジャイルなファイルワークロード運用 |
 | パターン | [UC13: education-research](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/education-research/) | 論文分類・引用分析 |
+| ノート | [ローカルユーザーの棚卸しに最終ログオン属性は無い](../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) | 利用者が多い環境で、使われていないアカウントを特定する手段 |
+| ノート | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) | 学期で利用が波打つときに、確保した量への課金が効く構造 |
 
 ### 物流
 
@@ -154,6 +201,8 @@ lang: ja
 |------|----------|------|
 | 事例 | [adidas](https://aws.amazon.com/fsx/netapp-ontap/customers/) | 大規模インスタンスでの処理速度。リストアの高速性 |
 | パターン | [UC11: retail-catalog](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/retail-catalog/) | 商品画像タグ付け |
+| ノート | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) | **容量プール階層はリクエストにも課金されます。** 読み直す画像を下げると高くなります |
+| ノート | [階層化の既定値は作成方法で違う](../playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) | コンソールで作った検証環境と IaC で作った本番が別のポリシーになること |
 
 ### AI / 機械学習
 
@@ -182,7 +231,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [fsxn-cyber-resilience-patterns](https://github.com/Yoshiki0705/fsxn-cyber-resilience-patterns) | ARP + File Security + FPolicy の多層防御 |
+| パターン | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ARP + File Security + FPolicy の多層防御 |
 | 技術資料 | [Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) | AWS 公式のランサムウェア対策ガイド |
 | ノート | [SnapLock は有効化とロックが別](../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) | 不可逆な選択が 3 段ある |
 
@@ -190,25 +239,26 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | Datadog / Splunk / New Relic 等への監査ログ転送 |
+| パターン | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Datadog / Splunk / New Relic 等への監査ログ転送 |
 | ノート | [p99 は CloudWatch のメトリクスからは出せない](../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られない |
 
 ### データレイク / Lakehouse（業種横断）
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
-| パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| パターン | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
+| パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 設計段階の制約 |
 
 ---
 
 ## 読み方のガイド
 
-1. **自分の業種を見つける** — 上の索引から。一致しなくてもワークロードが近ければ読む価値があります
+1. **自分の業種を見つける** — 上の索引から。**読むモジュールを決めているのはワークロードの形なので、一致しなくても形が近ければ読む価値があります**
 2. **事例は「何が達成されたか」の参考** — 構成や数値は明記されていないことが多い。設計根拠にするなら自環境で測る
 3. **パターンは「どう実装するか」のテンプレート** — SAM / CDK / CFn が含まれます。そのまま deploy 可能
 4. **ノートは「なぜそうするか、何に気をつけるか」の根拠** — 業種を問わず当たる壁の説明
+5. **業種の行より先に、全業種共通の 3 つを通す** — [読む順序](#業種から入ったときの読む順序)の末尾にあります。**後から変えられない項目は業種を問いません**
 
 ---
 
@@ -217,11 +267,11 @@ lang: ja
 | リポジトリ | 内容 | 形式 |
 |---|---|---|
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 28 業種別 UC + OPS + GenAI + SAP + [ファイルポータル UI](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | SAM + Amplify Gen2。[ポータル解説](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
-| [s3-burst-on-ontap-files](https://github.com/Yoshiki0705/s3-burst-on-ontap-files) | S3 で収集 → FlexCache NFS/SMB で利用。反映 p50 8 ms | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache NFS/SMB で利用。反映 p50 8 ms | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | アクセス制御対応 Agentic RAG | CDK |
-| [fsxn-cyber-resilience-patterns](https://github.com/Yoshiki0705/fsxn-cyber-resilience-patterns) | ARP + File Security + FPolicy 多層防御 | 実装パターン |
-| [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | 監査ログ → Datadog / Splunk 等 | Lambda + S3 AP |
-| [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Athena / Glue / Spark 連携 | S3 AP |
-| [ontap-edge-to-cloud-ai](https://github.com/Yoshiki0705/ontap-edge-to-cloud-ai) | IoT エッジ → クラウド AI | CDK |
-| [vmware-migration-ec2-ontap](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap) | VMware 移行 | — |
-| [blea-fsxn-usecase](https://github.com/Yoshiki0705/blea-fsxn-usecase) | BLEA ゲストシステムユースケース | CDK |
+| [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ARP + File Security + FPolicy 多層防御 | 実装パターン |
+| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 監査ログ → Datadog / Splunk 等 | Lambda + S3 AP |
+| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 連携 | S3 AP |
+| [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | IoT エッジ → クラウド AI | CDK |
+| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware 移行 | — |
+| [BLEA-FSx-for-ONTAP-Usecase](https://github.com/Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase) | BLEA ゲストシステムユースケース | CDK |

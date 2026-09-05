@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Seven sibling repositories had been renamed, and every link here still used the old name.**
+  `s3-burst-on-ontap-files`, `fsxn-cyber-resilience-patterns`, `fsxn-observability-integrations`,
+  `fsxn-lakehouse-integrations`, `ontap-edge-to-cloud-ai`, `vmware-migration-ec2-ontap` and
+  `blea-fsxn-usecase` are now `S3-Burst-on-ONTAP-Files`,
+  `FSx-for-ONTAP-Cyber-Resilience-Patterns`, `FSx-for-ONTAP-Observability-integrations`,
+  `FSx-for-ONTAP-Lakehouse-Integrations`, `ONTAP-Edge-to-Cloud-AI`, `VMware-Migration-EC2-ONTAP`
+  and `BLEA-FSx-for-ONTAP-Usecase`. Corrected across 19 files.
+  - **Nothing reported this**, which is the part worth recording. GitHub redirects a renamed
+    repository, so the external link check found all 354 URLs reachable and the citation index and
+    the industry map spelled the same repository two different ways without either looking broken.
+  - `make cross-repo-external` now resolves every sibling repository named anywhere in prose and
+    **fails when a name only works because of a redirect.** Verified by failing on a reintroduced
+    old name and passing once it was removed.
+
 - **The claim that a pre-created empty `/etc/multipath.conf` survives `mpathconf --enable` was
   wrong.** It left a 29-byte file with empty `blacklist` and `defaults` blocks — smaller than the 334
   bytes measured when it writes from scratch, but not untouched. The resulting map still used
@@ -463,6 +477,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
 
 ### Added
+
+- **A reading order for readers entering from an industry**, in
+  [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序).
+  The map indexed published case studies and sibling implementations well enough, but it answered
+  "what should I read here" only by scattering a few note rows through eighteen tables. It now leads
+  with a table naming, per industry, which module to read first and second and where the decisions
+  concentrate.
+  - **It says up front that the industry is not what selects the modules — the shape of the workload
+    is.** Many small files against few enormous ones, shared reads against non-overlapping ones,
+    block against file. So a reader whose industry is absent is told to read the nearest shape, and
+    a reader whose industry is present but whose workload differs is told not to.
+  - **Three items come before any industry row**, because irreversible settings, the evidence tiers
+    and the limits are not industry-specific.
+  - **Every industry now has at least one route back into this repository.** Education and
+    retail/sport had none — they were link collections pointing outward only.
+  - Use case implementations are still not reproduced here, and the page now says so with the
+    reason rather than leaving it implicit.
+
+- **Entry points to the industry map from the places readers actually start.** It was reachable only
+  from `docs/ja/reference/README.md`. Now also from the root README (both the getting-started table
+  and the reference table), `docs/en/README.md`, and both navigation guides. The cross-repository
+  citation index got the same treatment.
 
 - **A cited measurement of what a single connection actually measures**, at
   [単一接続で測った値はストレージの性能ではない](docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md).

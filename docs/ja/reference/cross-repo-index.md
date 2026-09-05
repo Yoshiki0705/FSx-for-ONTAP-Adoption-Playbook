@@ -73,7 +73,7 @@ lang: ja
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/saas-to-fsx-ontap-migration.md` | `常にエージェントと Basic モードが必要です` | FSx for ONTAP を宛先にすると AWS DataSync でエージェントと Basic モードが必要になること |
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/en/saas-to-fsx-ontap-migration.md` | `always requires an agent and Basic mode` | An FSx for ONTAP destination always needs an agent and Basic mode in AWS DataSync |
 | `docs/ja/reference/limits/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `5 GB → 50 GB` | オブジェクトサイズ上限の記載変更に対して、実際にエラーになるサイズを実測で確定したこと |
-| `docs/ja/reference/recent-updates.md` | `vmware-migration-ec2-ontap` | `docs/ja/atx-fsxn-ga-verification.md` | `Finalize は意図的に未実施` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を未実施として分離していること |
+| `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `Finalize は意図的に未実施` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を未実施として分離していること |
 
 <!-- cross-repo-table:end -->
 

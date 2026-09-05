@@ -707,7 +707,7 @@ IAM の側で表現する必要がある。
 > **設計に関する補足**: **ファイル単位の監査が要件なら、ボリュームのセキュリティスタイルを
 > 設計段階で決めてください。** UNIX スタイルのまま後から監査を足す経路は、本検証では
 > データ経路を壊しました。監査の構成そのもの（イベント種別、ログ形式、転送）は
-> [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations)
+> [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations)
 > で扱っています。**本ノートは「S3 AP 経由のアクセスで主体がどう記録されるか」だけを扱います。**
 
 ---
@@ -825,7 +825,7 @@ graph TD
 | CloudFormation のプロパティ | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN 形式、二層認可の整理、トラブルシュートの手がかり | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns の認可モデル](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.md) |
 | Windows ID は「AD 参加済みドメイン」の場合を記述（**本ノートの実測はこれより広い**） | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
-| ファイルアクセス監査の構成（イベント種別、ログ形式、転送） | [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) |
+| ファイルアクセス監査の構成（イベント種別、ログ形式、転送） | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) |
 
 ---
 

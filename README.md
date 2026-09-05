@@ -27,6 +27,7 @@
 | 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
 | 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
 | 自分の業種・ワークロードの事例を探す | [公開されている FSx for ONTAP の事例](docs/ja/case-studies/public-case-studies.md) | 10 分 |
+| **自分の業種から、何を決めればよいか調べる** | [業種別リソースマップ — 読む順序](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) | 10 分 |
 | 判断を誤った事例から学ぶ | [事例集](docs/ja/case-studies/) | 10 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
@@ -113,6 +114,8 @@
 | [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
 | [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
 | [`block-storage-resource-map.md`](docs/ja/reference/block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い |
+| [`industry-resource-map.md`](docs/ja/reference/industry-resource-map.md) | 業種から入ったときの読む順序と、公開事例・実装パターン・設計ノートの横断索引 |
+| [`cross-repo-index.md`](docs/ja/reference/cross-repo-index.md) | プロジェクト間の引用索引。どの主張をどのリポジトリから引いているか |
 
 ### ハンズオン開催 — `workshop-studio/`
 
@@ -229,9 +232,9 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 | リポジトリ | 概要 |
 |---|---|
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | S3 Access Points サーバーレス処理パターン集（45+） |
-| [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | 可観測性統合（メトリクス、アラート、自動対応） |
-| [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Lakehouse 統合（Databricks / Snowflake / Athena / Glue / EMR） |
-| [vmware-migration-ec2-ontap](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap) | VMware → EC2 + FSx for ONTAP 移行 |
+| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 可観測性統合（メトリクス、アラート、自動対応） |
+| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 統合（Databricks / Snowflake / Athena / Glue / EMR） |
+| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 移行 |
 
 ---
 

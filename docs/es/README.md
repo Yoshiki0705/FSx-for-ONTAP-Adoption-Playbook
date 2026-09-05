@@ -190,9 +190,9 @@ Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTI
 | Repositorio | Contenido |
 |---|---|
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Más de 45 patrones de procesamiento serverless sobre S3 Access Points |
-| [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) | Integraciones de observabilidad (métricas, alertas, respuesta automatizada) |
-| [fsxn-lakehouse-integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations) | Integraciones Lakehouse (Databricks / Snowflake / Athena / Glue / EMR) |
-| [vmware-migration-ec2-ontap](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap) | Migración VMware → EC2 + FSx for ONTAP |
+| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Integraciones de observabilidad (métricas, alertas, respuesta automatizada) |
+| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Integraciones Lakehouse (Databricks / Snowflake / Athena / Glue / EMR) |
+| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migración VMware → EC2 + FSx for ONTAP |
 
 ---
 

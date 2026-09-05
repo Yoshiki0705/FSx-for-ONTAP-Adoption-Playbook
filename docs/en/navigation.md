@@ -56,6 +56,7 @@ rest gives a reading order.
 | **A measured throughput figure is lower than expected** | [Working out what a measured throughput figure actually measured](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [Levers for raising throughput](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
+| **Working out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [Industry index](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
 | Reaching the data over the S3 API or from an analytics platform | [Prerequisites for FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Writing the access point policy](domains/security-governance/notes/access-point-authorization-layers.md) |
 | Hosting AI/ML training data and branching it per experiment | [Constraints on dataset versions and experiment branches](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [The three things to bound when handing out branches](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
@@ -112,6 +113,8 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 |---|---|
 | [Decision trees](../ja/reference/decision-trees/README.md) | Several options exist and you need to pick one |
 | [Comparison matrices](../ja/reference/comparison/) | You need the trade-offs against other options laid out |
+| [Industry resource map](../ja/reference/industry-resource-map.md) (日本語) | You want to enter from an industry and be told which modules to read |
+| [Cross-repository citation index](../ja/reference/cross-repo-index.md) (日本語) | You want to check which repository a given figure is cited from |
 | [Limits and quotas](../ja/reference/limits/) | You need to confirm a design will not hit a limit |
 | [Glossary](../ja/reference/glossary/) | You need the definition of an ONTAP or AWS term |
 

@@ -713,7 +713,7 @@ Measured on the same SVM with the same audit configuration (`file_operations` en
 > **Design note**: **if per-file auditing is a requirement, decide the volume security style during
 > design.** Adding auditing later to a volume left in UNIX style broke the data path in this
 > measurement. The audit configuration itself — event classes, log format, delivery — is covered in
-> [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations).
+> [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations).
 > **This note covers only how the subject is recorded for access through an S3 access point.**
 
 ---
@@ -829,7 +829,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 | CloudFormation properties | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN form, the authorization model, triage signals | [Authorization model in FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.en.md) |
 | Documents the Windows identity for a "joined Active Directory domain" (**the measurement here is broader**) | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
-| File access audit configuration (event classes, log format, delivery) | [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) |
+| File access audit configuration (event classes, log format, delivery) | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) |
 
 ---
 
