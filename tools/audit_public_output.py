@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Pre-publication audit for a public repository.
 
-Four independent concerns, all of which have historically been caught late or not at all:
+Five independent concerns, all of which have historically been caught late or not at all:
 
   1. naming      - "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" are the only accepted forms,
                    and three products must never be proposed.
   2. neutrality  - vendor-versus framing is inappropriate for an AWS Community Builder.
   3. pii         - personal names, account IDs, internal IPs, case numbers must never be committed.
   4. role-label  - inline callouts labeled with a job title imply a review that did not happen.
+  5. support-referral - telling a reader to contact AWS or NetApp Support is not a finding, and
+                   publishing it before a case exists puts a dead end in a knowledge base.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -43,8 +45,8 @@ from frontmatter import IGNORED_DIRS
 SKIP_DIRS = (*IGNORED_DIRS, "tools")
 SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json"}
 
-CATEGORIES = ("naming", "neutrality", "pii", "role-label")
-ALLOW = re.compile(r"allow:(naming|neutrality|pii|role-label|all)")
+CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
+ALLOW = re.compile(r"allow:(naming|neutrality|pii|role-label|support-referral|all)")
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
 FILE_ALLOW = re.compile(r"audit-file-allow:\s*([a-z-]+(?:\s*,\s*[a-z-]+)*)")
 FILE_ALLOW_SCAN_LINES = 40
@@ -147,6 +149,33 @@ ROLE_LABEL = re.compile(
     r"^\s*>\s*\*\*[^*]*(?:lens|の視点|perspective)[^*]*\*\*", re.IGNORECASE
 )
 
+# ---------------------------------------------------------------- support referral
+#
+# Directing a reader to a vendor's support desk is not knowledge. It is the absence of it, and
+# publishing it does three things a knowledge base should not: it hands the reader a dead end, it
+# implies the question was pursued as far as it can be pursued, and it dates badly, because the
+# behaviour that prompted it is usually documented somewhere already.
+#
+# This exists because it was written. A note in this repository once concluded that a FlexClone
+# relationship blocking a volume deletion "could not be cleared" and that the remedy was to wait or
+# to file with the vendor. The mechanism was ONTAP's volume recovery queue, documented, with a
+# one-command remedy -- found only after a reviewer asked whether the question had been researched at
+# all. The claim of impossibility and the support referral arrived together, and the referral is the
+# half a regex can see.
+#
+# **Attribution is deliberately not matched.** "AWS Support confirmed X (date)" records where a fact
+# came from and is how several notes here are sourced. What is matched is an instruction aimed at the
+# reader: contact them, file with them, escalate to them. If a case really is the only remaining path,
+# that belongs in `.private/`, not in a published note.
+SUPPORT_REFERRAL = re.compile(
+    r"(?:AWS\s+Support|NetApp\s+Support|ベンダー|サポート)\s*(?:に|へ)\s*"
+    r"(?:問い合わせ|上げ|連絡|相談|起票|確認を依頼)"
+    r"|(?:file|filing|open|raise|escalate)\s+(?:a\s+)?(?:support\s+)?(?:case|ticket)\s+with"
+    r"|contact\s+(?:AWS|NetApp)\s*Support"
+    r"|ベンダーに上げ|サポートケースを(?:開|起)",
+    re.IGNORECASE,
+)
+
 
 def iter_files(root: Path):
     for path in sorted(root.rglob("*")):
@@ -214,6 +243,16 @@ def audit_line(
                 )
                 break
 
+    if "support-referral" not in allowed and SUPPORT_REFERRAL.search(line):
+        findings.append(
+            (
+                "support-referral",
+                (
+                    "do not tell a reader to contact vendor support; publish the mechanism, or "
+                    "record the open question in .private/ until there is an answer"
+                ),
+            )
+        )
     if "role-label" not in allowed and ROLE_LABEL.match(line):
         findings.append(
             (
