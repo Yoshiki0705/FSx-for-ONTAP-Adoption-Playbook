@@ -110,6 +110,7 @@ AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロック
 | VMware からの移行で「一度 EBS に移して後から NAS を構成する」手順が不要に | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) |
 | MGN ベースの自動化と FSx for ONTAP の組み合わせで、SnapMirror 以外の移行パスが増えた | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
 | 移行後の LUN 配置が ONTAP の推奨と異なるため、移行後に整える工程が必要 | [LUN の並べ方が決めているのは復旧の粒度](../domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) |
+| **Finalize で物理容量が最大になる。移行データ 1 本分の追加容量が一時的に必要** | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](../playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) |
 
 **移行時に見積もる制約**: GA 済みだが、設計時に効く制約がある。
 
@@ -125,7 +126,7 @@ AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロック
 
 出典: [What's New — 2026/09](https://aws.amazon.com/about-aws/whats-new/2026/09/aws-transform-fsx-netapp-ontap-support/)、[AWS Transform Change log — 2026-08-30](https://docs.aws.amazon.com/transform/latest/userguide/change-log.html)、[FSx for ONTAP configuration（MGN ユーザーガイド）](https://docs.aws.amazon.com/mgn/latest/ug/fsx-ontap.html)
 
-**検証レポート**: スコープの確定と実機での API レベル確認は sibling repo の [ATX FSx for ONTAP GA 検証レポート](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap/blob/main/docs/ja/atx-fsxn-ga-verification.md) にある。最小 ONTAP バージョン要件は公開ドキュメントに記載が見つかっていない（2026-09-04 調査）。
+**検証レポート**: スコープの確定と実機での API レベル確認は sibling repo の [ATX FSx for ONTAP GA 検証レポート](https://github.com/Yoshiki0705/vmware-migration-ec2-ontap/blob/main/docs/ja/atx-fsxn-ga-verification.md) にある。レプリケーションから Finalize までを通した実測は [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](../playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) に昇格させた。**SNAPSHOT フェーズがボリューム Snapshot、LAUNCH フェーズが FlexClone の作成である**ことも、そちらで時刻を突き合わせて確定している。最小 ONTAP バージョン要件は公開ドキュメントに記載が見つかっていない（2026-09-04 調査）。
 
 ---
 
