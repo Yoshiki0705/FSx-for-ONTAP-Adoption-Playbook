@@ -1,0 +1,296 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >-
+  Smallest reproducible Amazon FSx for NetApp ONTAP block-storage environment: a Single-AZ
+  second-generation file system with one HA pair, one SVM, one volume intended to hold a single LUN,
+  and one Amazon Linux 2023 client reachable through AWS Systems Manager Session Manager. The LUN,
+  the igroup and the LUN map are NOT created here because the Amazon FSx API cannot create them;
+  run provision-lun.sh against the ONTAP REST API afterwards. Sized for observing behaviour, not for
+  measuring throughput - the default client instance type cannot sustain the provisioned rate.
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: fsxn-block-quickstart
+    AllowedPattern: '^[a-z][a-z0-9-]{2,30}$'
+    Description: >-
+      Lower-case prefix for resource names. The SVM and volume names derive from it with
+      non-alphanumeric characters replaced, because ONTAP does not accept hyphens in those names.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC. This template does not create network infrastructure.
+
+  ClientSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      Existing subnet for both the file system and the client. Single-AZ places the iSCSI endpoints
+      inside this subnet, so keeping the client here avoids any cross-subnet routing question.
+
+      The client reaches three AWS services: Systems Manager to log in, Secrets Manager to read the
+      fsxadmin password, and the Amazon FSx API to resolve the ONTAP management address. Give it a
+      NAT gateway, a public address, or interface VPC endpoints for ssm, ssmmessages, ec2messages,
+      secretsmanager and fsx. A subnet carrying only the Systems Manager and Secrets Manager
+      endpoints was measured to leave the Amazon FSx API unreachable, because it resolves to public
+      addresses; the scripts then need --management-ip and --target-ips instead. Nothing about iSCSI
+      itself needs any of this - the LUN is reached inside the VPC.
+
+  FsxAdminSecretName:
+    Type: String
+    MinLength: 1
+    Description: >-
+      Name or ARN of an existing AWS Secrets Manager secret whose SecretString is JSON containing a
+      "password" key. The template resolves it at create time, so the password appears in no
+      parameter, no output and no CloudFormation log. Amazon FSx accepts 8 to 50 characters for
+      the fsxadmin password.
+
+  StorageCapacityGiB:
+    Type: Number
+    Default: 1024
+    MinValue: 1024
+    Description: >-
+      SSD capacity in GiB. 1024 is the documented minimum for a second-generation file system with
+      one HA pair. Usable aggregate space is smaller than this; see the capacity note in the
+      block-storage module.
+
+  ThroughputCapacity:
+    Type: Number
+    Default: 384
+    AllowedValues: [384, 768, 1536, 3072, 6144]
+    Description: >-
+      Throughput capacity in MBps. 384 is the documented minimum for one HA pair. Higher values cost
+      more per hour and are not needed to observe block behaviour.
+
+  VolumeSizeBytes:
+    Type: String
+    Default: '68719476736'
+    Description: >-
+      Volume size in bytes. The default is 64 GiB: the 5 percent snapshot reserve leaves about
+      60.8 GiB, which holds the 40 GiB LUN that provision-lun.sh creates by default and leaves room
+      for snapshots of it. Raise it if you intend to fill the LUN and keep several snapshots. The volume is created through the Amazon FSx API
+      rather than through ONTAP deliberately: a volume created on the ONTAP side receives no fsvol
+      identifier and is therefore absent from Amazon CloudWatch, from AWS API tagging and from
+      AWS Backup.
+
+  ClientInstanceType:
+    Type: String
+    Default: t3.medium
+    Description: >-
+      Client instance type. The default is chosen for cost, not for bandwidth. It cannot sustain
+      384 MBps, so do not use this stack to measure throughput.
+
+  ClientAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: >-
+      Resolved from the AWS-published SSM public parameter so no AMI ID is pinned in this template.
+
+Conditions:
+  SecretGivenAsArn: !Equals [!Select [0, !Split [':', !Ref FsxAdminSecretName]], 'arn']
+
+Resources:
+  ClientSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Client for the FSx for ONTAP block-storage quickstart. No inbound rules.
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        # Session Manager, the Amazon FSx API, Secrets Manager and the ONTAP REST endpoint are all
+        # reached outbound. Narrowing this to VPC endpoint addresses is left to the reader because it
+        # depends on whether the subnet uses a NAT gateway or interface endpoints.
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-client'
+
+  FileSystemSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: FSx for ONTAP file system for the block-storage quickstart.
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-fs'
+
+  # Rules live outside the group so the client group can be referenced without a circular dependency.
+  IscsiFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3260
+      ToPort: 3260
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: iSCSI data. Port 4420 and 8009 would be added here for NVMe over TCP.
+
+  OntapRestFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: ONTAP REST API. Needed because the Amazon FSx API has no LUN action.
+
+  ClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: read-fsxadmin-secret
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                # Accepts either a name or an ARN in FsxAdminSecretName. A name is turned into an
+                # ARN pattern with the six-character suffix Secrets Manager appends.
+                Resource: !If
+                  - SecretGivenAsArn
+                  - !Ref FsxAdminSecretName
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${FsxAdminSecretName}-??????'
+        - PolicyName: describe-fsx
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - fsx:DescribeFileSystems
+                  - fsx:DescribeStorageVirtualMachines
+                  - fsx:DescribeVolumes
+                Resource: '*'
+
+  ClientInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ClientRole
+
+  FileSystem:
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: ONTAP
+      StorageType: SSD
+      StorageCapacity: !Ref StorageCapacityGiB
+      SubnetIds:
+        - !Ref ClientSubnetId
+      SecurityGroupIds:
+        - !Ref FileSystemSecurityGroup
+      OntapConfiguration:
+        # SINGLE_AZ_2 is the second generation, which iSCSI and NVMe over TCP both require. Block
+        # protocols are disabled above six HA pairs, so HAPairs stays at 1 here.
+        DeploymentType: SINGLE_AZ_2
+        HAPairs: 1
+        ThroughputCapacity: !Ref ThroughputCapacity
+        DiskIopsConfiguration:
+          Mode: AUTOMATIC
+        FsxAdminPassword: !Sub '{{resolve:secretsmanager:${FsxAdminSecretName}:SecretString:password}}'
+        AutomaticBackupRetentionDays: 0
+      Tags:
+        - Key: Name
+          Value: !Ref NamePrefix
+
+  StorageVirtualMachine:
+    Type: AWS::FSx::StorageVirtualMachine
+    Properties:
+      FileSystemId: !Ref FileSystem
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}svm']]
+      RootVolumeSecurityStyle: UNIX
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-svm'
+
+  LunVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}vol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref StorageVirtualMachine
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: UNIX
+        StorageEfficiencyEnabled: 'true'
+        # JunctionPath is present because the CloudFormation resource handler rejects a volume
+        # without it - "Missing required parameter in OntapConfiguration: JunctionPath" - even
+        # though the property reference marks it as not required. A volume that only holds a LUN
+        # has no reason to be in the SVM namespace, so this is a constraint of the control plane
+        # rather than a design choice. The LUN's contents stay unreadable over NFS regardless:
+        # a client that mounts this junction sees the LUN as a file whose name and size are
+        # visible and whose contents are not.
+        JunctionPath: !Sub '/${NamePrefix}'
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-vol'
+
+  ClientInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ClientAmiId
+      InstanceType: !Ref ClientInstanceType
+      IamInstanceProfile: !Ref ClientInstanceProfile
+      SubnetId: !Ref ClientSubnetId
+      SecurityGroupIds:
+        - !Ref ClientSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # The scripts in this example need these packages. Installing them here means the client is
+          # ready when the stack reports CREATE_COMPLETE.
+          dnf install -y iscsi-initiator-utils device-mapper-multipath jq >/var/log/quickstart-setup.log 2>&1
+          systemctl enable --now iscsid >>/var/log/quickstart-setup.log 2>&1
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-client'
+
+Outputs:
+  FileSystemId:
+    Description: Pass this to provision-lun.sh as --file-system-id.
+    Value: !Ref FileSystem
+
+  SvmName:
+    Description: Pass this to provision-lun.sh as --svm.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}svm']]
+
+  VolumeName:
+    Description: Pass this to provision-lun.sh as --volume.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}vol']]
+
+  ClientInstanceId:
+    Description: Connect with "aws ssm start-session --target <this>".
+    Value: !Ref ClientInstance
+
+  FsxAdminSecret:
+    Description: The secret the scripts read. Never passed on a command line.
+    Value: !Ref FsxAdminSecretName
+
+  WhatIsNotCreatedHere:
+    Description: >-
+      The LUN, the igroup and the LUN map. The Amazon FSx API has no action for any of them, so they
+      are created against the ONTAP REST API by provision-lun.sh.
+    Value: LUN, igroup, LUN map

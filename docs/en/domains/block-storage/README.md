@@ -8,6 +8,8 @@
 
 Covers designing, building, and operating LUNs and NVMe namespaces served over iSCSI and NVMe/TCP. Unlike a file share, **consistency and path management stay on the host side.** Where that boundary falls is what this module is about.
 
+**To get something running first, start with [Block storage running in about thirty minutes](quickstart.md).** One CloudFormation template and three ONTAP REST scripts take you to a LUN reached over iSCSI with multipath assembled ([`examples/block-storage/`](../../../../examples/block-storage/)).
+
 ---
 
 ## Questions this module answers
@@ -29,6 +31,7 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 | 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) (日本語) |
 | 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
 | 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
+| 16 | How to just run it and see | [Block storage running in about thirty minutes](quickstart.md) |
 
 ---
 
@@ -37,6 +40,7 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 | Directory | Contents |
 |---|---|
 | [`notes/`](../../../ja/domains/block-storage/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
+| [`quickstart.md`](quickstart.md) | Walkthrough for the smallest configuration. The runnable artifacts are in [`examples/block-storage/`](../../../../examples/block-storage/) |
 | [`checklists/`](../../../ja/domains/block-storage/checklists/) | Checklists for field use |
 
 ---

@@ -12,8 +12,10 @@
 ## Project Overview
 
 A **documentation-first** knowledge base for Amazon FSx for NetApp ONTAP adoption: migration cases
-and best practices across design, build, and operations. There is no application to deploy — the
-deliverable is the documentation itself, plus small validation tools under `tools/`.
+and best practices across design, build, and operations. The deliverable is the documentation, the
+validators under `tools/`, and the smallest runnable environment per topic under `examples/`. An
+example exists so a claim in the prose can be reproduced, and is verified by being run, not by
+passing a linter.
 
 **Every localizable document lives under `docs/<lang>/`.** Japanese is the reference language and the
 only complete tree. The one exception is the root `README.md`, which *is* the Japanese hub — so
@@ -78,6 +80,7 @@ make links           # Broken link check (internal links offline, external opt-i
 make anchors         # Externally cited section anchors have not been renamed
 make pr-verify PR=n  # CI passed for the commit this PR will merge, keyed on its head SHA
 make drift           # AGENTS.md size budget, steering loader thinness, index reachability
+make shell           # shellcheck over SH_PATHS; make cfn -- cfn-lint over CFN_PATHS
 make test            # Guardrail tests: guard contract, .PHONY, one break per doc gate
 make all             # everything above (commit gate)
 
@@ -144,6 +147,7 @@ gate after that last edit.
 │   │   ├── domains/<module>/README.md
 │   │   └── case-studies/README.md
 │   └── ko/ zh-CN/ zh-TW/ fr/ de/ es/     # README.md hubs for now
+├── examples/block-storage/         # CFn template (AWS side) + ONTAP REST scripts (LUN side)
 ├── tools/                          # Validation + scaffolding scripts (Python 3.12+, stdlib only)
 ├── scripts/                        # Maintenance helpers
 ├── .kiro/                          # Kiro steering + MCP (gitignored, local only)  <!-- gitleaks:allow -->
@@ -409,7 +413,7 @@ it outside the repository and imports it there. Recorded where it is enforced, n
 
 Before submitting changes:
 
-1. `make lint` — markdownlint clean, all frontmatter valid
+1. `make lint` — markdown, frontmatter, headings, Python, shell and CloudFormation all clean
 2. `make audit` — zero naming, neutrality, PII, or internal-ID hits
 3. `make i18n-check` — Tier 1 parity holds
 4. `make switcher-check` — switcher blocks match the languages on disk
@@ -439,6 +443,6 @@ Surface findings explicitly and fix before finalizing.
 
 - Primary region for verification: `ap-northeast-1` (Tokyo)
 - ONTAP baseline for carried-over findings: 9.17.1P7D1
-- Tooling: Python 3.12 or later (stdlib only for `tools/`; CI runs 3.14), `ruff` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`. CI installs `ruff` from the pinned file rather than resolving the latest release, so the lint verdict does not depend on the day it runs
+- Tooling: Python 3.12 or later (stdlib only for `tools/`; CI runs 3.14), `ruff` and `cfn-lint` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`, `shellcheck`. CI installs the pinned versions rather than resolving the latest release, so a lint verdict does not depend on the day it runs
 - A CI interpreter bump is a documentation change too: the version appears in prose in `AGENTS.md` and `CONTRIBUTING.md`, and a dependency bot cannot update prose. State the supported floor as a range and the CI version separately, so a later bump touches one line instead of three
-- No application runtime, no AWS deployment from this repository
+- No application runtime. `examples/` deploys into the reader's own account and is never deployed from CI

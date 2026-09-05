@@ -9,6 +9,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The claim that a pre-created empty `/etc/multipath.conf` survives `mpathconf --enable` was
+  wrong.** It left a 29-byte file with empty `blacklist` and `defaults` blocks — smaller than the 334
+  bytes measured when it writes from scratch, but not untouched. The resulting map still used
+  NetApp's recommended `service-time 0` and `queue_if_no_path`. Corrected where it is stated.
+- **"A space-reserved LUN consumes its full size immediately" was stated without its condition.** A
+  LUN created through the ONTAP REST API has `space.guarantee.requested` false by default, so the
+  volume showed 352,256 bytes used against a 40 GiB LUN. The reservation flag is now printed next to
+  the size so the capacity figures are read correctly.
+
 - **Two S3 access point behaviours were recorded as measured limits without saying whether they were
   intended.** The note listed Unicode characters rejected in object tags and `UploadPartCopy` failing
   inside one access point among the constraints that are not in public documentation, which leaves a
@@ -446,6 +455,50 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the pinned 0.16.1 on `PATH`).
 
 ### Added
+
+- **`examples/block-storage/`, the first runnable artifacts in this repository.** One CloudFormation
+  template for the AWS side and three shell scripts driving the ONTAP REST API for the block objects
+  the Amazon FSx API cannot create. The split is the control-plane boundary rather than a packaging
+  choice: a LUN, an igroup and a LUN map have no Amazon FSx action and no CloudFormation resource
+  type. The volume is created by the template on purpose, because a volume created on the ONTAP side
+  receives no `fsvol` identifier and is therefore absent from CloudWatch, from AWS API tagging and
+  from AWS Backup. Scope is deliberately narrow — Single-AZ, iSCSI, Linux — with NVMe/TCP, Windows,
+  Multi-AZ, multiple HA pairs and any throughput figure named as out of scope and why.
+  - **`provision-lun.sh` and `connect-iscsi.sh` are idempotent, measured rather than asserted.**
+    Three consecutive passes left five counts identical: LUNs on the SVM, igroup initiators, LUN
+    maps, iSCSI sessions and multipath paths. The property is worth stating because the documented
+    connection procedure does not have it — re-running its per-portal login loop adds sessions, and
+    on a Windows host took a measured 16 paths to 24 without a warning. `verify-block.sh` prints the
+    counts and creates nothing, because a script that both acts and judges its own result is not
+    evidence.
+  - Neither script accepts a password as an argument. The template resolves the fsxadmin password
+    with `{{resolve:secretsmanager:...}}` so it appears in no parameter, output or log, and the
+    scripts read the same secret at run time or take it on standard input.
+- **A quickstart in Japanese and English**, at `docs/<lang>/domains/block-storage/quickstart.md`. The
+  prose lives under `docs/` where the switcher and parity gates apply; `examples/README.md` stays a
+  short English reference to the files themselves.
+- **Four defects that only appeared when the artifacts were run**, all four having passed `cfn-lint`,
+  `shellcheck` and `validate-template`. They are recorded in the quickstart because each is a
+  stumbling point for anyone building the same thing:
+  - The CloudFormation resource handler rejects an ONTAP volume without `JunctionPath`, while the
+    property reference marks it *Required: No* and the prose on the same page says it is required.
+  - `fsx.<region>.amazonaws.com` resolves to public addresses, so a private subnet carrying only the
+    `ssm` and `secretsmanager` interface endpoints cannot reach the Amazon FSx API even though
+    Secrets Manager works. Both scripts gained `--management-ip` and `--password-stdin` so neither
+    needs the AWS API at all.
+  - `iscsiadm -m session` exits 21 when there are no sessions, which under `set -o pipefail` fails a
+    script on the normal starting state.
+  - `iscsiadm -m node -p <portal>` prints a record dump beginning with `# BEGIN RECORD`, so parsing
+    field 2 of line 1 yields `BEGIN`; discovery then succeeds and the login fails with "No records
+    found".
+- **Two gates for the new directory, and the audit's scan range widened to reach it.** `make shell`
+  runs `shellcheck` over `SH_PATHS` and `make cfn` runs `cfn-lint` over `CFN_PATHS`; both fail when
+  their tool is absent rather than skipping, and both are wired into `make lint` and into CI.
+  `cfn-lint` is exact-pinned alongside `ruff`. `.sh` was added to the audit's `SCAN_SUFFIXES`,
+  because a script's comments carry exactly the naming, vendor and private-address content the audit
+  exists to catch and leaving the suffix out would have made it silent about them by scan range
+  rather than by content. `scripts/tests/test_example_gates.py` breaks each gate on purpose and
+  additionally fails when a script or template on disk falls outside the paths the gates search.
 
 - **A measurement of where capacity actually goes during an AWS Transform migration.** The reference
   page already said Finalize splits the FlexClone and is irreversible. It did not say what that costs.
