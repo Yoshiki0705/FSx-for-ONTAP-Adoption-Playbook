@@ -20,6 +20,7 @@
 | 4 | 切り替え時のダウンタイムをどう最小化するか | [切り替えの順序](notes/where-the-rollback-window-closes.md#切り替えの順序) |
 | 5 | どの時点まで、どうやって戻せるか | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](notes/where-the-rollback-window-closes.md) |
 | 6 | 移行元が SaaS / クラウドストレージの場合、方式の前に何を確定させるか | [SaaS からの移行は転送方式より先に移行元の群を確定させる](notes/saas-source-migration-scoping.md) |
+| 7 | AWS Transform で移行するとき、どの工程で容量がいくら要るか | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](notes/atx-finalize-flexclone-capacity.md) |
 
 ---
 

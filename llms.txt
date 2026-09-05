@@ -64,6 +64,7 @@ missing translation is an absent link, never a placeholder page.
 
 ## Findings available today
 
+- [AWS Transform's Finalize is where physical capacity peaks](docs/ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md): The MGN SNAPSHOT phase is an ONTAP volume Snapshot and LAUNCH is a FlexClone from it, so the target volume holds 35.5 MiB of physical space against 7.91 GiB logical until Finalize. Finalize splits that clone, taking it to 8.57 GiB while the staging volume is still present for about nine minutes, so one extra full copy of the migrated data has to be free. Planning aggregate capacity from the pre-Finalize figure under-provisions. Measured once on 8 GiB in ap-northeast-1 on ONTAP 9.18.1P3D1.
 All twelve modules have content. Each module README lists the questions it covers alongside the note
 that answers each one; a question whose answer is not yet written is marked `_未追加_`, so the module
 READMEs are the authoritative source for coverage rather than any count stated here.

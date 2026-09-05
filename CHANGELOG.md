@@ -413,6 +413,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A measurement of where capacity actually goes during an AWS Transform migration.** The reference
+  page already said Finalize splits the FlexClone and is irreversible. It did not say what that costs.
+  Measured on 8 GiB across three disks in ap-northeast-1 on ONTAP 9.18.1P3D1: the target volume holds
+  35.5 MiB of physical space against 7.91 GiB logical while it is still a clone, and the split takes it
+  to 8.57 GiB while the staging volume is still present, for about nine minutes. So Finalize is the
+  point of peak capacity rather than cleanup, and an aggregate sized from the pre-Finalize figure is
+  short by one full copy of the migrated data. The note also maps the job phases onto ONTAP operations
+  by timestamp - SNAPSHOT is a volume Snapshot, LAUNCH is a FlexClone from it - and records that
+  Finalize emits no job, that cleanup is staged across about 33 minutes, and that the split was
+  non-disruptive. What is not known is stated: the behaviour when free space is below the migrated data
+  size was not induced, and the growth of the Snapshot phase against data volume was measured at one
+  point only.
 - **A `block-storage` domain, thirteenth module, covering iSCSI and NVMe/TCP.** Block was previously
   present only as incidental mentions: the six-HA-pair ceiling in the deployment-type note and a
   "remount iSCSI" line in the cutover checklist. Nothing covered LUNs, igroups, multipathing, capacity
