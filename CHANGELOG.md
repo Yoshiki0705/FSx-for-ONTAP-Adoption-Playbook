@@ -494,6 +494,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the other only NFS and SMB. And the snapshot reserve for a LUN-hosting volume is 5 percent per AWS
   against 0 per NetApp. The failover-transparency and client-tuning rows were rewritten to separate
   what is documented from what was measured.
+- **A kernel gate on the NVMe/TCP branch of [ブロックプロトコルとレイアウトの決定木](docs/ja/reference/decision-trees/block-protocol-and-layout.md).**
+  The tree previously offered NVMe/TCP for simpler MPIO on the strength of the AWS announcement, which
+  is the opposite of what happens on a kernel without `CONFIG_NVME_MULTIPATH`. The branch now asks for
+  the kernel option before the protocol is chosen, and port 8009 for discovery is added alongside 4420.
+  Four glossary entries follow: portset, CHAP, consistency group and `CONFIG_NVME_MULTIPATH`.
 - **Multi-AZ aggregate overhead in [容量は 3 か所で数えられる](docs/ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md).**
   The same 1,024 GiB of provisioned SSD yielded 907.03 GiB of aggregate on Single-AZ and 861.7 GiB on
   Multi-AZ. Two environments differing in deployment type; no attempt was made to isolate the cause
@@ -519,7 +524,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   irreversible. The matrix sets Amazon EBS, EBS Multi-Attach and FSx for ONTAP block side by side with
   symmetric trade-offs, and states plainly that a single attachment does not need FSx for ONTAP: the
   minimum footprint is 1,024 GiB of SSD and 384 MBps.
-- **Fourteen block-storage glossary entries**, including one recording that Fibre Channel is *absent*
+- **Eighteen block-storage glossary entries**, including one recording that Fibre Channel is *absent*
   from the AWS protocol enumerations rather than documented as unsupported — a distinction the
   repository asks readers not to collapse.
 
