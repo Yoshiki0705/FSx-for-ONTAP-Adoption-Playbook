@@ -57,7 +57,8 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [p99 cannot be read from the CloudWatch metrics](../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) (日本語) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) (日本語) | Tiering carries per-request charges, and deduplication does not lower the bill |
 | [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
-| [The AD dependency lasts the lifetime, not just the join](../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) (日本語) | An expired service account is symptomless until the next maintenance window |
+| [The AD dependency lasts the lifetime, not just the join](domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | An expired service account is symptomless until the next maintenance window |
+| [Some SVMs cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | The cause is a deleted CIFS server, not the creation date. The ONTAP REST API restores it |
 
 ---
 
