@@ -28,6 +28,8 @@
 | Reading a `@2x` PNG directly | Exceeds the 2000px limit. Downscale to a preview first |
 | Working past a `ruff` version mismatch | `make python` now fails instead of warning. Install the pinned version; if it still fires, a second binary is earlier on `PATH` (`which -a ruff`) |
 | Citing another repo's finding without a link | Always link the source repository and doc |
+| **Telling a reader to contact AWS or NetApp Support** | `make audit` fails (`support-referral`). Publish the mechanism instead; if there is genuinely no answer yet, the open question belongs in `.private/` |
+| Writing "this cannot be done" from your own observations alone | Search first. See [Concluding that something is impossible](#concluding-that-something-is-impossible) |
 
 ## Silencing the audit
 
@@ -47,3 +49,33 @@ Prefer the per-line form. A file-level allowance also exempts every mistake adde
 file later, which is how an exemption granted for one good reason turns into an unmonitored
 file. Inside a table, the comment goes **within** the last cell — placing it after the
 closing pipe adds a column and fails `markdownlint`.
+
+## Concluding that something is impossible
+
+**A statement that something cannot be done is a claim about the documentation, not an observation.**
+Observations produce "this returned an error"; only a search produces "there is no documented way".
+
+This has been got wrong here. A FlexClone relationship was blocking a volume deletion. Six things were
+tried, all of which failed, including ONTAP's own `volume delete` at diagnostic privilege — and the
+conclusion published was that the record could not be cleared and the remedy was to involve the
+vendor. **The mechanism is ONTAP's volume recovery queue**: `volume delete` parks a volume there for
+at least 12 hours, the clone relationship survives, and `volume recovery-queue purge` clears it in one
+command. It is documented, and a NetApp KB names it for exactly this symptom. None of that was
+searched for; the conclusion came from the failures alone.
+
+**The observations were all correct.** What was wrong was treating "everything I tried failed" as
+equivalent to "there is nothing that works". Six failures are evidence about six commands.
+
+Before writing an impossibility into a document, or reporting one:
+
+| # | Step |
+|---|---|
+| 1 | Search the vendor's documentation and KB for the **symptom text**, not the operation you were attempting. ONTAP's own error message named the wrong remedy here, so the working phrase was the error's *subject*, not its instruction |
+| 2 | Search for the artefact you actually observed. A volume renamed to `<name>_<number>` and hidden from `volume show` is a documented behaviour with a name; the number was a data set ID |
+| 3 | Check sibling repositories and `.private/` for the same symptom |
+| 4 | Only then write it, and write **what was searched and when**, so the next reader can tell a documented negative from an unfinished search |
+
+**The two halves of this failure travel together.** The support referral is what `make audit` can see;
+the unresearched claim is not mechanically detectable without flagging every legitimate "cannot be
+changed after creation" in the tree. So the gate catches the symptom and this section carries the
+cause — if the gate fires, the claim beside it is the thing to re-examine.

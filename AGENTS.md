@@ -288,6 +288,14 @@ Use **neutral, topic-based labels** instead — the finding is unchanged, only t
 
 Pre-commit check: `grep -rnoE '^> \*\*[^*]+(lens|の視点)[^*]*\*\*' <changed-files>` must return nothing.
 
+### Do not tell a reader to contact vendor support
+
+`make audit` fails on it (`support-referral`). A referral is the absence of knowledge, and it is
+usually the visible half of an impossibility claim that was never researched — which is how it got
+here. Publish the mechanism; if there is no answer yet, the open question goes in `.private/`.
+Attribution of a finding to a case that happened ("Support confirmed X, date") is unaffected.
+Procedure: [Concluding that something is impossible](docs/agent/pitfalls.md#concluding-that-something-is-impossible).
+
 ### No process metadata in published docs
 
 Do not add "Persona Review Summary" sections, review rounds, review dates, lens counts, or
