@@ -7,7 +7,7 @@ PY ?= python3
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
-        diagrams diagrams-check cfn shell
+        diagrams diagrams-check cfn shell cross-repo cross-repo-external
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -169,6 +169,14 @@ secrets: ## Secret scan of the worktree (fails when gitleaks is not installed)
 
 links: ## Check internal link resolution
 	@$(PY) tools/check_links.py
+# Split offline from network for the same reason as links / links-external. The offline half
+# answers "is every cross-repo citation registered"; the network half answers "does the cited
+# file still say it". Both are needed: a citation nobody registered is unverifiable, and a
+# registered citation whose claim was retracted reads exactly like one that still holds.
+cross-repo: ## Check that sibling-repository citations are registered
+	@$(PY) tools/check_cross_repo.py
+cross-repo-external: ## Also fetch each cited file and confirm the probe string survives
+	@$(PY) tools/check_cross_repo.py --external
 
 headings: ## Check that Japanese section headings are noun phrases
 	@$(PY) tools/check_heading_style.py --selftest >/dev/null
@@ -184,7 +192,7 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check ja-markers audit secrets links anchors drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check ja-markers audit secrets links cross-repo anchors drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship

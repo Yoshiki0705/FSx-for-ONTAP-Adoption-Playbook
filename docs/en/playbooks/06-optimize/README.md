@@ -27,7 +27,6 @@ Performance and cost tuning once you are in steady state. Optimization cannot be
 | Directory | Contents |
 |---|---|
 | [`notes/`](../../../ja/playbooks/06-optimize/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/06-optimize/checklists/) | Checklists for field use |
 
 ---
 

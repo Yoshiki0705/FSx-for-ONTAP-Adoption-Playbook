@@ -42,7 +42,7 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 |---|---|
 | [`notes/`](../../../ja/domains/block-storage/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
 | [`quickstart.md`](quickstart.md) | Walkthrough for the smallest configuration. The runnable artifacts are in [`examples/block-storage/`](../../../../examples/block-storage/) |
-| [`checklists/`](../../../ja/domains/block-storage/checklists/) | Checklists for field use |
+| [`checklists/`](../../../ja/domains/block-storage/checklists/) | Checklists for field use. → [Pre-cutover checks for iSCSI](../../../ja/domains/block-storage/checklists/iscsi-cutover.md) (日本語) |
 
 ---
 

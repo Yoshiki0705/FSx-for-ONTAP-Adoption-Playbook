@@ -31,7 +31,6 @@ Covers monitoring, capacity management, incident response, and change management
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/05-operate/checklists/) | Checklists for field use |
 
 ---
 

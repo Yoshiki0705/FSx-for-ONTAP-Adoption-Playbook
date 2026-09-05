@@ -157,6 +157,7 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
             "audit",
             "secrets",
             "links",
+            "cross-repo",
             "drift",
             "test",
         }

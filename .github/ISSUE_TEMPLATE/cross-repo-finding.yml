@@ -1,0 +1,131 @@
+name: Cross-repository finding
+description: A finding in another FSx for ONTAP repository that belongs here, or a question this repository should answer for another one.
+title: "[cross-repo] "
+labels: ["cross-repo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository does not re-measure what a sibling project has already measured. It cites,
+        and a gate checks that the cited claim is still there. See
+        [プロジェクト間の引用索引](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/blob/main/docs/ja/reference/cross-repo-index.md)
+        for the division of labour and how a citation gets registered.
+
+        Use this template in either direction:
+
+        - **Absorb** — a sibling project measured or established something, and the guidance here
+          should reflect it.
+        - **Request** — this repository has a gap that a sibling project's environment is the right
+          place to close.
+
+        For a factual error in existing content use
+        [Correction](?template=correction.yml) instead. For a topic with no source yet, use
+        [Knowledge request](?template=knowledge-request.yml).
+
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Direction
+      options:
+        - Absorb — a sibling finding should be reflected here
+        - Request — a sibling project should measure or verify this
+    validations:
+      required: true
+
+  - type: input
+    id: repo
+    attributes:
+      label: Which repository
+      description: The sibling repository this concerns.
+      placeholder: S3-Burst-on-ONTAP-Files
+    validations:
+      required: true
+
+  - type: input
+    id: path
+    attributes:
+      label: Path to the source, if it exists
+      description: >-
+        The file holding the finding, so it can be cited rather than restated. Leave blank for a
+        request.
+      placeholder: docs/ja/verification/perf-matrix-results.md
+    validations:
+      required: false
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: The claim, in one or two sentences
+      description: >-
+        State what is established, not what the document is about. A citation probe has to name a
+        claim: if the claim were retracted, the sentence here should stop being true.
+      placeholder: >-
+        A single connection measures the EC2 per-flow limit rather than the storage: three
+        configurations across two products landed between 4.0 and 4.7 Gbps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: conditions
+    attributes:
+      label: Conditions the claim depends on
+      description: >-
+        A number without its conditions cannot be used in a design, and this is the field most often
+        left out. Generation, capacity, provisioned IOPS, cache state, client instance type,
+        concurrency, region, date — whichever apply.
+      placeholder: |
+        - Region and date:
+        - Generation / deployment type:
+        - Throughput capacity, SSD capacity, provisioned IOPS:
+        - Cache state (NVMe read cache enabled or disabled):
+        - Client instance type and whether its network figure is guaranteed or burst:
+        - Concurrency and block size:
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Evidence tier at the source
+      description: >-
+        As the source states it, not as you would like it to be. A tier records where a claim comes
+        from, not how far it was chased.
+      options:
+        - verified — reproduced in a named environment
+        - documented — stated in vendor or AWS documentation
+        - field-observation — observed once, not reproduced
+        - hypothesis — reasoned, untested
+        - unclear from the source
+    validations:
+      required: true
+
+  - type: textarea
+    id: unmeasured
+    attributes:
+      label: What the source leaves unmeasured
+      description: >-
+        Citing selectively is easy, so this field is required. If the source lists its own gaps,
+        copy the ones that bear on the claim.
+    validations:
+      required: true
+
+  - type: textarea
+    id: where
+    attributes:
+      label: Where it belongs here, if you know
+      description: Which module or reference page, and whether it changes existing guidance.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: >-
+            No account IDs, private addresses, hostnames, support case numbers, vendor-internal
+            ticket IDs, or personal names. This repository is public and its history is permanent.
+          required: true
+        - label: >-
+            The claim is stated with its conditions, not as a bare number.
+          required: true

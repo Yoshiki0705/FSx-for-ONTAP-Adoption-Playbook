@@ -42,7 +42,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 |---|---|
 | [`notes/`](notes/) | 知見の最小単位。1 ファイル = 1 論点。frontmatter に `evidence` 区分を持ちます |
 | [`quickstart.md`](quickstart.md) | 最小構成を動かす手順。実行可能な一式は [`examples/block-storage/`](../../../../examples/block-storage/) |
-| [`checklists/`](checklists/) | 現場で使うチェックリスト |
+| [`checklists/`](checklists/) | 現場で使うチェックリスト。→ [iSCSI を本番に出す前の確認](checklists/iscsi-cutover.md) |
 
 ---
 

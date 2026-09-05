@@ -20,6 +20,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 | [S3 Access Point 経由のリクエストはどう判定されるか](access-point-authorization.md) | 二段の認可の評価順序を追い、症状から落ちた段を逆引きする / Following the two-layer authorization evaluation order, and working back from a symptom to the layer that refused |
 | [SMB のユーザー管理と監査は 2 つの選択で決まる](smb-identity-and-audit.md) | ID をワークグループと AD 参加のどちらに置くか、監査を常時有効にするか。各枝が引き受ける制約を選択前に示す / Choosing between a workgroup and AD membership, and whether auditing runs continuously, with what each branch commits you to shown before the choice。**英語版あり / [English version](../../../en/reference/decision-trees/smb-identity-and-audit.md)** |
 | [ブロックプロトコルとレイアウトの選択](block-protocol-and-layout.md) | 世代・HA ペア数・ホスト OS で選択肢が先に狭まる順序をたどり、LUN のレイアウトと容量と整合性まで続ける / Following the order in which generation, HA pair count, and host OS narrow the choice, then on to LUN layout, capacity, and consistency |
+| [手元のスループット値は何を測ったのかを判定する](measured-throughput-triage.md) | 4 か所ある上限のどこに当たっているかを切り分ける。**当たっている場所によって打つ手が正反対になります** / Isolating which of four ceilings a disappointing throughput figure actually hit, because the remedy for one is a no-op for the others |
 
 ---
 

@@ -27,7 +27,6 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/domains/data-protection/checklists/) | Checklists for field use |
 
 ---
 

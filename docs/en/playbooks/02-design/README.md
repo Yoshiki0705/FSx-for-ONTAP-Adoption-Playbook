@@ -30,7 +30,6 @@ Turn assessment output into a target configuration. Capacity and throughput can 
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/playbooks/02-design/checklists/) | Checklists for field use |
 
 ---
 

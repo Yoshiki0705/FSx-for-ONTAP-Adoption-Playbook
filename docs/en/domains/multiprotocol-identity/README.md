@@ -30,7 +30,6 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/domains/multiprotocol-identity/checklists/) | Checklists for field use |
 
 ---
 

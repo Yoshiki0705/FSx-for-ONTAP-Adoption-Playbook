@@ -77,6 +77,12 @@ jobs:
       - name: Check internal links
         run: make links
 
+      # Offline half only. The network half (cross-repo-external) is opt-in for the same reason
+      # links-external is: a sibling repository being briefly unreachable is not a defect in this
+      # change, and a gate that fails for that reason gets ignored.
+      - name: Check cross-repository citations are registered
+        run: make cross-repo
+
       # .kiro/ is gitignored, so the steering-loader half of this check cannot run here.
       # The target reports that on stdout rather than skipping silently and printing
       # "healthy", which is what it used to do.
