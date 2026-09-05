@@ -23,7 +23,12 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 | 7 | Where Amazon EBS is sufficient and where shared block changes the design | [When shared block changes the design](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
 | 8 | What constrains block persistent volumes on Kubernetes | [Kubernetes block volumes meet the volume limit](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) |
 | 9 | How to read and how to measure block performance figures | [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
-| 10 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
+| 10 | What changes on Multi-AZ, and whether block reaches across a peering | [Multi-AZ moves a route, not an address](../../../ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) (日本語) |
+| 11 | Whether I/O stops during a failover, and whether iSCSI and NVMe/TCP differ | [The measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
+| 12 | Whether there is access control beyond igroups | [igroups are not the only access control](../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) (日本語) |
+| 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) (日本語) |
+| 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
+| 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
 
 ---
 
@@ -49,7 +54,9 @@ Always check the `evidence` field in each note's frontmatter.
 
 See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 
-**A `verified` tier in this module means observed behavior, not a performance figure.** The verification ran on a minimum 384 MBps configuration and recorded no throughput or IOPS numbers. How to read published performance figures is covered in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語).
+**A `verified` tier in this module means observed behavior, not a performance figure.** The verification ran on minimum 384 MBps configurations — one Single-AZ and one Multi-AZ — and recorded no throughput or IOPS numbers. How to read published performance figures is covered in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語).
+
+**Failover timings are the one exception.** Those describe availability behaviour rather than performance, so they were measured; the conditions are stated in full inside [the measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語).
 
 ---
 

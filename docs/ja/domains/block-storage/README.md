@@ -23,7 +23,12 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 7 | EBS で足りる場合と、共有ブロックが設計を変える場合の境目はどこか | [共有ブロックが設計を変える条件](notes/when-shared-block-changes-the-design.md) |
 | 8 | Kubernetes にブロックを供給するとどこが詰まるか | [Kubernetes のブロック PV はボリューム数の上限に当たる](notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | 9 | ブロックの性能値をどう読み、どう測るか | [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) |
-| 10 | Fibre Channel は使えるか | _未追加_（[用語集の FC の項](../../reference/glossary/README.md) に記載範囲があります） |
+| 10 | Multi-AZ で何が変わるか。ピアリング越しに届くか | [Multi-AZ が動かすのはアドレスではなくルート](notes/multi-az-moves-a-route-not-an-address.md) |
+| 11 | フェイルオーバーで I/O は止まるか。iSCSI と NVMe/TCP で違うか | [パスはフェイルオーバーの仕組みそのもの](notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) |
+| 12 | igroup 以外にアクセス制御の手立てはあるか | [igroup の外側にある 2 つの制御](notes/igroups-are-not-the-only-access-control.md) |
+| 13 | 複数 LUN にまたがる DB を止めずにバックアップできるか | [LUN に載せた DB は静止させずに復旧した](notes/a-database-on-luns-recovers-without-quiescing.md) |
+| 14 | ブロックの監視で何が見えるか。LUN 単位で見られるか | [ブロックの監視で見えるものと見えないもの](notes/what-block-monitoring-shows.md) |
+| 15 | Fibre Channel は使えるか | _未追加_（[用語集の FC の項](../../reference/glossary/README.md) に記載範囲があります） |
 
 ---
 
@@ -49,7 +54,9 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 
 判断基準の詳細は [知見の分類ポリシー](../../evidence-policy.md) を参照してください。
 
-**このモジュールの `verified` は挙動の確認であって性能値ではありません。** 検証は 384 MBps の最小構成で行っており、スループットや IOPS の数値は取っていません。性能値の読み方は [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) にあります。
+**このモジュールの `verified` は挙動の確認であって性能値ではありません。** 検証は 384 MBps の最小構成（Single-AZ と Multi-AZ の 2 環境）で行っており、スループットや IOPS の数値は取っていません。性能値の読み方は [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) にあります。
+
+**フェイルオーバーの秒数だけは例外です。** これは性能値ではなく可用性の挙動なので測りました（[実測したフェイルオーバー](notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー)）。測定条件はノート内に全部書いてあります。
 
 ---
 

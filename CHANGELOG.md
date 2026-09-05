@@ -23,6 +23,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   "GB" wording in public documentation is being corrected, and that whether
   `CompleteMultipartUpload` sends periodic bytes during assembly is still unanswered, so no
   `read_timeout` guidance is given either way.
+- **The crash-consistency note claimed a database spanning separate volumes could not be recovered
+  from a crash-consistent snapshot.** That row of the "is crash-consistent enough" table said flatly
+  that it was not, on the reasoning that per-volume snapshots carry different timestamps. The reasoning
+  holds only for snapshots taken volume by volume. A consistency group with `-write-fence true` fixes
+  every member volume at one instant, and a measurement now in the repository took a PostgreSQL
+  instance with its data directory and WAL on separate LUNs, snapshotted it mid-write, cloned it to
+  another host's igroup and recovered every committed row. The fence returned in 0.52 seconds and both
+  volumes carried an identical create-time. The row now states the condition rather than the
+  prohibition, and the consequence for layout is corrected: putting the LUNs in one volume is no longer
+  the only way to get mutual consistency.
+- **The `-o nouuid` requirement for mounting a clone was stated too broadly.** It was recorded as a
+  property of clones. It is a same-host collision: XFS refuses to mount a filesystem whose UUID matches
+  one already mounted, and the clone inherits the parent's UUID. Mounting a clone on a host that does
+  not have the parent mounted needed no option at all. Narrowed in both notes that mention it.
+- **The failover section of the paths note said the duration could not be measured.** Two attempts to
+  induce a path failure from the host had failed, and the note stopped there. The measurement has now
+  been taken, so the section states results instead of an absence. It also records why there was only
+  one attempt: `storage failover show` returns an empty table to `fsxadmin`, so a throughput-capacity
+  change is the only way in, and second-generation file systems refuse another for six hours.
+
 - **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
   for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
   stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
@@ -439,16 +459,61 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   non-disruptive. What is not known is stated: the behaviour when free space is below the migrated data
   size was not induced, and the growth of the Snapshot phase against data volume was measured at one
   point only.
+- **A Multi-AZ verification round for block storage, and four notes from it.** All measurements come
+  from one `MULTI_AZ_2` file system in `ap-northeast-1` at 384 MBps with clients in both Availability
+  Zones, ONTAP 9.18.1P5, on 2026-09-05.
+  - [Multi-AZ が動かすのはアドレスではなくルート](docs/ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md)
+    — the endpoint range was auto-assigned outside the VPC CIDR and its addresses exist only as `/32`
+    route-table entries, so a failover rewrites the target ENI rather than moving an address. The iSCSI
+    and NVMe/TCP addresses are in-VPC with `failover-policy disabled` and never move, which is why
+    block access needs no Transit Gateway across a peering and why the documented client-side ARP
+    tuning is scoped to Single-AZ NFS. Both clients reported the optimized path on the same LIF, so
+    ALUA follows the volume's owning node and a client in the standby AZ crosses the AZ boundary for
+    its normal I/O.
+  - [igroup の外側にある 2 つの制御](docs/ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md)
+    — CHAP and portsets both work as `fsxadmin` and neither appears in the AWS documentation.
+    Authentication defaults to `none`. A portset reduces the path count but leaves the excluded path
+    on the host as a faulty zero-byte device that has to be removed through sysfs.
+  - [LUN に載せた DB は静止させずに復旧した](docs/ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md)
+    — the consistency-group measurement described under Fixed above, with the recovery log quoted.
+  - [ブロックの監視で見えるものと見えないもの](docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md)
+    — the full dimension inventory as measured. No LUN dimension and no protocol dimension exist, but
+    volume-scope I/O metrics do, which gives one LUN per volume a monitoring rationale distinct from
+    the recovery-granularity one. A volume created on the ONTAP side gets no `fsvol` identifier and is
+    therefore invisible to CloudWatch, AWS API tagging and AWS Backup.
+- **A measured failover in [パスはフェイルオーバーの仕組みそのもの](docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md).**
+  iSCSI over `dm-multipath` took zero failures across 1,161 one-second direct writes, with one 2.101
+  second stall. An NVMe/TCP namespace on the same host was unavailable for 423.8 seconds, the first
+  blocked write returning an error after 412.741 seconds. The cause is host-side: Amazon Linux 2023
+  ships without `CONFIG_NVME_MULTIPATH`, so one namespace surfaces as two device nodes and an
+  application bound to one has nowhere to fail over to. This is why AWS names NFS, SMB and iSCSI as
+  transparent and does not name NVMe/TCP. Behaviour on a kernel with native NVMe multipath was **not**
+  verified.
+- **Two more rows in the disagreement table of [ブロックストレージ横断リソースマップ](docs/ja/reference/block-storage-resource-map.md), now seven.**
+  Two AWS pages differ on which protocols a failover is transparent to — one lists NFS, SMB and iSCSI,
+  the other only NFS and SMB. And the snapshot reserve for a LUN-hosting volume is 5 percent per AWS
+  against 0 per NetApp. The failover-transparency and client-tuning rows were rewritten to separate
+  what is documented from what was measured.
+- **A kernel gate on the NVMe/TCP branch of [ブロックプロトコルとレイアウトの決定木](docs/ja/reference/decision-trees/block-protocol-and-layout.md).**
+  The tree previously offered NVMe/TCP for simpler MPIO on the strength of the AWS announcement, which
+  is the opposite of what happens on a kernel without `CONFIG_NVME_MULTIPATH`. The branch now asks for
+  the kernel option before the protocol is chosen, and port 8009 for discovery is added alongside 4420.
+  Four glossary entries follow: portset, CHAP, consistency group and `CONFIG_NVME_MULTIPATH`.
+- **Multi-AZ aggregate overhead in [容量は 3 か所で数えられる](docs/ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md).**
+  The same 1,024 GiB of provisioned SSD yielded 907.03 GiB of aggregate on Single-AZ and 861.7 GiB on
+  Multi-AZ. Two environments differing in deployment type; no attempt was made to isolate the cause
+  further, and the note says so.
+
 - **A `block-storage` domain, thirteenth module, covering iSCSI and NVMe/TCP.** Block was previously
   present only as incidental mentions: the six-HA-pair ceiling in the deployment-type note and a
   "remount iSCSI" line in the cutover checklist. Nothing covered LUNs, igroups, multipathing, capacity
-  accounting, or consistency. Eight notes now do, five of them `verified` against a second-generation
+  accounting, or consistency. Twelve notes now do, eight of them `verified` against a second-generation
   file system on ONTAP 9.18.1P5 in `ap-northeast-1`, created and destroyed for the purpose. The
   vocabulary is registered in `tools/validate_frontmatter.py` and `tools/new_note.py`, and the domain
   appears in the two-axis table in all eight language READMEs.
 - **`docs/ja/reference/block-storage-resource-map.md`.** An index of the AWS user guide, AWS blogs,
   re:Post, NetApp documentation, and public infrastructure as code for block storage — and, more
-  usefully, a table of **five places those sources disagree with each other**: the LUN-to-volume ratio
+  usefully, a table of **seven places those sources disagree with each other**: the LUN-to-volume ratio
   (two AWS posts recommend different layouts, and NetApp states 1:1 is not a formal best practice), the
   iSCSI session count (the eight-session guidance is sized for the first generation's 4,000 MBps
   ceiling), paths per LUN, the NVMe/TCP ports missing from the security-group requirements table, and
@@ -459,7 +524,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   irreversible. The matrix sets Amazon EBS, EBS Multi-Attach and FSx for ONTAP block side by side with
   symmetric trade-offs, and states plainly that a single attachment does not need FSx for ONTAP: the
   minimum footprint is 1,024 GiB of SSD and 384 MBps.
-- **Fourteen block-storage glossary entries**, including one recording that Fibre Channel is *absent*
+- **Eighteen block-storage glossary entries**, including one recording that Fibre Channel is *absent*
   from the AWS protocol enumerations rather than documented as unsupported — a distinction the
   repository asks readers not to collapse.
 
