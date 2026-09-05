@@ -7,6 +7,13 @@
 *.internal.md
 *-internal.md
 
+# --- Review tool output (same reason for the missing trailing slash) ---
+# A code-review agent writes here. The findings belong in .private/reviews/ where review
+# provenance lives; this entry only stops an un-reviewed drop from reaching a commit, and the
+# markdownlint ignore beside it stops the same file from failing the gate on someone else's branch.
+semantic-review
+**/semantic-review
+
 # --- Kiro local configuration (same reason for the missing trailing slash) ---
 .kiro
 
