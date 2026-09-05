@@ -11,6 +11,10 @@ lang: ja
 
 # SMB ログオン監査 — 4624 は記録される。ただし数えられるのはセッションであってログイン操作ではない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-logon-audit-event-coverage.md) | [English](../../../../en/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
@@ -293,3 +297,7 @@ NT_STATUS_ACCESS_DENIED listing \*
 - [監査ログの空き容量不足はクライアントアクセスを止める](audit-log-space-and-client-access.md)
 - [ローカルユーザーの棚卸しに使える情報は監査ログにしかない](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
 - [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](access-point-authorization-layers.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-logon-audit-event-coverage.md) | [English](../../../../en/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

@@ -413,6 +413,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **English counterparts for the two security-governance notes on audit logging.**
+  `audit-log-space-and-client-access` (455 lines, the longest note in the repository) and
+  `smb-logon-audit-event-coverage` complete the five findings the SMB decision tree routes to, so every
+  branch of that tree now lands in English. Both carry corrections made within the last week — the
+  retracted inference from an unobservable EMS event, and the withdrawn attribution of an S3 Access Point
+  failure to a missing name mapping — and translating them locks section parity, which is the cost that
+  makes the "settled" test worth applying rather than translating on sight. The English
+  security-governance README gains the three questions it was missing (#8 through #10), and the English
+  hub gains the audit finding.
 - **English counterparts for the three multiprotocol-identity notes on CIFS authentication and local-user
   inventory.** `smb-service-lost-on-cifs-server-delete`, `local-user-inventory-without-last-logon`, and
   `ad-dependency-lasts-the-lifetime` were the primary answers to three Tier 2 questions an English reader

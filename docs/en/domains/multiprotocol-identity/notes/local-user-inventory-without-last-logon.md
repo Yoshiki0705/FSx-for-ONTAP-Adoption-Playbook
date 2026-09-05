@@ -61,7 +61,7 @@ And when building the inventory, **"no activity in the audit log" is not the sam
 **The field name differs between the logon events and the file access events.** Extracting on one name alone silently returns zero rows.
 
 Recording conditions and measured values are in
-[SMB logon auditing — 4624 is recorded](../../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) (日本語).
+[SMB logon auditing — 4624 is recorded](../../../domains/security-governance/notes/smb-logon-audit-event-coverage.md).
 
 ---
 
@@ -141,7 +141,7 @@ Recording purpose, owner, and expected usage frequency in a register when an acc
 | Central user management | **Independent per SVM.** Accounts cannot be reused | Per domain |
 | Responsibility for audit log capacity | Taken on for the inventory | Not needed for inventory purposes |
 
-**Which fits depends on account count and how often it changes.** Dozens of local users with frequent movement point to AD membership; a small, stable set points to a workgroup with a register. **Enabling auditing permanently for the sake of an inventory brings [the risk of an access outage from capacity exhaustion](../../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) into operations.** That cost is what gets weighed against operating AD.
+**Which fits depends on account count and how often it changes.** Dozens of local users with frequent movement point to AD membership; a small, stable set points to a workgroup with a register. **Enabling auditing permanently for the sake of an inventory brings [the risk of an access outage from capacity exhaustion](../../../domains/security-governance/notes/audit-log-space-and-client-access.md) into operations.** That cost is what gets weighed against operating AD.
 
 > **On availability**: when the audit destination filled, what stopped was **only the paths carrying a
 > SACL**. Volumes in the same SVM that were not audited were unaffected (measured: 5,000 operations
@@ -177,8 +177,8 @@ Recording purpose, owner, and expected usage frequency in a register when an acc
 
 ## Related
 
-- [SMB logon auditing — 4624 is recorded](../../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) (日本語)
-- [Audit log capacity exhaustion stops client access](../../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語)
+- [SMB logon auditing — 4624 is recorded](../../../domains/security-governance/notes/smb-logon-audit-event-coverage.md)
+- [Audit log capacity exhaustion stops client access](../../../domains/security-governance/notes/audit-log-space-and-client-access.md)
 - [The AD dependency lasts a lifetime, not just the join](ad-dependency-lasts-the-lifetime.md)
 - [Some SVMs cannot serve SMB](smb-service-lost-on-cifs-server-delete.md)
 
