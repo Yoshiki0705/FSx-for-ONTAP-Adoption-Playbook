@@ -129,29 +129,65 @@ lang: ja
 
 ---
 
-## FlexClone を作るときの危険
+## クローンを消しても親が消せない期間
 
-**LUN を含むボリュームの FlexClone は、AWS 側から見えないオブジェクトを依存グラフに追加します。**
+**`volume delete` は即座に消しません。ボリュームは recovery queue に入り、既定で 12 時間以上そこに留まります。** その間、FlexClone の関係は生きたままなので、**親ボリュームを削除できません。**
 
-検証環境の撤去中に、次の状態に陥りました。
+検証環境の撤去中にこれに当たりました。順序は次のとおりです。
 
-1. FlexClone を ONTAP REST で作成し、後に ONTAP REST で削除した
-2. **ONTAP は削除を非同期に扱い、ボリュームを `<名前>_<データセット ID>` に改名して `volume show` から外した**
-3. **`volume clone show` のレコードだけが残った。** `FlexClone Parent Snapshot` は `(unavailable)`、状態は `offline`
-4. **そのレコードがある間、親ボリュームを削除できない**
+| # | 起きたこと |
+|---|---|
+| 1 | LUN を含むボリュームの FlexClone を ONTAP REST で作成 |
+| 2 | それを offline にして `DELETE /api/storage/volumes/{uuid}` で削除。**呼び出しは成功** |
+| 3 | **ONTAP はボリュームを `<名前>_<データセット ID>` に改名し、`volume show` から隠した**（検証環境では `blockverify_clone_1029`） |
+| 4 | **`volume clone show` は関係を保持し続けた。** `FlexClone Parent Snapshot` は `(unavailable)`、状態は `offline` |
+| 5 | **親ボリュームの削除がすべて失敗した。** CloudFormation、`aws fsx delete-volume --ontap-configuration SkipFinalBackup=true`、ONTAP CLI の `volume delete -force true`（advanced / diagnostic の両方） |
 
-**そこから先が閉じています。** ファイルシステムは SVM があると削除できず、SVM はボリュームがあると削除できず、ボリュームはクローンのレコードがあると削除できません。そしてレコードが指すボリュームは存在しないため、`volume delete` は `entry doesn't exist` を返します。**CloudFormation、`aws fsx delete-volume --ontap-configuration SkipFinalBackup=true`、advanced 権限の ONTAP CLI、いずれでも解消しませんでした。**
+**依存が連鎖します。** ファイルシステムは SVM があると削除できず、SVM はボリュームがあると削除できず、ボリュームはクローンの関係があると削除できません。**削除できない間、課金は続きます。**
 
-**帰結**: 課金は続きます。**そして FlexClone は Amazon FSx の API から一度も見えていませんでした。** `describe-volumes` は最後まで SVM のルートボリュームと親ボリュームだけを返しました。
+### 誤解を招くエラーメッセージ
 
-**設計上の教訓は 2 つです。**
+**ONTAP が返す指示は、この状況では機能しません。**
+
+```text
+Failed to delete volume "..." because it has one or more clones.
+Use "volume delete -vserver <svm name> -volume <clone name>" to delete clones.
+```
+
+**その `volume delete` は `entry doesn't exist` を返します。** recovery queue にあるボリュームは通常のボリュームではないため、`volume delete` の対象になりません。**メッセージは存在しないコマンドの実行を指示しています。**
+
+### 解決手順
+
+**`volume recovery-queue` を使います。advanced 権限が必要です。**
+
+| # | 手順 |
+|---|---|
+| 1 | `set -privilege advanced` |
+| 2 | `volume recovery-queue show` で、削除要求時刻と保持時間を確認する |
+| 3 | `volume recovery-queue purge -vserver <svm> -volume <名前>_<データセット ID>` |
+| 4 | `volume clone show` が空になったことを確認する |
+| 5 | 親ボリューム → SVM → ファイルシステムの順に削除する |
+
+**検証環境では手順 3 が即座に完了し、`volume clone show` は空になりました。** メタデータの更新のみなのでボリュームサイズに依存しません。
+
+**待つこともできます。** 保持時間（検証環境では 12 時間）が過ぎれば自動で消えます。保持時間は `vserver modify -volume-delete-retention-hours` で変更できます。
+
+**そして recovery queue には削除に成功したボリュームも入っています。** 検証環境では、CloudFormation が正常に削除した `blockverify_move_vol` も `blockverify_move_vol_1028` として残っていました。**「削除が成功した」と「容量が戻った」は別です。**
+
+### Amazon FSx の API からは見えないこと
+
+**FlexClone は一度も `describe-volumes` に現れませんでした。** recovery queue の中身も現れません。**AWS 側の一覧に出ないオブジェクトが、AWS 側の削除を止めます。**
+
+CloudFormation が返すのは ONTAP のメッセージをそのまま包んだものなので、**原因の特定には ONTAP 側を見る必要があります。**
+
+### 設計上の教訓
 
 | 教訓 | 内容 |
 |---|---|
-| クローンは「ローカルで可逆な便利機能」ではない | AWS が管理するボリュームの上に作ると、**AWS の制御面が見ることも消すこともできないオブジェクト**が依存グラフに入ります |
-| 削除の順序を手順書に書く | **クローンを先に消し、消えたことを `volume clone show` で確認してから**親ボリュームの削除に進んでください。削除 API の成功応答は削除完了の証拠になりません |
-
-**この状態は執筆時点で未解消です。** 解消手段は背景処理を待つか、ベンダーに上げるかのどちらかでした。**検証環境でクローンを作るときは、この経路が存在することを前提にしてください。**
+| 削除 API の成功応答は削除完了の証拠にならない | ボリュームは recovery queue に移っただけです。**確認は `volume recovery-queue show` と `volume clone show` で行ってください** |
+| 削除の順序を手順書に書く | **クローンを purge し、`volume clone show` が空になったことを確認してから**親ボリュームの削除に進みます |
+| エラーメッセージの指示を鵜呑みにしない | ONTAP は `volume delete` を指示しますが、recovery queue のボリュームには効きません |
+| 短命な検証環境では purge を撤去手順に入れる | 既定の 12 時間は、数時間で捨てる環境には長すぎます |
 
 ---
 
@@ -189,7 +225,7 @@ graph TD
     S1 --> CLONE
     S2 --> CLONE
     CLONE{FlexClone を使うか}
-    CLONE -->|使う| C1["削除順序を手順書に書く<br/>clone show で消えたことを確認してから親を消す"]
+    CLONE -->|使う| C1["撤去手順に recovery-queue purge を入れる<br/>delete だけでは 12 時間関係が残る"]
     CLONE -->|使わない| MOVE
     C1 --> MOVE
     MOVE["後から lun move で並べ替え可<br/>WWID は変わらない"]
@@ -212,7 +248,9 @@ graph TD
 | 5 | 複数 HA ペアの環境なら、移動前に reporting-nodes へ宛先ノードと HA パートナーを追加する | **このノートで未検証の条件** |
 | 6 | 検証環境で FlexClone を作り、クローン内の LUN が `mapped=unmapped` であることを確認する | 複製にマッピングが付いてこないこと |
 | 7 | クローンをマウントする際に `-o nouuid` が必要かを確認する | 同一ホストで元とクローンを併用するときの前提 |
-| 8 | クローンを削除し、**`volume clone show` が空になることを確認してから**親ボリュームの削除に進む | **削除順序。成功応答は削除完了の証拠になりません** |
+| 8 | クローンを削除し、`volume recovery-queue show` に残っていないか、`volume clone show` が空かを確認してから親ボリュームの削除に進む | **削除順序。`volume delete` の成功応答は削除完了の証拠になりません** |
+| 9 | 検証環境でクローンを削除した直後に `volume recovery-queue show` を実行する | **削除したボリュームが 12 時間残ることの確認** |
+| 10 | `volume recovery-queue purge -vserver <svm> -volume <名前>_<データセット ID>` を実行し、`volume clone show` が空になることを確認する | 撤去手順に入れるべきコマンド |
 
 手順 4・6・7・8 は**検証環境で行ってください。** 特に手順 8 の順序を守らないと、親ボリュームが削除できない状態になり得ます。
 
@@ -229,7 +267,10 @@ graph TD
 | `lun move` は同じ HA ペア内でも reporting-nodes の準備が必要 | 同一ペア内では不要でした。**別ペアへ移すときに必要です** |
 | クローンや複製を作れば LUN がそのまま使える | **マッピングは付いてきません。** 別途 igroup にマップし再スキャンします |
 | クローンは同じホストにそのままマウントできる | **XFS では `-o nouuid` が必要でした。** UUID が元と同一です |
-| クローンは消せばきれいに消える | **クローン関係のレコードが残り、親ボリュームが削除できなくなる経路があります** |
+| クローンは消せばきれいに消える | **`volume delete` は recovery queue に移すだけで、既定で 12 時間以上クローン関係が残り、親ボリュームを削除できません** |
+| 親が消せないのは孤立した壊れたレコードのせい | **文書化された recovery queue の動作です。** `volume recovery-queue purge` で即座に解消します |
+| ONTAP のエラーメッセージが示す `volume delete` を実行すればよい | **recovery queue のボリュームには効かず `entry doesn't exist` が返ります。** 使うのは `volume recovery-queue purge` です |
+| ボリュームの削除が成功すれば容量はすぐ戻る | **recovery queue にある間は戻りません。** 削除に成功したボリュームもキューに入っています |
 | AWS Transform が作るレイアウトが推奨形 | 1 サーバーの複数 LUN が 1 ボリュームに入ります。**`lun move` での並べ替えが前提です** |
 
 ---
@@ -262,6 +303,11 @@ graph TD
 | ボリューム数の上限（第 2 世代 1 HA ペア 500、2 組以上で合計 1,000、第 1 世代 500）。LUN や igroup のクォータが記載されていないこと | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | ボリュームを LUN より 5% 以上大きくすること、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | Trident の `ontap-san` が `dataLIF` を指定せず Selective LUN Map から LIF を導出すること | [NetApp: FSx for ONTAP configuration options and examples](https://docs.netapp.com/us-en/trident/trident-use/trident-fsx-examples.html) |
+| `volume delete` が RW / DP ボリュームを部分削除状態にし、既定で 12 時間以上 recovery queue に保持すること | [NetApp: Protection against accidental ONTAP volume deletion](https://docs.netapp.com/us-en/ontap/volumes/protection-accidental-volume-deletion-concept.html) |
+| `volume recovery-queue purge` がキューからボリュームを削除するコマンドであること | [NetApp: volume recovery-queue purge](https://docs.netapp.com/us-en/ontap-cli/volume-recovery-queue-purge.html) |
+| クローンが削除できないときに recovery queue の purge を使うこと | [NetApp KB: Cannot delete clones on fully joined cluster](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Cannot_delete_clones_on_fully_joined_cluster_Reason__Operation_is_not_permitted) |
+| クローン作成時の Snapshot がクローンの完全削除まで busy のまま保持され、recovery queue からの purge が必要になること | [NetApp KB: Behavior of snapshots created when doing volume clones](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/What_is_the_behavior_of_snapshots_that_are_created_when_doing_volume_clones) |
+| `volume delete` と `volume recovery-queue purge` がどちらもメタデータのみの更新で、ボリュームサイズに依存しないこと | [NetApp KB: Does the execution time depend on volume size](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Does_the_execution_time_of_volume_delete_and_volume_recovery-queue_purge_depend_on_volume_size_in_ONTAP) |
 
 ---
 

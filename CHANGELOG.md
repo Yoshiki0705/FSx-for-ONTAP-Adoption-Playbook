@@ -459,6 +459,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **`lun move` was non-disruptive and preserved the WWID** on a mounted, actively written LUN.
 - **A FlexClone carries the LUNs but not their mappings**, and mounting it alongside the original
   required `-o nouuid`.
+- **`volume delete` does not delete; it moves the volume to the recovery queue for at least 12 hours
+  by default, and the FlexClone relationship survives there.** While it does, the parent volume cannot
+  be deleted by CloudFormation, by `aws fsx delete-volume --ontap-configuration SkipFinalBackup=true`,
+  or by ONTAP's own `volume delete -force true` — and the error ONTAP returns tells you to run exactly
+  the command that answers `entry doesn't exist`, because a queued volume is no longer a volume.
+  `volume recovery-queue purge` clears it immediately. The queue also holds volumes whose deletion
+  *succeeded*, so "the delete returned success" and "the capacity came back" are different statements.
+  Neither the clone nor the queue is visible to `describe-volumes`.
 - **LUNs in an NFS-exported volume are visible as files with real names and sizes, but their contents
   are not readable** — ONTAP returned `Operation not permitted` even with `superuser=any`. The cost of
   the arrangement NetApp advises against is information disclosure and two different capacity figures,
