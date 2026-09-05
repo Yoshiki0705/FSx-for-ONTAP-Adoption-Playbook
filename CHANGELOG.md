@@ -9,6 +9,31 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A sweep for the same class of error found four more, and one of them was pointed the wrong way
+  entirely.** After correcting the path-count claim, every assertion of the form "the vendor does not
+  document this", "this is not supported", or "these two pages disagree" was re-checked against
+  primary sources on 2026-09-05.
+  - **"No AWS procedure exists for NVMe/TCP on Windows" was attributing an upstream limit to AWS.**
+    A NetApp KB answers the question directly: **ONTAP SAN does not support NVMe/TCP with Windows
+    Server**, with Windows support limited to native NVMe disks. The workaround it gives is NVMe/FC,
+    which FSx for ONTAP cannot offer because it has no FC. So the missing AWS page reflects the
+    support status, not a documentation gap. Corrected in five files, including a decision-tree
+    branch whose stated reason was wrong. **This is the case the guidance warns about: an
+    ONTAP-side answer already existed and was reachable by one search.**
+  - **Two third-party capability claims had no version.** The absence of an `nvme_subsystem` resource
+    in the NetApp Terraform provider is now pinned to v2.7.1 with the date the `docs/resources/`
+    listing was checked, and says to re-check the current release. Trident's NVMe/TCP being
+    REST-only likewise carries its check date. **Resources get added; a capability claim without a
+    version silently becomes false.**
+  - **Two AWS-side inconsistencies now say that nothing has been filed.** The Price List API
+    returning a `unit` that disagrees with its own `description`, and the security group requirements
+    table omitting the NVMe/TCP ports. Both are recorded as observations with their date, and both
+    state that no documentation feedback and no Support confirmation exist — so neither reads as a
+    defect the reader can assume is being fixed.
+  - Claims re-verified and left standing: the two AWS pages that differ on iSCSI failover
+    transparency, the ports absent from the requirements table, and the failover-detection `sysctl`
+    tuning being scoped to Single-AZ NFS.
+
 - **The claim that following AWS's iSCSI procedure exceeds NetApp's recommendation by four times was
   wrong, and it was the headline of a note.** It set AWS's 8-sessions-per-node guidance against a
   NetApp statement that a single LUN should not require more than four paths. Re-reading both primary

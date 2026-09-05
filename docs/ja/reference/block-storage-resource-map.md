@@ -204,7 +204,7 @@ graph TD
 
 | ページ | 状態 |
 |---|---|
-| `provision-nvme-windows.html` | サービス概要ページへリダイレクト。**NVMe/TCP を Windows で使う手順は AWS のドキュメントに見当たりません**（対応の可否も記載されていません） |
+| `provision-nvme-windows.html` | サービス概要ページへリダイレクト。手順は存在しません。**理由は上流にあります**: [NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server) が **ONTAP SAN と Windows Server の NVMe/TCP を非対応**としています（2026-09-05 確認） |
 | `mount-iscsi-luns-windows.html` | 現行の URL は `mount-iscsi-windows.html` です |
 | `limits-file-system-resources.html` | 現行の上限ページは `limits.html` です |
 

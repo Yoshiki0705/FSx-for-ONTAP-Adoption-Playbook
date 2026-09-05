@@ -37,7 +37,7 @@ Trident の `ontap-san` ドライバは **PV 1 つごとに FlexVol を 1 つ作
 | **PV 数の上限を決めるもの** | **ボリューム数の上限**（500 / 1,000） | 共有 FlexVol の数と、そこに入る LUN の数 |
 | **ボリューム単位の操作の効き方** | **PV ごとに独立**。Snapshot・SnapMirror・QoS を PV 単位で掛けられます | **共有 FlexVol 単位**。1 つの PV だけを対象にできません |
 | **NetApp の推奨** | 既定の選択 | **想定 PV 数がボリューム上限を超える場合のみ** |
-| **NVMe/TCP** | `ontap-san` 側で対応。**REST 経由のみ**（ONTAPI / ZAPI では非対応） | 記載なし |
+| **NVMe/TCP** | `ontap-san` 側で対応。**REST 経由のみ**（ONTAPI / ZAPI では非対応。2026-09-05 に Trident のドキュメントで確認） | 記載なし |
 
 **トレードオフは対称です。** `ontap-san` は PV ごとの独立性を得る代わりにボリューム上限を天井として受け入れます。`ontap-san-economy` は PV 数の自由度を得る代わりに、ボリューム単位の操作を PV 単位で掛けられなくなります。
 
