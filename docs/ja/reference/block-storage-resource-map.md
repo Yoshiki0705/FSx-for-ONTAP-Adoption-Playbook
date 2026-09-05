@@ -72,7 +72,7 @@ graph TD
 | 上限 | [AWS: Availability and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) | 世代ごとのスループット選択肢。第 2 世代 1 HA ペアは 384 / 768 / 1,536 / 3,072 / 6,144 MBps |
 | 制約 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) | 7 組目を足すとブロックプロトコルが使えなくなり、**足した HA ペアは削除できません** |
 | 制約 | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) | スループット変更はフェイルオーバーを伴い、**NFS / SMB / iSCSI に透過的**と書かれています（NVMe/TCP は名指しされていません） |
-| ポート | [AWS: Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) | iSCSI の 3260 は載っています。**4420 と 8009 は載っていません** |
+| ポート | [AWS: Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) | iSCSI の 3260 は載っています。**4420 と 8009 は載っていません**（2026-09-05 確認）。**必要なポートは使うプロトコルの手順ページから拾ってください** |
 
 ---
 
@@ -147,16 +147,27 @@ graph TD
 
 **同じ論点について AWS の資料同士が違うことを言っている箇所があります。** どちらかが誤りとは限らず、前提が違います。設計判断の前にここを読んでください。
 
+**食い違いに見えて、実際は適用範囲が違うだけだった論点は別表に分けています** → [食い違いに見えた論点](#食い違いに見えた論点)。
+
 | 論点 | 一方の記載 | もう一方の記載 | 読み方 |
 |---|---|---|---|
 | LUN とボリュームの比率 | [SQL Server best practice](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads): **1 ボリューム 1 LUN** | [SQL Server HA](https://aws.amazon.com/jp/blogs/modernizing-with-aws/sql-server-high-availability-amazon-fsx-for-netapp-ontap/): **1 ボリュームに 3 LUN**。[NetApp](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html): 1:1 は best practice ではない | **決めているのは復旧の粒度です。** [LUN の並べ方が決めているのは復旧の粒度](../domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) を参照 |
 | iSCSI のセッション数 | [Provisioning iSCSI](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-windows.html): 8 セッションで 5,000 MBps、これで**最上位のスループット容量 4,000 MBps を賄える** | [Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html): 第 2 世代の上限は Multi-AZ 6,144 MBps / Single-AZ 73,728 MBps | **2 ページの数値が一致しません**（2026-09-05 に両方を確認）。**セッション数は 1 セッション 625 MBps を目安に自分の構成のスループット容量から計算してください。** 手順の 8 をそのまま使わないこと |
-| ホストあたりのパス数 | [AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html): ノード・AZ あたり 8 セッション（Linux では `(Optional)`） | [NetApp](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html): **ASA / AFF / FAS 構成**では 1 LUN に 4 パス超は障害時に問題を起こしうる | **食い違いではありません。** NetApp の 4 パスは ASA / AFF / FAS についての記載で、FSx for ONTAP を対象に含めていません。プラットフォーム非依存の[上限は 1 ノードあたり 8 パス](https://docs.netapp.com/us-en/ontap/san-config/host-support-multipathing-concept.html)で、8 セッションはその内側です。[パスはフェイルオーバーの仕組みそのもの](../domains/block-storage/notes/paths-are-the-failover-mechanism.md) を参照 |
 | NVMe/TCP のポート | [Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html): 4420 の記載なし | [Provisioning NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) と [re:Post](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nvme-tcp): 4420 が必要 | **セキュリティグループの要件表は NVMe/TCP について不完全です。** iSCSI 用に書いた規則では NVMe/TCP は通りません |
 | フェイルオーバーの透過性の対象 | [Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html): NFS / SMB / **iSCSI** に透過的 | [Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html): **NFS と SMB のみ**を挙げ、iSCSI に触れない | **同じ AWS の 2 ページで対象の範囲が違います。** 実測では iSCSI は透過的でした（1,161 サンプルで失敗 0）。[パスはフェイルオーバーの仕組みそのもの](../domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) を参照 |
 | NVMe/TCP の透過性 | どちらのページも **NVMe/TCP を名指ししていません** | [Provisioning NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) は controller loss timeout に 1800 秒を指示 | **未記載を非対応と読み替えないこと。** 実測では Amazon Linux 2023 で透過的になりませんでしたが、**原因はカーネルの `CONFIG_NVME_MULTIPATH` 無効**です。1800 秒の指示は、コントローラが戻るまで待つための値と整合します |
 | LUN を置くボリュームの snapshot 予約 | [AWS: Creating LUNs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-luns.html): ボリュームを LUN より **5% 大きく**すること（API 既定も 5%） | [NetApp: LUN を含む FlexVol の指針](https://docs.netapp.com/us-en/ontap-system-manager-classic/online-help-96-97/concept_guidelines_working_with_volumes_that_contain_luns.html): 既定の 5% を挙げた上で、**Snapshot 用の予約を 0 にする**こと（自動 Snapshot スケジュールの停止も含む。**ONTAP 9.7 以前の System Manager classic の記載**） | **予約は「先に取るか後で取るか」の違いです。** どちらでも Snapshot は容量を使います。**0 にした場合、Snapshot の消費は active file system 側から出ます。** [容量は 3 か所で数えられる](../domains/block-storage/notes/capacity-is-counted-in-three-places.md) を参照 |
 | フェイルオーバー検知を速くする調整 | [Troubleshooting I/O errors and NFS lock reclaim failures](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/nfs-failover-issues.html): クライアントの `sysctl` で 55〜60 秒を 15〜20 秒に。**対象は Single-AZ の NFS** | Multi-AZ とブロックについての記載はありません | **あの調整は ARP の学び直しを速くするものです。** Multi-AZ の floating アドレスはルートテーブルの書き換えで移り、**iSCSI のアドレスは動きません。** どちらもこの調整が効く場面ではありません。[Multi-AZ が動かすのはアドレスではなくルート](../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) を参照 |
+
+---
+
+## 食い違いに見えた論点
+
+**確認したら食い違いではなかったものです。** 上の表と混ぜると、解消済みの論点を未解決として読まれます。
+
+| 論点 | 一方の記載 | もう一方の記載 | 確認結果 |
+|---|---|---|---|
+| ホストあたりのパス数 | [AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html): ノード・AZ あたり 8 セッション（Linux では `(Optional)`） | [NetApp](https://docs.netapp.com/us-en/ontap-sanhost/hu-ol-9x.html): **ASA / AFF / FAS 構成**では 1 LUN に 4 パス超は障害時に問題を起こしうる | **食い違いではありません。** NetApp の 4 パスは ASA / AFF / FAS についての記載で、FSx for ONTAP を対象に含めていません。プラットフォーム非依存の[上限は 1 ノードあたり 8 パス](https://docs.netapp.com/us-en/ontap/san-config/host-support-multipathing-concept.html)で、8 セッションはその内側です（2026-09-05 確認）。[パスはフェイルオーバーの仕組みそのもの](../domains/block-storage/notes/paths-are-the-failover-mechanism.md) を参照 |
 
 ---
 

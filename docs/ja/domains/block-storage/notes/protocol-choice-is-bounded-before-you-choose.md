@@ -139,7 +139,9 @@ Linux 側は `linux` です。igroup の `os_type` は LUN の `os_type` とは�
 
 **先に結論を書きます。ONTAP は Windows Server との NVMe/TCP をサポートしていません。** NetApp の KB が明示しており、Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られるとされています。回避策として NVMe/FC が挙げられていますが、**FSx for ONTAP は FC を提供しないので、この回避策は使えません。** Windows Server Insider Builds でのプレビューはあるものの、コマンドラインのみ・マルチパス無しという制約付きです（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)、2026-09-05 に確認）。
 
-**つまり AWS のドキュメントに Windows 向けの NVMe/TCP 手順が無いのは、上流のサポート状況の反映です。** AWS のドキュメントの欠落として扱うべきものではありません。実際、ブロックの手順として列挙されているのは 3 つです。
+**この KB は NetApp の `on-prem/` 名前空間に置かれています。** ホスト OS のサポート可否はプラットフォームに依存しない性質だと読めますが、**FSx for ONTAP を明示的に対象としているわけではありません。** 断定の強さはここまでにとどめてください。
+
+**そして「AWS に手順が無いのは上流の非対応の反映だ」という因果は、この KB の記述ではなく当方の推論です。** KB はサポート状況を述べているだけです。**実務上の帰結は同じで、Windows で NVMe/TCP を使う計画は立てられません。** 実際、AWS がブロックの手順として列挙しているのは 3 つです。
 
 - Provisioning iSCSI for Linux
 - Provisioning iSCSI for Windows

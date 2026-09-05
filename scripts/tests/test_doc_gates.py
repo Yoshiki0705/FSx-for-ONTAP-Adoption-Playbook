@@ -264,6 +264,44 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/en/domains/cost/notes/{PROBE}.md": en}):
             self.assert_rejected(run_gate("check_ja_only_markers.py"), PROBE)
 
+    def test_unregistered_cross_repo_citation_is_rejected(self) -> None:
+        """A citation nobody registered is the failure the gate exists to prevent.
+
+        The offline half of `check_cross_repo.py` is what runs in `make all`, so
+        it is the half that has to keep detecting. Registration is keyed on the
+        citing file, and this probe cites a real sibling path from a file that
+        has no row — which is exactly how a second document quietly starts
+        depending on a claim nobody is watching.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\nSee "
+            + "https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/"
+            + "docs/ja/verification/perf-matrix-results.md for the measurement.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(run_gate("check_cross_repo.py"), PROBE)
+
+    def test_cross_repo_table_shape_change_is_rejected(self) -> None:
+        """The gate parses the index table, so a changed shape is a broken gate.
+
+        Dropping a column would otherwise leave every row unparsed and the gate
+        reporting zero problems over zero citations.
+        """
+        index = ROOT / "docs" / "ja" / "reference" / "cross-repo-index.md"
+        original = index.read_text(encoding="utf-8")
+        broken = original.replace(
+            "| 引用元 | リポジトリ | パス | 確認する文字列 | 何を引いているか |",
+            "| 引用元 | リポジトリ | パス | 確認する文字列 |",
+            1,
+        )
+        self.assertNotEqual(broken, original, "the header row moved; update this test")
+        try:
+            index.write_text(broken, encoding="utf-8")
+            self.assert_rejected(run_gate("check_cross_repo.py"), "5 columns")
+        finally:
+            index.write_text(original, encoding="utf-8")
+
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""
         dirty = subprocess.run(
