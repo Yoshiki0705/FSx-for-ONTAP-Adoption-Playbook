@@ -65,6 +65,7 @@
 | [`performance/`](../en/domains/performance/) | 吞吐量设计、延迟、缓存、共享带宽 |
 | [`cost/`](../en/domains/cost/) | 容量、分层，以及估算与实测之间的差异 |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 共存、Active Directory 集成、ID 映射 |
+| [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF、LUN 布局、多路径、容量计算方式 |
 
 ### 横向参考 — `reference/`
 

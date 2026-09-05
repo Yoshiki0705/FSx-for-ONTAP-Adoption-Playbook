@@ -93,6 +93,7 @@ Le point d'entrée qui part d'un sujet. Référencé à toutes les phases du cyc
 | [Performance](../en/domains/performance/) | Où le débit se décide et où il est partagé |
 | [Coût](../en/domains/cost/) | Pourquoi les estimations et les mesures divergent |
 | [Multiprotocole et identité](../en/domains/multiprotocol-identity/) | Pourquoi les permissions diffèrent entre NFS et SMB |
+| [Stockage bloc](../en/domains/block-storage/) | Ce qui est déjà décidé avant de choisir iSCSI ou NVMe-oF |
 
 ---
 

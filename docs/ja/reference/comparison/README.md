@@ -78,6 +78,7 @@ YYYY-MM-DD 時点の情報です。
 |---|---|---|
 | [データ保護方式の比較](data-protection-methods.md) | Snapshot / ボリュームバックアップ / AWS Backup / SnapMirror（+ SnapLock の 2 モード） | 2026-08-06 |
 | [階層化ポリシーの比較](tiering-policies.md) | `NONE` / `SNAPSHOT_ONLY` / `AUTO` / `ALL` | 2026-08-06 |
+| [ブロックストレージの選択肢の比較](block-storage-options.md) | Amazon EBS / EBS Multi-Attach / FSx for ONTAP の iSCSI と NVMe/TCP | 2026-09-05 |
 
 ---
 

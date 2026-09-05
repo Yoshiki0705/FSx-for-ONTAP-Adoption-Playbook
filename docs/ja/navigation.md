@@ -48,6 +48,8 @@ graph TD
 | SMB が急に提供できなくなった | [SMB を提供できない SVM がある](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) |
 | 監査ログを有効化したい / ローカルユーザーを棚卸ししたい | [監査宛先の枯渇はアクセスを止める](domains/security-governance/notes/audit-log-space-and-client-access.md) | [最終ログオン属性は無い](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | 新規構築（移行元なし） | [設計](playbooks/02-design/) | [構築](playbooks/04-build/) → [運用](playbooks/05-operate/) |
+| **iSCSI / NVMe-oF でブロックを提供する** | [ブロックプロトコルとレイアウトの決定木](reference/decision-trees/block-protocol-and-layout.md) | [ブロックストレージ](domains/block-storage/) |
+| **ブロックにするか Amazon EBS で足りるか迷っている** | [ブロックストレージの選択肢の比較](reference/comparison/block-storage-options.md) | [共有ブロックが設計を変える条件](domains/block-storage/notes/when-shared-block-changes-the-design.md) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
@@ -85,6 +87,7 @@ graph TD
 | [性能](domains/performance/) | スループットはどこで決まり、どこで共有されるか |
 | [コスト](domains/cost/) | 見積もりと実測がなぜずれるか |
 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | NFS と SMB で権限がなぜ食い違うか |
+| [ブロックストレージ](domains/block-storage/) | iSCSI / NVMe-oF で LUN を出すとき何が先に決まるか |
 
 ---
 

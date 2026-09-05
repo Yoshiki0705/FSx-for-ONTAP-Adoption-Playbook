@@ -93,6 +93,7 @@ graph TD
 | [성능](../en/domains/performance/) | 처리량은 어디서 결정되고 어디서 공유되는가 |
 | [비용](../en/domains/cost/) | 견적과 실측이 왜 어긋나는가 |
 | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) | NFS와 SMB에서 권한이 왜 어긋나는가 |
+| [블록 스토리지](../en/domains/block-storage/) | iSCSI / NVMe-oF로 LUN을 제공할 때 무엇이 먼저 결정되는가 |
 
 ---
 

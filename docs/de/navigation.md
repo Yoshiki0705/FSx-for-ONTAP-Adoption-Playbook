@@ -93,6 +93,7 @@ Der Einstieg, der von einem Thema ausgeht. Wird über alle Lebenszyklusphasen hi
 | [Performance](../en/domains/performance/) | Wo der Durchsatz bestimmt und wo er geteilt wird |
 | [Kosten](../en/domains/cost/) | Warum Schätzung und Messung auseinandergehen |
 | [Multiprotokoll und Identität](../en/domains/multiprotocol-identity/) | Warum Berechtigungen zwischen NFS und SMB abweichen |
+| [Blockspeicher](../en/domains/block-storage/) | Was bereits entschieden ist, bevor Sie iSCSI oder NVMe-oF wählen |
 
 ---
 

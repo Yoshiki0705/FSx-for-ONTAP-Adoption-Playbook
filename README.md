@@ -61,6 +61,14 @@
 | [AD への依存は参加時ではなく生涯続く](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | 資格情報の失効は平常時に無症状で、次のメンテナンスで顕在化します |
 | [SMB を提供できない SVM がある](docs/ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | 原因は作成時期ではなく CIFS サーバーの削除です。ONTAP REST で作り直せば戻ります |
 | [監査宛先の枯渇はアクセスを止める](docs/ja/domains/security-governance/notes/audit-log-space-and-client-access.md) | 止まるのは満杯の瞬間ではなく、書き込み失敗を示す EMS は参照できません |
+| [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](docs/ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | NVMe/TCP は第 2 世代のみ。iSCSI と同じ LIF を使い、ポート 4420 は要件表に載っていません |
+| [LUN の並べ方が決めているのは復旧の粒度](docs/ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) | 1 LUN 1 ボリュームは best practice ではありません。`lun move` は無停止で WWID も変わりません |
+| [容量は 3 か所で数えられる](docs/ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | 1,024 GiB の確保で aggregate は 907 GiB。予約付き LUN は書き込み 0 でも容量を食います |
+| [パスはフェイルオーバーの仕組みそのもの](docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) | 手順どおりに作ると 1 LUN に 16 パス。接続スクリプトは冪等ではありません |
+| [LUN の Snapshot は既定で crash-consistent](docs/ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | application-consistent のフラグは記録用で、静止は別の仕組みが行います |
+| [LUN と igroup は AWS の API の外側にある](docs/ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | CloudFormation の Amazon FSx のリソースは 6 種のみ。ブロックは ONTAP 側にしかありません |
+| [共有ブロックが設計を変える条件](docs/ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) | 単独接続で足りるなら Amazon EBS が素直です。100 万 IOPS は 10 台を束ねた値です |
+| [Kubernetes のブロック PV はボリューム数の上限に当たる](docs/ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | 詰まるのは容量ではなくボリューム数。ドライバの選択がその天井を決めます |
 
 ---
 
@@ -92,6 +100,7 @@
 | [`performance/`](docs/ja/domains/performance/) | スループット設計・レイテンシ・キャッシュ・共有帯域 |
 | [`cost/`](docs/ja/domains/cost/) | 容量・ティアリング・見積もりと実測の差分 |
 | [`multiprotocol-identity/`](docs/ja/domains/multiprotocol-identity/) | NFS / SMB 共存・Active Directory 連携・ID マッピング |
+| [`block-storage/`](docs/ja/domains/block-storage/) | iSCSI / NVMe-oF・LUN レイアウト・マルチパス・容量の数え方 |
 
 ### 横断リファレンス — `reference/`
 
@@ -101,6 +110,7 @@
 | [`comparison/`](docs/ja/reference/comparison/) | 選択肢の比較マトリクス（トレードオフを対称に記載） |
 | [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
 | [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
+| [`block-storage-resource-map.md`](docs/ja/reference/block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い |
 
 ### ハンズオン開催 — `workshop-studio/`
 

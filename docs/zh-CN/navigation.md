@@ -93,6 +93,7 @@ graph TD
 | [性能](../en/domains/performance/) | 吞吐量在哪里决定、在哪里被共享 |
 | [成本](../en/domains/cost/) | 估算与实测为何出现偏差 |
 | [多协议与身份](../en/domains/multiprotocol-identity/) | NFS 与 SMB 的权限为何不一致 |
+| [块存储](../en/domains/block-storage/) | 以 iSCSI / NVMe-oF 提供 LUN 时，哪些条件已经先被决定 |
 
 ---
 

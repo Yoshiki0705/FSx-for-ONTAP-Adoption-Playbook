@@ -56,6 +56,27 @@ translated — `ONTAP`, `SnapMirror`, and similar stay in the original form.
 
 ---
 
+## ブロックストレージ / Block storage
+
+| 用語 / Term | 定義 / Definition |
+|---|---|
+| LUN | iSCSI で公開されるブロックデバイス。**ボリュームの中に置かれるオブジェクト**で、ボリュームそのものではない。最大 128 TB / A block device exposed over iSCSI. **An object placed inside a volume**, not the volume itself. Maximum 128 TB ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html)) |
+| Namespace | NVMe/TCP で公開されるブロックデバイス。iSCSI の LUN に対応する / The block device exposed over NVMe/TCP, the counterpart of a LUN in iSCSI ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html)) |
+| igroup (initiator group) | LUN を見せる相手を IQN で列挙したグループ。**LUN マップは igroup に対して行う** / A group listing, by IQN, the hosts a LUN is shown to. **A LUN is mapped to an igroup**, not to a host directly ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html)) |
+| Subsystem | NVMe/TCP で igroup に対応するもの。**host NQN を登録する** / The NVMe/TCP counterpart of an igroup. **Host NQNs are registered to it** ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html)) |
+| IQN (iSCSI Qualified Name) | iSCSI の initiator と target を識別する名前。Linux では `/etc/iscsi/initiatorname.iscsi` にある / The name identifying an iSCSI initiator or target. On Linux it is in `/etc/iscsi/initiatorname.iscsi` ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html)) |
+| NQN (NVMe Qualified Name) | NVMe の host と subsystem を識別する名前。Linux では `/etc/nvme/hostnqn` にある / The name identifying an NVMe host or subsystem. On Linux it is in `/etc/nvme/hostnqn` ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html)) |
+| ALUA / ANA | 複数パスのうちどれが最適かをホストに伝える仕組み。**ONTAP は iSCSI で ALUA、NVMe で ANA を使う** / The mechanism telling a host which of several paths is optimal. **ONTAP uses ALUA for iSCSI and ANA for NVMe** ([NetApp](https://docs.netapp.com/us-en/ontap/san-config/host-support-multipathing-concept.html)) |
+| Multipath / MPIO | 複数パスを 1 つのデバイスに束ねるホスト側の仕組み。**ブロックではフェイルオーバーの仕組みそのもので、ホスト側の責任** / The host-side mechanism binding several paths into one device. **For block it is the failover mechanism, and it is the host's responsibility** ([パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md)) |
+| Selective LUN Map (SLM) | LUN を所有するノードとその HA パートナー上のパスに限ってアクセスを許す設定。**新しい LUN マップでは既定で有効** / A setting restricting access to paths on the LUN's owning node and its HA partner. **Enabled by default on new LUN maps** ([NetApp](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html)) |
+| Space reservation / `space-reserve` | LUN のサイズ分の容量をボリュームから確保する設定。**書き込みが 0 でも消費される。既定は無効** / A setting reserving the LUN's size from the volume. **Consumed even with nothing written. Disabled by default** ([容量は 3 か所で数えられる](../../domains/block-storage/notes/capacity-is-counted-in-three-places.md)) |
+| Space allocation / `space-allocation` | ホストが解放したブロックを回収できるようにする設定（SCSI の UNMAP）。**これがないと LUN 上でファイルを消しても容量が戻らない** / A setting letting freed blocks be reclaimed (SCSI UNMAP). **Without it, deleting a file inside a LUN does not return capacity** ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html)) |
+| Fractional reserve | 上書きのための予備領域を表すボリューム属性。**0 か 100 しか取らず、ボリュームの guarantee が `none` のときは既定で 0** / A volume attribute for overwrite reserve. **Only 0 or 100, and 0 by default when the volume guarantee is `none`** ([NetApp](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html)) |
+| `os_type` | LUN のブロックオフセットを決める属性。**Windows は版を問わず `windows_2008`。`windows_2022` は存在しない** / The attribute fixing a LUN's block offset. **`windows_2008` for every Windows version; `windows_2022` does not exist** ([AWS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html)) |
+| Fibre Channel (FC) | **AWS のドキュメントのプロトコル列挙に現れません。** 使えないと明記されているのではなく、記載がない状態です。未記載を非対応と読み替えないこと / **Absent from the protocol enumerations in the AWS documentation.** It is not stated to be unsupported; it is simply not mentioned. Do not read silence as a documented negative |
+
+---
+
 ## ID と認証 / Identity and authentication
 
 | 用語 / Term | 定義 / Definition |

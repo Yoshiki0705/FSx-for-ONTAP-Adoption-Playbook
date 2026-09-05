@@ -47,6 +47,8 @@ rest gives a reading order.
 | NFS and SMB against the same data | [Security style determines the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [Security and governance](domains/security-governance/) |
 | Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
 | Designing SMB user management and auditing | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) | [Multiprotocol identity](domains/multiprotocol-identity/) |
+| **Serving block over iSCSI or NVMe-oF** | [Block protocol and layout decision tree](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [Block storage](domains/block-storage/) |
+| **Unsure whether block is needed or Amazon EBS is enough** | [Block storage options comparison](../ja/reference/comparison/block-storage-options.md) (日本語) | [When shared block changes the design](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
 | SMB stopped being served without warning | [An SVM that cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) |
 | Enabling audit logs / inventorying local users | [Destination exhaustion stops access](domains/security-governance/notes/audit-log-space-and-client-access.md) | [No last-logon attribute exists](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
@@ -98,6 +100,7 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 | [Performance](domains/performance/) | Where throughput is determined and where it is shared |
 | [Cost](domains/cost/) | Why estimates and measurements diverge |
 | [Multiprotocol & identity](domains/multiprotocol-identity/) | Why permissions disagree between NFS and SMB |
+| [Block storage](domains/block-storage/) | What is already decided before you choose iSCSI or NVMe-oF |
 
 ---
 
