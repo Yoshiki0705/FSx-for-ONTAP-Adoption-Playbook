@@ -7,11 +7,18 @@ PY ?= python3
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
-        diagrams diagrams-check
+        diagrams diagrams-check cfn shell
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
 PY_PATHS := tools scripts
+# Trees that may contain shell scripts and CloudFormation templates. Listed once for the
+# same reason as PY_PATHS: a workflow carrying its own copy is a second list to keep in
+# step. `find` is used rather than a fixed file list so a script added later is covered
+# without editing this file — the failure mode being avoided is a detector whose scan
+# range silently excludes the new thing.
+SH_PATHS := examples scripts tools
+CFN_PATHS := examples
 
 # Every directory holding tests. A tests/ directory that is not listed here runs
 # nowhere: not locally, not in CI, and only when someone remembers a command from a
@@ -22,7 +29,7 @@ help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-lint: frontmatter markdown headings python ## Frontmatter schema + Markdown lint + heading style + Python lint
+lint: frontmatter markdown headings python shell cfn ## Frontmatter schema + Markdown lint + heading style + Python, shell and CloudFormation lint
 
 RUFF_PINNED := $(shell sed -n 's/^ruff==//p' requirements-dev.txt)
 
@@ -75,6 +82,39 @@ python: ## Lint and format-check tools/ and scripts/ (fails when ruff is absent 
 format-python: ## Apply ruff formatting to tools/ and scripts/
 	@$(RUFF) format $(PY_PATHS) && $(RUFF) check --fix $(PY_PATHS)
 
+# --severity=style lowers the reporting threshold to the bottom of the default check set. It is
+# set deliberately: shellcheck reports different findings between releases -- CI's copy raised
+# SC2015 at info level on code a newer local copy passed -- which is the same "verdict depends
+# on the day it runs" problem the pinned ruff exists to avoid. Pinning the binary across macOS,
+# Linux and CI is impractical, so the gate asks for findings at every severity instead. A script
+# clean here is clean under any version's default threshold.
+# --enable=all is deliberately NOT used: those checks are opt-in style preferences that vary
+# more between releases, not correctness findings.
+shell: ## Run shellcheck at style severity on every shell script (fails when it is not installed)
+	@command -v shellcheck >/dev/null 2>&1 || { \
+		echo "error: shellcheck is not installed, so this gate would check nothing."; \
+		echo "       examples/ ships scripts that readers run against their own accounts,"; \
+		echo "       so an unchecked quoting bug there is a defect delivered, not a lint"; \
+		echo "       finding. Install it:  brew install shellcheck"; \
+		exit 1; \
+	}
+	@set -e; files=$$(find $(SH_PATHS) -name '*.sh' -type f 2>/dev/null); \
+	if [ -z "$$files" ]; then echo "shell: no scripts found"; else \
+		shellcheck --severity=style $$files && \
+		echo "shell: $$(echo $$files | wc -w | tr -d ' ') script(s) clean at style severity"; \
+	fi
+cfn: ## Run cfn-lint on every CloudFormation template (fails when it is not installed)
+	@command -v cfn-lint >/dev/null 2>&1 || { \
+		echo "error: cfn-lint is not installed, so this gate would check nothing."; \
+		echo "       A template that only fails at CreateStack time wastes a reader's"; \
+		echo "       twenty-minute file-system creation to find it."; \
+		echo "       Install it:  pip install -r requirements-dev.txt"; \
+		exit 1; \
+	}
+	@set -e; files=$$(grep -rl '^AWSTemplateFormatVersion' $(CFN_PATHS) --include='*.yaml' --include='*.yml' 2>/dev/null || true); \
+	if [ -z "$$files" ]; then echo "cfn: no templates found"; else \
+		cfn-lint $$files && echo "cfn: $$(echo $$files | wc -w | tr -d ' ') template(s) clean"; \
+	fi
 frontmatter: ## Validate YAML frontmatter on all notes
 	@$(PY) tools/validate_frontmatter.py
 

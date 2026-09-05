@@ -21,17 +21,22 @@ make all           # コミット前に必ず実行
 
 `tools/` は Python 3.12 以降の標準ライブラリのみで動きます。追加の依存はありません。CI は 3.14 で実行しています。
 
-### 外部ツール 3 つのインストール
+### 外部ツール 4 つのインストール
 
-**3 つとも必須です。未インストールのゲートは失敗します（スキップされません）。** ツールが無いゲートは、通ったゲートと見分けがつきません。
+**4 つとも必須です。未インストールのゲートは失敗します（スキップされません）。** ツールが無いゲートは、通ったゲートと見分けがつきません。
 
 ```bash
 npm install -g markdownlint-cli2        # pip では入りません
 brew install gitleaks                   # pip では入りません
+brew install shellcheck                 # pip では入りません
 uv venv .venv && uv pip install --python .venv/bin/python -r requirements-dev.txt
 ```
 
-`ruff` は `requirements-dev.txt` でバージョンを固定しています。**`make python` は固定値と一致しない `ruff` を拒否します。** リリース間で既定のルールセットが変わるため、不一致を許すとゲートの判定が実行日に依存します。
+`ruff` と `cfn-lint` は `requirements-dev.txt` でバージョンを固定しています。**`make python` は固定値と一致しない `ruff` を拒否します。** リリース間で既定のルールセットが変わるため、不一致を許すとゲートの判定が実行日に依存します。
+
+**`shellcheck` が増えたのは `examples/` を置いたためです。** そこにあるのは読者が自分のアカウントに対して実行するスクリプトなので、引用符の付け忘れは lint の指摘ではなく出荷した不具合になります。`cfn-lint` も同じ理由で、CreateStack 時にしか落ちないテンプレートは読者の 17 分を無駄にします。
+
+**`shellcheck` は `--severity=style` で走らせます。** バージョン間で報告する所見が変わるため（CI 側が info の SC2015 を出し、手元の新しい版は出さない、という食い違いが実際に起きました）、しきい値を最下段まで下げて差を吸収しています。**`shellcheck` はバージョン固定していません。** 版差を完全には消せないので、CI が手元と違う指摘をしたら版差を疑ってください。
 
 | 状況 | 手順 |
 |---|---|
@@ -216,13 +221,15 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 
 | コマンド | 検査内容 |
 |---|---|
-| `make lint` | frontmatter スキーマ + Markdown lint |
+| `make lint` | frontmatter スキーマ + Markdown + 見出し + Python + シェル + CloudFormation |
 | `make i18n-check` | Tier 1 の言語間パリティ |
 | `make switcher-check` | 言語スイッチャーの整合 + 誤った言語へのリンク |
 | `make audit` | 命名 / 中立性 / 個人情報 / 内部 ID / シークレット |
 | `make links` | 内部リンクの解決（`llms.txt` を含む） |
 | `make links-external` | 外部 URL も含む（ネットワーク必要） |
 | `make secrets` | gitleaks によるワークツリーの秘密スキャン（未インストール時は失敗します） |
+| `make shell` | `SH_PATHS` 配下のシェルスクリプト（`shellcheck --severity=style`。未インストール時は失敗します） |
+| `make cfn` | `CFN_PATHS` 配下の CloudFormation テンプレート（`cfn-lint`。同上） |
 | `make drift` | AGENTS.md のサイズ予算 / steering ローダーの薄さ / 索引の到達性と追跡状態 |
 | `make test` | ガードレールのテスト（block/ask/allow 契約、.PHONY、各ゲートの壊し検出） |
 | `make all` | 上記すべて。**コミット前の必須ゲート** |
