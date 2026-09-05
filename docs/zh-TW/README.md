@@ -65,6 +65,7 @@
 | [`performance/`](../en/domains/performance/) | 傳輸量設計、延遲、快取、共用頻寬 |
 | [`cost/`](../en/domains/cost/) | 容量、分層，以及估算與實測之間的落差 |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 共存、Active Directory 整合、ID 對應 |
+| [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF、LUN 佈局、多重路徑、容量計算方式 |
 
 ### 橫向參考 — `reference/`
 

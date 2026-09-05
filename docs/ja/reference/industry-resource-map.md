@@ -23,6 +23,8 @@ lang: ja
 
 事例は導入した組織が同意した範囲で書かれており、多くは ONTAP バージョン・リージョン・構成を明記していません。数値を設計の根拠にする前に自環境で測ってください。
 
+**ブロックストレージ（iSCSI / NVMe-oF）の一次情報は業種軸ではなく [ブロックストレージ横断リソースマップ](block-storage-resource-map.md) に集めています。**
+
 > **区分**: `documented` — 各事例 URL の所在と、sibling リポジトリへのリンクを記載しています。
 
 ---
@@ -78,6 +80,9 @@ lang: ja
 | 事例 | [Banco Pan](https://aws.amazon.com/solutions/case-studies/banco-pan-case-study/) | コスト 51% 削減 |
 | 事例 | [AdvisorEngine](https://www.netapp.com/customers/advisorengine-amazon-fsx-ontap-case-study/) | SQL Server 再アーキテクチャ。コストと性能 |
 | 事例 | [S&P Global Market Intelligence](https://aws.amazon.com/blogs/storage/why-sp-global-chose-amazon-fsx-for-netapp-ontap-to-achieve-high-availability-and-disaster-recovery-for-sql-server/) | SQL Server FCI DR。SnapMirror で RPO 短縮 |
+| 技術資料 | [SQL Server の高可用性](https://aws.amazon.com/jp/blogs/modernizing-with-aws/sql-server-high-availability-amazon-fsx-for-netapp-ontap/) | FCI を iSCSI 共有ストレージで組む。両ノードの IQN を 1 つの igroup に入れる |
+| ノート | [LUN の並べ方が決めているのは復旧の粒度](../domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) | **AWS の 2 記事が LUN レイアウトで一致していません。** 決めているのは復旧の粒度です |
+| ノート | [LUN の Snapshot は既定で crash-consistent](../domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | データベースを戻すのに静止の仕組みが必要かどうか |
 | 技術資料 | [FSI 向けサービス解説](https://aws.amazon.com/blogs/industries/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) / [日本語版](https://aws.amazon.com/jp/blogs/news/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) | 金融業界で問われる論点の整理 |
 | パターン | [UC2: financial-idp](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/financial-idp/) | 帳票 OCR・エンティティ抽出 |
 | ノート | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) | TCO の構造 |
@@ -167,6 +172,8 @@ lang: ja
 | 事例 | [Hyland](https://aws.amazon.com/fsx/netapp-ontap/customers/) | エンタープライズコンテンツ管理 SaaS。2 PB → 14 PB にスケール（3 年間で 7 倍）。数百万の小さなファイルのレプリケーション |
 | 事例 | [Infor](https://www.netapp.com/customers/infor/) | シングルテナント構成の個別調整 |
 | 事例 | [MYCOM OSI](https://aws.amazon.com/jp/blogs/news/how-mycom-osi-optimized-saas-storage-with-amazon-fsx-for-netapp-ontap/) | Kubernetes + iSCSI でのコスト最適化 |
+| ノート | [Kubernetes のブロック PV はボリューム数の上限に当たる](../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | `ontap-san` と `ontap-san-economy` の分岐点。詰まるのは容量ではありません |
+| ノート | [容量は 3 か所で数えられる](../domains/block-storage/notes/capacity-is-counted-in-three-places.md) | 予約付き LUN は書き込み 0 でも容量を食います |
 | パターン | [ファイルポータル UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | NAS にブラウザアクセス + AI 処理。VPN 不要。Nextcloud との併用可。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
 | 技術資料 | [SaaS デプロイのコスト・TTM 削減](https://aws.amazon.com/blogs/apn/reduce-saas-deployment-costs-and-time-to-market-with-amazon-fsx-for-netapp-ontap/) | FlexClone によるテナント展開 |
 | ノート | [IaC の境界は API の表面で決まる](../playbooks/04-build/notes/what-iac-cannot-reach.md) | テンプレートが成功しても構成は完成しない |

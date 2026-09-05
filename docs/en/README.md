@@ -60,6 +60,14 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [The AD dependency lasts the lifetime, not just the join](domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | An expired service account is symptomless until the next maintenance window |
 | [Some SVMs cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | The cause is a deleted CIFS server, not the creation date. The ONTAP REST API restores it |
 | [An exhausted audit destination stops client access](domains/security-governance/notes/audit-log-space-and-client-access.md) | Not at the moment it fills, and the EMS event reporting the write failure is not visible to you |
+| [The block protocol choice is narrowed before you make it](../ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) (日本語) | NVMe/TCP is second-generation only, shares its LIFs with iSCSI, and port 4420 is absent from the requirements table |
+| [LUN layout decides recovery granularity](../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) (日本語) | One LUN per volume is not a best practice. `lun move` was non-disruptive and kept the WWID |
+| [Capacity is counted in three places](../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) (日本語) | 1,024 GiB provisioned gave a 907 GiB aggregate, and a reserved LUN consumes its size with nothing written |
+| [Paths are the failover mechanism](../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) | Following the procedure produced 16 paths per LUN, and the connection script is not idempotent |
+| [A snapshot of a LUN is crash-consistent by default](../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) (日本語) | The application-consistent flag is record keeping; quiescing is done by something else |
+| [LUNs and igroups sit outside the AWS API](../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) (日本語) | CloudFormation exposes six Amazon FSx resource types, and none of them is a block object |
+| [When shared block changes the design](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) | Amazon EBS is the straightforward choice for a single attachment. The million-IOPS figure is ten file systems combined |
+| [Kubernetes block volumes meet the volume limit](../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) | What runs out is volumes, not capacity, and the driver choice sets that ceiling |
 
 ---
 
@@ -91,6 +99,7 @@ Enter here when your question is "I need to research this specific concern." The
 | [`performance/`](domains/performance/) | Throughput design, latency, caching, shared bandwidth |
 | [`cost/`](domains/cost/) | Capacity, tiering, and the gap between estimates and measurements |
 | [`multiprotocol-identity/`](domains/multiprotocol-identity/) | NFS / SMB coexistence, Active Directory integration, ID mapping |
+| [`block-storage/`](domains/block-storage/) | iSCSI / NVMe-oF, LUN layout, multipathing, how capacity is counted |
 
 ### Cross-cutting reference — `reference/`
 
@@ -100,6 +109,7 @@ Enter here when your question is "I need to research this specific concern." The
 | [`comparison/`](../ja/reference/comparison/) | Option comparison matrices (trade-offs stated symmetrically) |
 | [`limits/`](../ja/reference/limits/) | Limits and quotas, with sources and verification dates |
 | [`glossary/`](../ja/reference/glossary/) | ONTAP / AWS terminology and definitions |
+| [`block-storage-resource-map.md`](../ja/reference/block-storage-resource-map.md) (日本語) | Index of block primary sources and public infrastructure as code, and where they disagree |
 
 ### Hands-on delivery — `workshop-studio/`
 

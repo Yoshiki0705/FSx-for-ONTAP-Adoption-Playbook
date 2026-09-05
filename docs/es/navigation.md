@@ -93,6 +93,7 @@ El punto de entrada que parte de un tema. Se referencia en todas las fases del c
 | [Rendimiento](../en/domains/performance/) | Dónde se decide el rendimiento y dónde se comparte |
 | [Coste](../en/domains/cost/) | Por qué divergen la estimación y la medición |
 | [Multiprotocolo e identidad](../en/domains/multiprotocol-identity/) | Por qué difieren los permisos entre NFS y SMB |
+| [Almacenamiento de bloques](../en/domains/block-storage/) | Qué está ya decidido antes de elegir iSCSI o NVMe-oF |
 
 ---
 

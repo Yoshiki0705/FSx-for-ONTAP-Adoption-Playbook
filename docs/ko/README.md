@@ -65,6 +65,7 @@
 | [`performance/`](../en/domains/performance/) | 스루풋 설계·레이턴시·캐시·공유 대역 |
 | [`cost/`](../en/domains/cost/) | 용량·티어링과 견적 대비 실측의 차이 |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 공존·Active Directory 연계·ID 매핑 |
+| [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF·LUN 배치·멀티패스·용량 계산 방식 |
 
 ### 횡단 참조 — `reference/`
 

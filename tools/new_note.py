@@ -27,6 +27,7 @@ LIFECYCLE_BY_DIR = {
     "06-optimize": "optimize",
 }
 VALID_DOMAINS = {
+    "block-storage",
     "data-protection",
     "data-utilization",
     "security-governance",

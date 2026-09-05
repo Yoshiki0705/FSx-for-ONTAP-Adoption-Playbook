@@ -413,6 +413,76 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A `block-storage` domain, thirteenth module, covering iSCSI and NVMe/TCP.** Block was previously
+  present only as incidental mentions: the six-HA-pair ceiling in the deployment-type note and a
+  "remount iSCSI" line in the cutover checklist. Nothing covered LUNs, igroups, multipathing, capacity
+  accounting, or consistency. Eight notes now do, five of them `verified` against a second-generation
+  file system on ONTAP 9.18.1P5 in `ap-northeast-1`, created and destroyed for the purpose. The
+  vocabulary is registered in `tools/validate_frontmatter.py` and `tools/new_note.py`, and the domain
+  appears in the two-axis table in all eight language READMEs.
+- **`docs/ja/reference/block-storage-resource-map.md`.** An index of the AWS user guide, AWS blogs,
+  re:Post, NetApp documentation, and public infrastructure as code for block storage — and, more
+  usefully, a table of **five places those sources disagree with each other**: the LUN-to-volume ratio
+  (two AWS posts recommend different layouts, and NetApp states 1:1 is not a formal best practice), the
+  iSCSI session count (the eight-session guidance is sized for the first generation's 4,000 MBps
+  ceiling), paths per LUN, the NVMe/TCP ports missing from the security-group requirements table, and
+  failover transparency, which is documented for iSCSI and silent for NVMe/TCP. Also carries a section
+  on which figures are unsafe to extract without their conditions.
+- **A decision tree and a comparison matrix for block.** The tree orders the conditions that narrow the
+  choice before it is made — generation, HA pair count, host OS — because the first two are
+  irreversible. The matrix sets Amazon EBS, EBS Multi-Attach and FSx for ONTAP block side by side with
+  symmetric trade-offs, and states plainly that a single attachment does not need FSx for ONTAP: the
+  minimum footprint is 1,024 GiB of SSD and 384 MBps.
+- **Fourteen block-storage glossary entries**, including one recording that Fibre Channel is *absent*
+  from the AWS protocol enumerations rather than documented as unsupported — a distinction the
+  repository asks readers not to collapse.
+
+**Verified in that environment**, with what was measured rather than asserted:
+
+- **`space-reserve` on a LUN consumes the volume, and the accounting lags.** A 20 GiB reserved LUN took
+  20.078 GiB from a 100 GiB volume's 95 GiB active file system with nothing written. The change appears
+  between 0 and 30 seconds; **the first attempt at this measurement read the value five seconds after
+  the change and drew the opposite conclusion.** Sampled at 30-second intervals over four minutes in
+  both directions to settle it.
+- **Capacity is deducted three times**: 1,024 GiB of provisioned SSD produced a 907.03 GiB aggregate,
+  a 100 GiB volume reported 95 GiB of active file system, and the reserved LUN took its full size.
+- **Deleting a file inside a LUN returns nothing until TRIM, and then the blocks may move to a
+  snapshot.** `fstrim` moved volume usage from 24.14 to 20.17 GiB — and `snapshot.used` from 0 to
+  3.983 GiB, because the default snapshot policy had run in between.
+- **The AWS iSCSI procedure produces 16 paths per LUN**, split evenly between ALUA optimized and
+  non-optimized, against NetApp guidance that a single LUN needs no more than four. **Re-running the
+  Windows connection loop is not idempotent** and took the host from 16 to 24 paths with no warning.
+- **Amazon Linux 2023 ships without `CONFIG_NVME_MULTIPATH`.** One NVMe namespace appeared as two
+  block devices with identical WWIDs, and the verification step in the AWS procedure
+  (`/sys/module/nvme_core/parameters/multipath`) does not exist on that AMI. AWS's procedure specifies
+  RHEL 9.3.
+- **`lun move` was non-disruptive and preserved the WWID** on a mounted, actively written LUN.
+- **A FlexClone carries the LUNs but not their mappings**, and mounting it alongside the original
+  required `-o nouuid`.
+- **`volume delete` does not delete; it moves the volume to the recovery queue for at least 12 hours
+  by default, and the FlexClone relationship survives there.** While it does, the parent volume cannot
+  be deleted by CloudFormation, by `aws fsx delete-volume --ontap-configuration SkipFinalBackup=true`,
+  or by ONTAP's own `volume delete -force true` — and the error ONTAP returns tells you to run exactly
+  the command that answers `entry doesn't exist`, because a queued volume is no longer a volume.
+  `volume recovery-queue purge` clears it immediately. The queue also holds volumes whose deletion
+  *succeeded*, so "the delete returned success" and "the capacity came back" are different statements.
+  Neither the clone nor the queue is visible to `describe-volumes`.
+- **LUNs in an NFS-exported volume are visible as files with real names and sizes, but their contents
+  are not readable** — ONTAP returned `Operation not permitted` even with `superuser=any`. The cost of
+  the arrangement NetApp advises against is information disclosure and two different capacity figures,
+  not corruption.
+
+**Attempted and not verified, recorded as such rather than dropped:**
+
+- **Path failover time.** Two attempts to induce a path loss from the host failed — a firewall rule
+  did not disturb established iSCSI sessions and `Disconnect-IscsiTarget` did not reduce the session
+  count. Writes continued throughout, but since no path went away that is not evidence of failover.
+  The claim stays `documented`.
+- **SnapMirror with LUNs.** Not attempted; the FlexClone result demonstrates the same property. The
+  SnapMirror-specific sequence stays `documented`.
+- **Quotas for LUNs, igroups, namespaces and subsystems.** AWS documents none, and this work did not
+  probe for them. No number is published.
+
 - **English counterparts for the two security-governance notes on audit logging.**
   `audit-log-space-and-client-access` (455 lines, the longest note in the repository) and
   `smb-logon-audit-event-coverage` complete the five findings the SMB decision tree routes to, so every

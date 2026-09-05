@@ -65,6 +65,7 @@ Der Einstieg, wenn die Frage lautet: „Ich muss dieses konkrete Thema recherchi
 | [`performance/`](../en/domains/performance/) | Durchsatzdesign, Latenz, Caching, geteilte Bandbreite |
 | [`cost/`](../en/domains/cost/) | Kapazität, Tiering und die Lücke zwischen Schätzung und Messung |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS- / SMB-Koexistenz, Active-Directory-Integration, ID-Mapping |
+| [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, LUN-Layout, Multipathing, Kapazitätsberechnung |
 
 ### Übergreifende Referenz — `reference/`
 

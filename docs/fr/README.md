@@ -65,6 +65,7 @@ L'entrée à privilégier quand la question est « je dois creuser ce sujet pré
 | [`performance/`](../en/domains/performance/) | Dimensionnement du débit, latence, cache, bande passante partagée |
 | [`cost/`](../en/domains/cost/) | Capacité, tiering, et l'écart entre estimations et mesures |
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | Coexistence NFS / SMB, intégration Active Directory, mappage d'identités |
+| [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, disposition des LUN, multipathing, comptage de la capacité |
 
 ### Référence transversale — `reference/`
 

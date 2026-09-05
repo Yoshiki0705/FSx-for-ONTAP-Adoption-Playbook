@@ -109,7 +109,7 @@ AWS Transform（旧 AWS Application Migration Service / MGN）で、ブロック
 |---|---|
 | VMware からの移行で「一度 EBS に移して後から NAS を構成する」手順が不要に | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) |
 | MGN ベースの自動化と FSx for ONTAP の組み合わせで、SnapMirror 以外の移行パスが増えた | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
-| 移行後の LUN 配置が ONTAP の推奨と異なるため、移行後に整える工程が必要 | 下記「移行時に見積もる制約」 |
+| 移行後の LUN 配置が ONTAP の推奨と異なるため、移行後に整える工程が必要 | [LUN の並べ方が決めているのは復旧の粒度](../domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) |
 
 **移行時に見積もる制約**: GA 済みだが、設計時に効く制約がある。
 
@@ -138,7 +138,7 @@ Amazon Elastic VMware Service（EVS）— VPC 内で VMware Cloud Foundation を
 | 設計への影響 | 関連ノート |
 |---|---|
 | VMware から EC2 への全面移行を選ばなくても、FSx for ONTAP のストレージ機能が使える | [業種別リソースマップ — sibling repos](industry-resource-map.md#sibling-リポジトリ一覧)（vmware-migration-ec2-ontap） |
-| ブロックは iSCSI と NVMe/TCP のどちらでも VMFS データストアになる。NVMe/TCP は第 2 世代かつ HA ペア 6 以下が条件 | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
+| ブロックは iSCSI と NVMe/TCP のどちらでも VMFS データストアになる。NVMe/TCP は第 2 世代かつ HA ペア 6 以下が条件 | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](../domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) |
 | Oracle Database on EVS + FSx for ONTAP の構成ガイドが出ている（re:Post） | [公開事例](../case-studies/public-case-studies.md) |
 | SnapMirror による cross-region DR が EVS 構成でも利用可能 | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) |
 
