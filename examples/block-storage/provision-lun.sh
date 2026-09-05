@@ -144,9 +144,10 @@ else
     --file-system-ids "$FILE_SYSTEM_ID" --region "$REGION" \
     --query 'FileSystems[0].OntapConfiguration.Endpoints.Management.IpAddresses[0]' \
     --output text 2>/dev/null || true)"
-  [ -n "$MGMT_IP" ] && [ "$MGMT_IP" != "None" ] ||
+  if [ -z "$MGMT_IP" ] || [ "$MGMT_IP" = "None" ]; then
     die "could not resolve the management address for $FILE_SYSTEM_ID. If the call timed out, this
       host has no route to the Amazon FSx API; pass --management-ip instead"
+  fi
 fi
 
 if [ "$PASSWORD_STDIN" = "true" ]; then

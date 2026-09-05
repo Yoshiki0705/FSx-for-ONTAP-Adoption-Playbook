@@ -82,7 +82,15 @@ python: ## Lint and format-check tools/ and scripts/ (fails when ruff is absent 
 format-python: ## Apply ruff formatting to tools/ and scripts/
 	@$(RUFF) format $(PY_PATHS) && $(RUFF) check --fix $(PY_PATHS)
 
-shell: ## Run shellcheck on every shell script (fails when it is not installed)
+# --severity=style lowers the reporting threshold to the bottom of the default check set. It is
+# set deliberately: shellcheck reports different findings between releases -- CI's copy raised
+# SC2015 at info level on code a newer local copy passed -- which is the same "verdict depends
+# on the day it runs" problem the pinned ruff exists to avoid. Pinning the binary across macOS,
+# Linux and CI is impractical, so the gate asks for findings at every severity instead. A script
+# clean here is clean under any version's default threshold.
+# --enable=all is deliberately NOT used: those checks are opt-in style preferences that vary
+# more between releases, not correctness findings.
+shell: ## Run shellcheck at style severity on every shell script (fails when it is not installed)
 	@command -v shellcheck >/dev/null 2>&1 || { \
 		echo "error: shellcheck is not installed, so this gate would check nothing."; \
 		echo "       examples/ ships scripts that readers run against their own accounts,"; \
@@ -92,7 +100,8 @@ shell: ## Run shellcheck on every shell script (fails when it is not installed)
 	}
 	@set -e; files=$$(find $(SH_PATHS) -name '*.sh' -type f 2>/dev/null); \
 	if [ -z "$$files" ]; then echo "shell: no scripts found"; else \
-		shellcheck $$files && echo "shell: $$(echo $$files | wc -w | tr -d ' ') script(s) clean"; \
+		shellcheck --severity=style $$files && \
+		echo "shell: $$(echo $$files | wc -w | tr -d ' ') script(s) clean at style severity"; \
 	fi
 cfn: ## Run cfn-lint on every CloudFormation template (fails when it is not installed)
 	@command -v cfn-lint >/dev/null 2>&1 || { \
