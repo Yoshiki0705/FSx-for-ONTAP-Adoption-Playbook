@@ -122,6 +122,7 @@ serve both languages and there is no separate `docs/en/reference/` tree.
 - [Cross-repository citation index](docs/ja/reference/cross-repo-index.md): Which claim is cited from which sibling repository, with a probe string per citation naming the claim itself rather than a heading, so a retraction upstream fails a gate here instead of passing silently. Also states the division of labour: the project that built a test environment holds the numbers, and this repository cites them and translates them into design guidance.
 - [Limits and quotas](docs/ja/reference/limits/): Limit values with source and verification date.
 - [Glossary](docs/ja/reference/glossary/): ONTAP and AWS terminology.
+- [Industry resource map](docs/ja/reference/industry-resource-map.md): Opens with a reading order — for each of eighteen industries, which module to read first, which second, and where the decisions concentrate — and states plainly that what selects the modules is the shape of the workload rather than the industry, so a near-miss row is still worth reading. Three items come before any industry row because irreversible settings are not industry-specific. Then a per-industry index of published case studies, implementation patterns in sibling repositories, and design notes here. **Use case implementations are deliberately not reproduced here**; the same implementation in two places means the copy that stops being updated outlives the one that was corrected.
 - [Block storage resource map](docs/ja/reference/block-storage-resource-map.md): Index of the AWS, NetApp, re:Post and public infrastructure-as-code sources for block storage, plus a table of the seven places those sources disagree with each other.
 
 ## Workshop delivery
@@ -144,5 +145,5 @@ event's time budget, not a restatement of the workshop's own instructions.
 - [Contributing guide](CONTRIBUTING.md): Authoring conventions, frontmatter schema, review gates.
 - [Changelog](CHANGELOG.md): Notable additions and corrections.
 - [Related repository: S3 Access Points serverless patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns)
-- [Related repository: observability integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations)
-- [Related repository: lakehouse integrations](https://github.com/Yoshiki0705/fsxn-lakehouse-integrations)
+- [Related repository: observability integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations)
+- [Related repository: lakehouse integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations)

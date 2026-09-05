@@ -105,6 +105,6 @@ lang: ja
 
 - [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](where-the-rollback-window-closes.md) — Finalize の不可逆性と切り戻しの関係
 - [最近の更新](../../../reference/recent-updates.md) — AWS Transform が FSx for ONTAP をサポートした範囲と、移行時に見積もる制約
-- 実測の全文と再現手順: [vmware-migration-ec2-ontap](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP)
+- 実測の全文と再現手順: [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP)
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook — 移行](../README.md)
