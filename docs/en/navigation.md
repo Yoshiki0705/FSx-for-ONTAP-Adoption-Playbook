@@ -47,8 +47,8 @@ rest gives a reading order.
 | NFS and SMB against the same data | [Security style determines the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [Security and governance](domains/security-governance/) |
 | Active Directory integration is a given | [Multiprotocol identity](domains/multiprotocol-identity/) | [Design](playbooks/02-design/) |
 | Designing SMB user management and auditing | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) | [Multiprotocol identity](domains/multiprotocol-identity/) |
-| SMB stopped being served without warning | [An SVM that cannot serve SMB](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) |
-| Enabling audit logs / inventorying local users | [Destination exhaustion stops access](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [No last-logon attribute exists](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
+| SMB stopped being served without warning | [An SVM that cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) |
+| Enabling audit logs / inventorying local users | [Destination exhaustion stops access](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [No last-logon attribute exists](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |

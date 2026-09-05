@@ -413,6 +413,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **English counterparts for the three multiprotocol-identity notes on CIFS authentication and local-user
+  inventory.** `smb-service-lost-on-cifs-server-delete`, `local-user-inventory-without-last-logon`, and
+  `ad-dependency-lasts-the-lifetime` were the primary answers to three Tier 2 questions an English reader
+  reaches from the module README, and the AWS Support exchange that had been correcting them closed with no
+  reply outstanding — so the "content has settled" condition holds. Repointing was the larger half of the
+  work: 13 links across `docs/en/` had to move off the Japanese copies and drop their `(日本語)` markers,
+  including seven in the decision tree added moments earlier. `switcher-check` named every one, and its
+  output is the reason none were missed. Also fills the two questions the English module README had been
+  missing (#7 and #8) and adds the CIFS finding to the English hub's findings table.
+
 - **A decision tree for SMB identity and auditing, in Japanese and English.** Five notes covering CIFS
   authentication, local-user inventory, and audit logging were reachable only through two different
   module READMEs — four of the five had no link from the root README, `llms.txt`, or `navigation.md`, and

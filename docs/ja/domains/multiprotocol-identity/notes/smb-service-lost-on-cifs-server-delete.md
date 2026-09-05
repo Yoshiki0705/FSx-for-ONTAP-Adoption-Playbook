@@ -11,6 +11,10 @@ lang: ja
 
 # SMB を提供できない SVM がある。原因は作成時期ではなく CIFS サーバーの削除で、ONTAP REST で作り直せば戻る
 
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-service-lost-on-cifs-server-delete.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
@@ -250,3 +254,7 @@ for an ONTAP file system with 128 MBps of throughput capacity.
 - [AD への依存は参加時ではなく生涯続く](ad-dependency-lasts-the-lifetime.md)
 - [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md)
 - [上限値・クォータ](../../../reference/limits/README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-service-lost-on-cifs-server-delete.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

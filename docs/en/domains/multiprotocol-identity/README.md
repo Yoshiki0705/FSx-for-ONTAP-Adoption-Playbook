@@ -15,11 +15,13 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 | # | Question | Notes |
 |---|---|---|
 | 1 | How security style changes permission evaluation | [Security style determines the permission model](notes/security-style-and-permission-evaluation.md) |
-| 2 | What Active Directory integration presupposes | [The delegated permissions the service account needs](../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md#サービスアカウントに必要な委任権限) (日本語) |
+| 2 | What Active Directory integration presupposes | [The delegated permissions the service account needs](notes/ad-dependency-lasts-the-lifetime.md#delegated-permissions-the-service-account-needs) |
 | 3 | When win-unix / unix-win mapping is consulted | [same note](notes/security-style-and-permission-evaluation.md) |
-| 4 | What it takes to share the same data over NFS and SMB | [Three layers of conditions](../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md#同一データを-nfs-と-smb-で共有する条件) (日本語) |
-| 5 | What breaks when AD becomes unreachable | [The AD dependency lasts the lifetime, not just the join](../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) (日本語) |
+| 4 | What it takes to share the same data over NFS and SMB | [Three layers of conditions](notes/ad-dependency-lasts-the-lifetime.md#conditions-for-serving-the-same-data-over-nfs-and-smb) |
+| 5 | What breaks when AD becomes unreachable | [The AD dependency lasts the lifetime, not just the join](notes/ad-dependency-lasts-the-lifetime.md) |
 | 6 | How many authorization layers a browser path introduces | [Authorization becomes three layers](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) (日本語) |
+| 7 | Whether a local user inventory can be automated | [No last-logon attribute exists; it has to come from audit logs](notes/local-user-inventory-without-last-logon.md) |
+| 8 | Why SMB will not connect even though the CIFS server was created | [Some SVMs cannot serve SMB](notes/smb-service-lost-on-cifs-server-delete.md) |
 
 ---
 
