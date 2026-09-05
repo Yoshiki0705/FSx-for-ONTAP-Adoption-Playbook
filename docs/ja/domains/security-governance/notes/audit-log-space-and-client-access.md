@@ -11,6 +11,10 @@ lang: ja
 
 # 監査宛先が枯渇するとクライアントアクセスは止まる。止まるのは満杯になった瞬間ではなく、観測できない緩衝が吸収し切った時点で、記録は 1 件も落ちない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](audit-log-space-and-client-access.md) | [English](../../../../en/domains/security-governance/notes/audit-log-space-and-client-access.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
@@ -453,3 +457,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 - [SMB ログオン監査 — 4624 は記録される](smb-logon-audit-event-coverage.md)
 - [ローカルユーザーの棚卸しに使える情報は監査ログにしかない](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](audit-log-space-and-client-access.md) | [English](../../../../en/domains/security-governance/notes/audit-log-space-and-client-access.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

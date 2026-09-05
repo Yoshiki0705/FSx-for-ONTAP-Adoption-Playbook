@@ -21,6 +21,9 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 | 5 | Considerations when crossing the OT / IT boundary | [Mechanisms for crossing a segmented boundary, and their limits](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#分離された境界をまたぐときに使える仕組みとその限界) (日本語) |
 | 6 | How to govern operations that cannot be undone | [Approval for an irreversible operation is separate from approval for the task](../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) |
 | 7 | How to restrict access through an S3 access point, and how to write the policy | [S3 Access Point authorization design — evaluation order and the two layers that narrow access](notes/access-point-authorization-layers.md) |
+| 8 | What to bound when handing out snapshots and clones without admin rights | [What you bound when handing out experiment branches is more than permissions](../../../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
+| 9 | Whether SMB logon success, failure, and logoff are recorded in the audit log | [4624 is recorded, but what it counts is sessions](notes/smb-logon-audit-event-coverage.md) |
+| 10 | What happens to availability when auditing is enabled | [An exhausted audit destination stops access, but not at the moment it fills](notes/audit-log-space-and-client-access.md) |
 
 ---
 

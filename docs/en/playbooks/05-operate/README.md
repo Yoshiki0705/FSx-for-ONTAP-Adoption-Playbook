@@ -21,7 +21,7 @@ Covers monitoring, capacity management, incident response, and change management
 | 5 | How to define first-response actions during an incident | [First response during an incident](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md#インシデント時の初動) (日本語) |
 | 6 | What to suspect when the admin account can no longer authenticate | [fsxadmin gets locked, and REST cannot tell you why](../../../ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) (日本語) |
 | 7 | What to look at when a running SVM stops serving SMB | [An SVM that cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |
-| 8 | What happens to availability when auditing runs continuously | [Destination exhaustion stops access](../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) |
+| 8 | What happens to availability when auditing runs continuously | [Destination exhaustion stops access](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
 | 9 | How to run an inventory of local users | [No last-logon attribute exists; the inventory has to come from audit logs](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 
 ---

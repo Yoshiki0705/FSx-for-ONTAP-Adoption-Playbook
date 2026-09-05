@@ -59,6 +59,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
 | [The AD dependency lasts the lifetime, not just the join](domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | An expired service account is symptomless until the next maintenance window |
 | [Some SVMs cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | The cause is a deleted CIFS server, not the creation date. The ONTAP REST API restores it |
+| [An exhausted audit destination stops client access](domains/security-governance/notes/audit-log-space-and-client-access.md) | Not at the moment it fills, and the EMS event reporting the write failure is not visible to you |
 
 ---
 

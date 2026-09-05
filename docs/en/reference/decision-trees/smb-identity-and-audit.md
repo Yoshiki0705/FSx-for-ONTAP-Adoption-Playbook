@@ -94,7 +94,7 @@ The reasoning behind the branches:
 
 **How to choose**: with an audit requirement there is no choice to make. **When enabling it only for an inventory, first check whether decision 1 can choose AD membership.** If AD is available, the inventory costs nothing in availability design.
 
-**If you do enable it, order matters.** Prefer a design that **does not fill** — explicit retention, a generous initial size, autosizing — over one that detects and reacts. **The warning-to-stop window is not reproducible.** Measured values, and why they do not repeat, are in [the note on destination exhaustion](../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語).
+**If you do enable it, order matters.** Prefer a design that **does not fill** — explicit retention, a generous initial size, autosizing — over one that detects and reacts. **The warning-to-stop window is not reproducible.** Measured values, and why they do not repeat, are in [the note on destination exhaustion](../../domains/security-governance/notes/audit-log-space-and-client-access.md).
 
 ---
 
@@ -107,9 +107,9 @@ The reasoning behind the branches:
 | **Both branches** | **Deleting the CIFS server leaves that SVM unable to serve SMB.** Unjoining AD involves that deletion. Recreating through the ONTAP CLI does not restore it; the ONTAP REST API does | [An SVM that cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |
 | **Both branches** | **No administrative role can change a service policy.** Enumerating roles to find one is wasted effort | [The `fsxadmin` section of the same note](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md#what-fsxadmin-cannot-add) |
 | Workgroup | **Local users carry no last-logon attribute.** An inventory has to be built from audit logs, and "no activity" does not mean "not needed", so automating deletion is a separate judgment | [No last-logon attribute exists](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
-| Workgroup | **Logon audit events are per session, not per login action.** Counting them wrongly produces false positives in the inventory | [4624 is recorded, but what it counts is sessions](../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) (日本語) |
+| Workgroup | **Logon audit events are per session, not per login action.** Counting them wrongly produces false positives in the inventory | [4624 is recorded, but what it counts is sessions](../../domains/security-governance/notes/smb-logon-audit-event-coverage.md) |
 | AD membership | **The AD dependency lasts for the life of the SVM, not just the join.** Service account credential expiry is symptomless in steady state and surfaces at the next maintenance | [The AD dependency lasts a lifetime](../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
-| Auditing enabled | **Destination exhaustion stops client access.** No customer-visible EMS event reports the write failure, leaving only capacity-side proxies | [Destination exhaustion stops access](../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) |
+| Auditing enabled | **Destination exhaustion stops client access.** No customer-visible EMS event reports the write failure, leaving only capacity-side proxies | [Destination exhaustion stops access](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
 
 ---
 
@@ -174,8 +174,8 @@ The reasoning behind the branches:
 
 - [An SVM that cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) — **the constraint common to both branches.** Cause, and recovery through the ONTAP REST API
 - [No last-logon attribute exists; the inventory has to come from audit logs](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) — the workgroup branch, including a staged rollout
-- [4624 is recorded, but what it counts is sessions](../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) (日本語) — the nature of the events an inventory relies on
-- [Destination exhaustion stops access, but not at the moment it fills](../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) — the consequence in decision 2, with measurements and observable signals
+- [4624 is recorded, but what it counts is sessions](../../domains/security-governance/notes/smb-logon-audit-event-coverage.md) — the nature of the events an inventory relies on
+- [Destination exhaustion stops access, but not at the moment it fills](../../domains/security-governance/notes/audit-log-space-and-client-access.md) — the consequence in decision 2, with measurements and observable signals
 - [The AD dependency lasts a lifetime](../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) — the AD membership branch
 - [Security style determines the permission model](../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — the premise when NFS is served alongside
 - [Decision trees index](../../../ja/reference/decision-trees/README.md)
