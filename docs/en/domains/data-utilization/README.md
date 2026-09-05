@@ -41,7 +41,6 @@ Reference architectures that implement the concepts in this module. When you nee
 | Directory | Contents |
 |---|---|
 | [`notes/`](../../../ja/domains/data-utilization/notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/domains/data-utilization/checklists/) | Checklists for field use |
 
 ---
 

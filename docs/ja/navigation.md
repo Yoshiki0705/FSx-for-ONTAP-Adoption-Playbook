@@ -51,6 +51,7 @@ graph TD
 | **iSCSI / NVMe-oF でブロックを提供する** | [ブロックプロトコルとレイアウトの決定木](reference/decision-trees/block-protocol-and-layout.md) | [ブロックストレージ](domains/block-storage/) |
 | **ブロックにするか Amazon EBS で足りるか迷っている** | [ブロックストレージの選択肢の比較](reference/comparison/block-storage-options.md) | [共有ブロックが設計を変える条件](domains/block-storage/notes/when-shared-block-changes-the-design.md) |
 | **EBS で回している構成の費用と比べたい** | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [ブロックストレージを 30 分で動かす手順](domains/block-storage/quickstart.md) |
+| **測ったスループットが想定より低い** | [手元のスループット値は何を測ったのかを判定する](reference/decision-trees/measured-throughput-triage.md) | [スループットを上げる手段の比較](reference/comparison/throughput-levers.md) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |

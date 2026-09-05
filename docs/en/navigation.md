@@ -53,6 +53,7 @@ rest gives a reading order.
 | SMB stopped being served without warning | [An SVM that cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB identity and auditing decision tree](reference/decision-trees/smb-identity-and-audit.md) |
 | Enabling audit logs / inventorying local users | [Destination exhaustion stops access](domains/security-governance/notes/audit-log-space-and-client-access.md) | [No last-logon attribute exists](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | Greenfield, nothing to migrate | [Design](playbooks/02-design/) | [Build](playbooks/04-build/) → [Operate](playbooks/05-operate/) |
+| **A measured throughput figure is lower than expected** | [Working out what a measured throughput figure actually measured](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [Levers for raising throughput](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | Already running, tuning performance | [Performance](domains/performance/) | [Optimize](playbooks/06-optimize/) |
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |

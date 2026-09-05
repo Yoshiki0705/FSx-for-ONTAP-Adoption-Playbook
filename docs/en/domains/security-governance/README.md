@@ -32,7 +32,6 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/domains/security-governance/checklists/) | Checklists for field use |
 
 ---
 

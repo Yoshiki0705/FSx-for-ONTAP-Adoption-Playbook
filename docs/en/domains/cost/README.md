@@ -27,7 +27,6 @@ Covers capacity, tiering, and the gap between estimates and measurements. Estima
 | Directory | Contents |
 |---|---|
 | [`notes/`](notes/) | Smallest unit of knowledge. One file = one concern. Frontmatter carries the `evidence` tier |
-| [`checklists/`](../../../ja/domains/cost/checklists/) | Checklists for field use |
 
 ---
 

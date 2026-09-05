@@ -454,7 +454,76 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   second binary shadowing the pinned one, which is what was happening locally (0.15.20 ahead of
   the pinned 0.16.1 on `PATH`).
 
+### Removed
+
+- **Links to `checklists/` from the nine modules that had none.** Each pointed at a directory holding
+  only a `.gitkeep`, which reads as a checklist that exists and is worth opening. The directories are
+  gone too: an empty tracked directory nothing links to cannot be told apart from one whose contents
+  were lost. The shape is still documented in `_template`, which now says to create the directory once
+  a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
+
 ### Added
+
+- **A cited measurement of what a single connection actually measures**, at
+  [単一接続で測った値はストレージの性能ではない](docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md).
+  The performance module could describe where throughput is decided but had no measured figures to
+  anchor it, and a sibling project had just produced them. **The numbers are cited, not
+  re-measured** — one environment, one set of numbers, and this repository translates them into
+  design guidance.
+  - **Three configurations across two products and two protocols all landed between 4.0 and 4.7 Gbps
+    on one connection**, against a documented per-flow limit of 5 Gbps. The 1.18x spread that a
+    product comparison would have reported was two measurements of the same ceiling.
+  - **The same configuration measured twice differed by 45%**, cache state being the only variable.
+    That is recorded as a property of the storage rather than a benchmarking defect, which is why
+    the note refuses to state a single throughput figure for the file system.
+  - **Every condition is transcribed**, including the ones most often dropped: generation and
+    deployment type, provisioned IOPS, whether NVMe read cache was on, `tcp-max-xfer-size`, the
+    client instance type and whether its network figure is guaranteed or burst. **The source
+    environment has been torn down**, and the note says so rather than implying reproducibility.
+  - **What the source leaves unmeasured is listed**, because citing selectively is easy.
+
+- **A triage flow and a comparison for the performance module**, at
+  [手元のスループット値は何を測ったのかを判定する](docs/ja/reference/decision-trees/measured-throughput-triage.md)
+  and [スループットを上げる手段の比較](docs/ja/reference/comparison/throughput-levers.md). The
+  ceilings are in four places and **the remedy for one is a no-op for the others**, so the module now
+  opens with the split rather than with tuning advice. The comparison sets six levers against the
+  ceiling each moves, and states that the two that moved the measured figure most carry no additional
+  charge while raising provisioned throughput capacity changes nothing while a single connection is
+  the constraint.
+
+- **A cross-repository citation index and a gate that checks the citations**, at
+  [プロジェクト間の引用索引](docs/ja/reference/cross-repo-index.md), enforced by `make cross-repo`
+  and `make cross-repo-external`. Citing instead of duplicating keeps one number in one place, and
+  introduces a failure with no symptom: the cited file moves, or the claim is retracted, and the
+  sentence here goes on saying what it always said.
+  - **The probe string names the claim, not the heading**, so a retraction fails the gate. A file
+    name or a section title would survive the claim being withdrawn.
+  - **Registration is keyed on the citing file**, not just the cited path. When a probe does fail,
+    what is needed is every document that has to be revisited.
+  - **Introducing the gate found unregistered citations in eight existing files.** They are now
+    registered — 17 rows.
+  - There is one table, read by both the gate and the reader. A separate machine-readable copy would
+    be a second file to keep in step.
+
+- **An issue template for findings that cross repositories**, at
+  `.github/ISSUE_TEMPLATE/cross-repo-finding.yml`, in both directions: a sibling finding that should
+  be reflected here, and a gap whose right place to close is a sibling project's environment. **The
+  conditions a claim depends on and what the source leaves unmeasured are both required fields**,
+  because a bare number cannot be used in a design and citing selectively is the easy failure.
+
+- **A pre-cutover checklist for iSCSI**, at
+  [iSCSI を本番に出す前の確認](docs/ja/domains/block-storage/checklists/iscsi-cutover.md). Seven
+  items, each one a place where following the documented procedure leaves a default in place that
+  becomes a problem later — the path count that comes out at four times the recommendation, the
+  connection steps that exit silently under `pipefail`, capacity counted in three places, and the
+  reachability of the FSx for ONTAP AWS API from a private subnet. Longer checklists do not get run.
+
+- **Module completion criteria in both `_template` READMEs.** A module needs an entry point, notes, a
+  decision tree and a comparison before it reads as a module rather than a collection; a runnable
+  example and a resource map are worth it only for some. Also records the measurement budget — up to
+  $50 and four measured items per module, **and `documented` with the gaps named when that is
+  exceeded** — and the conditions a `verified` note has to carry in its body beyond `verified_on`
+  and `region`.
 
 - **An entry point for readers already running Amazon EBS**, at
   [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](docs/ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md).
