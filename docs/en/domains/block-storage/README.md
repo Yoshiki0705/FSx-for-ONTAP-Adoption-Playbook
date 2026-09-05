@@ -32,6 +32,7 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 | 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
 | 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
 | 16 | How to just run it and see | [Block storage running in about thirty minutes](quickstart.md) |
+| 17 | How the cost compares with an existing Amazon EBS estate | [What stops Amazon EBS being the cheaper answer](../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) |
 
 ---
 

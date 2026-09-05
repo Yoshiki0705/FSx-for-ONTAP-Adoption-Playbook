@@ -32,6 +32,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 14 | ブロックの監視で何が見えるか。LUN 単位で見られるか | [ブロックの監視で見えるものと見えないもの](notes/what-block-monitoring-shows.md) |
 | 15 | Fibre Channel は使えるか | _未追加_（[用語集の FC の項](../../reference/glossary/README.md) に記載範囲があります） |
 | 16 | とりあえず動かして確かめたい | [ブロックストレージを 30 分で動かす手順](quickstart.md) |
+| 17 | いま EBS で回している構成と費用を比べたい | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) |
 
 ---
 

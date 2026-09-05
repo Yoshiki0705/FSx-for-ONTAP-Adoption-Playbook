@@ -456,6 +456,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **An entry point for readers already running Amazon EBS**, at
+  [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](docs/ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md).
+  The module could tell someone what to choose once they had decided on block storage; it said
+  nothing to someone whose current answer is an EBS volume. Rates are pulled from the AWS Price List
+  API with the region, effective date and retrieval date stated, and the arithmetic built on them is
+  labelled as arithmetic rather than measurement.
+  - **It opens by conceding the price comparison.** FSx for ONTAP SSD is $0.150/GB-month against
+    `gp3` at $0.096 in `ap-northeast-1`, with throughput capacity billed on top, so it is not a
+    cheaper store of bytes and the note says so before anything else.
+  - **What decides is copy multiplicity, not instance count.** Amazon EBS cannot share a volume, so
+    N hosts reading one dataset means N billed copies, while FlexClone adds no full copy and
+    snapshots consume provisioned SSD instead of a separate line item. The crossover copy count is
+    tabulated by dataset size — about 9 copies at 1 TB, about 2.3 at 10 TB — and the note states
+    plainly that a single copy never crosses over.
+  - **83 percent of the minimum monthly floor is throughput capacity, not storage.** The floor is
+    1,024 GiB of SSD plus 384 MBps, and the 384 MBps is $772.99 of the $926.59. That reframes
+    "start small": the binding minimum is throughput, not capacity.
+  - Also records that second-generation throughput capacity costs more per MBps than
+    first-generation ($2.013 against $0.906 Single-AZ), that Multi-AZ is about 1.6 times the same
+    configuration, and that the Price List API returns the `gp3` throughput rate with `unit` of
+    `GiBps-mo` while its description reads MiBps — reading `pricePerUnit` alone is wrong by 1,024.
+  - What the arithmetic excludes is listed rather than absorbed: clone creation time, deduplication
+    and compression savings that are data-dependent and unguaranteed, host-side multipath operation,
+    two control planes, the inability to boot from a LUN, cross-AZ transfer, and the six-HA-pair
+    ceiling.
+- Reachable from the root README, both navigation guides, the module hubs in Japanese and English,
+  the comparison matrix and the block storage resource map, so the reader who arrives asking about
+  cost lands on it rather than on a note that assumes the decision is already made.
+
 - **`examples/block-storage/`, the first runnable artifacts in this repository.** One CloudFormation
   template for the AWS side and three shell scripts driving the ONTAP REST API for the block objects
   the Amazon FSx API cannot create. The split is the control-plane boundary rather than a packaging

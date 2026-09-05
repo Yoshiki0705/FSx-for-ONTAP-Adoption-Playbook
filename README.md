@@ -69,6 +69,7 @@
 | [LUN の Snapshot は既定で crash-consistent](docs/ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | application-consistent のフラグは記録用で、静止は別の仕組みが行います |
 | [LUN と igroup は AWS の API の外側にある](docs/ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | CloudFormation の Amazon FSx のリソースは 6 種のみ。ブロックは ONTAP 側にしかありません |
 | [共有ブロックが設計を変える条件](docs/ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) | 単独接続で足りるなら Amazon EBS が素直です。100 万 IOPS は 10 台を束ねた値です |
+| [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](docs/ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | GB 単価では負けます。最小構成の月額は 83% がスループット容量です |
 | [Kubernetes のブロック PV はボリューム数の上限に当たる](docs/ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | 詰まるのは容量ではなくボリューム数。ドライバの選択がその天井を決めます |
 
 ---

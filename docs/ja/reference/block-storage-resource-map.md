@@ -176,6 +176,8 @@ graph TD
 | ノート | [igroup の外側にある 2 つの制御](../domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | CHAP と portset。`fsxadmin` で使える範囲 |
 | ノート | [LUN に載せた DB は静止させずに復旧した](../domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | consistency group の write fence と、DB 自身による復旧 |
 | ノート | [ブロックの監視で見えるものと見えないもの](../domains/block-storage/notes/what-block-monitoring-shows.md) | CloudWatch の次元、1 ボリューム 1 LUN の監視上の理由 |
+| ノート | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | 公開単価から引いた床の内訳と、総額が入れ替わる条件 |
+| 手順 | [ブロックストレージを 30 分で動かす手順](../domains/block-storage/quickstart.md) | 最小構成を実際に作る。実行可能な一式は `examples/block-storage/` |
 | ノート | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) | HA ペア 6 組の天井がここで決まります |
 | 決定木 | [ブロックプロトコルとレイアウトの決定木](decision-trees/block-protocol-and-layout.md) | 上の判断を 1 枚にまとめたもの |
 | 比較 | [ブロックストレージの選択肢の比較](comparison/block-storage-options.md) | EBS などとの対称なトレードオフ |
