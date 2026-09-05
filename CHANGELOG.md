@@ -9,6 +9,30 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The claim that following AWS's iSCSI procedure exceeds NetApp's recommendation by four times was
+  wrong, and it was the headline of a note.** It set AWS's 8-sessions-per-node guidance against a
+  NetApp statement that a single LUN should not require more than four paths. Re-reading both primary
+  sources on 2026-09-05:
+  - **The NetApp four-path statement is scoped to ASA, AFF and FAS configurations.** FSx for ONTAP is
+    none of the three, and **no four-path recommendation for FSx for ONTAP was found.** The note had
+    that scope in its body and dropped it in the comparison, which is the whole error.
+  - **The platform-independent guidance is eight paths per node**, in the ONTAP SAN configuration
+    documentation. One HA pair with eight sessions is eight paths per node — **inside that limit, not
+    outside it.** There is no AWS-versus-NetApp contradiction here to report.
+  - **On Linux the eight-session step is marked `(Optional)`**, conditioned on needing more than the
+    5 Gbps single-client EC2 maximum. Without it the result is **two paths**, which is what this
+    repository's own quickstart measured. "Following the procedure gives 16 paths" contradicted a
+    measurement already published here. On Windows eight *is* the shipped script's default, and AWS's
+    own configuration checker prints 16 sessions across two nodes as a successful state.
+  - The note, the resource map's disagreement table and the pre-cutover checklist are corrected. The
+    note's title changes from "手順どおりに作ると推奨の 4 倍のパスが立つ" to what is actually true:
+    **session count is neither a default nor a ceiling; it is derived from required bandwidth.**
+- **A documentation inconsistency was being presented as a settled defect without having been
+  raised.** The eight-session rationale cites 4,000 MBps as the highest throughput capacity, while
+  the quotas page gives second-generation ceilings above it. Both readings are now recorded with the
+  date they were checked, and the text says plainly that **no documentation feedback or Support
+  confirmation has been filed** — so it reads as an inconsistency to work around, not a verdict.
+
 - **Seven sibling repositories had been renamed, and every link here still used the old name.**
   `s3-burst-on-ontap-files`, `fsxn-cyber-resilience-patterns`, `fsxn-observability-integrations`,
   `fsxn-lakehouse-integrations`, `ontap-edge-to-cloud-ai`, `vmware-migration-ec2-ontap` and
