@@ -114,6 +114,7 @@
 | [`comparison/`](docs/ja/reference/comparison/) | 選択肢の比較マトリクス（トレードオフを対称に記載） |
 | [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
 | [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
+| [`file-protocol-resource-map.md`](docs/ja/reference/file-protocol-resource-map.md) | ファイルプロトコルの一次情報・公開 IaC の索引と、資料間の食い違い |
 | [`block-storage-resource-map.md`](docs/ja/reference/block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い |
 | [`industry-resource-map.md`](docs/ja/reference/industry-resource-map.md) | 業種から入ったときの読む順序と、公開事例・実装パターン・設計ノートの横断索引 |
 | [`cross-repo-index.md`](docs/ja/reference/cross-repo-index.md) | プロジェクト間の引用索引。どの主張をどのリポジトリから引いているか |
