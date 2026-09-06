@@ -97,6 +97,14 @@ GROUP_POINTS = (
     "[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]]"
 )
 
+# The readability floor, enforced by `make diagram-fonts`. A label is displayed at the size it has
+# after the image is scaled into the reader's column, so these two numbers and `Diagram.width` are
+# one decision: at 16 the canvas may be about 1000px before the effective size drops under 14px.
+# The old values were 11 and 12 on a 1220px canvas, which reached a reader at roughly 8px.
+# Raising them without also rebuilding the layout only trades unreadable text for collided text.
+FONT_BODY = 16
+FONT_GROUP = 18
+
 
 @dataclass(frozen=True)
 class Palette:
@@ -109,8 +117,6 @@ class Palette:
     region_stroke: str
     box_stroke: str
     frame_stroke: str
-    note_fill: str
-    note_ink: str
 
 
 PALETTES = {
@@ -122,8 +128,6 @@ PALETTES = {
         region_stroke="#00A4A6",
         box_stroke="#232F3E",
         frame_stroke="#666666",
-        note_fill="#F5F5F5",
-        note_ink="#333333",
     ),
     "dark": Palette(
         variant="Dark",
@@ -133,17 +137,16 @@ PALETTES = {
         region_stroke="#4DD2D4",
         box_stroke="#FFFFFF",
         frame_stroke="#B0B8C1",
-        note_fill="#2E3B4E",
-        note_ink="#D5DBDB",
     ),
 }
 
 
 def group_style(gr_icon: str, stroke: str, ink: str, dashed: bool) -> str:
     return (
-        f"{GROUP_POINTS};outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;"
+        f"{GROUP_POINTS};outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;"
+        f"fontSize={FONT_GROUP};"
         f"fontStyle=1;fontColor={ink};shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.{gr_icon};"
-        f"strokeColor={stroke};fillColor=none;verticalAlign=top;align=left;spacingLeft=30;"
+        f"strokeColor={stroke};fillColor=none;verticalAlign=top;align=left;spacingLeft=36;"
         f"spacingTop=4;dashed={1 if dashed else 0};"
     )
 
@@ -151,7 +154,7 @@ def group_style(gr_icon: str, stroke: str, ink: str, dashed: bool) -> str:
 def icon_style(data_uri: str, ink: str) -> str:
     return (
         "sketch=0;html=1;shape=image;verticalLabelPosition=bottom;verticalAlign=top;"
-        "labelPosition=center;align=center;imageAspect=1;aspect=fixed;fontSize=11;"
+        f"labelPosition=center;align=center;imageAspect=1;aspect=fixed;fontSize={FONT_BODY};"
         f"fontColor={ink};image={data_uri};"
     )
 
@@ -166,7 +169,7 @@ def box_style(stroke: str, ink: str) -> str:
     """
     return (
         f"rounded=1;whiteSpace=wrap;html=1;strokeColor={stroke};fillColor=none;"
-        f"fontColor={ink};fontSize=11;verticalAlign=middle;align=center;"
+        f"fontColor={ink};fontSize={FONT_BODY};verticalAlign=middle;align=center;"
     )
 
 
@@ -179,7 +182,8 @@ def frame_style(stroke: str, ink: str) -> str:
     """
     return (
         f"rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor={stroke};"
-        f"fillColor=none;fontColor={ink};fontSize=11;verticalAlign=top;align=center;spacingTop=6;"
+        f"fillColor=none;fontColor={ink};fontSize={FONT_BODY};verticalAlign=top;align=center;"
+        "spacingTop=8;"
     )
 
 
@@ -193,16 +197,8 @@ def edge_style(ink: str, background: str) -> str:
     """
     return (
         "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;"
-        f"strokeColor={ink};strokeWidth=1;fontSize=11;fontColor={ink};"
+        f"strokeColor={ink};strokeWidth=1;fontSize={FONT_BODY};fontColor={ink};"
         f"labelBackgroundColor={background};"
-    )
-
-
-def note_style(fill: str, stroke: str, ink: str) -> str:
-    return (
-        f"rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor={stroke};"
-        f"fillColor={fill};fontColor={ink};fontSize=11;align=left;verticalAlign=top;"
-        "spacingLeft=10;spacingTop=6;"
     )
 
 
@@ -221,13 +217,16 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "ap-northeast-3（大阪）",
         "en": "ap-northeast-3 (Osaka)",
     },
+    # Folded to two lines rather than set smaller. At FONT_BODY the single line is about 220px
+    # against an 80px icon, which pushes the neighbouring label out of its own column; the naming
+    # rule allows two lines and forbids breaking mid-word, so the break goes at the space.
     "fsx_source": {
-        "ja": "Amazon FSx for NetApp ONTAP",
-        "en": "Amazon FSx for NetApp ONTAP",
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
     },
     "fsx_dest": {
-        "ja": "Amazon FSx for NetApp ONTAP",
-        "en": "Amazon FSx for NetApp ONTAP",
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
     },
     "aws_backup": {"ja": "AWS Backup", "en": "AWS Backup"},
     "volume_rw": {"ja": "RW ボリューム", "en": "RW volume"},
@@ -264,39 +263,16 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "AWS Backup のリストア",
         "en": "Restore via AWS Backup",
     },
-    # Every line here carries its own <br>. Left to draw.io's whiteSpace=wrap, a long line wraps at
-    # the geometry width but is drawn from spacingLeft, so it overruns the right edge by that much
-    # and the export border does not cover the overrun — the EN note lost "16 s ... at 9 MB" off the
-    # canvas that way. The XML parsed and --check passed; only the PNG showed it.
-    "note": {
-        "ja": (
-            "<b>補足</b><br>"
-            "※1 <b>リストア先はバックアップが保存されているリージョンに限られる（2 経路で共通、実測）</b><br>"
-            "大阪でリストアするには大阪にファイルシステムと SVM が必要で、その作成時間が RTO に乗る<br>"
-            "（実測 20〜22 分、ap-northeast-3、SINGLE_AZ_1、128 MBps）<br>"
-            "リストア自体は CopyBackup 経由で 13 分 21 秒、AWS Backup 経由で 16 分 16 秒（9 MB）<br>"
-            "※2 <b>FSx for ONTAP の CopyBackup は同一アカウント内のみ・手動</b><br>"
-            "定期実行と別アカウントは AWS Backup 経由（別アカウントは AWS Organizations が前提）<br>"
-            "※3 <b>この図は SnapMirror の代わりではない</b><br>"
-            "分単位の RPO と切り戻しが要件なら宛先にファイルシステムを常時持つ構成になる"
-        ),
-        "en": (
-            "<b>Notes</b><br>"
-            "*1 <b>A backup restores only into the Region it is stored in (both paths, measured)</b><br>"
-            "Restoring in Osaka needs a file system and an SVM there, and creating them lands on "
-            "the RTO<br>"
-            "(20-22 minutes measured; ap-northeast-3, SINGLE_AZ_1, 128 MBps)<br>"
-            "The restore itself took 13 m 21 s through CopyBackup and 16 m 16 s through AWS Backup, "
-            "at 9 MB<br>"
-            "*2 <b>The FSx for ONTAP CopyBackup is manual and same-account only</b><br>"
-            "Scheduling and cross-account copies go through AWS Backup, which requires AWS "
-            "Organizations for the cross-account case<br>"
-            "*3 <b>This is not a replacement for SnapMirror</b><br>"
-            "A minutes-level RPO and a failback procedure still mean holding a file system at the "
-            "destination continuously"
-        ),
-    },
 }
+
+# There is deliberately no `note` label, and no Note shape below. The figure used to carry a nine
+# line 補足 box, which was the densest text in the image and the least suited to being one: it was
+# the first thing to become illegible when the image was scaled into a reader's column, it cannot be
+# searched, selected or reached by a screen reader, and every measured figure in it had to be kept
+# in step with the same figure in the prose by hand. All of it already appears in
+# `docs/ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md`, so moving it
+# out removed a duplicate rather than a fact. Removing the mechanism as well as the content is the
+# point — a `Note` shape left in place is an invitation to put the next wall of text into a picture.
 
 CJK = re.compile(r"[\u3000-\u30ff\u4e00-\u9fff]")
 
@@ -370,6 +346,11 @@ class Edge:
     label: str = ""
     exit_at: tuple[float, float] | None = None
     entry_at: tuple[float, float] | None = None
+    # Where the label sits: position along the path (-1..1, 0 = midpoint) and a pixel nudge. The
+    # default midpoint is frequently on top of an icon or another label, and a label is now wide
+    # enough that it happens more often than it did at 11px.
+    label_at: float | None = None
+    label_offset: tuple[int, int] | None = None
 
     def style(self, ink: str, background: str) -> str:
         style = edge_style(ink, background)
@@ -381,15 +362,16 @@ class Edge:
             style += f"entryX={self.entry_at[0]};entryY={self.entry_at[1]};entryDx=0;entryDy=0;"
         return style
 
-
-@dataclass(frozen=True)
-class Note:
-    cid: str
-    label: str
-    x: int
-    y: int
-    width: int
-    height: int
+    def geometry(self) -> list[str]:
+        if self.label_at is None and self.label_offset is None:
+            return ['          <mxGeometry relative="1" as="geometry" />']
+        x = "" if self.label_at is None else f'x="{self.label_at}" '
+        dx, dy = self.label_offset or (0, 0)
+        return [
+            f'          <mxGeometry {x}relative="1" as="geometry">',
+            f'            <mxPoint as="offset" x="{dx}" y="{dy}" />',
+            "          </mxGeometry>",
+        ]
 
 
 @dataclass(frozen=True)
@@ -403,7 +385,6 @@ class Diagram:
     boxes: tuple[Box, ...] = ()
     nodes: tuple[Node, ...] = ()
     edges: tuple[Edge, ...] = ()
-    notes: tuple[Note, ...] = ()
 
     def filename(self, lang: str, theme: str) -> str:
         parts = [self.name]
@@ -421,21 +402,31 @@ def _backup_copy() -> Diagram:
     for ONTAP native `CopyBackup` reaches another Region inside one account with no scheduler; AWS
     Backup reaches another Region and another account on a plan. Drawing only the native path is
     what left readers thinking cross-account copies came with it.
+
+    The two Regions are stacked rather than placed side by side. Side by side, the figure needs
+    about 1200px of width, and at that width the readability floor asks for `fontSize` 20 — at which
+    point the folded service labels no longer fit the columns the icons sit in. Stacking spends
+    height instead, which nothing competes for, and brings the canvas near the 880px a reader's
+    column gives the image, so `FONT_BODY` is enough. It also puts both cross-Region flows on a
+    downward axis, which is the direction they should read in anyway.
     """
     return Diagram(
         name="backup-copy-cross-region",
         diagram_id="backup-copy-cross-region",
-        width=1220,
-        height=720,
+        # 810 wide, not the 1220 this diagram used to be. The width is set by the widest row plus a
+        # margin and nothing else: every extra 100px of canvas is a further reduction applied to
+        # every label once the image is fitted to a reader's column. Empty canvas is not free.
+        width=810,
+        height=960,
         groups=(
-            Group("aws_cloud", "aws_cloud", 40, 40, 1140, 490),
+            Group("aws_cloud", "aws_cloud", 30, 30, 720, 890),
             Group(
                 "region_src",
                 "region_source",
-                75,
-                85,
-                560,
-                400,
+                60,
+                80,
+                660,
+                360,
                 gr_icon="group_region",
                 kind="region",
                 dashed=True,
@@ -443,53 +434,89 @@ def _backup_copy() -> Diagram:
             Group(
                 "region_dst",
                 "region_dest",
-                700,
-                85,
-                450,
+                60,
+                490,
+                660,
                 400,
                 gr_icon="group_region",
                 kind="region",
                 dashed=True,
             ),
         ),
-        frames=(Frame("recovery", "recovery_frame", 725, 210, 410, 170),),
+        frames=(Frame("recovery", "recovery_frame", 105, 665, 480, 200),),
+        # Two columns held across both Regions: AWS Backup on the left, the FSx for ONTAP native
+        # path on the right. `copy` sits directly under `backup` so the CopyBackup edge is a single
+        # straight line instead of a dog-leg that ran alongside the copy-rule edge at almost the
+        # same height — two near-parallel lines a reader had to disentangle.
         boxes=(
-            Box("backup", "backup", 380, 160, 210, 50),
-            Box("copy", "backup_copy", 830, 130, 200, 50),
-            Box("vault", "vault", 730, 410, 200, 50),
+            Box("backup", "backup", 450, 137, 230, 56),
+            Box("copy", "backup_copy", 450, 530, 230, 56),
+            Box("vault", "vault", 105, 530, 230, 56),
         ),
         nodes=(
-            Node("fsx_src", "fsx_ontap", "fsx_source", 120, 130),
-            Node("vol_src", "disk", "volume_rw", 250, 146),
-            Node("backup_svc", "aws_backup", "aws_backup", 120, 370),
-            Node("fsx_dst", "fsx_ontap", "fsx_dest", 770, 250),
-            Node("vol_dst", "disk", "volume_restored", 1000, 266),
+            Node("fsx_src", "fsx_ontap", "fsx_source", 105, 125),
+            Node("vol_src", "disk", "volume_rw", 280, 141),
+            Node("backup_svc", "aws_backup", "aws_backup", 105, 330),
+            Node("fsx_dst", "fsx_ontap", "fsx_dest", 145, 705),
+            Node("vol_dst", "disk", "volume_restored", 335, 721),
         ),
         edges=(
             Edge("e1", "fsx_src", "vol_src"),
-            Edge("e2", "vol_src", "backup", "create_backup"),
-            Edge("e3", "backup", "copy", "copy_backup"),
-            Edge("e4", "fsx_src", "backup_svc", "backup_plan"),
-            Edge("e5", "backup_svc", "vault", "copy_rule"),
+            Edge("e2", "vol_src", "backup", "create_backup", label_offset=(0, -14)),
+            Edge(
+                "e3",
+                "backup",
+                "copy",
+                "copy_backup",
+                exit_at=(0.5, 1.0),
+                entry_at=(0.5, 0.0),
+                # Parked above the midpoint: at the midpoint it landed level with the copy-rule
+                # edge's horizontal segment and the two labels read as one line.
+                label_at=-0.35,
+            ),
+            # Routed out of the icon's right side rather than its bottom. Exiting the bottom sends
+            # the line straight through the two-line service label, which a folded label made
+            # unavoidable — the label is now tall enough to occupy the space the edge needs.
+            Edge(
+                "e4",
+                "fsx_src",
+                "backup_svc",
+                "backup_plan",
+                exit_at=(1.0, 0.5),
+                entry_at=(1.0, 0.5),
+            ),
+            Edge(
+                "e5",
+                "backup_svc",
+                "vault",
+                "copy_rule",
+                # Leaves the left edge rather than the bottom: the service label sits under the icon
+                # (verticalLabelPosition=bottom), so a bottom-centre exit drew the line straight
+                # through the words "AWS Backup". Visible only in the exported PNG, which is why the
+                # procedure requires looking at it rather than at the XML.
+                exit_at=(0.0, 0.5),
+                entry_at=(0.5, 0.0),
+            ),
             Edge(
                 "e6",
                 "copy",
                 "recovery",
                 "restore",
                 exit_at=(0.5, 1.0),
-                entry_at=(0.5, 0.0),
+                entry_at=(0.75, 0.0),
+                label_offset=(0, -16),
             ),
             Edge(
                 "e7",
                 "vault",
                 "recovery",
                 "restore_backup_svc",
-                exit_at=(0.5, 0.0),
-                entry_at=(0.5, 1.0),
+                exit_at=(0.5, 1.0),
+                entry_at=(0.25, 0.0),
+                label_offset=(0, -16),
             ),
             Edge("e8", "fsx_dst", "vol_dst"),
         ),
-        notes=(Note("note", "note", 40, 560, 1140, 170),),
     )
 
 
@@ -651,18 +678,8 @@ def render(
             f"source={quoteattr(edge.source)} "
             f'target={quoteattr(edge.target)} parent="1">'
         )
-        lines.append('          <mxGeometry relative="1" as="geometry" />')
+        lines += edge.geometry()
         lines.append("        </mxCell>")
-    for note in diagram.notes:
-        vertex(
-            note.cid,
-            label(note.label, lang),
-            note_style(p.note_fill, p.frame_stroke, p.note_ink),
-            note.x,
-            note.y,
-            note.width,
-            note.height,
-        )
 
     lines += ["      </root>", "    </mxGraphModel>", "  </diagram>", "</mxfile>", ""]
     return "\n".join(lines)

@@ -9,6 +9,47 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Every diagram label was too small to read, and no gate said so.** The figures were authored at
+  `fontSize=11` on a 1220px canvas. A reader's column is about 880px wide, so the image was scaled to
+  0.72 and the labels arrived at roughly 8px — half the surrounding body text, and the measured
+  figures inside the 補足 box were guesswork on a laptop. `fontSize=11` reads as unremarkable in a
+  style string, and the exported PNG is inspected at full size, so nothing in the review path was
+  looking at the number that mattered.
+  - The floor is now stated in terms of what a reader sees rather than what the source says:
+    **effective size ≥ 14px after scaling to 880px, and `fontSize` ≥ 16 regardless.** The second half
+    stops the first from being satisfied by shrinking the canvas. `make diagram-fonts` enforces both
+    and is part of `make all`; `scripts/tests/test_doc_gates.py` fails if it stops rejecting an 11px
+    label.
+  - Raising the number alone would have traded unreadable labels for collided ones, so the figure was
+    rebuilt: the canvas is **810px instead of 1220px** — narrow enough that no scaling applies at all,
+    which is why 16 suffices — the two Regions are **stacked rather than side by side**, and the two
+    paths hold consistent columns (AWS Backup left, the FSx for ONTAP native path right) so the
+    `CopyBackup` edge is one straight line instead of a dog-leg running alongside the copy-rule edge.
+    Effective label size went from 8.2px to 16.0px.
+  - **The in-figure 補足 box is gone, along with the `Note` shape that drew it.** Nine lines of the
+    densest text in the image, every measured figure of which already appeared in the prose of
+    `backup-copies-across-regions-and-accounts.md` — so this removed a duplicate that had to be kept
+    in step by hand, not a fact. Removing the mechanism as well as the content is deliberate: a
+    `Note` shape left in place is an invitation to put the next wall of text into a picture, where it
+    cannot be searched, selected, translated or reached by a screen reader.
+  - **Published blog posts are unaffected.** They reference the PNGs by pinned commit SHA, so they
+    still show the previous rendering. Re-pointing them is a separate decision.
+  - **Six ways to break the floor while the gate reported the file compliant were closed before this
+    shipped**, found by reviewing the gate rather than by running it. The one that mattered most is
+    the default path: draw.io writes no `fontSize` when the label uses the application default, so
+    dropping a shape in the app and typing a label produced a 12px label the gate read as silence.
+    An absent size is now read as 12. Also closed: a `<diagram>` holding compressed content, which
+    has no `mxGraphModel` and so was *counted among the files meeting the floor*; a label held on an
+    `<object>` / `<UserObject>` wrapper rather than on the cell; a model-level `defaultVertexStyle`;
+    `pageWidth="0"`, where a falsy-width guard disabled the effective-size floor entirely; and an
+    SVG width regex that could match an inner element.
+  - **The debt file records a count per path, not just a path.** Listing a bare path made the ratchet
+    operate on the number of *lines*: once a diagram was listed, a second small label in it was
+    tolerated in silence, so the file shrank while the debt behind each line grew. Any movement in
+    either direction now fails, which is what puts it in front of a reviewer.
+  - The gate is in `COPY_SETS`, so the claim that it runs where it is copied is now tested, and its
+    root resolution no longer assumes it sits one directory below a repository root — staged flat, it
+    used to walk the directory *above* the copy.
 - **The sibling-repository rename sweep was declared complete over five files that still carried an
   old name.** Four documents in `domains/observability/` plus its English README linked
   `fsxn-observability-integrations`, which GitHub still resolves by redirect, so nothing looked

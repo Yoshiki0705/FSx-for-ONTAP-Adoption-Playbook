@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COPY_SETS = {
     "guard_irreversible_ops.py": ("scripts/guard_irreversible_ops.py",),
     "check_i18n_parity.py": ("tools/check_i18n_parity.py",),
+    "check_diagram_fonts.py": ("tools/check_diagram_fonts.py",),
     "check_anchor_contract.py": (
         "tools/check_anchor_contract.py",
         "tools/check_links.py",
@@ -67,6 +68,24 @@ class CopyabilityClaims(unittest.TestCase):
                 result.returncode,
                 0,
                 f"the guard does not run outside this repository:\n"
+                f"{result.stdout}{result.stderr}",
+            )
+
+    def test_diagram_font_gate_runs_outside_the_repository(self) -> None:
+        """Its docstring says it is copied as-is; its selftest must pass where it lands.
+
+        Staged flat, as a reader following the instruction would put it. That is the case that
+        caught `ROOT`: resolved as `parent.parent` it pointed at the directory *above* the copy, so
+        the walk left the tree it was given.
+        """
+        with tempfile.TemporaryDirectory() as name:
+            target = Path(name)
+            stage(target, COPY_SETS["check_diagram_fonts.py"])
+            result = run_in(target, "check_diagram_fonts.py", "--selftest")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"the diagram font gate does not run outside this repository:\n"
                 f"{result.stdout}{result.stderr}",
             )
 
