@@ -21,6 +21,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 | [SMB のユーザー管理と監査は 2 つの選択で決まる](smb-identity-and-audit.md) | ID をワークグループと AD 参加のどちらに置くか、監査を常時有効にするか。各枝が引き受ける制約を選択前に示す / Choosing between a workgroup and AD membership, and whether auditing runs continuously, with what each branch commits you to shown before the choice。**英語版あり / [English version](../../../en/reference/decision-trees/smb-identity-and-audit.md)** |
 | [監視経路の選択](observability-route.md) | データの所在と粒度で先に狭まる順序をたどり、経路の選択と段階的な広げ方まで続ける / Following the order in which data residency and required granularity narrow the choice, then on to the route and how far it can be scaled |
 | [ブロックプロトコルとレイアウトの選択](block-protocol-and-layout.md) | 世代・HA ペア数・ホスト OS で選択肢が先に狭まる順序をたどり、LUN のレイアウトと容量と整合性まで続ける / Following the order in which generation, HA pair count, and host OS narrow the choice, then on to LUN layout, capacity, and consistency |
+| [どの AWS ファイルストレージかを決める](file-storage-selection.md) | プロトコルと正本の位置で候補が 1〜2 つに絞れる順序をたどる。**7 つの終端のうち 4 つは FSx for ONTAP に落ちません** / Following the order in which required protocol and the location of the source of truth reduce seven options to one or two. **Four of the seven terminals do not land on FSx for ONTAP** |
 | [手元のスループット値は何を測ったのかを判定する](measured-throughput-triage.md) | 4 か所ある上限のどこに当たっているかを切り分ける。**当たっている場所によって打つ手が正反対になります** / Isolating which of four ceilings a disappointing throughput figure actually hit, because the remedy for one is a no-op for the others |
 
 ---

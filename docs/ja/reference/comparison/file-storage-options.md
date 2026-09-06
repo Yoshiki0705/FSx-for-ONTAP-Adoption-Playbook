@@ -248,6 +248,7 @@ graph TD
 ## 関連ドキュメント
 
 - [比較マトリクス](README.md) — このモジュールのハブ
+- [どの AWS ファイルストレージかを決める](../decision-trees/file-storage-selection.md) — この表を判断順に並べた決定木
 - [ブロックストレージの選択肢の比較](block-storage-options.md) — ブロック側の同じ形式の比較
 - [スループットを動かす手段の比較](throughput-levers.md) — FSx for ONTAP を選んだ後の調整
 - [手元のスループット値は何を測ったのかを判定する](../decision-trees/measured-throughput-triage.md) — どの上限に当たっているかの切り分け
