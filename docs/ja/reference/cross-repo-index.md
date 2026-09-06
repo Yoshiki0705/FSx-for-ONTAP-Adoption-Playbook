@@ -75,6 +75,18 @@ lang: ja
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/en/saas-to-fsx-ontap-migration.md` | `always requires an agent and Basic mode` | An FSx for ONTAP destination always needs an agent and Basic mode in AWS DataSync |
 | `docs/ja/reference/limits/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `5 GB → 50 GB` | オブジェクトサイズ上限の記載変更に対して、実際にエラーになるサイズを実測で確定したこと |
 | `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `Finalize は意図的に未実施` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を未実施として分離していること |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv2 と NFSv3 は非対応` | Amazon EFS が NFSv3 に対応しないこと。NFSv3 が要件なら EFS が選択肢から外れる根拠 |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv4.2 は対応プロトコルとして挙げられていない` | Amazon EFS の NFSv4.2 非対応。**列挙に無いことが根拠**で、非対応と明記されているわけではありません |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `Windows を実行する EC2 インスタンスからの EFS のマウントは非対応` | Amazon EFS が Windows から使えないこと。**「EFS は SMB 非対応」の唯一の根拠でもあり、SMB 非対応を独立の主張として書かない** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | ``EFS は `nconnect` にも非対応`` | Amazon EFS が `nconnect` に対応しないこと |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `実効オプションではなく接続数で判定した` | `nconnect` の可否を実効オプションで判定できないこと。EFS でも `nconnect=16` は実効オプションに現れます |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `倍率 2.97 は **1,500 ÷ 500 = 3.0** に一致しており` | Amazon EFS のマウントヘルパー使用時の倍率がクォータ比に一致し、フロー数には比例しないこと |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `12,173 MiB/s = **102 Gbps**` | FSx for ONTAP のネットワーク上限が単一のデータ LIF ではないことの裏取り。**単一接続の値から外挿しない** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `観測したチャネル数は 4 であり` | SMB Multichannel のチャネル数が設定を上げても 4 で止まったこと |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `そうなったのかは**確認していない**` | チャネル数が 4 で止まる理由が未確認であること。**上の行だけを引くと 4 が製品の上限だと読めるため、2 行で 1 組** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `キャッシュの温度が揃っていない` | NFS 16 接続の列と SMB Multichannel の列が同条件でないこと。**この 2 列から SMB と NFS の優劣を取らない** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/performance-testing-guide.md` | `2,200 MB/s → 267 MB/s` | ボリューム使用率の上昇で書き込みが落ちること |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/performance-testing-guide.md` | ``測定ファイルを `rm` しても空きは戻らない`` | 削除では容量が戻らないこと。**上の行だけを引くと回復手順を誤るため、2 行で 1 組** |
 
 <!-- cross-repo-table:end -->
 
