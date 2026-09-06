@@ -81,6 +81,7 @@ YYYY-MM-DD 時点の情報です。
 | [ブロックストレージの選択肢の比較](block-storage-options.md) | Amazon EBS / EBS Multi-Attach / FSx for ONTAP の iSCSI と NVMe/TCP | 2026-09-05 |
 | [監視経路の比較](observability-routes.md) | Amazon CloudWatch / NetApp Harvest + Prometheus + Grafana / SaaS / ONTAP REST 直叩き | 2026-09-05 |
 | [スループットを上げる手段の比較](throughput-levers.md) | `nconnect` / SMB Multichannel / `tcp-max-xfer-size` / 台数 / SSD と IOPS / スループット容量 | 2026-09-05 |
+| [ファイルストレージの選択肢の比較](file-storage-options.md) | Amazon EFS / Amazon S3 Files / FSx for ONTAP / FSx for Windows File Server / FSx for Lustre / Amazon S3 + Mountpoint / S3 File Gateway | 2026-09-06 |
 
 ---
 

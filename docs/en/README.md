@@ -232,6 +232,7 @@ Issues and Pull Requests are welcome. See [CONTRIBUTING.md](../../CONTRIBUTING.m
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Observability integrations (metrics, alerts, automated response) |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse integrations (Databricks / Snowflake / Athena / Glue / EMR) |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP migration |
+| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Collect via the S3 API, consume over FlexCache NFS/SMB. **Holds the file-protocol measurements**, which most of the performance content here cites rather than re-measures ([citation index](../ja/reference/cross-repo-index.md)) |
 
 ---
 

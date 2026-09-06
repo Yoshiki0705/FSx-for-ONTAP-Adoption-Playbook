@@ -50,6 +50,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - The gate is in `COPY_SETS`, so the claim that it runs where it is copied is now tested, and its
     root resolution no longer assumes it sits one directory below a repository root — staged flat, it
     used to walk the directory *above* the copy.
+- **The sibling-repository rename sweep was declared complete over five files that still carried an
+  old name.** Four documents in `domains/observability/` plus its English README linked
+  `fsxn-observability-integrations`, which GitHub still resolves by redirect, so nothing looked
+  broken. A fifth link, `fsxn-s3ap-serverless-patterns`, returned 404 with no redirect at all — that
+  name was never a former name of anything, so it was wrong the day it was written. It now points at
+  the file portal UI under `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns`, which is what the
+  sentence around it describes.
+  - **The module carrying them was added after the sweep, not missed by it.** `domains/observability/`
+    landed a day later and the old names came in with it. A one-time correction cannot hold a naming
+    rule; only a gate can, which is why `check_repo_names()` exists.
+  - **That gate had never run.** It is deliberately outside `make all` because it needs the network,
+    and its scheduled workflow was added hours before these five were found, so the weekly cron had
+    not yet fired. They surfaced only because `make cross-repo-external` was run by hand while
+    working on something else. **A gate that has never executed is not yet evidence of anything**, so
+    the workflow was dispatched manually rather than waiting for Monday.
+  - **A redirect and a 404 are different defects and need different detection.** A redirect means the
+    name is stale, which `check_repo_names()` is built to catch. A 404 means the name is fictional,
+    which only fetching catches. The sibling repository solves the first case differently, with an
+    allow-list of published names, and confirmed by experiment that a wrong name fails there — but an
+    allow-list cannot report its own staleness, so the two approaches miss opposite things.
 - **A cited claim was retracted upstream while this change was in review, and the gate caught it.**
   The performance note said three single-connection measurements across two products all hit the
   same ceiling — the EC2 per-flow limit. The sibling project has since corrected that: **Amazon EFS
@@ -614,6 +634,31 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
 
 ### Added
+
+- **Two performance documents are now in the external anchor contract, which means a heading rename
+  in either one fails the commit gate here.** `docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md`
+  and `docs/ja/reference/decision-trees/measured-throughput-triage.md`. The contract went from 68 to
+  87 anchors.
+  - **The ordering is the reverse of what it looks like.** `S3-Burst-on-ONTAP-Files` cites these two
+    by fragment rather than by file, because what it wants is two specific claims inside a long
+    document. Its own gate refuses an anchored citation into a document this contract does not list,
+    so writing the citation first would turn *its* build red. The entry has to exist here before the
+    citation can be written there.
+  - Five probe strings were supplied for those citations, and each claim got two rather than one:
+    `p99 が必要なら、クライアント側で測るしかありません` alone reads as an instruction with no reason,
+    and `構造上その期間の平均になります` alone does not say what to do instead. Likewise
+    `当たっている場所によって打つ手が正反対になります` names the consequence while
+    `1 と 2 はクライアント側、3 と 4 はファイルシステム側です` names the order.
+  - **A probe candidate was rejected during this work for occurring twice.**
+    `上限は 4 か所にあり` appears in both the frontmatter `title` and the body of the triage tree. A
+    rename that leaves only the title would keep the gate green while the claim was gone — the exact
+    property a probe is supposed to rule out. Counting occurrences before registering is now the
+    practice on both sides.
+  - **Neither gate reads the paragraph around the probe.** A claim can be retracted in place, or
+    narrowed to "unverified", and both this repository's citation check and the sibling's anchor
+    check still pass. Until there is a mechanism, the countermeasure is a written instruction in the
+    source paragraph saying not to cite the figure — recorded here because it is a known gap, not a
+    solved problem.
 
 - **`domains/observability/` — an eighth topic module, for choosing a monitoring route.** The two
   neighbouring modules answer different questions: `domains/performance/` covers how throughput and
@@ -1412,6 +1457,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **Two of the three unmeasured SMB items were measured upstream, and one of the two does not reduce
+  to a number.** Three documents said all three were unmeasured; they now say two are measured, one
+  is not, and the client-count result is conditional. **The three were updated in one commit** —
+  leaving one behind would leave a measured item recorded as unmeasured, which is the same class of
+  error as the reverse.
+  - **The client-count test produced two tables with opposite conclusions, both measured.** Reading
+    the same file from every client keeps scaling to 8 clients and 94 Gbps at the ONTAP port;
+    reading non-overlapping regions flattens at 4. What decides it is whether the reads overlap, and
+    the growth on the shared side is ONTAP's memory supplying the overlap. **The same shape appears
+    on NFS, so it is not a protocol difference.** Citing either table alone as "how SMB scales with
+    client count" describes a different product, so both are registered, each row saying the other
+    is required.
+  - **Those figures are not a baseline.** Six points ran inside about forty minutes with a 180-second
+    steady window each, and AWS documents a network I/O credit mechanism, so burst and baseline are
+    not separated at that window length. Recorded in the fit-conditions document as something an
+    agent must not use as grounds.
+  - **Sustained write does not decay, and is not client-bound.** 1,488.03 MB/s over a 900-second
+    window, with 0.07% between the first and last third, and 0.6% between a 8-vCPU and a 36-vCPU
+    client. **It matches neither published figure** — not the general rule of a third of throughput
+    capacity, nor the exception table. On the same file system, node and physical port, NFS gives
+    2,063.00 MB/s and SMB 1,488.03. Neither side has ruled on which reading is right, and the
+    documents now say that one figure being closer to a published number is not grounds for
+    doubting the other.
+  - **Every SMB number here presupposes a setting that is off by default.** ONTAP ships SMB
+    Multichannel disabled, and `dialect=3.1.1` negotiates without it, so a 3.1.1 connection can be
+    single-channel while `max_connections_per_session` reads 32. Enabling it reaches only new
+    connections, which means **a success response is not evidence that the connection it was issued
+    for received the setting.** Added as a precondition rather than a footnote, because it invalidates
+    a comparison silently.
 - **The two VMware paths were described as one, and one of them had moved to GA.** `recent-updates.md`
   listed "AWS Transform and Amazon EVS support FSx for ONTAP as a storage target" in a single line, which
   reads as one capability with two entry points. They are different paths in different states: AWS

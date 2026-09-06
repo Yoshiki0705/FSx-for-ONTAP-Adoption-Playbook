@@ -49,6 +49,12 @@ def tracked_files() -> list[Path]:
     evidence policy in prose only. Both of those were listed here at first and have been removed: a
     contract claiming an anchor is externally cited when it is not makes the gate fire on renames
     that break nothing, and friction without benefit is how a gate ends up switched off.
+
+    The two performance documents were added on the same basis. `S3-Burst-on-ONTAP-Files` asked for
+    them by path and said it cites them by fragment rather than by file, because what it wants is two
+    specific claims inside a long document. Its own gate refuses an anchored citation into a document
+    this contract does not list, so the entry has to exist here before the citation can be written
+    there - the ordering is the reverse of what it looks like.
     """
     return [
         ROOT
@@ -59,6 +65,20 @@ def tracked_files() -> list[Path]:
         / "notes"
         / "access-point-authorization-layers.md"
         for lang in ("ja", "en")
+    ] + [
+        ROOT
+        / "docs"
+        / "ja"
+        / "domains"
+        / "performance"
+        / "notes"
+        / "what-you-cannot-read-from-cloudwatch.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "reference"
+        / "decision-trees"
+        / "measured-throughput-triage.md",
     ]
 
 

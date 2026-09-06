@@ -114,6 +114,8 @@
 | [`comparison/`](docs/ja/reference/comparison/) | 選択肢の比較マトリクス（トレードオフを対称に記載） |
 | [`limits/`](docs/ja/reference/limits/) | 上限値・クォータと、その出典・検証日 |
 | [`glossary/`](docs/ja/reference/glossary/) | ONTAP / AWS 用語の対訳と定義 |
+| [`fsx-ontap-fit-conditions.md`](docs/ja/reference/fsx-ontap-fit-conditions.md) | 利用者のエージェント向けの適合条件・適合しない条件と、根拠に使ってはいけないもの |
+| [`file-protocol-resource-map.md`](docs/ja/reference/file-protocol-resource-map.md) | ファイルプロトコルの一次情報・公開 IaC の索引と、資料間の食い違い |
 | [`block-storage-resource-map.md`](docs/ja/reference/block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い |
 | [`industry-resource-map.md`](docs/ja/reference/industry-resource-map.md) | 業種から入ったときの読む順序と、公開事例・実装パターン・設計ノートの横断索引 |
 | [`cross-repo-index.md`](docs/ja/reference/cross-repo-index.md) | プロジェクト間の引用索引。どの主張をどのリポジトリから引いているか |
@@ -236,6 +238,7 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 可観測性統合（メトリクス、アラート、自動対応） |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 統合（Databricks / Snowflake / Athena / Glue / EMR） |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 移行 |
+| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。**ファイルプロトコルの性能実測を持つ**ため、このリポジトリの性能記述の多くはここから引用しています（[引用索引](docs/ja/reference/cross-repo-index.md)） |
 
 ---
 
