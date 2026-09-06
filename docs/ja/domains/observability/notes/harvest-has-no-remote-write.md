@@ -60,7 +60,7 @@ Amazon Managed Service for Prometheus は `remote_write` で受け取ります�
 
 **この 1 ホップは「設定を足す」ではなく「運用対象を 1 つ足す」です。** 監視のための構成要素が落ちたことに気づく仕組みも要ります。
 
-構築手順とテンプレートは [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) にあります。**このノートで扱うのは「何が必要になるか」までです。**
+構築手順とテンプレートは [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。**このノートで扱うのは「何が必要になるか」までです。**
 
 ---
 

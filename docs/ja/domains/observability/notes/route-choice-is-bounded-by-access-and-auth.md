@@ -47,7 +47,7 @@ Amazon Managed Grafana の認証方式は、公式ドキュメントで**閉じ�
 | ポータル側のログインから Grafana に飛ばす（IdP 起点） | **IdP 起点ログインが未サポート**です |
 | ワークスペース内に閲覧専用ユーザーを直接追加する | 利用者は ID プロバイダ側に存在し、権限を付与する形になります |
 
-**自社ポータルに監視の画面を持たせる要件があるなら、Grafana の画面をそのまま見せる以外の方法を設計に入れることになります。** メトリクスを自前の画面に取り込む実例は [fsxn-s3ap-serverless-patterns](https://github.com/Yoshiki0705/fsxn-s3ap-serverless-patterns) で進行中です。
+**自社ポータルに監視の画面を持たせる要件があるなら、Grafana の画面をそのまま見せる以外の方法を設計に入れることになります。** メトリクスを自前の画面に取り込む実例は [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns のファイルポータル UI](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) で進行中です。
 
 > **セキュリティに関する補足**: 匿名アクセスの不在は制約ですが、閲覧者が必ず ID プロバイダ側で識別されるという性質でもあります。**監査要件がある環境では、この制約の側が要件に合致します。**
 

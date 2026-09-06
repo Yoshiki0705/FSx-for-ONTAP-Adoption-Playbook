@@ -9,6 +9,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The sibling-repository rename sweep was declared complete over five files that still carried an
+  old name.** Four documents in `domains/observability/` plus its English README linked
+  `fsxn-observability-integrations`, which GitHub still resolves by redirect, so nothing looked
+  broken. A fifth link, `fsxn-s3ap-serverless-patterns`, returned 404 with no redirect at all — that
+  name was never a former name of anything, so it was wrong the day it was written. It now points at
+  the file portal UI under `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns`, which is what the
+  sentence around it describes.
+  - **The module carrying them was added after the sweep, not missed by it.** `domains/observability/`
+    landed a day later and the old names came in with it. A one-time correction cannot hold a naming
+    rule; only a gate can, which is why `check_repo_names()` exists.
+  - **That gate had never run.** It is deliberately outside `make all` because it needs the network,
+    and its scheduled workflow was added hours before these five were found, so the weekly cron had
+    not yet fired. They surfaced only because `make cross-repo-external` was run by hand while
+    working on something else. **A gate that has never executed is not yet evidence of anything**, so
+    the workflow was dispatched manually rather than waiting for Monday.
+  - **A redirect and a 404 are different defects and need different detection.** A redirect means the
+    name is stale, which `check_repo_names()` is built to catch. A 404 means the name is fictional,
+    which only fetching catches. The sibling repository solves the first case differently, with an
+    allow-list of published names, and confirmed by experiment that a wrong name fails there — but an
+    allow-list cannot report its own staleness, so the two approaches miss opposite things.
 - **A cited claim was retracted upstream while this change was in review, and the gate caught it.**
   The performance note said three single-connection measurements across two products all hit the
   same ceiling — the EC2 per-flow limit. The sibling project has since corrected that: **Amazon EFS
