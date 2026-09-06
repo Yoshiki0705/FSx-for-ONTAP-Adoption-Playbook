@@ -48,7 +48,7 @@ graph TD
 | SMB が急に提供できなくなった | [SMB を提供できない SVM がある](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) |
 | 監査ログを有効化したい / ローカルユーザーを棚卸ししたい | [監査宛先の枯渇はアクセスを止める](domains/security-governance/notes/audit-log-space-and-client-access.md) | [最終ログオン属性は無い](domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | 新規構築（移行元なし） | [設計](playbooks/02-design/) | [構築](playbooks/04-build/) → [運用](playbooks/05-operate/) |
-| **Amazon EFS で足りるか FSx for ONTAP か迷っている** | [ファイルストレージの選択肢の比較](reference/comparison/file-storage-options.md) | [ボリュームのセキュリティスタイルが権限モデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
+| **Amazon EFS で足りるか FSx for ONTAP か迷っている** | [どの AWS ファイルストレージかを決める](reference/decision-trees/file-storage-selection.md) | [ファイルストレージの選択肢の比較](reference/comparison/file-storage-options.md) |
 | **iSCSI / NVMe-oF でブロックを提供する** | [ブロックプロトコルとレイアウトの決定木](reference/decision-trees/block-protocol-and-layout.md) | [ブロックストレージ](domains/block-storage/) |
 | **ブロックにするか Amazon EBS で足りるか迷っている** | [ブロックストレージの選択肢の比較](reference/comparison/block-storage-options.md) | [共有ブロックが設計を変える条件](domains/block-storage/notes/when-shared-block-changes-the-design.md) |
 | **EBS で回している構成の費用と比べたい** | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [ブロックストレージを 30 分で動かす手順](domains/block-storage/quickstart.md) |

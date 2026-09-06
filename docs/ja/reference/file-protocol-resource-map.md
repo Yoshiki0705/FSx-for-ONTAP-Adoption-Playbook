@@ -354,6 +354,7 @@ graph TD
 - [Reference](README.md) — このモジュールのハブ
 - [ブロックストレージ横断リソースマップ](block-storage-resource-map.md) — ブロック側の同じ形式の索引
 - [ファイルストレージの選択肢の比較](comparison/file-storage-options.md) — この索引の一次情報を使った選定
+- [どの AWS ファイルストレージかを決める](decision-trees/file-storage-selection.md) — 選定の判断順
 - [手元のスループット値は何を測ったのかを判定する](decision-trees/measured-throughput-triage.md) — 上限の切り分け
 - [業種別リソースマップ](industry-resource-map.md) — 業種を入口にした索引
 - [プロジェクト間の引用索引](cross-repo-index.md) — 供出元の実測をどう引いているか
