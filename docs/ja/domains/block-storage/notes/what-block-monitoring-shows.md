@@ -51,8 +51,8 @@ lang: ja
 `FileServer` 次元の値は **ノード名そのもの**でした。
 
 ```text
-FileServer = FsxId06c69f01d7b845789-01
-FileServer = FsxId06c69f01d7b845789-02
+FileServer = FsxIdEXAMPLE-01
+FileServer = FsxIdEXAMPLE-02
 ```
 
 **ここがノード単位の視点が得られる唯一の場所です。** そしてフェイルオーバーはここに現れます。ブロックの I/O が片方のノードに寄っているか、切り替わったかを見るための次元です。

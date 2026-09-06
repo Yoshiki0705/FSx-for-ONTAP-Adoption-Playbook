@@ -148,6 +148,21 @@ PII_RULES: list[tuple[re.Pattern[str], str]] = [
 ACCOUNT_ID = re.compile(r"(?<![\d.\w])\d{12}(?![\d.\w])")
 PLACEHOLDER_ACCOUNT = "123456789012"
 
+# Real resource identifiers. `fs-` and `svm-` were already covered by the account-ID rule only by
+# accident of digit count, and the ONTAP cluster name form was covered by nothing: an FSx for ONTAP
+# cluster is named `FsxId<hex>`, which is the file system ID with the `fs-` swapped for a prefix, so
+# every CLI prompt and every `FileServer` dimension value carries it. A real one reached a published
+# note and the audit passed, because no rule looked for it. The sanctioned stand-ins are the
+# hex-digit placeholder from AGENTS.md and the literal EXAMPLE the ONTAP transcripts already use.
+RESOURCE_ID = re.compile(r"\b(?:FsxId|fs-|svm-|vol-)[0-9a-f]{8,}\b")
+PLACEHOLDER_RESOURCE_IDS = frozenset(
+    {
+        "fs-0123456789abcdef0",
+        "svm-0123456789abcdef0",
+        "vol-0123456789abcdef0",
+    }
+)
+
 # Inline callouts labeled with a role/persona imply a review that did not happen.
 ROLE_LABEL = re.compile(
     r"^\s*>\s*\*\*[^*]*(?:lens|の視点|perspective)[^*]*\*\*", re.IGNORECASE
@@ -244,6 +259,18 @@ def audit_line(
             if match.group() != PLACEHOLDER_ACCOUNT:
                 findings.append(
                     ("pii", f"possible AWS account ID; use {PLACEHOLDER_ACCOUNT}")
+                )
+                break
+        for match in RESOURCE_ID.finditer(line):
+            if match.group() not in PLACEHOLDER_RESOURCE_IDS:
+                findings.append(
+                    (
+                        "pii",
+                        (
+                            f"real resource identifier {match.group()!r}; "
+                            "use fs-0123456789abcdef0 / FsxIdEXAMPLE"
+                        ),
+                    )
                 )
                 break
 
