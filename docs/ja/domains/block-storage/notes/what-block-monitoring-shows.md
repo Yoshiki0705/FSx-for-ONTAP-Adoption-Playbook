@@ -21,6 +21,8 @@ lang: ja
 
 **ただしボリューム単位の I/O メトリクスは存在します。** そのため **1 ボリュームに 1 LUN を置く構成では、ボリュームの次元が実質的に LUN の次元になります。** これは復旧の粒度の話とは別に、**監視の粒度としての 1:1 の理由**です。
 
+**ただし置き換わるのは粒度だけで、統計の種類は置き換わりません。** これらのボリュームメトリクスは合計値で、有効な統計は `Sum` です。**そこから出せるレイテンシは平均で、テールは出せません**（[p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md)）。LUN ごとの p99 が要件なら、この 1:1 では届きません。
+
 **LUN 単位の数字が要るなら ONTAP 側に聞くことになります。** `statistics lun show` と `lun show -fields size-used` があります。
 
 そして **ONTAP 側で作ったボリュームは CloudWatch に一切現れません。**
@@ -55,9 +57,9 @@ FileServer = FsxIdEXAMPLE-01
 FileServer = FsxIdEXAMPLE-02
 ```
 
-**ここがノード単位の視点が得られる唯一の場所です。** そしてフェイルオーバーはここに現れます。ブロックの I/O が片方のノードに寄っているか、切り替わったかを見るための次元です。
+**ここがノード単位の視点が得られる唯一の場所です。** 確認したのは次元の値がノード名であることまでで、**フェイルオーバー中にこの次元がどう動くかは測っていません。** [実測したフェイルオーバー](paths-are-the-failover-mechanism.md#実測したフェイルオーバー) は `nvme ana-log` とマルチパスとルートテーブルで観測したもので、CloudWatch 側では記録していません。
 
-**Multi-AZ で 1 HA ペアの構成では、aggregate を所有するのは片方のノードだけです。** つまり **平常時は片方の `FileServer` にほぼすべての I/O が出ます。** これはアンバランスではなく、その構成の正常な姿です。**「両ノードに均等に出ていないこと」をアラートの条件にしないでください。**
+平常時にどちらのノードに I/O が出るかも測っていません。**片ノードに寄った利用率をどう読むかは、[監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) が preferred / standby の設計から説明しています。**
 
 ---
 
@@ -81,7 +83,7 @@ FileServer = FsxIdEXAMPLE-02
 | iSCSI のセッション | `vserver iscsi session show -vserver <svm> -fields lif,initiator-name,tpgroup` |
 | NVMe のコントローラ | `vserver nvme subsystem controller show` |
 
-**これらは CloudWatch には流れません。** ONTAP に接続して取る仕組みを別に作ることになります。
+**これらは CloudWatch には流れません。** ONTAP に接続して取る経路が別に必要になります。**自作する前に [可観測性](../../observability/) の経路の比較を見てください** — NetApp Harvest の サポート対象ダッシュボードには LUN のものが含まれ、NVMe Namespaces は既定で無効なだけです（[オンプレのダッシュボードはそのまま移らない](../../observability/notes/on-prem-dashboards-do-not-transfer.md)）。自作は「欲しい値が数個だけ」のときの選択肢です。
 
 ---
 

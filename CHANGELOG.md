@@ -9,6 +9,55 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Four claims sat inside `verified` notes without a measurement behind them, and one of them
+  carried an alerting instruction.** Reviewing #107 after it merged found the boundary between what
+  was measured and what was reasoned had moved. The block monitoring note declared its verified scope
+  as the metric inventory and the `FileServer` dimension *values*, then stated that a failover becomes
+  visible in that dimension and that one node carries nearly all I/O in normal operation — ending in
+  "do not alert on imbalance". Neither was measured: the failover on that same file system on that
+  same date was instrumented with `nvme ana-log`, `multipath` and route-table polling, not with
+  CloudWatch. **Both are removed rather than relabelled**, with pointers to the note that did measure
+  the failover and to the operate-side note that explains one-sided utilization from the documented
+  preferred/standby design.
+  - The volume dimension is still offered as a substitute for the missing LUN dimension, but now says
+    what it substitutes: **the granularity, not the statistic.** Those volume metrics are sums whose
+    only valid statistic is `Sum`, so a per-LUN latency dashboard built on them cannot show a tail.
+  - "Build your own against ONTAP" now points at `domains/observability/` first, which catalogues the
+    routes — including that Harvest's AWS-supported dashboards contain a LUN one.
+- **Two notes carried measured numbers under `documented` frontmatter**, so `make lint` passed while
+  every consumer of the frontmatter described them as documentation-sourced. The one whose own
+  measurement it was is promoted to `verified` with the date, Region and version its body already
+  stated. The other kept `documented` and **the numbers were moved out**, attributed to the note that
+  measured them — a note should not restate a figure it did not take.
+- **Three absence claims asserted more than had been checked**, one of them in a note's title. "AWS
+  documents neither CHAP nor portsets" now names the date and the pages searched and says plainly that
+  the search was not exhaustive; "NetApp does not deprecate portsets" becomes "no deprecation notice
+  was found, which is not the same as confirming there is none"; and a term's absence from a
+  multi-page guide is narrowed to what the single cited page shows.
+- **A documented figure was mapped onto a measured one across different start points.** AWS scopes
+  "typically under 60 seconds" from *failure detection to promotion of the standby*; the measured
+  66 seconds runs from the API request, which starts earlier, has no failure to detect, and exceeds
+  the documented value. The correspondence is dropped and the 66 seconds is reported on its own terms.
+  Recorded alongside it: the same AWS page calls this "a few minutes" where the measurement was
+  22 minutes.
+- **An uncited timeout was doing load-bearing work.** A 7-second consistency-group limit appeared
+  three times — as the yardstick for a 0.52-second fence, as an unobserved failure mode, and as the
+  margin a reproduction step measures — with no source. **The value is removed**; the note now says a
+  limit exists, that its value is not established here, and that the margin is therefore unknown.
+- **The decision tree cited a note that does not mention the fact, and its kernel check could not
+  distinguish enabled from disabled.** The port-8009 row pointed at the Multi-AZ note, which contains
+  no occurrence of 8009 or 4420, and labelled it `verified` when the fact is `documented` elsewhere in
+  the repository. Repointed. And `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` prints
+  `# CONFIG_NVME_MULTIPATH is not set` and exits 0 on a kernel without it — the same visible result as
+  having it. Replaced with `grep -q '^CONFIG_NVME_MULTIPATH=y'`, and the device-level check that
+  actually established the finding is now a step of its own.
+- **The failover measurement now says what it did not record**: the tool that issued the writes,
+  whether the target was a raw device or a file, and **which of the two NVMe device nodes the writes
+  held** — the last being the explanation the note itself rests on. The 423.8-second outage is marked
+  as derived from the timeline rather than observed. Also corrected: a six-hour minimum between
+  throughput-capacity changes was written as "one measurement per environment", which is a stronger
+  constraint than the documentation states.
+
 - **A password containing `"` or `\` was silently truncated before it reached ONTAP, and an
   authentication failure had no message.** The example scripts hand curl the credential through
   `--config`, whose parser ends a double-quoted value at the first unescaped quote and drops a lone

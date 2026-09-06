@@ -1,5 +1,5 @@
 ---
-title: igroup の外側にある 2 つの制御 — CHAP と portset は fsxadmin で使えるが AWS のドキュメントには出てこない
+title: igroup の外側にある 2 つの制御 — CHAP と portset は fsxadmin で使える
 lifecycle: [design, build, operate]
 domains: [block-storage, security-governance]
 evidence: verified
@@ -19,7 +19,7 @@ lang: ja
 
 **FSx for ONTAP のブロックアクセス制御は igroup だけではありません。** ONTAP には **CHAP**（イニシエータの認証）と **portset**（LUN を見せる LIF の制限）があり、**どちらも `fsxadmin` で操作できました。**
 
-**そして AWS のドキュメントはどちらにも触れていません。** 未記載ですが使えます。**未記載を非対応と読み替えないでください。**
+**どちらも FSx for ONTAP の公式ドキュメントで見つけられませんでした**（2026-09-05 に FSx for ONTAP ユーザーガイドの iSCSI 関連ページを対象に確認。**網羅的な検索ではありません**）。**使えることは実測しました。** **未記載を非対応と読み替えないでください。**
 
 | 制御 | 何を制限するか | 既定 |
 |---|---|---|
@@ -173,7 +173,7 @@ multipath -r
 | `lun igroup unbind` | **`-portset` 引数を取りません。** igroup だけを指定します |
 | `lun portset delete` | **igroup が bind されている間は削除できません。** unbind が先です |
 
-**NetApp は portset を非推奨としていません。** ONTAP 9.12.1 以降、最初の portset は CLI で作る必要があります。
+**portset が非推奨だという記載は見つけていません。** ただし**非推奨でないことを確認したわけでもありません** — 確認したのは、この検証環境で作成して機能したことだけです。
 
 ---
 
@@ -223,7 +223,7 @@ multipath -r
 | `iscsiadm --op=update` はポータルを指定して行う | **絞らずに実行してください。** 指定した形は `No records found` を返しました |
 | portset を掛ければホストのパスが消える | **消えません。** `faulty` な SCSI デバイスが残り、削除が要ります |
 | `lun igroup unbind -portset …` で解除する | **`-portset` 引数はありません** |
-| portset は非推奨 | **NetApp は非推奨としていません** |
+| portset は非推奨 | **非推奨という記載は見つけていません。** この環境では作成して機能しました（非推奨でないことの確認ではありません） |
 | `storage failover show` が空なのは権限エラー | **エラーではありません。** FSx for ONTAP が HA 状態を見せていません |
 
 ---

@@ -57,7 +57,7 @@ lang: ja
 | 複数の LUN にまたがるデータベース（data と log が別ボリューム） | **consistency group の write fence を使えば足ります。** ボリュームごとに個別に Snapshot を取ると時刻が混ざり、相互整合しません |
 | バックアップの整合性を監査で示す必要がある | **足りません。** 静止した記録が要ります |
 
-**3 行目は当初「足りない」と書いていましたが、実測で覆りました。** ボリュームを個別に Snapshot すると時刻が混ざるのは事実ですが、**`vserver consistency-group snapshot create -write-fence true` は複数ボリュームを 1 時点として確定します。** 検証環境では、データと WAL を別 LUN に置いた PostgreSQL に対して**書き込みを止めずに** fence 付き Snapshot を取り、そのクローンから起動して**コミット済みの行を失わずに復旧しました**（fence 0.52 秒、redo 0.84 秒）。詳細は [LUN に載せた DB は静止させずに復旧した](a-database-on-luns-recovers-without-quiescing.md) にあります。
+**3 行目は当初「足りない」と書いていましたが、実測で覆りました。** ボリュームを個別に Snapshot すると時刻が混ざるのは事実ですが、**`vserver consistency-group snapshot create -write-fence true` は複数ボリュームを 1 時点として確定します。** 検証環境では、データと WAL を別 LUN に置いた PostgreSQL に対して**書き込みを止めずに** fence 付き Snapshot を取り、そのクローンから起動して**コミット済みの行を失わずに復旧しました**。**測定値はこのノートには置きません** — 実測したのは [LUN に載せた DB は静止させずに復旧した](a-database-on-luns-recovers-without-quiescing.md)（`verified`）で、fence と redo の秒数はそちらにあります。このノートの区分は `documented` のままです。
 
 **つまり「相互整合が必要なら同じボリュームに置く」だけが選択肢ではありません。** レイアウトの判断は [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) にあります。
 
