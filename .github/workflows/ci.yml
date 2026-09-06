@@ -86,6 +86,13 @@ jobs:
       # .kiro/ is gitignored, so the steering-loader half of this check cannot run here.
       # The target reports that on stdout rather than skipping silently and printing
       # "healthy", which is what it used to do.
+      # Both read the committed .drawio and .svg only, so neither needs the AWS icon
+      # package or the draw.io CLI. They were in `make all` but not here, which meant a
+      # pull request could go green on a figure a reader cannot read.
+      - name: Check diagram label size
+        run: make diagram-fonts
+      - name: Check diagram reading direction
+        run: make diagram-flow
       - name: Check agent context budget
         run: make drift
 
