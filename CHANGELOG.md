@@ -574,6 +574,31 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Two performance documents are now in the external anchor contract, which means a heading rename
+  in either one fails the commit gate here.** `docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md`
+  and `docs/ja/reference/decision-trees/measured-throughput-triage.md`. The contract went from 68 to
+  87 anchors.
+  - **The ordering is the reverse of what it looks like.** `S3-Burst-on-ONTAP-Files` cites these two
+    by fragment rather than by file, because what it wants is two specific claims inside a long
+    document. Its own gate refuses an anchored citation into a document this contract does not list,
+    so writing the citation first would turn *its* build red. The entry has to exist here before the
+    citation can be written there.
+  - Five probe strings were supplied for those citations, and each claim got two rather than one:
+    `p99 が必要なら、クライアント側で測るしかありません` alone reads as an instruction with no reason,
+    and `構造上その期間の平均になります` alone does not say what to do instead. Likewise
+    `当たっている場所によって打つ手が正反対になります` names the consequence while
+    `1 と 2 はクライアント側、3 と 4 はファイルシステム側です` names the order.
+  - **A probe candidate was rejected during this work for occurring twice.**
+    `上限は 4 か所にあり` appears in both the frontmatter `title` and the body of the triage tree. A
+    rename that leaves only the title would keep the gate green while the claim was gone — the exact
+    property a probe is supposed to rule out. Counting occurrences before registering is now the
+    practice on both sides.
+  - **Neither gate reads the paragraph around the probe.** A claim can be retracted in place, or
+    narrowed to "unverified", and both this repository's citation check and the sibling's anchor
+    check still pass. Until there is a mechanism, the countermeasure is a written instruction in the
+    source paragraph saying not to cite the figure — recorded here because it is a known gap, not a
+    solved problem.
+
 - **`domains/observability/` — an eighth topic module, for choosing a monitoring route.** The two
   neighbouring modules answer different questions: `domains/performance/` covers how throughput and
   latency are determined, and `playbooks/05-operate/` covers what to monitor and where thresholds go.
