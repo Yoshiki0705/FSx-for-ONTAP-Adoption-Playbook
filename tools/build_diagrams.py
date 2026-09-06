@@ -490,7 +490,11 @@ def _backup_copy() -> Diagram:
                 "backup_svc",
                 "vault",
                 "copy_rule",
-                exit_at=(0.5, 1.0),
+                # Leaves the left edge rather than the bottom: the service label sits under the icon
+                # (verticalLabelPosition=bottom), so a bottom-centre exit drew the line straight
+                # through the words "AWS Backup". Visible only in the exported PNG, which is why the
+                # procedure requires looking at it rather than at the XML.
+                exit_at=(0.0, 0.5),
                 entry_at=(0.5, 0.0),
             ),
             Edge(
