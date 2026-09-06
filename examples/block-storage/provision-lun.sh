@@ -168,20 +168,49 @@ fi
 # is to a private address inside the VPC, reachable only from the security group attached to this
 # host. If that is not acceptable in your environment, install your own certificate on the SVM with
 # the ONTAP "security certificate" commands and drop this flag.
+# The password is escaped before it reaches curl's config parser. That parser ends a double-quoted
+# value at the first unescaped quote and drops a lone backslash, both silently: a password containing
+# `"` sends only the part before it, and one containing `\` sends the character after it. Measured
+# with `--libcurl` on curl 8.7.1 -- `pa"ss` arrived as `pa`, `pa\ss` as `pass`, no warning either
+# time. Amazon FSx accepts both characters in an fsxadmin password, so the caller cannot be asked to
+# avoid them.
+curl_credential() {
+  local escaped=${PASSWORD//\\/\\\\}
+  escaped=${escaped//\"/\\\"}
+  printf 'user = "fsxadmin:%s"' "$escaped"
+}
+
+# ONTAP_STATUS carries the HTTP status of the last call. Without it a 401 or a proxy's HTML error
+# page reached jq as a non-JSON body: `jq -e` failed inside an `if`, was ignored, and the next
+# `jq -r` exited under `set -o pipefail`, killing the script with no message about authentication.
+ONTAP_STATUS=""
+
 ontap() {
   local method="$1" path="$2" body="${3:-}"
   local -a args=(--silent --show-error --insecure --max-time 60
     --user-agent 'fsxn-adoption-playbook/examples-block-storage'
     --request "$method" "https://${MGMT_IP}/api${path}"
     --header 'content-type: application/json'
+    --write-out '\n%{http_code}'
     --config /dev/fd/3)
   [ -n "$body" ] && args+=(--data "$body")
-  curl "${args[@]}" 3<<<"user = \"fsxadmin:${PASSWORD}\""
+  local raw
+  raw="$(curl "${args[@]}" 3<<<"$(curl_credential)")" || raw=$'\n000'
+  ONTAP_STATUS="${raw##*$'\n'}"
+  printf '%s' "${raw%$'\n'*}"
 }
 
 ontap_ok() {
   # Fails loudly on an ONTAP error payload instead of letting a later step misread it.
   local out="$1" what="$2"
+  case "$ONTAP_STATUS" in
+    2*) : ;;
+    000) die "$what failed: no HTTP response from ${MGMT_IP} (check reachability on 443)" ;;
+    401 | 403)
+      die "$what failed: HTTP $ONTAP_STATUS from ONTAP -- the fsxadmin credential was rejected"
+      ;;
+    *) die "$what failed: HTTP $ONTAP_STATUS from ONTAP: $(printf '%s' "$out" | head -c 200)" ;;
+  esac
   if printf '%s' "$out" | jq -e 'has("error")' >/dev/null 2>&1; then
     local msg
     msg="$(printf '%s' "$out" | jq -r '.error.message // "unknown error"')"

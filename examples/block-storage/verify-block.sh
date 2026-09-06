@@ -97,10 +97,38 @@ else
 fi
 
 # See provision-lun.sh for why --insecure is used against this endpoint.
+# The password is escaped before it reaches curl's config parser. That parser ends a double-quoted
+# value at the first unescaped quote and drops a lone backslash, both silently: a password containing
+# `"` sends only the part before it, and one containing `\` sends the character after it. Measured
+# with `--libcurl` on curl 8.7.1 -- `pa"ss` arrived as `pa`, `pa\ss` as `pass`, no warning either
+# time. Amazon FSx accepts both characters in an fsxadmin password, so the caller cannot be asked to
+# avoid them.
+curl_credential() {
+  local escaped=${PASSWORD//\\/\\\\}
+  escaped=${escaped//\"/\\\"}
+  printf 'user = "fsxadmin:%s"' "$escaped"
+}
+
+ONTAP_STATUS=""
+
 ontap() {
-  curl --silent --show-error --insecure --max-time 60 \
+  local raw
+  raw="$(curl --silent --show-error --insecure --max-time 60 \
     --user-agent 'fsxn-adoption-playbook/examples-block-storage' \
-    --config /dev/fd/3 "https://${MGMT_IP}/api$1" 3<<<"user = \"fsxadmin:${PASSWORD}\""
+    --write-out '\n%{http_code}' \
+    --config /dev/fd/3 "https://${MGMT_IP}/api$1" 3<<<"$(curl_credential)")" || raw=$'\n000'
+  ONTAP_STATUS="${raw##*$'\n'}"
+  case "$ONTAP_STATUS" in
+    2*) : ;;
+    401 | 403)
+      printf 'warning: ONTAP returned HTTP %s -- the fsxadmin credential was rejected\n' \
+        "$ONTAP_STATUS" >&2
+      ;;
+    *)
+      printf 'warning: ONTAP returned HTTP %s\n' "$ONTAP_STATUS" >&2
+      ;;
+  esac
+  printf '%s' "${raw%$'\n'*}"
 }
 
 num() { printf '%s' "$1" | jq -r '.num_records // 0'; }

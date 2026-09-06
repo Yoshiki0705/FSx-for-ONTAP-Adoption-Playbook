@@ -21,7 +21,9 @@ the Makefile, and these tests fail if a workflow starts carrying its own copy.
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -85,28 +87,41 @@ class ToolAbsenceFailsLoudly(unittest.TestCase):
                 )
 
     def test_missing_tool_produces_a_non_zero_exit(self) -> None:
-        """Run each gate with an empty PATH, so its tool cannot be found."""
-        # "shell" and "cfn" are not listed here: on some runners their tools live in /usr/bin,
-        # which this PATH keeps reachable, so the premise "its tool cannot be found" does not
-        # hold. scripts/tests/test_example_gates.py checks those two with an empty PATH and an
-        # absolute make instead.
+        """Hide the tool with an empty PATH and an absolute make, then require the message.
+
+        Narrowing PATH to `/usr/bin:/bin` was not a reliable way to hide a tool -- it worked here
+        only because these linters happen to install elsewhere, and on a runner where one lives in
+        /usr/bin the premise silently stops holding. `shell` and `cfn` were moved to an empty PATH
+        for exactly that reason; these two were left behind.
+
+        The message assertion is the whole mechanism, not decoration. With no PATH the recipe cannot
+        reach `find` either, so it dies at 127 whether or not the guard exists: a bare non-zero exit
+        is satisfied by deleting the guard. Only naming the tool distinguishes "the gate refused to
+        run without its tool" from "the recipe fell over".
+        """
+        make_bin = shutil.which("make")
+        self.assertIsNotNone(make_bin, "make is not on PATH; this test cannot run")
         for target in ("markdown", "secrets"):
-            with self.subTest(target=target):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as empty:
                 done = subprocess.run(
-                    ["make", target],
+                    [str(make_bin), target],
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
-                    # /usr/bin keeps make and the shell reachable while removing the
-                    # linters, which live in /opt/homebrew/bin and ~/.local/bin.
-                    env={"PATH": "/usr/bin:/bin", "HOME": str(Path.home())},
+                    env={"PATH": empty, "HOME": str(Path.home())},
                     check=False,
                 )
                 self.assertNotEqual(
                     done.returncode,
                     0,
-                    f"`make {target}` succeeded with its tool unavailable:\n"
+                    f"`make {target}` succeeded with its tool unreachable:\n"
                     f"{done.stdout}{done.stderr}",
+                )
+                self.assertIn(
+                    "not installed",
+                    done.stdout + done.stderr,
+                    f"`make {target}` failed without saying which tool is missing, so deleting "
+                    "the guard would leave this test passing",
                 )
 
     def test_python_gate_fails_when_ruff_cannot_be_resolved(self) -> None:
