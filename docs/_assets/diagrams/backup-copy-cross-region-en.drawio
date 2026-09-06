@@ -5,17 +5,49 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="aws_cloud" value="AWS Cloud" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud;strokeColor=#232F3E;fillColor=none;verticalAlign=top;align=left;spacingLeft=36;spacingTop=4;dashed=0;" vertex="1" parent="1">
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="fsx_src" target="vol_src" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="CreateBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="vol_src" target="backup" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-14" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="CopyBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="backup" target="copy" parent="1">
+          <mxGeometry x="-0.35" relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="Backup plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=1.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="fsx_src" target="backup_svc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Copy rule" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.8;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="backup_svc" target="vault" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="CreateVolumeFromBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.9;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="copy" target="recovery" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-16" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" value="Restore via AWS Backup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.25;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="vault" target="recovery" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-16" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="fsx_dst" target="vol_dst" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aws_cloud" value="AWS Cloud" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud;strokeColor=#232F3E;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;spacingTop=4;dashed=0;labelBackgroundColor=#FFFFFF;" vertex="1" parent="1">
           <mxGeometry x="30" y="30" width="720" height="890" as="geometry" />
         </mxCell>
-        <mxCell id="region_src" value="ap-northeast-1 (Tokyo)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=36;spacingTop=4;dashed=1;" vertex="1" parent="1">
+        <mxCell id="region_src" value="ap-northeast-1 (Tokyo)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;spacingTop=4;dashed=1;labelBackgroundColor=#FFFFFF;" vertex="1" parent="1">
           <mxGeometry x="60" y="80" width="660" height="360" as="geometry" />
         </mxCell>
-        <mxCell id="region_dst" value="ap-northeast-3 (Osaka)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=36;spacingTop=4;dashed=1;" vertex="1" parent="1">
+        <mxCell id="region_dst" value="ap-northeast-3 (Osaka)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=18;fontStyle=1;fontColor=#232F3E;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;spacingTop=4;dashed=1;labelBackgroundColor=#FFFFFF;" vertex="1" parent="1">
           <mxGeometry x="60" y="490" width="660" height="400" as="geometry" />
         </mxCell>
         <mxCell id="recovery" value="Created when recovering (absent day to day)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor=#666666;fillColor=none;fontColor=#232F3E;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="105" y="665" width="480" height="200" as="geometry" />
+          <mxGeometry x="105" y="665" width="520" height="200" as="geometry" />
         </mxCell>
         <mxCell id="backup" value="Volume backup" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#232F3E;fillColor=none;fontColor=#232F3E;fontSize=16;verticalAlign=middle;align=center;" vertex="1" parent="1">
           <mxGeometry x="450" y="137" width="230" height="56" as="geometry" />
@@ -40,38 +72,6 @@
         </mxCell>
         <mxCell id="vol_dst" value="New volume" style="sketch=0;html=1;shape=image;verticalLabelPosition=bottom;verticalAlign=top;labelPosition=center;align=center;imageAspect=1;aspect=fixed;fontSize=16;fontColor=#232F3E;image=data:image/svg+xml,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDhweCIgaGVpZ2h0PSI0OHB4IiB2aWV3Qm94PSIwIDAgNDggNDgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1SZXNvdXJjZS9HZW5lcmFsLVJlc291cmNlL1Jlc19EaXNrXzQ4X0xpZ2h0PC90aXRsZT4KICAgIDxnIGlkPSJJY29uLVJlc291cmNlL0dlbmVyYWwtUmVzb3VyY2UvUmVzX0Rpc2tfNDgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxwYXRoIGQ9Ik0yNC4wMTQsNDQuMDI4IEMxMi45NzksNDQuMDI4IDQsMzUuMDQ5IDQsMjQuMDEzIEM0LDEyLjk3OCAxMi45NzksNCAyNC4wMTQsNCBDMzUuMDQ5LDQgNDQuMDI4LDEyLjk3OCA0NC4wMjgsMjQuMDEzIEM0NC4wMjgsMzUuMDQ5IDM1LjA0OSw0NC4wMjggMjQuMDE0LDQ0LjAyOCBNMjQuMDE0LDIgQzExLjg3NSwyIDIsMTEuODc1IDIsMjQuMDEzIEMyLDM2LjE1MiAxMS44NzUsNDYuMDI4IDI0LjAxNCw0Ni4wMjggQzM2LjE1Myw0Ni4wMjggNDYuMDI4LDM2LjE1MiA0Ni4wMjgsMjQuMDEzIEM0Ni4wMjgsMTEuODc1IDM2LjE1MywyIDI0LjAxNCwyIE0yNC4wMTQsMzEuNzQ5IEMxOS43NDgsMzEuNzQ5IDE2LjI3OSwyOC4yNzkgMTYuMjc5LDI0LjAxMyBDMTYuMjc5LDE5Ljc0OCAxOS43NDgsMTYuMjc4IDI0LjAxNCwxNi4yNzggQzI4LjI4LDE2LjI3OCAzMS43NDksMTkuNzQ4IDMxLjc0OSwyNC4wMTMgQzMxLjc0OSwyOC4yNzkgMjguMjgsMzEuNzQ5IDI0LjAxNCwzMS43NDkgTTI0LjAxNCwxNC4yNzggQzE4LjY0NiwxNC4yNzggMTQuMjc5LDE4LjY0NSAxNC4yNzksMjQuMDEzIEMxNC4yNzksMjkuMzgyIDE4LjY0NiwzMy43NDkgMjQuMDE0LDMzLjc0OSBDMjkuMzgyLDMzLjc0OSAzMy43NDksMjkuMzgyIDMzLjc0OSwyNC4wMTMgQzMzLjc0OSwxOC42NDUgMjkuMzgyLDE0LjI3OCAyNC4wMTQsMTQuMjc4IE0yNC4wMTQsMjcuNTAzIEMyMi4wOSwyNy41MDMgMjAuNTI1LDI1LjkzNyAyMC41MjUsMjQuMDEzIEMyMC41MjUsMjIuMDkgMjIuMDksMjAuNTI0IDI0LjAxNCwyMC41MjQgQzI1LjkzOCwyMC41MjQgMjcuNTAzLDIyLjA5IDI3LjUwMywyNC4wMTMgQzI3LjUwMywyNS45MzcgMjUuOTM4LDI3LjUwMyAyNC4wMTQsMjcuNTAzIE0yNC4wMTQsMTguNTI0IEMyMC45ODgsMTguNTI0IDE4LjUyNSwyMC45ODcgMTguNTI1LDI0LjAxMyBDMTguNTI1LDI3LjA0IDIwLjk4OCwyOS41MDMgMjQuMDE0LDI5LjUwMyBDMjcuMDQsMjkuNTAzIDI5LjUwMywyNy4wNCAyOS41MDMsMjQuMDEzIEMyOS41MDMsMjAuOTg3IDI3LjA0LDE4LjUyNCAyNC4wMTQsMTguNTI0IiBpZD0iRmlsbC01IiBmaWxsPSIjMjMyRjNEIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==;" vertex="1" parent="1">
           <mxGeometry x="335" y="721" width="48" height="48" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="fsx_src" target="vol_src" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="CreateBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="vol_src" target="backup" parent="1">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint as="offset" x="0" y="-14" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e3" value="CopyBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="backup" target="copy" parent="1">
-          <mxGeometry x="-0.35" relative="1" as="geometry">
-            <mxPoint as="offset" x="0" y="0" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e4" value="Backup plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=1.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="fsx_src" target="backup_svc" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e5" value="Copy rule" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="backup_svc" target="vault" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e6" value="CreateVolumeFromBackup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.75;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="copy" target="recovery" parent="1">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint as="offset" x="0" y="-16" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e7" value="Restore via AWS Backup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.25;entryY=0.0;entryDx=0;entryDy=0;" edge="1" source="vault" target="recovery" parent="1">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint as="offset" x="0" y="-16" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#232F3E;strokeWidth=1;fontSize=16;fontColor=#232F3E;labelBackgroundColor=#FFFFFF;" edge="1" source="fsx_dst" target="vol_dst" parent="1">
-          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

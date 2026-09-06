@@ -141,13 +141,24 @@ PALETTES = {
 }
 
 
-def group_style(gr_icon: str, stroke: str, ink: str, dashed: bool) -> str:
+def group_style(
+    gr_icon: str, stroke: str, ink: str, dashed: bool, background: str
+) -> str:
     return (
         f"{GROUP_POINTS};outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;"
         f"fontSize={FONT_GROUP};"
         f"fontStyle=1;fontColor={ink};shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.{gr_icon};"
-        f"strokeColor={stroke};fillColor=none;verticalAlign=top;align=left;spacingLeft=36;"
-        f"spacingTop=4;dashed={1 if dashed else 0};"
+        f"strokeColor={stroke};fillColor=none;verticalAlign=top;align=left;spacingLeft=30;"
+        # 30, the offset the AWS group shape uses to clear its own corner badge. Raised
+        # past it, a boundary's title travels along the top edge and comes to rest beside
+        # an icon that is merely inside the boundary, where it reads as that icon's label
+        # while the icon's real label sits underneath -- two names, one of them wrong.
+        # `tools/check_diagram_flow.py` fails the build above 30.
+        # The title needs a background for the same reason an edge label does: it sits at the
+        # top-left of the frame, and a boundary crossed by a vertical run has that run passing
+        # straight through the words. `fillColor=none` keeps the frame transparent, so this paints
+        # behind the text only.
+        f"spacingTop=4;dashed={1 if dashed else 0};labelBackgroundColor={background};"
     )
 
 
@@ -443,7 +454,11 @@ def _backup_copy() -> Diagram:
                 dashed=True,
             ),
         ),
-        frames=(Frame("recovery", "recovery_frame", 105, 665, 480, 200),),
+        # 520 wide, not 480. The restore edge out of the copy has to enter this frame at
+        # a point right of where it leaves, and at 480 the frame's right edge stopped
+        # short of the copy box above it, so the only edge in the figure that ran
+        # backwards was the one carrying the recovery path.
+        frames=(Frame("recovery", "recovery_frame", 105, 665, 520, 200),),
         # Two columns held across both Regions: AWS Backup on the left, the FSx for ONTAP native
         # path on the right. `copy` sits directly under `backup` so the CopyBackup edge is a single
         # straight line instead of a dog-leg that ran alongside the copy-rule edge at almost the
@@ -490,11 +505,16 @@ def _backup_copy() -> Diagram:
                 "backup_svc",
                 "vault",
                 "copy_rule",
-                # Leaves the left edge rather than the bottom: the service label sits under the icon
-                # (verticalLabelPosition=bottom), so a bottom-centre exit drew the line straight
-                # through the words "AWS Backup". Visible only in the exported PNG, which is why the
-                # procedure requires looking at it rather than at the XML.
-                exit_at=(0.0, 0.5),
+                # Leaves the bottom right of the icon rather than its centre: the service label sits
+                # under the icon (verticalLabelPosition=bottom), so a bottom-centre exit drew the
+                # line straight through the words "AWS Backup". Visible only in the exported PNG,
+                # which is why the procedure requires looking at it rather than at the XML.
+                #
+                # It used to leave the left edge instead, which cleared the label just as well and
+                # put a leftward jog into a figure that otherwise only advances rightwards and
+                # downwards. The jog is invisible to the direction gate, which compares the points
+                # an edge joins and not the route between them, so this one is on the eye.
+                exit_at=(0.8, 1.0),
                 entry_at=(0.5, 0.0),
             ),
             Edge(
@@ -503,7 +523,7 @@ def _backup_copy() -> Diagram:
                 "recovery",
                 "restore",
                 exit_at=(0.5, 1.0),
-                entry_at=(0.75, 0.0),
+                entry_at=(0.9, 0.0),
                 label_offset=(0, -16),
             ),
             Edge(
@@ -627,12 +647,28 @@ def render(
         )
         lines.append("        </mxCell>")
 
+    # Edges first, so a vertex paints over a line rather than under it. A group's title sits at
+    # the top-left of its frame, and a boundary crossed by a vertical run had that run passing
+    # straight through the words; with the edges emitted last, the title's background could not
+    # help, because the line was painted after it. Nothing is lost by the swap: no edge in these
+    # figures is routed through a filled box, and an edge crossing a frame border is two thin
+    # lines of one colour meeting either way.
+    for edge in diagram.edges:
+        value = label(edge.label, lang) if edge.label else ""
+        lines.append(
+            f"        <mxCell id={quoteattr(edge.cid)} value={quoteattr(value)} "
+            f'style={quoteattr(edge.style(p.ink, p.background))} edge="1" '
+            f"source={quoteattr(edge.source)} "
+            f'target={quoteattr(edge.target)} parent="1">'
+        )
+        lines += edge.geometry()
+        lines.append("        </mxCell>")
     for group in diagram.groups:
         stroke = p.cloud_stroke if group.kind == "cloud" else p.region_stroke
         vertex(
             group.cid,
             label(group.label, lang),
-            group_style(group.gr_icon, stroke, p.ink, group.dashed),
+            group_style(group.gr_icon, stroke, p.ink, group.dashed, p.background),
             group.x,
             group.y,
             group.width,
@@ -670,16 +706,6 @@ def render(
             size,
             size,
         )
-    for edge in diagram.edges:
-        value = label(edge.label, lang) if edge.label else ""
-        lines.append(
-            f"        <mxCell id={quoteattr(edge.cid)} value={quoteattr(value)} "
-            f'style={quoteattr(edge.style(p.ink, p.background))} edge="1" '
-            f"source={quoteattr(edge.source)} "
-            f'target={quoteattr(edge.target)} parent="1">'
-        )
-        lines += edge.geometry()
-        lines.append("        </mxCell>")
 
     lines += ["      </root>", "    </mxGraphModel>", "  </diagram>", "</mxfile>", ""]
     return "\n".join(lines)
