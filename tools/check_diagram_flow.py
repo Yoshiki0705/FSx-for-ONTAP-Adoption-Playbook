@@ -64,9 +64,12 @@ ROOT = Path(__file__).resolve().parent.parent
 # findings nobody in this repository can act on.
 SKIP = {".git", ".venv", "node_modules", "__pycache__", ".private", "site-packages"}
 
-# Displacement below this is treated as no movement, so two icons a hair out of alignment are not
-# reported as a leftward edge. Anything a reader could perceive as a direction is far larger.
-EPSILON = 1.0
+# Displacement below this is treated as no movement. It is not a rounding allowance: these figures
+# are laid out on a 10px grid, and a box anchored at 0.5 of its own width lands a few pixels off the
+# icon above it, which renders as a straight vertical line and was being reported as a leftward edge.
+# A step a reader can perceive as a direction is a column or a row -- a hundred pixels and up -- so
+# nothing real hides under this, and a backwards nudge small enough to pass is one nobody can see.
+EPSILON = 8.0
 
 # The offset the AWS group shape uses to clear its own corner badge. A title at this value sits at
 # the top-left of the frame, which is where a boundary name belongs; past it, the title travels
@@ -175,10 +178,7 @@ def inspect(path: Path, text: str) -> list[Finding]:
             rect = _rect(cell)
             if rect is not None:
                 rects[cid] = rect
-            if (
-                IMAGE_SHAPE.search(style)
-                and "verticalLabelPosition=bottom" not in style
-            ):
+            if IMAGE_SHAPE.search(style) and "verticalLabelPosition=bottom" not in style:
                 findings.append(
                     Finding(
                         path,
@@ -238,10 +238,7 @@ def check() -> int:
         try:
             findings += inspect(path, path.read_text(encoding="utf-8"))
         except ET.ParseError as error:
-            print(
-                f"error: {path.relative_to(ROOT)} is not valid XML: {error}",
-                file=sys.stderr,
-            )
+            print(f"error: {path.relative_to(ROOT)} is not valid XML: {error}", file=sys.stderr)
             return 1
 
     if findings:
@@ -276,9 +273,7 @@ def _doc(cells: str) -> str:
     )
 
 
-def _node(
-    cid: str, x: int, y: int, *, style: str = "rounded=1;", value: str = "n"
-) -> str:
+def _node(cid: str, x: int, y: int, *, style: str = "rounded=1;", value: str = "n") -> str:
     return (
         f'<mxCell id="{cid}" value="{value}" style="{style}" vertex="1" parent="1">'
         f'<mxGeometry x="{x}" y="{y}" width="80" height="80" as="geometry" /></mxCell>'
@@ -301,9 +296,7 @@ def _frame(cid: str, x: int, y: int, w: int, h: int) -> str:
 
 
 ICON = "sketch=0;html=1;shape=image;verticalLabelPosition=bottom;verticalAlign=top;"
-ICON_SIDE = (
-    "sketch=0;html=1;shape=image;verticalLabelPosition=middle;verticalAlign=middle;"
-)
+ICON_SIDE = "sketch=0;html=1;shape=image;verticalLabelPosition=middle;verticalAlign=middle;"
 GROUP = "shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud;align=left;spacingLeft=30;"
 GROUP_WIDE = GROUP.replace("spacingLeft=30", "spacingLeft=160")
 
@@ -348,9 +341,14 @@ def selftest() -> int:
             True,
         ),
         (
-            "a two-pixel misalignment is not a direction",
-            _doc(_node("a", 0, 0) + _node("b", 200, -1) + _edge("e", "a", "b")),
+            "a few pixels off the grid is not a direction",
+            _doc(_node("a", 0, 0) + _node("b", 200, -6) + _edge("e", "a", "b")),
             False,
+        ),
+        (
+            "a whole row up still is",
+            _doc(_node("a", 0, 200) + _node("b", 200, 40) + _edge("e", "a", "b")),
+            True,
         ),
         (
             "an edge to a node with no geometry of its own is skipped, not guessed at",
@@ -396,9 +394,7 @@ def selftest() -> int:
             _doc(
                 _node("a", 400, 0)
                 + _frame("f", 0, 200, 520, 200)
-                + _edge(
-                    "e", "a", "f", anchors="exitX=0.5;exitY=1;entryX=0.25;entryY=0;"
-                )
+                + _edge("e", "a", "f", anchors="exitX=0.5;exitY=1;entryX=0.25;entryY=0;")
             ),
             True,
         ),
@@ -421,19 +417,13 @@ def selftest() -> int:
         if rejected != should_reject:
             verdict = "rejected" if rejected else "accepted"
             wanted = "reject" if should_reject else "accept"
-            print(
-                f"  selftest FAILED: {name} -> {verdict}, expected to {wanted}",
-                file=sys.stderr,
-            )
+            print(f"  selftest FAILED: {name} -> {verdict}, expected to {wanted}", file=sys.stderr)
             failures += 1
 
     fan_case = next(d for n, d, _ in cases if n.startswith("down and to the left"))
     rules = {f.rule for f in inspect(probe, fan_case)}
     if rules != {"flow-direction"}:
-        print(
-            f"  selftest FAILED: fan case reported {rules}, expected flow-direction",
-            file=sys.stderr,
-        )
+        print(f"  selftest FAILED: fan case reported {rules}, expected flow-direction", file=sys.stderr)
         failures += 1
 
     if failures:
