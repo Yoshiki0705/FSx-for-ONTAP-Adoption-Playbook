@@ -2,7 +2,10 @@
 title: LUN と igroup は AWS の API の外側にある — ブロックの構築手順は制御面を必ずまたぐ
 lifecycle: [build, design]
 domains: [block-storage, security-governance]
-evidence: documented
+evidence: verified
+verified_on: 2026-09-05
+region: ap-northeast-1
+ontap_version: 9.18.1P5
 source: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_FSx.html
 lang: ja
 ---

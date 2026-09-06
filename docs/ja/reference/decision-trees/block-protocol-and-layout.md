@@ -110,7 +110,7 @@ graph TD
 | Windows 版が無いことを欠落と見なさない判断 | **これは当方の推論で、出典の記述ではありません。** 上流が非対応であることから、AWS 側に手順が無いことは説明が付く、という読みです | — |
 | NVMe/TCP は MPIO の構成が単純 | 「iSCSI に比べて multi-path IO の構成を単純にする」 | [AWS: NVMe-over-TCP support](https://aws.amazon.com/about-aws/whats-new/2024/07/amazon-fsx-netapp-ontap-nvme-over-tcp) |
 | **カーネルに `CONFIG_NVME_MULTIPATH` が無いとフェイルオーバーが効かない** | Amazon Linux 2023（kernel 6.18.44）では無効で、1 つの namespace が同じ `wwid` の 2 デバイスとして現れます。フェイルオーバーの実測で、iSCSI が 1,161 サンプル失敗 0 の一方、NVMe/TCP は 423.8 秒使えませんでした | [パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー)（`verified`） |
-| NVMe/TCP は 8009 も要る | discovery が 8009、データが 4420 | [Multi-AZ が動かすのはアドレスではなくルート](../../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md)（`verified`） |
+| NVMe/TCP は 8009 も要る | discovery が 8009、データが 4420 | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](../../domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md)（`documented`） |
 | ポートは 3260 と 4420 | 3260 は要件表に、4420 は手順と re:Post の前提条件に | [AWS: Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) · [re:Post](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nvme-tcp) |
 | Snapshot と SnapMirror はボリューム単位 | 関連する LUN を同居させると相互に整合した複製が 1 回で取れる | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
 | ボリュームは LUN より 5% 以上大きく | 「ボリューム Snapshot の余地を残すため」 | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
@@ -130,7 +130,8 @@ graph TD
 | 1 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'` | 世代と HA ペア数。NVMe/TCP が選べるか |
 | 2 | ホスト OS の一覧を作り、Windows が含まれるかを確認する | NVMe/TCP を選べる範囲 |
 | 3 | セキュリティグループに 3260 と、NVMe/TCP を使うなら 4420 と 8009 の受信規則があるかを確認する | **要件表に 4420 がないため、iSCSI 用に書いた規則では通りません** |
-| 3b | NVMe/TCP を選ぶ前に `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` を実行する | **無効ならフェイルオーバーが効きません。** ここで選択が変わります |
+| 3b | NVMe/TCP を選ぶ前に `grep -q '^CONFIG_NVME_MULTIPATH=y' /boot/config-$(uname -r); echo $?` を実行する | **`0` なら有効、`1` なら無効。** 無効ならフェイルオーバーが効かず、ここで選択が変わります。**`-q '^…=y'` を付けない `grep` は、無効なカーネルでも `# CONFIG_NVME_MULTIPATH is not set` を表示して `0` で終わるので、有効な場合と区別できません** |
+| 3c | 接続後に、1 つの namespace が同じ `wwid` の 2 デバイスとして見えていないか確認する | **カーネル設定は必要条件で、これが実際の確認です。** 手順は [パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md) にあります |
 | 4 | 復旧したい単位を関係者と合意し、その単位でボリュームを分けるかを決める | LUN のレイアウトの根拠 |
 | 5 | 検証環境で LUN を作り、`lun show -fields space-reserve,space-allocation` と `volume show -fields size,available` を並べて記録する | 容量が 3 か所で数えられることの確認 |
 | 6 | Snapshot を取り、`snapshot show -fields snapshot,state` で既定の整合性区分を確認する | 静止の仕組みが必要かどうか |
@@ -144,7 +145,7 @@ graph TD
 | 誤解 | 実際 |
 |---|---|
 | プロトコルは後から変えられる | **iSCSI から NVMe/TCP へ移るには第 2 世代が必要**で、第 1 世代なら作り直しです |
-| iSCSI 用のセキュリティグループがあれば NVMe/TCP も通る | **ポートが違います**（3260 と、4420 + 8009）。しかも 4420 は AWS の要件表に載っていません |
+| iSCSI 用のセキュリティグループがあれば NVMe/TCP も通る | **ポートが違います**（3260 と、4420 + 8009）。しかも **4420 と 8009 はどちらも AWS の要件表に載っていません** |
 | NVMe/TCP のほうが MPIO が単純なので可用性も有利 | **カーネル次第です。** `CONFIG_NVME_MULTIPATH` が無効なディストリビューションでは切り替わりませんでした |
 | 1 LUN 1 ボリュームが常に正解 | NetApp は 1:1 を formal best practice としていません。**決めているのは復旧の粒度です** |
 | ボリュームと LUN を同じサイズにすればよい | **ボリュームは LUN より 5% 以上大きく**することが推奨されています |

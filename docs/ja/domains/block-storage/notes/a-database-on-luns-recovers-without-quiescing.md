@@ -67,7 +67,7 @@ vserver consistency-group snapshot create -vserver <svm> -consistency-group cg_p
 | fence の直前の `max(id)` | 210,000 |
 | fence の直後の `max(id)` | 213,000 |
 
-**NetApp は consistency group の Snapshot に内部で 7 秒のタイムアウトがあると記載しています。** **0.52 秒はその中に十分収まりました。** ただし **ボリューム数と負荷が増えれば近づきます。** fence が失敗したときに何が起きるかは、この検証では観測していません。
+**fence には上限時間があり、超えると失敗します。** ただし**その値をこのノートでは示しません** — 出典を確認できていません。**0.52 秒という測定値だけが確かなことで、上限までの余裕は分かりません。** ボリューム数と負荷が増えれば伸びます。fence が失敗したときに何が起きるかは観測していません。
 
 **`-consistency-type` の既定は `crash` です。** スケジュール実行の Snapshot は常に crash になります。
 
@@ -136,7 +136,7 @@ LOG:  checkpoint complete: ...
 
 **212,000 は fence 直前の 210,000 と直後の 213,000 の間にあります。** つまり **fence より前にコミットされた行はすべて残り、fence の窓の中でコミットされた行も一部残りました。** 失われたコミット済みの行はありません。
 
-**`pg_backup_start` / `pg_start_backup` は使っていません。** **NetApp の PostgreSQL 向けの手引きにもこれらは登場しません。**
+**`pg_backup_start` / `pg_start_backup` は使っていません。** **引用した NetApp のページはこれらを用いない手順を示しています** — 手引き全体にこの語が出てこないことは確認していません。
 
 ---
 
@@ -153,7 +153,7 @@ LOG:  checkpoint complete: ...
 | 主張 | なぜ言えないか |
 |---|---|
 | すべての DB エンジンで同じになる | **PostgreSQL 16 で 1 回観測しただけです** |
-| fence が失敗する条件と症状 | **観測していません。** 7 秒のタイムアウトに近づいた場合の挙動は未確認 |
+| fence が失敗する条件と症状 | **観測していません。** 上限時間の値も出典を確認できていません |
 | ボリュームが多い構成でも 0.52 秒で済む | **2 ボリュームでの値です** |
 | application-consistent が不要 | **要件次第です。** 下の区別を読んでください |
 
@@ -167,7 +167,7 @@ LOG:  checkpoint complete: ...
 |---|---|---|
 | 1 | データと WAL / redo を別ボリュームの LUN に分ける | fence が要る構成になっていること |
 | 2 | `vserver consistency-group create` が通るか確認する | **`fsxadmin` で使えること** |
-| 3 | 負荷を掛けた状態で `snapshot create … -write-fence true` を実行し、**返るまでの時間を測る** | **7 秒のタイムアウトに対する余裕** |
+| 3 | 負荷を掛けた状態で `snapshot create … -write-fence true` を実行し、**返るまでの時間を測る** | 自環境での fence の所要時間。**上限との差は、上限の値を確認できるまで分かりません** |
 | 4 | `volume snapshot show -snapshot <名前> -fields volume,create-time` | **全ボリュームの時刻が一致していること** |
 | 5 | 直前と直後にコミット済みの最大キーを記録する | 後で失われた範囲を判定する足場 |
 | 6 | クローンを**別ホストの igroup** に割り当て、起動する | **`lun map` が別途必要なこと** |
@@ -188,7 +188,7 @@ LOG:  checkpoint complete: ...
 | 複数 LUN でもボリュームごとに Snapshot すれば足りる | **時点が混ざります。** fence が要ります |
 | write fence は I/O を長く止める | **この構成では 0.52 秒でした**（2 ボリューム） |
 | `-consistency-type application` にしないと危ない | **既定は `crash` で、これで復旧しました。** 判断は復旧目標の側です |
-| `pg_backup_start` が必要 | **使っていません。** NetApp の手引きにも登場しません |
+| `pg_backup_start` が必要 | **使っていません。** 引用したページも用いない手順を示しています |
 | クローンのマウントには常に `nouuid` が要る | **親を同じホストにマウントしているときだけです** |
 | クローンの LUN はすぐ使える | **`lun map` が別途必要です。** 親のマッピングは継がれません |
 | クローンの LUN は WWID が同じ | **serial が別なので WWID も別です** |
