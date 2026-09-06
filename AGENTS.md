@@ -385,14 +385,14 @@ other doc — `.kiro/` only records when to read them.
 | Document | Read it when |
 |---|---|
 | [`docs/agent/localization.md`](docs/agent/localization.md) | adding, translating, or restructuring a document under `docs/<lang>/` |
-| [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, regenerating, or exporting a diagram |
+| [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, exporting, or sizing a diagram |
 | [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
 | [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
 | [`docs/agent/documentation-design.md`](docs/agent/documentation-design.md) | creating or restructuring a README, a module hub, or a technical reference document. **A README that carries detail inline instead of linking out is the failure it prevents** |
 
 ### Tools other repositories copy
 
-Three tools are portable. **The copy set for each lives in `COPY_SETS` in
+Four tools are portable. **The copy set for each lives in `COPY_SETS` in
 [`scripts/tests/test_copyability_claims.py`](scripts/tests/test_copyability_claims.py)**, which stages
 it outside the repository and imports it there. Recorded where it is enforced, not repeated here.
 
@@ -400,7 +400,7 @@ it outside the repository and imports it there. Recorded where it is enforced, n
 
 - Markdown, ATX headings (`##`), no trailing whitespace, one sentence per line is **not** required.
 - Tables over bullet lists for anything with 2+ attributes per item.
-- Mermaid for flowcharts and sequence diagrams; draw.io for architecture diagrams.
+- Mermaid for flowcharts and sequence diagrams; draw.io for architecture diagrams. Never shrink a label to make it fit.
 - **Every diagram carries the same information in prose or a table.** A mermaid block is a summary of something stated elsewhere in the document, never the only place a fact appears. Mermaid does not render in every context, is not reliably reachable by a screen reader, and is not extractable by a crawler — so a decision that exists only inside a diagram is a decision some readers cannot access.
 - Code blocks always carry a language tag.
 - Internal links are relative paths. Blog-facing images use absolute `raw.githubusercontent.com` URLs.

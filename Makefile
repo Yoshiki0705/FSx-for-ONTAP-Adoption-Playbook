@@ -7,7 +7,7 @@ PY ?= python3
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
-        diagrams diagrams-check cfn shell cross-repo cross-repo-external
+        diagrams diagrams-check diagram-fonts cfn shell cross-repo cross-repo-external
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -192,8 +192,14 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check ja-markers audit secrets links cross-repo anchors drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check ja-markers audit secrets links cross-repo anchors diagram-fonts drift test ## Run every check (commit gate)
 	@echo "All checks passed."
+
+# In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs
+# neither the AWS icon package nor the draw.io CLI.
+diagram-fonts: ## Check that diagram labels clear the readability floor
+	@$(PY) tools/check_diagram_fonts.py --selftest >/dev/null
+	@$(PY) tools/check_diagram_fonts.py
 
 drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship
 	@$(PY) scripts/check_agent_context_budget.py

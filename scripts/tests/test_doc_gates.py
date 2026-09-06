@@ -264,6 +264,73 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/en/domains/cost/notes/{PROBE}.md": en}):
             self.assert_rejected(run_gate("check_ja_only_markers.py"), PROBE)
 
+    def test_diagram_label_below_the_readability_floor_is_rejected(self) -> None:
+        """The size every diagram here was authored at, which no gate reported for months.
+
+        `fontSize=11` on a canvas around 1200px arrives in a reader's column at roughly 8px. The
+        probe uses a canvas wide enough that the effective-size floor is the binding one, so a
+        refactor that keeps only the source floor still fails here.
+        """
+        probe = (
+            '<?xml version="1.0" encoding="UTF-8"?><mxfile><diagram id="p" name="p">'
+            '<mxGraphModel pageWidth="1220" pageHeight="400"><root>'
+            '<mxCell id="0" /><mxCell id="1" parent="0" />'
+            '<mxCell id="small" value="Amazon FSx for NetApp ONTAP" '
+            'style="rounded=1;fontSize=11;" vertex="1" parent="1" />'
+            "</root></mxGraphModel></diagram></mxfile>"
+        )
+        with temp_files({f"docs/_assets/diagrams/{PROBE}.drawio": probe}):
+            self.assert_rejected(run_gate("check_diagram_fonts.py"), PROBE)
+
+    def test_font_debt_is_tolerated_only_while_it_is_real(self) -> None:
+        """The debt file must shrink, so both directions have to hold.
+
+        A listed violation is tolerated — otherwise wiring the gate into a repository whose
+        diagrams all predate it turns the build red until every one is redesigned, and a gate that
+        stays red gets switched off. The other direction is what stops the file becoming permanent:
+        a listed path that has been fixed fails, so fixing a diagram forces its line out.
+        """
+        small = (
+            '<?xml version="1.0" encoding="UTF-8"?><mxfile><diagram id="p" name="p">'
+            '<mxGraphModel pageWidth="1220" pageHeight="400"><root>'
+            '<mxCell id="0" /><mxCell id="1" parent="0" />'
+            '<mxCell id="small" value="x" style="fontSize=11;" vertex="1" parent="1" />'
+            "</root></mxGraphModel></diagram></mxfile>"
+        )
+        compliant = small.replace("fontSize=11", "fontSize=20")
+        diagram = f"docs/_assets/diagrams/{PROBE}.drawio"
+
+        worse = small.replace(
+            '<mxCell id="small"',
+            '<mxCell id="second" value="y" style="fontSize=11;" vertex="1" parent="1" />'
+            '<mxCell id="small"',
+        )
+
+        with temp_files({diagram: small, "diagram-font-debt.txt": f"{diagram} 1\n"}):
+            listed = run_gate("check_diagram_fonts.py")
+            self.assertEqual(
+                listed.returncode,
+                0,
+                f"a violation listed as known debt should not fail the gate:\n"
+                f"{listed.stdout}{listed.stderr}",
+            )
+            self.assertIn("debt", listed.stdout)
+
+        with temp_files(
+            {diagram: compliant, "diagram-font-debt.txt": f"{diagram} 1\n"}
+        ):
+            self.assert_rejected(run_gate("check_diagram_fonts.py"), "no findings")
+
+        # The direction the file-granular ratchet could not see: the listed diagram gets worse and
+        # the count no longer matches. Without this, one listed path absorbed new violations in
+        # silence and the gate reported the same "carried as debt" line as before.
+        with temp_files({diagram: worse, "diagram-font-debt.txt": f"{diagram} 1\n"}):
+            self.assert_rejected(run_gate("check_diagram_fonts.py"), "more than listed")
+
+        # A bare path is no longer a valid line, because it is what made the debt growable.
+        with temp_files({diagram: small, "diagram-font-debt.txt": f"{diagram}\n"}):
+            self.assert_rejected(run_gate("check_diagram_fonts.py"), "<path> <count>")
+
     def test_unregistered_cross_repo_citation_is_rejected(self) -> None:
         """A citation nobody registered is the failure the gate exists to prevent.
 
