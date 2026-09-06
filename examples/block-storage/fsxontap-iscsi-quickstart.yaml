@@ -66,8 +66,9 @@ Parameters:
     Default: '68719476736'
     Description: >-
       Volume size in bytes. The default is 64 GiB: the 5 percent snapshot reserve leaves about
-      60.8 GiB, which holds the 40 GiB LUN that provision-lun.sh creates by default and leaves room
-      for snapshots of it. Raise it if you intend to fill the LUN and keep several snapshots. The volume is created through the Amazon FSx API
+      60.8 GiB, which holds the 40 GiB LUN that provision-lun.sh creates by default. The reserve
+      exists but nothing fills it -- SnapshotPolicy is none below, so no snapshot is scheduled.
+      Raise the size and set a policy if you intend to fill the LUN and keep several snapshots. The volume is created through the Amazon FSx API
       rather than through ONTAP deliberately: a volume created on the ONTAP side receives no fsvol
       identifier and is therefore absent from Amazon CloudWatch, from AWS API tagging and from
       AWS Backup.
@@ -260,8 +261,14 @@ Resources:
       UserData:
         Fn::Base64: |
           #!/bin/bash
-          # The scripts in this example need these packages. Installing them here means the client is
-          # ready when the stack reports CREATE_COMPLETE.
+          # The scripts in this example need these packages.
+          #
+          # CREATE_COMPLETE does NOT mean this finished. There is no CreationPolicy and nothing calls
+          # cfn-signal, so the stack completes when the instance is running and this script may still
+          # be installing. Before running connect-iscsi.sh, check on the host:
+          #   command -v iscsiadm && systemctl is-active iscsid
+          # and if either is missing, read /var/log/quickstart-setup.log -- a dnf failure is recorded
+          # only there.
           dnf install -y iscsi-initiator-utils device-mapper-multipath jq >/var/log/quickstart-setup.log 2>&1
           systemctl enable --now iscsid >>/var/log/quickstart-setup.log 2>&1
       Tags:

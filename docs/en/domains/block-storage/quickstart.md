@@ -65,6 +65,23 @@ installs `iscsi-initiator-utils`, `device-mapper-multipath` and `jq` through use
 
 ---
 
+### Cost — forgetting to delete it is the expensive case
+
+**This creates billable resources.** Estimated at the defaults (1,024 GiB SSD, 384 MBps throughput capacity, one `t3.medium`).
+
+| Item | Rate | Per month at the defaults |
+|---|---|---|
+| SSD storage (ONTAP Single-AZ-2) | $0.150 / GB-month | $153.60 |
+| Throughput capacity (ONTAP Single-AZ-2) | $2.013 / MBps-month | $772.99 |
+| Client (`t3.medium` Linux) | $0.0544 / hour | about $39.71 (over 730 hours) |
+| **Total** | | **about $966 / month (about $1.32 / hour)** |
+
+**Torn down after thirty minutes it is under a dollar.** The expensive case is forgetting it, and **about 80 percent of that is throughput capacity** — lowering the storage size does not help.
+
+> Rates retrieved from the AWS Price List API for `ap-northeast-1`, On-Demand (**retrieved 2026-09-06**). **The monthly figures are the rates multiplied by the defaults, not amounts read off a bill.** Other Regions and other values differ. Data transfer and snapshots are not included.
+
+**Read [Teardown](#teardown) before you run `create-stack`.**
+
 ## Steps
 
 ### 1. Create a secret for the password
@@ -252,11 +269,23 @@ exactly.**
 **CloudFormation does not know about what the scripts created.** Remove the ONTAP objects first.
 
 ```bash
-sudo ./verify-block.sh ...      # record what exists
-sudo iscsiadm -m node -U all && sudo iscsiadm -m node -o delete
-# then delete the LUN map, the igroup and the LUN through the ONTAP REST API or CLI
+sudo ./verify-block.sh ...            # note what exists, including the UUIDs
+
+# Logout and delete are separate lines: with no sessions `-U all` exits 21, so chaining with &&
+# skips the delete that follows -- the same exit-code class the scripts themselves handle.
+sudo iscsiadm -m node -U all || true
+sudo iscsiadm -m node -o delete || true
+
+# Then the ONTAP objects, in this order. The UUIDs come from the verify-block.sh output above.
+curl -sk -u "fsxadmin:$PW" -X DELETE \
+  "https://${MGMT_IP}/api/protocols/san/lun-maps/${LUN_UUID}/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/protocols/san/igroups/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/storage/luns/${LUN_UUID}"
+
 aws cloudformation delete-stack --stack-name fsxn-block-quickstart
 ```
+
+The LUN map call is [DELETE /protocols/san/lun-maps/{lun.uuid}/{igroup.uuid}](https://docs.netapp.com/us-en/ontap-restapi-9151/delete-protocols-san-lun-maps-.html) (ONTAP 9.6 and later, the REST form of `lun mapping delete`). The igroup and the LUN take the same DELETE-by-UUID form.
 
 Deletion took about eighteen minutes.
 

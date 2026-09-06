@@ -107,7 +107,7 @@ cfn: ## Run cfn-lint on every CloudFormation template (fails when it is not inst
 	@command -v cfn-lint >/dev/null 2>&1 || { \
 		echo "error: cfn-lint is not installed, so this gate would check nothing."; \
 		echo "       A template that only fails at CreateStack time wastes a reader's"; \
-		echo "       twenty-minute file-system creation to find it."; \
+		echo "       seventeen-minute file-system creation to find it."; \
 		echo "       Install it:  pip install -r requirements-dev.txt"; \
 		exit 1; \
 	}

@@ -9,6 +9,42 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A password containing `"` or `\` was silently truncated before it reached ONTAP, and an
+  authentication failure had no message.** The example scripts hand curl the credential through
+  `--config`, whose parser ends a double-quoted value at the first unescaped quote and drops a lone
+  backslash. Measured with `--libcurl` on curl 8.7.1: `pa"ss` arrived as `pa`, `pa\ss` as `pass`,
+  no warning either time — and Amazon FSx accepts both characters in an `fsxadmin` password, so the
+  reader could not be told to avoid them. The value is now escaped, verified against real curl for a
+  quote, a backslash, both together, `#`, and spaces.
+  - **The HTTP status was never checked.** `curl` ran without `--fail` and the status was discarded,
+    so a 401 reached `jq` as a non-JSON body: `jq -e` failed inside an `if` and was ignored, then the
+    next `jq -r` exited under `set -o pipefail` and killed the script with nothing said about
+    authentication. The status is now captured and 401/403 is reported as a rejected credential.
+- **The quickstart created about $966 per month of resources and said nothing about cost.** The
+  prerequisites listed the VPC, the endpoints and the CLI permissions; the teardown was the last
+  section of a 280-line document. Both quickstarts and the example README now carry the figure before
+  the first `create-stack`, with the note that **about 80 percent of it is throughput capacity**, so
+  lowering the storage size does not help. Rates from the AWS Price List API for `ap-northeast-1`,
+  On-Demand, retrieved 2026-09-06; the monthly totals are arithmetic on the defaults, not amounts read
+  off a bill.
+- **The teardown skipped its own delete step and did not give the ONTAP calls.** `iscsiadm -m node -U
+  all && … -o delete` skips the delete when there are no sessions, because `-U all` exits 21 — the
+  same exit-code class the scripts themselves handle. Split into separate lines, and the three ONTAP
+  DELETE calls are now written out rather than described, in a directory whose premise is that those
+  calls have no AWS API.
+- **`CREATE_COMPLETE` did not mean the client was ready, but the template said it did.** There is no
+  `CreationPolicy` and nothing calls `cfn-signal`, so the stack completes while `dnf install` may
+  still be running and its failure is only in a log file. The comment now says what to check on the
+  host instead of claiming readiness. Also corrected: `VolumeSizeBytes` described the snapshot reserve
+  as leaving "room for snapshots" while `SnapshotPolicy` is `none` — the reserve exists, nothing
+  schedules a snapshot into it.
+- **Two gates were hidden by narrowing `PATH` to `/usr/bin:/bin`, which is not a reliable way to hide
+  a tool.** `shell` and `cfn` were moved to an empty `PATH` for that reason; `markdown` and `secrets`
+  were left behind, asserting only a non-zero exit. With no `PATH` the recipe dies at 127 whether or
+  not the guard exists, so deleting either guard left the test passing. Both now use an empty `PATH`
+  and require the message naming the missing tool — confirmed by deleting `make markdown`'s guard and
+  watching the test fail on the message rather than on the exit code.
+
 - **Every diagram label was too small to read, and no gate said so.** The figures were authored at
   `fontSize=11` on a 1220px canvas. A reader's column is about 880px wide, so the image was scaled to
   0.72 and the labels arrived at roughly 8px — half the surrounding body text, and the measured

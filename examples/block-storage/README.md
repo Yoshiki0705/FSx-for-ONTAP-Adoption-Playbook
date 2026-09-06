@@ -42,6 +42,14 @@ Outputs give `FileSystemId`, `SvmName`, `VolumeName`, `ClientInstanceId` and the
 ONTAP management address is **not** an output, because `AWS::FSx::FileSystem` exposes no
 `Fn::GetAtt` for it.
 
+## Cost
+
+At the defaults this creates 1,024 GiB of SSD and 384 MBps of throughput capacity plus a `t3.medium`
+— **about $966 per month in `ap-northeast-1`, roughly $1.32 per hour**, of which about 80 percent is
+the throughput capacity. Torn down after half an hour it costs under a dollar. Rates from the AWS
+Price List API, On-Demand, retrieved 2026-09-06; the monthly figures are arithmetic on the defaults
+rather than amounts read off a bill. **Read [Teardown](#teardown) first.**
+
 ## Order
 
 ```bash
@@ -109,13 +117,26 @@ warning.
 
 ## Teardown
 
+The scripts create nothing that CloudFormation knows about, so the ONTAP objects go first.
+
 ```bash
-# The scripts create nothing that CloudFormation knows about, so remove the ONTAP objects first.
-sudo ./verify-block.sh ...            # note what exists
-sudo iscsiadm -m node -U all && sudo iscsiadm -m node -o delete
-# then delete the LUN map, igroup and LUN through the ONTAP REST API or CLI, and finally:
+sudo ./verify-block.sh ...            # note what exists, including the UUIDs
+
+# Logout and delete are separate lines: with no sessions `-U all` exits 21, so chaining with &&
+# skips the delete that follows -- the same exit-code class the scripts themselves handle.
+sudo iscsiadm -m node -U all || true
+sudo iscsiadm -m node -o delete || true
+
+# Then the ONTAP objects, in this order. The UUIDs come from the verify-block.sh output above.
+curl -sk -u "fsxadmin:$PW" -X DELETE \
+  "https://${MGMT_IP}/api/protocols/san/lun-maps/${LUN_UUID}/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/protocols/san/igroups/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/storage/luns/${LUN_UUID}"
+
 aws cloudformation delete-stack --stack-name fsxn-block-quickstart
 ```
+
+The LUN map call is [DELETE /protocols/san/lun-maps/{lun.uuid}/{igroup.uuid}](https://docs.netapp.com/us-en/ontap-restapi-9151/delete-protocols-san-lun-maps-.html) (ONTAP 9.6 and later, the REST form of `lun mapping delete`). The igroup and the LUN take the same DELETE-by-UUID form.
 
 A deleted ONTAP volume waits in the recovery queue for at least 12 hours under a changed name. If a
 FlexClone relationship survives there it blocks the parent volume, its SVM and the whole file system

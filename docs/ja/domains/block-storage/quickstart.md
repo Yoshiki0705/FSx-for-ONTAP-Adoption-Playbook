@@ -53,6 +53,23 @@ lang: ja
 
 **クライアント側に用意するものはありません。** テンプレートが AL2023 を 1 台立て、`iscsi-initiator-utils`・`device-mapper-multipath`・`jq` を UserData で入れます。
 
+### 費用 — 消し忘れが一番高い
+
+**この手順は課金されるリソースを作ります。** 既定値（SSD 1,024 GiB / スループット容量 384 MBps / `t3.medium` 1 台）での概算です。
+
+| 項目 | 単価 | 既定値での月額 |
+|---|---|---|
+| SSD ストレージ（ONTAP Single-AZ-2） | $0.150 / GB-月 | $153.60 |
+| スループット容量（ONTAP Single-AZ-2） | $2.013 / MBps-月 | $772.99 |
+| クライアント（`t3.medium` Linux） | $0.0544 / 時 | 約 $39.71（730 時間換算） |
+| **合計** | | **約 $966 / 月（約 $1.32 / 時）** |
+
+**30 分で撤去すれば $1 未満です。** 高くつくのは消し忘れたときで、**そのうち約 80% はスループット容量**です。容量を減らしても効きません。
+
+> 単価は AWS Price List API から `ap-northeast-1` の On-Demand を取得（**取得日 2026-09-06**）。**月額は単価に既定値を掛けた計算値で、請求書の実測ではありません。** 他リージョン・他の値では変わります。データ転送とスナップショットは含みません。
+
+**先に [撤去](#撤去) を読んでから `create-stack` を実行してください。**
+
 ---
 
 ## 手順
@@ -223,11 +240,23 @@ sudo ./connect-iscsi.sh --target-ips "<iscsi-ip-1> <iscsi-ip-2>"
 **スクリプトが作ったものは CloudFormation が知りません。** ONTAP 側を先に消します。
 
 ```bash
-sudo ./verify-block.sh ...      # 何があるか記録する
-sudo iscsiadm -m node -U all && sudo iscsiadm -m node -o delete
-# LUN マップ → igroup → LUN の順に ONTAP REST か CLI で削除
+sudo ./verify-block.sh ...        # UUID を含めて何があるか記録する
+
+# ログアウトと削除は別の行にします。セッションが無いとき `-U all` は 21 で終わるので、
+# && で繋ぐと後続の -o delete が実行されません。
+sudo iscsiadm -m node -U all || true
+sudo iscsiadm -m node -o delete || true
+
+# ONTAP 側を LUN マップ → igroup → LUN の順に削除します。UUID は上の verify-block.sh の出力にあります。
+curl -sk -u "fsxadmin:$PW" -X DELETE \
+  "https://${MGMT_IP}/api/protocols/san/lun-maps/${LUN_UUID}/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/protocols/san/igroups/${IGROUP_UUID}"
+curl -sk -u "fsxadmin:$PW" -X DELETE "https://${MGMT_IP}/api/storage/luns/${LUN_UUID}"
+
 aws cloudformation delete-stack --stack-name fsxn-block-quickstart
 ```
+
+LUN マップの削除は [DELETE /protocols/san/lun-maps/{lun.uuid}/{igroup.uuid}](https://docs.netapp.com/us-en/ontap-restapi-9151/delete-protocols-san-lun-maps-.html)（ONTAP 9.6 以降、CLI の `lun mapping delete` に対応）です。igroup と LUN は同じ「UUID 指定の DELETE」の形です。
 
 削除には 18 分ほどかかりました。
 
