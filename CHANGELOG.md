@@ -1416,6 +1416,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Changed
 
+- **Two of the three unmeasured SMB items were measured upstream, and one of the two does not reduce
+  to a number.** Three documents said all three were unmeasured; they now say two are measured, one
+  is not, and the client-count result is conditional. **The three were updated in one commit** —
+  leaving one behind would leave a measured item recorded as unmeasured, which is the same class of
+  error as the reverse.
+  - **The client-count test produced two tables with opposite conclusions, both measured.** Reading
+    the same file from every client keeps scaling to 8 clients and 94 Gbps at the ONTAP port;
+    reading non-overlapping regions flattens at 4. What decides it is whether the reads overlap, and
+    the growth on the shared side is ONTAP's memory supplying the overlap. **The same shape appears
+    on NFS, so it is not a protocol difference.** Citing either table alone as "how SMB scales with
+    client count" describes a different product, so both are registered, each row saying the other
+    is required.
+  - **Those figures are not a baseline.** Six points ran inside about forty minutes with a 180-second
+    steady window each, and AWS documents a network I/O credit mechanism, so burst and baseline are
+    not separated at that window length. Recorded in the fit-conditions document as something an
+    agent must not use as grounds.
+  - **Sustained write does not decay, and is not client-bound.** 1,488.03 MB/s over a 900-second
+    window, with 0.07% between the first and last third, and 0.6% between a 8-vCPU and a 36-vCPU
+    client. **It matches neither published figure** — not the general rule of a third of throughput
+    capacity, nor the exception table. On the same file system, node and physical port, NFS gives
+    2,063.00 MB/s and SMB 1,488.03. Neither side has ruled on which reading is right, and the
+    documents now say that one figure being closer to a published number is not grounds for
+    doubting the other.
+  - **Every SMB number here presupposes a setting that is off by default.** ONTAP ships SMB
+    Multichannel disabled, and `dialect=3.1.1` negotiates without it, so a 3.1.1 connection can be
+    single-channel while `max_connections_per_session` reads 32. Enabling it reaches only new
+    connections, which means **a success response is not evidence that the connection it was issued
+    for received the setting.** Added as a precondition rather than a footnote, because it invalidates
+    a comparison silently.
 - **The two VMware paths were described as one, and one of them had moved to GA.** `recent-updates.md`
   listed "AWS Transform and Amazon EVS support FSx for ONTAP as a storage target" in a single line, which
   reads as one capability with two entry points. They are different paths in different states: AWS

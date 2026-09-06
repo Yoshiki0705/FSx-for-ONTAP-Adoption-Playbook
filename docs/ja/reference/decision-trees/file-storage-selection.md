@@ -157,7 +157,8 @@ graph TD
 | FSx for ONTAP を選んだ後のブロックの判断 | [ブロックプロトコルとレイアウトの選択](block-protocol-and-layout.md) |
 | SMB の ID と監査の設計 | [SMB のユーザー管理と監査は 2 つの選択で決まる](smb-identity-and-audit.md) |
 | マルチプロトコルの権限モデル | [ボリュームのセキュリティスタイルが権限モデルを決める](../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
-| **SMB の台数試験・持続書き込み・キャッシュ制御下の読み取り** | **未測定です。** 分岐条件に使っていません。範囲は [SMB について未測定の範囲](../comparison/file-storage-options.md#smb-について未測定の範囲) にあります |
+| **SMB のキャッシュ制御下の読み取り** | **未測定です。** 分岐条件に使っていません |
+| **SMB の台数試験と持続書き込み** | **測定されましたが、分岐条件にはしていません。** 台数試験は全台が同じデータを読むかどうかで逆の結論が出るため、単一の値になりません。範囲と両方の表は [SMB の測定済みの範囲と未測定の範囲](../comparison/file-storage-options.md#smb-の測定済みの範囲と未測定の範囲) にあります |
 | 費用の比較 | 料金は改定されます。[単価の確認先](../file-protocol-resource-map.md#単価と提供地点の確認先)から現行の値を引いてください |
 
 ---
