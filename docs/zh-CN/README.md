@@ -194,6 +194,7 @@ make all           # 以上全部
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 可观测性集成（指标、告警、自动响应） |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 集成（Databricks / Snowflake / Athena / Glue / EMR） |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 迁移 |
+| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 通过 S3 收集 → 经 FlexCache 的 NFS/SMB 使用。**持有文件协议的性能实测数据**，本仓库的性能描述大多引用自此处（[引用索引](../ja/reference/cross-repo-index.md)） |
 
 ---
 
