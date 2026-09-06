@@ -93,6 +93,13 @@ lang: ja
 | `docs/ja/reference/file-protocol-resource-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/support-matrix-fsx-ontap-flexcache-s3ap.md` | `ONTAP バージョンだけでは判断できない` | マネージドサービス上の機能可否が ONTAP のバージョンだけでは決まらないこと |
 | `docs/ja/reference/decision-trees/file-storage-selection.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/decision-trees/choosing-this-architecture.md` | `S3 Access Point のみでよい。ファンアウトは不要` | 利用拠点が Origin と同一なら FlexCache のファンアウトが不要であること。この決定木の終端 5 から送り出す先 |
 | `docs/ja/reference/fsx-ontap-fit-conditions.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification-status.md` | `公開ドキュメントに記載を見つけられていない。「できない」ではない` | 供出元の「未確認」の定義。**`cannot` と読み替えないことの根拠** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `8 台の 11,194.7 MiB/s は 94 Gbps である` | 同じファイルを 8 台で読んだときのポート実測。**重ならない領域の表と 2 行で 1 組**  |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `4 台と 8 台で止まった` | 重ならない領域では 4 台で頭打ちになること。**同一ファイル側の行だけを引くと逆の結論になる** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `同一ファイル側の伸びは、ONTAP のメモリが重なりを供給した結果である` | 伸びの原因。2 つの表を片方だけ引いてはいけない理由 |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `クライアントを 4.5 倍の型に変えても 0.6% しか動かない` | 15 分の持続書き込みがクライアント律速ではないこと |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `SMB は NFS の 72.1%` | 同一環境・同一物理ポートでの NFS との比。**どちらが公表値に近いかを優劣の根拠にしない** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/smb-multichannel-enablement.md` | `ONTAP 9 の SMB Multichannel は無効で出荷される` | SMB Multichannel が ONTAP で既定無効であること。**すべての SMB 数値の前提** |
+| `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/smb-multichannel-enablement.md` | `成功したという応答は、その接続に適用された証拠ではない` | 有効化が既に張られた接続に届かないこと（Tree Connect） |
 
 <!-- cross-repo-table:end -->
 
