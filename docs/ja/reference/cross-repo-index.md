@@ -87,6 +87,10 @@ lang: ja
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `キャッシュの温度が揃っていない` | NFS 16 接続の列と SMB Multichannel の列が同条件でないこと。**この 2 列から SMB と NFS の優劣を取らない** |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/performance-testing-guide.md` | `2,200 MB/s → 267 MB/s` | ボリューム使用率の上昇で書き込みが落ちること |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/performance-testing-guide.md` | ``測定ファイルを `rm` しても空きは戻らない`` | 削除では容量が戻らないこと。**上の行だけを引くと回復手順を誤るため、2 行で 1 組** |
+| `docs/ja/reference/file-protocol-resource-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-iops-concurrency.md` | `性能仕様表には NVMe キャッシュの列が**ありません**` | 性能仕様表とデプロイタイプの節が食い違っていること。**列の不在を「非対応」と読むか「記載なし」と読むかで結論が変わる** |
+| `docs/ja/reference/file-protocol-resource-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-iops-concurrency.md` | `ONTAP に直接聞いて決着させました` | 食い違いを ONTAP への直接確認で決着させたこと。**上の行だけだと「表に列が無い」で終わり、どう確定させたかが落ちるため 2 行で 1 組** |
+| `docs/ja/reference/file-protocol-resource-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/errata-fpolicy-s3ap-coverage.md` | `書き込みが S3 Access Point 経由で届く場合には成り立たない` | FPolicy による遮断が S3 Access Point 経由の書き込みには成り立たないこと |
+| `docs/ja/reference/file-protocol-resource-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/support-matrix-fsx-ontap-flexcache-s3ap.md` | `ONTAP バージョンだけでは判断できない` | マネージドサービス上の機能可否が ONTAP のバージョンだけでは決まらないこと |
 
 <!-- cross-repo-table:end -->
 
