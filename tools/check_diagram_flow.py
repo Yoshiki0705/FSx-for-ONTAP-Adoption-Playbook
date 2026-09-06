@@ -37,10 +37,12 @@ that do not render and misses ones that do. The direction rule removes most of t
 that all advance the same way have far fewer opportunities to meet.
 
 Nothing here is specific to one repository: paths are discovered rather than configured, so this file
-is copied between repositories as-is with **one line** adjusted -- the suppression on the parse call
-in `_parse()`. A repository whose ruff selects `S` needs `# noqa: S314` there; one that selects
-`RUF100` without `S` rejects the same comment as unused. The two cannot both be satisfied by one
-line, so the divergence is isolated to that function rather than left to spread.
+is copied between repositories as-is. Two things then differ, both of them known. The suppression on
+the parse call in `_parse()`: a repository whose ruff selects `S` needs `# noqa: S314` there, and one
+that selects `RUF100` without `S` rejects the same comment as unused, so the divergence is isolated to
+that one function rather than left to spread. And the line wrapping, because each repository's ruff
+carries its own line length and reformats the copy on arrival -- so the copies are the same logic and
+not the same bytes, and a diff between two of them is expected to show re-wrapped statements.
 
 There is no debt file. This gate was wired only after every figure in the repository passed it, so
 there is nothing to carry, and a gate with no exemption list cannot grow one quietly.
@@ -178,7 +180,10 @@ def inspect(path: Path, text: str) -> list[Finding]:
             rect = _rect(cell)
             if rect is not None:
                 rects[cid] = rect
-            if IMAGE_SHAPE.search(style) and "verticalLabelPosition=bottom" not in style:
+            if (
+                IMAGE_SHAPE.search(style)
+                and "verticalLabelPosition=bottom" not in style
+            ):
                 findings.append(
                     Finding(
                         path,
@@ -238,7 +243,10 @@ def check() -> int:
         try:
             findings += inspect(path, path.read_text(encoding="utf-8"))
         except ET.ParseError as error:
-            print(f"error: {path.relative_to(ROOT)} is not valid XML: {error}", file=sys.stderr)
+            print(
+                f"error: {path.relative_to(ROOT)} is not valid XML: {error}",
+                file=sys.stderr,
+            )
             return 1
 
     if findings:
@@ -273,7 +281,9 @@ def _doc(cells: str) -> str:
     )
 
 
-def _node(cid: str, x: int, y: int, *, style: str = "rounded=1;", value: str = "n") -> str:
+def _node(
+    cid: str, x: int, y: int, *, style: str = "rounded=1;", value: str = "n"
+) -> str:
     return (
         f'<mxCell id="{cid}" value="{value}" style="{style}" vertex="1" parent="1">'
         f'<mxGeometry x="{x}" y="{y}" width="80" height="80" as="geometry" /></mxCell>'
@@ -296,7 +306,9 @@ def _frame(cid: str, x: int, y: int, w: int, h: int) -> str:
 
 
 ICON = "sketch=0;html=1;shape=image;verticalLabelPosition=bottom;verticalAlign=top;"
-ICON_SIDE = "sketch=0;html=1;shape=image;verticalLabelPosition=middle;verticalAlign=middle;"
+ICON_SIDE = (
+    "sketch=0;html=1;shape=image;verticalLabelPosition=middle;verticalAlign=middle;"
+)
 GROUP = "shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud;align=left;spacingLeft=30;"
 GROUP_WIDE = GROUP.replace("spacingLeft=30", "spacingLeft=160")
 
@@ -394,7 +406,9 @@ def selftest() -> int:
             _doc(
                 _node("a", 400, 0)
                 + _frame("f", 0, 200, 520, 200)
-                + _edge("e", "a", "f", anchors="exitX=0.5;exitY=1;entryX=0.25;entryY=0;")
+                + _edge(
+                    "e", "a", "f", anchors="exitX=0.5;exitY=1;entryX=0.25;entryY=0;"
+                )
             ),
             True,
         ),
@@ -417,13 +431,19 @@ def selftest() -> int:
         if rejected != should_reject:
             verdict = "rejected" if rejected else "accepted"
             wanted = "reject" if should_reject else "accept"
-            print(f"  selftest FAILED: {name} -> {verdict}, expected to {wanted}", file=sys.stderr)
+            print(
+                f"  selftest FAILED: {name} -> {verdict}, expected to {wanted}",
+                file=sys.stderr,
+            )
             failures += 1
 
     fan_case = next(d for n, d, _ in cases if n.startswith("down and to the left"))
     rules = {f.rule for f in inspect(probe, fan_case)}
     if rules != {"flow-direction"}:
-        print(f"  selftest FAILED: fan case reported {rules}, expected flow-direction", file=sys.stderr)
+        print(
+            f"  selftest FAILED: fan case reported {rules}, expected flow-direction",
+            file=sys.stderr,
+        )
         failures += 1
 
     if failures:
