@@ -8,7 +8,7 @@
 
 Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を扱います。何を監視し閾値をどこに置くかは [運用](../../playbooks/05-operate/) 側、スループットやレイテンシがどう決まるかは [性能](../performance/) 側です。ここは「どの経路で値を取るか」だけを扱います。
 
-各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) にあります。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
+各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
 
 ---
 

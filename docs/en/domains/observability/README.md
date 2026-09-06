@@ -8,7 +8,7 @@
 
 Covers **how to choose a collection route** when monitoring Amazon FSx for NetApp ONTAP. What to monitor and where to set thresholds belongs to [Operate](../../playbooks/05-operate/); how throughput and latency are determined belongs to [Performance](../performance/). This module only covers which route the values come through.
 
-Implementation of each route (templates, per-vendor integrations, building the collection stack) lives in [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations). **This module answers "which one to choose", not "how to build it".**
+Implementation of each route (templates, per-vendor integrations, building the collection stack) lives in [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations). **This module answers "which one to choose", not "how to build it".**
 
 ---
 

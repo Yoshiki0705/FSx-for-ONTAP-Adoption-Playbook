@@ -42,7 +42,7 @@ Amazon FSx for NetApp ONTAP に対する操作は 2 つの管理面に分かれ�
 
 ## クロスアカウントで必要になる構成要素
 
-公式手順の構成要素です。**作り方（画面操作、テンプレート、コマンド）はここでは扱いません** — 出典と [fsxn-observability-integrations](https://github.com/Yoshiki0705/fsxn-observability-integrations) にあります。
+公式手順の構成要素です。**作り方（画面操作、テンプレート、コマンド）はここでは扱いません** — 出典と [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。
 
 | # | 要素 | どちらのアカウントか |
 |---|---|---|
