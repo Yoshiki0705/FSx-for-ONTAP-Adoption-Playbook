@@ -148,7 +148,14 @@ def selftest() -> int:
 
 
 def changed_workflows(base: str = "origin/main") -> list[str]:
-    """Workflow files this branch touches, relative to the base branch."""
+    """Workflow files this branch touches, relative to the base branch.
+
+    **`cwd` is the repository root, taken from this file's own location.** Without it the guard was
+    inert in the only configuration it runs in: a hook process does not start inside the repository,
+    `git diff` failed there, and **the empty result read as "no unobserved workflow was touched".** It
+    was tested from inside the repository and shipped - the same mistake a sibling reported after
+    reading a local pass as evidence about a hosted runner.
+    """
     try:
         out = subprocess.run(
             ["git", "diff", "--name-only", f"{base}...HEAD", "--", ".github/workflows"],
@@ -156,6 +163,7 @@ def changed_workflows(base: str = "origin/main") -> list[str]:
             text=True,
             check=False,
             timeout=20,
+            cwd=Path(__file__).resolve().parents[1],
             env={
                 "PATH": os.environ.get("PATH", ""),
                 "HOME": os.environ.get("HOME", ""),

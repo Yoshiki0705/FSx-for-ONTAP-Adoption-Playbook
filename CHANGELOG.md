@@ -9,6 +9,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The workflow-observability guard shipped inert.** `git diff` ran with the inherited working
+  directory; a hook process does not start inside the repository, git failed there, and **the empty
+  result read as "no unobserved workflow was touched"** — a silent pass on every merge. It now takes
+  the repository root from `__file__`.
+  - Tested from inside the repository, where it worked. **The same mistake a sibling reported about a
+    local pass versus a hosted runner**, one layer down: not a different machine, a different
+    directory.
+  - **The first test of the fix did not discriminate.** It compared the list from outside against the
+    list from inside, and on a branch touching no workflow both are empty. The assertion is now on the
+    `cwd` git is given, verified by removing the fix and watching it fail.
 - **A mutation that skipped *after* being applied was reported as "not discriminated".** The skip
   guard existed only for the clean copy. In CI the clean run spent the API allowance, the mutated run
   was rate-limited, and the harness turned that into a **red gate about someone else's quota on a pull

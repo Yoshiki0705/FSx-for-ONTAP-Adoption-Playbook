@@ -166,6 +166,24 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### A guard tested from inside the repository can be inert where it runs
+
+The workflow-observability hook shipped **inert**. `git diff` ran with the inherited working
+directory, a hook process does not start inside the repository, git failed there, and **the empty
+result read as "no unobserved workflow was touched"** — a silent pass on every merge.
+
+It was tested from inside the repository, where it worked. **That is the same mistake a sibling
+reported after reading a local pass as evidence about a hosted runner**, arriving one layer down:
+not a different machine, a different working directory.
+
+So a guard that runs outside the repository takes its paths from `__file__`, and **is exercised from
+a directory that is not a repository at all.**
+
+**The first test of it did not discriminate either.** It compared the list from outside against the
+list from inside, and on a branch touching no workflow both are empty — **a test that depends on the
+branch's own diff proves nothing on most branches.** The assertion is now on the `cwd` git is given,
+because the directory git runs in *is* the bug. Verified by removing the fix and watching it fail.
+
 ### A workflow no pull request runs is merged unobserved
 
 `schedule` and `workflow_dispatch` are not observable triggers. **A change to such a workflow can be
