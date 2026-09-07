@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`pr-verify` had the defect it was written to fix, one layer up.** It exists because
+  `gh pr checks` answers about the latest run rather than the current head. Called straight after a
+  push, the API still reports the **previous** head, so every lookup keyed on a SHA that was correct
+  and stale. That happened four times in one session. Twice the old SHA had failed, so the answer was
+  "not safe to merge" and the wrong reason went unnoticed — **had the old SHA passed, this would have
+  cleared a merge for a commit it never examined.**
+  - A stale answer is not a verdict, so it now fails rather than passes.
+  - **The comparison is scoped to the case where the checked-out branch is the pull request's
+    branch.** The first version compared unconditionally and refused every run from `main` and
+    against anyone else's pull request. **A check that refuses ordinary use gets worked around**,
+    which is the failure the command exists to prevent. Both directions are tested, and both were
+    confirmed by hand: a differing branch name proceeds, a matching name with a differing SHA
+    refuses.
+  - Both git lookups route through one helper that scrubs `GIT_*`. An inherited `GIT_DIR` would
+    report another repository's HEAD and invent a mismatch that refuses everything — the same
+    inheritance that fabricated a committed file here.
+
 - **A dead repository name was reported as "cannot resolve", which is what a rate limit reports
   too.** 404 and 403 both arrive as `HTTPError`, so branching on the exception type collapses a
   verdict about the **name** into a verdict about the **request**. The check now classifies on the
