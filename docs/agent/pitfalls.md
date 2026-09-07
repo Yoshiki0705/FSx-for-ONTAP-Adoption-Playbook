@@ -166,6 +166,28 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### "The server did not answer" is a third verdict, and both ways of collapsing it are wrong
+
+A probe has three outcomes, not two. Collapsing the third into either neighbour fails, in opposite
+directions:
+
+| Collapsed into | What breaks |
+|---|---|
+| broken | The run fails over someone else's outage. **A check that is wrong when nothing is wrong stops being read** |
+| fine | **A permanently unreachable URL looks verified.** Silent, and the worse direction |
+
+The second one is not hypothetical. A sibling repository measured github.com's HTML endpoint
+returning **504 persistently** for particular repositories on a hosted runner while the REST API
+answered immediately — so a rule of "5xx means fine" would have retired those checks permanently
+without a word. It had also read a local pass as evidence about the runner, where the failure was
+reproducible and the local behaviour was not.
+
+Both checks here now report `?` separately: `check_links.py` marks the verdict with `UNDETERMINED`
+and does not fail, and `check_cross_repo.py --external` fails only on 404, which means the cited file
+moved. **The residual limit is stated rather than fixed:** a citation undetermined every week looks
+the same as one that passes. Reporting it every run is the whole mitigation; consecutive-run state
+would need storage this repository does not have.
+
 ### Where the enforcing code sits decides whether a prohibition is enforceable
 
 **Writing a prohibition in the source is not sufficient.** It also has to be reachable by a test. A
