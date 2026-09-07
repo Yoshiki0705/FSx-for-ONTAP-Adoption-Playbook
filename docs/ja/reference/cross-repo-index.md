@@ -60,9 +60,9 @@ lang: ja
 | 引用元 | リポジトリ | パス | 確認する文字列 | 何を引いているか |
 |---|---|---|---|---|
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `EC2 の 1 フローあたり全二重 5 Gbps` | FSx for ONTAP の単一接続が当たっているのは EC2 の 1 フロー上限であること |
-| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | ファイルプロトコルの単一接続が 625 MBps に届かず、625 で割る形が必要セッション数を約 5% 少なく出すこと |
-| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `別の上限である` | 近い値を同じ原因に束ねないという訂正そのもの。**ブロックの値をファイルの値で代用しない根拠** |
-| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500 MiBps に一致する` | Amazon EFS の 499.79 MB/s は 1 フロー上限ではなくクライアント単位のクォータに一致すること。**近い値を同じ原因に束ねない** |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | ファイルプロトコルの単一接続が 625 MBps に届かず、625 で割る形が必要セッション数を約 5% 少なく出すこと。**この 1 本は発火を「読み直せ」の信号として扱い、撤回の検出には使いません** — 範囲の両端が単一接続の実測 3 行から出ているので、**4 本目が足されるだけで動きます。** ゲートは行の追加と主張の撤回を区別できないので、**自動で本文を直すと拡張を撤回として記録します** |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `別の上限である` | 近い値を同じ原因に束ねないという訂正そのもの。**ブロックの値をファイルの値で代用しない根拠。** ブロックの行が増えても動かないので、**撤回の検出に使えます** |
+| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500 MiBps に一致する` | Amazon EFS の 499.79 MB/s は 1 フロー上限ではなくクライアント単位のクォータに一致すること。**近い値を同じ原因に束ねない。** クライアント単位のクォータを指すので、**ブロックの行が増えても動きません** — 撤回の検出用 |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `45% 違った` | 同一構成・同一パラメータで 2 回測って 45% 振れ、違いはキャッシュに何が残っていたかだけだったこと |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `0.18 倍` | 8 台・128 接続で、同じファイルを共有した場合と重ならない領域を読んだ場合の差 |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `既定 65,536 のままだと` | 既定 65,536 のままだと `rsize` が 64 KiB に切り下がるため、測定前に引き上げていること |
@@ -109,6 +109,35 @@ lang: ja
 <!-- cross-repo-table:end -->
 
 ---
+
+### 発火の意味が 1 通りでない probe の扱い
+
+**probe が発火したら撤回、とは読めません。** 主張に幅（範囲、件数、一覧）が含まれていると、
+**引用先が行を足しただけで文字列が変わります。** ゲートは行の追加と主張の撤回を区別できないので、
+発火を撤回と決めて本文を自動で直すと、**拡張を撤回として記録します。**
+
+同一ファイルに複数の probe を張るときは役割を分けます。
+
+| probe の性質 | 役割 |
+|---|---|
+| 幅を含む主張を指す（`500〜592 MB/s に収まる`）| **「該当節を読み直せ」の信号。** 発火は正常でありうる |
+| 幅を含まない主張を指す（`別の上限である`、`500 MiBps に一致する`）| **撤回の検出。** 発火は主張が消えたことを意味する |
+
+分けたのは、片方だけを残す案を却下した結果です。**「読み直せ」用だけにすると撤回を検出できず、
+「撤回検出」用だけにすると幅の変化に気づけません。** どちらの発火も意味が 1 通りに読めることが、
+分けたことで得られたものです。
+
+### ゲートの説明とゲートそのものの不一致
+
+**この表が登録内容です。** 散文で probe を列挙している場所は、**ゲートが変わっても追随しません。**
+
+実際に起きました。分担を提案した issue の本文に probe 7 本を列挙しており、その後 2 本を差し替えた
+時点で本文は現在のゲートの説明ではなくなりました。**列挙を実装だと読んだ相手が「壊れている」と
+報告し、その文字列は一度も登録されていませんでした。** 直す対象はゲートではなく本文でした。
+
+**規則: 他リポジトリへ probe の内容を伝えるときは、この表への参照 1 行にする。** 現在の登録を
+転記すると同じ問題が再発します。**故障・撤回・未対応を他者へ報告する前に、散文ではなく登録表を
+読んでください。**
 
 ## まだ probe を張れていない引用
 

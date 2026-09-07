@@ -166,6 +166,28 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### Prose describing a gate does not follow the gate
+
+**A gate's registration table is the gate. A list of its contents written in prose is a snapshot that
+stops being true the moment the table changes** — and nothing fails when it drifts, because prose is
+not executed.
+
+It happened here. An issue proposing the division of labour with a sibling enumerated seven probe
+strings in its body. Two were later replaced, and from that moment the enumeration described a gate
+that no longer existed. **The sibling read the enumeration as the implementation, reported one of the
+strings as broken, and the string had never been registered at all.** Nothing was broken; the body
+was stale. The repair belonged to the prose, not to the gate.
+
+So the rule when telling another repository what a gate checks: **a one-line reference to the
+registration table, never a copy of its contents.** Copying reintroduces the same drift, one
+generation later. And before reporting a failure, a retraction, or a gap in someone else's gate,
+**read the registration rather than the description of it.**
+
+The general form is already in this file twice, in different clothes — a check whose tool is absent
+is indistinguishable from one that passed, and a prohibition is enforceable only where the enforcing
+code can be reached. **This is the documentation-facing member of the same family: the description of
+a control is not the control.**
+
 ### "The server did not answer" is a third verdict, and both ways of collapsing it are wrong
 
 A probe has three outcomes, not two. Collapsing the third into either neighbour fails, in opposite
