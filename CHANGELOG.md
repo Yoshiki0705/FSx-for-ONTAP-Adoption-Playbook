@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The 625 MBps divisor was described as reasoning when it is documented.** Both FSx for ONTAP block
+  procedures state "the Amazon EC2 single client maximum of 5 Gbps (~625 MBps)" verbatim, as the
+  preamble to the step that adds sessions. **The divisor is `documented`.** What is unverified is two
+  other things, and the note now separates them from it: **linearity** (whether n sessions deliver n
+  times one, unmeasured) and **whether the divisor matches measurement**.
+  - **On file protocols it does not.** Single-connection results on the same file system, client type
+    and instrument reached **94.7%** and **91.9%** of 625 MBps. **Dividing by 625 therefore under-counts
+    sessions by about 5%**, so the note now says to add one session rather than round up — rounding
+    leaves zero headroom whenever the division is exact.
+  - **Block is still unmeasured, and the file numbers are not transferable.** The note says so
+    explicitly: what can be claimed is "file protocols came in 5 to 8% low, block is unmeasured".
+    **"AWS states 625 MBps" and "625 MBps was measured" are different claims.**
+- **AWS's own arithmetic for eight sessions does not match the paths the same procedure creates.** The
+  text reads "8 sessions per initiator **per ONTAP node**", and an SVM has an iSCSI LIF on both nodes,
+  so `nr_sessions=8` produces **16**. The stated aggregate is **40 Gbps = 8 × 5**, not 16 × 5. **Which
+  counting the figure refers to is not decidable from that page.** The note now states that its own
+  "8 sessions" means the `nr_sessions` value and that the path count is twice that — the difference is
+  a factor of two in what gets provisioned.
+
 - **Twenty-one links into a sibling repository were verified by nothing, and a comment said they were
   handled.** The citation pattern documented tree links as out of scope "because `check_links.py`
   already resolves them" — that check **skips every `http(s)` URL unless `--external` is passed, and
@@ -971,6 +990,19 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
 
 ### Added
+
+- **The two conditions that must travel with any future block-versus-file comparison**, recorded before
+  the measurement exists rather than after someone reads the table wrong. Both favour block, so
+  dropping either makes an artefact read as a protocol difference: the file measurements sent **every
+  byte through one port** (the other measured zero), while block uses a LIF on each node and spreads
+  across two by default; and **raw-device `o_direct` traverses neither the page cache nor the file
+  system metadata path**, which the file numbers include.
+  - iSCSI against NVMe/TCP stays cleanly comparable — same host, OS, `openflag` and LIF, one parameter
+    apart.
+- **Two probes for the measurement now being cited**, since the 5% shortfall rests on figures owned by
+  another repository: the range those single-connection results fall in, and **the retraction that says
+  a near-identical number can have a different cause** — which is the reason a block estimate may not
+  borrow a file number.
 
 - **Mutation discrimination is now a gate rather than something checked by hand.** Two mutations were
   run manually to confirm the new negative cases had any detection capability at all, and **a manual
