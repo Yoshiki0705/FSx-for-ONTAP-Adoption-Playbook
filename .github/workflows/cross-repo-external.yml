@@ -44,4 +44,9 @@ jobs:
       # scheduled run should report the network findings even when an unrelated registration
       # problem is already failing the pull-request gate.
       - name: Verify probes and repository names
+        # The repository-name half asks the GitHub API, which allows 60 requests an hour
+        # unauthenticated. The token raises that to 5,000 and needs no extra permission beyond
+        # the read-only `contents` already granted above.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python3 tools/check_cross_repo.py --external

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -230,19 +231,22 @@ def check_repo_names() -> list[str]:
 
     for repo, files in sorted(seen.items()):
         url = f"https://api.github.com/repos/{OWNER}/{repo}"
-        request = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "cross-repo-check",
-                "Accept": "application/vnd.github+json",
-            },
-        )
+        headers = {
+            "User-Agent": "cross-repo-check",
+            "Accept": "application/vnd.github+json",
+        }
+        # Unauthenticated is 60 requests an hour, which a few dozen repositories fits inside
+        # once but not while iterating on this file. A token raises it to 5,000; CI has one.
+        token = os.environ.get("GITHUB_TOKEN", "").strip()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 payload = json.loads(response.read().decode("utf-8", "replace"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
-            # Unauthenticated requests are capped at 60 per hour. A few dozen repositories is
-            # well inside that; say so rather than reporting a name as stale.
+            # Report the failure rather than the name. A rate limit or an outage must not be
+            # reported as a stale name — that is how a gate teaches people to ignore it.
             problems.append(f"{repo}: cannot resolve ({exc})")
             continue
         full_name = str(payload.get("full_name", ""))
