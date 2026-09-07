@@ -201,6 +201,51 @@ def check_offline(rows: list[Row]) -> list[str]:
     return problems
 
 
+def check_self_paths() -> list[str]:
+    """Resolve absolute links that point back into this repository, against this working tree.
+
+    The whole path problem looked like one thing needing the citation index and the network, so
+    it sat in the network half. One subset needs neither: **an absolute URL pointing back into the
+    repository doing the checking** can be resolved against the files already on disk. It is
+    deterministic and entirely within our control, so it belongs in the per-commit gate rather
+    than the weekly one — the reasoning that keeps vendor URLs out of a blocking gate does not
+    transfer to a link we can break ourselves and fix ourselves.
+
+    `check_offline` skipped these deliberately, on the correct ground that a self-link is not a
+    cross-repository citation. That is true about *citation* and says nothing about whether the
+    path exists, which is how a self-link to a deleted file passed both halves.
+
+    Two boundaries, drawn on purpose:
+
+    - **A ref other than `main` is inconclusive, not dead.** A commit-pinned or branch-pinned link
+      points at a revision this working tree need not hold, so resolving it here would report a
+      defect that does not exist.
+    - **Paths inside sibling repositories stay out of scope.** Those genuinely need the network and
+      the index, and they are covered by ``--external``.
+
+    Credit where it belongs: a sibling repository found this subset was free after both of us had
+    filed the path gap as a single problem that needed infrastructure.
+    """
+    problems: list[str] = []
+    for path in prose_files():
+        rel = path.relative_to(ROOT).as_posix()
+        body = strip_code(path.read_text(encoding="utf-8"))
+        for match in BLOB_LINK.finditer(body):
+            if match.group("repo") != THIS_REPO:
+                continue
+            if match.group("ref") != "main":
+                continue
+            target = match.group("path")
+            if (ROOT / target).exists():
+                continue
+            problems.append(
+                f"{rel}: links to {target} in this repository, which does not exist. "
+                "The repository name is correct, so the name check passes — the path moved. "
+                "Fix the link, or the file, before this ships."
+            )
+    return problems
+
+
 def check_repo_names() -> list[str]:
     """Fail on a repository name that is not the repository's current name.
 
@@ -309,6 +354,8 @@ def main() -> int:
 
     rows, problems = parse_table()
     problems += check_offline(rows)
+    # Offline and deterministic, so it runs in the per-commit gate rather than the weekly one.
+    problems += check_self_paths()
 
     pinned = refs_in_prose()
     rows = [replace(row, ref=pinned.get((row.repo, row.path), row.ref)) for row in rows]
@@ -323,7 +370,10 @@ def main() -> int:
         return 1
 
     scope = "and every probe still present" if args.external else "registered"
-    print(f"cross-repo: {len(rows)} citation(s) {scope}")
+    print(
+        f"cross-repo: {len(rows)} citation(s) {scope}, "
+        "and every absolute link into this repository names a path that exists"
+    )
     return 0
 
 

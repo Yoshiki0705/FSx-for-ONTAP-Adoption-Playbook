@@ -62,10 +62,26 @@ def run_hook(
             text=True,
             check=False,
         )
-        if init.returncode != 0 or "re-init" in init.stderr:
+        # Verify the *outcome*, not the warning. The first version of this guard matched
+        # `"re-init" in init.stderr`, which depends on git keeping that wording and on git
+        # continuing to warn at all — and `-q` plus `capture_output` can leave no output to match.
+        # A sibling repository hit the same defect with `-q` set and had no trace whatsoever.
+        # Asking the scratch repository which git dir it belongs to cannot be worded away.
+        owned = subprocess.run(
+            ["git", "rev-parse", "--absolute-git-dir"],
+            env=env,
+            cwd=work,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        expected = (work / ".git").resolve()
+        resolved = Path(owned.stdout.strip() or "/nonexistent").resolve()
+        if init.returncode != 0 or resolved != expected:
             raise AssertionError(
-                "the scratch repository was not created cleanly, so any verdict below would be "
-                f"about the wrong repository: {init.stdout}{init.stderr}"
+                "the scratch repository was not created, so every verdict below would be about "
+                f"another repository — git dir resolved to {resolved}, "
+                f"expected {expected}: {init.stderr}{owned.stderr}"
             )
         (work / "seed.txt").write_text("seed\n", encoding="utf-8")
         return subprocess.run(
