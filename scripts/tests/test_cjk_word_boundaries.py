@@ -33,6 +33,11 @@ AUDIT = ROOT / "tools" / "audit_public_output.py"
 sys.path.insert(0, str(ROOT / "tools"))
 
 # Each case: a label, the Japanese-adjacent text, and the spaced text that already worked.
+#
+# Both are positive. **A version with the boundaries deleted outright passes them both**, because
+# removing a boundary only widens a match — so on their own they cannot tell the correct fix apart
+# from the laziest one. NEGATIVE below is what separates the two. A sibling repository found this by
+# mutation-testing its own equivalent: a guard-free version passed every positive case.
 CASES = [
     ("bare FSx", "FSxを使う構成です。", "The FSx deployment is ready."),
     (
@@ -43,6 +48,25 @@ CASES = [
     ("email", "連絡先person@corp.jpまで。", "Mail person@corp.jp for details."),
     ("vendor ticket", "課題AB-I-12345を参照。", "See AB-I-12345 for status."),
     ("internal ip", "管理IPは10.0.0.5です。", "The address 10.0.0.5 answers."),
+]
+
+
+# Embedded forms that must NOT match. Every one is a substring of a legitimate identifier, which is
+# why the fix cannot be "delete the boundary".
+#
+# `FSx_OnPre` also constrains the replacement. A guard written as `[^A-Za-z0-9]` is *looser* than
+# `\b`, because it treats `_` as a boundary, and a configured resource name then reads as prose.
+# `_` stays inside the character class for that reason.
+NEGATIVE = [
+    ("bare FSx", "XFSxN is a scratch identifier."),
+    ("bare FSx", "FSxNN appears in a generated name."),
+    ("bare FSx", "FSxN_OnPre is a storage virtual machine name."),
+    ("bare FSx", "FSx_OnPre_root is a volume name."),
+    ("bare FSx", "識別子 FSxN_OnPre を使っています。"),
+    ("account id", "1234567890123 is thirteen digits, not an account ID."),
+    ("account id", "v123456789012x is embedded in an identifier."),
+    ("vendor ticket", "XAB-I-12345Z is not a ticket reference."),
+    ("internal ip", "310.0.0.5 is not an RFC 1918 address."),
 ]
 
 
@@ -82,6 +106,27 @@ class RulesFireBesideJapanese(unittest.TestCase):
             [],
             "the boundary change lost detection of the spaced form:\n  "
             + "\n  ".join(missed),
+        )
+
+    def test_embedded_forms_are_not_reported(self) -> None:
+        """The negative side, which is what a deleted boundary fails.
+
+        Every string here is a substring of a legitimate identifier. A version with
+        the boundaries removed matches inside all of them, so this is the test that
+        tells a correct fix apart from "delete the boundary so the Japanese case
+        passes". Verified by mutation: with the two guards emptied, this fails while
+        both positive tests still pass.
+        """
+        wrong = []
+        for label, text in NEGATIVE:
+            result = audit(text)
+            if result.returncode != 0:
+                wrong.append(f"{label}: {text} -> {result.stdout.strip()}")
+        self.assertEqual(
+            wrong,
+            [],
+            "these are substrings of legitimate identifiers and must not be reported:\n  "
+            + "\n  ".join(wrong),
         )
 
     def test_the_sanctioned_placeholder_is_still_accepted(self) -> None:
