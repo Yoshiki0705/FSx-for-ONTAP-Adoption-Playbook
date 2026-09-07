@@ -118,6 +118,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`make workflow-observability` and a pre-merge hook: a workflow no pull request runs was being
+  merged unobserved.** `cross-repo-external.yml` has `schedule` and `workflow_dispatch` only, so a
+  change to it merges with **every check green and none of them about it.** The symptom was already
+  recorded in an issue before the cause was — two stale entries survived while the scheduled run
+  worked, because nobody read its result.
+  - The verdict is **`ask`, never `block`**. Dispatching needs the branch pushed first, so a person
+    drives push → dispatch → read → merge.
+  - **The argument against `block` was demonstrated, not reasoned.** The first hook resolved the
+    script through `git rev-parse` in the hook process's working directory, which is not the
+    repository, so it failed on every shell command and blocked unrelated work. Removed within a
+    minute.
+  - Reported by a sibling repository, with two bugs to avoid. **`\s{0,4}` for indentation** loses
+    every trigger after the first while the selftest stays green; it did not reproduce here because
+    triggers are intersected with a known set. **A pinned count drifting from the scan** — so the
+    assertion over the real workflows is a property, not a number.
+  - A mutation removing the `^` anchor from the `on:` extractor **survived**, and a case with the
+    word appearing mid-line was added to kill it. Three parser mutations now killed.
 - **The open question about whether an access point operation is counted by the rename and delete
   counters.** The volume is a NAS volume so the parameters apply, but **whether the counters see
   operations arriving over S3 is a separate matter, and no statement about it was found** on the

@@ -166,6 +166,40 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### A workflow no pull request runs is merged unobserved
+
+`schedule` and `workflow_dispatch` are not observable triggers. **A change to such a workflow can be
+merged with every check green and none of them about it** — the ticks are true and concern other
+workflows. `cross-repo-external.yml` is in that position here, and the symptom was recorded in an
+issue before the cause was: two stale entries survived while the scheduled run was working, because
+nobody was reading its result.
+
+A sibling measured the cost — merged behind **31 passing checks, none of which were that workflow**,
+first dispatch failed, and diagnosing it took a second merge.
+
+`scripts/check_workflow_observability.py` asks before `gh pr merge` when the branch touches one.
+**`ask`, never `block`:** dispatching needs the branch pushed first, so a person drives push →
+dispatch → read → merge, and a comment-only edit or a workflow waiting on a missing secret is a
+legitimate exception.
+
+**That argument got demonstrated rather than reasoned.** The first hook resolved the script through
+`git rev-parse` in the hook process's working directory, which is not the repository, so it **failed
+on every shell command and blocked unrelated work.** It was removed within a minute. A guard that
+stops ordinary work does not survive to guard anything.
+
+Two bugs the sibling hit are worth carrying even though neither reproduced here:
+
+- **`\s{0,4}` for indentation.** `\s` matches a newline, the line anchor stops meaning anything, and
+  every trigger after the first is lost — **two pull-request workflows were misclassified while the
+  selftest stayed green**, because it covered the verdict and not the parse. Use `[ \t]{0,4}`.
+- **A pinned count drifting from the scan.** A number counted over `*.yml` while scanning `*.y*ml`
+  left two files outside the number and inside the scan. **Assert a property instead** — "nothing is
+  called observed without an observing trigger" cannot drift.
+
+The first did not reproduce here, because triggers are extracted and then intersected with a known
+set, so over-consumption is filtered rather than fatal. **A mutation removing the `^` anchor from the
+`on:` extractor did survive**, and a case with the word appearing mid-line was added to kill it.
+
 ### Hunting quiet failures will not find the loud ones
 
 **"Look for the bug that leaves the run looking normal" is a good rule with a blind spot: the bug
