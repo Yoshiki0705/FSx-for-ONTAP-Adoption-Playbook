@@ -41,6 +41,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **The audit's role-label check missed the katakana form.** The pattern covered `lens`, `の視点` and
   `perspective` but not `レンズ`, so `> **Storage Specialist レンズ（…）**:` passed. No file here used
   it; a sibling repository did, which is how it surfaced. Added `レンズ` and bare `視点`.
+- **"ARP による遮断は未測定" understated what is actually known: the vendor documents no blocking
+  step at all.** The response is detect, warn, and snapshot. Verified directly against
+  [the vendor's page](https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html) on 2026-09-05,
+  which describes ARP as "detecting and warning about abnormal activity". So a design that expects
+  ARP to refuse a write is not waiting on a measurement — it is expecting something not in the
+  documented behaviour. **Detection through an access point is measured here** (150 high-entropy
+  objects recorded as suspect); blocking has to be expressed in the access point policy and IAM.
+  - Surfaced by a sibling repository, which found the blocking claim originated in **its own**
+    article and corrected it there. This repository had inherited the framing.
+- **Added the version scoping for ARP's learning period, which was missing entirely.** The same
+  vendor page states that **from ONTAP 9.16.1 a pre-trained model (ARP/AI) needs no learning period**,
+  covering NAS from 9.16.1 and **SAN from 9.17.1**. A plan built on "ARP needs 30 days" is built on a
+  generation-specific condition. The SAN figure also matters to the block storage module, where ARP
+  had not been considered at all.
+  - **The cross-repo issue this came from asserted the 30-day requirement as the reason nobody had
+    measured active mode.** That premise was wrong, and it was inferred from a sibling's document
+    rather than checked against the vendor's.
 
 - **Four claims sat inside `verified` notes without a measurement behind them, and one of them
   carried an alerting instruction.** Reviewing #107 after it merged found the boundary between what
