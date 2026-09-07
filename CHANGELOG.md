@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A premise was transcribed after declining to transcribe the claim built on it.** The note said the
+  parameters apply "because the volume is a NAS volume" — which presupposes a protocol restriction that
+  **no source supports.** The sibling that reported it has withdrawn it: the wording came from a
+  search-result snippet of a model document that cannot be opened, and **a snippet is not a source.**
+  Confirmed here by re-reading both CLI pages — `show` (9.17.1) and `modify` (9.16.1) — where no
+  protocol restriction appears. The note now says the restriction itself is unconfirmed, and that what
+  is unknown is whether the counters see operations arriving over S3.
+- **There are two always-enabled detection paths, not one.** The reference states that detection based
+  on **file-level** high entropy is always enabled and independent of the volume-level parameter, in
+  addition to the combined extension-and-entropy method already recorded.
+  - **The consequence runs both ways, and the second direction constrains the measurement above.**
+    Setting a parameter to `false` does not make an event unseen. And **a non-detection cannot be
+    attributed to any particular parameter**, because the always-on paths run alongside. What the cases
+    support is "no verdict emerged from this set of inputs within thirty minutes" — not "the rename
+    input did not fire".
+- **A clearer wording for the extension threshold**, from the `modify` page: "number of files observed
+  with a new file extension not seen before". **It is a file count**, which is the misreading this note
+  made and corrected, stated unambiguously at the source.
+
 - **An ambiguous sentence was read one way and the reading was written as fact.** `for this duration`
   admits "within that period" and "sustained across that period", and the note asserted the second by
   concluding the input could not be exercised. **Under the first reading the condition was met** — a
