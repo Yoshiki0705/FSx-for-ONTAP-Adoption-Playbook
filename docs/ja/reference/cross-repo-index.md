@@ -108,6 +108,20 @@ lang: ja
 
 ---
 
+## まだ probe を張れていない引用
+
+**引用表に載せられるのは、引用先のファイルに文字列が存在するものだけです。** 相手側の成果物が
+未コミットの間は probe を張れず、**張ると `make cross-repo` が落ちます。** 落ちるのが正しい挙動なので、
+「通すために probe を緩める」のではなく、ここに保留として書きます。
+
+| 引用元 | 根拠の所在 | 待っているもの |
+|---|---|---|
+| `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | Observability 側の実装ファイルのコミット。**回答時点で約 67 件が未コミットでした** |
+
+**Issue のコメントは公開されていて消えませんが、ファイルではないので probe の対象にできません。**
+つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。相手がコミットした時点で
+引用表へ移し、probe を張ってください。
+
 ## 引用を足すときの手順
 
 | # | 手順 | なぜ |
