@@ -27,6 +27,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.tests.gitenv import owns_git_dir, scrubbed_env
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "check_agent_context_budget.py"
 
@@ -69,20 +71,53 @@ class Fixture:
             LOADER_STUB, encoding="utf-8"
         )
         self._git("init", "-q")
+        self._assert_owns_its_git_dir()
         self.track("docs/agent/thing.md")
 
     def _git(self, *args: str) -> None:
-        subprocess.run(["git", *args], cwd=self.dir, check=True, capture_output=True)
+        # `env` is not optional here. Without it this call inherits GIT_DIR and GIT_INDEX_FILE
+        # from a pre-commit hook and operates on the real repository — which is how
+        # `docs/agent/orphan.md` became a committed file that was never on disk. See
+        # scripts/tests/gitenv.py for the full diagnosis.
+        subprocess.run(
+            ["git", *args],
+            cwd=self.dir,
+            env=scrubbed_env(),
+            check=True,
+            capture_output=True,
+        )
+
+    def _assert_owns_its_git_dir(self) -> None:
+        """Confirm the scratch repository is the one every later call will hit."""
+        reported = subprocess.run(
+            ["git", "rev-parse", "--absolute-git-dir"],
+            cwd=self.dir,
+            env=scrubbed_env(),
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout
+        if not owns_git_dir(self.dir, reported):
+            raise AssertionError(
+                "the fixture does not own its git dir, so every git call below would act on "
+                f"another repository — got {reported.strip()!r}, expected {self.dir}/.git"
+            )
 
     def track(self, relative: str) -> None:
         self._git("add", relative)
 
     def run(self) -> subprocess.CompletedProcess[str]:
+        # Scrubbed for the same reason `_git` is, and this half was missed first: the script
+        # under test runs `git ls-files` itself, so an inherited GIT_DIR makes it answer about
+        # the caller's repository while `track()` writes to the fixture's. Before either half
+        # was scrubbed both read the caller's repository and the suite passed by agreeing on the
+        # wrong tree — **fixing one half is what made the disagreement visible.**
         return subprocess.run(
             [sys.executable, str(self.dir / "scripts" / SCRIPT.name)],
             capture_output=True,
             text=True,
             cwd=self.dir,
+            env=scrubbed_env(),
             check=False,
         )
 

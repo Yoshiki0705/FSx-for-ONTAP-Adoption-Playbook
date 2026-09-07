@@ -22,6 +22,8 @@ import sys
 import unittest
 from pathlib import Path
 
+from scripts.tests.gitenv import scrubbed_env
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
@@ -37,6 +39,7 @@ def gitignored_directories() -> set[str]:
         ignored = subprocess.run(
             ["git", "check-ignore", "-q", child.name],
             cwd=ROOT,
+            env=scrubbed_env(),
             capture_output=True,
             check=False,
         )

@@ -27,6 +27,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.tests.gitenv import scrubbed_env
+
 ROOT = Path(__file__).resolve().parents[2]
 MAKEFILE = ROOT / "Makefile"
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -236,6 +238,7 @@ class CiInspectsTheSameTree(unittest.TestCase):
             ignored = subprocess.run(
                 ["git", "check-ignore", "-q", glob],
                 cwd=ROOT,
+                env=scrubbed_env(),
                 capture_output=True,
                 check=False,
             )

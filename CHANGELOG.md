@@ -9,6 +9,57 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The reason given for needing a collector per site did not survive contact with an implementation.**
+  The note attributed it to crossing a site boundary. **What decides it is the direction the connection
+  is opened.** Pull paths centralize across sites — one Harvest instance scales to 40+ file systems in
+  AWS's own sizing, management endpoints arrive as a list, and the audit-log Lambda needs no VPC config
+  at all, so adding a site is a parameter change. **Exactly one mechanism forces a collector per site:
+  FPolicy**, because ONTAP holds the external engine's IP in `primary-servers` and the ingress comes
+  from the SVM itself. No routing fixes that.
+  - **So "network change or architecture change" has different answers per path, and the paths are hit
+    in a fixed order.** Reachability breaks first, silently, as a timeout. Authorization breaks second
+    and misreports itself as IAM — `AccessDenied … explicit deny in a resource-based policy` with no
+    policy present, `HeadBucket` returning 200 while `ListObjectsV2` fails on an AD-joined SVM.
+    Throughput never appeared. A team therefore concludes "network change" and **is right until it adds
+    FPolicy**, which makes the earlier answer narrow rather than wrong.
+  - Answered by the repository that holds the collection stack. **It could not measure a cross-site
+    deployment either**, so the mechanism is `documented` and the deployment stays unmeasured.
+- **A citation was recorded as pending rather than gated, because the cited work is uncommitted.** A
+  probe can only stand on a string that exists in the cited file, and roughly 67 files were uncommitted
+  on the other side when the answer came. **An issue comment is durable and public but is not a file**,
+  so this citation cannot detect a retraction. `cross-repo-index.md` now has a section for that state —
+  **the alternative was loosening a probe to make the gate pass**, which is how a gate stops meaning
+  anything.
+
+### Confirmed
+
+- **The claim that on-premises dashboards do not transfer held, and was verified independently.**
+  19 / 8 / 10, with ONTAP's Disk category unsupported. **The sibling's own README had listed four Disk
+  dashboards as supported from an uncited hand-written list**, with a script that created a folder to
+  import them into. Bounded rather than contradicted: **a metric set can be extended by publishing your
+  own**, so the claim is about the managed service's published set, not about there being no way.
+  **Quota is the wrong example of that, which this repository got wrong first**: AWS lists
+  `ONTAP: Qtree` among the supported 19, and the sibling's own metric fills a gap in the *CloudWatch*
+  set instead. Cited against the Harvest route it attaches a wrong reason to a right conclusion.
+- **The hook added last commit refused this one, and it was right: the trunk cases were reporting on
+  their environment.** `test_precommit_hook.py` inherited `GIT_*` from its caller. Under a real
+  pre-commit hook that means an exported `GIT_DIR`, which did two things — `git symbolic-ref` in the
+  scratch repository answered for the outer one, and **`git init <path>` re-initialised the outer
+  repository instead of creating the scratch one.** The scratch directory was then not a repository,
+  HEAD read as `detached`, and no trunk branch was ever seen: the cases passed while proving nothing.
+  - **The first fix was itself an instance of the defect** — it stripped the variables only for the
+    hook invocation, leaving `git init` to inherit them and still write to the real repository. The
+    environment is now built before anything runs, and a `re-init` warning raises rather than being
+    swallowed, because that warning was the only visible trace.
+  **Quota is the wrong example of that, which this repository got wrong first**: AWS lists
+  `ONTAP: Qtree` among the supported 19, and the sibling's own metric fills a gap in the *CloudWatch*
+  set instead. Cited against the Harvest route it attaches a wrong reason to a right conclusion.
+- **The claim that Harvest has no remote-write path held**, corroborated by an implementation of the
+  hop it implies (ADOT sidecar, `prometheusremotewrite` with SigV4 to Amazon Managed Service for
+  Prometheus). **That implementation also contained the blind spot this note predicts**: the ADOT
+  container is `Essential: false` and the Harvest health check is commented out, so collection keeps
+  running while remote-write is dead and the task still reads as healthy.
+
 - **The only pre-commit hook lived in a global `hooksPath`, so it existed on one machine.** AGENTS.md
   already says this about the irreversible-ops guard — a hook outside the repository is invisible to
   collaborators and drifts — and the repository was in that state anyway. There is now a tracked

@@ -64,6 +64,21 @@ Amazon Managed Service for Prometheus は `remote_write` で受け取ります�
 
 ---
 
+### 実装側からの裏づけと、そこで見つかった盲点
+
+**この 1 ホップは sibling プロジェクトが実装しています**（ADOT のサイドカーで
+`prometheusremotewrite` に SigV4 を付けて Amazon Managed Service for Prometheus へ送る形、
+2026-09-05 に [Issue #71](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71) で報告）。**remote_write の不在という前提はそのまま成立しました。**
+
+**そのうえで、あちらの構成にこのノートが予測した盲点が実際にありました。** ADOT のコンテナが
+`Essential: false` で、Harvest 側のヘルスチェックがコメントアウトされていたため、
+**remote-write が死んでいる状態でも収集が動き続けます。** 収集が動いていることと、
+メトリクスが宛先に届いていることは別で、**タスクは正常のまま観測できなくなります。**
+
+> **Evidence**: `documented` — 機構は sibling の実装の記述に基づきます（2026-09-05）。
+> **著者による実測は含みません。** 引用の保留理由は
+> [まだ probe を張れていない引用](../../../reference/cross-repo-index.md#まだ-probe-を張れていない引用) を参照してください。
+
 ## 監視面の単一障害点
 
 AWS が提供する CloudFormation テンプレートは、**Harvest と Grafana をインストールした Amazon EC2 Linux インスタンスを 1 台作成する**構成です。既定のインスタンスタイプは `t3.micro` です。

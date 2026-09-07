@@ -28,6 +28,8 @@ import unittest
 from collections.abc import Iterator
 from pathlib import Path
 
+from scripts.tests.gitenv import scrubbed_env
+
 ROOT = Path(__file__).resolve().parents[2]
 PROBE = "zz-gate-probe"
 
@@ -459,6 +461,45 @@ class GateStillDetects(unittest.TestCase):
                 f"the audit rejected a topic label:\n{result.stdout}{result.stderr}",
             )
 
+    def test_self_link_to_a_missing_path_is_rejected(self) -> None:
+        """A link into this repository was skipped entirely, path included.
+
+        `check_offline` skips self-links on the correct ground that they are not
+        cross-repository citations. That is true about citation and says nothing
+        about whether the path exists — so a self-link to a deleted file passed
+        both halves. Offline and deterministic, so it belongs here rather than in
+        the weekly network run.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\nSee "
+            + "https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/blob/main/"
+            + "docs/ja/does-not-exist.md for details.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(run_gate("check_cross_repo.py"), "does not exist")
+
+    def test_self_link_pinned_to_a_commit_is_accepted(self) -> None:
+        """A ref this working tree need not hold is inconclusive, not dead.
+
+        Resolving a commit-pinned link against the current tree reports a defect
+        that does not exist. A gate that fires on a correct link gets an allow
+        marker rather than a fix.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\nSee "
+            + "https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/blob/"
+            + "a1b2c3d4/docs/ja/does-not-exist.md for details.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"a commit-pinned self link was reported dead:\n{result.stdout}{result.stderr}",
+            )
+
     def test_cross_repo_table_shape_change_is_rejected(self) -> None:
         """The gate parses the index table, so a changed shape is a broken gate.
 
@@ -481,11 +522,16 @@ class GateStillDetects(unittest.TestCase):
 
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""
+        # Scrubbed even though this deliberately queries the real repository. Under the tracked
+        # pre-commit hook, GIT_INDEX_FILE points at the commit being prepared, so an unscrubbed
+        # `git status` answers about that index instead of the working tree — and this assertion
+        # is precisely the one that must not read a different tree than the probes wrote to.
         dirty = subprocess.run(
             ["git", "status", "--porcelain"],
             capture_output=True,
             text=True,
             cwd=ROOT,
+            env=scrubbed_env(),
             check=False,
         ).stdout
         self.assertNotIn(PROBE, dirty, "a probe file survived cleanup")
