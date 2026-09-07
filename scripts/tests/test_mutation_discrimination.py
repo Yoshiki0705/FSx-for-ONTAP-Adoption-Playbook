@@ -161,6 +161,50 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # Only mutatable because the decision was extracted from `main`. While it lived there, the
+        # only possible tests asserted that the source *contained* certain strings — which a
+        # mutation kills trivially without saying anything about behaviour. A sibling repository
+        # named the axis: **a prohibition is enforceable only if the code enforcing it can be
+        # reached by a test**, and the fix is extracting a function, not moving a comment.
+        "name": "stale-head verdict dropped",
+        "why": (
+            "Returning 'answer' for a mismatch is what the command did before this guard existed. "
+            "After a push the API serves the previous head, so every verdict keys on a SHA that is "
+            "correct and stale — and a passing old SHA would clear a merge never examined."
+        ),
+        "module": "scripts.tests.test_pr_verify_head_match",
+        "edits": [
+            (
+                "scripts/verify_pr_checks.py",
+                '    if local and local != head:\n        return "stale"',
+                '    if False:\n        return "stale"',
+            ),
+        ],
+        "must_fail": ["test_the_same_branch_at_a_different_commit_is_stale"],
+        "must_pass": [
+            "test_a_different_branch_is_not_compared",
+            "test_the_same_branch_at_the_same_commit_answers",
+        ],
+    },
+    {
+        "name": "head comparison unscoped from the branch",
+        "why": (
+            "Comparing unconditionally refuses every run from main and against anyone else's pull "
+            "request. A check that refuses ordinary use gets worked around, which is the failure "
+            "this command exists to prevent."
+        ),
+        "module": "scripts.tests.test_pr_verify_head_match",
+        "edits": [
+            (
+                "scripts/verify_pr_checks.py",
+                '    if not branch or branch != pr_branch:\n        return "answer"',
+                '    if not branch:\n        return "answer"',
+            ),
+        ],
+        "must_fail": ["test_a_different_branch_is_not_compared"],
+        "must_pass": ["test_the_same_branch_at_a_different_commit_is_stale"],
+    },
+    {
         "name": "own-org path check removed",
         "why": (
             "'A tree link is navigation, not a citation' is true and says nothing about whether "

@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`pr-verify`'s stale-head guard was written in the source and enforced where no test could reach
+  it.** The decision lived inside `main()`, so its tests asserted that the source *contained*
+  `if local and local != head:` and `return 1`. **That cannot tell a behaviour from its spelling** —
+  renaming a local would have failed them, and changing the behaviour while keeping the text would
+  have passed. A mutation kills such a test trivially and says nothing.
+  - `head_verdict()` is now a pure function. **Four source assertions became a five-row truth table**,
+    including the two rows that were never exercised: an unknown local head must not invent a
+    mismatch, and a detached HEAD has nothing to compare.
+  - **Two mutations became possible**, and both are killed: dropping the stale verdict, and unscoping
+    the comparison from the branch. Eight mutations total.
+  - Reported by a sibling repository, which named the missing axis: **a prohibition is enforceable
+    only if the code enforcing it can be reached by a test, and the fix is extracting a function
+    rather than moving a comment.** It found the same shape in a rule that kept a baseline list
+    shrink-only, enforced inside `main()` and verified once by hand.
+
 - **A premise was transcribed after declining to transcribe the claim built on it.** The note said the
   parameters apply "because the volume is a NAS volume" — which presupposes a protocol restriction that
   **no source supports.** The sibling that reported it has withdrawn it: the wording came from a
