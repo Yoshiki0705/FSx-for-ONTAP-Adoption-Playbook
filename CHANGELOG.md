@@ -9,6 +9,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The mutation harness asserted a target string was present, not that it appeared once.** The
+  replacement is bounded to the first occurrence, so a second copy of the same source string leaves
+  half the detector intact — and **that direction is quieter than survival**: the test still fails, the
+  mutation reads as `killed`, and the guard looks protected while one site is unguarded. Zero was
+  already caught; two was not. **Exactly one is now required**, and the check was confirmed by pointing
+  a mutation at a string that occurs seven times.
+  - Reported by a sibling repository, which had the identical bounded replace and the identical missing
+    half.
+- **Three mutations added, one of them found by a technique worth reusing: a comment that forbids
+  something is a mutation candidate.** `audit_public_output.py` says *"Do not replace them with `\b`"* —
+  applying that restores the original CJK defect exactly, and it is now killed by the suite rather than
+  merely written down. **If such a mutation survives, the comment was a claim nobody enforces.**
+  - The other two: the pinned-ref exemption removed from the self-path check (a gate that fires on a
+    correct link gets an allow marker rather than a fix), and the own-org path check removed.
+- **Recorded that the unit of copying is a trade-off.** A sibling copies a *single file*, which makes a
+  fixture leak structurally impossible and makes any detector whose selftest needs a fixture
+  untestable. Copying the tree keeps every detector testable and accepts that a fixture can
+  participate. **The control is what makes that safe** — a copy that cannot pass its own tests yields
+  no verdict.
+
 - **The 625 MBps divisor was described as reasoning when it is documented.** Both FSx for ONTAP block
   procedures state "the Amazon EC2 single client maximum of 5 Gbps (~625 MBps)" verbatim, as the
   preamble to the step that adds sessions. **The divisor is `documented`.** What is unverified is two

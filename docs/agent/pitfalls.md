@@ -165,3 +165,21 @@ first two.** A 404 we caused is not transient.
 one, name the check and the condition under which it runs — `check_links.py --external`, which runs
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
+
+### Finding mutations: read the comments that forbid something
+
+**A comment saying "do not do X" is a mutation candidate.** Apply X. If the suite kills it, the comment
+is enforced. **If it survives, the comment was a claim nobody checks** — which is the same failure as
+a detector that reports on a narrower tree than it names.
+
+The technique came from a sibling repository, which turned two prohibitions in its own heading checker
+into mutations and had both killed. Here, `tools/audit_public_output.py` says *"Do not replace them with
+`\b`"* about the ASCII boundaries — now a mutation, and it restores the original defect exactly.
+
+Two properties a mutation must have, both learned by getting them wrong:
+
+- **Exactly one occurrence of the target string.** The replacement is bounded to the first, so a second
+  copy leaves half the detector intact — and **that is quieter than survival**: the test still fails,
+  the mutation reads as killed, and one site is unguarded. Zero was already caught; two was not.
+- **A plausible wrong fix, not an arbitrary corruption.** Arbitrary damage is killed by every case, so
+  it says nothing about the specific guard.
