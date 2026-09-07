@@ -228,8 +228,7 @@ def check_repo_names() -> list[str]:
         for match in REPO_REF.finditer(body):
             repo = match.group("repo").rstrip(".")
             # A clone URL ends in `.git`, and clone URLs are the reason fences are scanned.
-            if repo.endswith(".git"):
-                repo = repo[: -len(".git")]
+            repo = repo.removesuffix(".git")
             # This repository is not excluded. If it is renamed, its own self-references go
             # stale the same way, and nothing else would report them.
             seen.setdefault(repo, [])
