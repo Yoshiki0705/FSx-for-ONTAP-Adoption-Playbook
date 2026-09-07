@@ -405,6 +405,41 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
             self.assert_rejected(run_gate("audit_public_output.py"), "role-label")
 
+    def test_field_of_practice_heading_is_accepted(self) -> None:
+        """A field name is not a job title, and only a title implies a reviewer.
+
+        `（FinOps 観点）` used to be rejected while `（Reliability/Ops 観点）` passed,
+        because the role list carried bare discipline names inconsistently. A
+        sibling repository drew the line the other way round and was right: it
+        relabeled its `Specialist` headings and kept these two.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n## 前提（FinOps 観点）\n\nx\n\n"
+            + "## 制約（Reliability/Ops 観点）\n\nx\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("audit_public_output.py")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"the audit rejected a field of practice:\n{result.stdout}{result.stderr}",
+            )
+
+    def test_role_form_of_a_discipline_is_still_rejected(self) -> None:
+        """Dropping bare `FinOps` must not drop `FinOps Engineer` with it.
+
+        The narrowing above only holds if the title suffix still carries the
+        coverage. Without this, the fix trades a false positive for a false
+        negative and nothing says so.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n## 前提（FinOps Engineer 観点）\n\nx\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(run_gate("audit_public_output.py"), "role-label")
+
     def test_topic_labeled_heading_is_accepted(self) -> None:
         """The widened pattern must not fire on ordinary prose.
 

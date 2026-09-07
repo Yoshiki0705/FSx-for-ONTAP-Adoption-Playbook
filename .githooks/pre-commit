@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Tracked pre-commit hook. Wire it once per clone:
+#
+#     git config core.hooksPath .githooks
+#
+# It lives here, tracked, rather than in .git/hooks or a global hooksPath, for the reason
+# AGENTS.md already gives for the irreversible-ops guard: a hook outside the repository is
+# invisible to collaborators and to CI, and it drifts. This repository was in exactly that
+# state — the only pre-commit hook was under ~/.config/git/hooks, so no clone but one had it.
+set -uo pipefail
+
+fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------- 1. not on a trunk branch
+#
+# A commit lands on main when a branch was created and HEAD moved back without anyone noticing
+# until after the commit. Two repositories in this family hit it in the same week. "Check
+# git status first" is a thing to remember, and remembering is what failed.
+branch="$(git symbolic-ref --quiet --short HEAD || echo detached)"
+case "$branch" in
+main | master)
+    [ "${ALLOW_TRUNK_COMMIT:-}" = "1" ] || fail \
+        "refusing to commit directly to '$branch'.
+
+  Move to a branch:      git switch -c <type>/<what>
+  Or override once:      ALLOW_TRUNK_COMMIT=1 git commit ..."
+    ;;
+esac
+
+# ---------------------------------------------------------------- 2. the gate actually ran
+#
+# The failure this closes is specific and it happened twice here: `make all` was run, its exit
+# code was consumed by a pipe (`make all | tail` returns tail's status), the output was skimmed,
+# and a commit followed on a red gate. Both times CI caught it, which means the only thing that
+# worked was the check downstream of the mistake.
+#
+# Running the gate *here* removes the class rather than the instance. git checks this hook's
+# exit code itself, so no amount of piping upstream can hide a failure.
+if [ "${SKIP_GATE:-}" = "1" ]; then
+    printf '\033[33m⚠  SKIP_GATE=1 — committing without running the gate\033[0m\n'
+else
+    printf '▶  make all (SKIP_GATE=1 to bypass)\n'
+    if ! make all >/tmp/pre-commit-gate.log 2>&1; then
+        tail -n 25 /tmp/pre-commit-gate.log >&2
+        fail "make all failed — full log: /tmp/pre-commit-gate.log"
+    fi
+    printf '\033[32m✅ make all\033[0m\n'
+fi

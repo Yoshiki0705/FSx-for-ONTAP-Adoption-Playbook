@@ -9,6 +9,27 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The only pre-commit hook lived in a global `hooksPath`, so it existed on one machine.** AGENTS.md
+  already says this about the irreversible-ops guard — a hook outside the repository is invisible to
+  collaborators and drifts — and the repository was in that state anyway. There is now a tracked
+  `.githooks/pre-commit`, wired with `git config core.hooksPath .githooks`.
+- **`make all`'s exit code was consumed by a pipe, twice, and a commit followed on a red gate both
+  times.** `make all | tail` returns *tail's* status. CI caught both, which means the only thing that
+  worked was the check downstream of the mistake. The hook now runs the gate itself: git checks the
+  hook's own exit code, so no piping upstream can hide a failure. `SKIP_GATE=1` overrides it, and
+  `ALLOW_TRUNK_COMMIT=1` overrides the new refusal to commit on `main` — both tested in both directions,
+  because a hook that blocks ordinary work gets switched off.
+- **The role-label list mixed job titles with fields of practice, so `（FinOps 観点）` was rejected while
+  `（Reliability/Ops 観点）` passed.** The rule exists because a job title implies that a person in that
+  role reviewed the content; a field name implies nothing of the kind. Bare `FinOps`, `AppSec`, `DevOps`
+  and `SRE` are gone, which costs no coverage — `FinOps Engineer` is still caught by the title suffix,
+  and there is now a test in each direction saying so.
+  - **The line was drawn by a sibling repository**, which relabeled its `Specialist` headings and kept
+    these two deliberately. This list had the cut in an arbitrary place.
+- **Documented two gate hazards that had only been recorded in code comments**: the deliberate
+  disagreement over fenced blocks between the audit and the rename check, and the three occasions when a
+  gate here passed because its input set was empty or narrower than its claim.
+
 - **The rename check blanked fenced blocks, where a `git clone` URL lives.** A reader runs a clone
   URL, so it is where an old name survives longest and does the most damage. Fences are still blanked
   when scanning for citations — an example link inside one is not a claim — so the two checks now want

@@ -178,9 +178,20 @@ ROLE_LABEL = re.compile(
 # second pattern requires a role token *and* a lens word in the same label, which is what makes it
 # read as "a person in this role reviewed this". It covers headings as well as callouts, because a
 # heading carries the same implication and is more visible.
+#
+# The tokens are *job titles*, not fields of practice. A sibling repository drew this line while
+# relabeling its own headings: it changed `（VMware Specialist 観点）` and `（Storage Specialist 観点）`
+# and deliberately kept `（FinOps 観点）` and `（Reliability/Ops 観点）`, on the grounds that the latter
+# name a subject rather than a person. That is the right cut, and this list did not make it — it
+# carried bare `FinOps`, `AppSec`, `DevOps` and `SRE`, so 「FinOps 観点」 was rejected while
+# 「Reliability/Ops 観点」 passed. Arbitrary, and in the direction that costs a gate its credibility:
+# the ban exists because a job title implies a person in that role reviewed the content, and a field
+# name implies no such thing. Dropping the bare disciplines loses no coverage, because the role forms
+# of all four end in a title that is still listed — `FinOps Engineer`, `AppSec Engineer`. `SA`, `CISO`
+# and `DPO` stay, being titles that stand alone.
 _ROLE = (
     r"Specialist|Engineer|Architect|Officer|Analyst|Consultant|Manager|Lead|Admin|Reviewer|"
-    r"Practitioner|SA\b|AppSec|FinOps|DevOps|SRE|CISO|DPO|"
+    r"Practitioner|SA\b|CISO|DPO|"
     r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"
 )
 _LENS = r"lens|レンズ|視点|観点|perspective"
