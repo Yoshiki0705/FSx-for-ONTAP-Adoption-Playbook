@@ -9,6 +9,20 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Both external checks reported "the server did not answer" as "the link is broken".** A 5xx, a
+  timeout, and a DNS failure all became a failure, so a run could fail over someone else's outage —
+  and **a check that is wrong when nothing is wrong stops being read.**
+  - `check_links.py` marks those verdicts `?` and does not fail on them. `check_cross_repo.py
+    --external` now fails only on **404**, which is the case that means the cited file moved.
+  - **Returning "fine" was rejected as the worse direction**: a permanently unreachable URL would
+    then look verified. A sibling repository measured exactly that shape — github.com's HTML endpoint
+    returns **504 persistently** for particular repositories on a hosted runner while the REST API
+    answers immediately, and it had read a local pass as evidence about the runner.
+  - This repository's blocking path asks `api.github.com` and `raw.githubusercontent.com`, so that
+    504 does not reach it. **The category error was here regardless of that.**
+  - The residual limit is recorded, not fixed: a citation undetermined every week looks the same as
+    one that passes.
+
 - **`pr-verify`'s stale-head guard was written in the source and enforced where no test could reach
   it.** The decision lived inside `main()`, so its tests asserted that the source *contained*
   `if local and local != head:` and `return 1`. **That cannot tell a behaviour from its spelling** —

@@ -417,7 +417,27 @@ def check_own_org_paths(rows: list[Row]) -> list[str]:
 
 
 def check_external(rows: list[Row]) -> list[str]:
+    """Fetch each cited file and confirm the probe string still appears in it.
+
+    **A server that did not answer is not a citation that is wrong.** This conflated the two: every
+    exception became "cannot fetch", which fails the scheduled run with a message that reads like a
+    moved file. A sibling repository measured the case that makes this matter — github.com's HTML
+    endpoint returns 504 **persistently** for particular repositories on a hosted runner while the
+    REST API answers immediately, and it had read a local pass as evidence about the runner. This
+    repository's blocking path asks `api.github.com` and `raw.githubusercontent.com`, so that
+    specific 504 does not reach it, but the category error was here regardless.
+
+    So the verdicts split. **404 is a problem**: the file moved and the citation now sends a reader
+    nowhere. **5xx, a timeout, or a DNS failure is undetermined**: nothing was learned about the
+    citation, and reporting it as broken teaches people to ignore a check that is right the rest of
+    the time.
+
+    **The known limit: a citation that is undetermined every week is indistinguishable here from one
+    that is checked and passes.** Reporting it every time is the whole of the mitigation — recording
+    consecutive-run state is not worth a database in a repository with no runtime.
+    """
     problems: list[str] = []
+    undetermined: list[str] = []
     cache: dict[tuple[str, str, str], str | None] = {}
     for row in rows:
         # Fetch the ref the citation actually points at. Assuming `main` would verify a
@@ -431,9 +451,15 @@ def check_external(rows: list[Row]) -> list[str]:
             try:
                 with urllib.request.urlopen(request, timeout=30) as response:
                     cache[key] = response.read().decode("utf-8", "replace")
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
+            except urllib.error.HTTPError as exc:
                 cache[key] = None
-                problems.append(f"{row.repo}/{row.path}: cannot fetch ({exc})")
+                if exc.code == 404:
+                    problems.append(f"{row.repo}/{row.path}: gone (HTTP 404)")
+                else:
+                    undetermined.append(f"{row.repo}/{row.path}: HTTP {exc.code}")
+            except (urllib.error.URLError, TimeoutError) as exc:
+                cache[key] = None
+                undetermined.append(f"{row.repo}/{row.path}: unreachable ({exc})")
         body = cache[key]
         if body is None:
             continue
@@ -442,6 +468,12 @@ def check_external(rows: list[Row]) -> list[str]:
                 f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} is gone. Either the claim moved "
                 f"or it was retracted — check before adjusting {row.citing}."
             )
+    if undetermined:
+        print(
+            "undetermined (the server did not answer; nothing learned about the citation):"
+        )
+        for line in undetermined:
+            print(f"  ?   {line}")
     return problems
 
 

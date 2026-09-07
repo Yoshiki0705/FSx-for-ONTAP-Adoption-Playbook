@@ -124,6 +124,15 @@ def check_internal(source: Path, target: str) -> str | None:
     return None
 
 
+# Prefix marking a verdict as "the server did not answer", which is not the same as "the link is
+# broken". A sibling repository measured github.com's HTML endpoint returning 504 **persistently**
+# for particular repositories on a hosted runner while the REST API answered immediately - the links
+# were fine. Reporting those as broken is how a check stops being read; returning "fine" is worse,
+# because a permanently unreachable URL then looks checked. So it is reported, separately, and does
+# not fail the run.
+UNDETERMINED = "? "
+
+
 def _probe(url: str, method: str, timeout: float) -> str | None:
     request = urllib.request.Request(
         url, method=method, headers={"User-Agent": USER_AGENT}
@@ -135,9 +144,11 @@ def _probe(url: str, method: str, timeout: float) -> str | None:
     except urllib.error.HTTPError as exc:
         if exc.code in (403, 405, 429):
             return None  # bot-blocked or method-not-allowed, not a broken link
+        if exc.code >= 500:
+            return f"{UNDETERMINED}HTTP {exc.code}"
         return f"HTTP {exc.code}"
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:
-        return f"unreachable ({exc})"
+        return f"{UNDETERMINED}unreachable ({exc})"
     return None
 
 
@@ -163,6 +174,7 @@ def main() -> int:
     args = parser.parse_args()
 
     errors: list[str] = []
+    unknown: list[str] = []
     internal_count = 0
     external_seen: dict[str, str | None] = {}
 
@@ -182,7 +194,11 @@ def main() -> int:
                 if target not in external_seen:
                     external_seen[target] = check_external(target)
                 problem = external_seen[target]
-                if problem:
+                if problem and problem.startswith(UNDETERMINED):
+                    unknown.append(
+                        f"{rel}:{lineno}: {problem[len(UNDETERMINED) :]} -> {target}"
+                    )
+                elif problem:
                     errors.append(f"{rel}:{lineno}: {problem} -> {target}")
                 continue
             internal_count += 1
@@ -190,6 +206,13 @@ def main() -> int:
             if problem:
                 errors.append(f"{rel}:{lineno}: {problem}")
 
+    if unknown:
+        print(
+            "undetermined (the server did not answer; nothing learned about the link):",
+            file=sys.stderr,
+        )
+        for line in unknown:
+            print(f"  ? {line}", file=sys.stderr)
     if errors:
         print(f"Link check failed ({len(errors)} issue(s)):", file=sys.stderr)
         for error in errors:
