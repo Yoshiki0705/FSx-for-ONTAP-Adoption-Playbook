@@ -86,6 +86,7 @@ docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#�
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#設定例--6-パターン
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#関連ドキュメント
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#非-root-の-id-固定によるポリシー無しでの書き込み停止
+docs/ja/reference/decision-trees/access-point-authorization.md
 docs/ja/reference/decision-trees/measured-throughput-triage.md#この決定木が答えないこと
 docs/ja/reference/decision-trees/measured-throughput-triage.md#切り分けのフロー
 docs/ja/reference/decision-trees/measured-throughput-triage.md#各分岐の根拠
