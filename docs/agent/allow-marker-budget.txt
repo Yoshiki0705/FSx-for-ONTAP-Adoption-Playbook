@@ -1,0 +1,51 @@
+# Audit allow markers, counted per file and category. Generated - do not hand-edit.
+#
+# Regenerate with: python3 tools/check_allow_budget.py --write
+# Every marker silences a detector. Adding one looks identical to fixing the problem it silences,
+# because the audit passes either way - so the set is kept shrink-only and a rise has to be
+# deliberate. A fall is also reported: surplus in this file is headroom that would let the marker
+# come back unnoticed.
+#
+# Format: <path>\t<category>\t<count>, sorted. "file:" prefixes a whole-file declaration.
+AGENTS.md	file:naming	1
+AGENTS.md	file:neutrality	1
+AGENTS.md	file:pii	1
+AGENTS.md	naming	2
+CHANGELOG.md	role-label	1
+CONTRIBUTING.md	file:naming	1
+CONTRIBUTING.md	file:neutrality	1
+CONTRIBUTING.md	file:pii	1
+CONTRIBUTING.md	naming	1
+CONTRIBUTING.md	pii	1
+docs/agent/domain-knowledge.md	naming	2
+docs/agent/pitfalls.md	naming	2
+docs/en/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md	naming	1
+docs/en/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md	naming	5
+docs/en/domains/performance/notes/where-throughput-is-determined-and-shared.md	naming	2
+docs/en/domains/security-governance/notes/access-point-authorization-layers.md	naming	5
+docs/en/playbooks/04-build/notes/what-iac-cannot-reach.md	naming	3
+docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	2
+docs/i18n-terms.md	file:naming	1
+docs/ja/case-studies/public-references.md	naming	1
+docs/ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md	naming	1
+docs/ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md	naming	1
+docs/ja/domains/block-storage/notes/when-shared-block-changes-the-design.md	naming	2
+docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md	naming	4
+docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md	naming	1
+docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md	naming	1
+docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md	naming	5
+docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md	naming	2
+docs/ja/domains/security-governance/notes/access-point-authorization-layers.md	naming	5
+docs/ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md	naming	1
+docs/ja/playbooks/04-build/checklists/pre-production-review.md	naming	1
+docs/ja/playbooks/04-build/notes/what-iac-cannot-reach.md	naming	3
+docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	2
+docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md	naming	2
+docs/ja/reference/README.md	file:neutrality	1
+docs/ja/reference/block-storage-resource-map.md	naming	2
+docs/ja/reference/comparison/README.md	file:neutrality	1
+docs/ja/reference/comparison/tiering-policies.md	naming	1
+docs/ja/reference/glossary/README.md	naming	1
+docs/ja/reference/limits/README.md	naming	7
+docs/ja/workshop-studio/module-mapping.md	pii	1
+docs/ja/workshop-studio/smb-fileserver-quick-90min/README.md	naming	1
