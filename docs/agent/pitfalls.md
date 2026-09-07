@@ -166,6 +166,31 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### Where the enforcing code sits decides whether a prohibition is enforceable
+
+**Writing a prohibition in the source is not sufficient.** It also has to be reachable by a test. A
+rule buried in `main()` can only be checked by asserting that the source *contains* certain strings —
+which cannot tell a behaviour from its spelling, and which a mutation kills trivially without saying
+anything about either.
+
+That was the state of `pr-verify`'s stale-head guard: the decision lived inside `main`, and its tests
+grepped for `if local and local != head:` and `return 1`. Renaming a local variable would have failed
+them; changing the behaviour while keeping the text would have passed. **Extracting
+`head_verdict()` as a pure function replaced four source assertions with a five-row truth table and
+made two mutations possible.**
+
+So the axis is two-dimensional:
+
+| Prohibition written in | Enforcing code reachable by a test | Mutatable |
+|---|---|---|
+| source comment | yes — a pure function | **yes** |
+| source comment | no — inside `main()`, or needs the network | **no; extract the function** |
+| a document under `docs/` | either | **no** |
+
+**The fix for the middle row is extracting a function, not moving the comment.** Named by a sibling
+repository, which found the same shape in a rule keeping a baseline list shrink-only — enforced inside
+`main()`, verified once by hand.
+
 ### Finding mutations: read the comments that forbid something
 
 **A comment saying "do not do X" is a mutation candidate.** Apply X. If the suite kills it, the comment

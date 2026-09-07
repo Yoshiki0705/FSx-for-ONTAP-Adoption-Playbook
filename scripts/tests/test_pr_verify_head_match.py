@@ -27,33 +27,66 @@ SCRIPT = ROOT / "scripts" / "verify_pr_checks.py"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
+from verify_pr_checks import head_verdict
+
 
 class HeadComparisonIsScoped(unittest.TestCase):
-    def test_comparison_is_skipped_when_the_branch_differs(self) -> None:
-        """Reading someone else's pull request from another branch must still work.
+    """The decision as a truth table, exercised rather than grepped for.
 
-        Asserted on the source rather than by running the command, because running it
-        needs the network and a pull request in a particular state. What matters is
-        that the SHA is only fetched under the branch-name condition.
-        """
-        source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn(
-            'local = git_head() if branch and branch == pr.get("headRefName") else ""',
-            source,
-            "the head comparison is no longer scoped to the pull request's own branch, so it "
-            "refuses every run from main and against anyone else's pull request",
+    These were assertions that the source *contained* certain strings. That cannot tell a behaviour
+    from its spelling: a rename of a local variable failed them, and a mutation that changed the
+    behaviour while keeping the text would have passed. A sibling repository named the general
+    shape — **a prohibition is only enforceable if the code enforcing it can be reached by a test**,
+    and the fix is extracting a function rather than moving a comment.
+    """
+
+    def test_no_branch_means_nothing_to_compare(self) -> None:
+        self.assertEqual(
+            head_verdict(branch="", pr_branch="feat/x", local="aaa", head="bbb"),
+            "answer",
         )
 
-    def test_a_mismatch_is_a_failure_and_not_a_warning(self) -> None:
-        """A stale answer must stop the merge, not annotate it.
+    def test_a_different_branch_is_not_compared(self) -> None:
+        """Reading someone else's pull request, or reading from main, must still work.
 
-        `pr-verify` is read for a go/no-go, so a warning printed above a "safe to
-        merge" line is the same as no check at all.
+        Comparing unconditionally refuses both, and **a check that refuses ordinary use gets
+        worked around** — which is the failure this command exists to prevent.
         """
+        self.assertEqual(
+            head_verdict(branch="main", pr_branch="feat/x", local="aaa", head="bbb"),
+            "answer",
+        )
+
+    def test_the_same_branch_at_the_same_commit_answers(self) -> None:
+        self.assertEqual(
+            head_verdict(branch="feat/x", pr_branch="feat/x", local="aaa", head="aaa"),
+            "answer",
+        )
+
+    def test_the_same_branch_at_a_different_commit_is_stale(self) -> None:
+        """The case that cost four repeats: after a push the API serves the previous head."""
+        self.assertEqual(
+            head_verdict(branch="feat/x", pr_branch="feat/x", local="aaa", head="bbb"),
+            "stale",
+        )
+
+    def test_an_unknown_local_head_does_not_invent_a_mismatch(self) -> None:
+        """`git_head` returns "" when it cannot answer, and a guard that cannot run must not
+        block the check it guards."""
+        self.assertEqual(
+            head_verdict(branch="feat/x", pr_branch="feat/x", local="", head="bbb"),
+            "answer",
+        )
+
+    def test_a_stale_verdict_still_fails_the_command(self) -> None:
+        """A warning printed above "safe to merge" is the same as no check at all."""
         source = SCRIPT.read_text(encoding="utf-8")
-        marker = "if local and local != head:"
-        self.assertIn(marker, source)
-        after = source[source.index(marker) : source.index(marker) + 800]
+        # Matched on the call rather than on the comparison: a formatter moves `== "stale"` onto
+        # its own line, and a test that breaks when the formatter runs is testing the formatter.
+        marker = "head_verdict("
+        index = source.rindex(marker)
+        after = source[index : index + 900]
+        self.assertIn('"stale"', after, "the stale branch is no longer taken in main")
         self.assertIn("return 1", after, "a stale head no longer fails the command")
         self.assertIn("sys.stderr", after, "the refusal is not reported on stderr")
 

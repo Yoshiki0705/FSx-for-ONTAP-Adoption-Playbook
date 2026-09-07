@@ -95,6 +95,36 @@ def git_branch() -> str:
     return _git("symbolic-ref", "--quiet", "--short", "HEAD")
 
 
+def head_verdict(*, branch: str, pr_branch: str, local: str, head: str) -> str:
+    """Whether the API's head can be trusted for this invocation: "answer" or "stale".
+
+    Extracted from `main` on a sibling repository's argument, and it is a better argument than the
+    one it replaces. **A prohibition written in a comment is only enforceable if the code enforcing
+    it can be reached by a test.** This decision lived inside `main`, so the only tests possible were
+    assertions that the source *contained* certain strings — which cannot distinguish a behaviour
+    from its spelling, and which a mutation kills trivially without saying anything.
+
+    The rule, as a truth table rather than as prose:
+
+    | branch | equals the PR's branch | SHAs equal | verdict |
+    |---|---|---|---|
+    | absent (detached) | — | — | `answer` — nothing to compare against |
+    | present | no | — | `answer` — another branch, or someone else's pull request |
+    | present | yes | yes | `answer` |
+    | present | yes | **no** | **`stale`** |
+
+    The third row is the one that matters and the reason the comparison is scoped: comparing
+    unconditionally refuses every run from `main` and against anyone else's pull request, and **a
+    check that refuses ordinary use gets worked around**, which is the failure this command exists to
+    prevent.
+    """
+    if not branch or branch != pr_branch:
+        return "answer"
+    if local and local != head:
+        return "stale"
+    return "answer"
+
+
 def main() -> int:
     if len(sys.argv) != 2 or not sys.argv[1].isdigit():
         print("usage: verify_pr_checks.py <pr-number>", file=sys.stderr)
@@ -120,8 +150,16 @@ def main() -> int:
     # over-blocking — and a check that refuses ordinary use gets worked around, which is the
     # failure this command exists to prevent. The first version of this guard did exactly that.
     branch = git_branch()
-    local = git_head() if branch and branch == pr.get("headRefName") else ""
-    if local and local != head:
+    local = git_head() if branch else ""
+    if (
+        head_verdict(
+            branch=branch,
+            pr_branch=str(pr.get("headRefName", "")),
+            local=local,
+            head=head,
+        )
+        == "stale"
+    ):
         print(
             f"\nrefusing to answer: {branch} is at {local[:8]} but the API reports {head[:8]}.\n"
             "  After a push the API serves the previous head for a while, so every verdict below\n"
