@@ -73,6 +73,10 @@ jobs:
 
       - name: Audit public output
         run: make audit
+      # After the audit, deliberately. The audit reads content; this reads how much of the audit has
+      # been switched off, and a finding about the guard should not delay a finding about the text.
+      - name: Check the allow-marker budget has not grown
+        run: make allow-budget
 
       - name: Check internal links
         run: make links

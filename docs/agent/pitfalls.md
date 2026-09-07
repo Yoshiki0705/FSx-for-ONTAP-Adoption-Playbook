@@ -166,6 +166,22 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### An exemption list has to be shrink-only, and the surplus is the quiet half
+
+**Adding an allow marker looks exactly like fixing the problem it silences: the audit passes either
+way.** So the set is pinned in `docs/agent/allow-marker-budget.txt` and `make allow-budget` fails when
+it grows. Counting per file and category rather than per line is what keeps the baseline readable —
+line numbers move on almost every edit here.
+
+**Both directions fail, and the second is the one worth explaining.** A budget recording *more* than
+exists breaks nothing at the time, which is why it is dangerous: the surplus is headroom, so the
+marker it once counted can come back with nothing reported. **The failure is silence, not a crash** —
+the same shape a sibling repository found while keeping a known-divergence list shrink-only.
+
+Regenerating is the deliberate act: `python3 tools/check_allow_budget.py --write`. **Before running
+it after an `added` verdict, confirm the marker is the narrowest option** — a file-wide
+`audit-file-allow` where one line-level `allow:` would do turns the whole document into a blind spot.
+
 ### Prose describing a gate does not follow the gate
 
 **A gate's registration table is the gate. A list of its contents written in prose is a snapshot that

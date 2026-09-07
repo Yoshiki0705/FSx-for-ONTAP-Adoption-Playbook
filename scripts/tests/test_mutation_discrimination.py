@@ -161,6 +161,47 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        "name": "allow budget accepts a grown set",
+        "why": (
+            "Returning 'ok' when a marker appears is the state before this guard existed. Adding an "
+            "allow marker looks identical to fixing the problem it silences, because the audit "
+            "passes either way - so nothing surfaces until someone reads the file."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                '    if actual > recorded:\n        return "added"',
+                '    if False:\n        return "added"',
+            ),
+        ],
+        "must_fail": ["test_one_more_than_recorded_is_added"],
+        "must_pass": ["test_fewer_than_recorded_is_stale", "test_equal_counts_are_ok"],
+    },
+    {
+        # The quieter half. A surplus in the baseline breaks nothing today, which is exactly why it
+        # is worth a mutation: it is headroom that lets a marker return without a word.
+        "name": "allow budget stops reporting surplus",
+        "why": (
+            "Dropping the 'stale' verdict is the plausible edit, since a budget recording more than "
+            "exists fails nothing at the time. The surplus is headroom, so the marker it once "
+            "counted can come back silently."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                'FAILING = ("added", "stale")',
+                'FAILING = ("added",)',
+            ),
+        ],
+        "must_fail": ["test_stale_fails_the_check"],
+        "must_pass": [
+            "test_added_fails_the_check",
+            "test_fewer_than_recorded_is_stale",
+        ],
+    },
+    {
         # Only mutatable because the decision was extracted from `main`. While it lived there, the
         # only possible tests asserted that the source *contained* certain strings — which a
         # mutation kills trivially without saying anything about behaviour. A sibling repository

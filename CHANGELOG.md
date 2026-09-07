@@ -282,6 +282,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   **the alternative was loosening a probe to make the gate pass**, which is how a gate stops meaning
   anything.
 
+- **`make allow-budget` keeps the set of audit allow markers shrink-only.** Every marker silences a
+  detector, and **adding one looks identical to fixing the problem it silences, because the audit
+  passes either way.** The failure is a check that quietly stops covering something, not a crash.
+  - Baseline: `docs/agent/allow-marker-budget.txt`, generated, `path<TAB>category<TAB>count`.
+    **Counting per file and category rather than per line** keeps it stable — line numbers move on
+    almost every edit here, and a baseline that churns is one nobody reads. Currently 42 entries,
+    81 markers.
+  - **Two verdicts fail, for opposite reasons.** `added` is a silencing nobody signed off on.
+    **`stale` is the quieter one**: a budget recording more than exists breaks nothing today, and
+    that surplus is headroom that lets the marker return without a word.
+  - `allow_verdict()` is a pure function, so the rule is a truth table rather than a source
+    assertion, and **two mutations are possible and killed** — dropping either verdict. Ten total.
+  - **All three outcomes were exercised against the real tree**, not just the clean pass: adding a
+    marker exits 1, inflating the baseline exits 1, regenerating returns to 0.
+  - **Not added to the command list in `AGENTS.md`:** that list is 70 bytes from its size budget, and
+    enumerating Makefile targets in prose is the drift this release documents elsewhere. `make help`
+    reads the Makefile, so it cannot go stale, and the failure message names `--write` itself.
+
 ### Confirmed
 
 - **The claim that on-premises dashboards do not transfer held, and was verified independently.**
