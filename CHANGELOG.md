@@ -933,6 +933,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Mutation discrimination is now a gate rather than something checked by hand.** Two mutations were
+  run manually to confirm the new negative cases had any detection capability at all, and **a manual
+  run leaves nothing behind for the next person to touch a boundary.** `test_mutation_discrimination`
+  applies each plausible wrong fix to a throwaway copy and requires the discriminating test to fail
+  **and** the already-green tests to stay green — the second half is what tells "the mutation was
+  caught" apart from "the mutation broke everything".
+  - Three mutations declared: the boundaries emptied, `_` dropped from the boundary class, and the
+    self-link path check removed. **Each is a fix someone would plausibly ship**, not an arbitrary
+    corruption; nobody empties a regex by accident, but deleting a boundary to make a failing case
+    pass is a normal afternoon.
+  - **The control runs on the same copy that then gets mutated.** The first version of the harness
+    copied only `tools/` and `scripts/`, and the control caught it immediately: the doc gates resolve
+    every path against their own root, so a partial copy failed tests unrelated to any mutation.
+    **Without the control those failures would have read as mutations being detected.**
+  - **A mutation whose target string no longer exists fails loudly**, saying to update it rather than
+    delete it. Otherwise a refactor turns it into a test of nothing, which is the failure it exists
+    to prevent. Verified both ways: neutering the negative test is reported as "does not
+    discriminate", and a stale target is reported as no longer applying.
+  - **Nothing is mutated inside the repository.** The tree is copied out and `GIT_*` is scrubbed. A
+    harness whose job is to corrupt source must not be able to reach the real one, and a test here
+    has already written to the real index through an inherited `GIT_DIR`.
+  - Cost: `make all` goes from about 17 to 20 seconds.
+
 - **A measured answer for attacks that do not encrypt — mass rename, mass delete, extension rewrite.**
   The premise that these fall outside ARP is **wrong**: the volume's own detection parameters include
   **rename, delete and create operation rates, and never-before-seen extensions**, alongside the
