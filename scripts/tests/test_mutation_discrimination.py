@@ -18,7 +18,14 @@ Two assertions per mutation, and the second is the one that carries the weight:
   proves nothing about which test is doing the work.
 
 **Nothing is written inside the repository.** The tree is copied to a temporary directory and
-mutated there. An earlier version of a different check in this repository wrote to the real index
+mutated there.
+
+**The unit of copying is a trade-off, not an obvious choice.** A sibling repository copies a *single
+file* and calls its `--selftest` in a subprocess, which makes it structurally impossible for a
+repository fixture to leak into a verdict — and impossible to mutation-test any detector whose
+selftest legitimately needs one, because the control fails first. Copying the tree, as here, keeps
+every detector testable and accepts that a fixture can participate. **The control is what makes the
+second choice safe**: if the copy cannot pass its own tests, no verdict is read from it. An earlier version of a different check in this repository wrote to the real index
 through an inherited `GIT_DIR` and fabricated a committed file; a harness whose whole job is to
 corrupt source must not be able to do that. `GIT_*` is scrubbed for the same reason.
 """
@@ -80,6 +87,52 @@ MUTATIONS: list[dict] = [
             "test_japanese_adjacent_forms_are_reported",
             "test_spaced_ascii_forms_are_still_reported",
         ],
+    },
+    {
+        # From a comment that says "Do not replace them with `\b`". A sibling repository named the
+        # general technique: **a comment forbidding something is a mutation candidate**, and if the
+        # mutation survives, the comment was an unenforced claim rather than a rule.
+        "name": "ASCII boundaries replaced by the word boundary they replaced",
+        "why": (
+            "The original defect, restored. `\\b` is defined over `\\w`, which matches CJK, so the "
+            "Japanese-adjacent form stops matching while every ASCII case keeps working."
+        ),
+        "module": "scripts.tests.test_cjk_word_boundaries",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'ASCII_LEFT = r"(?<![A-Za-z0-9_])"',
+                'ASCII_LEFT = r"\\b"',
+            ),
+            (
+                "tools/audit_public_output.py",
+                'ASCII_RIGHT = r"(?![A-Za-z0-9_])"',
+                'ASCII_RIGHT = r"\\b"',
+            ),
+        ],
+        "must_fail": ["test_japanese_adjacent_forms_are_reported"],
+        "must_pass": [
+            "test_spaced_ascii_forms_are_still_reported",
+            "test_embedded_forms_are_not_reported",
+        ],
+    },
+    {
+        "name": "pinned-ref exemption removed from the self-path check",
+        "why": (
+            "A commit-pinned link points at a revision this working tree need not hold, so "
+            "resolving it reports a defect that does not exist. A gate that fires on a correct "
+            "link gets an allow marker rather than a fix."
+        ),
+        "module": "scripts.tests.test_doc_gates",
+        "edits": [
+            (
+                "tools/check_cross_repo.py",
+                '            if match.group("ref") != "main":\n                continue',
+                "            if False:\n                continue",
+            ),
+        ],
+        "must_fail": ["test_self_link_pinned_to_a_commit_is_accepted"],
+        "must_pass": ["test_self_link_to_a_missing_path_is_rejected"],
     },
     {
         "name": "underscore dropped from the boundary class",
@@ -224,12 +277,23 @@ class MutationsAreCaughtByTheRightTest(unittest.TestCase):
                 for relative, old, new in mutation["edits"]:
                     target = work / relative
                     body = target.read_text(encoding="utf-8")
-                    self.assertIn(
-                        old,
-                        body,
-                        f"the mutation for {mutation['name']!r} no longer applies to {relative}. "
-                        "The source moved and this mutation is now testing nothing — update it "
-                        "rather than deleting it.",
+                    # Exactly one, not "at least one". The replace below is bounded to the first
+                    # occurrence, so a second copy of the same source string leaves half the
+                    # detector intact — and **that direction is quieter than survival**. A
+                    # partially broken detector still fails its test, the mutation reads as
+                    # `killed`, and the guard looks protected while one site is unguarded.
+                    #
+                    # Zero was already caught. Two was not. Reported by a sibling repository,
+                    # which had the same bounded replace and the same missing half of the check.
+                    count = body.count(old)
+                    self.assertEqual(
+                        count,
+                        1,
+                        f"the mutation for {mutation['name']!r} matches {count} time(s) in "
+                        f"{relative}, and exactly one is required. Zero means the source moved and "
+                        "this mutation now tests nothing; more than one means only the first site "
+                        "is broken, which still shows as killed while leaving a site unguarded. "
+                        "Update the mutation rather than deleting it.",
                     )
                     target.write_text(body.replace(old, new, 1), encoding="utf-8")
 
