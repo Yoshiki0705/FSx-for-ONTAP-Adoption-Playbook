@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The `never-seen-before` extension threshold was read wrong, and the case built on it does not
+  stand.** It is not "5 distinct extensions in 48 hours". The CLI reference states that when a new
+  extension is observed and **that extension** accounts for the threshold number of create/rename
+  operations **for that duration**, it is reported as an attack. So the count is per extension — the
+  test exceeded it at 100 to 1,000 files each — and **the 48-hour duration condition was not met**,
+  because the burst lasted seconds and the observation lasted thirty minutes. **A 30-minute
+  observation cannot test a 48-hour condition.** The case shows the design could not exercise the
+  input, not that exceeding a threshold is insufficient.
+- **The surge basis is documented, so "unconfirmed candidate explanation" understated it.** The
+  comparison is against **the historically observed value**, not an absolute rate, in the same
+  reference. A freshly created volume has no history, which means the rename and delete cases may
+  have measured **the absence of history** rather than any property of the mechanism. Still
+  unconfirmed by measurement — but **the retest design follows from it: build history first.**
+- **The access path was missing from the record.** All four cases were written over **NFSv3**. SMB and
+  the S3 access point were not measured, which matters because path difference is the question
+  another repository is asking.
+  - Corrected after a sibling repository read the same reference and found the threshold sentence.
+    **Two readings of one parameter name, and the one that made the result sound stronger was mine.**
+
 - **The version scoping added for ARP's learning period was wrong for FlexGroup, in the direction
   that produces a wrong plan.** It said 9.16.1 and later needs no learning period, naming NAS and SAN.
   The vendor's support table is two-dimensional: the pre-trained model covers **FlexVol from 9.16.1,
