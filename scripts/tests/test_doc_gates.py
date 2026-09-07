@@ -28,6 +28,8 @@ import unittest
 from collections.abc import Iterator
 from pathlib import Path
 
+from scripts.tests.gitenv import scrubbed_env
+
 ROOT = Path(__file__).resolve().parents[2]
 PROBE = "zz-gate-probe"
 
@@ -520,11 +522,16 @@ class GateStillDetects(unittest.TestCase):
 
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""
+        # Scrubbed even though this deliberately queries the real repository. Under the tracked
+        # pre-commit hook, GIT_INDEX_FILE points at the commit being prepared, so an unscrubbed
+        # `git status` answers about that index instead of the working tree — and this assertion
+        # is precisely the one that must not read a different tree than the probes wrote to.
         dirty = subprocess.run(
             ["git", "status", "--porcelain"],
             capture_output=True,
             text=True,
             cwd=ROOT,
+            env=scrubbed_env(),
             check=False,
         ).stdout
         self.assertNotIn(PROBE, dirty, "a probe file survived cleanup")

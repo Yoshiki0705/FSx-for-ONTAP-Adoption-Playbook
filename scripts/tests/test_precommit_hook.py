@@ -22,6 +22,8 @@ import unittest
 import unittest.mock
 from pathlib import Path
 
+from scripts.tests.gitenv import owns_git_dir, scrubbed_env
+
 REPO = Path(__file__).resolve().parents[2]
 HOOK = REPO / ".githooks" / "pre-commit"
 
@@ -30,8 +32,7 @@ def run_hook(
     *, branch: str, env_extra: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
     """Run the tracked hook inside a scratch repository on the named branch."""
-    # Strip every GIT_* variable inherited from the caller, and build the environment BEFORE
-    # anything runs, because `git init` needs it too.
+    # Scrubbed, and built BEFORE anything runs, because `git init` needs it too.
     #
     # Git exports GIT_DIR and GIT_INDEX_FILE to a pre-commit hook. When the hook runs this
     # suite, an inherited GIT_DIR does two things, and the second is why the first was hard to
@@ -44,14 +45,7 @@ def run_hook(
     # Found by the hook running this suite during a commit. The first fix stripped the variables
     # only for the hook invocation, which left `git init` inheriting them — **the same defect with
     # a narrower blast radius**, and it still wrote to the real repository.
-    env = {
-        **{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
-        "GIT_AUTHOR_NAME": "t",
-        "GIT_AUTHOR_EMAIL": "t@example.com",
-        "GIT_COMMITTER_NAME": "t",
-        "GIT_COMMITTER_EMAIL": "t@example.com",
-        **(env_extra or {}),
-    }
+    env = scrubbed_env(env_extra)
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         init = subprocess.run(
@@ -76,11 +70,10 @@ def run_hook(
             check=False,
         )
         expected = (work / ".git").resolve()
-        resolved = Path(owned.stdout.strip() or "/nonexistent").resolve()
-        if init.returncode != 0 or resolved != expected:
+        if init.returncode != 0 or not owns_git_dir(work, owned.stdout):
             raise AssertionError(
                 "the scratch repository was not created, so every verdict below would be about "
-                f"another repository — git dir resolved to {resolved}, "
+                f"another repository — git dir resolved to {owned.stdout.strip()!r}, "
                 f"expected {expected}: {init.stderr}{owned.stderr}"
             )
         (work / "seed.txt").write_text("seed\n", encoding="utf-8")
