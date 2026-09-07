@@ -9,6 +9,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A mutation that skipped *after* being applied was reported as "not discriminated".** The skip
+  guard existed only for the clean copy. In CI the clean run spent the API allowance, the mutated run
+  was rate-limited, and the harness turned that into a **red gate about someone else's quota on a pull
+  request that touched none of this.**
+  - **"Not run" cannot be read as "did not detect" any more than as "detected".** Both directions now
+    skip with the reason named, which is the rule this harness already applied to the clean copy.
 - **A line that merely mentioned an allow marker in prose was honoured as one, and so was a marker
   shown inside a code span.** Every line documenting the markers exempted itself, and **appending a
   code-span marker to any sentence silenced the detector on that line.** The marker now requires the
