@@ -70,14 +70,36 @@ NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
     ),
 ]
 
+# `\b` is the wrong boundary in a Japanese repository, and it fails silently in the direction
+# that matters most.
+#
+# Python defines `\b` in terms of `\w`, and `\w` matches CJK. So `\bFSx\b` matches `FSx を使う`
+# and does **not** match `FSxを使う` — there is no boundary between `x` and `を`, because both
+# are word characters. The same applies on the left: `のFSx` never matched either. Japanese prose
+# attaches particles directly, so the common form is the one that went unreported, and this is
+# the most-repeated rule in the project.
+#
+# Reported by a sibling repository, which hit the identical asymmetry in a parity checker: its
+# trailing `(?![\w])` let `100 MB and up` match while `100MB以上` did not, so the check was
+# silent on exactly the language it existed to read, and it inflated its own findings with false
+# positives manufactured by the same rule.
+#
+# These say "not adjacent to an ASCII word character", which treats a Japanese character as a
+# boundary. Do not replace them with `\b`.
+ASCII_LEFT = r"(?<![A-Za-z0-9_])"
+ASCII_RIGHT = r"(?![A-Za-z0-9_])"
+
 # Bare "FSx" that is prose rather than part of an accepted phrase or an identifier.
 BARE_FSX = re.compile(
     r"(?<!Amazon\s)"  # "Amazon FSx" is the official family name, not an abbreviation
-    r"\bFSx\b"
-    r"(?!\s+for\s+(?:NetApp\s+)?ONTAP)"  # FSx for ONTAP / FSx for NetApp ONTAP
-    r"(?!\s+for\s+(?:Windows|Lustre|OpenZFS))"  # sibling AWS services are legitimate
-    r"(?!-for-ONTAP)"  # repo / URL slugs
-    r"(?![-\w]*\.(?:md|py|ya?ml|json|svg|png|drawio))"  # filenames
+    + ASCII_LEFT
+    + r"FSx"
+    + ASCII_RIGHT
+    # The lookaheads follow the boundary, so they still see the text after "FSx".
+    + r"(?!\s+for\s+(?:NetApp\s+)?ONTAP)"  # FSx for ONTAP / FSx for NetApp ONTAP
+    + r"(?!\s+for\s+(?:Windows|Lustre|OpenZFS))"  # sibling AWS services are legitimate
+    + r"(?!-for-ONTAP)"  # repo / URL slugs
+    + r"(?![-\w]*\.(?:md|py|ya?ml|json|svg|png|drawio))"  # filenames
 )
 # Contexts where "FSx" is a token, not prose. Matched against the same span as BARE_FSX
 # rather than the whole line: as a line-wide test, one URL or one backticked identifier
@@ -125,7 +147,9 @@ PII_RULES: list[tuple[re.Pattern[str], str]] = [
         "remove support case numbers; say 'filed with the vendor (tracked)'",
     ),
     (
-        re.compile(r"\b[A-Z]{2,4}-I-\d{4,}\b"),
+        # Explicit boundaries, not `\b`: see ASCII_LEFT. `課題AB-I-1234` was excluded by its own
+        # leading boundary, and Japanese prose is where these IDs actually get written.
+        re.compile(ASCII_LEFT + r"[A-Z]{2,4}-I-\d{4,}" + ASCII_RIGHT),
         "remove vendor-internal ticket IDs; say 'an internal product request (tracked)'",
     ),
     (
@@ -133,19 +157,32 @@ PII_RULES: list[tuple[re.Pattern[str], str]] = [
         "personal absolute path; use a relative path or ${PROJECT_DIR}",
     ),
     (
-        re.compile(r"\b[\w.+-]+@(?!example\.(?:com|org)\b)[\w-]+\.[a-z]{2,}\b"),
+        # Explicit boundaries, not `\b`: see ASCII_LEFT. A Japanese character before the local
+        # part suppressed the match, so `連絡先name@example.jp` went unreported.
+        re.compile(
+            r"(?<![0-9A-Za-z_.+-])[0-9A-Za-z_.+-]+@"
+            r"(?!example\.(?:com|org)(?![0-9A-Za-z_.]))"
+            r"[0-9A-Za-z-]+\.[a-z]{2,}(?![0-9A-Za-z_.])"
+        ),
         "remove email addresses; use '(internal reviewer)' or an example.com address",
     ),
     (
+        # Explicit boundaries, not `\b`: see ASCII_LEFT. `管理IPは10.0.0.1です` was suppressed at
+        # both ends, which is the form an internal address appears in here.
         re.compile(
-            r"\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b"
+            r"(?<![0-9A-Za-z_.])"
+            r"(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))"
+            r"\.\d{1,3}\.\d{1,3}"
+            r"(?![0-9A-Za-z_.])"
         ),
         "mask internal IPs as 10.0.x.x or <management-ip>",
     ),
 ]
 
-# 12-digit AWS account IDs other than the sanctioned placeholder.
-ACCOUNT_ID = re.compile(r"(?<![\d.\w])\d{12}(?![\d.\w])")
+# 12-digit AWS account IDs other than the sanctioned placeholder. The boundaries are explicit
+# for the reason given at ASCII_LEFT: `\w` matches CJK, so `アカウント123456789013` was excluded
+# by its own lookbehind.
+ACCOUNT_ID = re.compile(r"(?<![0-9A-Za-z_.])\d{12}(?![0-9A-Za-z_.])")
 PLACEHOLDER_ACCOUNT = "123456789012"
 
 # Real resource identifiers. `fs-` and `svm-` were already covered by the account-ID rule only by
