@@ -9,6 +9,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **An ambiguous sentence was read one way and the reading was written as fact.** `for this duration`
+  admits "within that period" and "sustained across that period", and the note asserted the second by
+  concluding the input could not be exercised. **Under the first reading the condition was met** — a
+  thousand files in seconds is inside 48 hours — and non-detection becomes a question of evaluation
+  lag, which the measured 10-minute delay in `attack_probability` keeps alive.
+  - Both readings are now stated with what each implies, and **neither is chosen**. What the case
+    supports is only that it cannot settle the threshold question. **Writing "could not be exercised"
+    sends an undetermined interpretation downstream as a determined one.**
+  - **The retest design avoids needing the answer**: write for longer than `-duration-in-hours` and
+    observe for longer still, so **either reading is satisfied**. Convergent with a sibling's plan, so
+    results can be compared whichever side runs it.
+- **The parameter table was presented as the set of detection inputs; it is the set of toggleable
+  ones.** The same reference states that detection combining file extension and entropy is **always
+  enabled and does not depend on these parameters**.
+
+### Added
+
+- **The open question about whether an access point operation is counted by the rename and delete
+  counters.** The volume is a NAS volume so the parameters apply, but **whether the counters see
+  operations arriving over S3 is a separate matter, and no statement about it was found** on the
+  reference read here. Recorded as unknown rather than as "they do not" — a sibling reported wording
+  about NAS-only validity that could not be located on that page, so it is not transcribed.
 - **The mutation harness asserted a target string was present, not that it appeared once.** The
   replacement is bounded to the first occurrence, so a second copy of the same source string leaves
   half the detector intact — and **that direction is quieter than survival**: the test still fails, the
@@ -28,7 +50,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   untestable. Copying the tree keeps every detector testable and accepts that a fixture can
   participate. **The control is what makes that safe** — a copy that cannot pass its own tests yields
   no verdict.
-
 - **The 625 MBps divisor was described as reasoning when it is documented.** Both FSx for ONTAP block
   procedures state "the Amazon EC2 single client maximum of 5 Gbps (~625 MBps)" verbatim, as the
   preamble to the step that adds sessions. **The divisor is `documented`.** What is unverified is two
@@ -47,7 +68,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   counting the figure refers to is not decidable from that page.** The note now states that its own
   "8 sessions" means the `nr_sessions` value and that the path count is twice that — the difference is
   a factor of two in what gets provisioned.
-
 - **Twenty-one links into a sibling repository were verified by nothing, and a comment said they were
   handled.** The citation pattern documented tree links as out of scope "because `check_links.py`
   already resolves them" — that check **skips every `http(s)` URL unless `--external` is passed, and
@@ -67,7 +87,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     network case skips, and under the mutation it would skip too — so "not run" would have read as
     "not detected". A green run that verified nothing is the exact failure the harness exists to
     prevent, so it says which mutation it could not verify and why.
-
 - **The `never-seen-before` extension threshold was read wrong, and the case built on it does not
   stand.** It is not "5 distinct extensions in 48 hours". The CLI reference states that when a new
   extension is observed and **that extension** accounts for the threshold number of create/rename
@@ -86,7 +105,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   another repository is asking.
   - Corrected after a sibling repository read the same reference and found the threshold sentence.
     **Two readings of one parameter name, and the one that made the result sound stronger was mine.**
-
 - **The version scoping added for ARP's learning period was wrong for FlexGroup, in the direction
   that produces a wrong plan.** It said 9.16.1 and later needs no learning period, naming NAS and SAN.
   The vendor's support table is two-dimensional: the pre-trained model covers **FlexVol from 9.16.1,
@@ -102,7 +120,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **The layered-defence table called detection "not recovery" and left out that it is also not
   blocking.** The documented response is warn, snapshot, administrator classification; there is no
   write-refusal step.
-
 - **The note foreclosed a design that works, by calling two different things "index-side".** It
   offered "split the index by permission" and "carry permission metadata and filter at search time",
   then concluded that **both are index-side design**. Those are three positions, not two, and the
@@ -123,7 +140,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     decision. **The recommended option's constraints are the ones most likely to be dropped.**
 - **A sentence said scoping "must" be designed into the index.** Corrected to say a mechanism
   separate from the file ACL is required, and that where it sits changes where the boundary is.
-
 - **`pr-verify` had the defect it was written to fix, one layer up.** It exists because
   `gh pr checks` answers about the latest run rather than the current head. Called straight after a
   push, the API still reports the **previous** head, so every lookup keyed on a SHA that was correct
@@ -140,7 +156,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - Both git lookups route through one helper that scrubs `GIT_*`. An inherited `GIT_DIR` would
     report another repository's HEAD and invent a mismatch that refuses everything — the same
     inheritance that fabricated a committed file here.
-
 - **A dead repository name was reported as "cannot resolve", which is what a rate limit reports
   too.** 404 and 403 both arrive as `HTTPError`, so branching on the exception type collapses a
   verdict about the **name** into a verdict about the **request**. The check now classifies on the
@@ -160,7 +175,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - **Activation cannot be enforced from inside the repository**, and asserting the config value in
     CI would be red by design. The tests stop at "the hook is fit to run": tracked, executable, and
     still invoking the gate. A test records that boundary rather than checking a value.
-
 - **An interim handling was listed that this repository had already said was unusable.** The
   workaround for `UploadPartCopy` returning `NoSuchKey` was given as "keep percent-encodable
   characters out of the copy-source key", and the paragraph below it said that is incompatible with
@@ -177,7 +191,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   it.** Keeping parts below the threshold is the one interim handling here that reverses cleanly.
   - Reported by the repository that runs an implementation with all three settings. This repository
     was judging reachability by API name, which cannot see it.
-
 - **The reason given for needing a collector per site did not survive contact with an implementation.**
   The note attributed it to crossing a site boundary. **What decides it is the direction the connection
   is opened.** Pull paths centralize across sites — one Harvest instance scales to 40+ file systems in
@@ -228,7 +241,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   Prometheus). **That implementation also contained the blind spot this note predicts**: the ADOT
   container is `Essential: false` and the Harvest health check is commented out, so collection keeps
   running while remote-write is dead and the task still reads as healthy.
-
 - **The only pre-commit hook lived in a global `hooksPath`, so it existed on one machine.** AGENTS.md
   already says this about the irreversible-ops guard — a hook outside the repository is invisible to
   collaborators and drifts — and the repository was in that state anyway. There is now a tracked
@@ -249,7 +261,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **Documented two gate hazards that had only been recorded in code comments**: the deliberate
   disagreement over fenced blocks between the audit and the rename check, and the three occasions when a
   gate here passed because its input set was empty or narrower than its claim.
-
 - **The rename check blanked fenced blocks, where a `git clone` URL lives.** A reader runs a clone
   URL, so it is where an old name survives longest and does the most damage. Fences are still blanked
   when scanning for citations — an example link inside one is not a claim — so the two checks now want
@@ -264,7 +275,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   word** — 「コストの観点から」 stays accepted, and there are now tests for both directions. **A rule
   that fires on ordinary prose gets an allow marker rather than a fix**, which is how a gate stops
   working.
-
 - **The rename check was silent on two of the seven names it was written for, and its break test
   used one of the five that work.** A case-only rename does not redirect: GitHub resolves repository
   names case-insensitively and serves the requested casing with 200, so comparing the final URL after
@@ -299,7 +309,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - **The cross-repo issue this came from asserted the 30-day requirement as the reason nobody had
     measured active mode.** That premise was wrong, and it was inferred from a sibling's document
     rather than checked against the vendor's.
-
 - **Four claims sat inside `verified` notes without a measurement behind them, and one of them
   carried an alerting instruction.** Reviewing #107 after it merged found the boundary between what
   was measured and what was reasoned had moved. The block monitoring note declared its verified scope
@@ -348,7 +357,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   as derived from the timeline rather than observed. Also corrected: a six-hour minimum between
   throughput-capacity changes was written as "one measurement per environment", which is a stronger
   constraint than the documentation states.
-
 - **A password containing `"` or `\` was silently truncated before it reached ONTAP, and an
   authentication failure had no message.** The example scripts hand curl the credential through
   `--config`, whose parser ends a double-quoted value at the first unescaped quote and drops a lone
@@ -384,7 +392,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   not the guard exists, so deleting either guard left the test passing. Both now use an empty `PATH`
   and require the message naming the missing tool — confirmed by deleting `make markdown`'s guard and
   watching the test fail on the message rather than on the exit code.
-
 - **Every diagram label was too small to read, and no gate said so.** The figures were authored at
   `fontSize=11` on a 1220px canvas. A reader's column is about 880px wide, so the image was scaled to
   0.72 and the labels arrived at roughly 8px — half the surrounding body text, and the measured
@@ -487,7 +494,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **The resource map listed a resolved question inside its disagreements table**, with a verdict cell
   reading "this is not a disagreement". Moved to a separate table so a reader scanning for open
   disagreements does not have to read to the end of a cell to learn it is closed.
-
 - **A sweep for the same class of error found four more, and one of them was pointed the wrong way
   entirely.** After correcting the path-count claim, every assertion of the form "the vendor does not
   document this", "this is not supported", or "these two pages disagree" was re-checked against
@@ -517,7 +523,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - Claims re-verified and left standing: the two AWS pages that differ on iSCSI failover
     transparency, the ports absent from the requirements table, and the failover-detection `sysctl`
     tuning being scoped to Single-AZ NFS.
-
 - **The claim that following AWS's iSCSI procedure exceeds NetApp's recommendation by four times was
   wrong, and it was the headline of a note.** It set AWS's 8-sessions-per-node guidance against a
   NetApp statement that a single LUN should not require more than four paths. Re-reading both primary
@@ -541,7 +546,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   second-generation ceilings above it. Both readings are recorded with the date they were checked,
   and the text now gives the operation that avoids the problem — compute session count from your own
   provisioned throughput capacity — rather than a verdict on which page is wrong.
-
 - **Seven sibling repositories had been renamed, and every link here still used the old name.**
   `s3-burst-on-ontap-files`, `fsxn-cyber-resilience-patterns`, `fsxn-observability-integrations`,
   `fsxn-lakehouse-integrations`, `ontap-edge-to-cloud-ai`, `vmware-migration-ec2-ontap` and
@@ -555,7 +559,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - `make cross-repo-external` now resolves every sibling repository named anywhere in prose and
     **fails when a name only works because of a redirect.** Verified by failing on a reintroduced
     old name and passing once it was removed.
-
 - **The claim that a pre-created empty `/etc/multipath.conf` survives `mpathconf --enable` was
   wrong.** It left a 29-byte file with empty `blacklist` and `defaults` blocks — smaller than the 334
   bytes measured when it writes from scratch, but not untouched. The resulting map still used
@@ -564,7 +567,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   LUN created through the ONTAP REST API has `space.guarantee.requested` false by default, so the
   volume showed 352,256 bytes used against a 40 GiB LUN. The reservation flag is now printed next to
   the size so the capacity figures are read correctly.
-
 - **Two S3 access point behaviours were recorded as measured limits without saying whether they were
   intended.** The note listed Unicode characters rejected in object tags and `UploadPartCopy` failing
   inside one access point among the constraints that are not in public documentation, which leaves a
@@ -598,7 +600,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   been taken, so the section states results instead of an absence. It also records why there was only
   one attempt: `storage failover show` returns an empty table to `fsxadmin`, so a throughput-capacity
   change is the only way in, and second-generation file systems refuse another for six hours.
-
 - **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
   for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
   stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
@@ -639,7 +640,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the AWS page, so a reader can act on "grow it before it fills" rather than just be told to consider
   it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
   measured at 19–65 seconds and does not reproduce, so detect-then-react cannot be relied on.
-
 - **The localization tiers did not classify `case-studies/` or `workshop-studio/`.** Both sit under
   `docs/<lang>/` with a `README.md`, which reads as Tier 2 — yet neither is a module whose question
   list is the index, so requiring English through Tier 2 would have been wrong. The tier table now
@@ -649,7 +649,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the rule was correct and unwritten, which is what invited re-deciding it each pass. No files moved
   or were translated — the remaining Japanese-only material under these two trees is Tier 3 and
   optional by design.
-
 - **`AGENTS.md`'s repository layout omitted `docs/ja/workshop-studio/`.** Six files live there, and the
   root README, `ja/navigation.md`, and `en/navigation.md` all link to it, but an agent reading the
   layout to orient itself would not know the subtree exists. Added one line. The file had eight bytes
@@ -658,7 +657,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `scripts/check_agent_context_budget.py`, which is the deliberate, visible bump the tool is built to
   require. The ceiling still sits close enough that the next approach to it is a prompt to move
   material to `docs/agent/`, not to raise it again by reflex.
-
 - **The `(日本語)` marker rule was stated, unenforced, and half-observed.** `docs/agent/localization.md`
   promises that a Japanese-only note is linked from English with a marker "so a missing translation is
   a labelled link rather than a broken promise". Nothing checked it, so it held in module README
@@ -674,14 +672,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - Wired with a break case in `scripts/tests/test_doc_gates.py` and a `--selftest` covering all seven
     accept/reject shapes, because a gate that only passes on a clean tree proves nothing about whether
     it can still detect anything.
-
 - **A section heading counted three findings and the table under it listed four.** In
   `what-iac-cannot-reach.md`, the heading said 3 while the table carried four rows, and the sentence
   that followed referred to "the third" while describing the fourth — the asynchrony of
   `UpdateVolume`. Found while translating, because a translation has to decide which item the sentence
   points at. The count is dropped from the heading and the finding is named instead, so the reference
   cannot drift again when a row is added. No inbound link cited that anchor.
-
 - **"Some SVMs cannot serve SMB, and only recreating the SVM fixes it" was wrong on the cause, the
   remedy and the indicator.** The vendor reproduced the behaviour and identified it: `data-cifs` is
   granted to **every** SVM at creation regardless of AD membership, and it is **removed when a CIFS
@@ -720,7 +716,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   choice disables the other. Also the part that makes the choice actionable: `-rotate-size` defaults to
   100 MB, `-rotate-limit` bounds the total at `rotate-size × rotate-limit` plus the active file, and
   the retention that `-rotate-limit` gives up is observable by watching the oldest file's timestamp.
-
 - **The lockout note framed the risk as using the wrong credential, and a correct one locked the
   account anyway.** Reproduced on 2026-09-02 while investigating whether an unrelated automation was
   the cause: authentication succeeded at `06:00:57` with the value from the secret, and the account was
@@ -743,7 +738,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   signal that the reset landed — and testing early spends one of the five attempts on the account you
   are trying to recover. The procedure now polls `AdministrativeActions[0].Status` first; the reset
   measured about 44 seconds.
-
 - **`CONTRIBUTING.md` still told contributors that a missing tool means a skipped check.** It called
   `markdownlint-cli2` optional and said the gate skips when it is absent, which stopped being true
   when every gate was changed to fail instead — so the quickstart promised the one behaviour the
@@ -753,7 +747,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   documented `.venv/bin/python -m pip install -r requirements-dev.txt` fails with
   `No module named pip` — hit while bumping `ruff` to 0.16.5, which is exactly when a contributor
   first needs the command to work.
-
 - **"There is no audit-specific EMS event" was a statement about the pattern I searched, not about
   ONTAP.** The query was `event log show -message-name *audit*`, and `adt.stgvol.*` cannot match it.
   ONTAP does define `adt.stgvol.nospace` (severity `EMERGENCY`) for staging exhaustion, plus
@@ -796,7 +789,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   the spelling; the NetApp KB
   attributing it to the role or privilege level is now cited where the restriction is documented, with
   the check that actually answers it (`security login role show -role <role>`).
-
 - **"The audit log filling up denies client access" is correct, and an earlier version of this entry
   said it was not — because that measurement was under-loaded.** The first pass drove five SMB
   operations against a destination at 99% and concluded access does not stop. Re-measured on the same
@@ -871,7 +863,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   assumed eleven listed words covered an open class. What actually keeps those nouns clean is that
   `ない` is a literal rather than `い$`, so that boundary is now asserted directly in
   `scripts/tests/test_heading_style_detection.py` and fails loudly if it is widened.
-
 - **"Not in the price list, so not charged" was wrong about `CopyBackup` cross-Region transfer.** The
   reasoning was that backups sit in AWS-managed S3 and never traverse the customer VPC, so an
   EC2-style inter-Region charge cannot apply. EBS snapshots refute it: they are also in AWS-managed
@@ -913,7 +904,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   so each label rendered as an empty rectangle. The XML parsed, `--check` passed, and only opening
   the PNG showed it — which is why the diagram standard says to look at the picture. The generator
   now sets `labelBackgroundColor` from the theme.
-
 - **The ruff gate misdiagnosed a broken install as a version mismatch.** It read the version through
   `ruff --version | awk '{print $2}'`, and a pipeline reports its *last* command's exit status, so a
   ruff that cannot execute produced an empty version string. The gate then refused — correctly — while
@@ -1008,9 +998,6 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   gone too: an empty tracked directory nothing links to cannot be told apart from one whose contents
   were lost. The shape is still documented in `_template`, which now says to create the directory once
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
-
-### Added
-
 - **The two conditions that must travel with any future block-versus-file comparison**, recorded before
   the measurement exists rather than after someone reads the table wrong. Both favour block, so
   dropping either makes an artefact read as a protocol difference: the file measurements sent **every
