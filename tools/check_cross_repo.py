@@ -220,11 +220,18 @@ def check_repo_names() -> list[str]:
     seen: dict[str, list[str]] = {}
     for path in prose_files():
         rel = path.relative_to(ROOT).as_posix()
-        body = strip_code(path.read_text(encoding="utf-8"))
+        # Deliberately NOT strip_code(): a repository name inside a fenced block is usually a
+        # `git clone` URL, which a reader runs. That is where an old name survives longest and
+        # matters most. Fences are blanked for citations, where an example link is not a claim —
+        # the two checks want opposite things from the same text.
+        body = path.read_text(encoding="utf-8")
         for match in REPO_REF.finditer(body):
             repo = match.group("repo").rstrip(".")
-            if repo == THIS_REPO:
-                continue
+            # A clone URL ends in `.git`, and clone URLs are the reason fences are scanned.
+            if repo.endswith(".git"):
+                repo = repo[: -len(".git")]
+            # This repository is not excluded. If it is renamed, its own self-references go
+            # stale the same way, and nothing else would report them.
             seen.setdefault(repo, [])
             if rel not in seen[repo]:
                 seen[repo].append(rel)

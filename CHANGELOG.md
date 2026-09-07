@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The rename check blanked fenced blocks, where a `git clone` URL lives.** A reader runs a clone
+  URL, so it is where an old name survives longest and does the most damage. Fences are still blanked
+  when scanning for citations — an example link inside one is not a claim — so the two checks now want
+  opposite things from the same text, which the comments say. Also strips a trailing `.git`.
+- **The rename check excluded this repository from its own scan.** If the Playbook is renamed, its own
+  self-references go stale identically and nothing else reports them. Exclusion removed.
+  - Both improvements came from a sibling repository's port of the check, which was better than the
+    original in exactly these two ways.
+- **The role-label rule matched blockquote callouts only, so a section heading passed.**
+  `（Storage Specialist 観点）` as a heading was reported by a sibling; neither side's detector saw it.
+  `観点` and `視点` are ordinary words, so the widened pattern requires **a role token beside the lens
+  word** — 「コストの観点から」 stays accepted, and there are now tests for both directions. **A rule
+  that fires on ordinary prose gets an allow marker rather than a fix**, which is how a gate stops
+  working.
+
 - **The rename check was silent on two of the seven names it was written for, and its break test
   used one of the five that work.** A case-only rename does not redirect: GitHub resolves repository
   names case-insensitively and serves the requested casing with 200, so comparing the final URL after
