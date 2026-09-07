@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The version scoping added for ARP's learning period was wrong for FlexGroup, in the direction
+  that produces a wrong plan.** It said 9.16.1 and later needs no learning period, naming NAS and SAN.
+  The vendor's support table is two-dimensional: the pre-trained model covers **FlexVol from 9.16.1,
+  FlexGroup from 9.18.1, SAN from 9.17.1**, while the original model — the one with the 30-day
+  learning period — covers **FlexVol 9.10.1 to 9.15.1 and FlexGroup 9.13.1 to 9.17.1**. So a
+  **FlexGroup on 9.16.1 or 9.17.1 is on the original model and does need the learning period**, and
+  the previous wording told that reader the opposite. The 30-day mode is for NAS FlexVol, with an
+  auto-switch available from 9.13.1.
+- **"ARP detects writes through the access point" did not say what it detected on.** The only observed
+  detection reason was high entropy. Rename and delete rates are detection inputs too, but their
+  thresholds are surge-based and do not behave the same way, so the measured result was being read
+  wider than it was. Now states the reason, the date, and the version, in both places that carry it.
+- **The layered-defence table called detection "not recovery" and left out that it is also not
+  blocking.** The documented response is warn, snapshot, administrator classification; there is no
+  write-refusal step.
+
 - **The note foreclosed a design that works, by calling two different things "index-side".** It
   offered "split the index by permission" and "carry permission metadata and filter at search time",
   then concluded that **both are index-side design**. Those are three positions, not two, and the
@@ -916,6 +932,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
 
 ### Added
+
+- **A measured answer for attacks that do not encrypt — mass rename, mass delete, extension rewrite.**
+  The premise that these fall outside ARP is **wrong**: the volume's own detection parameters include
+  **rename, delete and create operation rates, and never-before-seen extensions**, alongside the
+  high-entropy data rate. **What decides the outcome is the threshold, not the coverage** — the rate
+  inputs fire on a **100% surge against a learned baseline**, and the extension input on **5 unseen
+  extensions within 48 hours**.
+  - Measured on four freshly created FlexVols with ARP/AI enabled, 1,000 low-entropy text files each.
+    **The control — overwriting content with high-entropy data — was detected in 6 minutes.** A
+    1,000-file rename, a 1,000-file delete, and a rewrite to **seven** unseen extensions were all
+    undetected after 30 minutes. **ARP had recorded all seven extensions as observed**, so being
+    observed and being judged an attack are separate things.
+  - **The control is what makes the three negatives readable.** Without it, "not detected" and "ARP
+    was not running" are the same observation.
+  - Recorded as `field-observation`: one run, not reproduced. **It does not say ARP fails to detect
+    renames or deletes.** One candidate explanation is named and explicitly not confirmed — a surge is
+    measured against a learned baseline, and a volume created minutes earlier may not have one.
+  - Two by-products confirmed independently: **disabling ARP took over 11 minutes**, and **no ENOSPC
+    occurred** (ARP snapshots peaked at 3.2 MB on a 10 GiB volume), which is the failure that would
+    otherwise be misread as blocking.
 
 - **A record of two things the cross-repository index does not cover**, rather than leaving them
   implicit. The citation for the permission-decision correction rests on an issue comment and
