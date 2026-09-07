@@ -9,6 +9,27 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"Add one" had no unit, and the unit had already been shown to matter two sections earlier.**
+  `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` told the reader to add one
+  to the divided figure. **`nr_sessions` is per node and the SVM has a LIF on both**, so a bare "+1"
+  is either twice the intent or not settable: paths move in even steps only. The instruction now
+  names `nr_sessions` and states that paths increase by two. Reported by a sibling repository, which
+  pointed out that the ambiguity this note resolves for "8 sessions" had returned in its own advice.
+- **A probe whose firing has more than one meaning is now labelled as such.** `500〜592 MB/s に収まる`
+  cites a range whose ends come from three single-connection rows, so **a fourth row moves it** — the
+  gate cannot tell an added row from a withdrawn claim, and **repairing the prose automatically would
+  record an extension as a retraction.** That probe is now recorded as a "re-read the section" signal,
+  and the two probes on the same file that cite claims without a range keep the retraction-detection
+  role. Keeping only one of the two was rejected: one cannot detect a retraction, the other cannot
+  notice a widened range.
+- **Prose enumerating a gate's contents drifted from the gate, and a sibling read the prose as the
+  implementation.** An issue proposing the division of labour listed seven probe strings; two were
+  later replaced, and the enumeration then described a gate that no longer existed. **The sibling
+  reported one string as broken — it had never been registered at all.** The rule is now recorded:
+  telling another repository what a gate checks is **a one-line reference to the registration table,
+  never a copy of its contents**, and a failure is read from the registration rather than from a
+  description of it.
+
 - **Both external checks reported "the server did not answer" as "the link is broken".** A 5xx, a
   timeout, and a DNS failure all became a failure, so a run could fail over someone else's outage —
   and **a check that is wrong when nothing is wrong stops being read.**
