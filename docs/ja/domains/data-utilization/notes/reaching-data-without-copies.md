@@ -33,7 +33,7 @@ lang: ja
 
 | 手段 | 何をするか | コピーの有無 | 管理経路 |
 |---|---|---|---|
-| S3 Access Point | S3 API でボリュームのデータにアクセスします | コピーしません | Amazon FSx API <!-- allow:naming - AWS の API 名 --> |
+| S3 Access Point | S3 API でボリュームのデータにアクセスします | コピーしません | Amazon FSx API |
 | FlexClone | 元データを参照するボリュームを作ります | 参照するだけです | ONTAP CLI |
 | FlexCache | **必要な分だけ**元ボリュームから取得する疎なキャッシュ | 必要な範囲のみ | **ONTAP CLI** |
 

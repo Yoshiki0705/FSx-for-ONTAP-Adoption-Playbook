@@ -161,6 +161,49 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # The mirror-image mistake a sibling repository made first and reported. Testing for an
+        # unchanged report finds only markers that suppress nothing, and misses one that makes the
+        # checker report something that is not there.
+        "name": "suppression predicate accepts any change",
+        "why": (
+            "'!=' calls a marker justified whenever the count moved, including when the marker adds "
+            "a finding that does not exist. A rule written to hunt quiet failures will not look for "
+            "loud ones, so this is the shape that survives review."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                'return "justified" if findings_without > findings_with else "inert"',
+                'return "justified" if findings_without != findings_with else "inert"',
+            ),
+        ],
+        "must_fail": ["test_a_marker_that_adds_a_finding_is_not_justified"],
+        "must_pass": [
+            "test_a_marker_that_hides_a_finding_is_justified",
+            "test_a_marker_that_hides_nothing_is_inert",
+        ],
+    },
+    {
+        # The hole this closed: a line mentioning the marker in prose exempted itself.
+        "name": "allow marker recognised as bare text",
+        "why": (
+            "Dropping the HTML comment wrapper is the shortest way to make the regex simpler, and it "
+            "restores the hole where any line mentioning allow:naming - inside backticks included - "
+            "silenced the detector on that line."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'r"<!--[^>]*?allow:(naming|neutrality|pii|role-label|support-referral|all)[^>]*?-->"',
+                'r"allow:(naming|neutrality|pii|role-label|support-referral|all)"',
+            ),
+        ],
+        "must_fail": ["test_a_bare_prose_mention_does_not_suppress"],
+        "must_pass": ["test_a_real_marker_suppresses"],
+    },
+    {
         "name": "allow budget accepts a grown set",
         "why": (
             "Returning 'ok' when a marker appears is the state before this guard existed. Adding an "

@@ -89,7 +89,7 @@ FSx for ONTAP は、メトリクスが**複数の連続データポイントで*
 
 自分で SSD 容量のアラームを作る場合、ドキュメントが示す構成はこうです。
 
-- **名前空間**: `AWS/FSx` の Detailed File System Metrics <!-- allow:naming - CloudWatch の名前空間そのもの -->
+- **名前空間**: `AWS/FSx` の Detailed File System Metrics
 - **メトリクス**: **`MAX(StorageCapacityUtilization)`**
 - **期間**: 5 分
 - **条件**: 静的しきい値、80 以上

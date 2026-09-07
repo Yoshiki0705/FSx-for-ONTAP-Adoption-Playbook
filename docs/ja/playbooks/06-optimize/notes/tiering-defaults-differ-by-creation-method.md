@@ -19,8 +19,8 @@ lang: ja
 
 | 作成方法 | 既定のポリシー | 既定の cooling period |
 |---|---|---|
-| Amazon FSx コンソール <!-- allow:naming - AWS のコンソール名 --> | **`Auto`** | **31 日** |
-| AWS CLI / Amazon FSx API / ONTAP CLI <!-- allow:naming - AWS の API 名 --> | **`Snapshot Only`** | **2 日** |
+| Amazon FSx コンソール | **`Auto`** | **31 日** |
+| AWS CLI / Amazon FSx API / ONTAP CLI | **`Snapshot Only`** | **2 日** |
 
 **同じ「既定のまま」で作ったボリュームが、作成経路によって別の挙動になります。** コンソールで作った検証環境と、CloudFormation で作った本番環境で階層化の挙動が違う、という状態が既定で起こります。
 

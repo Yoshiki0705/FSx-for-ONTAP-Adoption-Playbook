@@ -166,6 +166,56 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### Hunting quiet failures will not find the loud ones
+
+**"Look for the bug that leaves the run looking normal" is a good rule with a blind spot: the bug
+that is wrong out loud.** A sibling repository hit it directly. Checking whether an exemption marker
+was *inactive* tests for "the report is unchanged with and without it" — which finds markers that
+suppress nothing, and **misses a marker that makes the checker report a problem that does not exist.**
+The correct predicate is asymmetric: **a suppression is justified only if ignoring it *increases* the
+report.**
+
+Both wrong shapes exist, and only one is quiet:
+
+| Shape | Report | Found by "unchanged"? |
+|---|---|---|
+| suppresses nothing | unchanged | yes |
+| **invents a finding** | **changed** | **no — it looks justified** |
+
+So when a rule is written to catch silence, ask what its loud counterpart would be. Here the loud
+counterpart was in the budget itself: **prose mentioning a marker was counted as a marker**, so
+writing about one could fail `make allow-budget` with nothing wrong.
+
+### A marker must be a directive, not a mention of one
+
+Two readings were too loose, and both were live holes:
+
+| Written as | Was it honoured? | Should be |
+|---|---|---|
+| `allow:naming` bare in prose | **yes** | no |
+| `` `<!-- allow:naming -->` `` in a code span | **yes** | no |
+
+**Every line documenting these markers was therefore exempting itself**, and appending a code-span
+marker to any sentence silenced the detector on it. The marker now requires the HTML comment wrapper,
+and code spans are stripped before markers are extracted — while findings still match the original
+line, so a forbidden term inside a code span is still reported.
+
+**The two fixes cover different sentences and each needs its own test.** The mutation harness proved
+it: a test using a backticked mention passes with the wrapper requirement removed, because the code
+span was already stripped. Only a bare mention exercises the wrapper.
+
+### Removing markers in bulk edits the documentation of the markers
+
+Deleting 56 inert markers by script damaged three files, in two ways that `make all` does not catch:
+
+- **`CONTRIBUTING.md`** shows the syntax inside a ` ```markdown ` fence. The rule about excluding
+  fenced blocks was already recorded in this file for the heading detector, **and was not applied.**
+- **`AGENTS.md`** shows it inside inline code spans, and the removal left empty backticks — **valid
+  markdown, so nothing failed.**
+
+Both were caught by reading the diff, not by a gate. **A scripted edit across 20+ files needs the
+diff read for the files that describe the thing being edited.**
+
 ### An exemption list has to be shrink-only, and the surplus is the quiet half
 
 **Adding an allow marker looks exactly like fixing the problem it silences: the audit passes either

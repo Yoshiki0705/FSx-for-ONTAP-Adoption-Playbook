@@ -92,7 +92,7 @@ Warnings appear on the **Monitoring & performance** dashboard. CloudWatch alarms
 
 To build your own SSD capacity alarm, the configuration the documentation gives is:
 
-- **Namespace**: Detailed File System Metrics under `AWS/FSx` <!-- allow:naming - the CloudWatch namespace itself -->
+- **Namespace**: Detailed File System Metrics under `AWS/FSx`
 - **Metric**: **`MAX(StorageCapacityUtilization)`**
 - **Period**: 5 minutes
 - **Condition**: static threshold, greater than or equal to 80

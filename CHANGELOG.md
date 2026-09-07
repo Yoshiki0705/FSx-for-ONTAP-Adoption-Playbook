@@ -9,6 +9,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A line that merely mentioned an allow marker in prose was honoured as one, and so was a marker
+  shown inside a code span.** Every line documenting the markers exempted itself, and **appending a
+  code-span marker to any sentence silenced the detector on that line.** The marker now requires the
+  HTML comment wrapper, and code spans are stripped before markers are extracted — findings still
+  match the original line, so a forbidden term inside a code span is still reported.
+  - Measured before changing anything: one line in the tree relied on the loose form, and **no new
+    finding appears.**
+  - The loud half of the same defect was in the budget: **prose about a marker was counted as a
+    marker**, so writing about one could fail `make allow-budget` with nothing wrong.
+- **56 markers suppressed nothing, and an inert marker is not merely useless — it is headroom.** The
+  line is exempt today and silently exempt for a real violation tomorrow. Most sat on `Amazon FSx`,
+  which the detector already accepts as the service name. `make allow-budget` now reports them.
+  **81 markers → 28; 42 entries → 24, with the audit still clean**, which is what proves they
+  suppressed nothing.
+  - The predicate is **"ignoring the marker increases the report"**, not "the report is unchanged".
+    Reported by a sibling repository, which implemented the second form first: it finds only markers
+    that suppress nothing and **misses one that invents a finding.** A rule written to hunt quiet
+    failures will not look for loud ones. Pinned as a truth table, and a mutation restoring `!=` is
+    killed. **Twelve mutations.**
+  - **The bulk removal damaged three files in ways no gate catches**: `CONTRIBUTING.md` documents the
+    syntax inside a fence, and `AGENTS.md` inside code spans where deletion left empty backticks —
+    valid markdown. Both restored; the check now excludes fences and uses the audit's own extraction.
+
 - **"Add one" had no unit, and the unit had already been shown to matter two sections earlier.**
   `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` told the reader to add one
   to the divided figure. **`nr_sessions` is per node and the SVM has a LIF on both**, so a bare "+1"
