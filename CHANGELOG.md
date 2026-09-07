@@ -9,6 +9,27 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The note foreclosed a design that works, by calling two different things "index-side".** It
+  offered "split the index by permission" and "carry permission metadata and filter at search time",
+  then concluded that **both are index-side design**. Those are three positions, not two, and the
+  third one — **deciding after retrieval, on the retrieved chunk's metadata** — is where an
+  implementation actually puts it.
+  - Confirmed against an implementation via a cross-repository issue: ingestion goes through an
+    FSx for ONTAP S3 Access Point, `Retrieve` is issued with **no filter at all**, and the caller's
+    identity is matched against chunk metadata **after** retrieval and before generation. The
+    index-side filter exists in that codebase and is unused.
+  - **The single-identity constraint this note describes still holds there, and is not circumvented.**
+    The access point identity authorizes ingestion and scanning; it does not authorize the end user.
+    Permissions are **re-derived into a separate index**, and that index is not a projection of the
+    ACL — it comes from an administrator-maintained mapping.
+  - **Trade-offs are stated symmetrically, including for the option with an implementation behind
+    it**: it is only as correct as the permission index, an ACL change on the volume does not reach
+    it unless something rebuilds that index, the index is not scoped by authorization so a missing
+    decision layer exposes everything, and retrieved counts depend on the candidate set before the
+    decision. **The recommended option's constraints are the ones most likely to be dropped.**
+- **A sentence said scoping "must" be designed into the index.** Corrected to say a mechanism
+  separate from the file ACL is required, and that where it sits changes where the boundary is.
+
 - **`pr-verify` had the defect it was written to fix, one layer up.** It exists because
   `gh pr checks` answers about the latest run rather than the current head. Called straight after a
   push, the API still reports the **previous** head, so every lookup keyed on a SHA that was correct
@@ -895,6 +916,15 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   a checklist exists. Block storage keeps its link, now pointing at the checklist itself.
 
 ### Added
+
+- **A record of two things the cross-repository index does not cover**, rather than leaving them
+  implicit. The citation for the permission-decision correction rests on an issue comment and
+  **nothing is being waited on**: implementation details are deliberately not transcribed here, and
+  without a transcription there is no string to probe. Transcribing would allow a probe and would rot
+  on the next refactor of the other side. **The choice is recorded as a choice, not as a gap.**
+  - **The index only sees what this repository cites, not what cites it.** An external repository
+    links into `docs/ja|en/domains/data-utilization/`, so **moving that directory breaks a link with
+    no gate here firing.** The anchor contract protects headings, not directory paths.
 
 - **Two performance documents are now in the external anchor contract, which means a heading rename
   in either one fails the commit gate here.** `docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md`

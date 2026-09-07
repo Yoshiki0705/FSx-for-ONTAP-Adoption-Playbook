@@ -117,9 +117,27 @@ lang: ja
 | 引用元 | 根拠の所在 | 待っているもの |
 |---|---|---|
 | `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | Observability 側の実装ファイルのコミット。**回答時点で約 67 件が未コミットでした** |
+| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | [Issue #162 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG/issues/162#issuecomment-5563205901)（公開 URL、恒久） | **何も待っていません。** 実装のファイル名・関数名を転記しない方針で、**転記しないなら probe を張る対象がありません。** 二重管理を避けた結果としてゲートの外に出ます |
 
 **Issue のコメントは公開されていて消えませんが、ファイルではないので probe の対象にできません。**
 つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。
+
+### 転記しない選択の代償
+
+**上の 2 行目は、相手のコミットを待っているのではありません。** 実装の詳細（ファイル名・関数名・行）を
+こちらへ転記しない方針を採ったので、**照合する文字列がそもそも存在しません。**
+
+転記すれば probe を張れます。ただし**二重管理になり、相手がリファクタリングした時点で片方が腐ります。**
+どちらを選んでも失うものがあり、ここでは**腐った記述が残るより、ゲートの外にあることが記録されている
+ほうがましだと判断しました。** この判断は方針であって、ゲートの不足ではありません。
+
+### この索引が捕まえない逆リンク
+
+**外部から `docs/ja|en/domains/data-utilization/` へ向かうリンクが存在します**（[FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) の
+8 言語 README）。**この索引は「こちらが引用しているもの」しか見ておらず、「こちらが引用されているもの」は
+見ていません。** つまり**このディレクトリを動かすと、こちらのゲートは 1 つも鳴らずに相手のリンクが
+切れます。** [外部から引用されているアンカー](../../../docs/agent/external-anchor-contract.txt) は
+見出しを守りますが、**ディレクトリの移動は対象外**です。移動の予定はありません。
 
 **待っているのはコミットではなくマージです。** 相手の成果物が既定ブランチ以外に載っている間、probe は「文字列が消えた」ではなく **「ファイルが存在しない」** で落ちます。**これは撤回と区別がつきません。** 既定ブランチにマージされてから引用表へ移し、probe を張ってください。
 
