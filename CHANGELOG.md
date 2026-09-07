@@ -124,6 +124,32 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`docs/agent/cross-repo-probe-contract.txt`: the probe check runs here and nowhere else, so a
+  sibling rewording a claim we cite could not see it until our CI failed.** 42 registered strings are
+  now published, generated from the citation table and compared by `make cross-repo`, so the side that
+  owns a claim can check before committing a reword instead of learning from someone else's red gate.
+  This is the mirror of the anchor contract, which runs in the other direction. Requested by a sibling
+  repository, which noticed the asymmetry while confirming a probe report of its own.
+  - **The role a probe plays is now a column, not prose.** `retraction` or `reread`, and any other
+    value is rejected — the reading side branches on it, and an unrecognized value most likely means
+    the row gets ignored, which is worse than no contract because the row still looks covered.
+  - **The criterion narrowed from "the claim has a width" to "the probe quotes the minimum or maximum
+    of the cited document's measured set", and that reclassified a row nobody had looked at.**
+    `3,551〜5,149 MB/s` is the same shape as the range already labelled — both are rewritten by adding
+    a measurement, while a two-point ratio (`0.18 倍`, `45% 違った`) and a single observation
+    (`12,173 MiB/s`) are not. **Marking more probes `reread` costs retraction detection on those
+    claims**, so the narrow rule is the conservative one.
+  - **An absence claim is a third shape and stays `retraction` deliberately.** "The column is not in
+    the specification table", "not stated in public documentation" — when one of those stops being
+    true, the guidance resting on it changes, and that is something to be stopped by rather than
+    warned about.
+  - **Fixed a contradiction this exposed inside the repository.** `check_cross_repo.py` refused "a
+    separate machine-readable copy" while `check_anchor_contract.py` calls a second copy the
+    mechanism. What is refused is a **hand-maintained** copy: generated plus compared is what makes
+    the second copy safe, and the docstring now says which.
+  - The citing file is deliberately absent from the published file. Which of our documents leans on a
+    claim is our problem; the other side needs the set of strings it must not silently reword.
+
 - **`make workflow-observability` and a pre-merge hook: a workflow no pull request runs was being
   merged unobserved.** `cross-repo-external.yml` has `schedule` and `workflow_dispatch` only, so a
   change to it merges with **every check green and none of them about it.** The symptom was already

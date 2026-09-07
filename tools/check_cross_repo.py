@@ -26,8 +26,18 @@ External (opt-in)
     because GitHub redirects it fails. A rename is normal; the old name continuing to resolve is
     what makes it invisible, and the table above keys on the name.
 
-The table is the single source. A separate machine-readable copy would be a second file to keep in
-step, which is the failure this repository has already documented elsewhere.
+The table is the single source, and a *hand-maintained* second list of its contents is refused: a
+copy nothing compares drifts, and this repository has already been on the receiving end of that —
+an issue body enumerated seven probe strings, two were later replaced, and the enumeration went on
+describing a gate that no longer existed until a sibling reported a string as broken that had never
+been registered.
+
+`docs/agent/cross-repo-probe-contract.txt` is not that. It is generated from this table and compared
+on every run, so drift fails here rather than being discovered by someone else. It exists because the
+probe check is one-directional: only this repository can run it, so a claim we cite going stale is
+invisible to the repository that owns the claim until our CI fails. Publishing the strings lets that
+side check before committing a reword, which is the same trade the anchor contract makes in the other
+direction.
 """
 
 from __future__ import annotations
@@ -44,8 +54,49 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "docs" / "ja" / "reference" / "cross-repo-index.md"
+CONTRACT = ROOT / "docs" / "agent" / "cross-repo-probe-contract.txt"
 OWNER = "Yoshiki0705"
 THIS_REPO = "FSx-for-ONTAP-Adoption-Playbook"
+
+# What a probe firing is allowed to mean. Two values, because one verdict cannot carry both: a
+# string quoting the extremes of a measured set moves when the cited side *adds* a measurement,
+# and treating that as a retraction records an extension as a withdrawal.
+ROLES = {
+    "retraction": (
+        "expected to survive; its absence means the claim moved or was retracted"
+    ),
+    "reread": (
+        "quotes a min/max over the cited document's measured set, so an added "
+        "measurement rewrites it while the finding stands. Firing is not a retraction"
+    ),
+}
+
+CONTRACT_HEADER = """\
+# Probe strings this repository registers against sibling repositories. Generated - do not hand-edit.
+#
+# Regenerate with: python3 tools/check_cross_repo.py --write-contract
+# Source of truth: docs/ja/reference/cross-repo-index.md (the table the gate parses).
+#
+# Why this is published: the probe check runs here and nowhere else, so a claim we cite being
+# reworded is invisible to the repository that owns it until our CI fails. Reading this file lets
+# that side see, before committing, which of its strings something outside it depends on.
+#
+# Format: <repo>\\t<cited path>\\t<role>\\t<probe>, sorted. One line per cited string; the citing file
+# on our side is deliberately absent, being our concern rather than yours.
+#
+# role:
+#   retraction  Expected to survive. Its absence means the claim moved or was retracted, and the
+#               guidance built on it here has lost its basis. Worth failing on.
+#   reread      Quotes a min/max over the measured set in the cited document, so adding a
+#               measurement rewrites the string while the finding still stands. A gate cannot tell
+#               an addition from a withdrawal, so treat firing as "read this section again", not as
+#               a retraction. Editing prose automatically on this one records an extension as a
+#               withdrawal.
+#
+# An absence claim ("the column is not in the table", "not stated in public documentation") is a
+# third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
+# resting on it changes, and that is something to be stopped by rather than warned about.
+"""
 
 TABLE_START = "<!-- cross-repo-table:start -->"
 TABLE_END = "<!-- cross-repo-table:end -->"
@@ -85,6 +136,7 @@ class Row:
     repo: str
     path: str
     probe: str
+    role: str
     what: str
     line: int
     ref: str = "main"
@@ -137,21 +189,29 @@ def parse_table() -> tuple[list[Row], list[str]]:
         if not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.strip("|").split("|")]
-        if len(cells) != 5:
+        if len(cells) != 6:
             problems.append(
-                f"{INDEX.relative_to(ROOT)}:{offset}: expected 5 columns, found {len(cells)}. "
+                f"{INDEX.relative_to(ROOT)}:{offset}: expected 6 columns, found {len(cells)}. "
                 "The gate reads this table, so a changed shape is a broken gate."
             )
             continue
         if cells[0].startswith("---") or cells[0] in {"引用元"}:
             continue
-        citing, repo, path, probe, what = (c.strip("`") for c in cells)
-        if not all((citing, repo, path, probe)):
+        citing, repo, path, probe, role, what = (c.strip("`") for c in cells)
+        if not all((citing, repo, path, probe, role)):
             problems.append(
                 f"{INDEX.relative_to(ROOT)}:{offset}: a required cell is empty"
             )
             continue
-        rows.append(Row(citing, repo, path, probe, what, offset))
+        if role not in ROLES:
+            problems.append(
+                f"{INDEX.relative_to(ROOT)}:{offset}: role {role!r} is not one of "
+                f"{', '.join(sorted(ROLES))}. The value is published in "
+                f"{CONTRACT.relative_to(ROOT)} and read by the cited repository, so an "
+                "unrecognized one leaves it unable to tell a retraction from an extension."
+            )
+            continue
+        rows.append(Row(citing, repo, path, probe, role, what, offset))
     return rows, problems
 
 
@@ -255,6 +315,57 @@ def check_self_paths() -> list[str]:
                 "The repository name is correct, so the name check passes — the path moved. "
                 "Fix the link, or the file, before this ships."
             )
+    return problems
+
+
+def contract_lines(rows: list[Row]) -> list[str]:
+    """The published view of the table: one line per cited string, deduplicated.
+
+    Keyed on the cited side, so two of our documents citing the same claim collapse to one line.
+    Which of our files carries a citation is what `check_offline` is for; the repository being
+    cited needs the set of strings it must not silently reword, and nothing else.
+    """
+    return sorted({f"{r.repo}\t{r.path}\t{r.role}\t{r.probe}" for r in rows})
+
+
+def stored_contract() -> list[str] | None:
+    if not CONTRACT.exists():
+        return None
+    return sorted(
+        line.rstrip("\n")
+        for line in CONTRACT.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    )
+
+
+def check_contract(rows: list[Row]) -> list[str]:
+    """Fail when the published contract no longer matches the table it is generated from.
+
+    Without this the file is exactly the hand-maintained copy the docstring refuses. With it, a row
+    added or a probe reworded here cannot reach `main` while the published view still shows the old
+    one — which matters because the other side reads the published view, not this table.
+    """
+    current = contract_lines(rows)
+    previous = stored_contract()
+    if previous is None:
+        return [
+            (
+                f"{CONTRACT.relative_to(ROOT)} is missing. "
+                "Generate it with: python3 tools/check_cross_repo.py --write-contract"
+            )
+        ]
+    problems = [
+        f"contract is missing: {line}" for line in current if line not in previous
+    ]
+    problems += [
+        f"contract has a stale line: {line}" for line in previous if line not in current
+    ]
+    if problems:
+        problems.append(
+            f"{CONTRACT.relative_to(ROOT)} is generated from {INDEX.relative_to(ROOT)} and read by "
+            "the cited repository. Regenerate it in the same change: "
+            "python3 tools/check_cross_repo.py --write-contract"
+        )
     return problems
 
 
@@ -484,10 +595,34 @@ def main() -> int:
         action="store_true",
         help="Fetch each cited file and confirm the probe string is still present.",
     )
+    parser.add_argument(
+        "--write-contract",
+        action="store_true",
+        help="Regenerate docs/agent/cross-repo-probe-contract.txt from the table.",
+    )
     args = parser.parse_args()
 
     rows, problems = parse_table()
+
+    if args.write_contract:
+        if problems:
+            print("cannot generate the contract from a table that does not parse:")
+            for problem in problems:
+                print(f"  {problem}")
+            return 1
+        lines = contract_lines(rows)
+        CONTRACT.parent.mkdir(parents=True, exist_ok=True)
+        CONTRACT.write_text(CONTRACT_HEADER + "\n".join(lines) + "\n", encoding="utf-8")
+        print(
+            f"probe contract: wrote {len(lines)} probe(s) to {CONTRACT.relative_to(ROOT)}"
+        )
+        return 0
+
     problems += check_offline(rows)
+    # Only meaningful against a table that parsed: rows dropped by a shape or vocabulary error
+    # would otherwise be reported a second time as contract drift.
+    if not problems:
+        problems += check_contract(rows)
     # Offline and deterministic, so it runs in the per-commit gate rather than the weekly one.
     problems += check_self_paths()
 
@@ -505,9 +640,12 @@ def main() -> int:
         return 1
 
     scope = "and every probe still present" if args.external else "registered"
+    published = contract_lines(rows)
+    reread = sum(1 for line in published if "\treread\t" in line)
     print(
         f"cross-repo: {len(rows)} citation(s) {scope}, "
-        "and every absolute link into this repository names a path that exists"
+        "and every absolute link into this repository names a path that exists; "
+        f"{len(published)} probe(s) published, {reread} reread-only"
     )
     return 0
 

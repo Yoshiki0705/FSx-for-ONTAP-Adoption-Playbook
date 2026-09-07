@@ -567,16 +567,63 @@ class GateStillDetects(unittest.TestCase):
         index = ROOT / "docs" / "ja" / "reference" / "cross-repo-index.md"
         original = index.read_text(encoding="utf-8")
         broken = original.replace(
+            "| 引用元 | リポジトリ | パス | 確認する文字列 | 役割 | 何を引いているか |",
             "| 引用元 | リポジトリ | パス | 確認する文字列 | 何を引いているか |",
-            "| 引用元 | リポジトリ | パス | 確認する文字列 |",
             1,
         )
         self.assertNotEqual(broken, original, "the header row moved; update this test")
         try:
             index.write_text(broken, encoding="utf-8")
-            self.assert_rejected(run_gate("check_cross_repo.py"), "5 columns")
+            self.assert_rejected(run_gate("check_cross_repo.py"), "6 columns")
         finally:
             index.write_text(original, encoding="utf-8")
+
+    def test_an_unrecognized_probe_role_is_rejected(self) -> None:
+        """The role is published, so an unrecognized value disarms the other side.
+
+        `retraction` and `reread` are the whole vocabulary, and the reading
+        repository branches on them: one means the claim it owns has stopped
+        supporting our guidance, the other means a range moved while the finding
+        held. A third value arrives as neither, and the most likely handling on
+        that side is to ignore the row — which is the one outcome worse than no
+        contract, because the row looks covered.
+        """
+        index = ROOT / "docs" / "ja" / "reference" / "cross-repo-index.md"
+        original = index.read_text(encoding="utf-8")
+        broken = original.replace("| `retraction` |", "| `maybe` |", 1)
+        self.assertNotEqual(
+            broken, original, "no retraction row left; update this test"
+        )
+        try:
+            index.write_text(broken, encoding="utf-8")
+            self.assert_rejected(run_gate("check_cross_repo.py"), "is not one of")
+        finally:
+            index.write_text(original, encoding="utf-8")
+
+    def test_a_probe_contract_that_no_longer_matches_the_table_is_rejected(
+        self,
+    ) -> None:
+        """An unchecked export is the hand-maintained copy it was meant not to be.
+
+        The contract exists because the probe check runs only here, so the
+        repository being cited cannot see a claim of ours going stale until our
+        CI fails. That only helps while the published file and the table agree:
+        a row added here without regenerating leaves the other side checking a
+        set that is missing the newest string, and reporting itself clean.
+        """
+        contract = ROOT / "docs" / "agent" / "cross-repo-probe-contract.txt"
+        original = contract.read_text(encoding="utf-8")
+        lines = [l for l in original.splitlines() if not l.startswith("#")]
+        self.assertTrue(lines, "the contract holds no probes; update this test")
+        stale = original.replace(lines[0] + "\n", "", 1)
+        self.assertNotEqual(
+            stale, original, "the first probe line moved; update this test"
+        )
+        try:
+            contract.write_text(stale, encoding="utf-8")
+            self.assert_rejected(run_gate("check_cross_repo.py"), "contract is missing")
+        finally:
+            contract.write_text(original, encoding="utf-8")
 
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""
