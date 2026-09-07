@@ -50,10 +50,22 @@ THIS_REPO = "FSx-for-ONTAP-Adoption-Playbook"
 TABLE_START = "<!-- cross-repo-table:start -->"
 TABLE_END = "<!-- cross-repo-table:end -->"
 
-# A citation is a blob link into a sibling repository. Tree and bare-repository links are
-# navigation, not citation, so they are out of scope here — check_links.py already resolves them.
+# A citation is a blob link into a sibling repository. Tree links are navigation rather than
+# citation, so they are not required to be registered — but "not a citation" is not "checked
+# somewhere else". The claim that check_links.py resolves them was wrong: that check skips every
+# http(s) URL unless --external is passed, and --external runs in no workflow. Twenty-one tree
+# links into one sibling repository were verified by nothing at all. PATH_LINK below is what the
+# network half now resolves.
 BLOB_LINK = re.compile(
     rf"https://github\.com/{OWNER}/(?P<repo>[A-Za-z0-9._-]+)/blob/(?P<ref>[^/\s)]+)/(?P<path>[^\s)\"'#]+)"
+)
+# Any path into a repository this account owns, blob or tree. The split that matters is not
+# citation-versus-navigation, it is **what a failure means**: a URL into our own account is
+# deterministic and entirely within our control, so a 404 is always a real defect that we can fix.
+# That is the reason vendor URLs stay out of a blocking gate, and it does not transfer here.
+PATH_LINK = re.compile(
+    rf"https://github\.com/{OWNER}/(?P<repo>[A-Za-z0-9._-]+)/(?P<kind>blob|tree)/"
+    rf"(?P<ref>[^/\s)]+)/(?P<path>[^\s)\"'#]+)"
 )
 
 # Any reference to a sibling repository, citation or not. A rename leaves the old name working
@@ -230,12 +242,12 @@ def check_self_paths() -> list[str]:
     for path in prose_files():
         rel = path.relative_to(ROOT).as_posix()
         body = strip_code(path.read_text(encoding="utf-8"))
-        for match in BLOB_LINK.finditer(body):
+        for match in PATH_LINK.finditer(body):
             if match.group("repo") != THIS_REPO:
                 continue
             if match.group("ref") != "main":
                 continue
-            target = match.group("path")
+            target = match.group("path").rstrip("/")
             if (ROOT / target).exists():
                 continue
             problems.append(
@@ -333,6 +345,77 @@ def check_repo_names() -> list[str]:
     return problems
 
 
+def check_own_org_paths(rows: list[Row]) -> list[str]:
+    """Resolve every path into this account's repositories that no probe already covers.
+
+    The category rule is **what a failure means**, not where the URL points. A vendor URL can fail
+    for reasons no local change fixes, which is why it stays out of a blocking gate. **A URL into an
+    account we own cannot**: a 404 there is a defect we introduced and can fix, so it belongs in a
+    gate that fails.
+
+    This existed as a recorded gap and stayed open one release too long. A DEAD name was reported
+    with the note that a 404 is what a link checker catches — and then the link check here turned out
+    to skip every http(s) URL unless asked, with `--external` wired into no workflow. **Twenty-one
+    tree links into one sibling repository were verified by nothing.**
+
+    Registered citations are skipped: their probe already reads the file's contents, which cannot
+    succeed if the path is gone. What is left is navigation — `tree/` links, and blob links nobody
+    registered because they are not claims.
+
+    Own-repository paths are resolved offline by `check_self_paths` and skipped here, so the network
+    is only used where it is the only option.
+    """
+    problems: list[str] = []
+    registered = {(r.repo, r.path) for r in rows}
+    cache: dict[tuple[str, str, str], str | None] = {}
+    headers = {
+        "User-Agent": "cross-repo-check",
+        "Accept": "application/vnd.github+json",
+    }
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    for path in prose_files():
+        rel = path.relative_to(ROOT).as_posix()
+        body = strip_code(path.read_text(encoding="utf-8"))
+        for match in PATH_LINK.finditer(body):
+            repo, ref = match.group("repo"), match.group("ref")
+            target = match.group("path").rstrip("/")
+            if repo == THIS_REPO:
+                continue  # resolved offline against this working tree
+            if (repo, target) in registered:
+                continue  # the probe reads the file, so the path is already proven
+            key = (repo, ref, target)
+            if key in cache:
+                verdict = cache[key]
+            else:
+                url = f"https://api.github.com/repos/{OWNER}/{repo}/contents/{target}?ref={ref}"
+                request = urllib.request.Request(url, headers=headers)
+                try:
+                    with urllib.request.urlopen(request, timeout=30):
+                        verdict = None
+                except (
+                    urllib.error.URLError,
+                    urllib.error.HTTPError,
+                    TimeoutError,
+                ) as exc:
+                    status = getattr(exc, "code", None)
+                    if status == 404:
+                        verdict = (
+                            f"DEAD — {repo}@{ref}/{target} does not exist. The repository name "
+                            "resolves, so the path moved. A reader following this link gets a 404"
+                        )
+                    else:
+                        verdict = (
+                            f"INCONCLUSIVE — cannot resolve {repo}/{target} ({exc})"
+                        )
+                cache[key] = verdict
+            if verdict:
+                problems.append(f"{rel}: {verdict}")
+    return problems
+
+
 def check_external(rows: list[Row]) -> list[str]:
     problems: list[str] = []
     cache: dict[tuple[str, str, str], str | None] = {}
@@ -381,6 +464,7 @@ def main() -> int:
     if args.external and not problems:
         problems += check_repo_names()
         problems += check_external(rows)
+        problems += check_own_org_paths(rows)
 
     if problems:
         print(f"cross-repo check failed ({len(problems)} issue(s)):")

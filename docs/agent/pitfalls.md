@@ -141,3 +141,27 @@ Three rules when adding one:
 **Nothing is mutated inside the repository.** The tree is copied out and `GIT_*` is scrubbed — a
 harness whose job is to corrupt source must not be able to reach the real one, and this repository has
 already had a test write to its real index through an inherited `GIT_DIR`.
+
+## "Not a citation" is not "checked somewhere else"
+
+The citation pattern carried a comment saying tree links were out of scope because `check_links.py`
+resolved them. **It does not.** That check skips every `http(s)` URL unless `--external` is passed, and
+`--external` was wired into no workflow. **Twenty-one tree links into one sibling repository were
+verified by nothing at all**, and the comment is what made that look deliberate.
+
+The category that decides where a link check belongs is **what a failure means**, not where the URL
+points:
+
+| Link | A failure means | Where it belongs |
+|---|---|---|
+| into this repository | a path we moved | **offline, per commit** — resolved against the working tree |
+| into another repository in this account | a path we moved, in a repo we own | **network, scheduled, blocking** |
+| a vendor or third-party page | possibly nothing we can fix | network, scheduled, **non-blocking** |
+
+The third row is the reason external checks are opt-in, and **that reason does not transfer to the
+first two.** A 404 we caused is not transient.
+
+**A comment asserting that another check covers something is a claim, and it decays.** When writing
+one, name the check and the condition under which it runs — `check_links.py --external`, which runs
+weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
+being true.
