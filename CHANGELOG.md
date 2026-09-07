@@ -9,6 +9,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Twenty-one links into a sibling repository were verified by nothing, and a comment said they were
+  handled.** The citation pattern documented tree links as out of scope "because `check_links.py`
+  already resolves them" — that check **skips every `http(s)` URL unless `--external` is passed, and
+  `--external` was wired into no workflow.** The comment is what made the gap look deliberate.
+  - This was the second defect recorded alongside the DEAD verdict two releases ago: *a 404 is what a
+    link checker catches, so if this gate found it, no link check covered that path.* **It stayed open
+    because it was written down.**
+  - The split is on **what a failure means**. A path into this repository resolves **offline, per
+    commit**. A path into another repository in this account resolves in the **scheduled** run and
+    **fails** there. A vendor URL runs scheduled and **non-blocking** — that is the reason external
+    checks are opt-in, and **it does not transfer to a 404 we caused.**
+  - `make links-external` now runs in the scheduled workflow with `continue-on-error`, so vendor
+    reachability is observed without gating anything. Before this it ran nowhere at all.
+  - Break case added and a mutation registered: removing the new check makes the break case pass, and
+    the mutation harness fails when it does.
+  - **A skipped control now skips the mutation instead of asserting through it.** Without a token the
+    network case skips, and under the mutation it would skip too — so "not run" would have read as
+    "not detected". A green run that verified nothing is the exact failure the harness exists to
+    prevent, so it says which mutation it could not verify and why.
+
 - **The `never-seen-before` extension threshold was read wrong, and the case built on it does not
   stand.** It is not "5 distinct extensions in 48 hours". The CLI reference states that when a new
   extension is observed and **that extension** accounts for the threshold number of create/rename

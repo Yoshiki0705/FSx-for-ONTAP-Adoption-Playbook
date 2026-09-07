@@ -511,6 +511,32 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
             self.assert_rejected(run_gate("check_cross_repo.py"), "does not exist")
 
+    def test_a_dead_path_in_a_sibling_repository_is_rejected(self) -> None:
+        """A `tree/` link is navigation, and "not a citation" is not "checked elsewhere".
+
+        The comment on the citation pattern claimed `check_links.py` resolved these.
+        It does not: that check skips every http(s) URL unless `--external` is passed,
+        and `--external` is wired into no workflow. Twenty-one tree links into one
+        sibling repository were verified by nothing.
+
+        The category that decides this is **what a failure means**. A vendor URL can
+        fail for reasons no local change fixes; a URL into an account we own cannot.
+
+        Network-dependent, so it runs only when the external check is asked for.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\nSee https://github.com/Yoshiki0705/"
+            + "FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/"
+            + "solutions/this-directory-does-not-exist for details.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py", "--external")
+            output = result.stdout + result.stderr
+            if "INCONCLUSIVE" in output:
+                self.skipTest("GitHub API unreachable or rate-limited")
+            self.assert_rejected(result, "DEAD")
+
     def test_self_link_pinned_to_a_commit_is_accepted(self) -> None:
         """A ref this working tree need not hold is inconclusive, not dead.
 

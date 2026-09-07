@@ -43,10 +43,18 @@ jobs:
       # Not `make cross-repo-external`: the Makefile target depends on the offline check, and a
       # scheduled run should report the network findings even when an unrelated registration
       # problem is already failing the pull-request gate.
-      - name: Verify probes and repository names
+      - name: Verify probes, repository names, and paths into this account
         # The repository-name half asks the GitHub API, which allows 60 requests an hour
         # unauthenticated. The token raises that to 5,000 and needs no extra permission beyond
         # the read-only `contents` already granted above.
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 tools/check_cross_repo.py --external
+
+      # Vendor URLs stay here rather than in the pull-request gate for the reason above: a vendor
+      # page being briefly unreachable is not a defect in the change being reviewed. Paths into this
+      # account are checked by the step above and fail there, because a 404 we caused is not
+      # transient. Splitting on **what a failure means** is what makes one of them blockable.
+      - name: Check external URLs are reachable
+        continue-on-error: true
+        run: make links-external

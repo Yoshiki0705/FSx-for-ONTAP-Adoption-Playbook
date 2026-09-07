@@ -108,6 +108,24 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        "name": "own-org path check removed",
+        "why": (
+            "'A tree link is navigation, not a citation' is true and says nothing about whether "
+            "the path exists. Reading it as coverage is how twenty-one links ended up verified by "
+            "nothing."
+        ),
+        "module": "scripts.tests.test_doc_gates",
+        "edits": [
+            (
+                "tools/check_cross_repo.py",
+                "        problems += check_own_org_paths(rows)",
+                "        pass  # mutation: own-org path check removed",
+            ),
+        ],
+        "must_fail": ["test_a_dead_path_in_a_sibling_repository_is_rejected"],
+        "must_pass": ["test_self_link_pinned_to_a_commit_is_accepted"],
+    },
+    {
         "name": "self-link path check removed",
         "why": (
             "A self-link is not a cross-repository citation, which is true about citation and "
@@ -159,6 +177,12 @@ def run_tests(work: Path, module: str, names: list[str]) -> dict[str, str]:
         r"^(?:FAIL|ERROR): (test_\w+) ", result.stderr, re.MULTILINE
     ):
         outcomes[name] = "FAIL"
+    for match in re.finditer(
+        r"^(test_\w+) \([^)]*\)(?:.*?)\.\.\. (skipped[^\n]*)$",
+        result.stderr,
+        re.MULTILINE | re.DOTALL,
+    ):
+        outcomes[match.group(1)] = match.group(2)
     for match in re.finditer(r"^(test_\w+) \(", result.stderr, re.MULTILINE):
         outcomes.setdefault(match.group(1), "ok")
     return outcomes
@@ -176,6 +200,19 @@ class MutationsAreCaughtByTheRightTest(unittest.TestCase):
             names = mutation["must_fail"] + mutation["must_pass"]
             with self.subTest(mutation=mutation["name"]), self._tree() as work:
                 clean = run_tests(work, mutation["module"], names)
+                # A network-dependent test skips itself without a token, and a skipped control
+                # cannot support any verdict: under the mutation it would skip too, and "not run"
+                # would read as "not detected". So the mutation is skipped rather than assumed —
+                # the alternative is a green run that verified nothing, which is the failure this
+                # whole file exists to prevent.
+                skipped = [
+                    n for n in names if str(clean.get(n, "")).startswith("skipped")
+                ]
+                if skipped:
+                    self.skipTest(
+                        f"{mutation['name']}: {skipped} skipped on the clean copy "
+                        "(no network or no GITHUB_TOKEN), so this mutation cannot be verified here"
+                    )
                 for name in names:
                     self.assertEqual(
                         clean.get(name),
