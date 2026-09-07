@@ -39,8 +39,17 @@ uv venv .venv && uv pip install --python .venv/bin/python -r requirements-dev.tx
 **クローンごとに 1 回設定してください。**
 
 ```bash
-git config core.hooksPath .githooks
+make hooks
 ```
+
+`git config core.hooksPath .githooks` を直接実行しても同じですが、`make hooks` は**グローバルの
+`core.hooksPath` が設定されている場合にそれを報告します。** これが第 3 の状態です——**フックは
+tracked で、正しく、実行可能なのに、ローカル設定の無いクローンではグローバル側が勝って走りません。**
+そのクローンは**保護されているように見えるぶん、フックが無いより悪い**状態です。
+
+**この設定値は検査で強制できません。** クローンごとの設定なので、CI で assert すれば設計上 red に
+なります。`make hooks` が設定し、警告を出すところまでが限界で、**リポジトリ内の検査は「フックが
+実行可能な状態にあること」で止まります。**
 
 `core.hooksPath` はクローン単位の設定なので、**設定するまでフックは 1 つも動きません。** フックを
 `.git/hooks` や `~/.config/git/hooks` に置くと他のクローンから見えず、気づかないまま食い違います。

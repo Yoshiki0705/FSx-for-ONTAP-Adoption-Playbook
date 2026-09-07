@@ -373,6 +373,38 @@ class GateStillDetects(unittest.TestCase):
                 self.skipTest("GitHub API unreachable or rate-limited")
             self.assert_rejected(result, "is not the current name")
 
+    def test_a_dead_name_is_reported_as_dead_not_as_a_rename(self) -> None:
+        """404 is a verdict about the name; 403 is a verdict about the request.
+
+        Both arrive as `HTTPError`, so branching on the exception type collapses
+        the two. The tell is asymmetry in arrival, which a sibling repository
+        named: a rename or a dead link appears one repository at a time, while
+        rate limiting appears for **every** name at once. Classify 403 as a stale
+        name and one throttled run reports the whole tree as stale.
+
+        A dead name must also not be reported as a rename — there is nothing to
+        rename it to, and the message has to say so or the reader looks for a new
+        name that does not exist.
+
+        Network-dependent, so it runs only when the external check is asked for.
+        """
+        missing = "this-repository-does-not-exist-playbook-probe"
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + f"\n# gate probe\n\nSee https://github.com/Yoshiki0705/{missing} for context.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py", "--external")
+            output = result.stdout + result.stderr
+            if "INCONCLUSIVE" in output and "404" not in output:
+                self.skipTest("GitHub API unreachable or rate-limited")
+            self.assert_rejected(result, "DEAD")
+            self.assertNotIn(
+                "is not the current name",
+                output,
+                "a name that resolves to nothing was reported as a rename",
+            )
+
     def test_stale_repository_name_inside_a_fence_is_rejected(self) -> None:
         """A clone URL lives in a fenced block, and a reader runs it.
 

@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify all \
+.PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external
 
@@ -204,6 +204,22 @@ diagram-fonts: ## Check that diagram labels clear the readability floor
 diagram-flow: ## Check that diagrams read rightwards and downwards, with labels under icons
 	@$(PY) tools/check_diagram_flow.py --selftest >/dev/null
 	@$(PY) tools/check_diagram_flow.py
+
+hooks: ## Activate the tracked pre-commit hook in this clone (idempotent)
+	@current="$$(git config --local --get core.hooksPath || true)"; \
+	if [ "$$current" = ".githooks" ]; then \
+	    echo "hooks: already active in this clone (core.hooksPath=.githooks)"; \
+	else \
+	    git config --local core.hooksPath .githooks; \
+	    echo "hooks: activated (core.hooksPath=.githooks)"; \
+	fi; \
+	globalpath="$$(git config --global --get core.hooksPath || true)"; \
+	if [ -n "$$globalpath" ]; then \
+	    echo "hooks: note: a global core.hooksPath is set ($$globalpath)."; \
+	    echo "hooks:       the local setting above overrides it in THIS clone only."; \
+	    echo "hooks:       any clone without it runs the global hook instead, and the"; \
+	    echo "hooks:       tracked hook is then present, correct, and never runs."; \
+	fi
 
 drift: ## Check AGENTS.md size budget and steering/AGENTS authority relationship
 	@$(PY) scripts/check_agent_context_budget.py
