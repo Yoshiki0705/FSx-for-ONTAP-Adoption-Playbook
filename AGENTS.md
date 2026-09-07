@@ -81,7 +81,7 @@ make anchors         # Externally cited section anchors have not been renamed
 make pr-verify PR=n  # CI passed for the commit this PR will merge, keyed on its head SHA
 make drift           # AGENTS.md size budget, steering loader thinness, index reachability
 make shell           # shellcheck over SH_PATHS; make cfn -- cfn-lint over CFN_PATHS
-make test            # Guardrail tests: guard contract, .PHONY, one break per doc gate
+make test            # Guardrail tests: guard contract, .PHONY, one break per gate, mutations
 make all             # everything above (commit gate)
 
 # Individual validators (also callable directly)

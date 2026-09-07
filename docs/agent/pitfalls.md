@@ -110,3 +110,34 @@ was empty or narrower than the claim:
 and confirm it fails — `--selftest` where the tool has one — before trusting a clean run. And when a
 detector is found to miss one member of a family, check the rest of the family rather than patching the
 single case: the word list and the *form* are separate holes, and widening one leaves the other.
+
+## A break test that cannot tell a correct fix from a lazy one
+
+Proving a detector fires on a bad input shows it **can** fail. It does not show it can tell a correct
+fix from the shortest one, and those are different properties.
+
+The boundary tests for the audit were both positive — the Japanese-adjacent form and the spaced ASCII
+form. **A version with the boundaries deleted outright passed both**, because removing a boundary only
+ever widens a match. And "delete the boundary" is exactly the fix someone reaches for when the
+Japanese case fails.
+
+`scripts/tests/test_mutation_discrimination.py` applies each plausible wrong fix to a throwaway copy
+and requires two things:
+
+- **the discriminating test fails** — otherwise it does not discriminate;
+- **the tests that were already green stay green** — otherwise the mutation is just broken, and says
+  nothing about which test is doing the work.
+
+Three rules when adding one:
+
+1. **Mutate toward a plausible wrong fix**, not an arbitrary corruption. Nobody empties a regex by
+   accident; people do delete a boundary to make a failing case pass.
+2. **Keep the control on the same copy.** Without a clean run first, "the mutation was detected" and
+   "the copy is broken" are the same observation. The first version of this harness copied only two
+   directories and the control caught it immediately.
+3. **A mutation whose target string no longer exists fails loudly.** Otherwise a refactor silently
+   turns it into a test of nothing, which is the failure mode the harness exists to prevent.
+
+**Nothing is mutated inside the repository.** The tree is copied out and `GIT_*` is scrubbed — a
+harness whose job is to corrupt source must not be able to reach the real one, and this repository has
+already had a test write to its real index through an inherited `GIT_DIR`.
