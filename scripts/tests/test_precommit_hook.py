@@ -111,6 +111,37 @@ class TrackedHookIsWired(unittest.TestCase):
             found, f"no tracked document tells a contributor to set {needle!r}"
         )
 
+    def test_hook_still_targets_what_it_claims_to(self) -> None:
+        """A tracked hook can be gutted by an edit and still look present.
+
+        The block cases below run the hook, so they cover behaviour. This covers
+        the target: that the body still invokes the gate and still names a trunk
+        branch. Without it, a future edit that removes the `make all` call leaves
+        every other test in this file passing.
+        """
+        body = HOOK.read_text(encoding="utf-8")
+        self.assertIn("make all", body, "the hook no longer runs the gate")
+        self.assertIn("main", body, "the hook no longer names a trunk branch")
+
+    def test_activation_is_not_asserted_on_purpose(self) -> None:
+        """`core.hooksPath` is clone-local, so asserting its value would be red in CI.
+
+        This test exists to record the decision rather than to check a value. A
+        sibling repository named the third state neither of us had: the hook is
+        tracked, correct, executable — and a *global* `core.hooksPath` wins in any
+        clone that has not set the local one, so it never runs. The repository then
+        looks protected, **which is worse than having no hook at all.**
+
+        Activation cannot be enforced from inside the repository. `make hooks` sets
+        it and warns when a global path is present; this file deliberately stops at
+        checking that the hook is fit to run.
+        """
+        self.assertIn(
+            "hooks:",
+            (REPO / "Makefile").read_text(encoding="utf-8"),
+            "make hooks is the only activation path and it is missing",
+        )
+
 
 class TrackedHookBlocks(unittest.TestCase):
     def test_commit_on_main_is_refused(self) -> None:

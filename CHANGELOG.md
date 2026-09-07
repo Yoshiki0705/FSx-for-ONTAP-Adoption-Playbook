@@ -9,6 +9,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A dead repository name was reported as "cannot resolve", which is what a rate limit reports
+  too.** 404 and 403 both arrive as `HTTPError`, so branching on the exception type collapses a
+  verdict about the **name** into a verdict about the **request**. The check now classifies on the
+  status code and reports three severities — DEAD (404), INCONCLUSIVE (403 or an outage), RENAMED —
+  all still non-zero.
+  - **The tell is asymmetry in arrival**, named by a sibling repository: a rename or a dead link
+    appears one repository at a time, while rate limiting appears for **every** name at once. Treat
+    403 as a stale name and one throttled run reports the whole tree as stale, which is how a gate
+    teaches people to ignore it.
+  - **A DEAD finding means two defects.** A 404 is precisely what a link checker catches, so if this
+    gate is the thing that found it, no link check covered that path. The message says so. Here the
+    external link check is opt-in, so that second defect is real and still open.
+- **`make hooks` replaces the instruction to run `git config` by hand, and reports the state neither
+  side had named.** A global `core.hooksPath` wins in any clone that has not set the local one, so
+  the tracked hook is present, correct, executable — **and never runs.** That clone looks protected,
+  which is worse than having no hook. It fires on this machine.
+  - **Activation cannot be enforced from inside the repository**, and asserting the config value in
+    CI would be red by design. The tests stop at "the hook is fit to run": tracked, executable, and
+    still invoking the gate. A test records that boundary rather than checking a value.
+
 - **An interim handling was listed that this repository had already said was unusable.** The
   workaround for `UploadPartCopy` returning `NoSuchKey` was given as "keep percent-encodable
   characters out of the copy-source key", and the paragraph below it said that is incompatible with

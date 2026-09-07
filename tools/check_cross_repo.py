@@ -296,9 +296,28 @@ def check_repo_names() -> list[str]:
             with urllib.request.urlopen(request, timeout=30) as response:
                 payload = json.loads(response.read().decode("utf-8", "replace"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
-            # Report the failure rather than the name. A rate limit or an outage must not be
-            # reported as a stale name — that is how a gate teaches people to ignore it.
-            problems.append(f"{repo}: cannot resolve ({exc})")
+            # Three outcomes, not two, and the split is on the *status code* rather than the
+            # exception type — `HTTPError` covers 404 and 403 alike, so branching on the type
+            # collapses a verdict about the name into a verdict about the request.
+            #
+            #   404  DEAD          the name resolves to nothing. A definite defect.
+            #   403  INCONCLUSIVE  rate limited or forbidden. Says nothing about the name.
+            #   else INCONCLUSIVE  outage, DNS, timeout.
+            #
+            # The tell is asymmetry in arrival, which a sibling repository named: a rename or a
+            # dead link appears one repository at a time, while rate limiting appears for every
+            # name at once. Classify 403 as a stale name and a single throttled run reports the
+            # whole tree as stale — which is how a gate teaches people to ignore it.
+            status = getattr(exc, "code", None)
+            if status == 404:
+                # A 404 is two defects, not one. This is precisely what a link checker catches,
+                # so if this gate is the thing that found it, no link checker ran that path.
+                problems.append(
+                    f"{repo}: DEAD — the name resolves to nothing (404). "
+                    f"Fix the name, and check why no link check covered it: {sorted(files)}"
+                )
+            else:
+                problems.append(f"{repo}: INCONCLUSIVE — cannot resolve ({exc})")
             continue
         full_name = str(payload.get("full_name", ""))
         canonical = full_name.rsplit("/", 1)[-1] if "/" in full_name else ""
