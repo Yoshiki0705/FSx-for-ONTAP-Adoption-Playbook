@@ -32,6 +32,7 @@ Run:  python3 scripts/verify_pr_checks.py <pr-number>
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 
@@ -71,16 +72,64 @@ def gh_json(*args: str) -> object:
     return json.loads(result.stdout or "null")
 
 
+def _git(*args: str) -> str:
+    """Run git with GIT_* scrubbed and return stdout, or "" on any failure.
+
+    Empty rather than raising: these two helpers guard against a stale API answer, and a guard that
+    cannot run must not stop the check it guards. GIT_* is scrubbed because an inherited GIT_DIR
+    would make this report another repository's HEAD, inventing a mismatch that refuses every run.
+    The same inheritance already fabricated a committed file in this repository.
+    """
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    result = subprocess.run(
+        ["git", *args], capture_output=True, text=True, env=env, check=False
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def git_head() -> str:
+    return _git("rev-parse", "HEAD")
+
+
+def git_branch() -> str:
+    return _git("symbolic-ref", "--quiet", "--short", "HEAD")
+
+
 def main() -> int:
     if len(sys.argv) != 2 or not sys.argv[1].isdigit():
         print("usage: verify_pr_checks.py <pr-number>", file=sys.stderr)
         return 2
     number = sys.argv[1]
 
-    pr = gh_json("pr", "view", number, "--json", "headRefOid,state,title")
+    pr = gh_json("pr", "view", number, "--json", "headRefOid,headRefName,state,title")
     assert isinstance(pr, dict)
     head = pr["headRefOid"]
     print(f"PR #{number} head {head[:8]} ({pr['state']}): {pr['title']}")
+
+    # This command exists because `gh pr checks` answers about the latest run rather than the
+    # current head — and it had the same defect one layer up. Called straight after a push, the API
+    # still reports the previous head, so every lookup below keys on a SHA that is correct and
+    # stale. That happened four times in one session. Twice the old SHA had failed, so the answer
+    # was "not safe to merge" and the wrong reason went unnoticed; had the old SHA passed, this
+    # would have cleared a merge for a commit it never examined.
+    #
+    # A stale answer is not a verdict, so it fails rather than passes.
+    #
+    # Compared only when the checked-out branch *is* the pull request's branch. Comparing
+    # unconditionally refuses every run from main and against anyone else's pull request, which is
+    # over-blocking — and a check that refuses ordinary use gets worked around, which is the
+    # failure this command exists to prevent. The first version of this guard did exactly that.
+    branch = git_branch()
+    local = git_head() if branch and branch == pr.get("headRefName") else ""
+    if local and local != head:
+        print(
+            f"\nrefusing to answer: {branch} is at {local[:8]} but the API reports {head[:8]}.\n"
+            "  After a push the API serves the previous head for a while, so every verdict below\n"
+            "  would be correct about the wrong commit. Wait and re-run.\n"
+            "  If it is not a lag, the last commit was never pushed.",
+            file=sys.stderr,
+        )
+        return 1
 
     runs = gh_json(
         "run",
