@@ -79,3 +79,34 @@ Before writing an impossibility into a document, or reporting one:
 the unresearched claim is not mechanically detectable without flagging every legitimate "cannot be
 changed after creation" in the tree. So the gate catches the symptom and this section carries the
 cause — if the gate fires, the claim beside it is the thing to re-examine.
+
+## Two checks wanting opposite things from the same fenced block
+
+`make audit` blanks fenced blocks before looking for a forbidden name or label; `check_cross_repo.py`
+does **not** blank them when scanning for stale repository names. That is deliberate, and it means the
+two cannot share a helper.
+
+| Check | Fences | Why |
+|---|---|---|
+| Naming, neutrality, role labels | **blanked** | A fenced block showing a forbidden form is usually quoting the rule. Flagging it produces an allow marker, not a fix |
+| Stale repository name | **scanned** | A `git clone` URL inside a fence is the one a reader executes, so it is where an old name does the most damage |
+
+**Do not "fix" this by unifying them.** A sibling repository reached the same split independently while
+porting the check, and documented it for the same reason: the next person to read either file assumes
+the other behaves the same way.
+
+## A gate that passed because it looked at nothing
+
+Three shapes of this have occurred here, and in each the verdict logic was correct while the input set
+was empty or narrower than the claim:
+
+- `make security` returned "up to date" without running `bandit` once, because the target was not in
+  `.PHONY`;
+- the rename check reported clean on two of the seven names it was written for, because a case-only
+  rename does not redirect;
+- the role-label check reported clean on a section heading, because the pattern only matched callouts.
+
+**A passing gate is evidence only about what it read.** When adding one, run its own break case first
+and confirm it fails — `--selftest` where the tool has one — before trusting a clean run. And when a
+detector is found to miss one member of a family, check the rest of the family rather than patching the
+single case: the word list and the *form* are separate holes, and widening one leaves the other.

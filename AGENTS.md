@@ -101,12 +101,10 @@ once in the Makefile's `PY_PATHS`. Test directories live in `TEST_DIRS` for the 
 `tests/` directory that is not listed there runs nowhere, and `make test` fails when one exists
 outside the list.
 
-`make all` is the gate. Run it before every commit — and specifically **after the last edit**, not before it.
-
-The pre-commit hook is not a substitute. It scans for secrets only, so a commit can pass the hook and
-still fail `markdown lint` in CI. The failure mode this produces is narrow and easy to walk into: run
-the gate, then touch one more file (a CHANGELOG entry is the usual candidate), then commit. Re-run the
-gate after that last edit.
+`make all` is the gate. **Wire the tracked hook once per clone** — `git config core.hooksPath .githooks`
+— and it runs the gate for you and refuses a commit on `main`. **Never read the gate's result off a
+pipe**: `make all | tail` returns *tail's* status, so a red gate reads as green, which happened twice
+here. Use `make all > /tmp/all.log 2>&1; echo $?`. Details in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Repository Layout
 
