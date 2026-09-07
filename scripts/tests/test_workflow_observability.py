@@ -14,6 +14,7 @@ import io
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -58,6 +59,54 @@ class TheRealWorkflowsAreClassified(unittest.TestCase):
             if W.observability(text) == "observed":
                 with self.subTest(path.name):
                     self.assertTrue(W.triggers(text) & W.OBSERVED)
+
+
+class TheGuardWorksWhereItActuallyRuns(unittest.TestCase):
+    """A hook process does not start inside the repository, and the first version assumed it did.
+
+    `git diff` was invoked with the inherited working directory. From anywhere else it failed, and
+    **the empty result read as "no unobserved workflow was touched" - so the guard was inert in the
+    only configuration it runs in.** It was tested from inside the repository and shipped, which is
+    the mistake a sibling reported after reading a local pass as evidence about a hosted runner.
+    """
+
+    def test_the_repository_is_located_from_the_file_not_the_caller(self) -> None:
+        """Run from a directory that is not a repository at all."""
+        with tempfile.TemporaryDirectory() as outside:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--selftest"],
+                cwd=outside,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_git_runs_in_the_repository_and_not_in_the_caller(self) -> None:
+        """The directory git runs in **is** the bug, so it is what gets asserted.
+
+        A behavioural version of this passed with the fix removed: it compared the list from outside
+        the repository against the list from inside, and on a branch that touches no workflow both
+        are empty. **A test that depends on the branch's own diff does not discriminate on most
+        branches** - the same weakness that made an earlier test in this file skip.
+        """
+        seen: dict[str, object] = {}
+
+        class Result:
+            stdout = ""
+
+        def fake(*args: object, **kwargs: object) -> Result:
+            seen.update(kwargs)
+            return Result()
+
+        with mock.patch.object(W.subprocess, "run", fake):
+            W.changed_workflows()
+        self.assertEqual(
+            seen.get("cwd"),
+            ROOT,
+            "git does not run in the repository root, so the guard is inert wherever the hook runs",
+        )
 
 
 class TheHookAsksAndNeverBlocks(unittest.TestCase):
