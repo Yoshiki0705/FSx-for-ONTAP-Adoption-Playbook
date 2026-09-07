@@ -33,6 +33,8 @@ step, which is the failure this repository has already documented elsewhere.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import sys
 import urllib.error
@@ -200,42 +202,69 @@ def check_offline(rows: list[Row]) -> list[str]:
 
 
 def check_repo_names() -> list[str]:
-    """Fail on a repository name that only still works because GitHub redirects it.
+    """Fail on a repository name that is not the repository's current name.
 
     Renames are normal. What is not survivable is that the old name keeps resolving, so two
     documents can name the same repository differently and neither looks broken. The citation
     table keys on the name, so a stale one there also silently splits one repository into two.
+
+    This asks the API for `full_name` rather than following an HTML redirect, because **a
+    case-only rename does not redirect.** GitHub resolves repository names case-insensitively
+    and serves the requested casing with 200, so comparing the final URL reports the old name
+    as current. Two of the seven stale names this check was written for were case-only, and the
+    first redirect-based version was silent on both — while passing a break test that happened
+    to use one of the five that do redirect. Proving a detector fires on one instance of a
+    family says nothing about the rest of the family.
     """
     problems: list[str] = []
     seen: dict[str, list[str]] = {}
     for path in prose_files():
         rel = path.relative_to(ROOT).as_posix()
-        body = strip_code(path.read_text(encoding="utf-8"))
+        # Deliberately NOT strip_code(): a repository name inside a fenced block is usually a
+        # `git clone` URL, which a reader runs. That is where an old name survives longest and
+        # matters most. Fences are blanked for citations, where an example link is not a claim —
+        # the two checks want opposite things from the same text.
+        body = path.read_text(encoding="utf-8")
         for match in REPO_REF.finditer(body):
             repo = match.group("repo").rstrip(".")
-            if repo == THIS_REPO:
-                continue
+            # A clone URL ends in `.git`, and clone URLs are the reason fences are scanned.
+            repo = repo.removesuffix(".git")
+            # This repository is not excluded. If it is renamed, its own self-references go
+            # stale the same way, and nothing else would report them.
             seen.setdefault(repo, [])
             if rel not in seen[repo]:
                 seen[repo].append(rel)
 
     for repo, files in sorted(seen.items()):
-        url = f"https://github.com/{OWNER}/{repo}"
-        request = urllib.request.Request(
-            url, headers={"User-Agent": "cross-repo-check"}
-        )
+        url = f"https://api.github.com/repos/{OWNER}/{repo}"
+        headers = {
+            "User-Agent": "cross-repo-check",
+            "Accept": "application/vnd.github+json",
+        }
+        # Unauthenticated is 60 requests an hour, which a few dozen repositories fits inside
+        # once but not while iterating on this file. A token raises it to 5,000; CI has one.
+        token = os.environ.get("GITHUB_TOKEN", "").strip()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
-                final = response.url
+                payload = json.loads(response.read().decode("utf-8", "replace"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
+            # Report the failure rather than the name. A rate limit or an outage must not be
+            # reported as a stale name — that is how a gate teaches people to ignore it.
             problems.append(f"{repo}: cannot resolve ({exc})")
             continue
-        canonical = final.rstrip("/").rsplit("/", 1)[-1]
+        full_name = str(payload.get("full_name", ""))
+        canonical = full_name.rsplit("/", 1)[-1] if "/" in full_name else ""
+        if not canonical:
+            problems.append(f"{repo}: the API response carried no full_name")
+            continue
         if canonical != repo:
             listed = ", ".join(files[:4]) + (" …" if len(files) > 4 else "")
             problems.append(
-                f"{repo} has been renamed to {canonical}. The old name still resolves through a "
-                f"redirect, so nothing else reports it. Update: {listed}"
+                f"{repo} is not the current name; it is {canonical}. The old name still "
+                f"resolves, so nothing else reports it. Update: {listed}"
             )
     return problems
 

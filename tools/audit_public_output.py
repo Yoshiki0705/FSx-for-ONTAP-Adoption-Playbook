@@ -164,8 +164,28 @@ PLACEHOLDER_RESOURCE_IDS = frozenset(
 )
 
 # Inline callouts labeled with a role/persona imply a review that did not happen.
+#
+# Two patterns, because the family is wider than the first one assumed. The first version matched
+# `lens` and `の視点` in a blockquote callout. A sibling repository then reported two forms it could
+# not see: `レンズ` (added), and `（Storage Specialist 観点）` as a *section heading* rather than a
+# callout. Each miss was found by a person, not by this file — which is the argument for widening on
+# the word list and on the form at the same time.
 ROLE_LABEL = re.compile(
-    r"^\s*>\s*\*\*[^*]*(?:lens|の視点|perspective)[^*]*\*\*", re.IGNORECASE
+    r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE
+)
+
+# `観点` and `視点` are ordinary words — 「セキュリティの観点から」 is not a role label. So this
+# second pattern requires a role token *and* a lens word in the same label, which is what makes it
+# read as "a person in this role reviewed this". It covers headings as well as callouts, because a
+# heading carries the same implication and is more visible.
+_ROLE = (
+    r"Specialist|Engineer|Architect|Officer|Analyst|Consultant|Manager|Lead|Admin|Reviewer|"
+    r"Practitioner|SA\b|AppSec|FinOps|DevOps|SRE|CISO|DPO|"
+    r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"
+)
+_LENS = r"lens|レンズ|視点|観点|perspective"
+ROLE_LABEL_WITH_ROLE = re.compile(
+    rf"^\s*(?:>\s*\*\*|#{{2,6}}\s+)[^\n]*?(?:{_ROLE})[^\n]*?(?:{_LENS})", re.IGNORECASE
 )
 
 # ---------------------------------------------------------------- support referral
@@ -284,7 +304,9 @@ def audit_line(
                 ),
             )
         )
-    if "role-label" not in allowed and ROLE_LABEL.match(line):
+    if "role-label" not in allowed and (
+        ROLE_LABEL.match(line) or ROLE_LABEL_WITH_ROLE.match(line)
+    ):
         findings.append(
             (
                 "role-label",

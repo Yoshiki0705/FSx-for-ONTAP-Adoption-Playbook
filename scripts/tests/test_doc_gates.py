@@ -349,6 +349,81 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
             self.assert_rejected(run_gate("check_cross_repo.py"), PROBE)
 
+    def test_case_only_stale_repository_name_is_rejected(self) -> None:
+        """A case-only rename does not redirect, so it needs its own case.
+
+        GitHub resolves repository names case-insensitively and serves the
+        requested casing with 200. The first version of this check compared the
+        final URL after following redirects, which reported the old casing as
+        current — silent on two of the seven names it was written for, while
+        passing a break test that used one of the five that do redirect.
+
+        Network-dependent, so it runs only when the external check is asked for.
+        """
+        stale = "vmware-migration-ec2-ontap"  # now VMware-Migration-EC2-ONTAP
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + f"\n# gate probe\n\nSee https://github.com/Yoshiki0705/{stale} for context.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py", "--external")
+            if "cannot resolve" in (result.stdout + result.stderr):
+                self.skipTest("GitHub API unreachable or rate-limited")
+            self.assert_rejected(result, "is not the current name")
+
+    def test_stale_repository_name_inside_a_fence_is_rejected(self) -> None:
+        """A clone URL lives in a fenced block, and a reader runs it.
+
+        Fences are blanked when scanning for citations, because an example link
+        inside one is not a claim. The repository-name check wants the opposite
+        from the same text: a `git clone` URL is where an old name survives
+        longest and does the most damage.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n```bash\n"
+            + "git clone https://github.com/Yoshiki0705/vmware-migration-ec2-ontap.git\n"
+            + "```\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py", "--external")
+            if "cannot resolve" in (result.stdout + result.stderr):
+                self.skipTest("GitHub API unreachable or rate-limited")
+            self.assert_rejected(result, "is not the current name")
+
+    def test_role_labeled_heading_is_rejected(self) -> None:
+        """A section heading carries the same implication as a callout.
+
+        The first version of this rule matched blockquote callouts only, and
+        `（Storage Specialist 観点）` as a heading passed. `観点` on its own is an
+        ordinary word, so the widened pattern requires a role token beside it.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n## 前提の整理（Storage Specialist 観点）\n\nx\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            self.assert_rejected(run_gate("audit_public_output.py"), "role-label")
+
+    def test_topic_labeled_heading_is_accepted(self) -> None:
+        """The widened pattern must not fire on ordinary prose.
+
+        「コストの観点」 is a topic, not a role. A rule that flags it gets an
+        allow marker rather than a fix, which is how a gate stops working.
+        """
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n## コストの観点から見た選択\n\n"
+            + "> **Cost note**: セキュリティの観点からも確認します。\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("audit_public_output.py")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"the audit rejected a topic label:\n{result.stdout}{result.stderr}",
+            )
+
     def test_cross_repo_table_shape_change_is_rejected(self) -> None:
         """The gate parses the index table, so a changed shape is a broken gate.
 
