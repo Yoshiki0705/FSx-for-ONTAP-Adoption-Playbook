@@ -119,8 +119,9 @@ lang: ja
 | `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | Observability 側の実装ファイルのコミット。**回答時点で約 67 件が未コミットでした** |
 
 **Issue のコメントは公開されていて消えませんが、ファイルではないので probe の対象にできません。**
-つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。相手がコミットした時点で
-引用表へ移し、probe を張ってください。
+つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。
+
+**待っているのはコミットではなくマージです。** 相手の成果物が既定ブランチ以外に載っている間、probe は「文字列が消えた」ではなく **「ファイルが存在しない」** で落ちます。**これは撤回と区別がつきません。** 既定ブランチにマージされてから引用表へ移し、probe を張ってください。
 
 ## 引用を足すときの手順
 

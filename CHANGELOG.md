@@ -38,6 +38,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   dashboards as supported from an uncited hand-written list**, with a script that created a folder to
   import them into. Bounded rather than contradicted: **a metric set can be extended by publishing your
   own**, so the claim is about the managed service's published set, not about there being no way.
+  **Quota is the wrong example of that, which this repository got wrong first**: AWS lists
+  `ONTAP: Qtree` among the supported 19, and the sibling's own metric fills a gap in the *CloudWatch*
+  set instead. Cited against the Harvest route it attaches a wrong reason to a right conclusion.
+- **The hook added last commit refused this one, and it was right: the trunk cases were reporting on
+  their environment.** `test_precommit_hook.py` inherited `GIT_*` from its caller. Under a real
+  pre-commit hook that means an exported `GIT_DIR`, which did two things — `git symbolic-ref` in the
+  scratch repository answered for the outer one, and **`git init <path>` re-initialised the outer
+  repository instead of creating the scratch one.** The scratch directory was then not a repository,
+  HEAD read as `detached`, and no trunk branch was ever seen: the cases passed while proving nothing.
+  - **The first fix was itself an instance of the defect** — it stripped the variables only for the
+    hook invocation, leaving `git init` to inherit them and still write to the real repository. The
+    environment is now built before anything runs, and a `re-init` warning raises rather than being
+    swallowed, because that warning was the only visible trace.
+  **Quota is the wrong example of that, which this repository got wrong first**: AWS lists
+  `ONTAP: Qtree` among the supported 19, and the sibling's own metric fills a gap in the *CloudWatch*
+  set instead. Cited against the Harvest route it attaches a wrong reason to a right conclusion.
 - **The claim that Harvest has no remote-write path held**, corroborated by an implementation of the
   hop it implies (ADOT sidecar, `prometheusremotewrite` with SigV4 to Amazon Managed Service for
   Prometheus). **That implementation also contained the blind spot this note predicts**: the ADOT

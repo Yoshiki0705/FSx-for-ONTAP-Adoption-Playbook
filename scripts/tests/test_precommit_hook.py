@@ -19,6 +19,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -29,18 +30,44 @@ def run_hook(
     *, branch: str, env_extra: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
     """Run the tracked hook inside a scratch repository on the named branch."""
+    # Strip every GIT_* variable inherited from the caller, and build the environment BEFORE
+    # anything runs, because `git init` needs it too.
+    #
+    # Git exports GIT_DIR and GIT_INDEX_FILE to a pre-commit hook. When the hook runs this
+    # suite, an inherited GIT_DIR does two things, and the second is why the first was hard to
+    # see: `git symbolic-ref` inside the scratch repository answers for the *outer* repository,
+    # and `git init <path>` **re-initialises the outer repository instead of creating the scratch
+    # one** — `warning: re-init: ignored --initial-branch` is that happening. The scratch
+    # directory is then not a repository at all, HEAD resolves to `detached`, no trunk branch is
+    # ever seen, and the trunk cases pass by reporting on an environment they did not set.
+    #
+    # Found by the hook running this suite during a commit. The first fix stripped the variables
+    # only for the hook invocation, which left `git init` inheriting them — **the same defect with
+    # a narrower blast radius**, and it still wrote to the real repository.
+    env = {
+        **{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+        **(env_extra or {}),
+    }
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
-        subprocess.run(["git", "init", "-q", "-b", branch, str(work)], check=True)
+        init = subprocess.run(
+            ["git", "init", "-q", "-b", branch, str(work)],
+            env=env,
+            cwd=work,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if init.returncode != 0 or "re-init" in init.stderr:
+            raise AssertionError(
+                "the scratch repository was not created cleanly, so any verdict below would be "
+                f"about the wrong repository: {init.stdout}{init.stderr}"
+            )
         (work / "seed.txt").write_text("seed\n", encoding="utf-8")
-        env = {
-            **os.environ,
-            "GIT_AUTHOR_NAME": "t",
-            "GIT_AUTHOR_EMAIL": "t@example.com",
-            "GIT_COMMITTER_NAME": "t",
-            "GIT_COMMITTER_EMAIL": "t@example.com",
-            **(env_extra or {}),
-        }
         return subprocess.run(
             ["bash", str(HOOK)],
             cwd=work,
@@ -85,6 +112,34 @@ class TrackedHookBlocks(unittest.TestCase):
     def test_commit_on_master_is_refused(self) -> None:
         result = run_hook(branch="master", env_extra={"SKIP_GATE": "1"})
         self.assertNotEqual(result.returncode, 0, "the hook allowed a commit on master")
+
+    def test_trunk_refusal_survives_an_inherited_git_dir(self) -> None:
+        """The regression guard for the leak that made the two cases above lie.
+
+        Git exports `GIT_DIR` and `GIT_INDEX_FILE` to a pre-commit hook, so when the
+        hook runs this suite those variables reach the scratch repository and
+        `git symbolic-ref` answers for the *outer* repository instead. The trunk
+        cases then pass regardless of the branch they set up.
+
+        Injecting `GIT_DIR` deliberately reproduces that condition. If the stripping
+        in `run_hook` is ever removed, this fails and the two cases above stop
+        being evidence of anything.
+        """
+        leaked = {
+            "GIT_DIR": str(REPO / ".git"),
+            "GIT_INDEX_FILE": str(REPO / ".git" / "index"),
+        }
+        # Patching os.environ is the point: the leak arrives through inheritance, not
+        # through an argument, so passing these via env_extra would test the opposite
+        # thing — env_extra is applied after the stripping, by design, because a caller
+        # asking for a variable should get it.
+        with unittest.mock.patch.dict(os.environ, leaked):
+            result = run_hook(branch="main", env_extra={"SKIP_GATE": "1"})
+        self.assertNotEqual(
+            result.returncode,
+            0,
+            "an inherited GIT_DIR let a commit on main through — the suite is not hermetic",
+        )
 
     def test_red_gate_is_refused(self) -> None:
         """The hook must run the gate itself rather than trust that it was run.
