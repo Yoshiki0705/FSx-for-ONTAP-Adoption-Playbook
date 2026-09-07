@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **An interim handling was listed that this repository had already said was unusable.** The
+  workaround for `UploadPartCopy` returning `NoSuchKey` was given as "keep percent-encodable
+  characters out of the copy-source key", and the paragraph below it said that is incompatible with
+  any prefix layout using `/`. **Both statements were true and they were two lines apart.** A
+  handling that cannot be adopted is not a workaround; it is the fact that the path is unusable.
+  - It would also **outlive the defect**. That is the argument this note already made about limiting
+    tag values to ASCII, and it was not applied to the row beside it.
+- **Whether a workload reaches `UploadPartCopy` at all is decided by a configuration value, not by
+  whether the code calls it.** Hadoop documents `fs.s3a.multipart.threshold` as controlling "the
+  partition size in renamed files, as rename() involves copying the source file(s)" — so **a rename
+  is not always one `CopyObject`**, and an output part above the threshold becomes an
+  `UploadPartCopy`. Reachability follows from three settings together (the threshold, the output
+  part size, and whether any output committer is configured), so **no single one of them answers
+  it.** Keeping parts below the threshold is the one interim handling here that reverses cleanly.
+  - Reported by the repository that runs an implementation with all three settings. This repository
+    was judging reachability by API name, which cannot see it.
+
 - **The reason given for needing a collector per site did not survive contact with an implementation.**
   The note attributed it to crossing a site boundary. **What decides it is the direction the connection
   is opened.** Pull paths centralize across sites — one Harvest instance scales to 40+ file systems in
