@@ -91,7 +91,7 @@ Athena を外すと「同じデータが SQL からも読める」話と、AI �
 
 返ってきた `LifecycleTransitionReason` は次のとおりです（検索できるよう原文のまま載せます）。
 
-> `Amazon FSx is unable to create an S3 access point because of an existing ONTAP object storage server on SVM svm-xxxxxxxx. Please delete the existing s3 server and retry.` <!-- allow:naming -->
+> `Amazon FSx is unable to create an S3 access point because of an existing ONTAP object storage server on SVM svm-xxxxxxxx. Please delete the existing s3 server and retry.`
 
 手動で構成した ONTAP の S3 オブジェクトストレージサーバーと、FSx for ONTAP が管理する
 S3 アクセスポイントは **同じ SVM 上で共存できません。**

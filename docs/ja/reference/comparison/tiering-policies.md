@@ -17,7 +17,7 @@ lang: ja
 
 **4 つのポリシーの差は「何を移すか」と「読んだときに戻るか」の 2 点です。** どちらもコストと性能の両方に効きます。
 
-そして**既定値は作成方法で変わります。** コンソールは `AUTO`（cooling 31 日）、AWS CLI / Amazon FSx API / ONTAP CLI は `SNAPSHOT_ONLY`（cooling 2 日）です。**この 2 つは移す対象そのものが違います。** <!-- allow:naming - AWS の API 名 -->
+そして**既定値は作成方法で変わります。** コンソールは `AUTO`（cooling 31 日）、AWS CLI / Amazon FSx API / ONTAP CLI は `SNAPSHOT_ONLY`（cooling 2 日）です。**この 2 つは移す対象そのものが違います。**
 
 > **区分**: `documented`。動作と既定値は AWS 公式ドキュメントと API リファレンスの記載に基づきます。
 > 既定値の一部は検証環境で実測して一致を確認しました（下記）。

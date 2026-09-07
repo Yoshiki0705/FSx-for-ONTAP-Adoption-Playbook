@@ -28,15 +28,25 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from audit_public_output import ALLOW, FILE_ALLOW, FILE_ALLOW_SCAN_LINES, iter_files
+from audit_public_output import (
+    ALLOW,
+    CODE_SPAN,
+    FILE_ALLOW,
+    FILE_ALLOW_SCAN_LINES,
+    audit_line,
+    file_allowances,
+    iter_files,
+)
 
 BUDGET = ROOT / "docs" / "agent" / "allow-marker-budget.txt"
+FENCE = re.compile(r"^\s*(```|~~~)")
 
 HEADER = """\
 # Audit allow markers, counted per file and category. Generated - do not hand-edit.
@@ -53,6 +63,58 @@ HEADER = """\
 # Deliberately not read from a variable: a mutation that widens this to include "stale" has to
 # change this line, and the selftest pins the four rows below.
 FAILING = ("added", "stale")
+
+
+def suppression_verdict(*, findings_with: int, findings_without: int) -> str:
+    """Whether one marker is earning its place: "justified" or "inert".
+
+    **The predicate is "ignoring the marker increases the report", not "the report is unchanged".** A
+    sibling repository got this wrong first in the mirror-image way and reported the correction: a
+    test for "unchanged" finds only markers that suppress nothing, and misses a marker that makes the
+    checker report something that is not there. Same-report is the quiet failure; more-report is the
+    loud one, and **a rule written to hunt quiet failures will not look for loud ones.**
+
+    Only the quiet half can occur here, because these markers can only remove findings from the line
+    they sit on. The predicate is written in the general form anyway, so the loud half cannot slip
+    through if a category ever gains cross-line state.
+
+    An inert marker is not merely useless. **It is pre-authorized headroom**: the line suppresses
+    nothing today, and silently suppresses a real violation the day the text changes.
+    """
+    return "justified" if findings_without > findings_with else "inert"
+
+
+def inert_markers() -> list[str]:
+    """Every line-level marker that suppresses nothing, as `path:line`."""
+    inert: list[str] = []
+    for path in iter_files(ROOT):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        allowed = frozenset(file_allowances(lines))
+        in_fence = False
+        for number, line in enumerate(lines, 1):
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            # A marker inside a fence is an example of the syntax. `CONTRIBUTING.md` documents the
+            # markers in a ```markdown block, and a first version of this check reported those as
+            # inert and had them deleted - the rule about excluding fences is already recorded in
+            # this repository for the heading detector, and was not applied here.
+            # The same extraction the audit uses, or this disagrees with it about what a marker is.
+            # A marker inside a code span is documentation of the syntax; `AGENTS.md` tells authors
+            # to write one, and searching the raw line reported those two lines as inert markers.
+            if in_fence or not ALLOW.search(CODE_SPAN.sub("", line)):
+                continue
+            bare = ALLOW.sub("", line)
+            verdict = suppression_verdict(
+                findings_with=len(audit_line(line, allowed)),
+                findings_without=len(audit_line(bare, allowed)),
+            )
+            if verdict == "inert":
+                inert.append(f"{path.relative_to(ROOT).as_posix()}:{number}")
+    return inert
 
 
 def allow_verdict(*, recorded: int | None, actual: int) -> str:
@@ -86,7 +148,14 @@ def snapshot() -> dict[tuple[str, str], int]:
         except UnicodeDecodeError:
             continue
         for line in lines:
-            for match in ALLOW.finditer(line):
+            # The audit's own extraction, or the two disagree about what a marker is. They did: this
+            # counted raw lines while the inert check stripped code spans, so a table cell in
+            # `pitfalls.md` showing the syntax was budgeted as a live marker.
+            #
+            # Fences are counted here but skipped by the inert check, deliberately. The audit honours
+            # a marker inside a fence, so the budget has to see it; the inert check must not demand
+            # the deletion of a documented example.
+            for match in ALLOW.finditer(CODE_SPAN.sub("", line)):
                 key = (rel, match.group(1))
                 counts[key] = counts.get(key, 0) + 1
         for line in lines[:FILE_ALLOW_SCAN_LINES]:
@@ -121,6 +190,14 @@ def stored() -> dict[tuple[str, str], int] | None:
 
 
 def selftest() -> int:
+    suppression_cases = [
+        ({"findings_with": 0, "findings_without": 1}, "justified"),
+        ({"findings_with": 0, "findings_without": 0}, "inert"),
+        ({"findings_with": 1, "findings_without": 1}, "inert"),
+        # The loud half: a marker that adds a finding. Cannot occur with today's categories, and the
+        # predicate refuses it anyway rather than reading "changed" as "earning its place".
+        ({"findings_with": 1, "findings_without": 0}, "inert"),
+    ]
     cases = [
         ({"recorded": None, "actual": 1}, "added"),
         ({"recorded": 3, "actual": 4}, "added"),
@@ -130,6 +207,13 @@ def selftest() -> int:
         ({"recorded": 1, "actual": 0}, "stale"),
     ]
     failures = 0
+    for kwargs, expected in suppression_cases:
+        got = suppression_verdict(**kwargs)  # type: ignore[arg-type]
+        if got != expected:
+            print(
+                f"FAIL: suppression_verdict({kwargs}) = {got!r}, expected {expected!r}"
+            )
+            failures += 1
     for kwargs, expected in cases:
         got = allow_verdict(**kwargs)  # type: ignore[arg-type]
         if got != expected:
@@ -143,7 +227,7 @@ def selftest() -> int:
     if "ok" in FAILING:
         print("FAIL: 'ok' fails the check, which refuses every clean run")
         failures += 1
-    print("selftest: 9 case(s) passed" if not failures else f"{failures} failure(s)")
+    print("selftest: 13 case(s) passed" if not failures else f"{failures} failure(s)")
     return 1 if failures else 0
 
 
@@ -162,6 +246,17 @@ def main() -> int:
         total = sum(counts.values())
         print(f"allow budget: wrote {len(counts)} entr(ies), {total} marker(s)")
         return 0
+
+    inert = inert_markers()
+    if inert:
+        print(
+            "allow budget failed: marker(s) that suppress nothing. Each one is headroom - the line "
+            "is exempt today and silently exempt for a real violation tomorrow. Delete them:",
+            file=sys.stderr,
+        )
+        for entry in inert:
+            print(f"  {entry}", file=sys.stderr)
+        return 1
 
     recorded = stored()
     if recorded is None:

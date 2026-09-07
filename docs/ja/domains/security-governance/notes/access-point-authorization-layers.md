@@ -71,13 +71,13 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 | 論点 | 内容 |
 |---|---|
 | 設定するもの | アクセスポイントポリシー（IAM リソースポリシー）。**バケットポリシーではありません** |
-| 作成時の設定経路 | Amazon FSx コンソール、または `CreateAndAttachS3AccessPoint` の `S3AccessPoint.Policy` <!-- allow:naming - AWS のサービス名 --> |
-| 既存 AP の変更経路 | **S3 側**（`aws s3control put-access-point-policy` / `delete-access-point-policy`）。Amazon FSx 側に変更 API はありません <!-- allow:naming - AWS のサービス名 --> |
+| 作成時の設定経路 | Amazon FSx コンソール、または `CreateAndAttachS3AccessPoint` の `S3AccessPoint.Policy` |
+| 既存 AP の変更経路 | **S3 側**（`aws s3control put-access-point-policy` / `delete-access-point-policy`）。Amazon FSx 側に変更 API はありません |
 | 必要な権限 | `s3:PutAccessPointPolicy` |
 | Block Public Access | **常に有効で、変更できません** |
 | ポリシーの上限 | 20 KB（後述の[実測](#正規化後で判定されるポリシーサイズの上限)を併せて読んでください） |
 
-**変更経路が Amazon FSx と S3 に分かれている点が運用に効きます。** <!-- allow:naming - AWS のサービス名 --> AP 自体は Amazon FSx の API で作り、ポリシーだけは S3 の API で回します。IaC を書くときも、テンプレートで作った AP のポリシーを後から S3 側で書き換えると、テンプレートと実環境が乖離します。
+**変更経路が Amazon FSx と S3 に分かれている点が運用に効きます。** AP 自体は Amazon FSx の API で作り、ポリシーだけは S3 の API で回します。IaC を書くときも、テンプレートで作った AP のポリシーを後から S3 側で書き換えると、テンプレートと実環境が乖離します。
 
 ---
 
@@ -436,7 +436,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ## AP 側のパラメータ — Policy 以外は作成時に確定
 
-Amazon FSx がこのアタッチメントに対して公開している操作は **3 つだけ**です。`CreateAndAttachS3AccessPoint`、`DescribeS3AccessPointAttachments`、`DetachAndDeleteS3AccessPoint`。**更新の操作がありません。** <!-- allow:naming - AWS のサービス名 -->
+Amazon FSx がこのアタッチメントに対して公開している操作は **3 つだけ**です。`CreateAndAttachS3AccessPoint`、`DescribeS3AccessPointAttachments`、`DetachAndDeleteS3AccessPoint`。**更新の操作がありません。**
 
 | パラメータ | 必須 | 制約 | 作成後に変更 |
 |---|---|---|---|
@@ -546,7 +546,7 @@ aws s3control delete-access-point-policy \
 | 24,861 バイト | `MalformedPolicy: Normalized policy document exceeds the maximum allowed size` |
 | 33,778 バイト | 同上 |
 
-**ドキュメント上の上限は 20 KB です。** 判定は **正規化後**の文書に対して行われるため、**手元の JSON のバイト数を予算として使えません。** 境界はポリシーの書き方で動きます。Amazon FSx の API がフィールドとして受け付ける 200,000 文字とも一致しません。<!-- allow:naming - AWS のサービス名 -->**上限に近づく設計は避け、AP を分けてください。**
+**ドキュメント上の上限は 20 KB です。** 判定は **正規化後**の文書に対して行われるため、**手元の JSON のバイト数を予算として使えません。** 境界はポリシーの書き方で動きます。Amazon FSx の API がフィールドとして受け付ける 200,000 文字とも一致しません。**上限に近づく設計は避け、AP を分けてください。**
 
 この値は [上限値・クォータ](../../../reference/limits/README.md#fsx-for-ontap-s3-ap--アクセスポイントポリシーのサイズ--access-point-policy-size) にも記録しています。
 

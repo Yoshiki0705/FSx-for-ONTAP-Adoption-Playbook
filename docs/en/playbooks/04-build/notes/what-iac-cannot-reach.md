@@ -23,7 +23,7 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 **"What to manage as IaC" is already settled by what the API reaches, before any policy decides it.**
 
-File systems, SVMs, volumes, backups, and tags can be created, updated, and deleted through the Amazon FSx API and templates. <!-- allow:naming - the AWS API name -->
+File systems, SVMs, volumes, backups, and tags can be created, updated, and deleted through the Amazon FSx API and templates.
 
 **ONTAP-level settings, on the other hand, are reachable only through ONTAP CLI or the ONTAP REST API.** Examples:
 
@@ -123,7 +123,7 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 
 | Layer | What to verify | Route |
 |---|---|---|
-| AWS resource layer | That the file system, SVMs, and volumes exist with the intended settings | Amazon FSx API <!-- allow:naming - the AWS API name --> |
+| AWS resource layer | That the file system, SVMs, and volumes exist with the intended settings | Amazon FSx API |
 | ONTAP settings layer | Required SMB encryption, inode ceilings, export policies, tiering policies | ONTAP CLI / REST API |
 
 **The items to check hardest are the ones where leaving the default produces environment-to-environment differences.**
@@ -144,7 +144,7 @@ The items to clear before going to production are collected in [Pre-production r
 | Method | Characteristics |
 |---|---|
 | FlexClone | Fast, because it references the original data. It does not consume disk throughput |
-| Restore from backup into a new volume | Can be run through the Amazon FSx API. Scoped to the same region <!-- allow:naming - the AWS API name --> |
+| Restore from backup into a new volume | Can be run through the Amazon FSx API. Scoped to the same region |
 | SnapMirror | Can replicate to another file system or another region |
 
 ### An operational interaction with FlexClone

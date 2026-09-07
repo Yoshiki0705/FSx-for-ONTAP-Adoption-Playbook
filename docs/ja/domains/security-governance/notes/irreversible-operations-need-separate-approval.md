@@ -200,7 +200,7 @@ SnapLock を採用していない環境でも、同じ削除ロックが発生�
 
 | API | 監査ログ保持期間の指定 |
 |---|---|
-| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です <!-- allow:naming - AWS の API 名 --> |
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です |
 | ONTAP `snaplock log create -retention-period` | 可 |
 
 **つまり「短い期間を選べなかった」のではなく、「指定できる経路を使わなかった」のが実態です。**

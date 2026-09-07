@@ -140,7 +140,7 @@ your editor is therefore not a usable budget.
 | ポリシーの上限 | 20 KB | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) | — | ドキュメント記載。正規化後の文書に対する上限 |
 | 受理された最大 | 24,620 B | 実測 | 2026-08-17 | 整形なし JSON、`Allow` 文 102 個 |
 | 拒否された最小 | 24,861 B | 実測 | 2026-08-17 | `MalformedPolicy: Normalized policy document exceeds the maximum allowed size` |
-| Amazon FSx API のフィールド制約 | 1〜200,000 文字 | [AWS: CreateAndAttachS3AccessPoint](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) | — | **実効上限ではありません。** S3 側がこれよりはるかに早く拒否します <!-- allow:naming - AWS のサービス名 --> |
+| Amazon FSx API のフィールド制約 | 1〜200,000 文字 | [AWS: CreateAndAttachS3AccessPoint](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) | — | **実効上限ではありません。** S3 側がこれよりはるかに早く拒否します |
 
 > **設計上の注意**: 境界はポリシーの書き方で動きます。**上限に近づく設計を避け、Access Point を
 > 分けてください。** ポリシーを渡す API がフィールドとして受け付ける文字数は、通ることの保証では
@@ -615,7 +615,7 @@ the situation where the volume retention is already at its minimum and the lock 
 
 | API | 監査ログ保持期間の指定 | 出典 |
 |---|---|---|
-| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です | [API Reference](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) <!-- allow:naming - AWS の API 名 --> |
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です | [API Reference](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnaplockConfiguration.html) |
 | ONTAP `snaplock log create -retention-period` | **可** | [NetApp Docs](https://docs.netapp.com/us-en/ontap/snaplock/create-audit-log-task.html) |
 
 > **`AuditLogVolume=true` を AWS API で渡すと、保持期間は選べず既定値が適用されます。** 値を制御するには
@@ -639,7 +639,7 @@ the situation where the volume retention is already at its minimum and the lock 
 | `BypassSnaplockEnterpriseRetention=true` | **効きません**（同上） |
 | `SkipFinalBackup=true` との併用 | 効きません |
 | `AuditLogVolume=false` への変更 | 適用されませんでした |
-| SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
+| SVM 側の指定 | **Amazon FSx の API に露出していません** |
 
 > **ONTAP 側で指定を解除した後、AWS API は `AuditLogVolume: False` を返すようになりました。
 > しかしボリュームは依然として削除できません。** ONTAP 側の `snaplock.is_audit_log` は `true` のままで、
@@ -751,7 +751,7 @@ The `delete-volume` response itself carries no reason — the volume moves to `D
 
 | 順 | ONTAP が返した理由 | コード | 実際の原因 |
 |---|---|---|---|
-| 1 | SnapMirror 関係の存在（`... is the destination or source endpoint of one or more SnapMirror relationships`） | `917858` | **残っていた Amazon FSx のバックアップ** <!-- allow:naming - AWS のサービス名 --> |
+| 1 | SnapMirror 関係の存在（`... is the destination or source endpoint of one or more SnapMirror relationships`） | `917858` | **残っていた Amazon FSx のバックアップ** |
 | 2 | 未期限の監査ログボリューム（`525057` の 5 条件） | `525057` | SnapLock 監査ログの 6 か月保持 |
 
 **1 番目のメッセージは調査を誤った方向へ導きます。** SnapMirror 関係を疑って
@@ -767,7 +767,7 @@ The `delete-volume` response itself carries no reason — the volume moves to `D
 **バックアップを削除すると、この理由は出なくなりました。** バックアップが内部的に SnapMirror を使うため、
 ユーザーに見える関係一覧には現れない形で削除を阻害します。
 
-> **診断の手がかりは Snapshot 名です。** Amazon FSx のバックアップはボリューム上に <!-- allow:naming - AWS のサービス名 -->
+> **診断の手がかりは Snapshot 名です。** Amazon FSx のバックアップはボリューム上に
 > `backup-<backup-id>` という Snapshot を残します。**SnapMirror のエラーが出て関係一覧が空なら、
 > バックアップの残骸を疑ってください。**
 >
@@ -928,7 +928,7 @@ precedence.
 
 | API | Snapshot locking の指定 |
 |---|---|
-| `CreateOntapVolumeConfiguration` | **不可。** フィールドは `StorageVirtualMachineId` / `AggregateConfiguration` / `CopyTagsToBackups` / `JunctionPath` / `OntapVolumeType` / `SecurityStyle` / `SizeInBytes` / `SizeInMegabytes` / `SnaplockConfiguration` / `SnapshotPolicy` / `StorageEfficiencyEnabled` / `TieringPolicy` / `VolumeStyle` <!-- allow:naming - AWS の API 名 --> |
+| `CreateOntapVolumeConfiguration` | **不可。** フィールドは `StorageVirtualMachineId` / `AggregateConfiguration` / `CopyTagsToBackups` / `JunctionPath` / `OntapVolumeType` / `SecurityStyle` / `SizeInBytes` / `SizeInMegabytes` / `SnaplockConfiguration` / `SnapshotPolicy` / `StorageEfficiencyEnabled` / `TieringPolicy` / `VolumeStyle` |
 | `CreateSnaplockConfiguration` | **不可**（SnapLock 用の 6 フィールドのみ） |
 | ONTAP CLI / REST | **可**（`-snapshot-locking-enabled true`） |
 

@@ -50,7 +50,15 @@ SKIP_DIRS = (*IGNORED_DIRS, "tools")
 SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json", ".sh"}
 
 CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
-ALLOW = re.compile(r"allow:(naming|neutrality|pii|role-label|support-referral|all)")
+# The HTML comment wrapper is required, not decoration. Without it, **a line that merely mentions
+# `allow:naming` in prose suppresses the detector on that line** - inside backticks too, so every
+# line documenting these markers was exempting itself. Verified before tightening: one line in the
+# tree relied on the loose form and no new finding appears. It also made the budget count prose as
+# markers, so writing about a marker could fail `make allow-budget` with nothing wrong - the loud
+# half of the same defect.
+ALLOW = re.compile(
+    r"<!--[^>]*?allow:(naming|neutrality|pii|role-label|support-referral|all)[^>]*?-->"
+)
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
 FILE_ALLOW = re.compile(r"audit-file-allow:\s*([a-z-]+(?:\s*,\s*[a-z-]+)*)")
 FILE_ALLOW_SCAN_LINES = 40
@@ -293,11 +301,22 @@ def file_allowances(lines: list[str]) -> set[str]:
     return allowed
 
 
+CODE_SPAN = re.compile(r"`[^`]*`")
+
+
 def audit_line(
     line: str, file_allowed: frozenset[str] = frozenset()
 ) -> list[tuple[str, str]]:
-    """Return (category, message) findings for one line, honouring allow markers."""
-    allowed = {match.group(1) for match in ALLOW.finditer(line)} | set(file_allowed)
+    """Return (category, message) findings for one line, honouring allow markers.
+
+    **Markers inside a code span are documentation of the syntax, not a use of it.** Without this,
+    the line in `AGENTS.md` that tells an author to write `<!-- allow:naming -->` was itself an
+    exempt line - and appending a code-span marker to any sentence silenced the detector on it,
+    which is the same smuggling path as the prose form. Findings are still matched against the
+    original line, so a forbidden term inside a code span is still reported.
+    """
+    markers = CODE_SPAN.sub("", line)
+    allowed = {match.group(1) for match in ALLOW.finditer(markers)} | set(file_allowed)
     if "all" in allowed:
         return []
 

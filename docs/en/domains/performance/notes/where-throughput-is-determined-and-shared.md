@@ -92,7 +92,7 @@ FlexGroup places "constituents" on each aggregate. **To achieve full performance
 
 After adding HA pairs, **you must expand the FlexGroup to the new aggregates — otherwise the additional capacity is unused.** Simply adding pairs does not speed up existing volumes.
 
-> **Design note**: When creating FlexVol on a file system with multiple HA pairs, the Amazon FSx console cannot be used — AWS CLI / API / NetApp management tools are required. **Working exclusively through the console effectively forces FlexGroup** — which is often the right direction, but confirm it is an intentional choice. <!-- allow:naming - "Amazon FSx console" is the official name covering all file system types -->
+> **Design note**: When creating FlexVol on a file system with multiple HA pairs, the Amazon FSx console cannot be used — AWS CLI / API / NetApp management tools are required. **Working exclusively through the console effectively forces FlexGroup** — which is often the right direction, but confirm it is an intentional choice.
 
 ---
 
@@ -128,7 +128,7 @@ graph TD
 | 4 | Measure with a read/write ratio and file sizes close to your workload | Results change significantly depending on whether data fits in cache |
 | 5 | Record measurement conditions (generation / region / throughput setting / SSD capacity / volume type) | Provides a comparison baseline for next time |
 
-Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amazon FSx API `AggregateConfiguration`. <!-- allow:naming - "Amazon FSx API" is the official name covering all file system types -->
+Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amazon FSx API `AggregateConfiguration`.
 
 **When performance is not meeting expectations, start by comparing against provisioned values.** If measured values are close to provisioned values, the configuration is not the bottleneck — the setting is the ceiling.
 
