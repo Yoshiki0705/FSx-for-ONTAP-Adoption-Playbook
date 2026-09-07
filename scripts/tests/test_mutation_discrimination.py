@@ -426,6 +426,21 @@ class MutationsAreCaughtByTheRightTest(unittest.TestCase):
                     target.write_text(body.replace(old, new, 1), encoding="utf-8")
 
                 outcomes = run_tests(work, mutation["module"], names)
+                # The same reasoning as the clean copy above, in the other direction. A test that
+                # skipped **after** the mutation was applied did not run, and "not run" cannot be
+                # read as "did not detect" any more than as "detected". This half was missing: the
+                # clean run consumed the API allowance, the mutated run was rate-limited, and the
+                # harness reported that the mutation was not discriminated - a red gate about
+                # someone else's quota, on a pull request that touched none of this.
+                skipped_after = [
+                    n for n in names if str(outcomes.get(n, "")).startswith("skipped")
+                ]
+                if skipped_after:
+                    self.skipTest(
+                        f"{mutation['name']}: {skipped_after} skipped under the mutation "
+                        "(no network, or the API allowance was spent by the clean run), so this "
+                        "mutation cannot be verified here"
+                    )
                 for name in mutation["must_fail"]:
                     self.assertEqual(
                         outcomes.get(name),
