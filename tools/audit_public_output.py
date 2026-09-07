@@ -165,7 +165,7 @@ PLACEHOLDER_RESOURCE_IDS = frozenset(
 
 # Inline callouts labeled with a role/persona imply a review that did not happen.
 ROLE_LABEL = re.compile(
-    r"^\s*>\s*\*\*[^*]*(?:lens|の視点|perspective)[^*]*\*\*", re.IGNORECASE
+    r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE
 )
 
 # ---------------------------------------------------------------- support referral

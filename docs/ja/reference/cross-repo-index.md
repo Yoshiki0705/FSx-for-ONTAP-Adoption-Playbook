@@ -49,6 +49,9 @@ lang: ja
 
 - **引用元** — このリポジトリ内の相対パス。その本文が引用先へのリンクを実際に含んでいること
 - **確認する文字列** — 引用先にまだ存在すべき短い literal。**主張そのものを指す文字列にしてください。** 見出しやファイル名だと、主張が撤回されてもゲートが通ります
+  > **この文字列が検出できないもの**: probe は**その文字列が引用先に存在するか**しか見ません。**引用元の中で記述が古くなり、同じファイルの本文が別のことを言っている状態は検出できません。**
+  > 実例があります。`Finalize は意図的に未実施` を probe にしていた行は、引用先のステータス行にその文が残ったまま、同じファイルの本文が「承認を得て実行」に更新されていました。**ゲートは「probe 現存」と報告し続け、気づいたのは相手側から指摘を受けたときです。**
+  > **引用元が自己矛盾している可能性は、ゲートでは拾えません。** 逆リンクを依頼するときなどに、引用している主張が今も本文と一致しているかを併せて訊いてください。
 
 **この表の後半 10 行は、ゲートを入れた時点で既に存在していた引用です。** 仕組みが無かった間に積まれ、登録も検証もされていませんでした。**引用が 8 ファイル分あることに誰も気づいていなかった、というのがこのゲートの最初の成果です。**
 
@@ -74,7 +77,7 @@ lang: ja
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/saas-to-fsx-ontap-migration.md` | `常にエージェントと Basic モードが必要です` | FSx for ONTAP を宛先にすると AWS DataSync でエージェントと Basic モードが必要になること |
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/en/saas-to-fsx-ontap-migration.md` | `always requires an agent and Basic mode` | An FSx for ONTAP destination always needs an agent and Basic mode in AWS DataSync |
 | `docs/ja/reference/limits/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `5 GB → 50 GB` | オブジェクトサイズ上限の記載変更に対して、実際にエラーになるサイズを実測で確定したこと |
-| `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `Finalize は意図的に未実施` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を未実施として分離していること |
+| `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `承認を得て実行` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を承認のうえ実行した結果（split の所要時間と不可逆性） |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv2 と NFSv3 は非対応` | Amazon EFS が NFSv3 に対応しないこと。NFSv3 が要件なら EFS が選択肢から外れる根拠 |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv4.2 は対応プロトコルとして挙げられていない` | Amazon EFS の NFSv4.2 非対応。**列挙に無いことが根拠**で、非対応と明記されているわけではありません |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `Windows を実行する EC2 インスタンスからの EFS のマウントは非対応` | Amazon EFS が Windows から使えないこと。**「EFS は SMB 非対応」の唯一の根拠でもあり、SMB 非対応を独立の主張として書かない** |

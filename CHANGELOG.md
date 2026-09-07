@@ -9,6 +9,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The rename check was silent on two of the seven names it was written for, and its break test
+  used one of the five that work.** A case-only rename does not redirect: GitHub resolves repository
+  names case-insensitively and serves the requested casing with 200, so comparing the final URL after
+  following redirects reports the old casing as current. `vmware-migration-ec2-ontap` and
+  `ontap-edge-to-cloud-ai` both passed. Now asks the API for `full_name`, and all three forms are
+  covered by tests including the case-only one.
+  - **This was found by the repository on the receiving end of a cross-repo issue**, not here.
+    Proving a detector fires on one member of a family says nothing about the rest of the family —
+    which is a rule already written down here, and was not applied when the check was built.
+- **A citation probe reported clean while the claim it stood for had been superseded.** The probe
+  `Finalize は意図的に未実施` was still present in the cited file's status line, and the body of the
+  same file had been updated to record that Finalize was executed with approval. **A probe checks
+  whether a string exists, not whether the document still agrees with itself.** The row now cites the
+  executed result, and the index says plainly what a probe cannot detect.
+- **The audit's role-label check missed the katakana form.** The pattern covered `lens`, `の視点` and
+  `perspective` but not `レンズ`, so `> **Storage Specialist レンズ（…）**:` passed. No file here used
+  it; a sibling repository did, which is how it surfaced. Added `レンズ` and bare `視点`.
+
 - **Four claims sat inside `verified` notes without a measurement behind them, and one of them
   carried an alerting instruction.** Reviewing #107 after it merged found the boundary between what
   was measured and what was reasoned had moved. The block monitoring note declared its verified scope

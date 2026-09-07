@@ -33,6 +33,7 @@ step, which is the failure this repository has already documented elsewhere.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import urllib.error
@@ -200,11 +201,19 @@ def check_offline(rows: list[Row]) -> list[str]:
 
 
 def check_repo_names() -> list[str]:
-    """Fail on a repository name that only still works because GitHub redirects it.
+    """Fail on a repository name that is not the repository's current name.
 
     Renames are normal. What is not survivable is that the old name keeps resolving, so two
     documents can name the same repository differently and neither looks broken. The citation
     table keys on the name, so a stale one there also silently splits one repository into two.
+
+    This asks the API for `full_name` rather than following an HTML redirect, because **a
+    case-only rename does not redirect.** GitHub resolves repository names case-insensitively
+    and serves the requested casing with 200, so comparing the final URL reports the old name
+    as current. Two of the seven stale names this check was written for were case-only, and the
+    first redirect-based version was silent on both — while passing a break test that happened
+    to use one of the five that do redirect. Proving a detector fires on one instance of a
+    family says nothing about the rest of the family.
     """
     problems: list[str] = []
     seen: dict[str, list[str]] = {}
@@ -220,22 +229,32 @@ def check_repo_names() -> list[str]:
                 seen[repo].append(rel)
 
     for repo, files in sorted(seen.items()):
-        url = f"https://github.com/{OWNER}/{repo}"
+        url = f"https://api.github.com/repos/{OWNER}/{repo}"
         request = urllib.request.Request(
-            url, headers={"User-Agent": "cross-repo-check"}
+            url,
+            headers={
+                "User-Agent": "cross-repo-check",
+                "Accept": "application/vnd.github+json",
+            },
         )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
-                final = response.url
+                payload = json.loads(response.read().decode("utf-8", "replace"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
+            # Unauthenticated requests are capped at 60 per hour. A few dozen repositories is
+            # well inside that; say so rather than reporting a name as stale.
             problems.append(f"{repo}: cannot resolve ({exc})")
             continue
-        canonical = final.rstrip("/").rsplit("/", 1)[-1]
+        full_name = str(payload.get("full_name", ""))
+        canonical = full_name.rsplit("/", 1)[-1] if "/" in full_name else ""
+        if not canonical:
+            problems.append(f"{repo}: the API response carried no full_name")
+            continue
         if canonical != repo:
             listed = ", ".join(files[:4]) + (" …" if len(files) > 4 else "")
             problems.append(
-                f"{repo} has been renamed to {canonical}. The old name still resolves through a "
-                f"redirect, so nothing else reports it. Update: {listed}"
+                f"{repo} is not the current name; it is {canonical}. The old name still "
+                f"resolves, so nothing else reports it. Update: {listed}"
             )
     return problems
 

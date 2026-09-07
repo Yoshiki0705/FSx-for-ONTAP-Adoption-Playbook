@@ -349,6 +349,28 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
             self.assert_rejected(run_gate("check_cross_repo.py"), PROBE)
 
+    def test_case_only_stale_repository_name_is_rejected(self) -> None:
+        """A case-only rename does not redirect, so it needs its own case.
+
+        GitHub resolves repository names case-insensitively and serves the
+        requested casing with 200. The first version of this check compared the
+        final URL after following redirects, which reported the old casing as
+        current — silent on two of the seven names it was written for, while
+        passing a break test that used one of the five that do redirect.
+
+        Network-dependent, so it runs only when the external check is asked for.
+        """
+        stale = "vmware-migration-ec2-ontap"  # now VMware-Migration-EC2-ONTAP
+        body = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + f"\n# gate probe\n\nSee https://github.com/Yoshiki0705/{stale} for context.\n"
+        )
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": body}):
+            result = run_gate("check_cross_repo.py", "--external")
+            if "cannot resolve" in (result.stdout + result.stderr):
+                self.skipTest("GitHub API unreachable or rate-limited")
+            self.assert_rejected(result, "is not the current name")
+
     def test_cross_repo_table_shape_change_is_rejected(self) -> None:
         """The gate parses the index table, so a changed shape is a broken gate.
 
