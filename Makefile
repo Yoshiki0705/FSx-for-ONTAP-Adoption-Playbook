@@ -212,7 +212,7 @@ diagram-flow: ## Check that diagrams read rightwards and downwards, with labels 
 	@$(PY) tools/check_diagram_flow.py --selftest >/dev/null
 	@$(PY) tools/check_diagram_flow.py
 
-hooks: ## Activate the tracked pre-commit hook in this clone (idempotent)
+hooks: ## Activate the tracked pre-commit and pre-push hooks in this clone (idempotent)
 	@current="$$(git config --local --get core.hooksPath || true)"; \
 	if [ "$$current" = ".githooks" ]; then \
 	    echo "hooks: already active in this clone (core.hooksPath=.githooks)"; \

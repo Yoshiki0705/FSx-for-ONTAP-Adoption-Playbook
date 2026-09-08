@@ -101,8 +101,8 @@ once in the Makefile's `PY_PATHS`. Test directories live in `TEST_DIRS` for the 
 `tests/` directory that is not listed there runs nowhere, and `make test` fails when one exists
 outside the list.
 
-`make all` is the gate. **Wire the tracked hook once per clone** — `make hooks`
-— and it runs the gate for you and refuses a commit on `main`. **Never read the gate's result off a
+`make all` is the gate. **Wire the tracked hooks once per clone** — `make hooks`
+— and they run it on commit and on push, and refuse a commit on `main`. **Never read the gate's result off a
 pipe**: `make all | tail` returns *tail's* status, so a red gate reads as green, which happened twice
 here. Use `make all > /tmp/all.log 2>&1; echo $?`. Details in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 

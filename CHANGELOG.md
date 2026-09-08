@@ -271,6 +271,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A tracked `pre-push` hook, because `git commit` is not the only way a commit appears.** Measured
+  on git 2.54.0 with pre-commit wired, confirming in each case that a commit was actually created:
+
+  | Operation | Commit | pre-commit |
+  |---|---|---|
+  | `git merge --no-ff` | created | **did not run** |
+  | `git cherry-pick` | created | **did not run** |
+  | `git revert` | created | **did not run** |
+  | `git rebase` (conflict resolved) | created | **did not run** |
+  | `git commit` (control) | created | ran |
+
+  - The control is load-bearing: without it, four zeros are indistinguishable from a probe that never
+    wired the hook. The first run had `cherry-pick` creating **no commit** — the setup picked a merge
+    commit — so that row stayed unverified until it was redone.
+  - **The rebase path is hit on every pull request here.** The CHANGELOG's top entry conflicts on
+    every merge to `main`, so each branch gets rebased at least once, and resolving that conflict is
+    an edit no hook saw. Reported by a sibling repository, which enumerated the four paths after
+    hitting the rebase one.
+  - Push is the choke point downstream of all four, and git reads the hook's own exit status, so no
+    pipe upstream can hide a failing gate — the property that made running the gate from pre-commit
+    worth its seconds.
+  - **A deletion-only push and a no-op push skip the gate**, with the zero object id matched by
+    *length* so a SHA-256 repository is not silently different. Demanding a gate verdict for a push
+    that carries no content would mean waiting to delete a merged branch, or a habit of bypassing
+    the hook.
+  - `SKIP_GATE=1` is the same variable pre-commit honours. Two names for one decision is a way to
+    have the override not work when it is needed.
+  - Verified end-to-end with a real `git push`: refused on a red gate with the log path named, pushed
+    under the override, and a branch deletion allowed with no override at all.
 - **`docs/agent/cross-repo-probe-contract.txt`: the probe check runs here and nowhere else, so a
   sibling rewording a claim we cite could not see it until our CI failed.** 42 registered strings are
   now published, generated from the citation table and compared by `make cross-repo`, so the side that
