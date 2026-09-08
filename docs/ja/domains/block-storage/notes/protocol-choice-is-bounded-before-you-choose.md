@@ -37,6 +37,22 @@ lang: ja
 
 ---
 
+## 列挙に現れないプロトコル
+
+**AWS のドキュメントが列挙するブロックプロトコルは iSCSI と NVMe/TCP の 2 つです。**
+[Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) と
+[How Amazon FSx for NetApp ONTAP works](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-it-works-fsx-ontap.html)
+のいずれも、この 2 つを挙げています（2026-09-08 に確認）。
+
+**Fibre Channel はどちらの列挙にも現れません。** ただし**「非対応」と明記した記述は見つけていません。**
+複数の列挙に不在であることと、明示的に否定されていることは別で、**前者を後者として引用すると、
+出典にない主張になります。**
+
+**読者にとっての帰結は同じです。** FC で接続する手段が文書化されていないので、既存の FC SAN を
+そのまま延伸する構成は取れません。移行するなら iSCSI か NVMe/TCP になります。
+
+---
+
 ## 世代と HA ペア数
 
 | 条件 | iSCSI | NVMe/TCP |
