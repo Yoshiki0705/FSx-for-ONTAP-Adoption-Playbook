@@ -111,6 +111,24 @@ and confirm it fails — `--selftest` where the tool has one — before trusting
 detector is found to miss one member of a family, check the rest of the family rather than patching the
 single case: the word list and the *form* are separate holes, and widening one leaves the other.
 
+## A gate that never ran because the set is written in two files
+
+Distinct from the above: the verdict logic was fine and the input set was fine. The target was simply
+never called. The gate set lives once as the prerequisites of `make all` and once as the steps of
+`ci.yml`, and for a while nothing compared them.
+
+`diagram-fonts` and `diagram-flow` were added to `make all` with a comment saying CI therefore ran
+them on every change. `ci.yml` never called either, and the comment kept looking true because no check
+read both files. They were added by hand later. **Four more were in the same state when that was
+found** — `headings`, `ja-markers`, `anchors`, `workflow-observability` — including the heading rule
+`AGENTS.md` documents as a convention, and the anchor contract whose entire premise is that the citing
+side cannot observe the break.
+
+**A gate that exists and does not run is worse than an absent one, because the checklist credits it.**
+`scripts/tests/test_ci_gate_parity.py` now fails when the two sets diverge, and holds the two
+exemptions — `markdown` and `secrets`, both covered by a workflow using a different mechanism — as
+named entries that must still exist in `make all`.
+
 ## A break test that cannot tell a correct fix from a lazy one
 
 Proving a detector fires on a bad input shows it **can** fail. It does not show it can tell a correct

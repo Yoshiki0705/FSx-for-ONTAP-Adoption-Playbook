@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Four gates in `make all` were called by no workflow, so they ran only when someone typed
+  `make all`.** `headings`, `ja-markers`, `anchors` and `workflow-observability` — among them the
+  Japanese heading rule `AGENTS.md` documents as a convention, and the externally-cited-anchor
+  contract, whose whole premise is that **GitHub answers an unknown fragment with the top of the
+  page, so the citing repository never observes the break.**
+  - The state `diagram-fonts` and `diagram-flow` were in earlier, for the same reason: the gate set
+    is written once as the prerequisites of `make all` and once as the steps of `ci.yml`, and nothing
+    compared the two. **A Makefile comment claiming CI runs a target stays true-looking indefinitely
+    while no check reads both files.**
+  - `scripts/tests/test_ci_gate_parity.py` now fails when the sets diverge. It expands aggregate
+    targets, so `lint` counts as covered by the six steps that run its parts, and it ignores
+    comments — `ci.yml` contains the string `make all` inside one. The two exemptions, `markdown`
+    and `secrets`, are named with the workflow covering each, and are asserted to still be part of
+    `make all`, so a rename cannot leave a dead exemption excusing a real gap.
+  - Verified in both directions: the test names all four against the previous `ci.yml`, and names
+    `anchors` alone when that one step is removed again.
+  - **A gate that exists and does not run is worse than an absent one, because the checklist credits
+    it.** Reported by a sibling repository, which found the identical divergence in its own Makefile
+    while implementing a hook that runs the gates.
 - **A role token bounded on one side reported a country and missed the form that is normal in
   Japanese.** The list carried `SA\b`, and that one character produced a false positive and a miss
   at the same time: 「USA 市場の観点」 was reported, while 「（SA観点）」 was not. `\b` needs a
