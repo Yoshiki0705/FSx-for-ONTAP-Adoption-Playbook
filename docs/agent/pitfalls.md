@@ -238,6 +238,35 @@ So when a rule is written to catch silence, ask what its loud counterpart would 
 counterpart was in the budget itself: **prose mentioning a marker was counted as a marker**, so
 writing about one could fail `make allow-budget` with nothing wrong.
 
+### An invariant between exact complements asserts nothing
+
+`inert` was defined as `without <= with` and `load_bearing` as `without > with`. **Exact complements**,
+so "both" and "neither" are equally impossible and the assertion over them **could not fail.** Proven
+rather than reasoned: with `strip_markers` replaced by `return line`, it still passed.
+
+A sibling repository found the same weakness from the other side and reported that **checking only one
+direction is a partial check wearing the shape of an invariant** — `neither` has its own harm, a marker
+that is never reported inert and never load-bearing simply stays forever, **and axis 1 returns through
+the back door.**
+
+**It then declined the corpus check for its own code, correctly.** Its judgement is one predicate, so
+the relation holds structurally and a runtime check over data cannot fire — **a check that cannot fail
+is the thing this file keeps warning about.** The guarantee belongs in a mutation there.
+
+**The pair is why this repository is on the other side.** `marker_categories` and `strip_markers` are two
+functions, so "counted equals removed" rides on their relationship, and a corpus check does bite. The
+invariant is now stated in both directions: nothing counted survives removal, and nothing uncounted is
+removed.
+
+**Which then found its own limit.** A mutation applying removal to the raw line **passes the corpus
+half**, because no line in the tree carries both a code-span example and a counted marker. The crafted
+case catches it. So the split the sibling drew is directly observable here:
+
+| Axis | Depends on | Guard it with |
+|---|---|---|
+| 1–3: is it a suppression, does it suppress | **the input** | a corpus check |
+| 4–5: do the checks agree, is agreement structural | **the code** | a mutation |
+
 ### Two checks answering the same question differently is a fifth axis
 
 `shrink-only` asks whether a suppression is justified. The axis before it asks whether the thing is a

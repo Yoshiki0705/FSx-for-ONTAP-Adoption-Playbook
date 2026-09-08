@@ -185,6 +185,31 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # Removal stops removing. The corpus check for this direction replaced an assertion that
+        # could not fail: `inert` and `load_bearing` were defined as exact complements, so neither
+        # "both" nor "neither" could occur. Proven by breaking `strip_markers` and watching it pass.
+        "name": "marker removal stops removing",
+        "why": (
+            "Returning the line unchanged is what a careless simplification of the segment join "
+            "produces. Every counted marker then survives removal, so the inert check compares a "
+            "line against itself and reports that nothing suppresses anything."
+        ),
+        "module": "scripts.tests.test_marker_width_is_consistent",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                (
+                    '    return "".join(\n'
+                    '        segment if is_code else ALLOW.sub("", segment)\n'
+                    "        for segment, is_code in _outside_code_spans(line)\n    )"
+                ),
+                "    return line",
+            ),
+        ],
+        "must_fail": ["test_nothing_counted_survives_removal"],
+        "must_pass": ["test_a_fence_makes_both_halves_inert_together"],
+    },
+    {
         # The width mismatch a sibling reported: removal applied to the raw line while detection
         # applied to the code-span-stripped one. Each check stays correct on its own, and the pair
         # produces a line that fails whether the marker stays or goes.
@@ -206,8 +231,17 @@ MUTATIONS: list[dict] = [
                 '    return ALLOW.sub("", line)',
             ),
         ],
+        # `test_nothing_uncounted_is_removed` is listed as must_pass rather than must_fail, and the
+        # reason is the finding: **the corpus contains no line carrying both a code-span example and a
+        # counted marker**, so the corpus half cannot see this mutation. The crafted case can. A
+        # sibling repository drew the line this sits on - a check over data finds the axes that depend
+        # on the input, and the ones that depend on code structure need a mutation instead.
         "must_fail": ["test_detection_and_removal_agree_on_what_a_marker_is"],
-        "must_pass": ["test_a_fence_makes_both_halves_inert_together"],
+        "must_pass": [
+            "test_a_fence_makes_both_halves_inert_together",
+            "test_nothing_counted_survives_removal",
+            "test_nothing_uncounted_is_removed",
+        ],
     },
     {
         # The half that was missing while the other half was recorded as a rule. Reported by a

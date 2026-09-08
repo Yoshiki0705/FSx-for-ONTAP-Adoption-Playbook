@@ -9,6 +9,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The marker-width invariant asserted nothing.** `inert` and `load_bearing` were defined as
+  `without <= with` and `without > with` — **exact complements**, so "both" could not occur and the
+  assertion could not fail. **Proven, not reasoned: with `strip_markers` replaced by `return line`, it
+  still passed.**
+  - Restated in both directions over the corpus: **nothing counted survives removal, and nothing
+    uncounted is removed** (by length, plus a direct check that code spans are untouched). Both
+    directions fail when `strip_markers` is broken either way — 17 failures for one break, 1 for the
+    other.
+  - Reported by a sibling repository, which found the same weakness from the other side: **checking one
+    direction is a partial check wearing the shape of an invariant**, since `neither` has its own harm —
+    a marker never called inert and never load-bearing stays forever.
+  - **It declined the corpus check for its own code, correctly.** One predicate means the relation holds
+    structurally and a runtime check cannot fire. **This repository has a pair**, so the relation rides
+    on two functions and a corpus check bites.
+  - **And found its own limit immediately.** A mutation applying removal to the raw line **passes the
+    corpus half** — no line in the tree carries both a code-span example and a counted marker. It is
+    recorded as `must_pass` with that reason, and the crafted case carries the kill. Fifteen mutations.
 - **"Is this a marker" was decided in three places, and a fourth disagreed with all of them.** Removal
   applied to the raw line while detection applied to the code-span-stripped one, so **a code-span
   example was removed although it was never a directive.** A width differing by one step produces a
