@@ -22,6 +22,7 @@
 # An absence claim ("the column is not in the table", "not stated in public documentation") is a
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	paused
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
