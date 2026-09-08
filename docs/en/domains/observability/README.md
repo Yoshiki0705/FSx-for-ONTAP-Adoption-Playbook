@@ -12,6 +12,19 @@ Implementation of each route (templates, per-vendor integrations, building the c
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **No monitoring in place yet** | [Observability route decision tree](../../../ja/reference/decision-trees/observability-route.md) (日本語) | **there is more than one route, and authentication and data residency narrow it first** |
+| **Bringing an on-premises Grafana setup** | [On-premises dashboards do not transfer as they are](../../../ja/domains/observability/notes/on-prem-dashboards-do-not-transfer.md) (日本語) | why they do not, and what is needed to move them |
+| **Extending across accounts or sites** | [Cross-account is a network problem, not an IAM one](../../../ja/domains/observability/notes/cross-account-is-a-network-problem.md) (日本語) | **fixing IAM does not make it reachable.** The obstruction is elsewhere |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

@@ -10,6 +10,19 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **Restricting access** | [Comparing the ways to restrict access](../../../ja/reference/comparison/access-restriction-options.md) (日本語) | **the options do not sit in one layer.** This is not a table to pick a single row from |
+| **Asked who read what** | [Two faces of auditing, and the hole in one of them](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#監査の-2-つの面と片方の穴の存在) (日本語) | **some of it cannot be answered.** There are reads that leave no record |
+| **About to run something that cannot be undone** | [Approval for an irreversible operation is taken separately](../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) | **why the approval is separate, and which value to settle before acting** |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

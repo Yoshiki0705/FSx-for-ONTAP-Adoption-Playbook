@@ -10,6 +10,19 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **Reading or writing through the S3 API** | [An FSx for ONTAP S3 AP is not a drop-in for S3](../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | **same account and same region are design-time constraints, not deployment details** |
+| **Feeding an AI or RAG pipeline** | [What flattened permissions mean](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) (日本語) | **the original ACLs are not carried through.** Scoping has to be designed into the index |
+| **Avoiding another copy of the data** | [Three ways to avoid a copy](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) (日本語) | the three mechanisms and what each commits you to |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

@@ -10,6 +10,19 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **Snapshots are already being taken** | [What each mechanism protects against](notes/snapshots-are-not-a-recovery-plan.md#what-each-mechanism-protects-against) | **a Snapshot is lost with the volume it lives on** |
+| **A copy is needed in another region or account** | [A backup copy holds no file system until it is restored](../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) | what exists at the destination and what does not, and how it differs from SnapMirror |
+| **Ransomware protection has been asked for** | [Enabling SnapLock and locking are separate](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | **three irreversible steps.** Privileged delete is unavailable once retention expires |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |
