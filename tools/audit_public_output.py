@@ -387,18 +387,35 @@ SUPPORT_REFERRAL = re.compile(
 # 'the May 2026 AWS Support discussion', 'AWS Support findings', 'Databricks Support response' and
 # 'Alternative Paths Identified by Snowflake Support'. Enumerating what four sibling repositories
 # actually wrote, rather than what the pattern imagined, is what found them.
+#
+# The same enumeration on the Japanese side turned up 72 unmatched shapes, and the attributions
+# among them were all one construction: the desk, a connective, an evidentiary noun --
+# による確認結果, とのやり取りに由来, からの回答により, により…確認, も…確認. **The connectives
+# were the gap, not the nouns.** Two are deliberately left out because they carry the opposite
+# meaning: `への` ('サポートへの確認をしていない' is a statement about not having asked) and 回答
+# followed by 待ち ('回答を待機' is the honest way to write 'asked, no answer yet').
 SUPPORT_ATTRIBUTION = re.compile(
-    # A vendor's support desk followed by a reply noun.
-    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*(?:の)?\s*"
-    r"(?:回答|見解|返信|指摘|案内|確認)"
+    # A vendor's support desk, then a connective, then a noun that makes the desk the source of
+    # a finding. `への` is absent from the connectives on purpose: "サポートへの確認をしていない"
+    # is a statement about *not* having asked. And 回答 followed by 待ち / を待 is the act of
+    # waiting for one, which is the honest way to write "asked, no answer yet".
+    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*"
+    r"(?:の|による|により|からの|との|様の)?\s*(?:（[^）\n]{0,20}）\s*(?:により|による)?\s*)?"
+    # The window carries a date or a modifier -- "サポート 2026 年 5 月確認", "サポートの明確な指針".
+    # **`へ` and `に` are excluded from it, and that exclusion is what keeps the rule usable**:
+    # every publishable shape points *at* the desk with one of those two particles, and every
+    # attribution points away from it.
+    r"[^。\nへに]{0,14}?"
+    r"(?:回答(?!\s*(?:待ち|を\s*待))|見解|返信|指摘|案内|確認結果|追加確認|確認|指針|やり取り|検証|分析)"
     r"|サポート回答"
     # "...との回答を得た" / "回答がありました" attached to a confirmation.
     r"|(?:回答|見解)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
     # The desk as the subject of confirming or reproducing.
-    r"|(?:(?:AWS|NetApp|Databricks|Snowflake|ベンダー)\s*(?:Support|サポート)|サポート側)"
+    r"|(?:(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)|サポート側)"
     # `に` is excluded here on purpose: "サポートに確認中" is the act of asking and stays
     # publishable. The completed form "サポートに確認した / 済み" has its own alternative below.
-    r"\s*(?:が|は|で)[^。\n]{0,24}?(?:確認|回答|再現|指摘|説明)"
+    r"\s*(?:が|は|も|で|により|による)[^。\n]{0,40}?"
+    r"(?:確認|回答|再現|指摘|説明|照合|提案|分析|エスカレーション)"
     # Presenting a completed confirmation as the basis. "確認中" is the act of asking and is left
     # alone on purpose.
     r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"

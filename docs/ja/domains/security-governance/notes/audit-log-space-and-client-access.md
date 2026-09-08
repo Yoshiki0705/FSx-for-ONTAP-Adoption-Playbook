@@ -276,16 +276,16 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 **同時に指定できません。** 期間だけを指定すると本数に上限が無く、**設計時に容量の上界を押さえられません。** 逆に本数だけを指定すると、アクセス量が増えた期間は保持期間が短くなります。
 
-**この排他は CLI の引数解析ではなく ONTAP の内部実装です。** AWS サポートが同一バージョンで REST を検証し、`POST /api/protocols/audit` と `PATCH /api/protocols/audit` のいずれも `retention.count` と `retention.duration` の同時指定で **400 Bad Request** になることを確認しています（2026-09-02）。**Amazon FSx 側でこの制約を解除することは困難**との回答です。NetApp の CLI リファレンスでも、この 2 つは波括弧と縦棒で囲まれた択一のオプションとして記載されています。
+**この排他は CLI の引数解析ではなく REST でも起きます。** `POST /api/protocols/audit` と `PATCH /api/protocols/audit` のいずれも、`retention.count` と `retention.duration` を同時に指定すると **400 Bad Request** になります（`verified`、2026-09-02）。**CLI 固有の制約ではないので、REST に切り替えても回避できません。**NetApp の CLI リファレンスでも、この 2 つは波括弧と縦棒で囲まれた択一のオプションとして記載されています。
 
 > **設定変更に関する注意**: **`retention.duration` を設定した状態から `retention.count` だけを指定すると、
-> `retention.duration` は `PT0S` に戻ります**（AWS サポートによる検証、2026-09-02）。
+> `retention.duration` は `PT0S` に戻ります**（`verified`、2026-09-02）。
 > `PT0S` は「期間による削除をしない」という意味です。**片方を設定する操作が、もう片方を無効化します。**
 > 保持方式を切り替えるときは、切り替え後に `vserver audit show -instance` で両方の値を読んでください。
 
 ### 方式ごとの上界と検知方法
 
-**どちらを選んでも、選ばなかった側は監視で担保することになります。** AWS サポートから提示された指針です。
+**どちらを選んでも、選ばなかった側は監視で担保することになります。** 上の排他が実測で確定しているので、片方しか設定できません。
 
 | 選ぶ基準 | 設定 | 確定するもの | 確定しないものの担保 |
 |---|---|---|---|
@@ -376,7 +376,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 > **運用に関する補足**: アクセスポイントの作成が `FAILED` で終わった後、アタッチメントを削除しても
 > ボリューム側に FSx for ONTAP 管理のオブジェクトストア関連付けが残り、**ONTAP からボリュームを
 > 削除できなくなります。** `aws fsx delete-volume` を使うと削除できます。監査用ボリュームを
-> 作り直す運用ではここで詰まります。機構と AWS サポートによる再現確認は
+> 作り直す運用ではここで詰まります。観測できた範囲は
 > [FSx for ONTAP S3 AP は「S3 として使える」わけではない](../../data-utilization/notes/s3-access-point-constraints.md#観測できた範囲とそこから言えないこと)
 > にあります。
 

@@ -76,7 +76,7 @@ services: data-core,data-nfs,management-ssh,management-https,data-s3-server,data
 
 ## 原因 — CIFS サーバーの削除と CLI での再作成
 
-**AWS サポートが同一バージョン（ONTAP 9.18.1P3D1）の環境で再現し、機構を特定しました**（2026-09-02）。
+**以下の機構は当方では再現していません。** 観測している状態は `verified` ですが、それを作った因果は `open` です。表の後の Evidence の注記を参照してください。
 
 | # | 操作 | `data-cifs` | 445 |
 |---|---|---|---|
