@@ -32,6 +32,8 @@
 | 4 | スループット設定を上げる前に確認すべきことは何か | [変更の順序は「戻せるか」で決める](notes/tiering-defaults-differ-by-creation-method.md#戻せるかで決める変更の順序) |
 | 5 | コスト削減と可用性のトレードオフをどう置くか | [トレードオフの見比べかた](../../domains/cost/notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
 | 6 | 変更を何からどの順に打つか | [最適化で何をどの順に変えるか](../../reference/decision-trees/what-to-change-and-in-what-order.md) |
+| 7 | 階層化ポリシーはどれを選ぶか | [階層化ポリシーの比較](../../reference/comparison/tiering-policies.md) |
+| 8 | スループットを上げる手段はどれで、何を引き換えにするか | [スループットを上げる手段の比較](../../reference/comparison/throughput-levers.md) |
 
 ---
 

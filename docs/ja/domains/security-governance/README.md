@@ -37,6 +37,7 @@
 | 9 | SMB のログオン成功・失敗・ログオフは監査ログに残るか | [4624 は記録される。ただし数えられるのはセッション](notes/smb-logon-audit-event-coverage.md) |
 | 10 | 監査を有効化すると可用性に何が起きるか | [監査宛先の枯渇はアクセスを止める。ただし満杯の瞬間ではない](notes/audit-log-space-and-client-access.md) |
 | 11 | アクセスを絞る手立てはいくつあり、どの層に効くか | [アクセスを絞る手立ての比較](../../reference/comparison/access-restriction-options.md) |
+| 12 | S3 Access Point 経由のリクエストが落ちた段をどう逆引きするか | [S3 Access Point 経由のリクエストはどう判定されるか](../../reference/decision-trees/access-point-authorization.md) |
 
 ---
 
