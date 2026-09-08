@@ -303,6 +303,12 @@ graph TD
 **同じページには `state` にも同種の不一致があります。** パラメータの列挙は 7 値（`paused` を含む）で、
 続く説明は 6 値です（`paused` の説明がありません）。
 
+**説明側の 6 値だけを実装に写すと、無言で誤表示になります。** 監視や自動化のコードが `switch` の
+`default` に落ちた値を「無効」として扱うと、**`paused` のボリュームは ARP が有効なまま「無効」と
+表示されます。** 同じ形が `disable_in_progress` で実際に起きたことが報告されています
+（[FSx-for-ONTAP-Cyber-Resilience-Patterns の状態の値域と表示](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/arp-configuration.md)、
+2026-09-08 に確認）。**7 値で扱ってください。** 落ちるのではなく黙るので、テストでは気づけません。
+
 **`dry-run` を「学習中」と読むときは、専用の項目があることに注意してください。** `state` の `dry-run` は
 「dry-run または evaluation モード」と説明されており、この 1 値が両方を覆います。ただし
 `block-device-detection-status` という別項目が `evaluation_period` を持ちます。**どちらの項目で

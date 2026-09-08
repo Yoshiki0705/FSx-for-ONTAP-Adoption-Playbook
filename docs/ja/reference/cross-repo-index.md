@@ -60,6 +60,7 @@ lang: ja
 
 | 引用元 | リポジトリ | パス | 確認する文字列 | 役割 | 何を引いているか |
 |---|---|---|---|---|---|
+| `docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/arp-configuration.md` | `paused` | `retraction` | 説明側の 6 値だけを実装に写すと `paused` のボリュームが有効なまま「無効」と表示されること。**こちらは文書の不一致を、そちらは実害の形を持っています** |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `EC2 の 1 フローあたり全二重 5 Gbps` | `retraction` | FSx for ONTAP の単一接続が当たっているのは EC2 の 1 フロー上限であること |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | `reread` | ファイルプロトコルの単一接続が 625 MBps に届かず、625 で割る形が必要セッション数を約 5% 少なく出すこと。**範囲の両端が単一接続の実測 3 行から出ているので、4 本目が足されるだけで動きます** — ブロックの 1 セッションが測られた時点で発火する見込みです |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `別の上限である` | `retraction` | 近い値を同じ原因に束ねないという訂正そのもの。**ブロックの値をファイルの値で代用しない根拠。** 幅を含まないので、行が増えても動きません |
