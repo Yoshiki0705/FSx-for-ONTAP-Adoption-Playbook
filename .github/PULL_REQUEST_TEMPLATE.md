@@ -14,8 +14,16 @@
 |---|---|---|
 |  |  |  |
 
+## Purpose
+
+<!-- Which reader question does this answer? A reader here is designing, building, or operating
+     FSx for ONTAP on AWS, or an agent doing that on their behalf. If this change answers no such
+     question - tooling, gates, refactors - say so, and say why it is worth doing now rather than
+     the reader-facing work that is already open. -->
+
 ## Checks
 
+- [ ] **The Purpose section names a reader question, or states why this comes first instead**
 - [ ] `make all` passes (frontmatter, i18n parity, audit, links)
 - [ ] New notes are linked from their module README
 - [ ] Numbers carry ONTAP version, region, and configuration
