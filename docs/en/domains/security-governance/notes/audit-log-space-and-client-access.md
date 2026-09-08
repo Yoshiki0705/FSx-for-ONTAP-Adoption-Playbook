@@ -167,7 +167,7 @@ The absorbed volume observed was **4,538 records**. The EVTX emitted on recovery
 - The staging volume `MDV_AUD_*` cannot be read from `fsxadmin`, so its occupancy cannot be checked directly
 - No test was run to separate accumulated volume, elapsed time, and rotation size as the threshold
 
-**And the cause of the stop was the destination filling, not staging.** AWS Support confirmed that **besides staging volume exhaustion, client access failure can also occur when the audit log destination volume fills** (2026-09-03). What was filled in this measurement is the destination volume. The NetApp KB [CIFS share not serving data because the Audit Log Destination is full](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) covers the same symptom. **So "it stopped nowhere near the 2 GB of staging" is not a contradiction. Staging was not involved.**
+**And the cause of the stop was the destination filling, not staging.** What was filled in this measurement is the destination volume, and client access stopped when it filled. The NetApp KB [CIFS share not serving data because the Audit Log Destination is full](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) covers the same symptom, also from the destination filling. **So "it stopped nowhere near the 2 GB of staging" is not a contradiction. Staging was not involved.**
 
 An EMS event reporting this directly is also defined: `adt.dest.directory.full` (severity `EMERGENCY`), whose description states it **can lead to denial of service on objects carrying a SACL**. This measurement used a SACL on the SMB path, matching the observed symptom.
 
@@ -183,9 +183,9 @@ FsxIdEXAMPLE::> event log show -message-name adt.*
 There are no entries matching your query.
 ```
 
-**Those zeros are evidence of nothing.** AWS Support confirmed that **neither `adt.stgvol.nospace` nor `adt.dest.directory.full` is visible to customers by design** (2026-09-03; the former retracts the same case's earlier suggestion that it could be used for monitoring). **The event cannot fire, so its absence is unrelated to whether exhaustion occurred.** The conclusion — that staging was not involved — is corroborated by AWS's answer through a different route, but **the argument that supported it at the time did not hold.**
+**Those zeros are evidence of nothing.** All we have is that no `adt.*` event is visible from `fsxadmin`, and **we cannot separate "it did not fire" from "it fired and is not visible to us".** `fsxadmin` has no way to fill the staging volume `MDV_AUD_*` deliberately, so we cannot create the firing condition and test visibility either. **Picking one of two indistinguishable states and arguing from it was the error.** The conclusion itself — that staging was not involved — stands on the destination-filling measurement and the KB above, but **the argument that supported it at the time did not hold.** Event visibility is left `open`.
 
-Meanwhile, `monitor.volume.full` and `monitor.volume.nearlyFull` targeting `MDV_aud_*` are described as **expected to be visible to customers**. Those were also zero across both runs. **But "visible" is AWS's expectation and was not confirmed here** (there is no way to fill staging deliberately). **So those zeros cannot be read as "staging had not reached 95%" either.**
+`monitor.volume.full` and `monitor.volume.nearlyFull` targeting `MDV_aud_*` were also zero across both runs. **They cannot be read either, for the same reason:** we have not confirmed that they are visible from `fsxadmin`, and there is no way to fill staging deliberately. **So those zeros cannot be read as "staging had not reached 95%" either.**
 
 > **On detection patterns**: the first search used only
 > `event log show -message-name *audit*`. **`adt.stgvol.*` does not match that pattern.** The
@@ -382,7 +382,7 @@ How the layers work is in
 > an FSx for ONTAP managed object store association on the volume, and **the volume can no longer be
 > deleted from ONTAP.** `aws fsx delete-volume` does delete it. Any practice of recreating the audit
 > volume gets stuck here. The mechanism and AWS Support's reproduction are in
-> [FSx for ONTAP S3 AP is not "S3 that you can use"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#aws-サポートによる再現確認と機構) (日本語).
+> [FSx for ONTAP S3 AP is not "S3 that you can use"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#観測できた範囲とそこから言えないこと) (日本語).
 
 ---
 

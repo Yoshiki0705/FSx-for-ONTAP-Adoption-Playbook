@@ -890,26 +890,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   (`monitor.volume.*` on `MDV_aud_*`, since staging cannot be filled deliberately), and what is
   unreachable.
 - **The S3 Access Point note said the FSx for ONTAP managed bucket is hidden, without saying what *is*
-  visible.** AWS Support confirmed that a `type nas` bucket created by hand does appear in both
-  `/protocols/s3/buckets` and `vserver object-store-server bucket show`, so the blind spot is specific
-  to objects FSx for ONTAP manages rather than a property of those readers. That asymmetry is what
-  makes the absence hard to notice: the same two commands that fail to list the managed bucket do list
-  the operator's own, so "nothing in the S3 view means no bucket" reads as a confirmed negative. The
-  note now states the contrast, because a reader who has ever created a bucket there has already seen
-  those commands work.
+  visible.** The note now says which readers were checked and on what: neither
+  `/protocols/s3/buckets` nor `vserver object-store-server bucket show` lists the bucket that
+  FSx for ONTAP manages. Whether a hand-created `type nas` bucket appears in the same two readers is
+  not established here, so the note marks it `open` rather than asserting the contrast. The reason it
+  matters either way is stated: if those commands do list an operator's own bucket, "nothing in the S3
+  view means no bucket" reads as a confirmed negative.
 - **The service-policy note recorded only `fsxadmin`, leaving "try another role" open as a workaround.**
-  AWS Support confirmed `network interface service-policy` is `readonly` under all eight roles
-  available on FSx for ONTAP (`fsxadmin`, `fsxadmin-readonly`, and the six `vsadmin*` roles), and that
-  no role exists that can change a service policy. The measured evidence still covers `fsxadmin` alone,
-  so the addition is attributed to Support rather than folded into the reading — but the recovery path
-  is now stated as bounded, so nobody spends time enumerating roles. Also records that an operator who
-  *can* edit the policy directly is on a different ONTAP footing, which is why procedures written for
-  those environments do not transfer.
+  The measurement covers `fsxadmin`, which is the only role a file system exposes, so the other roles
+  cannot be enumerated from here and the note marks them `open` instead of implying a workaround
+  exists. Also records that an operator who *can* edit the policy directly is on a different ONTAP
+  footing, which is why procedures written for those environments do not transfer.
 - **The audit note's `-autosize` row named a parameter but not the command.** Following up on the
-  documentation case, AWS Support confirmed FlexVol autosizing is available on FSx for ONTAP via the
-  ONTAP CLI `volume autosize`, which is the actionable form — the row now names the command and links
-  the AWS page, so a reader can act on "grow it before it fills" rather than just be told to consider
-  it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
+  documentation case, the row now names the actionable form — the ONTAP CLI `volume autosize` — and
+  links the AWS page, so a reader can act on "grow it before it fills" rather than just be told to
+  consider it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
   measured at 19–65 seconds and does not reproduce, so detect-then-react cannot be relied on.
 - **The localization tiers did not classify `case-studies/` or `workshop-studio/`.** Both sit under
   `docs/<lang>/` with a `README.md`, which reads as Tier 2 — yet neither is a module whose question
@@ -1033,12 +1028,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `nearlyFull` (95%), `wafl.vol.full` and `full` (99%) all landed in the same second.** Alarming at
   95% to buy reaction time assumes a gap that is not always there.
 - **"No AWS or NetApp documentation covers the deletion order for a volume that had an S3 Access
-  Point" now has a vendor answer.** AWS Support reproduced the orphaned association and explained it:
-  the bucket is `amazon-fsx-fsvol-<volume ID>`, it survives both detach and a failed create, and its
-  removal is part of **Amazon FSx's** volume-deletion path — which is why ONTAP CLI refuses and
-  `aws fsx delete-volume` works. There is no user-facing path to delete the bucket on its own. The
-  error wording is emitted by ONTAP, so Amazon FSx cannot change it. The note is re-tiered
-  accordingly: behaviour `verified`, mechanism from Support, and **still absent from public
+  Point" is still uncovered, and the note now separates what we observed from what we inferred.**
+  Observed: the bucket is named `amazon-fsx-fsvol-<volume ID>`, it survives both a detach and a failed
+  create, ONTAP CLI refuses to remove it, and `aws fsx delete-volume` does remove it. Inferred from
+  that asymmetry, and marked `open`: that its removal belongs to the Amazon FSx volume-deletion path.
+  No user-facing path to delete the bucket on its own was found. **Still absent from public
   documentation** — a submitted feedback is not a published one.
 - **The note referenced an object-store-server conflict in a section that never stated it.** That gap
   is closed with the constraint itself plus what AWS Support added: it applies **per SVM**, there is
@@ -2967,10 +2961,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     feature request raised on the false premise was retracted with AWS Support and replaced by a
     documentation request for that page.
 
-- **AWS Support confirmed in writing that there is no early exit.** Deleting the SnapLock audit log volume
-  before its retention expires is not possible, deleting the file system that contains it is not possible,
-  and **no path exists other than closing the account**. The explicit statement was requested precisely so
-  that this section could stop hedging: the volume and its file system are fixed in place until 2027-02.
+- **Five escape routes were tried and all five were closed.** Deleting the SnapLock audit log volume
+  before its retention expires failed from both the AWS API and ONTAP REST, clearing the SVM-side audit
+  log designation succeeded without making the volume deletable, the volume-side `is_audit_log` field is
+  read-only, taking the volume offline did not help, and privileged delete of the WORM log files had
+  already been permanently disabled. The section stops hedging on that basis: the volume and its file
+  system are fixed in place until 2027-02.
 
 - **The inode arithmetic in the assess note was measured and did not reproduce.** The note published a
   break-even average file size table derived from the documented statement that volumes of 648 GiB or

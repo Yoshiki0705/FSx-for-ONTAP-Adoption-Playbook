@@ -14,6 +14,7 @@ CONTRIBUTING.md	file:naming	1
 CONTRIBUTING.md	file:neutrality	1
 CONTRIBUTING.md	file:pii	1
 docs/agent/pitfalls.md	naming	2
+docs/agent/support-reply-handling.md	file:support-attribution	1
 docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	1
 docs/i18n-terms.md	file:naming	1
 docs/ja/case-studies/public-references.md	naming	1

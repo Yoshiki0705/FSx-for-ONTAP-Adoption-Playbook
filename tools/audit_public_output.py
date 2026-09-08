@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-publication audit for a public repository.
 
-Five independent concerns, all of which have historically been caught late or not at all:
+Six independent concerns, all of which have historically been caught late or not at all:
 
   1. naming      - "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" are the only accepted forms,
                    and three products must never be proposed.
@@ -10,6 +10,8 @@ Five independent concerns, all of which have historically been caught late or no
   4. role-label  - inline callouts labeled with a job title imply a review that did not happen.
   5. support-referral - telling a reader to contact AWS or NetApp Support is not a finding, and
                    publishing it before a case exists puts a dead end in a knowledge base.
+  6. support-attribution - a vendor's support reply is the vendor's confidential information, so it
+                   cannot be the published basis for a claim, however it is worded.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -49,7 +51,14 @@ SKIP_DIRS = (*IGNORED_DIRS, "tools")
 # and private-address content this audit exists to catch.
 SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json", ".sh"}
 
-CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
+CATEGORIES = (
+    "naming",
+    "neutrality",
+    "pii",
+    "role-label",
+    "support-referral",
+    "support-attribution",
+)
 # The HTML comment wrapper is required, not decoration. Without it, **a line that merely mentions
 # `allow:naming` in prose suppresses the detector on that line** - inside backticks too, so every
 # line documenting these markers was exempting itself. Verified before tightening: one line in the
@@ -57,7 +66,9 @@ CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
 # markers, so writing about a marker could fail `make allow-budget` with nothing wrong - the loud
 # half of the same defect.
 ALLOW = re.compile(
-    r"<!--[^>]*?allow:(naming|neutrality|pii|role-label|support-referral|all)[^>]*?-->"
+    r"<!--[^>]*?allow:"
+    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|all)"
+    r"[^>]*?-->"
 )
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
 FILE_ALLOW = re.compile(r"audit-file-allow:\s*([a-z-]+(?:\s*,\s*[a-z-]+)*)")
@@ -283,16 +294,64 @@ ROLE_LABEL_WITH_ROLE = re.compile(
 # all. The claim of impossibility and the support referral arrived together, and the referral is the
 # half a regex can see.
 #
-# **Attribution is deliberately not matched.** "AWS Support confirmed X (date)" records where a fact
-# came from and is how several notes here are sourced. What is matched is an instruction aimed at the
-# reader: contact them, file with them, escalate to them. If a case really is the only remaining path,
-# that belongs in `.private/`, not in a published note.
+# What is matched here is an instruction aimed at the reader: contact them, file with them, escalate
+# to them. If a case really is the only remaining path, that belongs in `.private/`, not in a
+# published note.
+#
+# Attribution -- "AWS Support confirmed X (date)" -- is a different failure and is matched by
+# `support-attribution` below. It used to be explicitly permitted here, on the reasoning that
+# recording where a fact came from is not the same as sending the reader away. That reasoning was
+# sound about referrals and wrong about publication, and the section below says why.
 SUPPORT_REFERRAL = re.compile(
     r"(?:AWS\s+Support|NetApp\s+Support|ベンダー|サポート)\s*(?:に|へ)\s*"
     r"(?:問い合わせ|上げ|連絡|相談|起票|確認を依頼)"
     r"|(?:file|filing|open|raise|escalate)\s+(?:a\s+)?(?:support\s+)?(?:case|ticket)\s+with"
     r"|contact\s+(?:AWS|NetApp)\s*Support"
     r"|ベンダーに上げ|サポートケースを(?:開|起)",
+    re.IGNORECASE,
+)
+
+# ------------------------------------------------- support-attribution
+#
+# A vendor's support reply cannot be the published basis for a claim. AWS treats replies from AWS
+# Support as its confidential information under the customer agreement and asked, in a reply on a
+# case in 2026-09, that they not be published; NetApp, Databricks and Snowflake carry comparable
+# terms, so the rule is vendor-neutral.
+#
+# **Paraphrasing is not a way around it.** What is confidential is the content, not the wording, so
+# "Support confirmed X", "サポートの回答によれば X" and "X であるとの回答を得た" are the same act.
+#
+# This replaces an explicit permission. Several notes here were sourced to what a vendor confirmed
+# during a case, with a date, on the reasoning that attribution merely records where a fact came
+# from. It does -- and that is the problem: it makes the published claim rest on a source a reader
+# cannot consult and the author is not free to quote.
+#
+# A reply may still change what you conclude. What it cannot do is appear as the reason. After a
+# reply, one of three things has to happen before the claim is published: find the public page that
+# says it (`documented`), observe it yourself (`verified`), or leave it `open` and say so.
+#
+# What stays publishable, and is deliberately not matched: the fact that a question was asked, the
+# date, and that a feature or documentation request was filed. Those are the ledger's own fields.
+# Also not matched: "サポート対象" and "サポートされません" -- those are about whether a product
+# supports something, not about a support desk. And "NetApp Support のログインが必要" names a
+# portal, not a reply. Both shapes are in the test fixtures.
+SUPPORT_ATTRIBUTION = re.compile(
+    # A vendor's support desk followed by a reply noun.
+    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*(?:の)?\s*"
+    r"(?:回答|見解|返信|指摘|案内)"
+    r"|サポート回答"
+    # "...との回答を得た" / "回答がありました" attached to a confirmation.
+    r"|(?:回答|見解)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
+    # The desk as the subject of confirming or reproducing.
+    r"|(?:AWS|NetApp|Databricks|Snowflake|ベンダー)?\s*(?:Support|サポート)\s*(?:が|は|側(?:が|は|で))"
+    r"[^。\n]{0,24}?(?:確認|回答|再現|指摘|説明)"
+    # Presenting a completed confirmation as the basis. "確認中" is the act of asking and is left
+    # alone on purpose.
+    r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"
+    # English: the desk as the subject of a reporting verb.
+    r"|(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+Support\s+"
+    r"(?:confirmed|reproduced|replied|advised|stated|said|indicated|explained|clarified)"
+    r"|(?:per|according\s+to)\s+(?:AWS|NetApp|Databricks|Snowflake)\s+Support",
     re.IGNORECASE,
 )
 
@@ -451,6 +510,17 @@ def audit_line(
                 (
                     "do not tell a reader to contact vendor support; publish the mechanism, or "
                     "record the open question in .private/ until there is an answer"
+                ),
+            )
+        )
+    if "support-attribution" not in allowed and SUPPORT_ATTRIBUTION.search(line):
+        findings.append(
+            (
+                "support-attribution",
+                (
+                    "a vendor's support reply cannot be the published basis for a claim; cite the "
+                    "public page, state your own observation, or mark it open. Recording that you "
+                    "asked, and when, is fine"
                 ),
             )
         )
