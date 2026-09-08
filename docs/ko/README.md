@@ -193,6 +193,7 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | S3 Access Points 서버리스 처리 패턴 모음(45+) |
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 가관측성 통합(메트릭, 알림, 자동 대응) |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 통합(Databricks / Snowflake / Athena / Glue / EMR) |
+| [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | IoT 엣지 수집 → 클라우드 AI 구현(CFn + SAM). 스토리지 계층 선택의 정본은 이 리포지토리의 결정 트리이며, 저쪽은 IoT / 엣지 맥락의 차이만 다룹니다 |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 마이그레이션 |
 | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3로 수집 → FlexCache의 NFS/SMB로 활용. **파일 프로토콜 성능 실측을 보유**하며, 이 리포지토리의 성능 관련 서술은 대부분 여기에서 인용합니다（[인용 색인](../ja/reference/cross-repo-index.md)） |
 

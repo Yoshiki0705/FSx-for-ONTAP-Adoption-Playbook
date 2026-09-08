@@ -193,6 +193,7 @@ Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIB
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Über 45 Serverless-Verarbeitungsmuster über S3 Access Points |
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Observability-Integrationen (Metriken, Alarme, automatisierte Reaktion) |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse-Integrationen (Databricks / Snowflake / Athena / Glue / EMR) |
+| [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | Erfassung von IoT-Edge in Cloud-KI (CFn + SAM). Für die Wahl der Speicherschicht ist der Entscheidungsbaum dieses Repositorys maßgeblich; dort verbleiben nur die Unterschiede im IoT-/Edge-Kontext |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration VMware → EC2 + FSx for ONTAP |
 | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Erfassung über die S3-API, Nutzung über FlexCache NFS/SMB. **Hält die Messungen der Dateiprotokolle**, die der Großteil der Performance-Inhalte hier zitiert statt neu zu messen ([Zitationsindex](../ja/reference/cross-repo-index.md)) |
 

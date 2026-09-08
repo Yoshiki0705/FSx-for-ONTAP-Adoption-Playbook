@@ -251,6 +251,7 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 | **ランサムウェア対策をどの層で持つか** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP、FPolicy による事象駆動の対応、サードパーティ製品との統合 |
 | **監視の経路を決めた** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | メトリクス、アラート、自動対応の実装（[経路の比較](docs/ja/reference/comparison/observability-routes.md)で選んでから） |
 | **分析基盤に載せる** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR との統合 |
+| **IoT / エッジで集めてクラウドの AI に載せる** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | エッジからの取り込みとクラウド側 AI の実装（CFn + SAM）。**ストレージ層の選択はこちらの[決定木](docs/ja/reference/decision-trees/file-storage-selection.md)が正本**で、そちらは IoT / エッジ文脈での差分だけを持ちます |
 | **VMware から移す** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2 と FSx for ONTAP への移行手順 |
 
 **両方を通す順序がある場合は、決定ツリー側に書いてあります。**

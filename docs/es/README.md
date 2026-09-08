@@ -193,6 +193,7 @@ Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTI
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Más de 45 patrones de procesamiento serverless sobre S3 Access Points |
 | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Integraciones de observabilidad (métricas, alertas, respuesta automatizada) |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Integraciones Lakehouse (Databricks / Snowflake / Athena / Glue / EMR) |
+| [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | Ingesta desde el edge IoT hacia la IA en la nube (CFn + SAM). La elección de la capa de almacenamiento se rige por el árbol de decisión de este repositorio; allí solo quedan las diferencias del contexto IoT / edge |
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migración VMware → EC2 + FSx for ONTAP |
 | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Recolección mediante la API de S3, consumo por NFS/SMB de FlexCache. **Contiene las mediciones de los protocolos de archivos**, que la mayoría del contenido de rendimiento de este repositorio cita en lugar de volver a medir ([índice de citas](../ja/reference/cross-repo-index.md)) |
 
