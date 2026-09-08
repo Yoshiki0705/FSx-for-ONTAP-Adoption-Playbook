@@ -104,7 +104,10 @@ was empty or narrower than the claim:
   `.PHONY`;
 - the rename check reported clean on two of the seven names it was written for, because a case-only
   rename does not redirect;
-- the role-label check reported clean on a section heading, because the pattern only matched callouts.
+- the role-label check reported clean on a section heading, because the pattern only matched callouts;
+- the four API-dependent break tests skipped on the anonymous 60-per-hour limit, which a hosted runner
+  shares, so `make test` reported `OK` having run none of them. The skip is correct behaviour and the
+  defect was that it was the *default* one — locally the count moved between runs with the quota alone.
 
 **A passing gate is evidence only about what it read.** When adding one, run its own break case first
 and confirm it fails — `--selftest` where the tool has one — before trusting a clean run. And when a

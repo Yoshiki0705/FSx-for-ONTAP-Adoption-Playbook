@@ -129,6 +129,14 @@ jobs:
       # completeness, and one deliberate break per documentation gate. Without these a
       # gate can stop detecting anything and still report success.
       - name: Run guardrail and gate tests
+        # Four of these reach the GitHub API and skip with the reason named when it will not
+        # answer. Skipping is right -- a sibling being briefly unreachable is not a defect in this
+        # change. Skipping *routinely* is not: unauthenticated access is 60 requests an hour
+        # against an address a runner shares, so with no credential those four never run and this
+        # step still reports OK. The token raises it to 5,000 and needs no permission beyond the
+        # read-only `contents` already granted above.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: make test
 
   markdown-lint:
