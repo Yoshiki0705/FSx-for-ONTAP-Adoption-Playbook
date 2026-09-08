@@ -308,6 +308,53 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 FENCE = re.compile(r"^\s*(```|~~~)")
 
 
+def _outside_code_spans(line: str):
+    """Yield (segment, is_code) pairs so a rule can apply to prose only, once."""
+    position = 0
+    for match in CODE_SPAN.finditer(line):
+        if match.start() > position:
+            yield line[position : match.start()], False
+        yield match.group(0), True
+        position = match.end()
+    if position < len(line):
+        yield line[position:], False
+
+
+def marker_categories(line: str, in_fence: bool = False) -> set[str]:
+    """Categories this line *directs* to be suppressed.
+
+    **The single definition of "is this a marker".** It was written three times - here, in the budget's
+    counter, and in the inert check - and a fourth place removed markers from the raw line while the
+    others detected them in the code-span-stripped one. **Widths that differ by one step produce a
+    line that fails whether the marker stays or goes**, with each check correct on its own. A sibling
+    repository hit exactly that and reported the fix: extract it, rather than align two copies, because
+    two copies get touched one at a time.
+    """
+    if in_fence:
+        return set()
+    return {
+        match.group(1)
+        for segment, is_code in _outside_code_spans(line)
+        if not is_code
+        for match in ALLOW.finditer(segment)
+    }
+
+
+def strip_markers(line: str, in_fence: bool = False) -> str:
+    """The line with its honoured markers removed, and nothing else.
+
+    Paired with `marker_categories` deliberately: whatever counts as a marker is what gets removed. A
+    marker shown inside a code span is an example, so it survives here - the earlier version removed
+    it, which is the width mismatch this pairing prevents.
+    """
+    if in_fence:
+        return line
+    return "".join(
+        segment if is_code else ALLOW.sub("", segment)
+        for segment, is_code in _outside_code_spans(line)
+    )
+
+
 def audit_line(
     line: str,
     file_allowed: frozenset[str] = frozenset(),
@@ -327,8 +374,7 @@ def audit_line(
     which is the same smuggling path as the prose form. Findings are still matched against the
     original line, so a forbidden term inside a code span is still reported.
     """
-    markers = "" if in_fence else CODE_SPAN.sub("", line)
-    allowed = {match.group(1) for match in ALLOW.finditer(markers)} | set(file_allowed)
+    allowed = marker_categories(line, in_fence) | set(file_allowed)
     if "all" in allowed:
         return []
 
