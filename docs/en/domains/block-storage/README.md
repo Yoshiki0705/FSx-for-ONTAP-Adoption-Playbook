@@ -12,6 +12,21 @@ Covers designing, building, and operating LUNs and NVMe namespaces served over i
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **A number** (a published benchmark, or your own measurement) | [How to read published benchmarks](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) | **How many devices that figure aggregates.** A number that hides the device count cannot be read as one device's performance |
+| **An existing setup** (running on Amazon EBS today) | [Where EBS stops being the cheaper answer](../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | The condition under which its premise breaks. **Per-GB, EBS wins.** The boundary is not the device count |
+| **A pending decision** (protocol, LUN layout) | [Block protocol and layout decision tree](../../../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | **The constraint that has already narrowed it.** Generation and HA-pair count remove options before any comparison starts |
+
+**If you want to run something first, start from the [30-minute quickstart](quickstart.md) instead.**
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |
