@@ -155,6 +155,13 @@ PERMITTED = (
     "[NetApp Support](https://mysupport.netapp.com/) のログインが必要です。",
     "詳細は [AWS Support inquiry draft](./docs/support-inquiry.md) にあります。",
     "| **照会日** | 2026-05-22（AWS サポートへ照会。回答待ち） |",
+    # Four shapes the citation rule reported on its first run across four repositories. Two
+    # tokens that name a desk also name a portal, a credential for one, and a contract -- and
+    # the third is a disclaimer that no contract is implied, which is the opposite of a citation.
+    "| NetApp アカウント | **必要**（NSS: NetApp Support Site アカウント） |",
+    "- [MySupport Shift Toolkit ページ](https://mysupport.netapp.com/x)（NetApp Support アカウント要）",
+    "実際のアクセス階層はエンドユーザーであり、ベンダーサポート契約を意味するものではありません。",
+    "| Recovery Time | Unknown (under confirmation with AWS Support) |",
 )
 
 

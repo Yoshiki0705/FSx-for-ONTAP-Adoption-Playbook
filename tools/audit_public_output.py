@@ -456,11 +456,14 @@ SUPPORT_ATTRIBUTION = re.compile(
 # live in parentheses too: "(2026-05 に照会中)", "(filed with AWS Support)", "(AWS Support case)".
 # So the paren is matched first and the publishable ones are subtracted, rather than trying to
 # express both in one pattern -- the direction that produced two false positives last time.
-# "NetApp Support Site" is a portal name, so the desk alternative stops short of it. Without
-# the lookahead, "（NSS: NetApp Support Site アカウント）" read as a citation.
+# The desk alternative stops short of four words that turn the same two tokens into something
+# else, all four found by running this over four repositories: a portal ("NetApp Support Site"),
+# a credential for one ("NetApp Support アカウント要" beside a MySupport link), and a support
+# contract ("ベンダーサポート契約を意味するものではありません", which is a disclaimer that no
+# contract is implied -- the opposite of citing a reply).
 _DESK = (
     r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)"
-    r"(?!\s*(?:Site|サイト))"
+    r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
 )
 SUPPORT_CITATION = re.compile(
     # A parenthesis whose content names the desk.
@@ -477,6 +480,8 @@ SUPPORT_CITATION = re.compile(
 # window above: they point at the desk.
 SUPPORT_CITATION_PERMIT = re.compile(
     r"asked|filed|submitted|opened|inquiry|question|case|portal|login|sign\s*in"
+    # An answer that has not arrived is the honest way to write it, in either language.
+    r"|under\s+confirmation|awaiting|pending|no\s+answer"
     r"|照会|問い合わせ|起票|提出|待ち|中\b|へ|に",
     re.IGNORECASE,
 )
