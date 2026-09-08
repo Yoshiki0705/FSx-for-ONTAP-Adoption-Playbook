@@ -38,6 +38,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	0.18 倍
@@ -61,6 +62,9 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	ret
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv4.2 は対応プロトコルとして挙げられていない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	Windows を実行する EC2 インスタンスからの EFS のマウントは非対応
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	実効オプションではなく接続数で判定した
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7 ms 対 2,171 ms
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない

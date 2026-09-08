@@ -33,6 +33,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 5 | 読み取り加速をどこで効かせるか | [FlexCache が効く条件](notes/reaching-data-without-copies.md#flexcache-が効く条件) |
 | 6 | エンドユーザーにブラウザや SFTP で見せる経路はどれか | [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md) |
 | 7 | AI / ML の学習データセットの版と実験ブランチをどう扱うか | [学習データセットの版をスケジュール Snapshot に載せると消える](notes/dataset-versions-and-experiment-branches.md) |
+| 8 | 書いたものが反対側で見えるまでどれくらいか。方向で違うか | [書いた側と読む側が違うと、見えるまでの時間は方向で決まる](notes/how-long-until-a-write-is-visible.md) |
 
 ---
 

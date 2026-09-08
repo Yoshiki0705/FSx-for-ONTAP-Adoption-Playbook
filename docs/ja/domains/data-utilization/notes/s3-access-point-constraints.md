@@ -112,6 +112,10 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 | オブジェクトタグのキー / 値に含まれる特定の Unicode 文字が `InvalidTag` で拒否される | **ONTAP 側の不具合**（NetApp KB [CONTAP-771956](https://kb.netapp.com/on-prem/ontap/da/S3/S3-Issues/CONTAP-771956)）。将来の ONTAP バージョンで修正予定 | タグ値を ASCII に限定する |
 | 同一 AP 内のコピーで `UploadPartCopy` が `NoSuchKey` を返す | **AWS 側の不具合**。ドキュメントの誤りではありません。修正が進行中 | **採用できる回避策がありません**（下記「到達性を決めるのは設定値」を参照） |
 
+**`UploadPartCopy` の失敗には対照付きの実測があります。** [検証記録](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-operations.md)（2026-08-19、ap-northeast-1、`SINGLE_AZ_1` / 128 MBps、UNIX）で、**同一の `CopySource` を与えた `CopyObject` が同一実行内で成功しています。** つまり `NoSuchKey` は署名や権限や手順の誤りではなく、この API 呼び出しに固有です。**自分の環境で同じ症状に当たったときは、まず `CopyObject` を対照として流してください** — 通れば経路と権限は正常で、切り分けが 1 手で済みます。
+
+**ただし出どころの記録は、`UploadPartCopy` そのものの対応可否を未判定としています。** 別 AP をソースとするコピーは `CopyObject` でも拒否されるため、「同一 AP 内では失敗する」ことと「この API が非対応である」ことを、その測定では分離できていません。**不具合という区分は AWS サポートの判断であって、この測定から導いた結論ではありません。**
+
 **オブジェクトタグは Amazon S3 と同等の Unicode 対応が意図された仕様です。** したがって現在拒否される文字があることは仕様ではありません。ASCII への限定は修正までの回避策であり、恒久的な設計制約として文書化すると、修正後も不要な制限を残すことになります。
 
 ### 到達性を決めるのは設定値
