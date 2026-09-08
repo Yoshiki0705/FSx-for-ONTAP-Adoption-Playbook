@@ -418,7 +418,7 @@ SUPPORT_ATTRIBUTION = re.compile(
     # `に` is excluded here on purpose: "サポートに確認中" is the act of asking and stays
     # publishable. The completed form "サポートに確認した / 済み" has its own alternative below.
     r"\s*(?:が|は|も|で|により|による)[^。\n]{0,40}?"
-    r"(?:確認|回答|再現|指摘|説明|照合|提案|分析|エスカレーション)"
+    r"(?:確認|回答|再現|指摘|説明|照合|提案|提示|分析|エスカレーション)"
     # Presenting a completed confirmation as the basis. "確認中" is the act of asking and is left
     # alone on purpose.
     r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"
@@ -438,6 +438,51 @@ SUPPORT_ATTRIBUTION = re.compile(
     r"|(?:confirmed|verified|validated|clarified|established|identified|escalated)\s+"
     r"(?:with|by|through|to)\s+(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+[Ss]upport"
     r"|(?:per|according\s+to)\s+(?:AWS|NetApp|Databricks|Snowflake)\s+[Ss]upport",
+    re.IGNORECASE,
+)
+
+# A third shape, found by running the rule over a fourth repository: **the desk in a citation
+# slot, with no verb and no evidentiary noun for the alternatives above to catch.**
+#
+#     | ... | [API support](https://...), [AWS Support (verified)](verified 2026-05-22) |
+#     | **Confirmed** | 2026-05-22 (AWS Support, product-level limitation) |
+#
+# Both put the desk where a reader looks for a source. The first is also a broken link -- its
+# target is the string "verified 2026-05-22" -- which is what a citation to something
+# unpublishable degrades into. Neither carries a reporting verb, so every alternative above
+# walks past them, and a source column is the one place attribution matters most.
+#
+# Matching any parenthesis that mentions the desk would swallow the publishable shapes, which
+# live in parentheses too: "(2026-05 に照会中)", "(filed with AWS Support)", "(AWS Support case)".
+# So the paren is matched first and the publishable ones are subtracted, rather than trying to
+# express both in one pattern -- the direction that produced two false positives last time.
+# The desk alternative stops short of four words that turn the same two tokens into something
+# else, all four found by running this over four repositories: a portal ("NetApp Support Site"),
+# a credential for one ("NetApp Support アカウント要" beside a MySupport link), and a support
+# contract ("ベンダーサポート契約を意味するものではありません", which is a disclaimer that no
+# contract is implied -- the opposite of citing a reply).
+_DESK = (
+    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)"
+    r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
+)
+SUPPORT_CITATION = re.compile(
+    # A parenthesis whose content names the desk.
+    rf"[(（][^)）\n]*{_DESK}[^)）\n]*[)）]"
+    # A link whose *label* names the desk and whose target is not a URL. The target matters:
+    # `[AWS Support](https://console.aws.amazon.com/support/)` is a portal link and stays
+    # publishable, which is why matching the label alone reported it. The target is inside the
+    # match so the permit below can read it too.
+    rf"|\[[^\]\n]*{_DESK}[^\]\n]*\]\((?!https?://)[^)\n]*\)",
+    re.IGNORECASE,
+)
+# Asking, when, and filing stay publishable, so a parenthesis that says one of those is not a
+# citation to a reply. `へ` and `に` are here for the same reason they are excluded from the
+# window above: they point at the desk.
+SUPPORT_CITATION_PERMIT = re.compile(
+    r"asked|filed|submitted|opened|inquiry|question|case|portal|login|sign\s*in"
+    # An answer that has not arrived is the honest way to write it, in either language.
+    r"|under\s+confirmation|awaiting|pending|no\s+answer"
+    r"|照会|問い合わせ|起票|提出|待ち|中\b|へ|に",
     re.IGNORECASE,
 )
 
@@ -599,7 +644,12 @@ def audit_line(
                 ),
             )
         )
-    if "support-attribution" not in allowed and SUPPORT_ATTRIBUTION.search(line):
+    citation = SUPPORT_CITATION.search(line)
+    if citation and SUPPORT_CITATION_PERMIT.search(citation.group(0)):
+        citation = None
+    if "support-attribution" not in allowed and (
+        SUPPORT_ATTRIBUTION.search(line) or citation
+    ):
         findings.append(
             (
                 "support-attribution",
