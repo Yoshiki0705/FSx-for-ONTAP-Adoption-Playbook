@@ -19,7 +19,7 @@ Promoting a tier (moving it toward higher confidence) requires adding the corres
 | Tier | Meaning | Required metadata | How readers should treat it |
 |---|---|---|---|
 | `verified` | The author actually reproduced it in the stated environment | `verified_on` (date) + environment stated in the body | Trustworthy under those conditions. Different conditions require re-verification |
-| `documented` | Stated in vendor or AWS official documentation | `source` (URL or document name) | Usable as primary information, with attention to version and region differences |
+| `documented` | Stated in vendor or AWS official documentation. **Or stated in the record of another project that owns a measurement environment** (see below) | `source` (URL or document name) | Usable as primary information, with attention to version and region differences |
 | `field-observation` | Observed once in the field, reproduction not confirmed | Body must state "not reproduced" | A lead for a hypothesis. Must not be generalized |
 | `hypothesis` | A logically derived expectation, untested | Body must state "untested" | A starting point for verification. Cannot ground a decision |
 
@@ -34,6 +34,14 @@ A tier classifies **where a statement comes from.** It is **not a degree of foll
 `documented` means only that a vendor or AWS document states it. **It carries no claim that the author confirmed the behaviour.** The only tier that claims measurement is `verified`.
 
 So "the primary source states it, but it was not chased on real hardware" belongs in `documented`. **Nothing is lost in that mapping**, precisely because `documented` never implied measurement. Where another repository names the same state something like `unverified`, it maps onto `documented` unchanged.
+
+**Transcribing a figure another project measured is also `documented`.** What `verified` claims is that an author of *this* repository reproduced it in that environment, and a citation does not meet it. **A citation carries three conditions of its own.**
+
+| Condition | Why |
+|---|---|
+| **Transcribe every measurement condition** | A figure without its conditions cannot be used in a design. Generation, capacity, IOPS, cache state, client instance type, concurrency |
+| **Transcribe what the source itself calls unmeasured** | **A citation can take only the convenient part.** Dropping the gaps the source names misrepresents how certain the finding is |
+| **Register it in the [cross-project citation index](../ja/reference/cross-repo-index.md) (日本語)** | **A citation rots silently.** If the source retracts a claim, the sentence here does not change. Registered, `make cross-repo-external` detects the retraction |
 
 ### The absence of documentation is not a tier
 

@@ -36,6 +36,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     this repository cannot watch every citing tree on every commit, so a sibling reporting a citation
     is still the only way one gets registered in time. What measuring establishes is how far the
     register drifts when nobody reports.
+- **Seven of the eight languages defined an evidence tier differently from Japanese, and `AGENTS.md`
+  — which wins on any disagreement — carried the incomplete definition.** `docs/ja/evidence-policy.md`
+  states that transcribing another project's measurement is `documented`, with three conditions of its
+  own: every measurement condition transcribed, the source's own unmeasured gaps transcribed, and a row
+  in the cross-project citation index so a retraction is detected. **English, Korean, both Chinese
+  variants, French, German and Spanish said only "stated in vendor or AWS documentation."**
+  - **Under the English reading, the note added earlier today was mis-tiered.** It cites a sibling's
+    measurements as `documented`, which the Japanese policy requires and the English one appeared to
+    forbid. Nothing was wrong with the note; the rule a non-Japanese reader was given was wrong.
+  - **Neither gate could see it.** `make i18n-check` compares section structure and all eight files
+    have thirteen sections. `make drift` compares numbers and identifiers, so a definition diverging
+    in prose alone is invisible. The divergence was found by grepping for a path that translations
+    keep byte-identical (`cross-repo-index.md`): present once in Japanese, absent in the other seven.
+  - Scope was chosen against the localization rule rather than by preference. The tier definitions are
+    first-touch material — "how to read the confidence signals" — so the row and the three conditions
+    are promoted to all eight. **The worked retraction example stays Japanese-only**, being the deep
+    technical material that the same rule keeps at ja.
+  - `AGENTS.md` names the case and defers the three conditions to the policy document it already links.
+    **That leaves 41 bytes of headroom against the size budget**, so the next addition there has to
+    remove something.
 
 - **The sibling table claimed `CDK` for a repository that has none.** `ONTAP-Edge-to-Cloud-AI` is
   CloudFormation and SAM. Reported by that repository, which traced the claim to its own `AGENTS.md`

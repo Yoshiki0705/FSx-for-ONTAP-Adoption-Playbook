@@ -19,7 +19,7 @@ Eine Stufe höherzustufen, also in Richtung höherer Verlässlichkeit zu verschi
 | Stufe | Bedeutung | Erforderliche Metadaten | Umgang aus Lesersicht |
 |---|---|---|---|
 | `verified` | Von der Autorenseite in der angegebenen Umgebung tatsächlich reproduziert | `verified_on` (Prüfdatum) + Testumgebung im Text | Unter diesen Umgebungsbedingungen verlässlich. Andere Bedingungen erfordern eine erneute Prüfung |
-| `documented` | In der Dokumentation des Herstellers oder von AWS belegt | `source` (URL oder Dokumentname) | Als Primärquelle verwendbar, bei Beachtung von Versions- und Regionsunterschieden |
+| `documented` | In der Dokumentation des Herstellers oder von AWS belegt. **Oder im Messprotokoll eines anderen Projekts belegt, das eine Messumgebung betreibt** (siehe unten) | `source` (URL oder Dokumentname) | Als Primärquelle verwendbar, bei Beachtung von Versions- und Regionsunterschieden |
 | `field-observation` | Einmal im Feld beobachtet, Reproduzierbarkeit nicht bestätigt | Ausdrücklicher Hinweis „nicht reproduziert" im Text | Ansatzpunkt für eine Hypothese. Nicht verallgemeinern |
 | `hypothesis` | Logisch abgeleitete Vermutung, ungeprüft | Ausdrücklicher Hinweis „ungeprüft" im Text | Ausgangspunkt einer Prüfung. Keine Entscheidungsgrundlage |
 
@@ -34,6 +34,14 @@ Eine Stufe klassifiziert **die Herkunft einer Aussage.** Sie ist **kein Grad der
 `documented` besagt nur, dass ein Hersteller- oder AWS-Dokument es angibt. **Es enthält keine Aussage, dass der Autor das Verhalten bestätigt hat.** Die einzige Stufe, die eine Messung behauptet, ist `verified`.
 
 Somit gehört „die Primärquelle sagt es, aber es wurde nicht an echter Hardware nachverfolgt" zu `documented`. **Bei dieser Zuordnung geht nichts verloren** — gerade weil `documented` eine Messung nie implizierte. Nennt ein anderes Repository denselben Zustand etwa `unverified`, lässt er sich unverändert auf `documented` abbilden.
+
+**Einen von einem anderen Projekt gemessenen Wert zu übernehmen ist ebenfalls `documented`.** `verified` behauptet, dass eine Autorin oder ein Autor *dieses* Repositoriums den Wert in jener Umgebung reproduziert hat; ein Zitat erfüllt das nicht. **Für ein Zitat gelten drei eigene Bedingungen.**
+
+| Bedingung | Warum |
+|---|---|
+| **Alle Messbedingungen mit übernehmen** | Ein Wert ohne seine Bedingungen ist für einen Entwurf unbrauchbar. Generation, Kapazität, IOPS, Cache-Zustand, Client-Instanztyp, Parallelität |
+| **Auch das übernehmen, was die Quelle selbst als ungemessen bezeichnet** | **Ein Zitat kann nur den bequemen Teil herausnehmen.** Die von der Quelle genannten Lücken weglassen heißt, Sicherheit vorzutäuschen |
+| **Im [projektübergreifenden Zitatverzeichnis](../ja/reference/cross-repo-index.md) (日本語) registrieren** | **Ein Zitat verfällt stillschweigend.** Zieht die Quelle eine Aussage zurück, ändert sich der Satz hier nicht. Registriert erkennt `make cross-repo-external` die Rücknahme |
 
 ### Das Fehlen von Dokumentation ist keine Stufe
 

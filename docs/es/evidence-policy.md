@@ -19,7 +19,7 @@ Elevar un nivel, es decir moverlo hacia una mayor fiabilidad, exige añadir la e
 | Nivel | Significado | Metadatos obligatorios | Cómo debe tratarlo quien lee |
 |---|---|---|---|
 | `verified` | Reproducido por la autoría en el entorno indicado | `verified_on` (fecha de verificación) + el entorno de pruebas en el cuerpo del texto | Fiable en esas condiciones de entorno. Condiciones distintas exigen volver a verificar |
-| `documented` | Consta en la documentación del proveedor o de AWS | `source` (URL o nombre del documento) | Puede tratarse como fuente primaria, atendiendo a las diferencias de versión y región |
+| `documented` | Consta en la documentación del proveedor o de AWS. **O consta en el registro de otro proyecto que dispone de un entorno de medición** (véase más abajo) | `source` (URL o nombre del documento) | Puede tratarse como fuente primaria, atendiendo a las diferencias de versión y región |
 | `field-observation` | Observado una vez en campo, sin confirmar que se reproduzca | Indicación explícita de «no reproducido» en el cuerpo del texto | Pista para una hipótesis. No debe generalizarse |
 | `hypothesis` | Deducción lógica, sin verificar | Indicación explícita de «sin verificar» en el cuerpo del texto | Punto de partida de una verificación. No puede fundamentar una decisión |
 
@@ -34,6 +34,14 @@ Un nivel clasifica **de dónde procede una afirmación.** **No es un grado de se
 `documented` significa únicamente que un documento del proveedor o de AWS lo indica. **No conlleva ninguna afirmación de que el autor haya confirmado el comportamiento.** El único nivel que reclama una medición es `verified`.
 
 Así, «la fuente primaria lo indica, pero no se comprobó en equipo real» corresponde a `documented`. **Nada se pierde en esa correspondencia**, precisamente porque `documented` nunca implicó una medición. Cuando otro repositorio llama a ese mismo estado algo como `unverified`, se traslada sin cambios a `documented`.
+
+**Transcribir una cifra medida por otro proyecto también es `documented`.** Lo que `verified` afirma es que una autora o autor de *este* repositorio la reprodujo en ese entorno, y una cita no lo cumple. **Una cita lleva tres condiciones propias.**
+
+| Condición | Por qué |
+|---|---|
+| **Transcribir todas las condiciones de medición** | Una cifra sin sus condiciones no sirve para diseñar. Generación, capacidad, IOPS, estado de la caché, tipo de instancia cliente, concurrencia |
+| **Transcribir también lo que la fuente califica de no medido** | **Una cita puede quedarse solo con la parte cómoda.** Omitir los huecos que la fuente señala falsea el grado de certeza |
+| **Registrarla en el [índice de citas entre proyectos](../ja/reference/cross-repo-index.md) (日本語)** | **Una cita se corrompe en silencio.** Si la fuente retira una afirmación, la frase de aquí no cambia. Registrada, `make cross-repo-external` detecta la retirada |
 
 ### La ausencia de documentación no es un nivel
 
