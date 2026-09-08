@@ -24,7 +24,7 @@ only complete tree. The one exception is the root `README.md`, which *is* the Ja
 Two navigation axes, mirrored in each language:
 
 - `docs/<lang>/playbooks/` — lifecycle: `01-assess` → `02-design` → `03-migrate` → `04-build` → `05-operate` → `06-optimize`
-- `docs/<lang>/domains/` — cross-cutting topics: `data-protection`, `data-utilization`, `security-governance`, `performance`, `cost`, `multiprotocol-identity`
+- `docs/<lang>/domains/` — cross-cutting topics: the eight directories under it. `validate_frontmatter.py` holds the list
 
 Plus `docs/<lang>/case-studies/` (anonymized field findings) and `docs/ja/reference/` (decision
 trees, comparisons, limits, glossary — currently bilingual single files, see Localization).
@@ -101,8 +101,8 @@ once in the Makefile's `PY_PATHS`. Test directories live in `TEST_DIRS` for the 
 `tests/` directory that is not listed there runs nowhere, and `make test` fails when one exists
 outside the list.
 
-`make all` is the gate. **Wire the tracked hook once per clone** — `make hooks`
-— and it runs the gate for you and refuses a commit on `main`. **Never read the gate's result off a
+`make all` is the gate. **Wire the tracked hooks once per clone** — `make hooks`
+— and they run it on commit and on push, and refuse a commit on `main`. **Never read the gate's result off a
 pipe**: `make all | tail` returns *tail's* status, so a red gate reads as green, which happened twice
 here. Use `make all > /tmp/all.log 2>&1; echo $?`. Details in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -164,7 +164,7 @@ missing translation is simply absent from the switcher rather than a broken link
 ---
 title: <one-line statement of the concern, not a topic label>
 lifecycle: [assess|design|migrate|build|operate|optimize]   # ≥1
-domains: [data-protection|data-utilization|security-governance|performance|cost|multiprotocol-identity]  # ≥1
+domains: [<one or more of the eight in validate_frontmatter.py>]   # ≥1
 evidence: verified | documented | field-observation | hypothesis
 verified_on: YYYY-MM-DD        # required iff evidence == verified
 region: ap-northeast-1         # required iff evidence == verified
@@ -290,13 +290,12 @@ Use **neutral, topic-based labels** instead — the finding is unchanged, only t
 
 Pre-commit check: `grep -rnoE '^> \*\*[^*]+(lens|の視点)[^*]*\*\*' <changed-files>` must return nothing.
 
-### Do not tell a reader to contact vendor support
+### Two ways a support case must not reach a published document
 
-`make audit` fails on it (`support-referral`). A referral is the absence of knowledge, and it is
-usually the visible half of an impossibility claim that was never researched — which is how it got
-here. Publish the mechanism; if there is no answer yet, the open question goes in `.private/`.
-Attribution of a finding to a case that happened ("Support confirmed X, date") is unaffected.
-Procedure: [Concluding that something is impossible](docs/agent/pitfalls.md#concluding-that-something-is-impossible).
+`make audit` fails on both: sending the reader to a support desk (`support-referral`), and making a
+reply the basis of a claim (`support-attribution`). Cite the public page, observe it yourself, or mark
+it `open`; asking, and when, stays publishable.
+[Handling a vendor support reply](docs/agent/support-reply-handling.md).
 
 ### No process metadata in published docs
 
@@ -386,6 +385,7 @@ other doc — `.kiro/` only records when to read them.
 | [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, exporting, or sizing a diagram |
 | [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
 | [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
+| [`docs/agent/support-reply-handling.md`](docs/agent/support-reply-handling.md) | a claim would otherwise be sourced to what a vendor's support desk said |
 | [`docs/agent/documentation-design.md`](docs/agent/documentation-design.md) | creating or restructuring a README, a module hub, or a technical reference document. **A README that carries detail inline instead of linking out is the failure it prevents** |
 
 ### Tools other repositories copy

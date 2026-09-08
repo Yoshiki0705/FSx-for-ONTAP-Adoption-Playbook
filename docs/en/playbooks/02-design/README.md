@@ -10,6 +10,19 @@ Turn assessment output into a target configuration. Capacity and throughput can 
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **Nothing built yet** | [The deployment type is decided once](notes/deployment-type-is-decided-once.md) | **which choices are irreversible, and when they are made.** They cannot be changed after creation |
+| **An existing setup** on a single HA pair | [The ceiling of a single HA pair](notes/deployment-type-is-decided-once.md#the-ceiling-of-a-single-ha-pair) | the scale-out limit. **The availability choice set this ceiling too** |
+| **No decision yet on how users reach the data** | [Four routes reach the data](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md) (日本語) | each route carries different premises, and the security style follows from it |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

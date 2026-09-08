@@ -21,7 +21,7 @@ lang: en
 
 ## Conclusion
 
-**Amazon FSx requires a valid service account for the lifetime of the file system.** It does not stop being needed once the join completes. <!-- allow:naming - AWS service name -->
+**Amazon FSx requires a valid service account for the lifetime of the file system.** It does not stop being needed once the join completes.
 
 The reason is that **some operations require FSx for ONTAP to unjoin from AD and rejoin.** The documentation names these:
 
@@ -64,7 +64,7 @@ Which means **an expired service account credential causes nothing at all in ste
 
 | Operation | Result |
 |---|---|
-| Moving the computer object Amazon FSx created inside the OU after the SVM exists <!-- allow:naming - AWS service name --> | **The SVM becomes misconfigured** |
+| Moving the computer object Amazon FSx created inside the OU after the SVM exists | **The SVM becomes misconfigured** |
 | Deleting the Active Directory while an SVM is joined to it | **The SVM becomes misconfigured** |
 
 The first happens easily during AD housekeeping. **If a change to the OU structure is planned, exclude the objects FSx for ONTAP created.**
@@ -122,7 +122,7 @@ Enabled versions are visible in `vserver nfs show`. Enabling a specific version 
 | Kerberos in-transit encryption for SMB / NFS | **Requires membership in AD or LDAP.** [In-transit encryption has prerequisites](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#転送時の暗号化の前提条件) (日本語) |
 | SVM state | Deleting the AD leaves it `misconfigured` |
 
-**Keeping the configuration current is stated as a requirement.** When the service account credential changes, update the configuration on the Amazon FSx side too. <!-- allow:naming - AWS service name -->
+**Keeping the configuration current is stated as a requirement.** When the service account credential changes, update the configuration on the Amazon FSx side too.
 
 ---
 
@@ -163,7 +163,7 @@ graph TD
 |---|---|---|
 | 1 | Verify all seven delegated permissions on the service account | Whether anything post-join management needs is missing |
 | 2 | Check the credential's expiry and the rotation procedure | **Finds a symptomless expiry ahead of time** |
-| 3 | Write a procedure that updates the Amazon FSx configuration whenever the credential changes <!-- allow:naming - AWS service name --> | Prevents updating only one side |
+| 3 | Write a procedure that updates the Amazon FSx configuration whenever the credential changes | Prevents updating only one side |
 | 4 | Disable the service account in a test environment and observe the SVM's state | **Measures what happens when AD is unreachable.** Do this in a test environment |
 | 5 | Check `vserver show-protocols` and `vserver nfs show` | Which protocols and versions are enabled |
 | 6 | Try mounting with the NFS version the clients use | Finds a version mismatch ahead of time |
@@ -181,7 +181,7 @@ Steps 2 and 8 are worth the most. **An expiry produces no symptoms in steady sta
 | The service account is only needed at join time | **It is needed for the lifetime of the file system** |
 | If AD integration is working there is no problem | It is symptomless in steady state. **It surfaces during patching or a failure replacement** |
 | Domain join permission is enough | Seven permissions have to be delegated |
-| Changing the credential in AD is sufficient | **The Amazon FSx configuration has to be updated too** <!-- allow:naming - AWS service name --> |
+| Changing the credential in AD is sufficient | **The Amazon FSx configuration has to be updated too** |
 | The computer object FSx for ONTAP created can be moved | Moving it **leaves the SVM misconfigured** |
 | Delete the SVM first, then the AD | Deleting the AD while joined leaves it misconfigured |
 | The join failure error identifies the cause | **A missing port and a missing permission produce the same text.** Check both |

@@ -10,6 +10,19 @@ Performance and cost tuning once you are in steady state. Optimization cannot be
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **The bill is higher than expected** | [When the bill came in higher than expected](../../../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) | **provisioned or consumed is the first branch.** Reducing usage does not move a provisioned charge |
+| **It is slow and the cause is unclear** | [Isolating a performance regression](../05-operate/notes/monitoring-fails-on-averages.md#order-for-isolating-a-performance-regression) | **the remedy for one ceiling is a no-op for the others** |
+| **A pending decision on what order to change things in** | [Order changes by whether they can be undone](../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md#戻せるかで決める変更の順序) (日本語) | **try the reversible ones first.** The tiering default depends on how the volume was created |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

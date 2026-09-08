@@ -33,7 +33,7 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 | 想定していた影響範囲 | そのボリューム 1 本 |
 | 実際の影響範囲 | **ボリューム + SVM + ファイルシステム** |
 | 期間 | **最低 6 か月**（Enterprise モードでも例外なし） |
-| 早期解除の経路 | **ありません。** ドキュメントの読みに加え、[ベンダーサポートの回答としても確定](#ベンダーサポートに確認した結果2026-08)しました |
+| 早期解除の経路 | **ありません。** [試した 5 経路すべてが塞がっていること](#退路の不在を自環境で確かめた範囲)を実測しました |
 | 得られた知見 | **なし。** 当該検証は「帰属できない」で終了しました |
 
 > **Evidence**: `verified`（検証日 2026-08-06、`ap-northeast-1`、`SINGLE_AZ_1`（第 1 世代）、
@@ -71,24 +71,23 @@ SnapLock 監査ログボリュームを 1 本作成した結果、**ボリュー
 | ボリュームをオフラインにして削除 | 失敗（保持期間が未満了） |
 | WORM ログファイルの特権削除 | **経路なし**（恒久無効化済み） |
 
-### ベンダーサポートに確認した結果（2026-08）
+### 退路の不在を自環境で確かめた範囲
 
-**早期解除の経路が無いことは、ドキュメントの読みではなく回答として確定しました。** 以下は
-2026-08 のサポートケースで得た内容です（`verified`。ケース識別子は本ノートに含めません）。
+上の表の 5 経路はいずれも塞がっていました。**AWS API とONTAP REST の両側から試して、保持期間の満了前に
+削除できる経路は見つかりませんでした。** 判断に使える材料は次の 2 つです。
 
-| 論点 | 回答 |
+| 判定に使うもの | 位置づけ |
 |---|---|
-| 保持期間満了前の削除 / ロック解除 | **不可。満了を待つ以外の経路はありません** |
-| 請求面の相談 | **対象リソースの削除完了後**に「アカウントおよび請求サポート」窓口へ改めて起票する順序。配慮が可能であることは約束されません |
-| `AuditLogVolume: false` でも削除できない理由 | ブロックしているのは**指定ではなく、監査ログファイルに適用済みの保持期間**。指定を解除しても残ります |
-| `snaplock.is_audit_log` が `true` のまま残る理由 | **「過去に一度でも指定された」ことを示す履歴マーク**で、現在の指定を表しません。現在の指定は AWS の `AuditLogVolume` で判断します |
-| 削除可否の判断に使うフィールド | `DescribeVolumes` の `LifecycleTransitionReason.Message`（`Cannot delete the volume because it contains unexpired log files.`） |
-| 満了日時の確認方法 | 管理エンドポイントへ SSH し `volume snaplock show -vserver <svm> -volume <volume> -instance` の `Expiry Time`。**ONTAP REST の `GET /api/storage/volumes/{uuid}?fields=snaplock` でも `expiry_time` として読めます**（実測 2026-08-17） |
-| ドキュメント改善の要望 | 担当部署へフィードバック。反映と時期は約束されません |
-| 長期案件のケース運用 | 半年オープンのままにはできないため、**満了後の削除実施時に、前のケース ID を添えて新規ケースを起票**する運用 |
+| `DescribeVolumes` の `LifecycleTransitionReason.Message` | `Cannot delete the volume because it contains unexpired log files.` が返ります（`verified`、2026-08-06） |
+| 満了日時 | ONTAP REST の `GET /api/storage/volumes/{uuid}?fields=snaplock` が `expiry_time` を返します（`verified`、2026-08-17）。管理エンドポイントへ SSH して `volume snaplock show -instance` を読む必要はありません |
 
-> **ドキュメント改善は「提出済み」であって「反映済み」ではありません。** 公開されるまでは未反映として
-> 扱ってください。
+**`AuditLogVolume: false` にしても削除できるようにはなりません。** SVM 側の指定を外す操作自体は成功しますが、
+削除は依然として失敗します（`verified`、上の表）。**ボリューム側の `snaplock.is_audit_log` は読み取り専用で、
+指定を外しても `true` のまま残ります。** この 2 つのフィールドの関係と、`is_audit_log` が `true` を保つ内部の
+理由は当方で確かめられていないため `open` として扱います。現在の指定を読むなら AWS の `AuditLogVolume` を
+見るのが、当方で観測できた範囲では確実でした。
+
+請求面の扱いは当方の観測範囲外なので、このノートでは扱いません。
 
 **保持期間の設定値は、削除できない理由を説明しません。** 実測したボリュームは
 `retention` が `{default: P0Y, minimum: P0Y, maximum: P30Y}` のまま 6 か月削除できませんでした。
@@ -200,7 +199,7 @@ SnapLock を採用していない環境でも、同じ削除ロックが発生�
 
 | API | 監査ログ保持期間の指定 |
 |---|---|
-| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です <!-- allow:naming - AWS の API 名 --> |
+| Amazon FSx `CreateSnaplockConfiguration` | **不可。** フィールドは `SnaplockType` / `AuditLogVolume` / `AutocommitPeriod` / `PrivilegedDelete` / `RetentionPeriod` / `VolumeAppendModeEnabled` の 6 つで、`RetentionPeriod` は**ボリュームの WORM ファイル用**です |
 | ONTAP `snaplock log create -retention-period` | 可 |
 
 **つまり「短い期間を選べなかった」のではなく、「指定できる経路を使わなかった」のが実態です。**

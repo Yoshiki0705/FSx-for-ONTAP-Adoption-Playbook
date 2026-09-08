@@ -225,15 +225,14 @@ That decision design is covered in
 
 **This is the most common cause of "auditing is enabled but the log is empty".** The AWS documentation gives the procedure for configuring audit policies, but does not state the causal link that events drop to zero without one.
 
-> **On how this is classified**: asked to state this in the documentation, AWS Support replied that
-> configuring a SACL is **already mandatory under the current wording — "You need to configure audit
-> policies on the files and folders that you want audited" — and that the specific behaviour when a
-> mandatory setting is missing is not committed to as specified behaviour** (2026-09-02).
+> **On how this is classified**: the AWS page already makes the SACL mandatory — it tells you to
+> configure audit policies on the files and folders you want audited — but it does not say what
+> happens when you skip it. **Nothing published commits to the zero.**
 >
 > **So the zero above is measured behaviour, not guaranteed behaviour.**
 > Do not build audit logic that reads "zero events" as "there was no access".
 > **Zero is equally consistent with no access, no SACL, and no category.**
-> AWS Support will feed back to the responsible team whether a troubleshooting entry can be added
+> A documentation request asking for a troubleshooting entry has been filed (2026-09-02).
 > pointing at a missing SACL when records do not appear as expected, and a warning that configuring a
 > SACL through the CLI replaces the DACL.
 

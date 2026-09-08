@@ -20,6 +20,7 @@ the Makefile, and these tests fail if a workflow starts carrying its own copy.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -261,6 +262,80 @@ class CiInspectsTheSameTree(unittest.TestCase):
         ):
             with self.subTest(target=target):
                 self.assertIn(target, text)
+
+
+class NetworkTestsHaveACredential(unittest.TestCase):
+    """A break test that skips on someone else's quota verifies nothing, and still exits 0.
+
+    Four tests in `test_doc_gates.py` reach the GitHub API and skip with the reason named when it
+    answers `cannot resolve`. Skipping is the right behaviour — a sibling repository being briefly
+    unreachable is not a defect in the change under review, and a gate that reddens for that gets
+    ignored. What is not right is skipping *routinely*: unauthenticated access is 60 requests an
+    hour against an address a hosted runner shares, so with no credential those four are the normal
+    outcome rather than the exception, and `make test` reports `OK` having checked none of them.
+
+    Measured locally: the skip count moved between runs (9, then 11, then 0) purely with the quota
+    state, which is the property that makes a green run unreadable. With a token the network skips
+    went to zero and only the `.kiro/hooks` ones remained, those being absent by design in CI.
+
+    `cross-repo-external.yml` already passes `github.token` for the same reason. The test step is a
+    second, separate path to the same API and did not.
+    """
+
+    STEP_START = re.compile(r"^\s*-\s+name:")
+    # A job key at two-space indent. Without this the last step of a job runs on into the next job,
+    # and a token belonging to a different job would read as covering this step.
+    JOB_START = re.compile(r"^ {2}[A-Za-z0-9_-]+:\s*$")
+    RUNS_MAKE_TEST = re.compile(r"^\s*run:\s*make\s+test\b", re.MULTILINE)
+
+    def steps_running_make_test(self) -> list[tuple[Path, str]]:
+        found: list[tuple[Path, str]] = []
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            current: list[str] = []
+            chunks: list[str] = []
+            for line in path.read_text(encoding="utf-8").splitlines():
+                boundary = self.STEP_START.match(line) or self.JOB_START.match(line)
+                if boundary and current:
+                    chunks.append("\n".join(current))
+                    current = [] if self.JOB_START.match(line) else [line]
+                else:
+                    current.append(line)
+            if current:
+                chunks.append("\n".join(current))
+            found += [(path, c) for c in chunks if self.RUNS_MAKE_TEST.search(c)]
+        return found
+
+    def test_the_step_running_make_test_is_given_a_token(self) -> None:
+        steps = self.steps_running_make_test()
+        self.assertTrue(
+            steps, "no workflow step runs `make test`; this test is looking at nothing"
+        )
+        for path, chunk in steps:
+            with self.subTest(workflow=path.name):
+                self.assertIn(
+                    "GITHUB_TOKEN",
+                    chunk,
+                    f"{path.name} runs `make test` without a token, so the API-dependent break "
+                    "tests skip on the anonymous 60-per-hour limit and the gate still exits 0. "
+                    "Add `env: GITHUB_TOKEN: ${{ github.token }}`; it needs no permission beyond "
+                    "the read-only `contents` already granted.",
+                )
+
+    @unittest.skipUnless(
+        os.environ.get("GITHUB_ACTIONS") == "true",
+        "asserts a property of the runner; there is no runner locally",
+    )
+    def test_a_runner_actually_receives_a_non_empty_token(self) -> None:
+        """The workflow text can name a token that arrives empty.
+
+        `secrets.SOMETHING_MISPELLED` expands to the empty string, so the step above would pass
+        while every network test still skipped. This is the half that only a runner can answer.
+        """
+        self.assertTrue(
+            os.environ.get("GITHUB_TOKEN", "").strip(),
+            "GITHUB_TOKEN is empty on the runner, so the API-dependent tests will skip on quota "
+            "while this gate reports success",
+        )
 
 
 if __name__ == "__main__":

@@ -10,6 +10,19 @@ Covers monitoring, capacity management, incident response, and change management
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **An alert fired, or a number looks wrong** | [Monitoring fails on averages](notes/monitoring-fails-on-averages.md) | **why the statistic is chosen before the threshold.** A standby node drags the average down |
+| **Authentication fails, or SMB stopped serving** | [fsxadmin gets locked](../../../ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) (日本語) / [Some SVMs cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | **two causes behind one symptom.** The REST response cannot tell them apart |
+| **No monitoring in place yet** | [Observability route decision tree](../../../ja/reference/decision-trees/observability-route.md) (日本語) | **there is more than one route, and conditions narrow it first** - including what the route adds to the management path |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

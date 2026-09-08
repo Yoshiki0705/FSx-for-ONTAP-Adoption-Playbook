@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
+.PHONY: allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external
 
@@ -185,6 +185,13 @@ headings: ## Check that Japanese section headings are noun phrases
 anchors: ## Check that externally cited section anchors have not been renamed
 	@$(PY) tools/check_anchor_contract.py
 
+workflow-observability: ## Check every workflow's triggers parse, and classify them
+	@$(PY) scripts/check_workflow_observability.py --selftest
+
+allow-budget: ## Check that the set of audit allow markers has not grown
+	@$(PY) tools/check_allow_budget.py --selftest >/dev/null
+	@$(PY) tools/check_allow_budget.py
+
 pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 	@test -n "$(PR)" || { echo "usage: make pr-verify PR=<number>" >&2; exit 2; }
 	@$(PY) scripts/verify_pr_checks.py $(PR)
@@ -192,7 +199,7 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check ja-markers audit secrets links cross-repo anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs
@@ -205,7 +212,7 @@ diagram-flow: ## Check that diagrams read rightwards and downwards, with labels 
 	@$(PY) tools/check_diagram_flow.py --selftest >/dev/null
 	@$(PY) tools/check_diagram_flow.py
 
-hooks: ## Activate the tracked pre-commit hook in this clone (idempotent)
+hooks: ## Activate the tracked pre-commit and pre-push hooks in this clone (idempotent)
 	@current="$$(git config --local --get core.hooksPath || true)"; \
 	if [ "$$current" = ".githooks" ]; then \
 	    echo "hooks: already active in this clone (core.hooksPath=.githooks)"; \

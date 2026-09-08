@@ -79,7 +79,7 @@ The note stated that non-AD SVMs created before 2026-06-09 lack `data-cifs` whil
 
 ## Cause — a deleted CIFS server recreated through the CLI
 
-**AWS Support reproduced this on the same version (ONTAP 9.18.1P3D1) and identified the mechanism** (2026-09-02).
+**The mechanism below was not reproduced here.** The state we observe is `verified`; the causal chain that produces it is `open`. See the evidence note after the table.
 
 | # | Operation | `data-cifs` | 445 |
 |---|---|---|---|
@@ -190,13 +190,13 @@ PATCH /api/network/ip/service-policies/<uuid>
 > ONTAP behaviour rather than specific to FSx for ONTAP; the NetApp KB
 > [Command fails with "Command is not recognized command"](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
 > attributes it to being unable to run the command with the correct role or at the `advanced`
-> privilege level (AWS Support gave the same triage, 2026-09-02). **When the spelling is right and the
+> privilege level. **When the spelling is right and the
 > command is still not recognized, check that command family's `access` with
 > `security login role show -role <role>`.**
 
-**The list of command families that are `readonly` or `none` for `fsxadmin` is not published.** A request to document it has been filed with AWS Support, which replied that it will be considered as an improvement request (2026-09-02). **For now the only route is reading `security login role show` in your own environment.**
+**The list of command families that are `readonly` or `none` for `fsxadmin` is not published.** A documentation request has been filed (2026-09-02). **For now the only route is reading `security login role show` in your own environment.**
 
-**Using a different role is not a way around it either.** AWS Support confirmed that `network interface service-policy` is **`readonly` under every one of** `fsxadmin`, `fsxadmin-readonly`, `vsadmin`, `vsadmin-backup`, `vsadmin-protocol`, `vsadmin-readonly`, `vsadmin-snaplock`, and `vsadmin-volume`, and that **no role available on FSx for ONTAP can change a service policy** (2026-09-02). The measurement above covers `fsxadmin` alone, but enumerating roles to find an opening is unnecessary.
+**Whether another role is a way around it cannot be established from here.** A file system exposes only `fsxadmin`, and there is no way to log in as any `vsadmin*` role, so `security login role show` cannot be read for them. **The measurement above shows `network interface service-policy` is `readonly` for `fsxadmin`; the other roles are `open`.** The list is not published either, so there is nothing to reason from.
 
 > **On the difference from on-premises ONTAP**: where an administrator can edit the service policy
 > directly, this symptom ends with fixing the policy. **Not having that route is specific to
@@ -237,7 +237,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 
 - **The causality in steps 3 to 5, and the recovery procedure.** This is what AWS Support reported and **has not been run here.** It requires deleting a CIFS server on a shared file system, and no disposable SVM has been prepared
 - **Whether a CIFS server was ever deleted on the affected SVMs here.** The current state is consistent with the mechanism, but **there is no way to review the deletion history.** A workgroup CIFS server was created and deleted on one SVM during testing, but whether `data-cifs` was lost before or after that cannot be established
-- **Whether ONTAP outside FSx for ONTAP behaves the same.** AWS Support considers this ONTAP-side processing rather than specific to FSx for ONTAP, and suggests reproducing it on on-premises ONTAP and documenting it through NetApp. **Not done**
+- **Whether ONTAP outside FSx for ONTAP behaves the same.** Reproducing it on on-premises ONTAP would answer it. **Not done**
 - **Why `data-cifs` is not restored when created through the ONTAP CLI.** The CLI and REST paths were shown to differ, but whether that is by design is unclear
 - **What happens when AD configuration is added later to an SVM without `data-cifs`.** Joining AD through Amazon FSx creates a CIFS server, so it may be restored, but this was not measured
 
@@ -249,7 +249,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 - AWS re:Post: [How do I use the FSx for ONTAP REST API?](https://repost.aws/knowledge-center/fsx-ontap-rest-apis)
 - NetApp KB: [Command fails with "Command is not recognized command"](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
 
-**No public material explaining that `data-cifs` is lost when a CIFS server is deleted was found while writing this note.** AWS Support is still considering whether to publish it as documentation or as a knowledge article. **Filing is not publishing, so treat the behaviour as undocumented.**
+**No public material explaining that `data-cifs` is lost when a CIFS server is deleted was found while writing this note.** A request to document it has been filed (2026-09-02). **Filing is not publishing, so treat the behaviour as undocumented.**
 
 ---
 

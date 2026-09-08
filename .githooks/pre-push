@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Tracked pre-push hook. Wired by the same setting as pre-commit:
+#
+#     make hooks        # git config core.hooksPath .githooks
+#
+# Why this exists alongside pre-commit
+# ------------------------------------
+# `git commit` is not the only way a commit appears. Measured on git 2.54.0, with a pre-commit hook
+# wired and a commit demonstrably created each time:
+#
+#     git merge --no-ff        commit created, pre-commit did NOT run
+#     git cherry-pick          commit created, pre-commit did NOT run
+#     git revert               commit created, pre-commit did NOT run
+#     git rebase (conflict)    commit created, pre-commit did NOT run
+#     git commit  (control)    commit created, pre-commit ran
+#
+# Resolving a rebase conflict is an *edit*, and it is the one this repository hits constantly: the
+# CHANGELOG's top entry conflicts on every merge to main, so every pull request here gets rebased at
+# least once, and none of those edits was gated. Reported by a sibling repository, which enumerated
+# the four paths after hitting the rebase one.
+#
+# Push is the single choke point downstream of all four. git reads this hook's own exit status, so no
+# pipe upstream can hide a failure -- the same property that made running the gate from pre-commit
+# worth the seconds it costs.
+set -uo pipefail
+
+fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------- 1. is anything arriving?
+#
+# stdin carries one line per ref: `<local ref> <local sha> <remote ref> <remote sha>`. A deletion
+# sends the zero object id as the local sha, and no new content arrives, so gating it would refuse a
+# branch cleanup for a gate result that says nothing about it. No lines at all means git found
+# nothing to push.
+#
+# The zero id is matched by length rather than as a literal, because it is 40 characters under SHA-1
+# and 64 under SHA-256. Hard-coding the SHA-1 form would silently stop recognising deletions in a
+# repository that migrated.
+arriving=0
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+    [ -z "${local_sha:-}" ] && continue
+    case "$local_sha" in
+    *[!0]*) arriving=1 ;;
+    esac
+done
+
+if [ "$arriving" -eq 0 ]; then
+    printf 'pre-push: nothing new to push (deletion or no-op) — gate skipped\n'
+    exit 0
+fi
+
+# ---------------------------------------------------------------- 2. the gate
+#
+# SKIP_GATE is the same variable pre-commit honours, deliberately: one override covers both, so a
+# contributor who has decided to bypass the gate does not have to learn a second name for it.
+if [ "${SKIP_GATE:-}" = "1" ]; then
+    printf '\033[33m⚠  SKIP_GATE=1 — pushing without running the gate\033[0m\n'
+    exit 0
+fi
+
+printf '▶  make all (SKIP_GATE=1 to bypass)\n'
+if ! make all >/tmp/pre-push-gate.log 2>&1; then
+    tail -n 25 /tmp/pre-push-gate.log >&2
+    fail "make all failed — full log: /tmp/pre-push-gate.log"
+fi
+printf '\033[32m✅ make all\033[0m\n'

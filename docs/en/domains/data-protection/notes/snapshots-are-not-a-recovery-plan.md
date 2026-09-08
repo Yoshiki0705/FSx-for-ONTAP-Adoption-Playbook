@@ -108,7 +108,7 @@ The first row is the most troublesome. **When backups are used alongside Snapsho
 
 > **Planning retention on the assumption that Snapshots are nearly free will overrun the reserve.** And because the error raised when space runs out is `No space left on device`, **the message does not distinguish reaching the count limit from running out of space.** Check both.
 
-> **Evidence for this section**: `verified` (2026-08-06). `ap-northeast-1`, `SINGLE_AZ_1` (first generation), ONTAP `9.17.1P7D1`. **The Amazon FSx `CreateSnapshot` action is specific to FSx for OpenZFS**, so these were created through the ONTAP REST API. <!-- allow:naming - AWS の API 名 --> The record is in [Limits and quotas](../../../../ja/reference/limits/README.md).
+> **Evidence for this section**: `verified` (2026-08-06). `ap-northeast-1`, `SINGLE_AZ_1` (first generation), ONTAP `9.17.1P7D1`. **The Amazon FSx `CreateSnapshot` action is specific to FSx for OpenZFS**, so these were created through the ONTAP REST API. The record is in [Limits and quotas](../../../../ja/reference/limits/README.md).
 
 ### Locking Snapshots Disables the Keep-Count Limit
 

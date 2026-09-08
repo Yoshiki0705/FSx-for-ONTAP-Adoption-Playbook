@@ -73,13 +73,13 @@ So **to narrow within Layer 1 you write an explicit `Deny`. And the way you writ
 | Item | Detail |
 |---|---|
 | The thing you set | An access point policy (IAM resource policy). **Not a bucket policy** |
-| Path at creation | The Amazon FSx console, or `S3AccessPoint.Policy` on `CreateAndAttachS3AccessPoint` <!-- allow:naming - AWS service name --> |
-| Path for an existing access point | **The S3 side** (`aws s3control put-access-point-policy` / `delete-access-point-policy`). Amazon FSx exposes no update API <!-- allow:naming - AWS service name --> |
+| Path at creation | The Amazon FSx console, or `S3AccessPoint.Policy` on `CreateAndAttachS3AccessPoint` |
+| Path for an existing access point | **The S3 side** (`aws s3control put-access-point-policy` / `delete-access-point-policy`). Amazon FSx exposes no update API |
 | Permission required | `s3:PutAccessPointPolicy` |
 | Block Public Access | **Always on, and cannot be changed** |
 | Policy size limit | 20 KB (read it together with the [measurement below](#the-policy-size-limit-is-checked-after-normalization)) |
 
-**The split in change paths matters operationally.** <!-- allow:naming - AWS service name --> The access point is created through the Amazon FSx API; the policy is turned through the S3 API. If you create the access point from a template and later rewrite its policy on the S3 side, the template and the live resource diverge.
+**The split in change paths matters operationally.** The access point is created through the Amazon FSx API; the policy is turned through the S3 API. If you create the access point from a template and later rewrite its policy on the S3 side, the template and the live resource diverge.
 
 ---
 
@@ -440,7 +440,7 @@ Row 3 exists as the control, and that matters. **Without it, the refusal in row 
 
 ## Access Point Parameters — Everything Except the Policy Is Fixed at Creation
 
-Amazon FSx exposes exactly **three** operations for these attachments: `CreateAndAttachS3AccessPoint`, `DescribeS3AccessPointAttachments`, and `DetachAndDeleteS3AccessPoint`. **There is no update operation.** <!-- allow:naming - AWS service name -->
+Amazon FSx exposes exactly **three** operations for these attachments: `CreateAndAttachS3AccessPoint`, `DescribeS3AccessPointAttachments`, and `DetachAndDeleteS3AccessPoint`. **There is no update operation.**
 
 | Parameter | Required | Constraint | Changeable later |
 |---|---|---|---|
@@ -550,7 +550,7 @@ aws s3control delete-access-point-policy \
 | 24,861 bytes | `MalformedPolicy: Normalized policy document exceeds the maximum allowed size` |
 | 33,778 bytes | same error |
 
-**The documented limit is 20 KB.** The check runs against the **normalized** document, so **the byte count of the JSON in your editor is not a usable budget.** The boundary moves with how the policy is written, and it does not line up with the 200,000 characters the Amazon FSx API accepts at the field level. <!-- allow:naming - AWS service name --> **Avoid designs that approach the limit; split into more access points instead.**
+**The documented limit is 20 KB.** The check runs against the **normalized** document, so **the byte count of the JSON in your editor is not a usable budget.** The boundary moves with how the policy is written, and it does not line up with the 200,000 characters the Amazon FSx API accepts at the field level. **Avoid designs that approach the limit; split into more access points instead.**
 
 The values are also recorded in [Limits and quotas](../../../../ja/reference/limits/README.md#fsx-for-ontap-s3-ap--アクセスポイントポリシーのサイズ--access-point-policy-size) (日本語).
 

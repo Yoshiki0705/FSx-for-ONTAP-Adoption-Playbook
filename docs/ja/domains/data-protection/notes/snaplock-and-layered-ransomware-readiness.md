@@ -58,7 +58,7 @@ Compliance と Enterprise の差は 1 点に集約されます。**Enterprise �
 
 **Enterprise の 2 番目の用途に注目してください。** モードは変更できないので、**本番で Compliance を使う前の検証先として Enterprise を使う**のが、ドキュメントが示す進め方です。
 
-**EBR と Legal Hold の操作は ONTAP CLI と REST API でのみサポートされます。** テンプレートや Amazon FSx API では届きません。境界の考え方は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。 <!-- allow:naming - AWS の API 名 -->
+**EBR と Legal Hold の操作は ONTAP CLI と REST API でのみサポートされます。** テンプレートや Amazon FSx API では届きません。境界の考え方は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。
 
 ---
 
@@ -71,7 +71,7 @@ Compliance と Enterprise の差は 1 点に集約されます。**Enterprise �
 | 削除できるのは誰か | **SnapLock 管理者だけ**です |
 | 有効化の前提 | **同じ SVM に SnapLock 監査ログボリュームを先に作る必要があります** |
 | 監査ログボリュームの最小保持期間 | **6 か月**。**この間ファイルシステムごと削除できなくなります**（[詳細](#監査ログボリュームによるファイルシステム全体の-6-か月固定)） |
-| 監査ログ保持期間の指定手段 | **Amazon FSx の API には該当パラメータがありません。** `AuditLogVolume=true` を渡すと既定値が適用されます。値を選ぶには ONTAP の `snaplock log create -retention-period` が必要です <!-- allow:naming - AWS の API 名 --> |
+| 監査ログ保持期間の指定手段 | **Amazon FSx の API には該当パラメータがありません。** `AuditLogVolume=true` を渡すと既定値が適用されます。値を選ぶには ONTAP の `snaplock log create -retention-period` が必要です |
 | 恒久無効化 | **不可逆**。ただし恒久無効にすれば監査ログボリュームは不要になります |
 
 > **恒久無効化を選ぶ判断材料が 1 つ増えます。** 特権削除を使わないと決めれば監査ログボリュームが不要になり、
@@ -121,7 +121,7 @@ Compliance と Enterprise の差は 1 点に集約されます。**Enterprise �
 | 通常の削除 | **`DELETING` に入ったのち `CREATED` に戻ります。エラーは返りません** |
 | `BypassSnaplockEnterpriseRetention=true` | **効きません**（同上） |
 | `AuditLogVolume=false` への変更 | 適用されませんでした |
-| SVM 側の指定 | **Amazon FSx の API に露出していません** <!-- allow:naming - AWS の API 名 --> |
+| SVM 側の指定 | **Amazon FSx の API に露出していません** |
 
 ### ONTAP REST での指定解除と、削除可能化の不成立
 
@@ -162,7 +162,7 @@ ONTAP レベルの削除拒否メッセージは阻害要因を 5 つ列挙し�
 | 有効化の取り消し | **不可（恒久）** | **全ロック済み Snapshot の失効まで不可** |
 | ボリュームの削除 | 未期限の WORM ファイルがあると不可 | **未期限のロック済み Snapshot があると不可** |
 | 保持期間の下限 | ボリューム設定は 0 も可 | **時間単位から選べます**（Hours 0–24 など） |
-| Amazon FSx の API | `SnaplockConfiguration` で指定 <!-- allow:naming - AWS の API 名 --> | **パラメータが存在しません。** ONTAP CLI / REST 専用 |
+| Amazon FSx の API | `SnaplockConfiguration` で指定 | **パラメータが存在しません。** ONTAP CLI / REST 専用 |
 
 ONTAP CLI は有効化時に確認を求めます。**文面が示す構造は監査ログボリュームと同じです。**
 
@@ -289,6 +289,30 @@ graph TD
 **「拾わない」ではありません。** 経路を変えた同一設計の測定が答えになります。
 
 **対照群が検知されたので、これは「ARP が動いていなかった」ではありません。**
+
+**どの入力が効いたかを `Attack Detected By` から特定することはできません。** 再測定を計画する読者が
+最初に手を伸ばす項目なので、先に書いておきます。切り替え可能な入力は 5 つ以上あり、常時有効な経路が
+別に 2 つありますが、この項目の値はそのどちらの区別にも対応しません。
+
+**そのうえで、値の集合自体が文書から決まりません。** [show の CLI リファレンス](https://docs.netapp.com/us-en/ontap-cli-9171/security-anti-ransomware-volume-show.html)（全文、2026-09-07）は
+**同じ項目に 2 通りの値を並べています** — 「possible values are `file`, `block`」と書いたうえで、
+続く説明では `file_analysis` と `encryption_percentage_analysis` を説明しています。**どちらが実際に
+返る値かは、このページからは決まりません。** 実測して生の値を記録するまでは、この項目を根拠に
+「ファイル活動で検知された」と書けません。
+
+**同じページには `state` にも同種の不一致があります。** パラメータの列挙は 7 値（`paused` を含む）で、
+続く説明は 6 値です（`paused` の説明がありません）。
+
+**説明側の 6 値だけを実装に写すと、無言で誤表示になります。** 監視や自動化のコードが `switch` の
+`default` に落ちた値を「無効」として扱うと、**`paused` のボリュームは ARP が有効なまま「無効」と
+表示されます。** 同じ形が `disable_in_progress` で実際に起きたことが報告されています
+（[FSx-for-ONTAP-Cyber-Resilience-Patterns の状態の値域と表示](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/arp-configuration.md)、
+2026-09-08 に確認）。**7 値で扱ってください。** 落ちるのではなく黙るので、テストでは気づけません。
+
+**`dry-run` を「学習中」と読むときは、専用の項目があることに注意してください。** `state` の `dry-run` は
+「dry-run または evaluation モード」と説明されており、この 1 値が両方を覆います。ただし
+`block-device-detection-status` という別項目が `evaluation_period` を持ちます。**どちらの項目で
+評価期間が見えるのかは、このページからは決まりません。**
 
 **ただし c は、閾値についての結論を出せません。** 件数の条件（1 拡張子あたり 5 件）は 100〜1,000 件で
 超えています。**問題は期間の条件で、その読み方が文書から決まりません。**

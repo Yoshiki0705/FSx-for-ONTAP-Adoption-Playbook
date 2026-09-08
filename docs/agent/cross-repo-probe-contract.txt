@@ -1,0 +1,67 @@
+# Probe strings this repository registers against sibling repositories. Generated - do not hand-edit.
+#
+# Regenerate with: python3 tools/check_cross_repo.py --write-contract
+# Source of truth: docs/ja/reference/cross-repo-index.md (the table the gate parses).
+#
+# Why this is published: the probe check runs here and nowhere else, so a claim we cite being
+# reworded is invisible to the repository that owns it until our CI fails. Reading this file lets
+# that side see, before committing, which of its strings something outside it depends on.
+#
+# Format: <repo>\t<cited path>\t<role>\t<probe>, sorted. One line per cited string; the citing file
+# on our side is deliberately absent, being our concern rather than yours.
+#
+# role:
+#   retraction  Expected to survive. Its absence means the claim moved or was retracted, and the
+#               guidance built on it here has lost its basis. Worth failing on.
+#   reread      Quotes a min/max over the measured set in the cited document, so adding a
+#               measurement rewrites the string while the finding still stands. A gate cannot tell
+#               an addition from a withdrawal, so treat firing as "read this section again", not as
+#               a retraction. Editing prose automatically on this one records an extension as a
+#               withdrawal.
+#
+# An absence claim ("the column is not in the table", "not stated in public documentation") is a
+# third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
+# resting on it changes, and that is something to be stopped by rather than warned about.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	paused
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	常にエージェントと Basic モードが必要です
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	5 GB → 50 GB
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	ONTAP 9 の SMB Multichannel は無効で出荷される
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	成功したという応答は、その接続に適用された証拠ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
+S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	0.18 倍
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	12,173 MiB/s = **102 Gbps**
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	4 台と 8 台で止まった
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	45% 違った
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	500 MiBps に一致する
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	8 台の 11,194.7 MiB/s は 94 Gbps である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	EC2 の 1 フローあたり全二重 5 Gbps
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	SMB は NFS の 72.1%
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	そうなったのかは**確認していない**
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	キャッシュの温度が揃っていない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	クライアントを 4.5 倍の型に変えても 0.6% しか動かない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	倍率 2.97 は **1,500 ÷ 500 = 3.0** に一致しており
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	別の上限である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	同一ファイル側の伸びは、ONTAP のメモリが重なりを供給した結果である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	既定 65,536 のままだと
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	観測したチャネル数は 4 であり
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	EFS は `nconnect` にも非対応
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv2 と NFSv3 は非対応
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv4.2 は対応プロトコルとして挙げられていない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	Windows を実行する EC2 インスタンスからの EFS のマウントは非対応
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	実効オプションではなく接続数で判定した
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない
+VMware-Migration-EC2-ONTAP	docs/ja/atx-fsxn-ga-verification.md	retraction	承認を得て実行

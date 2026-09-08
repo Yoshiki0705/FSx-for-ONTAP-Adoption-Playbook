@@ -9,6 +9,203 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The role-label rule reported labels that name no person, in two independent ways.** Both were
+  found by a sibling repository, the second by asking a question about the first.
+  - **An ordinary word sat in the path that needs no role token.** `観点` was deliberately kept out
+    of that list — 「セキュリティの観点から」 is not a role label — but `視点` was left in, so
+    「> **コストの視点からの補足**」 and 「> **運用視点の注意**」 were reported. `perspective` was in
+    the same position: 「> **Cost perspective**」 is a topic. **Only one of the two ordinary words had
+    been handled.** Both now sit behind the role-token requirement, where `観点` already was.
+  - **`の視点` stays in that path, but only when it ends the label**, which is the shape of the
+    construction. That keeps the one thing the token-free path is uniquely for: a label naming a
+    *person*, whose name no role-token list can hold.
+  - **The near miss is the part worth recording.** The first proposal moved `視点` out wholesale, on
+    the reasoning that a personal name is the `pii` category's job. **`pii` has no personal-name
+    rule** — it matches case numbers, ticket IDs, `/Users/` paths, addresses, IPs and resource
+    identifiers. 「> **<a name> の視点**」 was matched only by the path being narrowed, so the change
+    would have left it matched by nothing. Caught because the sibling asked what else covered the
+    form before agreeing. **Nothing here would have reported it**: a gate stays green when a rule
+    stops matching something no test names.
+  - **The Japanese tokens had a prefix problem the boundary comment did not cover.** They carry no
+    ASCII boundary class, which is right — Japanese attaches particles without a space — and says
+    nothing about `エンジニア` sitting inside `エンジニアリング`. 「## エンジニアリングの観点」 and
+    「## 担当範囲の観点」 were reported: a field and a scope. The guards are script-based rather than
+    a list of compounds, because a list of compounds guesses at which nouns exist. Checking the rest
+    of the list found no further members: `アーキテクト` is not a prefix of `アーキテクチャ`, and
+    `レビュア` deliberately gets no guard because it would block `レビュアー`.
+  - **The accepted residual is pinned by a test rather than left as a surprise.** A topic label
+    ending in `の視点` (「> **コストの視点**」) is still reported. Position is a habit of word order
+    and carries no information about whether a person is named. The surface is narrower than "any
+    label containing 視点", and no neutral topic label this repository prescribes ends that way.
+  - `scripts/tests/test_role_label_vocabulary.py` runs the audit end-to-end and **asserts the
+    category**, which immediately found that its own helper read stdout while findings go to stderr —
+    every finding read as absent. A sibling test file checks only the exit code, so it never had to
+    know; its failure message printed an empty reason and is corrected here.
+  - Three mutations registered: returning the ordinary words to the token-free path, dropping the
+    end-anchor from `の視点`, and removing the Japanese prefix guards. Each is required to fail the
+    subject-label test while leaving the person-label tests green.
+- **The four API-dependent break tests skipped by default, and `make test` reported `OK` having run
+  none of them.** Unauthenticated access to the GitHub API is 60 requests an hour against an address
+  a hosted runner shares, and the CI step had no credential. `cross-repo-external.yml` already passed
+  `github.token`; the test step is a second path to the same API and did not.
+  - **The skip itself is correct and stays.** A sibling repository being briefly unreachable is not a
+    defect in the change under review, and a gate that reddens for that gets ignored. The defect was
+    that skipping was the *default* outcome rather than the exception.
+  - Measured: locally the skip count moved between runs — 9, then 11, then 0 — with nothing changing
+    but the quota. **A green run whose coverage depends on someone else's allowance cannot be read.**
+    With a token the API skips went to zero and only the `.kiro/hooks` ones remained, and those are
+    absent by design in CI.
+  - Guarded from both sides in `test_gate_integrity.py`: the step running `make test` must carry a
+    token, checked per step so one belonging to the *next job* does not read as covering it; and on a
+    runner the token must be non-empty, because a misspelled secret reference expands to the empty
+    string and would satisfy the first check while every network test still skipped.
+  - Reported by a sibling repository, which hit the same silence in its own pre-commit hook.
+- **Four gates in `make all` were called by no workflow, so they ran only when someone typed
+  `make all`.** `headings`, `ja-markers`, `anchors` and `workflow-observability` — among them the
+  Japanese heading rule `AGENTS.md` documents as a convention, and the externally-cited-anchor
+  contract, whose whole premise is that **GitHub answers an unknown fragment with the top of the
+  page, so the citing repository never observes the break.**
+  - The state `diagram-fonts` and `diagram-flow` were in earlier, for the same reason: the gate set
+    is written once as the prerequisites of `make all` and once as the steps of `ci.yml`, and nothing
+    compared the two. **A Makefile comment claiming CI runs a target stays true-looking indefinitely
+    while no check reads both files.**
+  - `scripts/tests/test_ci_gate_parity.py` now fails when the sets diverge. It expands aggregate
+    targets, so `lint` counts as covered by the six steps that run its parts, and it ignores
+    comments — `ci.yml` contains the string `make all` inside one. The two exemptions, `markdown`
+    and `secrets`, are named with the workflow covering each, and are asserted to still be part of
+    `make all`, so a rename cannot leave a dead exemption excusing a real gap.
+  - Verified in both directions: the test names all four against the previous `ci.yml`, and names
+    `anchors` alone when that one step is removed again.
+  - **A gate that exists and does not run is worse than an absent one, because the checklist credits
+    it.** Reported by a sibling repository, which found the identical divergence in its own Makefile
+    while implementing a hook that runs the gates.
+- **A role token bounded on one side reported a country and missed the form that is normal in
+  Japanese.** The list carried `SA\b`, and that one character produced a false positive and a miss
+  at the same time: 「USA 市場の観点」 was reported, while 「（SA観点）」 was not. `\b` needs a
+  non-word character, and Python counts CJK as a word character, so the particle-adjacent form never
+  had a boundary to find.
+  - **Checking the rest of the list found four more members of the same family**: `Lead` inside
+    `Leadership`, `Admin` inside `Administration`, `Engineer` inside `Engineering`, and — the rule
+    being case-insensitive — `SA` inside `Visa`. None names a person, so each was a heading the gate
+    would have reddened for no reason. Fixing only the reported one would have repeated the lesson
+    already recorded here, that one member of a family says nothing about the rest.
+  - Every ASCII token is now bounded on both sides, with `s?` keeping the plural: `Engineers` names
+    people and `Engineering` names a field, which is the same job-title-versus-field cut applied to
+    word endings. The Japanese tokens stay unbounded, because an ASCII boundary around 担当 would
+    block exactly the adjacent form this change exists to catch.
+  - **`scripts/tests/test_cjk_word_boundaries.py` existed for this bug class and did not cover the
+    rule that reintroduced it.** The role label now has a case there, and both directions are
+    mutation-verified: restoring `SA\b` fails three cases, dropping `s?` fails two.
+  - Reported by a sibling repository, whose own copy drew the job-title-versus-field line first —
+    which is what made these false positives visible rather than acceptable.
+- **The marker-width invariant asserted nothing.** `inert` and `load_bearing` were defined as
+  `without <= with` and `without > with` — **exact complements**, so "both" could not occur and the
+  assertion could not fail. **Proven, not reasoned: with `strip_markers` replaced by `return line`, it
+  still passed.**
+  - Restated in both directions over the corpus: **nothing counted survives removal, and nothing
+    uncounted is removed** (by length, plus a direct check that code spans are untouched). Both
+    directions fail when `strip_markers` is broken either way — 17 failures for one break, 1 for the
+    other.
+  - Reported by a sibling repository, which found the same weakness from the other side: **checking one
+    direction is a partial check wearing the shape of an invariant**, since `neither` has its own harm —
+    a marker never called inert and never load-bearing stays forever.
+  - **It declined the corpus check for its own code, correctly.** One predicate means the relation holds
+    structurally and a runtime check cannot fire. **This repository has a pair**, so the relation rides
+    on two functions and a corpus check bites.
+  - **And found its own limit immediately.** A mutation applying removal to the raw line **passes the
+    corpus half** — no line in the tree carries both a code-span example and a counted marker. It is
+    recorded as `must_pass` with that reason, and the crafted case carries the kill. Fifteen mutations.
+- **"Is this a marker" was decided in three places, and a fourth disagreed with all of them.** Removal
+  applied to the raw line while detection applied to the code-span-stripped one, so **a code-span
+  example was removed although it was never a directive.** A width differing by one step produces a
+  line that fails whether the marker stays or goes — the audit reports the violation without it, the
+  budget reports an inert marker with it. **Each check correct alone; only the pair contradictory.**
+  - `marker_categories()` and `strip_markers()` are now the single definition, paired so that whatever
+    counts as a marker is what gets removed. **Extracted rather than aligned** — two copies get touched
+    one at a time.
+  - The selftest pins **the relationship, not examples**: "inert" and "load-bearing" never both hold,
+    asserted over the whole corpus. A sibling reported that its own individual cases all passed for the
+    entire period its equivalent contradiction existed.
+  - **The extraction invalidated one mutation, as the sibling predicted.** The string it targeted moved
+    into the new function and the harness reported `0 matches` — **unverifiable, not killed.** Re-pointed;
+    fourteen mutations, all killed.
+  - No contradictory line existed in the corpus. **The gate reported nothing** — this was found by
+    applying a sibling's report to code, not by a failing check.
+- **A marker inside a fenced block was still honoured as a directive.** A fence and a code span are
+  one rule in two shapes — *this is code, not prose* — and only the code-span half was implemented.
+  Both markers in that position sat in `CONTRIBUTING.md`, which documents the syntax, so **the
+  documentation of the feature was exempting itself.**
+  - Measured first: two markers, and **ignoring them produces no new finding.** 26 markers → 24.
+  - Reported by a sibling repository, which found the identical split in its own heading detector,
+    where a heading telling authors to add a marker went unreported. **The recorded rule was not
+    missing; its scope was one step too narrow** — a different failure from forgetting to apply it,
+    and the one that survives a review of "is the rule written down".
+  - `FENCE` is imported rather than redefined. **Two definitions of "what is a marker" already
+    disagreed once**, and the budget's fence-versus-inert asymmetry documented last release is now
+    gone rather than explained.
+  - Thirteen mutations, all killed.
+  - **Not applicable here: reporting the processed line instead of the original.** The sibling hit
+    that as a by-product; this audit prints `path:line` and category only, never the line text.
+- **The workflow-observability guard shipped inert.** `git diff` ran with the inherited working
+  directory; a hook process does not start inside the repository, git failed there, and **the empty
+  result read as "no unobserved workflow was touched"** — a silent pass on every merge. It now takes
+  the repository root from `__file__`.
+  - Tested from inside the repository, where it worked. **The same mistake a sibling reported about a
+    local pass versus a hosted runner**, one layer down: not a different machine, a different
+    directory.
+  - **The first test of the fix did not discriminate.** It compared the list from outside against the
+    list from inside, and on a branch touching no workflow both are empty. The assertion is now on the
+    `cwd` git is given, verified by removing the fix and watching it fail.
+- **A mutation that skipped *after* being applied was reported as "not discriminated".** The skip
+  guard existed only for the clean copy. In CI the clean run spent the API allowance, the mutated run
+  was rate-limited, and the harness turned that into a **red gate about someone else's quota on a pull
+  request that touched none of this.**
+  - **"Not run" cannot be read as "did not detect" any more than as "detected".** Both directions now
+    skip with the reason named, which is the rule this harness already applied to the clean copy.
+- **A line that merely mentioned an allow marker in prose was honoured as one, and so was a marker
+  shown inside a code span.** Every line documenting the markers exempted itself, and **appending a
+  code-span marker to any sentence silenced the detector on that line.** The marker now requires the
+  HTML comment wrapper, and code spans are stripped before markers are extracted — findings still
+  match the original line, so a forbidden term inside a code span is still reported.
+  - Measured before changing anything: one line in the tree relied on the loose form, and **no new
+    finding appears.**
+  - The loud half of the same defect was in the budget: **prose about a marker was counted as a
+    marker**, so writing about one could fail `make allow-budget` with nothing wrong.
+- **56 markers suppressed nothing, and an inert marker is not merely useless — it is headroom.** The
+  line is exempt today and silently exempt for a real violation tomorrow. Most sat on `Amazon FSx`,
+  which the detector already accepts as the service name. `make allow-budget` now reports them.
+  **81 markers → 28; 42 entries → 24, with the audit still clean**, which is what proves they
+  suppressed nothing.
+  - The predicate is **"ignoring the marker increases the report"**, not "the report is unchanged".
+    Reported by a sibling repository, which implemented the second form first: it finds only markers
+    that suppress nothing and **misses one that invents a finding.** A rule written to hunt quiet
+    failures will not look for loud ones. Pinned as a truth table, and a mutation restoring `!=` is
+    killed. **Twelve mutations.**
+  - **The bulk removal damaged three files in ways no gate catches**: `CONTRIBUTING.md` documents the
+    syntax inside a fence, and `AGENTS.md` inside code spans where deletion left empty backticks —
+    valid markdown. Both restored; the check now excludes fences and uses the audit's own extraction.
+
+- **"Add one" had no unit, and the unit had already been shown to matter two sections earlier.**
+  `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` told the reader to add one
+  to the divided figure. **`nr_sessions` is per node and the SVM has a LIF on both**, so a bare "+1"
+  is either twice the intent or not settable: paths move in even steps only. The instruction now
+  names `nr_sessions` and states that paths increase by two. Reported by a sibling repository, which
+  pointed out that the ambiguity this note resolves for "8 sessions" had returned in its own advice.
+- **A probe whose firing has more than one meaning is now labelled as such.** `500〜592 MB/s に収まる`
+  cites a range whose ends come from three single-connection rows, so **a fourth row moves it** — the
+  gate cannot tell an added row from a withdrawn claim, and **repairing the prose automatically would
+  record an extension as a retraction.** That probe is now recorded as a "re-read the section" signal,
+  and the two probes on the same file that cite claims without a range keep the retraction-detection
+  role. Keeping only one of the two was rejected: one cannot detect a retraction, the other cannot
+  notice a widened range.
+- **Prose enumerating a gate's contents drifted from the gate, and a sibling read the prose as the
+  implementation.** An issue proposing the division of labour listed seven probe strings; two were
+  later replaced, and the enumeration then described a gate that no longer existed. **The sibling
+  reported one string as broken — it had never been registered at all.** The rule is now recorded:
+  telling another repository what a gate checks is **a one-line reference to the registration table,
+  never a copy of its contents**, and a failure is read from the registration rather than from a
+  description of it.
+
 - **Both external checks reported "the server did not answer" as "the link is broken".** A 5xx, a
   timeout, and a DNS failure all became a failure, so a run could fail over someone else's outage —
   and **a check that is wrong when nothing is wrong stops being read.**
@@ -74,6 +271,78 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A tracked `pre-push` hook, because `git commit` is not the only way a commit appears.** Measured
+  on git 2.54.0 with pre-commit wired, confirming in each case that a commit was actually created:
+
+  | Operation | Commit | pre-commit |
+  |---|---|---|
+  | `git merge --no-ff` | created | **did not run** |
+  | `git cherry-pick` | created | **did not run** |
+  | `git revert` | created | **did not run** |
+  | `git rebase` (conflict resolved) | created | **did not run** |
+  | `git commit` (control) | created | ran |
+
+  - The control is load-bearing: without it, four zeros are indistinguishable from a probe that never
+    wired the hook. The first run had `cherry-pick` creating **no commit** — the setup picked a merge
+    commit — so that row stayed unverified until it was redone.
+  - **The rebase path is hit on every pull request here.** The CHANGELOG's top entry conflicts on
+    every merge to `main`, so each branch gets rebased at least once, and resolving that conflict is
+    an edit no hook saw. Reported by a sibling repository, which enumerated the four paths after
+    hitting the rebase one.
+  - Push is the choke point downstream of all four, and git reads the hook's own exit status, so no
+    pipe upstream can hide a failing gate — the property that made running the gate from pre-commit
+    worth its seconds.
+  - **A deletion-only push and a no-op push skip the gate**, with the zero object id matched by
+    *length* so a SHA-256 repository is not silently different. Demanding a gate verdict for a push
+    that carries no content would mean waiting to delete a merged branch, or a habit of bypassing
+    the hook.
+  - `SKIP_GATE=1` is the same variable pre-commit honours. Two names for one decision is a way to
+    have the override not work when it is needed.
+  - Verified end-to-end with a real `git push`: refused on a red gate with the log path named, pushed
+    under the override, and a branch deletion allowed with no override at all.
+- **`docs/agent/cross-repo-probe-contract.txt`: the probe check runs here and nowhere else, so a
+  sibling rewording a claim we cite could not see it until our CI failed.** 42 registered strings are
+  now published, generated from the citation table and compared by `make cross-repo`, so the side that
+  owns a claim can check before committing a reword instead of learning from someone else's red gate.
+  This is the mirror of the anchor contract, which runs in the other direction. Requested by a sibling
+  repository, which noticed the asymmetry while confirming a probe report of its own.
+  - **The role a probe plays is now a column, not prose.** `retraction` or `reread`, and any other
+    value is rejected — the reading side branches on it, and an unrecognized value most likely means
+    the row gets ignored, which is worse than no contract because the row still looks covered.
+  - **The criterion narrowed from "the claim has a width" to "the probe quotes the minimum or maximum
+    of the cited document's measured set", and that reclassified a row nobody had looked at.**
+    `3,551〜5,149 MB/s` is the same shape as the range already labelled — both are rewritten by adding
+    a measurement, while a two-point ratio (`0.18 倍`, `45% 違った`) and a single observation
+    (`12,173 MiB/s`) are not. **Marking more probes `reread` costs retraction detection on those
+    claims**, so the narrow rule is the conservative one.
+  - **An absence claim is a third shape and stays `retraction` deliberately.** "The column is not in
+    the specification table", "not stated in public documentation" — when one of those stops being
+    true, the guidance resting on it changes, and that is something to be stopped by rather than
+    warned about.
+  - **Fixed a contradiction this exposed inside the repository.** `check_cross_repo.py` refused "a
+    separate machine-readable copy" while `check_anchor_contract.py` calls a second copy the
+    mechanism. What is refused is a **hand-maintained** copy: generated plus compared is what makes
+    the second copy safe, and the docstring now says which.
+  - The citing file is deliberately absent from the published file. Which of our documents leans on a
+    claim is our problem; the other side needs the set of strings it must not silently reword.
+
+- **`make workflow-observability` and a pre-merge hook: a workflow no pull request runs was being
+  merged unobserved.** `cross-repo-external.yml` has `schedule` and `workflow_dispatch` only, so a
+  change to it merges with **every check green and none of them about it.** The symptom was already
+  recorded in an issue before the cause was — two stale entries survived while the scheduled run
+  worked, because nobody read its result.
+  - The verdict is **`ask`, never `block`**. Dispatching needs the branch pushed first, so a person
+    drives push → dispatch → read → merge.
+  - **The argument against `block` was demonstrated, not reasoned.** The first hook resolved the
+    script through `git rev-parse` in the hook process's working directory, which is not the
+    repository, so it failed on every shell command and blocked unrelated work. Removed within a
+    minute.
+  - Reported by a sibling repository, with two bugs to avoid. **`\s{0,4}` for indentation** loses
+    every trigger after the first while the selftest stays green; it did not reproduce here because
+    triggers are intersected with a known set. **A pinned count drifting from the scan** — so the
+    assertion over the real workflows is a property, not a number.
+  - A mutation removing the `^` anchor from the `on:` extractor **survived**, and a case with the
+    word appearing mid-line was added to kill it. Three parser mutations now killed.
 - **The open question about whether an access point operation is counted by the rename and delete
   counters.** The volume is a NAS volume so the parameters apply, but **whether the counters see
   operations arriving over S3 is a separate matter, and no statement about it was found** on the
@@ -260,6 +529,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   so this citation cannot detect a retraction. `cross-repo-index.md` now has a section for that state —
   **the alternative was loosening a probe to make the gate pass**, which is how a gate stops meaning
   anything.
+
+- **`make allow-budget` keeps the set of audit allow markers shrink-only.** Every marker silences a
+  detector, and **adding one looks identical to fixing the problem it silences, because the audit
+  passes either way.** The failure is a check that quietly stops covering something, not a crash.
+  - Baseline: `docs/agent/allow-marker-budget.txt`, generated, `path<TAB>category<TAB>count`.
+    **Counting per file and category rather than per line** keeps it stable — line numbers move on
+    almost every edit here, and a baseline that churns is one nobody reads. Currently 42 entries,
+    81 markers.
+  - **Two verdicts fail, for opposite reasons.** `added` is a silencing nobody signed off on.
+    **`stale` is the quieter one**: a budget recording more than exists breaks nothing today, and
+    that surplus is headroom that lets the marker return without a word.
+  - `allow_verdict()` is a pure function, so the rule is a truth table rather than a source
+    assertion, and **two mutations are possible and killed** — dropping either verdict. Ten total.
+  - **All three outcomes were exercised against the real tree**, not just the clean pass: adding a
+    marker exits 1, inflating the baseline exits 1, regenerating returns to 0.
+  - **Not added to the command list in `AGENTS.md`:** that list is 70 bytes from its size budget, and
+    enumerating Makefile targets in prose is the drift this release documents elsewhere. `make help`
+    reads the Makefile, so it cannot go stale, and the failure message names `--write` itself.
 
 ### Confirmed
 
@@ -667,26 +954,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   (`monitor.volume.*` on `MDV_aud_*`, since staging cannot be filled deliberately), and what is
   unreachable.
 - **The S3 Access Point note said the FSx for ONTAP managed bucket is hidden, without saying what *is*
-  visible.** AWS Support confirmed that a `type nas` bucket created by hand does appear in both
-  `/protocols/s3/buckets` and `vserver object-store-server bucket show`, so the blind spot is specific
-  to objects FSx for ONTAP manages rather than a property of those readers. That asymmetry is what
-  makes the absence hard to notice: the same two commands that fail to list the managed bucket do list
-  the operator's own, so "nothing in the S3 view means no bucket" reads as a confirmed negative. The
-  note now states the contrast, because a reader who has ever created a bucket there has already seen
-  those commands work.
+  visible.** The note now says which readers were checked and on what: neither
+  `/protocols/s3/buckets` nor `vserver object-store-server bucket show` lists the bucket that
+  FSx for ONTAP manages. Whether a hand-created `type nas` bucket appears in the same two readers is
+  not established here, so the note marks it `open` rather than asserting the contrast. The reason it
+  matters either way is stated: if those commands do list an operator's own bucket, "nothing in the S3
+  view means no bucket" reads as a confirmed negative.
 - **The service-policy note recorded only `fsxadmin`, leaving "try another role" open as a workaround.**
-  AWS Support confirmed `network interface service-policy` is `readonly` under all eight roles
-  available on FSx for ONTAP (`fsxadmin`, `fsxadmin-readonly`, and the six `vsadmin*` roles), and that
-  no role exists that can change a service policy. The measured evidence still covers `fsxadmin` alone,
-  so the addition is attributed to Support rather than folded into the reading — but the recovery path
-  is now stated as bounded, so nobody spends time enumerating roles. Also records that an operator who
-  *can* edit the policy directly is on a different ONTAP footing, which is why procedures written for
-  those environments do not transfer.
+  The measurement covers `fsxadmin`, which is the only role a file system exposes, so the other roles
+  cannot be enumerated from here and the note marks them `open` instead of implying a workaround
+  exists. Also records that an operator who *can* edit the policy directly is on a different ONTAP
+  footing, which is why procedures written for those environments do not transfer.
 - **The audit note's `-autosize` row named a parameter but not the command.** Following up on the
-  documentation case, AWS Support confirmed FlexVol autosizing is available on FSx for ONTAP via the
-  ONTAP CLI `volume autosize`, which is the actionable form — the row now names the command and links
-  the AWS page, so a reader can act on "grow it before it fills" rather than just be told to consider
-  it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
+  documentation case, the row now names the actionable form — the ONTAP CLI `volume autosize` — and
+  links the AWS page, so a reader can act on "grow it before it fills" rather than just be told to
+  consider it. This is the mitigation the same note argues for, since the destination-full-to-stop window was
   measured at 19–65 seconds and does not reproduce, so detect-then-react cannot be relied on.
 - **The localization tiers did not classify `case-studies/` or `workshop-studio/`.** Both sit under
   `docs/<lang>/` with a `README.md`, which reads as Tier 2 — yet neither is a module whose question
@@ -810,12 +1092,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `nearlyFull` (95%), `wafl.vol.full` and `full` (99%) all landed in the same second.** Alarming at
   95% to buy reaction time assumes a gap that is not always there.
 - **"No AWS or NetApp documentation covers the deletion order for a volume that had an S3 Access
-  Point" now has a vendor answer.** AWS Support reproduced the orphaned association and explained it:
-  the bucket is `amazon-fsx-fsvol-<volume ID>`, it survives both detach and a failed create, and its
-  removal is part of **Amazon FSx's** volume-deletion path — which is why ONTAP CLI refuses and
-  `aws fsx delete-volume` works. There is no user-facing path to delete the bucket on its own. The
-  error wording is emitted by ONTAP, so Amazon FSx cannot change it. The note is re-tiered
-  accordingly: behaviour `verified`, mechanism from Support, and **still absent from public
+  Point" is still uncovered, and the note now separates what we observed from what we inferred.**
+  Observed: the bucket is named `amazon-fsx-fsvol-<volume ID>`, it survives both a detach and a failed
+  create, ONTAP CLI refuses to remove it, and `aws fsx delete-volume` does remove it. Inferred from
+  that asymmetry, and marked `open`: that its removal belongs to the Amazon FSx volume-deletion path.
+  No user-facing path to delete the bucket on its own was found. **Still absent from public
   documentation** — a submitted feedback is not a published one.
 - **The note referenced an object-store-server conflict in a section that never stated it.** That gap
   is closed with the constraint itself plus what AWS Support added: it applies **per SVM**, there is
@@ -827,7 +1108,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   another SVM. Either drop the existing object store server or read the logs another way — the ONTAP
   REST file API works without mounting. Raised on the case as well, since documenting only "use a
   different SVM" would not tell an operator that the audit-log use case is excluded.
-- **"SACL missing means zero events" is measured behaviour, not a guarantee.** AWS Support declined to
+- **"SACL missing means zero events" is measured behaviour, not a guarantee.** Nothing published commits to
   document it as such: the SACL requirement is already stated ("You need to configure audit
   policies…"), and behaviour when a required setting is absent is not a specified contract. Recorded
   inline, because the consequence is concrete — **zero events is equally consistent with "no access",
@@ -2744,10 +3025,12 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     feature request raised on the false premise was retracted with AWS Support and replaced by a
     documentation request for that page.
 
-- **AWS Support confirmed in writing that there is no early exit.** Deleting the SnapLock audit log volume
-  before its retention expires is not possible, deleting the file system that contains it is not possible,
-  and **no path exists other than closing the account**. The explicit statement was requested precisely so
-  that this section could stop hedging: the volume and its file system are fixed in place until 2027-02.
+- **Five escape routes were tried and all five were closed.** Deleting the SnapLock audit log volume
+  before its retention expires failed from both the AWS API and ONTAP REST, clearing the SVM-side audit
+  log designation succeeded without making the volume deletable, the volume-side `is_audit_log` field is
+  read-only, taking the volume offline did not help, and privileged delete of the WORM log files had
+  already been permanently disabled. The section stops hedging on that basis: the volume and its file
+  system are fixed in place until 2027-02.
 
 - **The inode arithmetic in the assess note was measured and did not reproduce.** The note published a
   break-even average file size table derived from the documented statement that volumes of 648 GiB or

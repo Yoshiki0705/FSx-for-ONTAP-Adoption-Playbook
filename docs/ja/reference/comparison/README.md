@@ -76,6 +76,7 @@ YYYY-MM-DD 時点の情報です。
 
 | 資料 / Document | 比較対象 / Options compared | 比較時点 / As of |
 |---|---|---|
+| [アクセスを絞る手立ての比較](access-restriction-options.md) | Security Group / S3 AP のポリシー / エクスポートポリシー / NTFS ACL・UNIX モード / igroup・CHAP・portset / 管理操作の分離 | 2026-09-08 |
 | [データ保護方式の比較](data-protection-methods.md) | Snapshot / ボリュームバックアップ / AWS Backup / SnapMirror（+ SnapLock の 2 モード） | 2026-08-06 |
 | [階層化ポリシーの比較](tiering-policies.md) | `NONE` / `SNAPSHOT_ONLY` / `AUTO` / `ALL` | 2026-08-06 |
 | [ブロックストレージの選択肢の比較](block-storage-options.md) | Amazon EBS / EBS Multi-Attach / FSx for ONTAP の iSCSI と NVMe/TCP | 2026-09-05 |

@@ -104,12 +104,33 @@ was empty or narrower than the claim:
   `.PHONY`;
 - the rename check reported clean on two of the seven names it was written for, because a case-only
   rename does not redirect;
-- the role-label check reported clean on a section heading, because the pattern only matched callouts.
+- the role-label check reported clean on a section heading, because the pattern only matched callouts;
+- the four API-dependent break tests skipped on the anonymous 60-per-hour limit, which a hosted runner
+  shares, so `make test` reported `OK` having run none of them. The skip is correct behaviour and the
+  defect was that it was the *default* one — locally the count moved between runs with the quota alone.
 
 **A passing gate is evidence only about what it read.** When adding one, run its own break case first
 and confirm it fails — `--selftest` where the tool has one — before trusting a clean run. And when a
 detector is found to miss one member of a family, check the rest of the family rather than patching the
 single case: the word list and the *form* are separate holes, and widening one leaves the other.
+
+## A gate that never ran because the set is written in two files
+
+Distinct from the above: the verdict logic was fine and the input set was fine. The target was simply
+never called. The gate set lives once as the prerequisites of `make all` and once as the steps of
+`ci.yml`, and for a while nothing compared them.
+
+`diagram-fonts` and `diagram-flow` were added to `make all` with a comment saying CI therefore ran
+them on every change. `ci.yml` never called either, and the comment kept looking true because no check
+read both files. They were added by hand later. **Four more were in the same state when that was
+found** — `headings`, `ja-markers`, `anchors`, `workflow-observability` — including the heading rule
+`AGENTS.md` documents as a convention, and the anchor contract whose entire premise is that the citing
+side cannot observe the break.
+
+**A gate that exists and does not run is worse than an absent one, because the checklist credits it.**
+`scripts/tests/test_ci_gate_parity.py` now fails when the two sets diverge, and holds the two
+exemptions — `markdown` and `secrets`, both covered by a workflow using a different mechanism — as
+named entries that must still exist in `make all`.
 
 ## A break test that cannot tell a correct fix from a lazy one
 
@@ -165,6 +186,238 @@ first two.** A 404 we caused is not transient.
 one, name the check and the condition under which it runs — `check_links.py --external`, which runs
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
+
+### The same claim, made while *narrowing* a rule
+
+The version above is about a rule that never covered the form. The harder one is a rule that covers it
+today and is about to stop, because the sentence sounds like housekeeping rather than a removal.
+
+The role-label pattern that needs no role token was reporting topic labels, and the proposed fix was to
+move `視点` behind the role-token requirement — with the reasoning that a personal name is the `pii`
+category's job. **`pii` has no rule for a personal name.** It matches case numbers, ticket IDs,
+`/Users/` paths, email addresses, internal IPs and resource identifiers. So `> **<a name> の視点**` was
+matched *only* by the path being narrowed, and the narrowing would have left it matched by nothing.
+
+It was caught because a sibling repository, asked to review the change, asked what else covered that
+form before agreeing. Nothing in this repository would have reported the hole: every gate stays green
+when a rule stops matching something no test names.
+
+**Before removing anything from a detector, name what else matches the form, and open that file.**
+"Another rule handles it" is the same claim as above, and while narrowing it is load-bearing — the
+coverage disappears in the same commit that asserts it exists elsewhere.
+
+### A guard tested from inside the repository can be inert where it runs
+
+The workflow-observability hook shipped **inert**. `git diff` ran with the inherited working
+directory, a hook process does not start inside the repository, git failed there, and **the empty
+result read as "no unobserved workflow was touched"** — a silent pass on every merge.
+
+It was tested from inside the repository, where it worked. **That is the same mistake a sibling
+reported after reading a local pass as evidence about a hosted runner**, arriving one layer down:
+not a different machine, a different working directory.
+
+So a guard that runs outside the repository takes its paths from `__file__`, and **is exercised from
+a directory that is not a repository at all.**
+
+**The first test of it did not discriminate either.** It compared the list from outside against the
+list from inside, and on a branch touching no workflow both are empty — **a test that depends on the
+branch's own diff proves nothing on most branches.** The assertion is now on the `cwd` git is given,
+because the directory git runs in *is* the bug. Verified by removing the fix and watching it fail.
+
+### A workflow no pull request runs is merged unobserved
+
+`schedule` and `workflow_dispatch` are not observable triggers. **A change to such a workflow can be
+merged with every check green and none of them about it** — the ticks are true and concern other
+workflows. `cross-repo-external.yml` is in that position here, and the symptom was recorded in an
+issue before the cause was: two stale entries survived while the scheduled run was working, because
+nobody was reading its result.
+
+A sibling measured the cost — merged behind **31 passing checks, none of which were that workflow**,
+first dispatch failed, and diagnosing it took a second merge.
+
+`scripts/check_workflow_observability.py` asks before `gh pr merge` when the branch touches one.
+**`ask`, never `block`:** dispatching needs the branch pushed first, so a person drives push →
+dispatch → read → merge, and a comment-only edit or a workflow waiting on a missing secret is a
+legitimate exception.
+
+**That argument got demonstrated rather than reasoned.** The first hook resolved the script through
+`git rev-parse` in the hook process's working directory, which is not the repository, so it **failed
+on every shell command and blocked unrelated work.** It was removed within a minute. A guard that
+stops ordinary work does not survive to guard anything.
+
+Two bugs the sibling hit are worth carrying even though neither reproduced here:
+
+- **`\s{0,4}` for indentation.** `\s` matches a newline, the line anchor stops meaning anything, and
+  every trigger after the first is lost — **two pull-request workflows were misclassified while the
+  selftest stayed green**, because it covered the verdict and not the parse. Use `[ \t]{0,4}`.
+- **A pinned count drifting from the scan.** A number counted over `*.yml` while scanning `*.y*ml`
+  left two files outside the number and inside the scan. **Assert a property instead** — "nothing is
+  called observed without an observing trigger" cannot drift.
+
+The first did not reproduce here, because triggers are extracted and then intersected with a known
+set, so over-consumption is filtered rather than fatal. **A mutation removing the `^` anchor from the
+`on:` extractor did survive**, and a case with the word appearing mid-line was added to kill it.
+
+### Hunting quiet failures will not find the loud ones
+
+**"Look for the bug that leaves the run looking normal" is a good rule with a blind spot: the bug
+that is wrong out loud.** A sibling repository hit it directly. Checking whether an exemption marker
+was *inactive* tests for "the report is unchanged with and without it" — which finds markers that
+suppress nothing, and **misses a marker that makes the checker report a problem that does not exist.**
+The correct predicate is asymmetric: **a suppression is justified only if ignoring it *increases* the
+report.**
+
+Both wrong shapes exist, and only one is quiet:
+
+| Shape | Report | Found by "unchanged"? |
+|---|---|---|
+| suppresses nothing | unchanged | yes |
+| **invents a finding** | **changed** | **no — it looks justified** |
+
+So when a rule is written to catch silence, ask what its loud counterpart would be. Here the loud
+counterpart was in the budget itself: **prose mentioning a marker was counted as a marker**, so
+writing about one could fail `make allow-budget` with nothing wrong.
+
+### An invariant between exact complements asserts nothing
+
+`inert` was defined as `without <= with` and `load_bearing` as `without > with`. **Exact complements**,
+so "both" and "neither" are equally impossible and the assertion over them **could not fail.** Proven
+rather than reasoned: with `strip_markers` replaced by `return line`, it still passed.
+
+A sibling repository found the same weakness from the other side and reported that **checking only one
+direction is a partial check wearing the shape of an invariant** — `neither` has its own harm, a marker
+that is never reported inert and never load-bearing simply stays forever, **and axis 1 returns through
+the back door.**
+
+**It then declined the corpus check for its own code, correctly.** Its judgement is one predicate, so
+the relation holds structurally and a runtime check over data cannot fire — **a check that cannot fail
+is the thing this file keeps warning about.** The guarantee belongs in a mutation there.
+
+**The pair is why this repository is on the other side.** `marker_categories` and `strip_markers` are two
+functions, so "counted equals removed" rides on their relationship, and a corpus check does bite. The
+invariant is now stated in both directions: nothing counted survives removal, and nothing uncounted is
+removed.
+
+**Which then found its own limit.** A mutation applying removal to the raw line **passes the corpus
+half**, because no line in the tree carries both a code-span example and a counted marker. The crafted
+case catches it. So the split the sibling drew is directly observable here:
+
+| Axis | Depends on | Guard it with |
+|---|---|---|
+| 1–3: is it a suppression, does it suppress | **the input** | a corpus check |
+| 4–5: do the checks agree, is agreement structural | **the code** | a mutation |
+
+### Two checks answering the same question differently is a fifth axis
+
+`shrink-only` asks whether a suppression is justified. The axis before it asks whether the thing is a
+suppression at all. **The axis before *that* asks whether every check answers that identically.**
+
+The judgement "is this a marker" was written in three places here, and a fourth removed markers from
+the raw line while the others detected them in the code-span-stripped one. **A width that differs by
+one step produces a line that fails whether the marker stays or goes** — remove it and the audit
+reports the violation, keep it and the budget reports an inert marker. **Each check is correct alone;
+only the pair is a contradiction, and no single-check test can see it.**
+
+Named by a sibling repository, which reported both halves of the fix:
+
+- **Extract the judgement, do not align the copies.** Two copies get touched one at a time.
+- **Pin the relationship, not the examples.** Its individual cases all passed for the entire period the
+  contradiction existed, so the selftest asserts that "inert" and "load-bearing" never both hold, over
+  the whole corpus.
+
+Its asymmetry had a plausible reason too — *the inert check should read the original line, since that
+is where the marker sits.* **Reasonable, and wrong.** The same shape as an asymmetry documented here as
+deliberate one release earlier.
+
+**The extraction cost one mutation, exactly as predicted.** The string a fenced-marker mutation targeted
+moved into the new function, and the harness reported `0 matches` — **unverifiable, not killed.** That is
+what requiring exactly one match buys.
+
+### Before asking whether a suppression is justified, ask whether it is a suppression
+
+`shrink-only` covers two ways an exemption can be wrong — it suppresses nothing, or it invents a
+finding. **Both assume the thing is a suppression at all.** A sibling repository named the third
+axis: the layer that decides **"is this a marker"** sits before the layer that judges whether the
+marker earns its place, and it was missing on both sides.
+
+Everything found here lived in that layer: prose mentioning a marker, a marker shown in a code span,
+a marker shown inside a fence. **None of them are directives, and all three were honoured.**
+
+### A marker must be a directive, not a mention of one
+
+Two readings were too loose, and both were live holes:
+
+| Written as | Was it honoured? | Should be |
+|---|---|---|
+| `allow:naming` bare in prose | **yes** | no |
+| `` `<!-- allow:naming -->` `` in a code span | **yes** | no |
+| the marker inside a fenced block | **yes** | no |
+
+**Every line documenting these markers was therefore exempting itself**, and appending a code-span
+marker to any sentence silenced the detector on it. The marker now requires the HTML comment wrapper,
+and code spans are stripped before markers are extracted — while findings still match the original
+line, so a forbidden term inside a code span is still reported.
+
+**A fence and a code span are one rule in two shapes — this is code, not prose — and only the
+code-span half was implemented.** The fence half was closed a day later, after a sibling reported the
+identical split in its own detector, where a heading telling authors to add a marker went unreported
+because the example silenced the line describing the feature. **The recorded rule was not missing; its
+scope was one step too narrow** — which is a different failure from forgetting to apply it, and the
+one that survives a review of "is the rule written down".
+
+**The fixes cover different sentences and each needs its own test.** The mutation harness proved
+it: a test using a backticked mention passes with the wrapper requirement removed, because the code
+span was already stripped. Only a bare mention exercises the wrapper.
+
+### Removing markers in bulk edits the documentation of the markers
+
+Deleting 56 inert markers by script damaged three files, in two ways that `make all` does not catch:
+
+- **`CONTRIBUTING.md`** shows the syntax inside a ` ```markdown ` fence. The rule about excluding
+  fenced blocks was already recorded in this file for the heading detector, **and was not applied.**
+- **`AGENTS.md`** shows it inside inline code spans, and the removal left empty backticks — **valid
+  markdown, so nothing failed.**
+
+Both were caught by reading the diff, not by a gate. **A scripted edit across 20+ files needs the
+diff read for the files that describe the thing being edited.**
+
+### An exemption list has to be shrink-only, and the surplus is the quiet half
+
+**Adding an allow marker looks exactly like fixing the problem it silences: the audit passes either
+way.** So the set is pinned in `docs/agent/allow-marker-budget.txt` and `make allow-budget` fails when
+it grows. Counting per file and category rather than per line is what keeps the baseline readable —
+line numbers move on almost every edit here.
+
+**Both directions fail, and the second is the one worth explaining.** A budget recording *more* than
+exists breaks nothing at the time, which is why it is dangerous: the surplus is headroom, so the
+marker it once counted can come back with nothing reported. **The failure is silence, not a crash** —
+the same shape a sibling repository found while keeping a known-divergence list shrink-only.
+
+Regenerating is the deliberate act: `python3 tools/check_allow_budget.py --write`. **Before running
+it after an `added` verdict, confirm the marker is the narrowest option** — a file-wide
+`audit-file-allow` where one line-level `allow:` would do turns the whole document into a blind spot.
+
+### Prose describing a gate does not follow the gate
+
+**A gate's registration table is the gate. A list of its contents written in prose is a snapshot that
+stops being true the moment the table changes** — and nothing fails when it drifts, because prose is
+not executed.
+
+It happened here. An issue proposing the division of labour with a sibling enumerated seven probe
+strings in its body. Two were later replaced, and from that moment the enumeration described a gate
+that no longer existed. **The sibling read the enumeration as the implementation, reported one of the
+strings as broken, and the string had never been registered at all.** Nothing was broken; the body
+was stale. The repair belonged to the prose, not to the gate.
+
+So the rule when telling another repository what a gate checks: **a one-line reference to the
+registration table, never a copy of its contents.** Copying reintroduces the same drift, one
+generation later. And before reporting a failure, a retraction, or a gap in someone else's gate,
+**read the registration rather than the description of it.**
+
+The general form is already in this file twice, in different clothes — a check whose tool is absent
+is indistinguishable from one that passed, and a prohibition is enforceable only where the enforcing
+code can be reached. **This is the documentation-facing member of the same family: the description of
+a control is not the control.**
 
 ### "The server did not answer" is a third verdict, and both ways of collapsing it are wrong
 

@@ -30,6 +30,12 @@ from check_links import anchors_of
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "docs" / "agent" / "external-anchor-contract.txt"
 
+# Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
+# cannot see the citing side, so only the citing repository knows which form it uses.
+PATH_ONLY = frozenset(
+    {"docs/ja/reference/decision-trees/access-point-authorization.md"}
+)
+
 HEADER = """\
 # Section anchors that other repositories cite. Generated - do not hand-edit.
 #
@@ -55,6 +61,12 @@ def tracked_files() -> list[Path]:
     specific claims inside a long document. Its own gate refuses an anchored citation into a document
     this contract does not list, so the entry has to exist here before the citation can be written
     there - the ordering is the reverse of what it looks like.
+
+    The decision tree is here on declaration too. A sibling cites it from seven places **without a
+    fragment**, so it records the path alone: renaming a heading inside it breaks nothing, and
+    **moving the file breaks all seven.** The sibling first reported "four files, eight places" and
+    then corrected it - eight counted citation sites, not destinations, and the one anchored citation
+    among them was already listed.
     """
     return [
         ROOT
@@ -79,6 +91,12 @@ def tracked_files() -> list[Path]:
         / "reference"
         / "decision-trees"
         / "measured-throughput-triage.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "reference"
+        / "decision-trees"
+        / "access-point-authorization.md",
     ]
 
 
@@ -88,6 +106,13 @@ def snapshot() -> list[str]:
         rel = path.relative_to(ROOT).as_posix()
         if not path.exists():
             lines.append(f"{rel}#<MISSING FILE>")
+            continue
+        # A file cited only by path pins the path, not its headings. Recording its anchors would fire
+        # this gate on a rename that breaks nothing for the citing side - which is the reason two
+        # documents were removed from the list above, and would have applied to a third. What the
+        # citing repository needs to hear about is the file moving.
+        if rel in PATH_ONLY:
+            lines.append(rel)
             continue
         anchors = sorted(anchors_of(path))
         lines.extend(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-publication audit for a public repository.
 
-Five independent concerns, all of which have historically been caught late or not at all:
+Six independent concerns, all of which have historically been caught late or not at all:
 
   1. naming      - "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" are the only accepted forms,
                    and three products must never be proposed.
@@ -10,6 +10,8 @@ Five independent concerns, all of which have historically been caught late or no
   4. role-label  - inline callouts labeled with a job title imply a review that did not happen.
   5. support-referral - telling a reader to contact AWS or NetApp Support is not a finding, and
                    publishing it before a case exists puts a dead end in a knowledge base.
+  6. support-attribution - a vendor's support reply is the vendor's confidential information, so it
+                   cannot be the published basis for a claim, however it is worded.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -49,8 +51,25 @@ SKIP_DIRS = (*IGNORED_DIRS, "tools")
 # and private-address content this audit exists to catch.
 SCAN_SUFFIXES = {".md", ".txt", ".yml", ".yaml", ".json", ".sh"}
 
-CATEGORIES = ("naming", "neutrality", "pii", "role-label", "support-referral")
-ALLOW = re.compile(r"allow:(naming|neutrality|pii|role-label|support-referral|all)")
+CATEGORIES = (
+    "naming",
+    "neutrality",
+    "pii",
+    "role-label",
+    "support-referral",
+    "support-attribution",
+)
+# The HTML comment wrapper is required, not decoration. Without it, **a line that merely mentions
+# `allow:naming` in prose suppresses the detector on that line** - inside backticks too, so every
+# line documenting these markers was exempting itself. Verified before tightening: one line in the
+# tree relied on the loose form and no new finding appears. It also made the budget count prose as
+# markers, so writing about a marker could fail `make allow-budget` with nothing wrong - the loud
+# half of the same defect.
+ALLOW = re.compile(
+    r"<!--[^>]*?allow:"
+    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|all)"
+    r"[^>]*?-->"
+)
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
 FILE_ALLOW = re.compile(r"audit-file-allow:\s*([a-z-]+(?:\s*,\s*[a-z-]+)*)")
 FILE_ALLOW_SCAN_LINES = 40
@@ -207,8 +226,30 @@ PLACEHOLDER_RESOURCE_IDS = frozenset(
 # not see: `レンズ` (added), and `（Storage Specialist 観点）` as a *section heading* rather than a
 # callout. Each miss was found by a person, not by this file — which is the argument for widening on
 # the word list and on the form at the same time.
+#
+# This first pattern needs no role token, so its vocabulary has to be **idiom-bound**. `lens` and
+# `レンズ` qualify: outside this construction nobody labels a callout with them. `視点` did not, and
+# was in the list anyway — so 「> **コストの視点からの補足**」 and 「> **運用視点の注意**」 were
+# reported, both of them topic labels naming no person. That is the same mistake `観点` was already
+# kept out of this list to avoid; only one of the two ordinary words had been handled. Asked about it
+# by a sibling repository, whose own detector requires a role token on every path and therefore never
+# had the hole. `perspective` moves for the same reason — 「> **Cost perspective**」 is a topic.
+#
+# `の視点` stays, but only when it **ends** the label, which is the shape of the construction:
+# 「**X の視点**」. A topic label puts the word mid-label and continues past it. That keeps the one
+# thing this token-free path is uniquely for — a label naming a *person*, whose name no role-token
+# list can hold. Nothing else in this file covers that form: the `pii` rules match case numbers,
+# ticket IDs, paths, addresses and identifiers, and **not a bare personal name**. Dropping `の視点`
+# entirely would have left 「> **<a name> の視点**」 matched by no rule at all — caught only because
+# the sibling asked what else covered it before agreeing to the change.
+#
+# The residual is stated rather than hidden: a topic label that ends in `の視点`
+# (「> **コストの視点**」) is still reported. Position is a habit of word order and carries no
+# information about whether a person is named, so no regex separates that from 「**<a name> の視点**」.
+# The surface is narrower than "any label containing 視点", and none of the neutral topic labels this
+# repository actually prescribes — `**Security note**`, `**〜に関する補足**` — ends that way.
 ROLE_LABEL = re.compile(
-    r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE
+    r"^\s*>\s*\*\*(?:[^*]*(?:lens|レンズ)[^*]*|[^*]*の視点\s*)\*\*", re.IGNORECASE
 )
 
 # `観点` and `視点` are ordinary words — 「セキュリティの観点から」 is not a role label. So this
@@ -226,10 +267,51 @@ ROLE_LABEL = re.compile(
 # name implies no such thing. Dropping the bare disciplines loses no coverage, because the role forms
 # of all four end in a title that is still listed — `FinOps Engineer`, `AppSec Engineer`. `SA`, `CISO`
 # and `DPO` stay, being titles that stand alone.
-_ROLE = (
+#
+# Every ASCII token is bounded on **both** sides, because an unbounded one matches inside a longer
+# and unrelated word. The list carried `SA\b`, a boundary on the right only, and that single
+# character produced a false positive and a miss at the same time: 「USA 市場の観点」 was reported,
+# while 「（SA観点）」 was not — `\b` needs a non-word character, and Python counts CJK as a word
+# character, so the particle-adjacent form that is normal in Japanese never had a boundary to find.
+# Reported by a sibling repository. Checking the rest of the list found four more members of the
+# same family: `Lead` inside `Leadership`, `Admin` inside `Administration`, `Engineer` inside
+# `Engineering`, and — because this pattern is case-insensitive — `SA` inside `Visa`. Each is a
+# field or an unrelated noun, so each was a heading the gate would have reddened for no reason.
+#
+# `s?` keeps the plural: `Engineers` and `Reviewers` name people, while `Engineering` names a
+# field. That is the same job-title-versus-field cut as above, applied to word endings.
+#
+# The boundary class holds `_` and digits, not only letters. A class of `[^A-Za-z]` would be
+# *looser* than `\b` — it treats `_` as a boundary, so a configured identifier reads as prose.
+# `scripts/tests/test_cjk_word_boundaries.py` pins that with `FSx_OnPre`.
+#
+# The Japanese tokens take no ASCII boundary class: Japanese attaches particles without a space, so
+# one around 担当 or エンジニア would block exactly the adjacent form this change exists to catch.
+#
+# That reasoning is right about ASCII boundaries and says nothing about the *prefix* problem, which
+# the same tokens have. 「## エンジニアリングの観点」 and 「## 担当範囲の観点」 were both reported —
+# a field and a scope, neither a person. Reported by a sibling repository, which hit `エンジニア`
+# inside `エンジニアリング` in its own copy. Checking the rest of the list found exactly one more,
+# `担当` inside every kanji compound built on it, and no others: `アーキテクト` is not a prefix of
+# `アーキテクチャ` (they diverge at the sixth character), and `スペシャリスト`, `責任者`, `レビュア`
+# are prefixes of nothing ordinary.
+#
+# The guards are script-based rather than a list of compounds, because a list of compounds is a guess
+# about which nouns exist. `担当` followed by a kanji is a compound noun; `担当者` is a person, so it
+# is listed first and matches before the guard applies. `エンジニア` followed by more katakana is a
+# longer katakana word.
+#
+# `レビュア` deliberately gets no katakana guard: `レビュアー` is the ordinary spelling of the same
+# word, and the guard would block it. The cost of the `エンジニア` guard is stated for the same
+# reason — `エンジニアチーム` names a group of people and now passes.
+_ROLE_W = r"[A-Za-z0-9_]"
+_ROLE_TITLE = (
     r"Specialist|Engineer|Architect|Officer|Analyst|Consultant|Manager|Lead|Admin|Reviewer|"
-    r"Practitioner|SA\b|CISO|DPO|"
-    r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"
+    r"Practitioner|SA|CISO|DPO"
+)
+_ROLE = (
+    rf"(?<!{_ROLE_W})(?:{_ROLE_TITLE})s?(?!{_ROLE_W})|"
+    r"スペシャリスト|エンジニア(?![ァ-ヶー])|アーキテクト|担当者|担当(?![一-龠])|責任者|レビュア"
 )
 _LENS = r"lens|レンズ|視点|観点|perspective"
 ROLE_LABEL_WITH_ROLE = re.compile(
@@ -250,16 +332,168 @@ ROLE_LABEL_WITH_ROLE = re.compile(
 # all. The claim of impossibility and the support referral arrived together, and the referral is the
 # half a regex can see.
 #
-# **Attribution is deliberately not matched.** "AWS Support confirmed X (date)" records where a fact
-# came from and is how several notes here are sourced. What is matched is an instruction aimed at the
-# reader: contact them, file with them, escalate to them. If a case really is the only remaining path,
-# that belongs in `.private/`, not in a published note.
+# What is matched here is an instruction aimed at the reader: contact them, file with them, escalate
+# to them. If a case really is the only remaining path, that belongs in `.private/`, not in a
+# published note.
+#
+# Attribution -- "AWS Support confirmed X (date)" -- is a different failure and is matched by
+# `support-attribution` below. It used to be explicitly permitted here, on the reasoning that
+# recording where a fact came from is not the same as sending the reader away. That reasoning was
+# sound about referrals and wrong about publication, and the section below says why.
 SUPPORT_REFERRAL = re.compile(
     r"(?:AWS\s+Support|NetApp\s+Support|ベンダー|サポート)\s*(?:に|へ)\s*"
     r"(?:問い合わせ|上げ|連絡|相談|起票|確認を依頼)"
     r"|(?:file|filing|open|raise|escalate)\s+(?:a\s+)?(?:support\s+)?(?:case|ticket)\s+with"
     r"|contact\s+(?:AWS|NetApp)\s*Support"
     r"|ベンダーに上げ|サポートケースを(?:開|起)",
+    re.IGNORECASE,
+)
+
+# ------------------------------------------------- support-attribution
+#
+# A vendor's support reply cannot be the published basis for a claim. AWS treats replies from AWS
+# Support as its confidential information under the customer agreement and asked, in a reply on a
+# case in 2026-09, that they not be published; NetApp, Databricks and Snowflake carry comparable
+# terms, so the rule is vendor-neutral.
+#
+# **Paraphrasing is not a way around it.** What is confidential is the content, not the wording, so
+# "Support confirmed X", "サポートの回答によれば X" and "X であるとの回答を得た" are the same act.
+#
+# This replaces an explicit permission. Several notes here were sourced to what a vendor confirmed
+# during a case, with a date, on the reasoning that attribution merely records where a fact came
+# from. It does -- and that is the problem: it makes the published claim rest on a source a reader
+# cannot consult and the author is not free to quote.
+#
+# A reply may still change what you conclude. What it cannot do is appear as the reason. After a
+# reply, one of three things has to happen before the claim is published: find the public page that
+# says it (`documented`), observe it yourself (`verified`), or leave it `open` and say so.
+#
+# What stays publishable, and is deliberately not matched: the fact that a question was asked, the
+# date, and that a feature or documentation request was filed. Those are the ledger's own fields.
+# Also not matched: "サポート対象" and "サポートされません" -- those are about whether a product
+# supports something, not about a support desk. And "NetApp Support のログインが必要" names a
+# portal, not a reply. Both shapes are in the test fixtures.
+#
+# Two corrections found by running it across sibling repositories, one in each direction. It
+# missed 'AWS サポート確認済み', because 確認 was not in the reply-noun list. And it fired on
+# 'FSx S3 Access Point のサポートが実際に機能することを確認' -- the vendor name was optional in
+# the subject alternative, so any 'サポートが...確認' matched. The vendor name is now required
+# there, with `サポート側` as the one exception, since that phrase names the desk on its own.
+# **A detector that is loose in one direction is usually tight in the other**: both defects were
+# in the same two lines.
+#
+# The English half then turned out to be narrower than the Japanese half. It only saw the desk as
+# the subject of a verb -- 'AWS Support confirmed' -- and walked past 'confirmed with AWS Support',
+# 'the May 2026 AWS Support discussion', 'AWS Support findings', 'Databricks Support response' and
+# 'Alternative Paths Identified by Snowflake Support'. Enumerating what four sibling repositories
+# actually wrote, rather than what the pattern imagined, is what found them.
+#
+# The same enumeration on the Japanese side turned up 72 unmatched shapes, and the attributions
+# among them were all one construction: the desk, a connective, an evidentiary noun --
+# による確認結果, とのやり取りに由来, からの回答により, により…確認, も…確認. **The connectives
+# were the gap, not the nouns.** Two are deliberately left out because they carry the opposite
+# meaning: `への` ('サポートへの確認をしていない' is a statement about not having asked) and 回答
+# followed by 待ち ('回答を待機' is the honest way to write 'asked, no answer yet').
+SUPPORT_ATTRIBUTION = re.compile(
+    # A vendor's support desk, then a connective, then a noun that makes the desk the source of
+    # a finding. `への` is absent from the connectives on purpose: "サポートへの確認をしていない"
+    # is a statement about *not* having asked. And 回答 followed by 待ち / を待 is the act of
+    # waiting for one, which is the honest way to write "asked, no answer yet".
+    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*"
+    r"(?:の|による|により|からの|との|様の)?\s*(?:（[^）\n]{0,20}）\s*(?:により|による)?\s*)?"
+    # The window carries a date or a modifier -- "サポート 2026 年 5 月確認", "サポートの明確な指針".
+    # **`へ` and `に` are excluded from it, and that exclusion is what keeps the rule usable**:
+    # every publishable shape points *at* the desk with one of those two particles, and every
+    # attribution points away from it.
+    r"[^。\nへに]{0,14}?"
+    r"(?:回答(?!\s*(?:待ち|を\s*待))|見解|返信|指摘|案内|確認結果|追加確認|確認|指針|やり取り|検証|分析)"
+    r"|サポート回答"
+    # Reported speech: "仕様であるとの回答を得ました", "検討する旨の回答を得ています". **The quotative
+    # particle is doing the work**, because the desk is often named in an earlier sentence and not
+    # in this one. Without it the alternative fired on "即時回答を得る GenAI エージェント", which is
+    # a sentence about a question-answering product.
+    r"|(?:との|という|旨の)\s*(?:回答|見解|説明)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
+    # The desk as the subject of confirming or reproducing.
+    r"|(?:(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)|サポート側)"
+    # `に` is excluded here on purpose: "サポートに確認中" is the act of asking and stays
+    # publishable. The completed form "サポートに確認した / 済み" has its own alternative below.
+    r"\s*(?:が|は|も|で|により|による)[^。\n]{0,40}?"
+    r"(?:確認|回答|再現|指摘|説明|照合|提案|提示|分析|エスカレーション)"
+    # Presenting a completed confirmation as the basis. "確認中" is the act of asking and is left
+    # alone on purpose.
+    r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"
+    # English: the desk as the subject of a reporting verb.
+    r"|(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+Support\s+"
+    r"(?:confirmed|reproduced|replied|advised|stated|said|indicated|explained|clarified"
+    r"|escalated|considers|considered|declined|identified|suggested|acknowledged"
+    r"|answered|is\s+still\s+considering)"
+    # English: the desk followed by a noun that makes it the source of a finding. "case",
+    # "submission" and "site" are deliberately absent -- drafting an inquiry, and naming a
+    # portal, stay publishable.
+    r"|(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+[Ss]upport\s+"
+    r"(?:findings?|clarification|confirmation|response|answer|recommendation|guidance"
+    r"|statement|discussion|engagement|position|assessment)"
+    # English: an evidentiary verb pointing at the desk. The bare infinitive is left alone,
+    # because "what to confirm with AWS Support" is a plan rather than a basis.
+    r"|(?:confirmed|verified|validated|clarified|established|identified|escalated)\s+"
+    r"(?:with|by|through|to)\s+(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+[Ss]upport"
+    r"|(?:per|according\s+to)\s+(?:AWS|NetApp|Databricks|Snowflake)\s+[Ss]upport",
+    re.IGNORECASE,
+)
+
+# A third shape, found by running the rule over a fourth repository: **the desk in a citation
+# slot, with no verb and no evidentiary noun for the alternatives above to catch.**
+#
+#     | ... | [API support](https://...), [AWS Support (verified)](verified 2026-05-22) |
+#     | **Confirmed** | 2026-05-22 (AWS Support, product-level limitation) |
+#
+# Both put the desk where a reader looks for a source. The first is also a broken link -- its
+# target is the string "verified 2026-05-22" -- which is what a citation to something
+# unpublishable degrades into. Neither carries a reporting verb, so every alternative above
+# walks past them, and a source column is the one place attribution matters most.
+#
+# Matching any parenthesis that mentions the desk would swallow the publishable shapes, which
+# live in parentheses too: "(2026-05 に照会中)", "(filed with AWS Support)", "(AWS Support case)".
+# So the paren is matched first and the publishable ones are subtracted, rather than trying to
+# express both in one pattern -- the direction that produced two false positives last time.
+# The desk alternative stops short of four words that turn the same two tokens into something
+# else, all four found by running this over four repositories: a portal ("NetApp Support Site"),
+# a credential for one ("NetApp Support アカウント要" beside a MySupport link), and a support
+# contract ("ベンダーサポート契約を意味するものではありません", which is a disclaimer that no
+# contract is implied -- the opposite of citing a reply).
+_DESK = (
+    r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)"
+    # "ClickHouse supports this" is a statement about a product, and the rule already says so
+    # for サポート対象 and サポートされません. The English form was missing, so a parenthesis
+    # reading "(IMDS v1/v2 -- ClickHouse supports this)" was reported as a citation.
+    + ASCII_RIGHT
+    + r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
+)
+SUPPORT_CITATION = re.compile(
+    # A parenthesis whose content names the desk.
+    rf"[(（][^)）\n]*{_DESK}[^)）\n]*[)）]"
+    # A link whose *label* names the desk and whose target is not a URL. The target matters:
+    # `[AWS Support](https://console.aws.amazon.com/support/)` is a portal link and stays
+    # publishable, which is why matching the label alone reported it. The target is inside the
+    # match so the permit below can read it too.
+    rf"|\[[^\]\n]*{_DESK}[^\]\n]*\]\((?!https?://)[^)\n]*\)"
+    # The desk word elided: "（AWS 確認、2026-08-29）", "(AWS confirmed, 2026-08-29)". The same
+    # act, written so the source is not named -- found on the Japanese half of a note whose
+    # English half said "(AWS Support, 2026-08-29)" in the same place. The vendor has to be
+    # immediately followed by the verb, which is what separates it from "AWS ドキュメントで確認"
+    # and "confirmed against the AWS documentation": those name a page, and are publishable.
+    r"|[(（]\s*(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s*"
+    r"(?:確認|回答|見解|confirmed|advised|stated)",
+    re.IGNORECASE,
+)
+# Asking, when, and filing stay publishable, so a parenthesis that says one of those is not a
+# citation to a reply. `へ` and `に` are here for the same reason they are excluded from the
+# window above: they point at the desk.
+SUPPORT_CITATION_PERMIT = re.compile(
+    r"asked|filed|submitted|opened|inquiry|question|case|portal|login|sign\s*in"
+    # An answer that has not arrived is the honest way to write it, in either language.
+    r"|under\s+confirmation|awaiting|pending|no\s+answer"
+    r"|照会|問い合わせ|起票|提出|待ち|中\b|へ|に",
     re.IGNORECASE,
 )
 
@@ -293,11 +527,80 @@ def file_allowances(lines: list[str]) -> set[str]:
     return allowed
 
 
+CODE_SPAN = re.compile(r"`[^`]*`")
+# A fenced block and a code span are two forms of one rule - **this is code, not prose** - and only
+# one of them was implemented. A sibling repository named the shape after finding the same split in
+# its own detector: the recorded rule was not missing, its scope was one step too narrow.
+FENCE = re.compile(r"^\s*(```|~~~)")
+
+
+def _outside_code_spans(line: str):
+    """Yield (segment, is_code) pairs so a rule can apply to prose only, once."""
+    position = 0
+    for match in CODE_SPAN.finditer(line):
+        if match.start() > position:
+            yield line[position : match.start()], False
+        yield match.group(0), True
+        position = match.end()
+    if position < len(line):
+        yield line[position:], False
+
+
+def marker_categories(line: str, in_fence: bool = False) -> set[str]:
+    """Categories this line *directs* to be suppressed.
+
+    **The single definition of "is this a marker".** It was written three times - here, in the budget's
+    counter, and in the inert check - and a fourth place removed markers from the raw line while the
+    others detected them in the code-span-stripped one. **Widths that differ by one step produce a
+    line that fails whether the marker stays or goes**, with each check correct on its own. A sibling
+    repository hit exactly that and reported the fix: extract it, rather than align two copies, because
+    two copies get touched one at a time.
+    """
+    if in_fence:
+        return set()
+    return {
+        match.group(1)
+        for segment, is_code in _outside_code_spans(line)
+        if not is_code
+        for match in ALLOW.finditer(segment)
+    }
+
+
+def strip_markers(line: str, in_fence: bool = False) -> str:
+    """The line with its honoured markers removed, and nothing else.
+
+    Paired with `marker_categories` deliberately: whatever counts as a marker is what gets removed. A
+    marker shown inside a code span is an example, so it survives here - the earlier version removed
+    it, which is the width mismatch this pairing prevents.
+    """
+    if in_fence:
+        return line
+    return "".join(
+        segment if is_code else ALLOW.sub("", segment)
+        for segment, is_code in _outside_code_spans(line)
+    )
+
+
 def audit_line(
-    line: str, file_allowed: frozenset[str] = frozenset()
+    line: str,
+    file_allowed: frozenset[str] = frozenset(),
+    in_fence: bool = False,
 ) -> list[tuple[str, str]]:
-    """Return (category, message) findings for one line, honouring allow markers."""
-    allowed = {match.group(1) for match in ALLOW.finditer(line)} | set(file_allowed)
+    """Return (category, message) findings for one line, honouring allow markers.
+
+    **A marker inside a code span or a fenced block is documentation of the syntax, not a use of it.**
+    The two are one rule in two shapes - this is code, not prose - and only the code-span half was
+    implemented here. A sibling repository found the identical split in its own detector, where a
+    heading telling authors to add a marker went unreported because the example silenced the very line
+    describing it.
+
+    Without this,
+    the line in `AGENTS.md` that tells an author to write `<!-- allow:naming -->` was itself an
+    exempt line - and appending a code-span marker to any sentence silenced the detector on it,
+    which is the same smuggling path as the prose form. Findings are still matched against the
+    original line, so a forbidden term inside a code span is still reported.
+    """
+    allowed = marker_categories(line, in_fence) | set(file_allowed)
     if "all" in allowed:
         return []
 
@@ -352,6 +655,22 @@ def audit_line(
                 ),
             )
         )
+    citation = SUPPORT_CITATION.search(line)
+    if citation and SUPPORT_CITATION_PERMIT.search(citation.group(0)):
+        citation = None
+    if "support-attribution" not in allowed and (
+        SUPPORT_ATTRIBUTION.search(line) or citation
+    ):
+        findings.append(
+            (
+                "support-attribution",
+                (
+                    "a vendor's support reply cannot be the published basis for a claim; cite the "
+                    "public page, state your own observation, or mark it open. Recording that you "
+                    "asked, and when, is fine"
+                ),
+            )
+        )
     if "role-label" not in allowed and (
         ROLE_LABEL.match(line) or ROLE_LABEL_WITH_ROLE.match(line)
     ):
@@ -371,7 +690,26 @@ def audit_line(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=str(ROOT), help="directory to audit")
+    # A sibling repository can be clean on one rule while carrying a backlog on another --
+    # one has 710 naming findings and zero support attributions. Without this it could not
+    # gate the rule it has cleared, because the run fails on the backlog and the new rule's
+    # result is invisible inside it. A gate that cannot be switched on is not a gate.
+    parser.add_argument(
+        "--only",
+        default="",
+        help=f"comma-separated categories to report ({', '.join(CATEGORIES)}); default is all",
+    )
     args = parser.parse_args()
+
+    only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
+    unknown = only - frozenset(CATEGORIES)
+    if unknown:
+        # Raising beats reporting nothing: a typo in --only would otherwise make the gate
+        # pass on every input, which is the failure mode this whole file exists to avoid.
+        raise SystemExit(
+            f"--only: unknown category {', '.join(sorted(unknown))} "
+            f"(allowed: {', '.join(CATEGORIES)})"
+        )
 
     root = Path(args.path).resolve()
     findings: list[str] = []
@@ -386,8 +724,14 @@ def main() -> int:
             findings.append(f"{rel}: not valid UTF-8")
             continue
         file_allowed = frozenset(file_allowances(lines))
+        in_fence = False
         for lineno, line in enumerate(lines, start=1):
-            for category, message in audit_line(line, file_allowed):
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            for category, message in audit_line(line, file_allowed, in_fence):
+                if only and category not in only:
+                    continue
                 findings.append(f"{rel}:{lineno}: [{category}] {message}")
 
     if findings:
@@ -396,7 +740,8 @@ def main() -> int:
             print(f"  {finding}", file=sys.stderr)
         return 1
 
-    print(f"audit: {scanned} file(s) clean")
+    scope = f" for {', '.join(sorted(only))}" if only else ""
+    print(f"audit: {scanned} file(s) clean{scope}")
     return 0
 
 

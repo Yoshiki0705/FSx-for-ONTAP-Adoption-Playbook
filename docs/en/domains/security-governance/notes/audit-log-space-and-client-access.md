@@ -167,7 +167,7 @@ The absorbed volume observed was **4,538 records**. The EVTX emitted on recovery
 - The staging volume `MDV_AUD_*` cannot be read from `fsxadmin`, so its occupancy cannot be checked directly
 - No test was run to separate accumulated volume, elapsed time, and rotation size as the threshold
 
-**And the cause of the stop was the destination filling, not staging.** AWS Support confirmed that **besides staging volume exhaustion, client access failure can also occur when the audit log destination volume fills** (2026-09-03). What was filled in this measurement is the destination volume. The NetApp KB [CIFS share not serving data because the Audit Log Destination is full](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) covers the same symptom. **So "it stopped nowhere near the 2 GB of staging" is not a contradiction. Staging was not involved.**
+**And the cause of the stop was the destination filling, not staging.** What was filled in this measurement is the destination volume, and client access stopped when it filled. The NetApp KB [CIFS share not serving data because the Audit Log Destination is full](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/CIFS_share_not_serving_data_because_the_Audit_Log_Destination_is_full) covers the same symptom, also from the destination filling. **So "it stopped nowhere near the 2 GB of staging" is not a contradiction. Staging was not involved.**
 
 An EMS event reporting this directly is also defined: `adt.dest.directory.full` (severity `EMERGENCY`), whose description states it **can lead to denial of service on objects carrying a SACL**. This measurement used a SACL on the SMB path, matching the observed symptom.
 
@@ -183,9 +183,9 @@ FsxIdEXAMPLE::> event log show -message-name adt.*
 There are no entries matching your query.
 ```
 
-**Those zeros are evidence of nothing.** AWS Support confirmed that **neither `adt.stgvol.nospace` nor `adt.dest.directory.full` is visible to customers by design** (2026-09-03; the former retracts the same case's earlier suggestion that it could be used for monitoring). **The event cannot fire, so its absence is unrelated to whether exhaustion occurred.** The conclusion — that staging was not involved — is corroborated by AWS's answer through a different route, but **the argument that supported it at the time did not hold.**
+**Those zeros are evidence of nothing.** All we have is that no `adt.*` event is visible from `fsxadmin`, and **we cannot separate "it did not fire" from "it fired and is not visible to us".** `fsxadmin` has no way to fill the staging volume `MDV_AUD_*` deliberately, so we cannot create the firing condition and test visibility either. **Picking one of two indistinguishable states and arguing from it was the error.** The conclusion itself — that staging was not involved — stands on the destination-filling measurement and the KB above, but **the argument that supported it at the time did not hold.** Event visibility is left `open`.
 
-Meanwhile, `monitor.volume.full` and `monitor.volume.nearlyFull` targeting `MDV_aud_*` are described as **expected to be visible to customers**. Those were also zero across both runs. **But "visible" is AWS's expectation and was not confirmed here** (there is no way to fill staging deliberately). **So those zeros cannot be read as "staging had not reached 95%" either.**
+`monitor.volume.full` and `monitor.volume.nearlyFull` targeting `MDV_aud_*` were also zero across both runs. **They cannot be read either, for the same reason:** we have not confirmed that they are visible from `fsxadmin`, and there is no way to fill staging deliberately. **So those zeros cannot be read as "staging had not reached 95%" either.**
 
 > **On detection patterns**: the first search used only
 > `event log show -message-name *audit*`. **`adt.stgvol.*` does not match that pattern.** The
@@ -215,7 +215,7 @@ Reviewing every EMS record over the interval containing the stop, the only other
 
 | Event | Severity | Meaning | Visible to customers |
 |---|---|---|---|
-| `adt.dest.directory.full` | `EMERGENCY` | The destination directory is full and audit logs cannot be written. **Can lead to denial of service on objects carrying a SACL** | **No** (AWS confirmed, 2026-09-03) |
+| `adt.dest.directory.full` | `EMERGENCY` | The destination directory is full and audit logs cannot be written. **Can lead to denial of service on objects carrying a SACL** | **No** (absent from every EMS event in the outage window, measured 2026-09-03) |
 | `adt.stgvol.nospace` | `EMERGENCY` | The staging volume has no space and a file or directory for audit logs cannot be created | **No** (same) |
 | `monitor.volume.full` / `monitor.volume.nearlyFull` (targeting `MDV_aud_*`) | `ALERT` / `ERROR` | The staging volume reached 98% / 95% | **Expected** yes (per AWS; not confirmed here) |
 | `monitor.volume.full` / `monitor.volume.nearlyFull` / `wafl.vol.full` (targeting the destination) | `ALERT` / `ERROR` | The destination reached 98% / 95%, or extension failed | **Yes** (measured) |
@@ -228,7 +228,7 @@ Reviewing every EMS record over the interval containing the stop, the only other
 |---|---|
 | Destination volume utilization (the 95% / 99% EMS events, CloudWatch volume metrics) | **The warning signal for an access outage — but the grace is 19 to 65 seconds** (below) |
 | The `wafl.vol.full` EMS event | The moment auditing failed to extend the EVTX |
-| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is visible to customers** (AWS confirmed). They cannot be monitored |
+| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is visible to customers** (absent from every EMS event in the outage window). They cannot be monitored |
 | The `monitor.volume.*` EMS events targeting `MDV_aud_*` | Staging pressure. **Expected to be visible but not confirmed here**, since there is no way to fill staging deliberately |
 | Aggregate free space | The headroom staging has to draw on |
 | `Auditing State` in `vserver audit show` | **`true` even while stopped.** Not usable as a health signal |
@@ -283,7 +283,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 **This exclusivity is ONTAP's internal implementation rather than CLI argument parsing.** AWS Support tested REST on the same version and confirmed that both `POST /api/protocols/audit` and `PATCH /api/protocols/audit` return **400 Bad Request** when `retention.count` and `retention.duration` are given together (2026-09-02), and replied that **lifting the constraint on the Amazon FSx side would be difficult**. The NetApp CLI reference likewise lists the two as alternatives inside braces separated by a vertical bar.
 
 > **On changing the setting**: **specifying only `retention.count` while `retention.duration` is set
-> resets `retention.duration` to `PT0S`** (verified by AWS Support, 2026-09-02).
+> resets `retention.duration` to `PT0S`** (`verified` here, 2026-09-02).
 > `PT0S` means no deletion by age. **Setting one disables the other.**
 > When switching methods, read both values with `vserver audit show -instance` afterwards.
 
@@ -318,7 +318,7 @@ Where a period is set by policy — a three-month inventory requirement, for ins
 | Retention | **Explicitly** set `-retention-duration` or `-rotate-limit` to match the requirement | Both defaults are unlimited, and **left alone they lead to an access outage** |
 | `-rotate-size` | Around 100 MB | Keeps a single file from growing unwieldy for collection and parsing |
 | Destination utilization alarm | **At 95%, at the same time you enable auditing** | It is the only warning signal, and **99% to the stop was 19 to 65 seconds when measured** |
-| Autosizing (ONTAP CLI `volume autosize`) | Consider alongside | **Nineteen seconds is too short for a person or for alarm-driven automation.** It expands the volume automatically on a utilization threshold (available on FlexVol, the default on FSx for ONTAP; confirmed with AWS Support, 2026-09-02) |
+| Autosizing (ONTAP CLI `volume autosize`) | Consider alongside | **Nineteen seconds is too short for a person or for alarm-driven automation.** It expands the volume automatically on a utilization threshold. [Enabling autosizing](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-volume-autosizing.html) documents `volume autosize` for FlexVol, the default volume style on FSx for ONTAP |
 | Aggregate free space | Monitor alongside | The proxy for staging headroom |
 | `-strict-guarantee` | Start from **the default `true`** | See below |
 
@@ -382,7 +382,7 @@ How the layers work is in
 > an FSx for ONTAP managed object store association on the volume, and **the volume can no longer be
 > deleted from ONTAP.** `aws fsx delete-volume` does delete it. Any practice of recreating the audit
 > volume gets stuck here. The mechanism and AWS Support's reproduction are in
-> [FSx for ONTAP S3 AP is not "S3 that you can use"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#aws-サポートによる再現確認と機構) (日本語).
+> [FSx for ONTAP S3 AP is not "S3 that you can use"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#観測できた範囲とそこから言えないこと) (日本語).
 
 ---
 

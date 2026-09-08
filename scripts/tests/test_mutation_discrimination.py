@@ -161,6 +161,179 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # The mirror-image mistake a sibling repository made first and reported. Testing for an
+        # unchanged report finds only markers that suppress nothing, and misses one that makes the
+        # checker report something that is not there.
+        "name": "suppression predicate accepts any change",
+        "why": (
+            "'!=' calls a marker justified whenever the count moved, including when the marker adds "
+            "a finding that does not exist. A rule written to hunt quiet failures will not look for "
+            "loud ones, so this is the shape that survives review."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                'return "justified" if findings_without > findings_with else "inert"',
+                'return "justified" if findings_without != findings_with else "inert"',
+            ),
+        ],
+        "must_fail": ["test_a_marker_that_adds_a_finding_is_not_justified"],
+        "must_pass": [
+            "test_a_marker_that_hides_a_finding_is_justified",
+            "test_a_marker_that_hides_nothing_is_inert",
+        ],
+    },
+    {
+        # Removal stops removing. The corpus check for this direction replaced an assertion that
+        # could not fail: `inert` and `load_bearing` were defined as exact complements, so neither
+        # "both" nor "neither" could occur. Proven by breaking `strip_markers` and watching it pass.
+        "name": "marker removal stops removing",
+        "why": (
+            "Returning the line unchanged is what a careless simplification of the segment join "
+            "produces. Every counted marker then survives removal, so the inert check compares a "
+            "line against itself and reports that nothing suppresses anything."
+        ),
+        "module": "scripts.tests.test_marker_width_is_consistent",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                (
+                    '    return "".join(\n'
+                    '        segment if is_code else ALLOW.sub("", segment)\n'
+                    "        for segment, is_code in _outside_code_spans(line)\n    )"
+                ),
+                "    return line",
+            ),
+        ],
+        "must_fail": ["test_nothing_counted_survives_removal"],
+        "must_pass": ["test_a_fence_makes_both_halves_inert_together"],
+    },
+    {
+        # The width mismatch a sibling reported: removal applied to the raw line while detection
+        # applied to the code-span-stripped one. Each check stays correct on its own, and the pair
+        # produces a line that fails whether the marker stays or goes.
+        "name": "marker removal widened past detection",
+        "why": (
+            "Stripping markers from the raw line is the obvious one-liner and it reads as equivalent. "
+            "It removes a code-span example that was never a directive, so removal and detection stop "
+            "answering the same question about the same input."
+        ),
+        "module": "scripts.tests.test_marker_width_is_consistent",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                (
+                    '    return "".join(\n'
+                    '        segment if is_code else ALLOW.sub("", segment)\n'
+                    "        for segment, is_code in _outside_code_spans(line)\n    )"
+                ),
+                '    return ALLOW.sub("", line)',
+            ),
+        ],
+        # `test_nothing_uncounted_is_removed` is listed as must_pass rather than must_fail, and the
+        # reason is the finding: **the corpus contains no line carrying both a code-span example and a
+        # counted marker**, so the corpus half cannot see this mutation. The crafted case can. A
+        # sibling repository drew the line this sits on - a check over data finds the axes that depend
+        # on the input, and the ones that depend on code structure need a mutation instead.
+        "must_fail": ["test_detection_and_removal_agree_on_what_a_marker_is"],
+        "must_pass": [
+            "test_a_fence_makes_both_halves_inert_together",
+            "test_nothing_counted_survives_removal",
+            "test_nothing_uncounted_is_removed",
+        ],
+    },
+    {
+        # The half that was missing while the other half was recorded as a rule. Reported by a
+        # sibling repository, which found the same split in its own heading detector.
+        "name": "a fenced marker is honoured as a directive",
+        "why": (
+            "Ignoring the fence flag is the shortest way to simplify this branch, and it restores "
+            "the state where a documented example silences the line that documents it - which is how "
+            "a heading describing the feature went unreported in a sibling repository. Re-pointed "
+            "after extracting marker_categories moved the code it used to target: the harness "
+            "reported that as unverifiable rather than as killed, which is the whole point of "
+            "requiring exactly one match."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "    if in_fence:\n        return set()",
+                "    if False:\n        return set()",
+            ),
+        ],
+        "must_fail": ["test_a_marker_inside_a_fence_does_not_suppress"],
+        "must_pass": ["test_a_marker_outside_a_fence_still_suppresses"],
+    },
+    {
+        # The hole this closed: a line mentioning the marker in prose exempted itself.
+        "name": "allow marker recognised as bare text",
+        "why": (
+            "Dropping the HTML comment wrapper is the shortest way to make the regex simpler, and it "
+            "restores the hole where any line mentioning allow:naming - inside backticks included - "
+            "silenced the detector on that line."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'r"<!--[^>]*?allow:"',
+                'r"allow:"',
+            ),
+            # The wrapper is two halves and dropping one is not the hole. Both go, or the regex
+            # still demands `-->` and the mutation survives while reading as applied.
+            (
+                "tools/audit_public_output.py",
+                'r"[^>]*?-->"',
+                'r""',
+            ),
+        ],
+        "must_fail": ["test_a_bare_prose_mention_does_not_suppress"],
+        "must_pass": ["test_a_real_marker_suppresses"],
+    },
+    {
+        "name": "allow budget accepts a grown set",
+        "why": (
+            "Returning 'ok' when a marker appears is the state before this guard existed. Adding an "
+            "allow marker looks identical to fixing the problem it silences, because the audit "
+            "passes either way - so nothing surfaces until someone reads the file."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                '    if actual > recorded:\n        return "added"',
+                '    if False:\n        return "added"',
+            ),
+        ],
+        "must_fail": ["test_one_more_than_recorded_is_added"],
+        "must_pass": ["test_fewer_than_recorded_is_stale", "test_equal_counts_are_ok"],
+    },
+    {
+        # The quieter half. A surplus in the baseline breaks nothing today, which is exactly why it
+        # is worth a mutation: it is headroom that lets a marker return without a word.
+        "name": "allow budget stops reporting surplus",
+        "why": (
+            "Dropping the 'stale' verdict is the plausible edit, since a budget recording more than "
+            "exists fails nothing at the time. The surplus is headroom, so the marker it once "
+            "counted can come back silently."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/check_allow_budget.py",
+                'FAILING = ("added", "stale")',
+                'FAILING = ("added",)',
+            ),
+        ],
+        "must_fail": ["test_stale_fails_the_check"],
+        "must_pass": [
+            "test_added_fails_the_check",
+            "test_fewer_than_recorded_is_stale",
+        ],
+    },
+    {
         # Only mutatable because the decision was extracted from `main`. While it lived there, the
         # only possible tests asserted that the source *contained* certain strings — which a
         # mutation kills trivially without saying anything about behaviour. A sibling repository
@@ -239,6 +412,69 @@ MUTATIONS: list[dict] = [
         ],
         "must_fail": ["test_self_link_to_a_missing_path_is_rejected"],
         "must_pass": ["test_self_link_pinned_to_a_commit_is_accepted"],
+    },
+    {
+        "name": "ordinary viewpoint words returned to the token-free path",
+        "why": (
+            "The state this file's role-label rule was in. A path that needs no role token fires "
+            "on any word in its vocabulary, so putting an ordinary word there reports topic "
+            "labels. It is also the shortest way to make a missed personal-name label pass."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r'r"^\s*>\s*\*\*(?:[^*]*(?:lens|レンズ)[^*]*|[^*]*の視点\s*)\*\*", re.IGNORECASE',
+                r'r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE',
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": [
+            "test_labels_naming_a_person_are_reported",
+            "test_the_accepted_residual_is_still_reported",
+        ],
+    },
+    {
+        "name": "the end-anchor dropped from の視点",
+        "why": (
+            "Keeping the word but letting it match anywhere in the label. Every positive case "
+            "still passes, because loosening a pattern only widens it — so this is the mutation "
+            "that separates 'bounded to the construction' from 'the word is in the list'."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r"|[^*]*の視点\s*)\*\*",
+                r"|[^*]*の視点[^*]*)\*\*",
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": [
+            "test_labels_naming_a_person_are_reported",
+            "test_the_accepted_residual_is_still_reported",
+        ],
+    },
+    {
+        # From a comment stating that the ASCII-boundary reasoning "says nothing about the prefix
+        # problem". A comment that forbids something is a mutation candidate: if the mutation
+        # survives, the comment was an unenforced claim.
+        "name": "prefix guards removed from the Japanese role tokens",
+        "why": (
+            "The tokens carry no ASCII boundary, correctly, and that was read as carrying no "
+            "guard at all. `エンジニア` then matches inside `エンジニアリング` and `担当` inside "
+            "every kanji compound built on it — a field and a scope, reported as people."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r'r"スペシャリスト|エンジニア(?![ァ-ヶー])|アーキテクト|担当者|担当(?![一-龠])|責任者|レビュア"',
+                r'r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"',
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": ["test_labels_naming_a_person_are_reported"],
     },
 ]
 
@@ -342,6 +578,21 @@ class MutationsAreCaughtByTheRightTest(unittest.TestCase):
                     target.write_text(body.replace(old, new, 1), encoding="utf-8")
 
                 outcomes = run_tests(work, mutation["module"], names)
+                # The same reasoning as the clean copy above, in the other direction. A test that
+                # skipped **after** the mutation was applied did not run, and "not run" cannot be
+                # read as "did not detect" any more than as "detected". This half was missing: the
+                # clean run consumed the API allowance, the mutated run was rate-limited, and the
+                # harness reported that the mutation was not discriminated - a red gate about
+                # someone else's quota, on a pull request that touched none of this.
+                skipped_after = [
+                    n for n in names if str(outcomes.get(n, "")).startswith("skipped")
+                ]
+                if skipped_after:
+                    self.skipTest(
+                        f"{mutation['name']}: {skipped_after} skipped under the mutation "
+                        "(no network, or the API allowance was spent by the clean run), so this "
+                        "mutation cannot be verified here"
+                    )
                 for name in mutation["must_fail"]:
                     self.assertEqual(
                         outcomes.get(name),

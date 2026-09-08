@@ -55,6 +55,12 @@ jobs:
       - name: Validate frontmatter
         run: make frontmatter
 
+      # The other half of `make lint` that is not markdownlint. AGENTS.md states the noun-phrase
+      # rule for Japanese section headings as a convention, and until now nothing enforced it on a
+      # pull request -- the target existed and ran only when someone typed `make all`.
+      - name: Check Japanese heading style
+        run: make headings
+
       # examples/ ships a template and scripts that readers run against their own accounts. A
       # quoting bug or an invalid property there is a defect delivered, not a lint finding, and
       # a template that only fails at CreateStack time costs the reader a twenty-minute file
@@ -71,8 +77,18 @@ jobs:
       - name: Check language switchers and cross-language links
         run: make switcher-check
 
+      # An English page linking into Japanese-only prose has to say so. Without the marker the
+      # reader follows the link and finds a language they may not read, which is a defect delivered
+      # to the reader rather than a lint finding.
+      - name: Check Japanese-only link markers
+        run: make ja-markers
+
       - name: Audit public output
         run: make audit
+      # After the audit, deliberately. The audit reads content; this reads how much of the audit has
+      # been switched off, and a finding about the guard should not delay a finding about the text.
+      - name: Check the allow-marker budget has not grown
+        run: make allow-budget
 
       - name: Check internal links
         run: make links
@@ -82,6 +98,13 @@ jobs:
       # change, and a gate that fails for that reason gets ignored.
       - name: Check cross-repository citations are registered
         run: make cross-repo
+
+      # Renaming a heading another repository cites by fragment is invisible from the other side:
+      # GitHub answers an unknown fragment with the top of the page, so the citing document keeps
+      # resolving and stops pointing at anything. This gate is the only place that break surfaces,
+      # and it was running only by hand.
+      - name: Check externally cited anchors are unchanged
+        run: make anchors
 
       # .kiro/ is gitignored, so the steering-loader half of this check cannot run here.
       # The target reports that on stdout rather than skipping silently and printing
@@ -96,10 +119,24 @@ jobs:
       - name: Check agent context budget
         run: make drift
 
+      # A workflow no pull request runs cannot be observed failing, so it has to be declared. The
+      # guard for that was itself running only from `make all` and the hook -- which is to say, only
+      # where someone had already chosen to look.
+      - name: Check workflow observability
+        run: make workflow-observability
+
       # Guardrail tests: the irreversibility guard's block / ask / allow contract, .PHONY
       # completeness, and one deliberate break per documentation gate. Without these a
       # gate can stop detecting anything and still report success.
       - name: Run guardrail and gate tests
+        # Four of these reach the GitHub API and skip with the reason named when it will not
+        # answer. Skipping is right -- a sibling being briefly unreachable is not a defect in this
+        # change. Skipping *routinely* is not: unauthenticated access is 60 requests an hour
+        # against an address a runner shares, so with no credential those four never run and this
+        # step still reports OK. The token raises it to 5,000 and needs no permission beyond the
+        # read-only `contents` already granted above.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: make test
 
   markdown-lint:

@@ -10,6 +10,19 @@ Covers method selection, cutover, and rollback. A migration plan without a rollb
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **No migration method chosen yet** | [Choosing a migration method](../../../ja/reference/decision-trees/migration-method.md) (日本語) | source type, ACL requirements and tolerable downtime narrow it first |
+| **A method chosen, and the cutover is the worry** | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) | **there is no operation that undoes a cutover.** Incremental sync depends on a common Snapshot |
+| **A SaaS or cloud-storage source** | [Settle the source set before the transfer method](notes/saas-source-migration-scoping.md) | **some decisions come before the transfer method.** Reversing the order means collecting again |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |
