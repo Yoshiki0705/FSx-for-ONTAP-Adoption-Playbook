@@ -19,7 +19,7 @@ Toute connaissance de ce dépôt porte un niveau `evidence` à quatre degrés. E
 | Niveau | Signification | Métadonnées obligatoires | Ce que le lecteur doit en faire |
 |---|---|---|---|
 | `verified` | Reproduit par l'auteur dans l'environnement indiqué | `verified_on` (date de vérification) + l'environnement de test dans le corps du texte | Fiable dans ces conditions d'environnement. Des conditions différentes exigent une revérification |
-| `documented` | Figure dans la documentation de l'éditeur ou d'AWS | `source` (URL ou nom du document) | Peut être traité comme source primaire, en restant attentif aux écarts de version et de région |
+| `documented` | Figure dans la documentation de l'éditeur ou d'AWS. **Ou figure dans le relevé d'un autre projet qui possède un environnement de mesure** (voir ci-dessous) | `source` (URL ou nom du document) | Peut être traité comme source primaire, en restant attentif aux écarts de version et de région |
 | `field-observation` | Observé une fois sur le terrain, sans confirmation de reproductibilité | Mention explicite « non reproduit » dans le corps du texte | Piste d'hypothèse. Ne doit pas être généralisé |
 | `hypothesis` | Déduction logique, non testée | Mention explicite « non vérifié » dans le corps du texte | Point de départ d'une vérification. Ne peut fonder une décision |
 
@@ -34,6 +34,14 @@ Un niveau classe **la provenance d'une affirmation.** Ce n'est **ni un degré d'
 `documented` signifie seulement qu'un document de l'éditeur ou d'AWS l'énonce. **Il ne porte aucune affirmation selon laquelle l'auteur a confirmé le comportement.** Le seul niveau qui revendique une mesure est `verified`.
 
 Ainsi, « la source primaire l'énonce, mais cela n'a pas été vérifié sur du matériel réel » relève de `documented`. **Rien n'est perdu dans cette correspondance**, précisément parce que `documented` n'a jamais impliqué une mesure. Lorsqu'un autre dépôt nomme ce même état `unverified` ou similaire, il se transpose tel quel en `documented`.
+
+**Transcrire une valeur mesurée par un autre projet relève aussi de `documented`.** Ce que `verified` revendique, c'est qu'un auteur de *ce* dépôt l'a reproduite dans cet environnement, et une citation ne satisfait pas cela. **Une citation s'accompagne de trois conditions propres.**
+
+| Condition | Pourquoi |
+|---|---|
+| **Transcrire toutes les conditions de mesure** | Une valeur sans ses conditions ne sert pas à concevoir. Génération, capacité, IOPS, état du cache, type d'instance client, parallélisme |
+| **Transcrire aussi ce que la source qualifie elle-même de non mesuré** | **Une citation peut ne retenir que la partie commode.** Omettre les lacunes que la source signale fausse le degré de certitude |
+| **L'enregistrer dans l'[index des citations inter-projets](../ja/reference/cross-repo-index.md) (日本語)** | **Une citation pourrit en silence.** Si la source retire une affirmation, la phrase ici ne change pas. Enregistrée, `make cross-repo-external` détecte le retrait |
 
 ### L'absence de documentation n'est pas un niveau
 

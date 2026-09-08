@@ -186,7 +186,7 @@ named, the tier is wrong rather than the field optional.
 | Tier | Meaning | Requirement |
 |------|---------|-------------|
 | `verified` | Reproduced in a named environment by the author | `verified_on` + environment (version / region / config) stated inline |
-| `documented` | Stated in vendor or AWS documentation | `source` URL; quote ≤ 30 consecutive words; paraphrase preferred |
+| `documented` | Stated in vendor or AWS documentation, **or transcribed from another project's measurement** | `source` URL; quote ≤ 30 consecutive words; paraphrase preferred. A transcription carries three further conditions |
 | `field-observation` | Observed once in the field, not reproduced | Must say so explicitly in the body; no generalization |
 | `hypothesis` | Reasoned expectation, untested | Must be labeled as untested in the body |
 
