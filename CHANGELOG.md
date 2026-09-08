@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **"Is this a marker" was decided in three places, and a fourth disagreed with all of them.** Removal
+  applied to the raw line while detection applied to the code-span-stripped one, so **a code-span
+  example was removed although it was never a directive.** A width differing by one step produces a
+  line that fails whether the marker stays or goes — the audit reports the violation without it, the
+  budget reports an inert marker with it. **Each check correct alone; only the pair contradictory.**
+  - `marker_categories()` and `strip_markers()` are now the single definition, paired so that whatever
+    counts as a marker is what gets removed. **Extracted rather than aligned** — two copies get touched
+    one at a time.
+  - The selftest pins **the relationship, not examples**: "inert" and "load-bearing" never both hold,
+    asserted over the whole corpus. A sibling reported that its own individual cases all passed for the
+    entire period its equivalent contradiction existed.
+  - **The extraction invalidated one mutation, as the sibling predicted.** The string it targeted moved
+    into the new function and the harness reported `0 matches` — **unverifiable, not killed.** Re-pointed;
+    fourteen mutations, all killed.
+  - No contradictory line existed in the corpus. **The gate reported nothing** — this was found by
+    applying a sibling's report to code, not by a failing check.
 - **A marker inside a fenced block was still honoured as a directive.** A fence and a code span are
   one rule in two shapes — *this is code, not prose* — and only the code-span half was implemented.
   Both markers in that position sat in `CONTRIBUTING.md`, which documents the syntax, so **the

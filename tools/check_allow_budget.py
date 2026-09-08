@@ -35,14 +35,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from audit_public_output import (
-    ALLOW,
-    CODE_SPAN,
     FENCE,
     FILE_ALLOW,
     FILE_ALLOW_SCAN_LINES,
     audit_line,
     file_allowances,
     iter_files,
+    marker_categories,
+    strip_markers,
 )
 
 BUDGET = ROOT / "docs" / "agent" / "allow-marker-budget.txt"
@@ -104,9 +104,9 @@ def inert_markers() -> list[str]:
             # The same extraction the audit uses, or this disagrees with it about what a marker is.
             # A marker inside a code span is documentation of the syntax; `AGENTS.md` tells authors
             # to write one, and searching the raw line reported those two lines as inert markers.
-            if in_fence or not ALLOW.search(CODE_SPAN.sub("", line)):
+            if in_fence or not marker_categories(line):
                 continue
-            bare = ALLOW.sub("", line)
+            bare = strip_markers(line)
             verdict = suppression_verdict(
                 findings_with=len(audit_line(line, allowed)),
                 findings_without=len(audit_line(bare, allowed)),
@@ -162,8 +162,8 @@ def snapshot() -> dict[tuple[str, str], int]:
             # asymmetry this comment used to explain away is gone. One definition of what a fence is,
             # imported rather than repeated - two definitions of "what is a marker" already
             # disagreed once.
-            for match in ALLOW.finditer(CODE_SPAN.sub("", line)):
-                key = (rel, match.group(1))
+            for category in marker_categories(line):
+                key = (rel, category)
                 counts[key] = counts.get(key, 0) + 1
         for line in lines[:FILE_ALLOW_SCAN_LINES]:
             match = FILE_ALLOW.search(line)

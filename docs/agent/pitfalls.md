@@ -238,6 +238,32 @@ So when a rule is written to catch silence, ask what its loud counterpart would 
 counterpart was in the budget itself: **prose mentioning a marker was counted as a marker**, so
 writing about one could fail `make allow-budget` with nothing wrong.
 
+### Two checks answering the same question differently is a fifth axis
+
+`shrink-only` asks whether a suppression is justified. The axis before it asks whether the thing is a
+suppression at all. **The axis before *that* asks whether every check answers that identically.**
+
+The judgement "is this a marker" was written in three places here, and a fourth removed markers from
+the raw line while the others detected them in the code-span-stripped one. **A width that differs by
+one step produces a line that fails whether the marker stays or goes** — remove it and the audit
+reports the violation, keep it and the budget reports an inert marker. **Each check is correct alone;
+only the pair is a contradiction, and no single-check test can see it.**
+
+Named by a sibling repository, which reported both halves of the fix:
+
+- **Extract the judgement, do not align the copies.** Two copies get touched one at a time.
+- **Pin the relationship, not the examples.** Its individual cases all passed for the entire period the
+  contradiction existed, so the selftest asserts that "inert" and "load-bearing" never both hold, over
+  the whole corpus.
+
+Its asymmetry had a plausible reason too — *the inert check should read the original line, since that
+is where the marker sits.* **Reasonable, and wrong.** The same shape as an asymmetry documented here as
+deliberate one release earlier.
+
+**The extraction cost one mutation, exactly as predicted.** The string a fenced-marker mutation targeted
+moved into the new function, and the harness reported `0 matches` — **unverifiable, not killed.** That is
+what requiring exactly one match buys.
+
 ### Before asking whether a suppression is justified, ask whether it is a suppression
 
 `shrink-only` covers two ways an exemption can be wrong — it suppresses nothing, or it invents a

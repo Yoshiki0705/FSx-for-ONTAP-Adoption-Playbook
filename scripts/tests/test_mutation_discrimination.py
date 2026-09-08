@@ -185,20 +185,48 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # The width mismatch a sibling reported: removal applied to the raw line while detection
+        # applied to the code-span-stripped one. Each check stays correct on its own, and the pair
+        # produces a line that fails whether the marker stays or goes.
+        "name": "marker removal widened past detection",
+        "why": (
+            "Stripping markers from the raw line is the obvious one-liner and it reads as equivalent. "
+            "It removes a code-span example that was never a directive, so removal and detection stop "
+            "answering the same question about the same input."
+        ),
+        "module": "scripts.tests.test_marker_width_is_consistent",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                (
+                    '    return "".join(\n'
+                    '        segment if is_code else ALLOW.sub("", segment)\n'
+                    "        for segment, is_code in _outside_code_spans(line)\n    )"
+                ),
+                '    return ALLOW.sub("", line)',
+            ),
+        ],
+        "must_fail": ["test_detection_and_removal_agree_on_what_a_marker_is"],
+        "must_pass": ["test_a_fence_makes_both_halves_inert_together"],
+    },
+    {
         # The half that was missing while the other half was recorded as a rule. Reported by a
         # sibling repository, which found the same split in its own heading detector.
         "name": "a fenced marker is honoured as a directive",
         "why": (
-            "Ignoring the fence flag is the shortest way to simplify the call, and it restores the "
-            "state where a documented example silences the line that documents it - which is how a "
-            "heading describing the feature went unreported in a sibling repository."
+            "Ignoring the fence flag is the shortest way to simplify this branch, and it restores "
+            "the state where a documented example silences the line that documents it - which is how "
+            "a heading describing the feature went unreported in a sibling repository. Re-pointed "
+            "after extracting marker_categories moved the code it used to target: the harness "
+            "reported that as unverifiable rather than as killed, which is the whole point of "
+            "requiring exactly one match."
         ),
         "module": "scripts.tests.test_allow_budget_verdicts",
         "edits": [
             (
                 "tools/audit_public_output.py",
-                'markers = "" if in_fence else CODE_SPAN.sub("", line)',
-                'markers = CODE_SPAN.sub("", line)',
+                "    if in_fence:\n        return set()",
+                "    if False:\n        return set()",
             ),
         ],
         "must_fail": ["test_a_marker_inside_a_fence_does_not_suppress"],
