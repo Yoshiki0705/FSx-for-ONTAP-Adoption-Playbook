@@ -1108,7 +1108,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   another SVM. Either drop the existing object store server or read the logs another way — the ONTAP
   REST file API works without mounting. Raised on the case as well, since documenting only "use a
   different SVM" would not tell an operator that the audit-log use case is excluded.
-- **"SACL missing means zero events" is measured behaviour, not a guarantee.** AWS Support declined to
+- **"SACL missing means zero events" is measured behaviour, not a guarantee.** Nothing published commits to
   document it as such: the SACL requirement is already stated ("You need to configure audit
   policies…"), and behaviour when a required setting is absent is not a specified contract. Recorded
   inline, because the consequence is concrete — **zero events is equally consistent with "no access",

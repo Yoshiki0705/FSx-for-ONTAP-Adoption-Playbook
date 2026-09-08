@@ -56,6 +56,19 @@ BLOCKED = (
     # Missed by the first version: 確認 was not in the reply-noun list. Found in a sibling
     # repository, not by re-reading the pattern.
     "包括的な互換性マトリクス、既知の制約（2026年5月 AWS サポート確認済み）については以下を参照:",
+    # The English half was narrower than the Japanese half: it only saw the desk as the subject
+    # of a verb. These are what four sibling repositories actually wrote.
+    "known constraints (confirmed with AWS Support, May 2026), refer to:",
+    "The number entered this documentation from the May 2026 AWS Support discussion.",
+    "## AWS Support findings (2026-08)",
+    "### AWS Support Confirmation (August 2026)",
+    "## What AWS Support answered (from a case in 2026-08)",
+    '"source": "Databricks Support response",',
+    "## Alternative Paths Identified by Snowflake Support",
+    "access_point field added per Databricks support recommendation",
+    "Added 2026-08-12 after AWS Support escalated the charset behaviour",
+    "AWS Support considers this ONTAP-side processing rather than specific to FSx for ONTAP.",
+    "AWS Support declined to state it as specified behaviour.",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -75,7 +88,15 @@ PERMITTED = (
     # Flagged by the first version, which made the vendor name optional in the subject
     # alternative, so any "サポートが...確認" matched. This sentence is about whether a feature
     # works, and a rule that sweeps it up is a rule that gets switched off.
-    "自社の特定の環境に対して FSx S3 Access Point のサポートが実際に機能することを確認できます。",
+    "自社の特定の環境に対して FSx for ONTAP S3 AP のサポートが実際に機能することを確認できます。",
+    # Drafting an inquiry, planning one, and naming a portal all stay publishable. Widening the
+    # English half made these the near misses, so they are pinned.
+    "Wording for an AWS Support case about the monitoring coverage.",
+    "What to confirm with AWS Support",
+    "## AWS Support Submission Text",
+    "## NetApp Support Diagnostic Bundle",
+    "| NetApp アカウント | **必要**（NSS: NetApp Support Site アカウント） |",
+    "aws support describe-services and record it",
 )
 
 

@@ -237,7 +237,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 
 - **The causality in steps 3 to 5, and the recovery procedure.** This is what AWS Support reported and **has not been run here.** It requires deleting a CIFS server on a shared file system, and no disposable SVM has been prepared
 - **Whether a CIFS server was ever deleted on the affected SVMs here.** The current state is consistent with the mechanism, but **there is no way to review the deletion history.** A workgroup CIFS server was created and deleted on one SVM during testing, but whether `data-cifs` was lost before or after that cannot be established
-- **Whether ONTAP outside FSx for ONTAP behaves the same.** AWS Support considers this ONTAP-side processing rather than specific to FSx for ONTAP, and suggests reproducing it on on-premises ONTAP and documenting it through NetApp. **Not done**
+- **Whether ONTAP outside FSx for ONTAP behaves the same.** Reproducing it on on-premises ONTAP would answer it. **Not done**
 - **Why `data-cifs` is not restored when created through the ONTAP CLI.** The CLI and REST paths were shown to differ, but whether that is by design is unclear
 - **What happens when AD configuration is added later to an SVM without `data-cifs`.** Joining AD through Amazon FSx creates a CIFS server, so it may be restored, but this was not measured
 
@@ -249,7 +249,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 - AWS re:Post: [How do I use the FSx for ONTAP REST API?](https://repost.aws/knowledge-center/fsx-ontap-rest-apis)
 - NetApp KB: [Command fails with "Command is not recognized command"](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
 
-**No public material explaining that `data-cifs` is lost when a CIFS server is deleted was found while writing this note.** AWS Support is still considering whether to publish it as documentation or as a knowledge article. **Filing is not publishing, so treat the behaviour as undocumented.**
+**No public material explaining that `data-cifs` is lost when a CIFS server is deleted was found while writing this note.** A request to document it has been filed (2026-09-02). **Filing is not publishing, so treat the behaviour as undocumented.**
 
 ---
 

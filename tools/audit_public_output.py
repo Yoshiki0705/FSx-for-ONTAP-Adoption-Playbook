@@ -381,6 +381,12 @@ SUPPORT_REFERRAL = re.compile(
 # there, with `サポート側` as the one exception, since that phrase names the desk on its own.
 # **A detector that is loose in one direction is usually tight in the other**: both defects were
 # in the same two lines.
+#
+# The English half then turned out to be narrower than the Japanese half. It only saw the desk as
+# the subject of a verb -- 'AWS Support confirmed' -- and walked past 'confirmed with AWS Support',
+# 'the May 2026 AWS Support discussion', 'AWS Support findings', 'Databricks Support response' and
+# 'Alternative Paths Identified by Snowflake Support'. Enumerating what four sibling repositories
+# actually wrote, rather than what the pattern imagined, is what found them.
 SUPPORT_ATTRIBUTION = re.compile(
     # A vendor's support desk followed by a reply noun.
     r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*(?:の)?\s*"
@@ -398,8 +404,20 @@ SUPPORT_ATTRIBUTION = re.compile(
     r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"
     # English: the desk as the subject of a reporting verb.
     r"|(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+Support\s+"
-    r"(?:confirmed|reproduced|replied|advised|stated|said|indicated|explained|clarified)"
-    r"|(?:per|according\s+to)\s+(?:AWS|NetApp|Databricks|Snowflake)\s+Support",
+    r"(?:confirmed|reproduced|replied|advised|stated|said|indicated|explained|clarified"
+    r"|escalated|considers|considered|declined|identified|suggested|acknowledged"
+    r"|answered|is\s+still\s+considering)"
+    # English: the desk followed by a noun that makes it the source of a finding. "case",
+    # "submission" and "site" are deliberately absent -- drafting an inquiry, and naming a
+    # portal, stay publishable.
+    r"|(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+[Ss]upport\s+"
+    r"(?:findings?|clarification|confirmation|response|answer|recommendation|guidance"
+    r"|statement|discussion|engagement|position|assessment)"
+    # English: an evidentiary verb pointing at the desk. The bare infinitive is left alone,
+    # because "what to confirm with AWS Support" is a plan rather than a basis.
+    r"|(?:confirmed|verified|validated|clarified|established|identified|escalated)\s+"
+    r"(?:with|by|through|to)\s+(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s+[Ss]upport"
+    r"|(?:per|according\s+to)\s+(?:AWS|NetApp|Databricks|Snowflake)\s+[Ss]upport",
     re.IGNORECASE,
 )
 

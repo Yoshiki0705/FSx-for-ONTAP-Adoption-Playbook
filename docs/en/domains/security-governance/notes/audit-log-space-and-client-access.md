@@ -283,7 +283,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 **This exclusivity is ONTAP's internal implementation rather than CLI argument parsing.** AWS Support tested REST on the same version and confirmed that both `POST /api/protocols/audit` and `PATCH /api/protocols/audit` return **400 Bad Request** when `retention.count` and `retention.duration` are given together (2026-09-02), and replied that **lifting the constraint on the Amazon FSx side would be difficult**. The NetApp CLI reference likewise lists the two as alternatives inside braces separated by a vertical bar.
 
 > **On changing the setting**: **specifying only `retention.count` while `retention.duration` is set
-> resets `retention.duration` to `PT0S`** (verified by AWS Support, 2026-09-02).
+> resets `retention.duration` to `PT0S`** (`verified` here, 2026-09-02).
 > `PT0S` means no deletion by age. **Setting one disables the other.**
 > When switching methods, read both values with `vserver audit show -instance` afterwards.
 
@@ -318,7 +318,7 @@ Where a period is set by policy — a three-month inventory requirement, for ins
 | Retention | **Explicitly** set `-retention-duration` or `-rotate-limit` to match the requirement | Both defaults are unlimited, and **left alone they lead to an access outage** |
 | `-rotate-size` | Around 100 MB | Keeps a single file from growing unwieldy for collection and parsing |
 | Destination utilization alarm | **At 95%, at the same time you enable auditing** | It is the only warning signal, and **99% to the stop was 19 to 65 seconds when measured** |
-| Autosizing (ONTAP CLI `volume autosize`) | Consider alongside | **Nineteen seconds is too short for a person or for alarm-driven automation.** It expands the volume automatically on a utilization threshold (available on FlexVol, the default on FSx for ONTAP; confirmed with AWS Support, 2026-09-02) |
+| Autosizing (ONTAP CLI `volume autosize`) | Consider alongside | **Nineteen seconds is too short for a person or for alarm-driven automation.** It expands the volume automatically on a utilization threshold. [Enabling autosizing](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-volume-autosizing.html) documents `volume autosize` for FlexVol, the default volume style on FSx for ONTAP |
 | Aggregate free space | Monitor alongside | The proxy for staging headroom |
 | `-strict-guarantee` | Start from **the default `true`** | See below |
 
