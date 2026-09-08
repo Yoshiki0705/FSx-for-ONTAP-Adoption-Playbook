@@ -33,8 +33,29 @@ CONTRACT = ROOT / "docs" / "agent" / "external-anchor-contract.txt"
 # Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
 # cannot see the citing side, so only the citing repository knows which form it uses.
 PATH_ONLY = frozenset(
-    {"docs/ja/reference/decision-trees/access-point-authorization.md"}
+    {
+        "docs/ja/reference/decision-trees/access-point-authorization.md",
+        "docs/ja/navigation.md",
+        "docs/en/README.md",
+    }
 )
+
+# Cited by fragment, but only some of the file's anchors are cited.
+#
+# The all-or-nothing choice above does not fit every document. `industry-resource-map.md` has 24
+# anchors and **one** of them is cited. Recording all 24 fires this gate on 23 renames that break
+# nothing for anyone, which is the friction `tracked_files()` says ends with a gate switched off.
+# Recording the path alone leaves the cited anchor unprotected, which is the silent break this file
+# exists to prevent. Neither is right, so the cited subset is declared.
+#
+# A declared anchor that no longer exists is recorded as missing rather than dropped. Dropping it
+# would leave the snapshot unchanged after a rename — the failure mode being guarded against, in the
+# guard itself.
+CITED_ANCHORS: dict[str, frozenset[str]] = {
+    "docs/ja/reference/industry-resource-map.md": frozenset(
+        {"業種から入ったときの読む順序"}
+    ),
+}
 
 HEADER = """\
 # Section anchors that other repositories cite. Generated - do not hand-edit.
@@ -67,6 +88,18 @@ def tracked_files() -> list[Path]:
     **moving the file breaks all seven.** The sibling first reported "four files, eight places" and
     then corrected it - eight counted citation sites, not destinations, and the one anchored citation
     among them was already listed.
+
+    The last three were measured rather than declared, and that is a change of method worth stating.
+    A sibling's issue reported three inbound targets; **its tree held six**, because it had since made
+    every pattern reachable from a selection guide and that guide cites this repository. The list was
+    three days behind the citing side. So `industry-resource-map.md`, `navigation.md` and
+    `docs/en/README.md` were added from a shallow clone of that repository - seven links, six distinct
+    paths, one of them carrying a fragment.
+
+    **Declaration remains the mechanism and measurement is the audit.** This repository cannot watch
+    every citing tree on every commit, and a sibling reporting a citation is still the only way one
+    gets registered in time. What measuring establishes is how far behind the register drifts when
+    nobody reports, and the answer here was three days.
     """
     return [
         ROOT
@@ -97,6 +130,9 @@ def tracked_files() -> list[Path]:
         / "reference"
         / "decision-trees"
         / "access-point-authorization.md",
+        ROOT / "docs" / "ja" / "reference" / "industry-resource-map.md",
+        ROOT / "docs" / "ja" / "navigation.md",
+        ROOT / "docs" / "en" / "README.md",
     ]
 
 
@@ -113,6 +149,18 @@ def snapshot() -> list[str]:
         # citing repository needs to hear about is the file moving.
         if rel in PATH_ONLY:
             lines.append(rel)
+            continue
+        # Only the cited anchors, where the citing side cites a subset. A declared anchor that is
+        # gone is recorded as missing, not omitted: omitting it would leave the snapshot identical
+        # after the rename this gate exists to catch.
+        if rel in CITED_ANCHORS:
+            present = anchors_of(path)
+            lines.extend(
+                f"{rel}#{anchor}"
+                if anchor in present
+                else f"{rel}#<MISSING ANCHOR: {anchor}>"
+                for anchor in sorted(CITED_ANCHORS[rel])
+            )
             continue
         anchors = sorted(anchors_of(path))
         lines.extend(

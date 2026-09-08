@@ -9,6 +9,34 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Three inbound citations of this repository were unregistered, and the anchor contract could not
+  express one of them.** Closes the inbound-gating decision: the register stays here, in the existing
+  mechanism, rather than being mirrored on the citing side.
+  - The sibling's issue reported **three** inbound targets. Its tree held **six** — it had since made
+    every pattern reachable from a selection guide, and that guide cites this repository. Measured
+    from a shallow clone: seven links, six distinct paths, of which `industry-resource-map.md`,
+    `navigation.md` and `docs/en/README.md` were absent from the contract. **The register was three
+    days behind the citing side.**
+  - **One of the three is cited by fragment, at `#業種から入ったときの読む順序`** — the heading of the
+    reading-order table. That is the same table #151 asks for a new row in, so it is now pinned before
+    that work starts rather than after.
+  - The contract was all-or-nothing: every anchor of a file, or the path alone. That file has **24
+    anchors and one is cited.** Recording all 24 fires the gate on 23 renames that break nothing,
+    which the tool's own docstring says is how a gate ends up switched off; recording the path alone
+    leaves the cited anchor unprotected, which is the silent break the file exists to prevent. A cited
+    subset is now declarable.
+  - **A declared anchor that disappears is recorded as `<MISSING ANCHOR: …>`, not dropped.** Dropping
+    it would leave the snapshot unchanged after the rename this gate exists to catch — the failure
+    mode inside the guard against it.
+  - Two break tests, and **neither makes the argument alone**: renaming the cited heading must fail,
+    and renaming an uncited heading of the same file must pass. Pinning all 24 satisfies the first and
+    fails the second; recording the path alone does the reverse. Registered as a mutation, because
+    "just record every anchor" is the simplifying fix someone would ship.
+  - 88 → 91 registered entries. **Declaration remains the mechanism and measurement is the audit**:
+    this repository cannot watch every citing tree on every commit, so a sibling reporting a citation
+    is still the only way one gets registered in time. What measuring establishes is how far the
+    register drifts when nobody reports.
+
 - **The sibling table claimed `CDK` for a repository that has none.** `ONTAP-Edge-to-Cloud-AI` is
   CloudFormation and SAM. Reported by that repository, which traced the claim to its own `AGENTS.md`
   holding "TypeScript for CDK constructs" as a convention **with no corresponding code**, and

@@ -143,6 +143,77 @@ class GateStillDetects(unittest.TestCase):
         finally:
             target.write_text(original, encoding="utf-8")
 
+    # The pair below is the whole argument for recording a subset of a file's anchors, and neither
+    # case makes it alone. A version that pins all 24 anchors of this file passes the first and
+    # fails the second; a version that records the path alone passes the second and fails the first.
+    CITED_HEADING = "## 業種から入ったときの読む順序"
+
+    def test_renaming_the_one_cited_heading_of_a_subset_file_is_rejected(self) -> None:
+        """One of this file's 24 anchors is cited from outside, and it is this one."""
+        target = ROOT / "docs/ja/reference/industry-resource-map.md"
+        original = target.read_text(encoding="utf-8")
+        self.assertIn(self.CITED_HEADING, original, "the cited heading is gone already")
+        try:
+            target.write_text(
+                original.replace(self.CITED_HEADING, f"{self.CITED_HEADING}（改）", 1),
+                encoding="utf-8",
+            )
+            self.assert_rejected(run_gate("check_anchor_contract.py"), "GONE")
+        finally:
+            target.write_text(original, encoding="utf-8")
+
+    def test_renaming_an_uncited_heading_of_the_same_file_is_accepted(self) -> None:
+        """The other 23 are not cited, and firing on them is how a gate gets switched off.
+
+        This is the half that a "pin every heading" implementation fails. Without it, over-pinning
+        looks correct: it catches the rename above and nothing here notices the cost.
+        """
+        target = ROOT / "docs/ja/reference/industry-resource-map.md"
+        original = target.read_text(encoding="utf-8")
+        uncited = next(
+            line
+            for line in original.split("\n")
+            if line.startswith("## ") and line != self.CITED_HEADING
+        )
+        try:
+            target.write_text(
+                original.replace(uncited, f"{uncited}（改）", 1), encoding="utf-8"
+            )
+            result = run_gate("check_anchor_contract.py")
+            self.assertEqual(
+                result.returncode,
+                0,
+                "renaming an uncited heading failed the gate, so 23 of this file's headings "
+                f"are pinned for no citing side:\n{result.stdout}{result.stderr}",
+            )
+        finally:
+            target.write_text(original, encoding="utf-8")
+
+    def test_a_declared_anchor_that_disappears_is_recorded_as_missing(self) -> None:
+        """Dropping it silently would leave the snapshot unchanged after a rename.
+
+        Asserted on the snapshot rather than through the gate, because the gate already fails via
+        the GONE line above; what this pins is that the replacement line *says* what happened, so a
+        contract diff names a missing anchor rather than just losing one.
+        """
+        sys.path.insert(0, str(ROOT / "tools"))
+        import check_anchor_contract as contract
+
+        rel = "docs/ja/reference/industry-resource-map.md"
+        target = ROOT / rel
+        original = target.read_text(encoding="utf-8")
+        try:
+            target.write_text(
+                original.replace(self.CITED_HEADING, "## 別の見出し", 1),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                f"{rel}#<MISSING ANCHOR: 業種から入ったときの読む順序>",
+                contract.snapshot(),
+            )
+        finally:
+            target.write_text(original, encoding="utf-8")
+
     def test_table_literal_drift_between_languages_is_rejected(self) -> None:
         """A stale number in a translation keeps the heading fingerprint identical."""
         target = (
