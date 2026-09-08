@@ -142,7 +142,12 @@ class RulesFireBesideJapanese(unittest.TestCase):
         for label, text in NEGATIVE:
             result = audit(text)
             if result.returncode != 0:
-                wrong.append(f"{label}: {text} -> {result.stdout.strip()}")
+                # stderr, not stdout: findings go there and the clean line goes to stdout. Reading
+                # stdout printed an empty reason after every failure, so the one thing a reader
+                # needs from this assertion -- which rule fired -- was the part that was missing.
+                wrong.append(
+                    f"{label}: {text} -> {(result.stdout + result.stderr).strip()}"
+                )
         self.assertEqual(
             wrong,
             [],

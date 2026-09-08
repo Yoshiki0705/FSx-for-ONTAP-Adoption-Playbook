@@ -187,6 +187,25 @@ one, name the check and the condition under which it runs — `check_links.py --
 weekly and never on a pull request — because "handled elsewhere" reads as coverage long after it stops
 being true.
 
+### The same claim, made while *narrowing* a rule
+
+The version above is about a rule that never covered the form. The harder one is a rule that covers it
+today and is about to stop, because the sentence sounds like housekeeping rather than a removal.
+
+The role-label pattern that needs no role token was reporting topic labels, and the proposed fix was to
+move `視点` behind the role-token requirement — with the reasoning that a personal name is the `pii`
+category's job. **`pii` has no rule for a personal name.** It matches case numbers, ticket IDs,
+`/Users/` paths, email addresses, internal IPs and resource identifiers. So `> **<a name> の視点**` was
+matched *only* by the path being narrowed, and the narrowing would have left it matched by nothing.
+
+It was caught because a sibling repository, asked to review the change, asked what else covered that
+form before agreeing. Nothing in this repository would have reported the hole: every gate stays green
+when a rule stops matching something no test names.
+
+**Before removing anything from a detector, name what else matches the form, and open that file.**
+"Another rule handles it" is the same claim as above, and while narrowing it is load-bearing — the
+coverage disappears in the same commit that asserts it exists elsewhere.
+
 ### A guard tested from inside the repository can be inert where it runs
 
 The workflow-observability hook shipped **inert**. `git diff` ran with the inherited working

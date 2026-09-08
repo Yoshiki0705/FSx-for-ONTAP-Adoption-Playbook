@@ -9,6 +9,41 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The role-label rule reported labels that name no person, in two independent ways.** Both were
+  found by a sibling repository, the second by asking a question about the first.
+  - **An ordinary word sat in the path that needs no role token.** `観点` was deliberately kept out
+    of that list — 「セキュリティの観点から」 is not a role label — but `視点` was left in, so
+    「> **コストの視点からの補足**」 and 「> **運用視点の注意**」 were reported. `perspective` was in
+    the same position: 「> **Cost perspective**」 is a topic. **Only one of the two ordinary words had
+    been handled.** Both now sit behind the role-token requirement, where `観点` already was.
+  - **`の視点` stays in that path, but only when it ends the label**, which is the shape of the
+    construction. That keeps the one thing the token-free path is uniquely for: a label naming a
+    *person*, whose name no role-token list can hold.
+  - **The near miss is the part worth recording.** The first proposal moved `視点` out wholesale, on
+    the reasoning that a personal name is the `pii` category's job. **`pii` has no personal-name
+    rule** — it matches case numbers, ticket IDs, `/Users/` paths, addresses, IPs and resource
+    identifiers. 「> **<a name> の視点**」 was matched only by the path being narrowed, so the change
+    would have left it matched by nothing. Caught because the sibling asked what else covered the
+    form before agreeing. **Nothing here would have reported it**: a gate stays green when a rule
+    stops matching something no test names.
+  - **The Japanese tokens had a prefix problem the boundary comment did not cover.** They carry no
+    ASCII boundary class, which is right — Japanese attaches particles without a space — and says
+    nothing about `エンジニア` sitting inside `エンジニアリング`. 「## エンジニアリングの観点」 and
+    「## 担当範囲の観点」 were reported: a field and a scope. The guards are script-based rather than
+    a list of compounds, because a list of compounds guesses at which nouns exist. Checking the rest
+    of the list found no further members: `アーキテクト` is not a prefix of `アーキテクチャ`, and
+    `レビュア` deliberately gets no guard because it would block `レビュアー`.
+  - **The accepted residual is pinned by a test rather than left as a surprise.** A topic label
+    ending in `の視点` (「> **コストの視点**」) is still reported. Position is a habit of word order
+    and carries no information about whether a person is named. The surface is narrower than "any
+    label containing 視点", and no neutral topic label this repository prescribes ends that way.
+  - `scripts/tests/test_role_label_vocabulary.py` runs the audit end-to-end and **asserts the
+    category**, which immediately found that its own helper read stdout while findings go to stderr —
+    every finding read as absent. A sibling test file checks only the exit code, so it never had to
+    know; its failure message printed an empty reason and is corrected here.
+  - Three mutations registered: returning the ordinary words to the token-free path, dropping the
+    end-anchor from `の視点`, and removing the Japanese prefix guards. Each is required to fail the
+    subject-label test while leaving the person-label tests green.
 - **The four API-dependent break tests skipped by default, and `make test` reported `OK` having run
   none of them.** Unauthenticated access to the GitHub API is 60 requests an hour against an address
   a hosted runner shares, and the CI step had no credential. `cross-repo-external.yml` already passed
