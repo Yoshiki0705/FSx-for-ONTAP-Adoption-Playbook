@@ -162,6 +162,10 @@ PERMITTED = (
     "- [MySupport Shift Toolkit ページ](https://mysupport.netapp.com/x)（NetApp Support アカウント要）",
     "実際のアクセス階層はエンドユーザーであり、ベンダーサポート契約を意味するものではありません。",
     "| Recovery Time | Unknown (under confirmation with AWS Support) |",
+    # A vendor name beside the verb "supports" is a statement about the product, which the rule
+    # already permits in Japanese through サポート対象. The English form was missing.
+    '    - "EC2 Instance Profile (IMDS v1/v2 — ClickHouse supports this)"',
+    "Athena supports reading it; AWS Support is not involved in that claim.",
 )
 
 

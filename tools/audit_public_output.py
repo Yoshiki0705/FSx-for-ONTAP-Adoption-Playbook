@@ -463,7 +463,11 @@ SUPPORT_ATTRIBUTION = re.compile(
 # contract is implied -- the opposite of citing a reply).
 _DESK = (
     r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)"
-    r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
+    # "ClickHouse supports this" is a statement about a product, and the rule already says so
+    # for サポート対象 and サポートされません. The English form was missing, so a parenthesis
+    # reading "(IMDS v1/v2 -- ClickHouse supports this)" was reported as a citation.
+    + ASCII_RIGHT
+    + r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
 )
 SUPPORT_CITATION = re.compile(
     # A parenthesis whose content names the desk.
