@@ -690,7 +690,26 @@ def audit_line(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=str(ROOT), help="directory to audit")
+    # A sibling repository can be clean on one rule while carrying a backlog on another --
+    # one has 710 naming findings and zero support attributions. Without this it could not
+    # gate the rule it has cleared, because the run fails on the backlog and the new rule's
+    # result is invisible inside it. A gate that cannot be switched on is not a gate.
+    parser.add_argument(
+        "--only",
+        default="",
+        help=f"comma-separated categories to report ({', '.join(CATEGORIES)}); default is all",
+    )
     args = parser.parse_args()
+
+    only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
+    unknown = only - frozenset(CATEGORIES)
+    if unknown:
+        # Raising beats reporting nothing: a typo in --only would otherwise make the gate
+        # pass on every input, which is the failure mode this whole file exists to avoid.
+        raise SystemExit(
+            f"--only: unknown category {', '.join(sorted(unknown))} "
+            f"(allowed: {', '.join(CATEGORIES)})"
+        )
 
     root = Path(args.path).resolve()
     findings: list[str] = []
@@ -711,6 +730,8 @@ def main() -> int:
                 in_fence = not in_fence
                 continue
             for category, message in audit_line(line, file_allowed, in_fence):
+                if only and category not in only:
+                    continue
                 findings.append(f"{rel}:{lineno}: [{category}] {message}")
 
     if findings:
@@ -719,7 +740,8 @@ def main() -> int:
             print(f"  {finding}", file=sys.stderr)
         return 1
 
-    print(f"audit: {scanned} file(s) clean")
+    scope = f" for {', '.join(sorted(only))}" if only else ""
+    print(f"audit: {scanned} file(s) clean{scope}")
     return 0
 
 
