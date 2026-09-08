@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A role token bounded on one side reported a country and missed the form that is normal in
+  Japanese.** The list carried `SA\b`, and that one character produced a false positive and a miss
+  at the same time: 「USA 市場の観点」 was reported, while 「（SA観点）」 was not. `\b` needs a
+  non-word character, and Python counts CJK as a word character, so the particle-adjacent form never
+  had a boundary to find.
+  - **Checking the rest of the list found four more members of the same family**: `Lead` inside
+    `Leadership`, `Admin` inside `Administration`, `Engineer` inside `Engineering`, and — the rule
+    being case-insensitive — `SA` inside `Visa`. None names a person, so each was a heading the gate
+    would have reddened for no reason. Fixing only the reported one would have repeated the lesson
+    already recorded here, that one member of a family says nothing about the rest.
+  - Every ASCII token is now bounded on both sides, with `s?` keeping the plural: `Engineers` names
+    people and `Engineering` names a field, which is the same job-title-versus-field cut applied to
+    word endings. The Japanese tokens stay unbounded, because an ASCII boundary around 担当 would
+    block exactly the adjacent form this change exists to catch.
+  - **`scripts/tests/test_cjk_word_boundaries.py` existed for this bug class and did not cover the
+    rule that reintroduced it.** The role label now has a case there, and both directions are
+    mutation-verified: restoring `SA\b` fails three cases, dropping `s?` fails two.
+  - Reported by a sibling repository, whose own copy drew the job-title-versus-field line first —
+    which is what made these false positives visible rather than acceptable.
 - **The marker-width invariant asserted nothing.** `inert` and `load_bearing` were defined as
   `without <= with` and `without > with` — **exact complements**, so "both" could not occur and the
   assertion could not fail. **Proven, not reasoned: with `strip_markers` replaced by `return line`, it
