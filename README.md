@@ -19,6 +19,8 @@
 
 | やりたいこと | ガイド | 所要時間 |
 |---|---|---|
+| **FSx for ONTAP が自分の課題に合うか判断する** | [どの AWS ファイルストレージかを決める](docs/ja/reference/decision-trees/file-storage-selection.md) | 10 分 |
+| **選択肢のトレードオフを対称に読む** | [ファイルストレージの選択肢の比較](docs/ja/reference/comparison/file-storage-options.md) | 15 分 |
 | このリポジトリの歩き方を知る | [ナビゲーションガイド](docs/ja/navigation.md) | 3 分 |
 | 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) | 10 分 |
 | SMB の ID 管理と監査を設計する | [SMB のユーザー管理と監査 決定ツリー](docs/ja/reference/decision-trees/smb-identity-and-audit.md) | 10 分 |
@@ -30,6 +32,10 @@
 | **自分の業種から、何を決めればよいか調べる** | [業種別リソースマップ — 読む順序](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) | 10 分 |
 | 判断を誤った事例から学ぶ | [事例集](docs/ja/case-studies/) | 10 分 |
 | 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
+
+> **最初の 1 行**: 上の決定木は **7 つの終端のうち 4 つで FSx for ONTAP に落ちません。**
+> FSx for ONTAP でなければならない終端は 1 つだけです（SMB と NFS を同じデータに同時に出す場合）。
+> **適合しないと分かった時点で読むのをやめられる**ようにしてあります。
 
 > **収録状況**: **12 モジュールすべてに中身があります。**
 > 各モジュールの README に、そのモジュールが答える問いと、対応するノートが一覧されています。
@@ -230,15 +236,26 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 
 ---
 
-## 関連リポジトリ
+## 関連リポジトリ — 判断の場所と実装の場所
 
-| リポジトリ | 概要 |
-|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | S3 Access Points サーバーレス処理パターン集（45+） |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 可観測性統合（メトリクス、アラート、自動対応） |
-| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 統合（Databricks / Snowflake / Athena / Glue / EMR） |
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 移行 |
-| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。**ファイルプロトコルの性能実測を持つ**ため、このリポジトリの性能記述の多くはここから引用しています（[引用索引](docs/ja/reference/cross-repo-index.md)） |
+**このリポジトリは判断を扱います。実装と実測はそれぞれのリポジトリにあります。**
+役割を分けているのは、同じことを 2 か所に書くと片方だけが更新され、古い側が新しい側を上書きするためです。
+
+**移る先は「何を決め終えたか」で決まります。**
+
+| ここで決まったこと | 移る先 | そちらにあるもの |
+|---|---|---|
+| **正本は Amazon S3、利用は読み取り中心** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | この構成を採るかの決定木（5 分岐）と、**ファイルプロトコルの性能実測**。このリポジトリの性能記述の多くはここからの引用です（[引用索引](docs/ja/reference/cross-repo-index.md)） |
+| **S3 Access Point でデータを出し、サーバーレスで処理する** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 処理パターンの実装（45+）と、ファイルシステムに対する運用パターン |
+| **AI / RAG で使い、元の ACL を効かせたい** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Amazon Bedrock と AWS CDK による実装。**権限を別の索引に再構成して検索時に判定する**形です（[単一 ID 認可の制約](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md)を読んでから） |
+| **ランサムウェア対策をどの層で持つか** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP、FPolicy による事象駆動の対応、サードパーティ製品との統合 |
+| **監視の経路を決めた** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | メトリクス、アラート、自動対応の実装（[経路の比較](docs/ja/reference/comparison/observability-routes.md)で選んでから） |
+| **分析基盤に載せる** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR との統合 |
+| **VMware から移す** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2 と FSx for ONTAP への移行手順 |
+
+**両方を通す順序がある場合は、決定ツリー側に書いてあります。**
+例として [ファイルストレージの決定木](docs/ja/reference/decision-trees/file-storage-selection.md#この決定木が送り出す先) は、
+終端 5 から先を扱わないことと、sibling 側の決定木へ渡す順序を明示しています。
 
 ---
 
