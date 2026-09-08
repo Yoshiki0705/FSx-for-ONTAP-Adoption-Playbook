@@ -9,6 +9,12 @@ Five rules were affected — bare `FSx`, account IDs, email addresses, vendor ti
 internal IPs. Each is the audit's own subject matter, and each was silent on the side of the tree
 where it mattered. Nothing errored; the audit printed "clean".
 
+A sixth arrived **after this file existed**. The role-label rule was given a `SA\b`, a boundary on
+one side only, and it reproduced both halves at once: 「USA 市場の観点」 was reported while
+「（SA観点）」 was not. This file is the record of that bug class and did not cover the new rule, so
+the class was reintroduced in a repository that had already written it down. That is the argument
+for adding a case here whenever a rule gains a token, not only when a rule is fixed.
+
 Reported by a sibling repository, which hit the identical asymmetry in a parity checker. Its
 trailing `(?![\\w])` let `100 MB and up` match while `100MB以上` did not, and it then reported 13
 findings where the truth was 9 — four false positives manufactured by the same rule. **The
@@ -48,6 +54,12 @@ CASES = [
     ("email", "連絡先person@corp.jpまで。", "Mail person@corp.jp for details."),
     ("vendor ticket", "課題AB-I-12345を参照。", "See AB-I-12345 for status."),
     ("internal ip", "管理IPは10.0.0.5です。", "The address 10.0.0.5 answers."),
+    # A standalone job title, which is where the one-sided boundary hid the common form.
+    ("role label", "## 前提（SA観点）", "## 前提（SA 観点）"),
+    # The plural names people, so the right-hand boundary has to admit it. Without `s?` both of
+    # these stop matching, and the NEGATIVE entries below still pass — so this pair is what tells
+    # "bounded correctly" apart from "bounded too tightly".
+    ("role label plural", "## 前提（Engineers観点）", "## 前提（Engineers 観点）"),
 ]
 
 
@@ -67,6 +79,15 @@ NEGATIVE = [
     ("account id", "v123456789012x is embedded in an identifier."),
     ("vendor ticket", "XAB-I-12345Z is not a ticket reference."),
     ("internal ip", "310.0.0.5 is not an RFC 1918 address."),
+    # The role-label family. Every one of these was reported before the boundary was made
+    # symmetric, and not one of them names a person: they are a country, three fields of practice
+    # and a payment network. `Visa` matches only because the rule is case-insensitive, which is why
+    # a two-letter title needs a boundary on its left as much as on its right.
+    ("role label", "## USA 市場の観点"),
+    ("role label", "## Leadership の観点"),
+    ("role label", "## Administration の観点"),
+    ("role label", "## Engineering 観点"),
+    ("role label", "## Visa 発行の観点"),
 ]
 
 

@@ -234,9 +234,34 @@ ROLE_LABEL = re.compile(
 # name implies no such thing. Dropping the bare disciplines loses no coverage, because the role forms
 # of all four end in a title that is still listed — `FinOps Engineer`, `AppSec Engineer`. `SA`, `CISO`
 # and `DPO` stay, being titles that stand alone.
-_ROLE = (
+#
+# Every ASCII token is bounded on **both** sides, because an unbounded one matches inside a longer
+# and unrelated word. The list carried `SA\b`, a boundary on the right only, and that single
+# character produced a false positive and a miss at the same time: 「USA 市場の観点」 was reported,
+# while 「（SA観点）」 was not — `\b` needs a non-word character, and Python counts CJK as a word
+# character, so the particle-adjacent form that is normal in Japanese never had a boundary to find.
+# Reported by a sibling repository. Checking the rest of the list found four more members of the
+# same family: `Lead` inside `Leadership`, `Admin` inside `Administration`, `Engineer` inside
+# `Engineering`, and — because this pattern is case-insensitive — `SA` inside `Visa`. Each is a
+# field or an unrelated noun, so each was a heading the gate would have reddened for no reason.
+#
+# `s?` keeps the plural: `Engineers` and `Reviewers` name people, while `Engineering` names a
+# field. That is the same job-title-versus-field cut as above, applied to word endings.
+#
+# The boundary class holds `_` and digits, not only letters. A class of `[^A-Za-z]` would be
+# *looser* than `\b` — it treats `_` as a boundary, so a configured identifier reads as prose.
+# `scripts/tests/test_cjk_word_boundaries.py` pins that with `FSx_OnPre`.
+#
+# The Japanese tokens stay unbounded on purpose. Japanese attaches particles without a space, so an
+# ASCII boundary class around 担当 or エンジニア would block exactly the adjacent form this change
+# exists to catch.
+_ROLE_W = r"[A-Za-z0-9_]"
+_ROLE_TITLE = (
     r"Specialist|Engineer|Architect|Officer|Analyst|Consultant|Manager|Lead|Admin|Reviewer|"
-    r"Practitioner|SA\b|CISO|DPO|"
+    r"Practitioner|SA|CISO|DPO"
+)
+_ROLE = (
+    rf"(?<!{_ROLE_W})(?:{_ROLE_TITLE})s?(?!{_ROLE_W})|"
     r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"
 )
 _LENS = r"lens|レンズ|視点|観点|perspective"
