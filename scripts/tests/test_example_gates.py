@@ -23,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from collections.abc import Iterator
@@ -74,6 +75,24 @@ def written(path: Path, body: str) -> Iterator[None]:
         yield
     finally:
         path.unlink(missing_ok=True)
+
+
+def _sweep_stale_probes() -> None:
+    """Clear probes a previously killed run left behind, before any gate reads the tree.
+
+    The `finally` in `temp_files` does not run when the process is killed, and the leftover then
+    fails every gate for a reason unrelated to the change being tested. Sweeping here means a
+    poisoned tree heals on the next run instead of blocking it.
+    """
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "sweep_gate_probes.py")],
+        check=False,
+        capture_output=True,
+        timeout=60,
+    )
+
+
+_sweep_stale_probes()
 
 
 class GatesRejectBrokenInput(unittest.TestCase):

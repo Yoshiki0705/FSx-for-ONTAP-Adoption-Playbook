@@ -206,6 +206,26 @@ when a rule stops matching something no test names.
 "Another rule handles it" is the same claim as above, and while narrowing it is load-bearing — the
 coverage disappears in the same commit that asserts it exists elsewhere.
 
+### A killed test run leaves a probe that fails every later gate
+
+The gate tests write a probe into `docs/` or `examples/`, run a gate against it, and remove it in a
+`finally`. **That cleanup does not run when the process is killed** — a timeout, a Ctrl-C, a closed
+terminal — and the leftover then fails every subsequent gate for a reason unrelated to what the next
+person is doing.
+
+It happened twice in one session. A `git push` was refused because the pre-push gate found a probe
+note whose `evidence` tier had no supporting body, and again because `shellcheck` was handed a probe
+script that vanished between the glob and the read. **Both were worked around by hand, which is the
+wrong repair** — the next person hits the same wall with no reason to suspect a dead test run.
+
+`make sweep-probes` runs **first** in `make all` and at import time in both gate test modules, so a
+poisoned tree heals instead of blocking. It reports what it removed rather than doing it silently.
+
+**The name is the contract.** Anything matching `zz-gate-probe*` under `docs/` or `examples/` is a
+test artifact, the sweep deletes it unasked, and a test holds that no real content is called that.
+The search is bounded to those two directories: **an unbounded delete keyed on a name pattern is a
+worse failure than the one being fixed.**
+
 ### A guard tested from inside the repository can be inert where it runs
 
 The workflow-observability hook shipped **inert**. `git diff` ran with the inherited working

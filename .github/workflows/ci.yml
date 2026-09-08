@@ -83,6 +83,10 @@ jobs:
       - name: Check Japanese-only link markers
         run: make ja-markers
 
+      # Before the checks that read the tree. A killed run elsewhere cannot poison CI, but keeping
+      # the order the same locally and here means the local failure mode is the one being tested.
+      - name: Sweep probe files a killed test run may have left
+        run: make sweep-probes
       - name: Check every module README routes the reader
         run: make entry-points
       - name: Audit public output

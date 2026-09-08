@@ -57,6 +57,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     **That leaves 41 bytes of headroom against the size budget**, so the next addition there has to
     remove something.
 
+- **A killed test run left a probe file that failed every later gate.** The gate tests write into
+  `docs/` and `examples/` and clean up in a `finally`, which **does not run when the process is
+  killed.** Two pushes in one session were refused by the pre-push gate over a leftover, and both were
+  worked around by hand — **the wrong repair, because the next person has no reason to suspect a dead
+  test run.**
+  - `make sweep-probes` runs **first** in `make all`, in CI, and at import time in both gate test
+    modules, so a poisoned tree heals instead of blocking. It reports what it removed.
+  - **The name is the contract**: `zz-gate-probe*` under those two directories is a test artifact, and
+    a test holds that no real content is named that. The search is bounded to two directories, because
+    an unbounded delete keyed on a name pattern is a worse failure than the one being fixed.
+  - Verified by reproducing the cause — killing a run mid-test, confirming the leftover fails
+    `validate_frontmatter.py`, then confirming the next run clears it.
 - **The sibling table claimed `CDK` for a repository that has none.** `ONTAP-Edge-to-Cloud-AI` is
   CloudFormation and SAM. Reported by that repository, which traced the claim to its own `AGENTS.md`
   holding "TypeScript for CDK constructs" as a convention **with no corresponding code**, and
