@@ -413,6 +413,69 @@ MUTATIONS: list[dict] = [
         "must_fail": ["test_self_link_to_a_missing_path_is_rejected"],
         "must_pass": ["test_self_link_pinned_to_a_commit_is_accepted"],
     },
+    {
+        "name": "ordinary viewpoint words returned to the token-free path",
+        "why": (
+            "The state this file's role-label rule was in. A path that needs no role token fires "
+            "on any word in its vocabulary, so putting an ordinary word there reports topic "
+            "labels. It is also the shortest way to make a missed personal-name label pass."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r'r"^\s*>\s*\*\*(?:[^*]*(?:lens|レンズ)[^*]*|[^*]*の視点\s*)\*\*", re.IGNORECASE',
+                r'r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE',
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": [
+            "test_labels_naming_a_person_are_reported",
+            "test_the_accepted_residual_is_still_reported",
+        ],
+    },
+    {
+        "name": "the end-anchor dropped from の視点",
+        "why": (
+            "Keeping the word but letting it match anywhere in the label. Every positive case "
+            "still passes, because loosening a pattern only widens it — so this is the mutation "
+            "that separates 'bounded to the construction' from 'the word is in the list'."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r"|[^*]*の視点\s*)\*\*",
+                r"|[^*]*の視点[^*]*)\*\*",
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": [
+            "test_labels_naming_a_person_are_reported",
+            "test_the_accepted_residual_is_still_reported",
+        ],
+    },
+    {
+        # From a comment stating that the ASCII-boundary reasoning "says nothing about the prefix
+        # problem". A comment that forbids something is a mutation candidate: if the mutation
+        # survives, the comment was an unenforced claim.
+        "name": "prefix guards removed from the Japanese role tokens",
+        "why": (
+            "The tokens carry no ASCII boundary, correctly, and that was read as carrying no "
+            "guard at all. `エンジニア` then matches inside `エンジニアリング` and `担当` inside "
+            "every kanji compound built on it — a field and a scope, reported as people."
+        ),
+        "module": "scripts.tests.test_role_label_vocabulary",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                r'r"スペシャリスト|エンジニア(?![ァ-ヶー])|アーキテクト|担当者|担当(?![一-龠])|責任者|レビュア"',
+                r'r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"',
+            ),
+        ],
+        "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
+        "must_pass": ["test_labels_naming_a_person_are_reported"],
+    },
 ]
 
 

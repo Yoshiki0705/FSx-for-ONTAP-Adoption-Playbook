@@ -226,8 +226,30 @@ PLACEHOLDER_RESOURCE_IDS = frozenset(
 # not see: `レンズ` (added), and `（Storage Specialist 観点）` as a *section heading* rather than a
 # callout. Each miss was found by a person, not by this file — which is the argument for widening on
 # the word list and on the form at the same time.
+#
+# This first pattern needs no role token, so its vocabulary has to be **idiom-bound**. `lens` and
+# `レンズ` qualify: outside this construction nobody labels a callout with them. `視点` did not, and
+# was in the list anyway — so 「> **コストの視点からの補足**」 and 「> **運用視点の注意**」 were
+# reported, both of them topic labels naming no person. That is the same mistake `観点` was already
+# kept out of this list to avoid; only one of the two ordinary words had been handled. Asked about it
+# by a sibling repository, whose own detector requires a role token on every path and therefore never
+# had the hole. `perspective` moves for the same reason — 「> **Cost perspective**」 is a topic.
+#
+# `の視点` stays, but only when it **ends** the label, which is the shape of the construction:
+# 「**X の視点**」. A topic label puts the word mid-label and continues past it. That keeps the one
+# thing this token-free path is uniquely for — a label naming a *person*, whose name no role-token
+# list can hold. Nothing else in this file covers that form: the `pii` rules match case numbers,
+# ticket IDs, paths, addresses and identifiers, and **not a bare personal name**. Dropping `の視点`
+# entirely would have left 「> **<a name> の視点**」 matched by no rule at all — caught only because
+# the sibling asked what else covered it before agreeing to the change.
+#
+# The residual is stated rather than hidden: a topic label that ends in `の視点`
+# (「> **コストの視点**」) is still reported. Position is a habit of word order and carries no
+# information about whether a person is named, so no regex separates that from 「**<a name> の視点**」.
+# The surface is narrower than "any label containing 視点", and none of the neutral topic labels this
+# repository actually prescribes — `**Security note**`, `**〜に関する補足**` — ends that way.
 ROLE_LABEL = re.compile(
-    r"^\s*>\s*\*\*[^*]*(?:lens|レンズ|の視点|視点|perspective)[^*]*\*\*", re.IGNORECASE
+    r"^\s*>\s*\*\*(?:[^*]*(?:lens|レンズ)[^*]*|[^*]*の視点\s*)\*\*", re.IGNORECASE
 )
 
 # `観点` and `視点` are ordinary words — 「セキュリティの観点から」 is not a role label. So this
@@ -263,9 +285,25 @@ ROLE_LABEL = re.compile(
 # *looser* than `\b` — it treats `_` as a boundary, so a configured identifier reads as prose.
 # `scripts/tests/test_cjk_word_boundaries.py` pins that with `FSx_OnPre`.
 #
-# The Japanese tokens stay unbounded on purpose. Japanese attaches particles without a space, so an
-# ASCII boundary class around 担当 or エンジニア would block exactly the adjacent form this change
-# exists to catch.
+# The Japanese tokens take no ASCII boundary class: Japanese attaches particles without a space, so
+# one around 担当 or エンジニア would block exactly the adjacent form this change exists to catch.
+#
+# That reasoning is right about ASCII boundaries and says nothing about the *prefix* problem, which
+# the same tokens have. 「## エンジニアリングの観点」 and 「## 担当範囲の観点」 were both reported —
+# a field and a scope, neither a person. Reported by a sibling repository, which hit `エンジニア`
+# inside `エンジニアリング` in its own copy. Checking the rest of the list found exactly one more,
+# `担当` inside every kanji compound built on it, and no others: `アーキテクト` is not a prefix of
+# `アーキテクチャ` (they diverge at the sixth character), and `スペシャリスト`, `責任者`, `レビュア`
+# are prefixes of nothing ordinary.
+#
+# The guards are script-based rather than a list of compounds, because a list of compounds is a guess
+# about which nouns exist. `担当` followed by a kanji is a compound noun; `担当者` is a person, so it
+# is listed first and matches before the guard applies. `エンジニア` followed by more katakana is a
+# longer katakana word.
+#
+# `レビュア` deliberately gets no katakana guard: `レビュアー` is the ordinary spelling of the same
+# word, and the guard would block it. The cost of the `エンジニア` guard is stated for the same
+# reason — `エンジニアチーム` names a group of people and now passes.
 _ROLE_W = r"[A-Za-z0-9_]"
 _ROLE_TITLE = (
     r"Specialist|Engineer|Architect|Officer|Analyst|Consultant|Manager|Lead|Admin|Reviewer|"
@@ -273,7 +311,7 @@ _ROLE_TITLE = (
 )
 _ROLE = (
     rf"(?<!{_ROLE_W})(?:{_ROLE_TITLE})s?(?!{_ROLE_W})|"
-    r"スペシャリスト|エンジニア|アーキテクト|担当|責任者|レビュア"
+    r"スペシャリスト|エンジニア(?![ァ-ヶー])|アーキテクト|担当者|担当(?![一-龠])|責任者|レビュア"
 )
 _LENS = r"lens|レンズ|視点|観点|perspective"
 ROLE_LABEL_WITH_ROLE = re.compile(
