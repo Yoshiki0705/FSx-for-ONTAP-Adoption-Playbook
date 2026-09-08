@@ -71,6 +71,24 @@ def temp_files(files: dict[str, str]) -> Iterator[None]:
             path.unlink(missing_ok=True)
 
 
+def _sweep_stale_probes() -> None:
+    """Clear probes a previously killed run left behind, before any gate reads the tree.
+
+    The `finally` in `temp_files` does not run when the process is killed, and the leftover then
+    fails every gate for a reason unrelated to the change being tested. Sweeping here means a
+    poisoned tree heals on the next run instead of blocking it.
+    """
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "sweep_gate_probes.py")],
+        check=False,
+        capture_output=True,
+        timeout=60,
+    )
+
+
+_sweep_stale_probes()
+
+
 class GateStillDetects(unittest.TestCase):
     def assert_rejected(
         self, result: subprocess.CompletedProcess[str], expect: str
@@ -126,6 +144,64 @@ class GateStillDetects(unittest.TestCase):
             self.assert_rejected(
                 run_gate("validate_frontmatter.py"), "unknown frontmatter key"
             )
+
+    def test_no_probe_name_collision(self) -> None:
+        """`zz-gate-probe*` is reserved for test artifacts, because the sweep deletes it unasked.
+
+        The sweep runs before every gate and removes anything matching that name under `docs/` or
+        `examples/`. If real content were ever called that, it would disappear without anyone
+        deleting it - so the name is the contract, and this holds it.
+        """
+        sweep = ROOT / "scripts" / "sweep_gate_probes.py"
+        self.assertTrue(
+            sweep.exists(), "the sweep is gone but the tests still write probes"
+        )
+        result = subprocess.run(
+            [sys.executable, str(sweep), "--check"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"a file named like a gate probe is present in the tree: {result.stderr}",
+        )
+
+    def test_the_sweep_removes_a_probe_and_reports_it(self) -> None:
+        """Proven on a real leftover, because a sweep that silently does nothing looks identical."""
+        probe = ROOT / "docs" / "ja" / "domains" / "cost" / "notes" / f"{PROBE}.md"
+        probe.write_text("---\ntitle: leftover\n---\n", encoding="utf-8")
+        try:
+            checked = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "sweep_gate_probes.py"),
+                    "--check",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertNotEqual(
+                checked.returncode, 0, "--check passed with a probe present"
+            )
+            swept = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "sweep_gate_probes.py")],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertEqual(swept.returncode, 0)
+            self.assertIn(
+                "swept", swept.stderr, "the sweep removed a file without saying so"
+            )
+            self.assertFalse(probe.exists(), "the probe survived the sweep")
+        finally:
+            probe.unlink(missing_ok=True)
 
     def test_a_module_readme_without_an_entry_point_is_rejected(self) -> None:
         """Strip the entry section from a real README and the gate must fail.
