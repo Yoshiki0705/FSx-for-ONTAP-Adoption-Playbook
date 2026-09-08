@@ -61,6 +61,8 @@ lang: ja
 
 **この 4,000 MBps という数値と、現行のクォータの記載が一致していません。** クォータのページは第 2 世代の上限を Multi-AZ 6,144 MBps、Single-AZ 73,728 MBps としています。**したがって第 2 世代で上限近くまで使う場合、8 という数の根拠をそのまま流用できません。**
 
+**ただし Single-AZ の 73,728 MBps を iSCSI の上限として扱うと過大です。** [Provisioning iSCSI for Windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-windows.html) は iSCSI が使えるのを **6 HA ペア以下**のファイルシステムに限っており、73,728 MBps は 12 HA ペアの値です。iSCSI の文脈で意味のある上限は 6 × 6,144 = **36,864 MBps** です（両ページを 2026-09-08 に確認）。**プロトコルの可用範囲がスループットの上限より先に効きます。**
+
 > **セッション数は自分の構成から計算してください。** 1 セッションあたり 625 MBps を目安に、必要なスループットを満たす本数を出します。**手順に書かれた 8 をそのまま使わないでください。** 8 の根拠として挙げられている 4,000 MBps は、[クォータ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html)の第 2 世代の値と一致しません（両ページを 2026-09-05 に確認）。
 
 ---
