@@ -91,6 +91,16 @@ BLOCKED = (
     "**仕様であるとの回答を得ました。**",
     "改善要望として検討する旨の回答を得ています（2026-09-02）。",
     "再現できないという回答がありました。",
+    # A citation slot, with no verb and no evidentiary noun for the other alternatives to catch.
+    # Found on a fourth repository: a source column whose entry is the desk, and a "Confirmed"
+    # cell whose value is the desk plus a characterisation. The first is also a broken link --
+    # its target is the date string -- which is what a citation to something unpublishable
+    # degrades into.
+    "| x | [API support](https://a), [AWS Support (verified)](verified 2026-05-22) |",
+    "| **Confirmed** | 2026-05-22 (AWS Support, product-level limitation) |",
+    "| src | [NetApp Support (confirmed)](confirmed 2026-06-01) |",
+    # 提示 was missing from the Japanese verb list, so the desk presenting a root cause passed.
+    "| **確認日** | 2026-05-26（Databricks Support が根本原因を提示） |",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -138,6 +148,13 @@ PERMITTED = (
     # about a question-answering product, with no support desk anywhere in it.
     "7-Eleven は 13,000+ 店舗の設備メンテナンスで技術者が即時回答を得る GenAI エージェントを構築した。",
     "アンケートで 200 件の回答を得ました。",
+    # A link *to* the desk is a portal, not a reply, and the target is what separates the two.
+    # Both forms are fixtures: an http target stays publishable, and a doc path whose name says
+    # inquiry is a draft of a question rather than an answer to one.
+    "[AWS Support](https://console.aws.amazon.com/support/) にサインインします。",
+    "[NetApp Support](https://mysupport.netapp.com/) のログインが必要です。",
+    "詳細は [AWS Support inquiry draft](./docs/support-inquiry.md) にあります。",
+    "| **照会日** | 2026-05-22（AWS サポートへ照会。回答待ち） |",
 )
 
 

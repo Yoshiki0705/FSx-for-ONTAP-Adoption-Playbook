@@ -190,7 +190,7 @@ PATCH /api/network/ip/service-policies/<uuid>
 > ONTAP behaviour rather than specific to FSx for ONTAP; the NetApp KB
 > [Command fails with "Command is not recognized command"](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
 > attributes it to being unable to run the command with the correct role or at the `advanced`
-> privilege level (AWS Support gave the same triage, 2026-09-02). **When the spelling is right and the
+> privilege level. **When the spelling is right and the
 > command is still not recognized, check that command family's `access` with
 > `security login role show -role <role>`.**
 
