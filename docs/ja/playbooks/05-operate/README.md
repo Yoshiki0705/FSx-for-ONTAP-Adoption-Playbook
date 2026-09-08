@@ -10,6 +10,18 @@
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **アラートが鳴った / 数字が悪い** | [監視は平均値で失敗する](notes/monitoring-fails-on-averages.md) | **閾値より先に統計値を決める理由。** 待機系ノードが平均を引き下げます |
+| **認証できない / SMB が出ない** | [fsxadmin はロックされる](notes/admin-account-lockout-and-recovery.md) / [SMB を提供できない SVM がある](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | **症状が同じで原因が違う 2 つ。** REST の応答では判別できません |
+| **まだ監視を組んでいない** | [監視経路の選択 決定木](../../reference/decision-trees/observability-route.md) | **経路は 1 つではなく、先に狭まる条件があります。** 導入が管理面に持ち込むリスクも含みます |
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |

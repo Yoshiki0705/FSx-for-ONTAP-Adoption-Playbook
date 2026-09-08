@@ -10,6 +10,19 @@ A hand-built environment cannot be reproduced. Infrastructure as code and automa
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **The template succeeded and the setup is still incomplete** | [The IaC boundary is the API surface](notes/what-iac-cannot-reach.md) | **a successful deployment does not reach the ONTAP-side settings.** This says where the boundary is |
+| **Active Directory integration still to automate** | [Automating Active Directory integration](notes/what-iac-cannot-reach.md#automating-active-directory-integration) | what can be automated, and what is left to do by hand |
+| **A pending decision on what to rehearse before production** | [Pre-production review](../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | **the irreversible settings, and the items worth exercising first** |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |
