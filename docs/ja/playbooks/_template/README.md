@@ -116,6 +116,8 @@ hand into the next single page to read.
 
 **3 行以内の表にしてください。** 長い入口は読まれません。
 
+**見出しは既存の形を使ってください / Use one of the existing headings**: `## 最初に読むもの` / `## 読む順序` / `## Read first` / `## Reading order`。**`make entry-points` は module README の最初の `##` がこの集合にあることを検査します** — 目次が先に来ていると落ちます。新しい言語を足すときは `tools/check_entry_section.py` の `ACCEPTED` に足してください。
+
 ---
 
 ## 検証記録の形式 / Recording a verification

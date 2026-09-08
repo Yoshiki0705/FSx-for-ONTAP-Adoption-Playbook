@@ -10,6 +10,21 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **A mix of NFS and SMB** | [The volume's security style decides the permission evaluation model](notes/security-style-and-permission-evaluation.md) | Which model evaluates access. **Stopping ID mapping does not stop SMB access on an NTFS-style volume** |
+| **An AD-joined configuration** | [The AD dependency lasts the lifetime, not just the join](notes/ad-dependency-lasts-the-lifetime.md) | That an expired credential **surfaces at the next maintenance window** |
+| **The symptom "SMB cannot be served"** | [Some SVMs cannot serve SMB](notes/smb-service-lost-on-cifs-server-delete.md) | That the cause is **the CIFS server having been deleted**, not when the SVM was created |
+
+**If SMB identity and auditing are still being designed, enter from [the SMB identity and audit decision tree](../../reference/decision-trees/smb-identity-and-audit.md).**
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

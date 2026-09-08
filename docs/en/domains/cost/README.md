@@ -10,6 +10,21 @@ Covers capacity, tiering, and the gap between estimates and measurements. Estima
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **A bill** (higher than expected) | [When the bill came in higher than expected](../../../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) | Whether the cost is provisioned or consumed. **The two lead to opposite actions** |
+| **An estimate you are about to build** | [Typical estimation assumptions that break](notes/provisioned-versus-consumed.md#typical-estimation-assumptions-that-break) | That estimates miss on assumptions rather than unit prices, and which assumptions those are |
+| **A plan to cut cost by tiering** | [Tiering policy comparison](../../../ja/reference/comparison/tiering-policies.md) (日本語) | What it saves, and **what the capacity-pool request charges give back** |
+
+**If the suspicion is that the minimum configuration itself is expensive, start from [the floor of the minimum configuration](../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) (日本語).**
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

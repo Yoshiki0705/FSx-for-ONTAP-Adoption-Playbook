@@ -12,6 +12,21 @@ Implementation of each route (templates, per-vendor integrations, building the c
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **A list of metrics you want to see** | [The route is narrowed first by authentication and access path](../../../ja/domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md) (日本語) | The conditions already decided before what you want to see |
+| **A route still to be chosen** | [Observability route decision tree](../../../ja/reference/decision-trees/observability-route.md) (日本語) | The available routes, and the trade-offs in the [comparison](../../../ja/reference/comparison/observability-routes.md) (日本語) |
+| **Dashboards already running on-premises** | [On-premises dashboards do not transfer as they are](../../../ja/domains/observability/notes/on-prem-dashboards-do-not-transfer.md) (日本語) | The difference in which metric sets are exposed |
+
+**If sites or accounts are crossed, read [cross-account is a network problem, not an IAM one](../../../ja/domains/observability/notes/cross-account-is-a-network-problem.md) (日本語) first.**
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

@@ -10,6 +10,21 @@ Covers encryption, audit, permission design, and considerations for regulated wo
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **An S3 Access Point policy** | [S3 Access Point permission design](notes/access-point-authorization-layers.md) | That **two layers are evaluated independently, with no subtraction across them** |
+| **A requirement to restrict access** | [Access restriction comparison](../../../ja/reference/comparison/access-restriction-options.md) (日本語) | The options per layer, with trade-offs stated symmetrically |
+| **An irreversible setting awaiting approval** | [Approval for an irreversible operation is taken separately from approval for the work](../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) | The case where **128 MiB pinned a file system for six months**, and how to split the approval |
+
+**Before relying on auditing as evidence, confirm [which reads are not recorded](../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語).** Encryption at rest is automatic; in transit it is off by default.
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

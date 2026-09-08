@@ -10,6 +10,21 @@ How to use NAS-resident data from analytics, AI, and applications without multip
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **A requirement to use the data without multiplying copies** | [An S3 Access Point authorizes every request as one identity](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The three ways to reach data without copying, and that **permissions are flattened** |
+| **An assumption that it can be used over the S3 API** | [It is not "S3 you can use as S3"](../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | The deltas against S3, and which constraints bite at design time |
+| **Versioning of training data or experiments** | [Dataset versions placed on a scheduled snapshot policy are deleted by it](../../../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | That the ceiling reached is **the volume count, not capacity** |
+
+**For permission-aware AI / RAG, read the first row before moving to an implementation repository.** The decision can sit in [three places](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#ai--rag-で設計する対象) (日本語), and the boundary moves with it.
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

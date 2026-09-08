@@ -10,6 +10,20 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **「Snapshot を取っている」という事実** | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに**守れる障害の範囲が違う**こと |
+| **RPO / RTO の要件** | [データ保護手段の比較](../../reference/comparison/data-protection-methods.md) | 手段ごとの守れる範囲、コスト、復旧までの距離 |
+| **改変不能な保持を求める要件** | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) | **不可逆な選択が 3 段ある**こと。128 MiB がファイルシステムを 6 か月固定した実例 |
+
+**別リージョン・別アカウントへ持ち出す前提なら [バックアップコピーはリストアするまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) が先です。**
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |

@@ -57,11 +57,25 @@ def run_gate(script: str, *args: str) -> subprocess.CompletedProcess[str]:
 
 @contextlib.contextmanager
 def temp_files(files: dict[str, str]) -> Iterator[None]:
-    """Write probe files, then remove them even when an assertion fails."""
+    """Write probe files, then remove them and the directories created for them.
+
+    Removing only the files is not enough, and the gap is invisible to
+    `test_tree_is_clean_after_the_probes`: **git does not track directories**, so
+    an empty `docs/ja/domains/zz-gate-probe/` left behind reports as a clean
+    tree while `check_i18n_parity.py` reads it as a module missing its README.
+    Measured — `make all` failed on exactly that, one target after the probe ran.
+
+    Directories are removed innermost-first and only when empty, so a probe
+    written into a real module directory cannot take it down with it.
+    """
     written: list[Path] = []
+    created: list[Path] = []
     try:
         for relative, content in files.items():
             path = ROOT / relative
+            for parent in reversed(path.parents):
+                if parent.is_relative_to(ROOT) and not parent.exists():
+                    created.append(parent)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
             written.append(path)
@@ -69,6 +83,9 @@ def temp_files(files: dict[str, str]) -> Iterator[None]:
     finally:
         for path in written:
             path.unlink(missing_ok=True)
+        for directory in sorted(set(created), key=lambda p: len(p.parts), reverse=True):
+            if directory.is_dir() and not any(directory.iterdir()):
+                directory.rmdir()
 
 
 class GateStillDetects(unittest.TestCase):
@@ -229,6 +246,39 @@ class GateStillDetects(unittest.TestCase):
     def test_template_directories_stay_exempt(self) -> None:
         """The narrowing above must not start failing on intentional placeholders."""
         self.assertEqual(run_gate("validate_frontmatter.py").returncode, 0)
+
+    def test_module_readme_without_an_entry_point_is_rejected(self) -> None:
+        """The one completion element whose absence renders as a working page.
+
+        A missing decision tree is a missing file. A module README that opens on
+        its table of contents looks finished, and the reader reads the contents
+        list as the route.
+        """
+        body = "\n# gate probe\n\n## このモジュールが扱う問い\n\n| # | 問い |\n|---|---|\n| 1 | a |\n"
+        with temp_files({f"docs/ja/domains/{PROBE}/README.md": body}):
+            self.assert_rejected(run_gate("check_entry_section.py"), PROBE)
+
+    def test_a_table_of_contents_is_not_an_entry_point(self) -> None:
+        """Presence is not the criterion; position is.
+
+        The entry point exists in this probe. It sits below the contents table,
+        so the reader still meets the table first — which is the state the gate
+        was written for, not an edge case around it.
+        """
+        body = "\n# gate probe\n\n## このモジュールが扱う問い\n\nrows\n\n## 最初に読むもの\n\nrouting\n"
+        with temp_files({f"docs/ja/domains/{PROBE}/README.md": body}):
+            self.assert_rejected(run_gate("check_entry_section.py"), PROBE)
+
+    def test_scaffolding_modules_stay_exempt(self) -> None:
+        """An underscore-prefixed module is scaffolding and carries no criterion.
+
+        Asserted in the accepting direction on purpose. A gate proven only to
+        reject is a gate that gets switched off the first time it fires on a
+        template.
+        """
+        body = "\n# gate probe\n\n## 構成\n\nno entry point here\n"
+        with temp_files({f"docs/ja/domains/_{PROBE}/README.md": body}):
+            self.assertEqual(run_gate("check_entry_section.py").returncode, 0)
 
     def test_hand_edited_language_switcher_is_rejected(self) -> None:
         """Switcher blocks are generated; a hand-edited one drifts from the tree."""
@@ -624,6 +674,26 @@ class GateStillDetects(unittest.TestCase):
             self.assert_rejected(run_gate("check_cross_repo.py"), "contract is missing")
         finally:
             contract.write_text(original, encoding="utf-8")
+
+    def test_probe_directories_are_removed_too(self) -> None:
+        """The cleanup a `git status` assertion cannot see.
+
+        `test_tree_is_clean_after_the_probes` below reads `git status`, and git
+        does not track directories — so an empty probe directory surviving is
+        reported as clean. `check_i18n_parity.py` reads it as a module missing
+        its README, and `make all` fails one target after the probe ran.
+        """
+        module = ROOT / "docs" / "ja" / "domains" / PROBE
+        with temp_files({f"docs/ja/domains/{PROBE}/README.md": "## 最初に読むもの\n"}):
+            self.assertTrue(module.is_dir(), "the probe directory was not created")
+        self.assertFalse(module.exists(), "the probe directory survived cleanup")
+
+    def test_a_real_directory_is_not_removed_with_the_probe(self) -> None:
+        """Cleanup removes what it created, not what it wrote into."""
+        existing = ROOT / "docs" / "ja" / "domains" / "cost" / "notes"
+        with temp_files({f"docs/ja/domains/cost/notes/{PROBE}.md": "body\n"}):
+            pass
+        self.assertTrue(existing.is_dir(), "an existing directory was removed")
 
     def test_tree_is_clean_after_the_probes(self) -> None:
         """A probe left behind would poison every later run of `make all`."""

@@ -83,6 +83,12 @@ jobs:
       - name: Check Japanese-only link markers
         run: make ja-markers
 
+      # The first of the four completion elements, and the only one whose absence is invisible. A
+      # missing decision tree is a missing file; a missing entry point is a page that still renders,
+      # so the reader lands on a table of contents and reads it as the route.
+      - name: Check module entry points
+        run: make entry-points
+
       - name: Audit public output
         run: make audit
       # After the audit, deliberately. The audit reads content; this reads how much of the audit has

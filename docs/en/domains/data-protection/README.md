@@ -10,6 +10,21 @@ Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protec
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **The fact that snapshots are being taken** | [Having snapshots and being able to recover are different](notes/snapshots-are-not-a-recovery-plan.md) | That **the range of failures each mechanism covers differs** |
+| **An RPO / RTO requirement** | [Data protection method comparison](../../../ja/reference/comparison/data-protection-methods.md) (日本語) | Each method's coverage, cost, and distance to recovery |
+| **A requirement for tamper-proof retention** | [Enabling SnapLock and locking it are separate](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | That **three irreversible choices sit in sequence**, and the case where 128 MiB pinned a file system for six months |
+
+**If the plan is to carry copies to another Region or account, read [a backup copy holds no file system until it is restored](../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) first.**
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |

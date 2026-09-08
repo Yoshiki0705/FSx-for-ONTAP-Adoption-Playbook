@@ -10,6 +10,20 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **NFS と SMB の混在という前提** | [ボリュームのセキュリティスタイルが権限評価のモデルを決める](notes/security-style-and-permission-evaluation.md) | どちらのモデルで評価されるか。**ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません** |
+| **AD 参加済みの構成** | [AD への依存は参加時ではなく生涯続く](notes/ad-dependency-lasts-the-lifetime.md) | 資格情報の失効が**次のメンテナンスで顕在化する**こと |
+| **「SMB が提供できない」という症状** | [SMB を提供できない SVM がある](notes/smb-service-lost-on-cifs-server-delete.md) | 原因は作成時期ではなく **CIFS サーバーの削除**であること |
+
+**SMB の ID と監査をこれから設計するなら [SMB の ID と監査の決定木](../../reference/decision-trees/smb-identity-and-audit.md) から入ってください。**
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |

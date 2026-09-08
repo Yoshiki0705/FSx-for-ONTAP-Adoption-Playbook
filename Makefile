@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
+.PHONY: allow-budget workflow-observability help lint i18n-check switcher-check ja-markers entry-points switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external
 
@@ -146,6 +146,9 @@ switcher-check: ## Verify language switchers, and that no page links to the wron
 ja-markers: ## Check that English links into Japanese-only pages are labelled
 	@$(PY) tools/check_ja_only_markers.py --selftest >/dev/null
 	@$(PY) tools/check_ja_only_markers.py
+entry-points: ## Check that every module README opens with an entry point
+	@$(PY) tools/check_entry_section.py --selftest >/dev/null
+	@$(PY) tools/check_entry_section.py
 
 switcher-write: ## Regenerate language switcher blocks from what exists on disk
 	@$(PY) tools/sync_lang_switcher.py --write
@@ -199,7 +202,7 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: lint i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: lint i18n-check switcher-check ja-markers entry-points audit allow-budget workflow-observability secrets links cross-repo anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

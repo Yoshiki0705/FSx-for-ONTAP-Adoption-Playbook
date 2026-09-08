@@ -12,6 +12,20 @@ Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **見たいメトリクスの一覧** | [経路は認証とアクセス経路で先に狭まる](notes/route-choice-is-bounded-by-access-and-auth.md) | 見たいものより前に決まっている条件 |
+| **経路をこれから選ぶという状況** | [監視経路の決定木](../../reference/decision-trees/observability-route.md) | 選べる経路と、[比較](../../reference/comparison/observability-routes.md)で見るトレードオフ |
+| **オンプレで動いているダッシュボード** | [オンプレのダッシュボードはそのまま移らない](notes/on-prem-dashboards-do-not-transfer.md) | 公開されるメトリクスセットの差 |
+
+**拠点やアカウントをまたぐ前提なら [クロスアカウントは IAM ではなくネットワークの問題](notes/cross-account-is-a-network-problem.md) が先です。**
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |

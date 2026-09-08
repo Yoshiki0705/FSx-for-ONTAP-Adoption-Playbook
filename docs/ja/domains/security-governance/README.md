@@ -10,6 +10,20 @@
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **S3 Access Point のポリシー** | [S3 Access Point の権限設計](notes/access-point-authorization-layers.md) | **2 つの層が独立に評価され、引き算が効かないこと** |
+| **「アクセスを絞りたい」という要件** | [アクセス制限の手段の比較](../../reference/comparison/access-restriction-options.md) | 層ごとの手段と、トレードオフを対称に並べた表 |
+| **不可逆な設定の承認** | [不可逆な操作の承認は作業の承認とは別に取る](notes/irreversible-operations-need-separate-approval.md) | **128 MiB がファイルシステムを 6 か月固定した**実例と、承認の分け方 |
+
+**監査を根拠に使う前に [記録されない読み取りの存在](notes/what-the-platform-gives-and-what-stays-yours.md) を確認してください。** 保存時の暗号化は自動でも、転送時は既定で無効です。
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |
