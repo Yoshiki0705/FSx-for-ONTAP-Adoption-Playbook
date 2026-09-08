@@ -59,6 +59,46 @@ IGNORED = shutil.ignore_patterns(
 
 MUTATIONS: list[dict] = [
     {
+        # The widening the issue names explicitly: accept the table of contents and the gate passes
+        # everywhere while checking nothing. The template's own words are that the entry point is not
+        # a table of contents, so this is the plausible edit that undoes the check.
+        "name": "the question table is accepted as an entry point",
+        "why": (
+            "Adding the contents heading to the accepted set is the shortest way to make a failing "
+            "README pass, and it makes the gate accept every module that only lists its notes - "
+            "which is the state twelve of fourteen modules were in."
+        ),
+        "module": "scripts.tests.test_entry_point_verdicts",
+        "edits": [
+            (
+                "tools/check_entry_points.py",
+                'ACCEPTED_JA = ("読む順序", "最初に読むもの")',
+                'ACCEPTED_JA = ("読む順序", "最初に読むもの", "このモジュールが扱う問い")',
+            ),
+        ],
+        "must_fail": ["test_a_table_of_contents_is_not_an_entry_point"],
+        "must_pass": ["test_an_entry_heading_is_accepted"],
+    },
+    {
+        # Fenced examples again. Two other detectors here each had to learn this separately.
+        "name": "a fenced heading counts as an entry point",
+        "why": (
+            "Dropping the fence flag is the shortest simplification of the scan, and a README that "
+            "documents the section inside a ```markdown block then satisfies the gate without having "
+            "the section."
+        ),
+        "module": "scripts.tests.test_entry_point_verdicts",
+        "edits": [
+            (
+                "tools/check_entry_points.py",
+                "        if in_fence:\n            continue",
+                "        if False:\n            continue",
+            ),
+        ],
+        "must_fail": ["test_a_heading_inside_a_fence_is_an_example"],
+        "must_pass": ["test_an_entry_heading_is_accepted"],
+    },
+    {
         "name": "ASCII boundaries emptied",
         "why": (
             "The shortest way to make the Japanese-adjacent case pass. Removing a boundary only "
