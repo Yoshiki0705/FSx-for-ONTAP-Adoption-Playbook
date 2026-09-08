@@ -211,7 +211,7 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 
 | イベント | severity | 意味 | 利用者から参照 |
 |---|---|---|---|
-| `adt.dest.directory.full` | `EMERGENCY` | 宛先ディレクトリが満杯で監査ログを書けない。**SACL 付きオブジェクトでサービス拒否に至り得る** | **不可**（AWS 確認、2026-09-03） |
+| `adt.dest.directory.full` | `EMERGENCY` | 宛先ディレクトリが満杯で監査ログを書けない。**SACL 付きオブジェクトでサービス拒否に至り得る** | **不可**（停止中の EMS 全件に現れず。2026-09-03 実測） |
 | `adt.stgvol.nospace` | `EMERGENCY` | ステージングボリュームに空きが無く、監査ログ用のファイル / ディレクトリを作成できない | **不可**（同上） |
 | `monitor.volume.full` / `monitor.volume.nearlyFull`（`MDV_aud_*` 対象） | `ALERT` / `ERROR` | ステージングボリュームが 98% / 95% に到達 | 可と**想定**（AWS 案内。当方未確認） |
 | `monitor.volume.full` / `monitor.volume.nearlyFull` / `wafl.vol.full`（宛先ボリューム対象） | `ALERT` / `ERROR` | 宛先が 98% / 95% に到達、または伸長に失敗 | **可**（実測） |
@@ -224,7 +224,7 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 |---|---|
 | 宛先ボリュームの使用率（95% / 99% の EMS、CloudWatch のボリュームメトリクス） | **アクセス断の予告信号。ただし猶予は 19〜65 秒**（下記） |
 | `wafl.vol.full` の EMS | 監査が EVTX の伸長に失敗した瞬間 |
-| `adt.dest.directory.full` / `adt.stgvol.nospace` の EMS | 書き込み失敗を直接示すイベント。**どちらも利用者から参照できません**（AWS 確認）。監視対象に置けません |
+| `adt.dest.directory.full` / `adt.stgvol.nospace` の EMS | 書き込み失敗を直接示すイベント。**どちらも利用者から参照できません**（停止中の EMS 全件に現れず）。監視対象に置けません |
 | `monitor.volume.*`（`MDV_aud_*` 対象）の EMS | ステージング逼迫。**参照できると想定されるが当方未確認。** 意図的に埋める手段が無いため検証できていません |
 | アグリゲートの空き容量 | ステージング領域が確保できる余地 |
 | `vserver audit show` の `Auditing State` | **停止中も `true`。** 健全性の判定に使えません |

@@ -101,6 +101,12 @@ BLOCKED = (
     "| src | [NetApp Support (confirmed)](confirmed 2026-06-01) |",
     # 提示 was missing from the Japanese verb list, so the desk presenting a root cause passed.
     "| **確認日** | 2026-05-26（Databricks Support が根本原因を提示） |",
+    # The desk word elided. Found on the Japanese half of a note whose English half wrote
+    # "(AWS Support, 2026-08-29)" in the same position, so the two halves of one document
+    # disagreed about whether the rule applied to them.
+    "**実行可能なコマンドの一覧は公開されていません**（AWS 確認、2026-08-29）。",
+    "> **AWS のブログに誤りがあります**（AWS 確認、2026-08-29）。",
+    "The syntax does not work (AWS confirmed, 2026-08-29).",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -162,6 +168,14 @@ PERMITTED = (
     "- [MySupport Shift Toolkit ページ](https://mysupport.netapp.com/x)（NetApp Support アカウント要）",
     "実際のアクセス階層はエンドユーザーであり、ベンダーサポート契約を意味するものではありません。",
     "| Recovery Time | Unknown (under confirmation with AWS Support) |",
+    # A vendor name beside the verb "supports" is a statement about the product, which the rule
+    # already permits in Japanese through サポート対象. The English form was missing.
+    '    - "EC2 Instance Profile (IMDS v1/v2 — ClickHouse supports this)"',
+    "Athena supports reading it; AWS Support is not involved in that claim.",
+    # A page, not a desk. The vendor name has to be immediately followed by the verb for the
+    # elided form to match, which is what keeps these two publishable.
+    "（AWS ドキュメントで確認、2026-08-29）",
+    "(confirmed against the AWS documentation, 2026-08-29)",
 )
 
 

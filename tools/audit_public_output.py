@@ -463,7 +463,11 @@ SUPPORT_ATTRIBUTION = re.compile(
 # contract is implied -- the opposite of citing a reply).
 _DESK = (
     r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)"
-    r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
+    # "ClickHouse supports this" is a statement about a product, and the rule already says so
+    # for サポート対象 and サポートされません. The English form was missing, so a parenthesis
+    # reading "(IMDS v1/v2 -- ClickHouse supports this)" was reported as a citation.
+    + ASCII_RIGHT
+    + r"(?!\s*(?:Site|サイト|アカウント|account|契約|contract))"
 )
 SUPPORT_CITATION = re.compile(
     # A parenthesis whose content names the desk.
@@ -472,7 +476,14 @@ SUPPORT_CITATION = re.compile(
     # `[AWS Support](https://console.aws.amazon.com/support/)` is a portal link and stays
     # publishable, which is why matching the label alone reported it. The target is inside the
     # match so the permit below can read it too.
-    rf"|\[[^\]\n]*{_DESK}[^\]\n]*\]\((?!https?://)[^)\n]*\)",
+    rf"|\[[^\]\n]*{_DESK}[^\]\n]*\]\((?!https?://)[^)\n]*\)"
+    # The desk word elided: "（AWS 確認、2026-08-29）", "(AWS confirmed, 2026-08-29)". The same
+    # act, written so the source is not named -- found on the Japanese half of a note whose
+    # English half said "(AWS Support, 2026-08-29)" in the same place. The vendor has to be
+    # immediately followed by the verb, which is what separates it from "AWS ドキュメントで確認"
+    # and "confirmed against the AWS documentation": those name a page, and are publishable.
+    r"|[(（]\s*(?:AWS|NetApp|Databricks|Snowflake|ClickHouse)\s*"
+    r"(?:確認|回答|見解|confirmed|advised|stated)",
     re.IGNORECASE,
 )
 # Asking, when, and filing stay publishable, so a parenthesis that says one of those is not a
