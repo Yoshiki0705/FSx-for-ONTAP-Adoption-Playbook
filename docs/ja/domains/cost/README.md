@@ -19,6 +19,8 @@
 | 3 | 見積もりが外れる典型的な前提は何か | [見積もりが外れる典型的な前提](notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) |
 | 4 | Snapshot が容量に与える影響をどう見るか | [Snapshot は容量として現れます](notes/provisioned-versus-consumed.md#容量として現れる-snapshot) |
 | 5 | コストと可用性・性能のトレードオフをどう見比べて決めるか | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
+| 6 | 請求が想定より高いとき、どこから確かめるか | [請求が想定より高いとき](../../reference/decision-trees/cost-higher-than-expected.md) |
+| 7 | 最小構成そのものが高いのではないか。複製が 1 つだけの場合はどうか | [最小構成の床](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) / [台数の問いから複製の問いへ](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#台数の問いから複製の問いへの置き換え) |
 
 ---
 
