@@ -188,13 +188,20 @@ Les Issues et Pull Requests sont bienvenues. Voir [CONTRIBUTING.md](../../CONTRI
 
 ## Dépôts liés
 
-| Dépôt | Contenu |
-|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Plus de 45 modèles de traitement serverless via S3 Access Points |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Intégrations d'observabilité (métriques, alertes, réponse automatisée) |
-| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Intégrations Lakehouse (Databricks / Snowflake / Athena / Glue / EMR) |
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration VMware → EC2 + FSx for ONTAP |
-| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Collecte via l'API S3, consommation via NFS/SMB FlexCache. **Détient les mesures des protocoles de fichiers**, que la plupart du contenu de performance de ce dépôt cite plutôt que de re-mesurer ([index des citations](../ja/reference/cross-repo-index.md)) |
+**Ce dépôt traite des décisions. Les implémentations et les mesures se trouvent dans les dépôts ci-dessous.** Un même fait présent à deux endroits finit par être obsolète à l'un des deux.
+
+**La destination suivante dépend de ce qui est déjà décidé.**
+
+| Décidé ici | Aller vers | Ce qu'on y trouve |
+|---|---|---|
+| **La source de vérité est Amazon S3, usage principalement en lecture** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Un arbre de décision sur l'adoption de cette architecture et **les mesures des protocoles de fichiers** |
+| **Exposer les données via un point d'accès S3 et les traiter en serverless** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Implémentations de motifs de traitement et motifs d'exploitation du système de fichiers |
+| **Alimenter une chaîne IA / RAG en respectant les permissions d'origine** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Une implémentation sur Amazon Bedrock et AWS CDK. **Les permissions sont reconstruites dans un index distinct et évaluées à la recherche** |
+| **Agréger des données edge / IoT dispersées avant analyse** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | Agrégation dans ONTAP puis Bedrock / Athena / SageMaker via des points d'accès S3. **Uniquement les écarts propres à l'IoT ; le choix de la couche de stockage vient d'ici** |
+| **À quelle couche placer la défense contre les rançongiciels** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP, réponse événementielle via FPolicy, intégrations tierces |
+| **La route de supervision est choisie** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Métriques, alertes et réponse automatisée |
+| **Poser les données sur une plateforme analytique** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Intégrations Databricks / Snowflake / Athena / Glue / EMR |
+| **Migrer depuis VMware** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration vers Amazon EC2 avec FSx for ONTAP |
 
 ---
 

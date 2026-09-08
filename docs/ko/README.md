@@ -188,13 +188,20 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 
 ## 관련 리포지토리
 
-| 리포지토리 | 개요 |
-|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | S3 Access Points 서버리스 처리 패턴 모음(45+) |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 가관측성 통합(메트릭, 알림, 자동 대응) |
-| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 통합(Databricks / Snowflake / Athena / Glue / EMR) |
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 마이그레이션 |
-| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3로 수집 → FlexCache의 NFS/SMB로 활용. **파일 프로토콜 성능 실측을 보유**하며, 이 리포지토리의 성능 관련 서술은 대부분 여기에서 인용합니다（[인용 색인](../ja/reference/cross-repo-index.md)） |
+**이 리포지토리는 판단을 다룹니다. 구현과 실측은 아래 리포지토리에 있습니다.** 같은 사실을 두 곳에 두면 한쪽이 오래된 상태로 남기 때문입니다.
+
+**다음에 갈 곳은 이미 무엇을 결정했는지로 정해집니다.**
+
+| 여기서 결정한 것 | 이동할 곳 | 그곳에 있는 것 |
+|---|---|---|
+| **정본은 Amazon S3이고 읽기 중심으로 사용** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 이 구성을 채택할지 판단하는 결정 트리와 **파일 프로토콜 실측값** |
+| **S3 액세스 포인트로 데이터를 내보내 서버리스로 처리** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 처리 패턴 구현과 파일 시스템 운영 패턴 |
+| **AI / RAG에서 사용하며 원래 권한을 적용** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Amazon Bedrock과 AWS CDK 구현. **권한을 별도 인덱스로 재구성해 검색 시점에 판정합니다** |
+| **흩어진 엣지 / IoT 데이터를 모아 분석** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | ONTAP로 집계한 뒤 S3 액세스 포인트를 통해 Bedrock / Athena / SageMaker. **IoT 고유의 차이만 다루며 스토리지 계층 선택은 이곳 기준입니다** |
+| **랜섬웨어 대응을 어느 계층에서 가질지** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP, FPolicy 기반 이벤트 대응, 서드파티 통합 |
+| **모니터링 경로를 결정** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 메트릭, 알림, 자동 대응 |
+| **분석 플랫폼에 올리기** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 통합 |
+| **VMware에서 이전** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2와 FSx for ONTAP로의 마이그레이션 |
 
 ---
 
