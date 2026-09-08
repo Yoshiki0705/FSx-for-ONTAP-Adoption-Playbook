@@ -10,6 +10,18 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 
 ---
 
+## 最初に読むもの
+
+**手元にある材料から、次に読む 1 ページを決めます。** 下の「扱う問い」は目次で、これは入口です。
+
+| 手元にあるもの | 最初に読むもの | そこで分かること |
+|---|---|---|
+| **Snapshot は取っている** | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md#守れる対象) | 仕組みごとに守れる障害が違います。**Snapshot はボリュームと一緒に失われます** |
+| **別リージョン・別アカウントへ退避したい** | [バックアップコピーは復元するまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) | 退避先で何が存在し、何が存在しないか。**SnapMirror との選び分けもここです** |
+| **ランサムウェア対策を求められている** | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) | **不可逆な選択が 3 段あります。** 特権削除は満了後には使えません |
+
+---
+
 ## このモジュールが扱う問い
 
 | # | 問い | ノート |

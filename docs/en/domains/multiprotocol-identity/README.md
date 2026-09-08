@@ -10,6 +10,19 @@ Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Mo
 
 ---
 
+## Read first
+
+**This turns what you already have in hand into the next single page to read.** The table below it is
+the table of contents; this is the entry point.
+
+| What you have | Read first | What it settles |
+|---|---|---|
+| **Serving the same data over NFS and SMB** | [Security style decides the permission model](notes/security-style-and-permission-evaluation.md) | **decide the style first.** Changing it later changes how permissions are evaluated |
+| **AD integration, planned or already joined** | [The AD dependency lasts the lifetime, not the join](notes/ad-dependency-lasts-the-lifetime.md) | **an expired credential is asymptomatic until the next maintenance window** |
+| **SMB will not connect** | [Some SVMs cannot serve SMB](notes/smb-service-lost-on-cifs-server-delete.md) | **the cause is a deleted CIFS server, not when the SVM was created** |
+
+---
+
 ## Questions this module answers
 
 | # | Question | Notes |
