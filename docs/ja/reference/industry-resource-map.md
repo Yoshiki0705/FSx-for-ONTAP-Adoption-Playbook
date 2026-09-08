@@ -62,6 +62,9 @@ lang: ja
 | サイバーレジリエンス（業種横断） | [データ保護](../domains/data-protection/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **有効化とロックが別だという点。** 不可逆な選択が 3 段あります |
 | 可観測性（業種横断） | [性能](../domains/performance/) | [セキュリティ・ガバナンス](../domains/security-governance/) | 何が見えないか。SMB 監査は最初の読みと書きしか記録しません |
 | データレイク / Lakehouse（業種横断） | [データ活用](../domains/data-utilization/) | [性能](../domains/performance/) | S3 AP の制約と、接続数で当たる上限が変わること |
+| ファイルシステム運用（業種横断） | [運用](../playbooks/05-operate/) | [コスト](../domains/cost/) | **稼働中のファイルシステムに加える変更が、無停止に見えて無停止ではないこと。** スループット変更はファイルサーバーの入れ替えを伴います（[スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md)）。階層化も[常に安くなるとは限りません](../domains/cost/notes/provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由) |
+
+**末尾の 4 行は業種ではありません。** 3 行はワークロードの縦方向（サイバーレジリエンス、可観測性、データレイク）で、1 行は運用者の役割（ファイルシステム運用）です。**役割で引く行は、ワークロードの形が決まっていなくても読めます** — 対象が業務のパイプラインではなく、稼働中のファイルシステムそのものだからです。
 
 **どの業種でも共通して先に通すもの**があります。業種の行より優先してください。
 
@@ -249,6 +252,17 @@ lang: ja
 | パターン | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
 | パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 設計段階の制約 |
+
+### ファイルシステム運用（業種横断）
+
+**この行の対象は業務のワークロードではなく、稼働中のファイルシステムそのものです。** 容量のライトサイジング、階層化、ストレージ効率、Snapshot ライフサイクル、QoS 監視、コスト最適化。**S3 Access Point は使いません。**
+
+| 種類 | リソース | 論点 |
+|------|----------|------|
+| パターン | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns の `operations/`](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/operations) | 6 つの運用パターン。データパスではなくファイルシステムに手を入れます |
+| ノート | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) | 変更はファイルサーバーの入れ替えを伴い、メンテナンスウィンドウ中は遅延しえます |
+| ノート | [階層化が常に安くなるとは限らない理由](../domains/cost/notes/provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由) | 容量プール階層のリクエスト課金 |
+| 決定木 | [請求が想定より高いとき](decision-trees/cost-higher-than-expected.md) | 確保した量か使った量か。どちらかで打ち手が変わります |
 
 ---
 
