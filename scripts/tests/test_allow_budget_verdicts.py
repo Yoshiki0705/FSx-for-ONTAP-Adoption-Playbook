@@ -137,6 +137,29 @@ class MarkersAreDirectivesNotMentions(unittest.TestCase):
         """Documenting the syntax must not activate it."""
         self.assertTrue(audit_line(f"{self.FORBIDDEN} `<!-- allow:naming -->`"))
 
+    def test_a_marker_inside_a_fence_does_not_suppress(self) -> None:
+        """A fence and a code span are one rule in two shapes, and only one half was implemented.
+
+        A sibling repository found the identical split: a heading telling authors to add a marker went
+        unreported, because the example inside it silenced the very line describing the feature. Here
+        the two markers in that position both sat in `CONTRIBUTING.md`, which documents the syntax.
+        """
+        self.assertTrue(
+            audit_line(
+                f"{self.FORBIDDEN} <!-- allow:naming -->", frozenset(), in_fence=True
+            ),
+            "a fenced example is honoured as a directive",
+        )
+
+    def test_a_marker_outside_a_fence_still_suppresses(self) -> None:
+        """The distinction is worth something only if the other side keeps working."""
+        self.assertEqual(
+            audit_line(
+                f"{self.FORBIDDEN} <!-- allow:naming -->", frozenset(), in_fence=False
+            ),
+            [],
+        )
+
     def test_a_forbidden_term_inside_a_code_span_is_still_reported(self) -> None:
         """Only marker extraction ignores code spans. Findings still match the original line."""
         self.assertTrue(audit_line("the `FSxN` short form"))

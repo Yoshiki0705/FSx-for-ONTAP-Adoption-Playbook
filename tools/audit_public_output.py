@@ -302,20 +302,32 @@ def file_allowances(lines: list[str]) -> set[str]:
 
 
 CODE_SPAN = re.compile(r"`[^`]*`")
+# A fenced block and a code span are two forms of one rule - **this is code, not prose** - and only
+# one of them was implemented. A sibling repository named the shape after finding the same split in
+# its own detector: the recorded rule was not missing, its scope was one step too narrow.
+FENCE = re.compile(r"^\s*(```|~~~)")
 
 
 def audit_line(
-    line: str, file_allowed: frozenset[str] = frozenset()
+    line: str,
+    file_allowed: frozenset[str] = frozenset(),
+    in_fence: bool = False,
 ) -> list[tuple[str, str]]:
     """Return (category, message) findings for one line, honouring allow markers.
 
-    **Markers inside a code span are documentation of the syntax, not a use of it.** Without this,
+    **A marker inside a code span or a fenced block is documentation of the syntax, not a use of it.**
+    The two are one rule in two shapes - this is code, not prose - and only the code-span half was
+    implemented here. A sibling repository found the identical split in its own detector, where a
+    heading telling authors to add a marker went unreported because the example silenced the very line
+    describing it.
+
+    Without this,
     the line in `AGENTS.md` that tells an author to write `<!-- allow:naming -->` was itself an
     exempt line - and appending a code-span marker to any sentence silenced the detector on it,
     which is the same smuggling path as the prose form. Findings are still matched against the
     original line, so a forbidden term inside a code span is still reported.
     """
-    markers = CODE_SPAN.sub("", line)
+    markers = "" if in_fence else CODE_SPAN.sub("", line)
     allowed = {match.group(1) for match in ALLOW.finditer(markers)} | set(file_allowed)
     if "all" in allowed:
         return []
@@ -405,8 +417,12 @@ def main() -> int:
             findings.append(f"{rel}: not valid UTF-8")
             continue
         file_allowed = frozenset(file_allowances(lines))
+        in_fence = False
         for lineno, line in enumerate(lines, start=1):
-            for category, message in audit_line(line, file_allowed):
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            for category, message in audit_line(line, file_allowed, in_fence):
                 findings.append(f"{rel}:{lineno}: [{category}] {message}")
 
     if findings:
