@@ -334,6 +334,30 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A fourth 業種横断 row in the reading-order table, for file-system operations.** A sibling asked
+  which row its OPS patterns map to and declined to invent one, on the grounds that the division is
+  this repository's to make. Thirteen of its READMEs had no back-link because of it.
+  - The row reads `運用` then `コスト`, decided by reading the six patterns rather than the request:
+    `capacity-rightsizing`, `cost-optimization`, `storage-efficiency` and `tiering-optimizer` are
+    capacity and cost, `snapshot-lifecycle` is retention, and only `qos-monitoring` is performance.
+    **Four of six land in cost**, so the nearest existing row — 通信, which reads `運用` then `性能` —
+    would have sent an operator to the wrong second module.
+  - The judgment column names the one that decides whether the work is worth doing at all: **whether
+    reducing usage changes the bill depends on provisioned versus consumed.** It points at the cost
+    decision tree, whose first branch is exactly that.
+  - **Every one of those six patterns carries a caveat that its number is an operational guide rather
+    than a benchmark or a bill.** That is stated in the row, because a reader arriving from a tool that
+    produced a figure is the one most likely to treat it as measured.
+  - **The table's own instruction had to be amended, not just extended.** It says a row is chosen by
+    workload shape, and operations is not a workload — it is what is done *to* a running file system.
+    The three existing 業種横断 rows were already concerns rather than shapes, so the instruction was
+    loose before this row; it now says so.
+  - **The matching section in the per-industry index arrived separately, in #203**, along with a first
+    version of this row that this change replaces. The three existing 業種横断 rows each have such a
+    section, so a row without one would have been the only cross-industry entry with no material behind
+    it; it indexes the sibling's `operations/` directory and returns to the cost decision tree and two
+    notes. **That commit carried no CHANGELOG entry, so this is the record for both halves** — two
+    sessions worked the same request in parallel, and the duplicate is what made the row land twice.
 - **The four directions of cross-protocol visibility, and the one value in them that must not be
   quoted.** A pipeline that writes through one protocol and reads through the other waits, and how
   long depends on which way round it is. Measured on Amazon FSx for NetApp ONTAP: S3 Access Point
