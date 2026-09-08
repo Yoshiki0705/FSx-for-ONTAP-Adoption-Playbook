@@ -408,8 +408,11 @@ SUPPORT_ATTRIBUTION = re.compile(
     r"[^。\nへに]{0,14}?"
     r"(?:回答(?!\s*(?:待ち|を\s*待))|見解|返信|指摘|案内|確認結果|追加確認|確認|指針|やり取り|検証|分析)"
     r"|サポート回答"
-    # "...との回答を得た" / "回答がありました" attached to a confirmation.
-    r"|(?:回答|見解)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
+    # Reported speech: "仕様であるとの回答を得ました", "検討する旨の回答を得ています". **The quotative
+    # particle is doing the work**, because the desk is often named in an earlier sentence and not
+    # in this one. Without it the alternative fired on "即時回答を得る GenAI エージェント", which is
+    # a sentence about a question-answering product.
+    r"|(?:との|という|旨の)\s*(?:回答|見解|説明)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
     # The desk as the subject of confirming or reproducing.
     r"|(?:(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)|サポート側)"
     # `に` is excluded here on purpose: "サポートに確認中" is the act of asking and stays

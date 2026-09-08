@@ -86,6 +86,11 @@ BLOCKED = (
     "AWS サポートからの回答により、実態が明確になりました",
     "| **確認方法** | AWS サポートによる検証 + API ドキュメント確認 |",
     "部分的成功は不完全な内部処理の副作用（Databricks サポート 2026 年 5 月確認） |",
+    # Reported speech with the desk named in an earlier sentence rather than this one. The
+    # quotative particle is the only anchor available.
+    "**仕様であるとの回答を得ました。**",
+    "改善要望として検討する旨の回答を得ています（2026-09-02）。",
+    "再現できないという回答がありました。",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -129,6 +134,10 @@ PERMITTED = (
     "- これは Databricks サポート対象パスではない",
     "本番利用前に Snowflake サポートへ確認してください |",
     "FlexCache は 9.13.1 以降でサポート対象です。",
+    # **This is why the quotative anchor is required.** Found in a sibling repository: a sentence
+    # about a question-answering product, with no support desk anywhere in it.
+    "7-Eleven は 13,000+ 店舗の設備メンテナンスで技術者が即時回答を得る GenAI エージェントを構築した。",
+    "アンケートで 200 件の回答を得ました。",
 )
 
 
