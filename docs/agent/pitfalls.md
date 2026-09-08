@@ -238,6 +238,16 @@ So when a rule is written to catch silence, ask what its loud counterpart would 
 counterpart was in the budget itself: **prose mentioning a marker was counted as a marker**, so
 writing about one could fail `make allow-budget` with nothing wrong.
 
+### Before asking whether a suppression is justified, ask whether it is a suppression
+
+`shrink-only` covers two ways an exemption can be wrong — it suppresses nothing, or it invents a
+finding. **Both assume the thing is a suppression at all.** A sibling repository named the third
+axis: the layer that decides **"is this a marker"** sits before the layer that judges whether the
+marker earns its place, and it was missing on both sides.
+
+Everything found here lived in that layer: prose mentioning a marker, a marker shown in a code span,
+a marker shown inside a fence. **None of them are directives, and all three were honoured.**
+
 ### A marker must be a directive, not a mention of one
 
 Two readings were too loose, and both were live holes:
@@ -246,13 +256,21 @@ Two readings were too loose, and both were live holes:
 |---|---|---|
 | `allow:naming` bare in prose | **yes** | no |
 | `` `<!-- allow:naming -->` `` in a code span | **yes** | no |
+| the marker inside a fenced block | **yes** | no |
 
 **Every line documenting these markers was therefore exempting itself**, and appending a code-span
 marker to any sentence silenced the detector on it. The marker now requires the HTML comment wrapper,
 and code spans are stripped before markers are extracted — while findings still match the original
 line, so a forbidden term inside a code span is still reported.
 
-**The two fixes cover different sentences and each needs its own test.** The mutation harness proved
+**A fence and a code span are one rule in two shapes — this is code, not prose — and only the
+code-span half was implemented.** The fence half was closed a day later, after a sibling reported the
+identical split in its own detector, where a heading telling authors to add a marker went unreported
+because the example silenced the line describing the feature. **The recorded rule was not missing; its
+scope was one step too narrow** — which is a different failure from forgetting to apply it, and the
+one that survives a review of "is the rule written down".
+
+**The fixes cover different sentences and each needs its own test.** The mutation harness proved
 it: a test using a backticked mention passes with the wrapper requirement removed, because the code
 span was already stripped. Only a bare mention exercises the wrapper.
 

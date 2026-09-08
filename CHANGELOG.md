@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A marker inside a fenced block was still honoured as a directive.** A fence and a code span are
+  one rule in two shapes — *this is code, not prose* — and only the code-span half was implemented.
+  Both markers in that position sat in `CONTRIBUTING.md`, which documents the syntax, so **the
+  documentation of the feature was exempting itself.**
+  - Measured first: two markers, and **ignoring them produces no new finding.** 26 markers → 24.
+  - Reported by a sibling repository, which found the identical split in its own heading detector,
+    where a heading telling authors to add a marker went unreported. **The recorded rule was not
+    missing; its scope was one step too narrow** — a different failure from forgetting to apply it,
+    and the one that survives a review of "is the rule written down".
+  - `FENCE` is imported rather than redefined. **Two definitions of "what is a marker" already
+    disagreed once**, and the budget's fence-versus-inert asymmetry documented last release is now
+    gone rather than explained.
+  - Thirteen mutations, all killed.
+  - **Not applicable here: reporting the processed line instead of the original.** The sibling hit
+    that as a by-product; this audit prints `path:line` and category only, never the line text.
 - **The workflow-observability guard shipped inert.** `git diff` ran with the inherited working
   directory; a hook process does not start inside the repository, git failed there, and **the empty
   result read as "no unobserved workflow was touched"** — a silent pass on every merge. It now takes

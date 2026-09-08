@@ -13,8 +13,6 @@ AGENTS.md	file:pii	1
 CONTRIBUTING.md	file:naming	1
 CONTRIBUTING.md	file:neutrality	1
 CONTRIBUTING.md	file:pii	1
-CONTRIBUTING.md	naming	1
-CONTRIBUTING.md	pii	1
 docs/agent/pitfalls.md	naming	2
 docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	1
 docs/i18n-terms.md	file:naming	1

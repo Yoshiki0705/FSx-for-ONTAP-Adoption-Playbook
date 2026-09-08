@@ -185,6 +185,26 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # The half that was missing while the other half was recorded as a rule. Reported by a
+        # sibling repository, which found the same split in its own heading detector.
+        "name": "a fenced marker is honoured as a directive",
+        "why": (
+            "Ignoring the fence flag is the shortest way to simplify the call, and it restores the "
+            "state where a documented example silences the line that documents it - which is how a "
+            "heading describing the feature went unreported in a sibling repository."
+        ),
+        "module": "scripts.tests.test_allow_budget_verdicts",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'markers = "" if in_fence else CODE_SPAN.sub("", line)',
+                'markers = CODE_SPAN.sub("", line)',
+            ),
+        ],
+        "must_fail": ["test_a_marker_inside_a_fence_does_not_suppress"],
+        "must_pass": ["test_a_marker_outside_a_fence_still_suppresses"],
+    },
+    {
         # The hole this closed: a line mentioning the marker in prose exempted itself.
         "name": "allow marker recognised as bare text",
         "why": (

@@ -28,7 +28,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from pathlib import Path
 
@@ -38,6 +37,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from audit_public_output import (
     ALLOW,
     CODE_SPAN,
+    FENCE,
     FILE_ALLOW,
     FILE_ALLOW_SCAN_LINES,
     audit_line,
@@ -46,7 +46,6 @@ from audit_public_output import (
 )
 
 BUDGET = ROOT / "docs" / "agent" / "allow-marker-budget.txt"
-FENCE = re.compile(r"^\s*(```|~~~)")
 
 HEADER = """\
 # Audit allow markers, counted per file and category. Generated - do not hand-edit.
@@ -147,14 +146,22 @@ def snapshot() -> dict[tuple[str, str], int]:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
             continue
+        in_fence = False
         for line in lines:
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
             # The audit's own extraction, or the two disagree about what a marker is. They did: this
             # counted raw lines while the inert check stripped code spans, so a table cell in
             # `pitfalls.md` showing the syntax was budgeted as a live marker.
             #
-            # Fences are counted here but skipped by the inert check, deliberately. The audit honours
-            # a marker inside a fence, so the budget has to see it; the inert check must not demand
-            # the deletion of a documented example.
+            # Fences are skipped on both sides now. The audit stopped honouring a marker inside a
+            # fence, so counting one here would budget something that is not a directive, and the
+            # asymmetry this comment used to explain away is gone. One definition of what a fence is,
+            # imported rather than repeated - two definitions of "what is a marker" already
+            # disagreed once.
             for match in ALLOW.finditer(CODE_SPAN.sub("", line)):
                 key = (rel, match.group(1))
                 counts[key] = counts.get(key, 0) + 1
