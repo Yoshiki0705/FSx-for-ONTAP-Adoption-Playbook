@@ -83,6 +83,8 @@ jobs:
       - name: Check Japanese-only link markers
         run: make ja-markers
 
+      - name: Check every module README routes the reader
+        run: make entry-points
       - name: Audit public output
         run: make audit
       # After the audit, deliberately. The audit reads content; this reads how much of the audit has

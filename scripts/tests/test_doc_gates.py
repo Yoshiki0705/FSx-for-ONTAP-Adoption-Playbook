@@ -127,6 +127,54 @@ class GateStillDetects(unittest.TestCase):
                 run_gate("validate_frontmatter.py"), "unknown frontmatter key"
             )
 
+    def test_a_module_readme_without_an_entry_point_is_rejected(self) -> None:
+        """Strip the entry section from a real README and the gate must fail.
+
+        The section is invisible when absent - a missing decision tree is a missing file, this is
+        nothing at all - which is how twelve of fourteen modules went without one while the criterion
+        sat in the template. So the gate is proven on a break, not on the passing tree.
+        """
+        target = ROOT / "docs" / "ja" / "domains" / "cost" / "README.md"
+        original = target.read_text(encoding="utf-8")
+        self.assertIn(
+            "## 最初に読むもの",
+            original,
+            "the probe target no longer has an entry point",
+        )
+        stripped = original.replace("## 最初に読むもの", "## 見出しではない何か", 1)
+        try:
+            target.write_text(stripped, encoding="utf-8")
+            result = run_gate("check_entry_points.py")
+            self.assertNotEqual(
+                result.returncode, 0, "a README with no entry point passed"
+            )
+            self.assertIn("docs/ja/domains/cost/README.md", result.stderr)
+            self.assertIn(
+                "最初に読むもの", result.stderr, "the accepted headings are not named"
+            )
+        finally:
+            target.write_text(original, encoding="utf-8")
+        self.assertEqual(
+            run_gate("check_entry_points.py").returncode, 0, "the tree was left broken"
+        )
+
+    def test_the_question_table_is_not_accepted_as_an_entry_point(self) -> None:
+        """The template says the entry point is not a table of contents, so this must fail."""
+        target = ROOT / "docs" / "ja" / "domains" / "cost" / "README.md"
+        original = target.read_text(encoding="utf-8")
+        stripped = original.replace(
+            "## 最初に読むもの", "## このモジュールが扱う問い", 1
+        )
+        try:
+            target.write_text(stripped, encoding="utf-8")
+            self.assertNotEqual(
+                run_gate("check_entry_points.py").returncode,
+                0,
+                "a table of contents was accepted as the entry point",
+            )
+        finally:
+            target.write_text(original, encoding="utf-8")
+
     def test_renaming_an_externally_cited_heading_is_rejected(self) -> None:
         """A renamed heading silently redirects an outside citation to the top of the page."""
         target = (
