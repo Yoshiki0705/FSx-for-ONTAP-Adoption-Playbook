@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The sibling table claimed `CDK` for a repository that has none.** `ONTAP-Edge-to-Cloud-AI` is
+  CloudFormation and SAM. Reported by that repository, which traced the claim to its own `AGENTS.md`
+  holding "TypeScript for CDK constructs" as a convention **with no corresponding code**, and
+  corrected the convention on its side.
+  - Verified independently against its tree rather than taken on report: **0 `cdk.json`, 0 `*.ts`, 6
+    `template.yaml`** at the paths named. Of the six, **one** declares
+    `Transform: AWS::Serverless-2016-10-31`, so `CFn + SAM` is accurate and matches the vocabulary the
+    `S3-Burst-on-ONTAP-Files` row already uses.
+  - **Checking the rest of the column found a second error the report did not name.**
+    `VMware-Migration-EC2-ONTAP` showed `—`, which reads as nothing to deploy, while it ships two
+    CloudFormation templates that its own `cfn-lint` target covers. Now `CFn`. The other seven rows
+    hold: `Agentic-Access-Aware-RAG` and `BLEA-FSx-for-ONTAP-Usecase` really are CDK (`cdk.json`
+    present, 538 and 55 TypeScript files).
+  - **A convention with no code behind it propagates as fact.** The claim was true of the sibling's
+    stated intent and false of its tree, and nothing on either side compares those two.
 - **The role-label rule reported labels that name no person, in two independent ways.** Both were
   found by a sibling repository, the second by asking a question about the first.
   - **An ordinary word sat in the path that needs no role token.** `観点` was deliberately kept out
