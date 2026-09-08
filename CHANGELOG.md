@@ -346,6 +346,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A note on what a red gate will mean on a day nobody has reached yet.** The probe registered
+  against the FPolicy / S3 Access Point errata is `retraction`, and the most likely cause of it firing
+  is that **a later ONTAP began accepting `s3` as an FPolicy event protocol** — today only `cifs`,
+  `nfsv3` and `nfsv4` are accepted and `s3` is refused. That is progress on the cited side, not a
+  withdrawal and not a defect in the errata, **and the entry here still has to be rewritten.**
+  - Written down because the role vocabulary has two values and neither says "the cited side learned
+    something". The change that would have put this in the failure message was closed unmerged as
+    plumbing, so **the warning goes where the reader is instead of into the tool.**
+  - The same event fires the citing repository's gate too. Forewarned by that repository, which
+    reached the conclusion from the other direction: **both gates go red, both are correct.**
+
 - **A fourth 業種横断 row in the reading-order table, for file-system operations.** A sibling asked
   which row its OPS patterns map to and declined to invent one, on the grounds that the division is
   this repository's to make. Thirteen of its READMEs had no back-link because of it.

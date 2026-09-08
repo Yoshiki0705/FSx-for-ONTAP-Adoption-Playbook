@@ -257,6 +257,8 @@ graph TD
 
 **認可モデルと S3 AP の制約は、このリポジトリ側に digest があります。** [S3 Access Point 認可設計](../domains/security-governance/notes/access-point-authorization-layers.md) と [S3 Access Point は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) を先に読むほうが速いです。
 
+> **FPolicy の訂正について引用のゲートが落ちたときは、まず ONTAP 側の前進を疑ってください。** この行の probe（`書き込みが S3 Access Point 経由で届く場合には成り立たない`）は[引用索引](cross-repo-index.md)に `retraction` として登録されており、**発火の原因として最も可能性が高いのは、後の ONTAP が `s3` を FPolicy の event protocol として受け付けるようになったことです。** 現在は `cifs` / `nfsv3` / `nfsv4` のみで、`s3` は拒否されます。**その場合に起きたのは撤回ではなく前進で、訂正文書の欠陥でもありません** — それでもこの索引の記述は書き換えが必要です。**役割の語が「撤回」しか指さないので、調査を始める前にこの可能性を先に見てください。** 供出元から事前に予告を受けています。
+
 ---
 
 ## 提供状況の告知 (What's New)
