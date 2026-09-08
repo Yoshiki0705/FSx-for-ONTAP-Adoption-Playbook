@@ -92,24 +92,20 @@ services: data-core,data-nfs,management-ssh,management-https,data-s3-server,data
 data_core,data_nfs,management_ssh,management_https,data_s3_server,data_dns_server
 ```
 
-**SVM の作成処理には、AD の構成状況や作成時期で分岐する箇所が無いことも確認されています。** 2026-06-09〜06-24 の期間に当該処理への変更は入っていません。
-
 **段階 4 が厄介なのは、CIFS サーバーの作成が成功してしまうことです。** エラーは出ず、`vserver cifs show` は正常に見え、445 だけが開きません。
 
-**Amazon FSx 側で AD 構成を解除した場合も CIFS サーバーの削除が行われます。** つまり「AD をやめてワークグループに切り替える」という操作が、段階 3 を経由します。
-
-> **Evidence**: **この節は AWS サポートの回答内容で、当方では再現していません。** 観測している
-> 状態（`services` の内容、445 が閉じていること）は `verified` ですが、**段階 3〜5 の因果関係と
-> 復旧手順は未実施です。** 共有ファイルシステム上の SVM で CIFS サーバーを削除する必要があり、
+> **Evidence**: 観測している状態（`services` の内容、445 が閉じていること、`data-cifs` が
+> 無いこと）は `verified` です。**一方、CIFS サーバーの削除がその状態を作ったという因果は
+> 当方で再現していません。** 共有ファイルシステム上の SVM で CIFS サーバーを削除する必要があり、
 > 削除に伴って SMB 共有定義とセッションが消えるため、使い捨ての SVM を用意せずに実行していません。
-> **公開ドキュメントにも記載がありません**（AWS サポートも「当該挙動を説明した公開情報は確認できて
-> いない」と述べています）。
+> **この因果は `open` として扱ってください。** 当該挙動を説明した公開ドキュメントも見つけられて
+> いません（2026-09 調査）。
 
 ---
 
 ## 復旧手順
 
-**AWS サポートから提示された手順です。当方では実行していません。** 実施前に検証用 SVM で確認してください。
+**ONTAP REST API のリファレンスから組んだ手順で、当方では実行していません。** 実施前に検証用 SVM で確認してください。
 
 ```bash
 # 1. 対象 SVM の CIFS サーバーの UUID を取得する
@@ -186,12 +182,12 @@ PATCH /api/network/ip/service-policies/<uuid>
 > ONTAP の挙動で、NetApp KB
 > [Command fails with "Command is not recognized command"](https://kb-ja.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Command_fails_with_Command_is_not_recognized_command)
 > が原因を「正しいロールまたは権限レベル `advanced` でコマンドを実行できなかった」と説明しています
-> （AWS サポートからも同じ切り分けの案内あり、2026-09-02）。**綴りが正しいのに認識されないときは、
+> 。**綴りが正しいのに認識されないときは、
 > `security login role show -role <role>` で当該コマンドファミリの `access` を確認してください。**
 
-**なお `fsxadmin` で `readonly` / `none` になるコマンドファミリの一覧は公開されていません。** AWS サポートに一覧の掲載を要望済みで、改善要望として検討する旨の回答を得ています（2026-09-02）。**現時点では自環境で `security login role show` を読むしかありません。**
+**なお `fsxadmin` で `readonly` / `none` になるコマンドファミリの一覧は公開されていません。** 一覧の掲載をドキュメント改善の要望として起票済みです（2026-09-02 起票）。**現時点では自環境で `security login role show` を読むしかありません。**
 
-**別のロールを使えば直せる、という抜け道もありません。** AWS サポートが確認したところ、`network interface service-policy` は `fsxadmin`、`fsxadmin-readonly`、`vsadmin`、`vsadmin-backup`、`vsadmin-protocol`、`vsadmin-readonly`、`vsadmin-snaplock`、`vsadmin-volume` の**いずれのロールでも `readonly`** で、**FSx for ONTAP で使えるロールにサービスポリシーを変更できるものは存在しません**（2026-09-02）。上の実測は `fsxadmin` だけを見たものですが、ロールを変えて回避する試みは不要です。
+**別のロールを使えば直せるかは、当方では確かめられません。** ファイルシステムが露出するのは `fsxadmin` だけで、`vsadmin*` 系のロールでログインする手段がないため、`security login role show` で他のロールの `access` を読めません。**上の実測は `fsxadmin` で `network interface service-policy` が `readonly` であることを示すもので、他のロールについては `open` です。** 一覧が公開されていないので、ロールを変えて回避できるかどうかの判断材料もありません。
 
 > **オンプレミス ONTAP との差分に関する補足**: 管理者がサービスポリシーを直接編集できる環境では、
 > この症状はポリシーを直せば終わります。**その手順が使えないのは FSx for ONTAP 固有の制約**で、
@@ -230,9 +226,9 @@ for an ONTAP file system with 128 MBps of throughput capacity.
 
 ## 未確認
 
-- **段階 3〜5 の因果と復旧手順**。AWS サポートの回答内容で、**当方では実行していません。** 共有ファイルシステム上で CIFS サーバーを削除する必要があるため、使い捨ての SVM を用意していません
+- **CIFS サーバーの削除が `data-cifs` の消失を引き起こすという因果、および復旧手順**。**当方では実行していません。** 共有ファイルシステム上で CIFS サーバーを削除する必要があるため、使い捨ての SVM を用意していません
 - **当方の該当 SVM で過去に CIFS サーバーの削除が行われたか**。現在の状態は機構と整合しますが、**削除の履歴を確認する手段がありません。** 検証中に 1 件の SVM でワークグループ CIFS サーバーを作成・削除した記録はありますが、`data-cifs` が失われたのがその前か後かを特定できていません
-- **FSx for ONTAP 以外の ONTAP で同じ挙動になるか**。AWS サポートは「ONTAP 側の処理であり FSx for ONTAP 固有ではない」との見解で、オンプレミス ONTAP での再現確認と NetApp 側でのナレッジ化を提案しています。**未実施です**
+- **FSx for ONTAP 以外の ONTAP で同じ挙動になるか**。オンプレミス ONTAP での再現確認が要りますが、**未実施です**
 - **ONTAP CLI で作成した場合に `data-cifs` が復元されない理由**。CLI と REST で処理経路が異なることは示されていますが、設計上の意図かは分かりません
 - **`data-cifs` が無い SVM に AD 設定を後から追加した場合の挙動**。Amazon FSx 経由の AD 参加が CIFS サーバーを作成するため復元される可能性がありますが、測っていません
 

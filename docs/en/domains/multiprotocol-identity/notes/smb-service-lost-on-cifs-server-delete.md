@@ -79,7 +79,7 @@ The note stated that non-AD SVMs created before 2026-06-09 lack `data-cifs` whil
 
 ## Cause — a deleted CIFS server recreated through the CLI
 
-**AWS Support reproduced this on the same version (ONTAP 9.18.1P3D1) and identified the mechanism** (2026-09-02).
+**The mechanism below was not reproduced here.** The state we observe is `verified`; the causal chain that produces it is `open`. See the evidence note after the table.
 
 | # | Operation | `data-cifs` | 445 |
 |---|---|---|---|
@@ -194,9 +194,9 @@ PATCH /api/network/ip/service-policies/<uuid>
 > command is still not recognized, check that command family's `access` with
 > `security login role show -role <role>`.**
 
-**The list of command families that are `readonly` or `none` for `fsxadmin` is not published.** A request to document it has been filed with AWS Support, which replied that it will be considered as an improvement request (2026-09-02). **For now the only route is reading `security login role show` in your own environment.**
+**The list of command families that are `readonly` or `none` for `fsxadmin` is not published.** A documentation request has been filed (2026-09-02). **For now the only route is reading `security login role show` in your own environment.**
 
-**Using a different role is not a way around it either.** AWS Support confirmed that `network interface service-policy` is **`readonly` under every one of** `fsxadmin`, `fsxadmin-readonly`, `vsadmin`, `vsadmin-backup`, `vsadmin-protocol`, `vsadmin-readonly`, `vsadmin-snaplock`, and `vsadmin-volume`, and that **no role available on FSx for ONTAP can change a service policy** (2026-09-02). The measurement above covers `fsxadmin` alone, but enumerating roles to find an opening is unnecessary.
+**Whether another role is a way around it cannot be established from here.** A file system exposes only `fsxadmin`, and there is no way to log in as any `vsadmin*` role, so `security login role show` cannot be read for them. **The measurement above shows `network interface service-policy` is `readonly` for `fsxadmin`; the other roles are `open`.** The list is not published either, so there is nothing to reason from.
 
 > **On the difference from on-premises ONTAP**: where an administrator can edit the service policy
 > directly, this symptom ends with fixing the policy. **Not having that route is specific to

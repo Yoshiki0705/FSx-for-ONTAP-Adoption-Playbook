@@ -278,8 +278,15 @@ MUTATIONS: list[dict] = [
         "edits": [
             (
                 "tools/audit_public_output.py",
-                'r"<!--[^>]*?allow:(naming|neutrality|pii|role-label|support-referral|all)[^>]*?-->"',
-                'r"allow:(naming|neutrality|pii|role-label|support-referral|all)"',
+                'r"<!--[^>]*?allow:"',
+                'r"allow:"',
+            ),
+            # The wrapper is two halves and dropping one is not the hole. Both go, or the regex
+            # still demands `-->` and the mutation survives while reading as applied.
+            (
+                "tools/audit_public_output.py",
+                'r"[^>]*?-->"',
+                'r""',
             ),
         ],
         "must_fail": ["test_a_bare_prose_mention_does_not_suppress"],

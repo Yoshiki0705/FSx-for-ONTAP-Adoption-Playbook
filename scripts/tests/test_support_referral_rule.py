@@ -11,10 +11,11 @@ regex-matched without flagging every legitimate "this cannot be changed after cr
 that half lives in `docs/agent/pitfalls.md`. The support referral is the half a pattern can see, and
 it is a reliable marker of the other, because the two arrive together.
 
-**The allow direction matters as much here.** Several notes in this repository are sourced to what a
-vendor confirmed during a case that actually happened, with a date. That is attribution: it says where
-a fact came from. Flagging it would make the rule intolerable and it would be switched off, so
-`PERMITTED` is checked with the same weight as `BLOCKED`.
+**The allow direction matters as much here.** `PERMITTED` is checked with the same weight as
+`BLOCKED`, because a rule that flags ordinary prose gets switched off wholesale. What belongs in
+`PERMITTED` changed once, though: attribution to a case that happened used to be listed here, on the
+reasoning that recording where a fact came from is not a referral. It is not -- it is a separate
+failure, and it now has its own category. See `test_support_attribution_rule.py`.
 """
 
 from __future__ import annotations
@@ -42,19 +43,15 @@ BLOCKED = (
     "この時点でサポートケースを開きます。",
 )
 
-# Attribution of a finding to a case that happened. These are how several notes here are sourced.
+# Not a referral. Attribution to a case moved to `test_support_attribution_rule.py`, so what is
+# left here is prose that a loose pattern would sweep up.
 PERMITTED = (
-    "AWS Support confirmed that neither event is visible to customers by design (2026-09-03).",
-    "AWS Support reproduced this on the same version and identified the mechanism (2026-09-02).",
-    "**この節は AWS Support が確認した内容を報告しています。** 当環境では再現していません。",
-    (
-        "A request to document it has been filed with the vendor, which replied that it will be "
-        "considered as an improvement request."
-    ),
+    "A documentation request has been filed with the vendor (2026-09-03).",
     "| `documented` | ベンダー / AWS 公式ドキュメントに記載あり。`source` に出典 |",
     "**7 組を超えるファイルシステムではサポートされません。**",
     "`Get-MSDSMSupportedHW` に載っていました。",
     "NetApp Support のログインが必要で、本ノート作成時点では参照できていません。",
+    "この挙動は AWS サポートに確認中で、回答が来るまでは open として扱います。",
 )
 
 
