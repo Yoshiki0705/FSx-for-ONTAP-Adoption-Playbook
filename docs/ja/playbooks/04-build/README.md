@@ -31,6 +31,8 @@
 | 3 | シークレットをどう扱うか | [シークレットの扱い](notes/what-iac-cannot-reach.md#シークレットの扱い) |
 | 4 | 構築後の検証をどう自動化するか | [構築後の検証を自動化する](notes/what-iac-cannot-reach.md#構築後検証の自動化) |
 | 5 | 環境の複製（開発・検証）をどう作るか | [開発・検証環境の複製](notes/what-iac-cannot-reach.md#開発検証環境の複製) |
+| 6 | この設定はテンプレートで作れるのか、ONTAP 側なのか | [この設定はどこから作るか](../../reference/decision-trees/where-a-setting-is-created.md) |
+| 7 | ONTAP 側に届く経路はどれで、何を引き換えにするか | [ONTAP 側の設定に届く経路の比較](../../reference/comparison/ontap-configuration-routes.md) |
 
 ---
 
