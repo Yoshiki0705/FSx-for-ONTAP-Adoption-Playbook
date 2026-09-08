@@ -373,16 +373,26 @@ SUPPORT_REFERRAL = re.compile(
 # Also not matched: "サポート対象" and "サポートされません" -- those are about whether a product
 # supports something, not about a support desk. And "NetApp Support のログインが必要" names a
 # portal, not a reply. Both shapes are in the test fixtures.
+#
+# Two corrections found by running it across sibling repositories, one in each direction. It
+# missed 'AWS サポート確認済み', because 確認 was not in the reply-noun list. And it fired on
+# 'FSx S3 Access Point のサポートが実際に機能することを確認' -- the vendor name was optional in
+# the subject alternative, so any 'サポートが...確認' matched. The vendor name is now required
+# there, with `サポート側` as the one exception, since that phrase names the desk on its own.
+# **A detector that is loose in one direction is usually tight in the other**: both defects were
+# in the same two lines.
 SUPPORT_ATTRIBUTION = re.compile(
     # A vendor's support desk followed by a reply noun.
     r"(?:AWS|NetApp|Databricks|Snowflake|ClickHouse|ベンダー)\s*(?:Support|サポート)\s*(?:の)?\s*"
-    r"(?:回答|見解|返信|指摘|案内)"
+    r"(?:回答|見解|返信|指摘|案内|確認)"
     r"|サポート回答"
     # "...との回答を得た" / "回答がありました" attached to a confirmation.
     r"|(?:回答|見解)\s*(?:を\s*(?:得|受け|もら)|が\s*あり)"
     # The desk as the subject of confirming or reproducing.
-    r"|(?:AWS|NetApp|Databricks|Snowflake|ベンダー)?\s*(?:Support|サポート)\s*(?:が|は|側(?:が|は|で))"
-    r"[^。\n]{0,24}?(?:確認|回答|再現|指摘|説明)"
+    r"|(?:(?:AWS|NetApp|Databricks|Snowflake|ベンダー)\s*(?:Support|サポート)|サポート側)"
+    # `に` is excluded here on purpose: "サポートに確認中" is the act of asking and stays
+    # publishable. The completed form "サポートに確認した / 済み" has its own alternative below.
+    r"\s*(?:が|は|で)[^。\n]{0,24}?(?:確認|回答|再現|指摘|説明)"
     # Presenting a completed confirmation as the basis. "確認中" is the act of asking and is left
     # alone on purpose.
     r"|(?:Support|サポート)\s*(?:に|へ)\s*確認\s*(?:した|済み)"

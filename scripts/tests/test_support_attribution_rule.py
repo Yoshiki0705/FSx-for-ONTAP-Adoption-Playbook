@@ -53,6 +53,9 @@ BLOCKED = (
     "Per AWS Support, the field is populated only for Lustre.",
     "According to NetApp Support this cannot be cleared without a revert.",
     "サポート側で同じ事象を再現し、`launchStatus` では判定できないと説明がありました。",
+    # Missed by the first version: 確認 was not in the reply-noun list. Found in a sibling
+    # repository, not by re-reading the pattern.
+    "包括的な互換性マトリクス、既知の制約（2026年5月 AWS サポート確認済み）については以下を参照:",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -69,6 +72,10 @@ PERMITTED = (
     "公開ドキュメントの [DescribeFileSystems](https://example.invalid/) に Lustre 用と明記されています。",
     "当環境で 2026-07-22 に ap-northeast-1 へデプロイして動作しました。",
     "LUN は igroup にマップします。",
+    # Flagged by the first version, which made the vendor name optional in the subject
+    # alternative, so any "サポートが...確認" matched. This sentence is about whether a feature
+    # works, and a rule that sweeps it up is a rule that gets switched off.
+    "自社の特定の環境に対して FSx S3 Access Point のサポートが実際に機能することを確認できます。",
 )
 
 
