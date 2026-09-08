@@ -215,7 +215,7 @@ Reviewing every EMS record over the interval containing the stop, the only other
 
 | Event | Severity | Meaning | Visible to customers |
 |---|---|---|---|
-| `adt.dest.directory.full` | `EMERGENCY` | The destination directory is full and audit logs cannot be written. **Can lead to denial of service on objects carrying a SACL** | **No** (AWS confirmed, 2026-09-03) |
+| `adt.dest.directory.full` | `EMERGENCY` | The destination directory is full and audit logs cannot be written. **Can lead to denial of service on objects carrying a SACL** | **No** (absent from every EMS event in the outage window, measured 2026-09-03) |
 | `adt.stgvol.nospace` | `EMERGENCY` | The staging volume has no space and a file or directory for audit logs cannot be created | **No** (same) |
 | `monitor.volume.full` / `monitor.volume.nearlyFull` (targeting `MDV_aud_*`) | `ALERT` / `ERROR` | The staging volume reached 98% / 95% | **Expected** yes (per AWS; not confirmed here) |
 | `monitor.volume.full` / `monitor.volume.nearlyFull` / `wafl.vol.full` (targeting the destination) | `ALERT` / `ERROR` | The destination reached 98% / 95%, or extension failed | **Yes** (measured) |
@@ -228,7 +228,7 @@ Reviewing every EMS record over the interval containing the stop, the only other
 |---|---|
 | Destination volume utilization (the 95% / 99% EMS events, CloudWatch volume metrics) | **The warning signal for an access outage — but the grace is 19 to 65 seconds** (below) |
 | The `wafl.vol.full` EMS event | The moment auditing failed to extend the EVTX |
-| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is visible to customers** (AWS confirmed). They cannot be monitored |
+| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is visible to customers** (absent from every EMS event in the outage window). They cannot be monitored |
 | The `monitor.volume.*` EMS events targeting `MDV_aud_*` | Staging pressure. **Expected to be visible but not confirmed here**, since there is no way to fill staging deliberately |
 | Aggregate free space | The headroom staging has to draw on |
 | `Auditing State` in `vserver audit show` | **`true` even while stopped.** Not usable as a health signal |
