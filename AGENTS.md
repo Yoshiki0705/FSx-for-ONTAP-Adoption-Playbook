@@ -24,7 +24,7 @@ only complete tree. The one exception is the root `README.md`, which *is* the Ja
 Two navigation axes, mirrored in each language:
 
 - `docs/<lang>/playbooks/` — lifecycle: `01-assess` → `02-design` → `03-migrate` → `04-build` → `05-operate` → `06-optimize`
-- `docs/<lang>/domains/` — cross-cutting topics: `data-protection`, `data-utilization`, `security-governance`, `performance`, `cost`, `multiprotocol-identity`
+- `docs/<lang>/domains/` — cross-cutting topics: the eight directories under it. `validate_frontmatter.py` holds the list
 
 Plus `docs/<lang>/case-studies/` (anonymized field findings) and `docs/ja/reference/` (decision
 trees, comparisons, limits, glossary — currently bilingual single files, see Localization).
@@ -164,7 +164,7 @@ missing translation is simply absent from the switcher rather than a broken link
 ---
 title: <one-line statement of the concern, not a topic label>
 lifecycle: [assess|design|migrate|build|operate|optimize]   # ≥1
-domains: [data-protection|data-utilization|security-governance|performance|cost|multiprotocol-identity]  # ≥1
+domains: [<one or more of the eight in validate_frontmatter.py>]   # ≥1
 evidence: verified | documented | field-observation | hypothesis
 verified_on: YYYY-MM-DD        # required iff evidence == verified
 region: ap-northeast-1         # required iff evidence == verified
