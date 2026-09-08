@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`retraction` names the verdict, not the cause, and the failure message offered "moved or
+  retracted" as though those were the only two.** Four things produce the same vanished probe:
+  withdrawn, moved, reworded, or — where the probe carries an absence ("not in the specification
+  table", "not stated in public documentation") — **the absence stopped being true, which is the
+  cited side learning something rather than retracting anything.** The message now names all four and
+  says an edit is needed here either way. The `reread` case says plainly that an added measurement
+  rewrote a range and the finding may still stand.
+  - **The role vocabulary stays at two values deliberately.** A third would arrive at the published
+    contract's readers as unrecognized, and a sibling repository has already wired a gate that fails
+    on an unknown role — correctly. **The distinction belongs in the message, not in the interface.**
+  - Reported by that sibling, from the concrete case: the day it establishes why SMB Multichannel
+    stops at four channels, `そうなったのかは**確認していない**` disappears and this gate fails
+    **labelled as a withdrawal, on progress.**
+  - **Only the message changed.** No verdict changed, and the contract payload is byte-identical —
+    the regenerated file differs in its comment header alone.
+
 - **"Is this a marker" was decided in three places, and a fourth disagreed with all of them.** Removal
   applied to the raw line while detection applied to the code-span-stripped one, so **a code-span
   example was removed although it was never a directive.** A width differing by one step produces a

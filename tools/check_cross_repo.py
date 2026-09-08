@@ -71,6 +71,23 @@ ROLES = {
     ),
 }
 
+# What to say when a probe has vanished. The role names the verdict; it does not name the cause, and
+# `retraction` is the narrower word — four things produce the same absence, and one of them is the
+# cited side making progress. Reported by a sibling repository, which pointed out that the word would
+# arrive labelled as a withdrawal on the day it learned why a ceiling was where it was.
+VANISHED = {
+    "retraction": (
+        "Four causes produce this: the claim was withdrawn, it moved to another file, it was "
+        'reworded, or — where the probe carries an absence ("not in the table", "not stated '
+        'in public documentation") — the absence stopped being true, which is the cited side '
+        "learning something rather than retracting anything."
+    ),
+    "reread": (
+        "This probe quotes a min/max over a measured set, so an added measurement rewrites it "
+        "while the finding still stands. Do not read it as a withdrawal."
+    ),
+}
+
 CONTRACT_HEADER = """\
 # Probe strings this repository registers against sibling repositories. Generated - do not hand-edit.
 #
@@ -85,8 +102,11 @@ CONTRACT_HEADER = """\
 # on our side is deliberately absent, being our concern rather than yours.
 #
 # role:
-#   retraction  Expected to survive. Its absence means the claim moved or was retracted, and the
-#               guidance built on it here has lost its basis. Worth failing on.
+#   retraction  Expected to survive, and worth failing on: the guidance built on it here has lost
+#               its basis. The word names the verdict, not the cause - withdrawn, moved, reworded,
+#               or, where the probe carries an absence ("not in the table", "not stated in public
+#               documentation"), the absence stopped being true. That last one is the cited side
+#               learning something, and it still requires an edit on ours.
 #   reread      Quotes a min/max over the measured set in the cited document, so adding a
 #               measurement rewrites the string while the finding still stands. A gate cannot tell
 #               an addition from a withdrawal, so treat firing as "read this section again", not as
@@ -576,8 +596,9 @@ def check_external(rows: list[Row]) -> list[str]:
             continue
         if row.probe not in body:
             problems.append(
-                f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} is gone. Either the claim moved "
-                f"or it was retracted — check before adjusting {row.citing}."
+                f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} is gone. "
+                f"{VANISHED[row.role]} Either way {row.citing} needs an edit — read the section "
+                "before making one."
             )
     if undetermined:
         print(
