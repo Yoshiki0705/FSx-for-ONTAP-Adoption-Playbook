@@ -516,6 +516,30 @@ MUTATIONS: list[dict] = [
         "must_fail": ["test_labels_naming_a_subject_are_not_reported"],
         "must_pass": ["test_labels_naming_a_person_are_reported"],
     },
+    {
+        "name": "cited-anchor subset collapsed into every anchor",
+        "why": (
+            "The simplifying fix: drop the subset and record all of a file's anchors. It still "
+            "catches the rename that matters, so the test for that stays green and the change looks "
+            "free -- while pinning 23 headings no citing side references, which is the friction the "
+            "tool's own docstring says ends with a gate switched off."
+        ),
+        "module": "scripts.tests.test_doc_gates",
+        "edits": [
+            (
+                "tools/check_anchor_contract.py",
+                "        if rel in CITED_ANCHORS:",
+                "        if False:  # mutation: subset handling removed",
+            ),
+        ],
+        "must_fail": [
+            "test_renaming_an_uncited_heading_of_the_same_file_is_accepted",
+            "test_a_declared_anchor_that_disappears_is_recorded_as_missing",
+        ],
+        "must_pass": [
+            "test_renaming_the_one_cited_heading_of_a_subset_file_is_rejected"
+        ],
+    },
 ]
 
 
