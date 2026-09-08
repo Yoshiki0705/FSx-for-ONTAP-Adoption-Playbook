@@ -69,6 +69,23 @@ BLOCKED = (
     "Added 2026-08-12 after AWS Support escalated the charset behaviour",
     "AWS Support considers this ONTAP-side processing rather than specific to FSx for ONTAP.",
     "AWS Support declined to state it as specified behaviour.",
+    # The Japanese connectives were the gap, not the nouns. These are the shapes a sweep of three
+    # sibling repositories turned up, all of them the desk plus a connective plus an evidentiary
+    # noun, and none of them matched before.
+    "## AWS サポートによる確認結果（2026-08）",
+    "### AWS サポート追加確認（ONTAP バージョン要件）",
+    "## Snowflake サポートが提案した代替パス",
+    "この数値は 2026 年 5 月の AWS サポートとのやり取りに由来し、product-level と説明されていました",
+    "**Snowflake サポートのエラー進行分析 (2026-06-02)**:",
+    "AWS サポートが S3 および FSx for ONTAP のドキュメントと照合し、意図的な検証だと判明しました",
+    "AWS サポートの明確な指針:",
+    "AWS サポートは FSx for ONTAP サービスチームにドキュメント改善をエスカレーション済み:",
+    "AWS サポートも ap-northeast-1 での利用可能性を Lab 環境で確認",
+    "S3 AP は登録できません（Databricks サポートにより 2026 年 5 月確認済み）",
+    "Databricks サポート（2026 年 5 月）により以下が確認されました:",
+    "AWS サポートからの回答により、実態が明確になりました",
+    "| **確認方法** | AWS サポートによる検証 + API ドキュメント確認 |",
+    "部分的成功は不完全な内部処理の副作用（Databricks サポート 2026 年 5 月確認） |",
 )
 
 # Publishable: the act of asking, the filing, product-support wording, portal names.
@@ -97,6 +114,21 @@ PERMITTED = (
     "## NetApp Support Diagnostic Bundle",
     "| NetApp アカウント | **必要**（NSS: NetApp Support Site アカウント） |",
     "aws support describe-services and record it",
+    # **Every publishable shape points at the desk with へ or に, and every attribution points
+    # away from it.** That asymmetry is what the window exclusion relies on, so these pin it.
+    "## 3. AWS サポート Feature Request",
+    "## 8. AWS サポートへ確認する事項",
+    "# Databricks サポートに対応を依頼中",
+    "- B-4: Databricks サポートにフォローアップ送信済み (2026-06-01)",
+    "| Amazon MSK | プラットフォームエンジニア | アーキテクチャリード | AWS サポート | チーム |",
+    "| サービスクォータ超過 | AWS サポートにクォータ引き上げを申請 |",
+    "| 復旧時間 | 不明（AWS サポートに確認中） |",
+    "**やっていないこと**: **AWS サポートへの確認をしていない**",
+    "- [x] ~~AWS サポートからの回答を待機（2 件のケース）~~",
+    "障害発生時に NetApp/AWS サポートへ提供する情報:",
+    "- これは Databricks サポート対象パスではない",
+    "本番利用前に Snowflake サポートへ確認してください |",
+    "FlexCache は 9.13.1 以降でサポート対象です。",
 )
 
 
