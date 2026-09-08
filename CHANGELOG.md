@@ -9,6 +9,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The four API-dependent break tests skipped by default, and `make test` reported `OK` having run
+  none of them.** Unauthenticated access to the GitHub API is 60 requests an hour against an address
+  a hosted runner shares, and the CI step had no credential. `cross-repo-external.yml` already passed
+  `github.token`; the test step is a second path to the same API and did not.
+  - **The skip itself is correct and stays.** A sibling repository being briefly unreachable is not a
+    defect in the change under review, and a gate that reddens for that gets ignored. The defect was
+    that skipping was the *default* outcome rather than the exception.
+  - Measured: locally the skip count moved between runs — 9, then 11, then 0 — with nothing changing
+    but the quota. **A green run whose coverage depends on someone else's allowance cannot be read.**
+    With a token the API skips went to zero and only the `.kiro/hooks` ones remained, and those are
+    absent by design in CI.
+  - Guarded from both sides in `test_gate_integrity.py`: the step running `make test` must carry a
+    token, checked per step so one belonging to the *next job* does not read as covering it; and on a
+    runner the token must be non-empty, because a misspelled secret reference expands to the empty
+    string and would satisfy the first check while every network test still skipped.
+  - Reported by a sibling repository, which hit the same silence in its own pre-commit hook.
 - **Four gates in `make all` were called by no workflow, so they ran only when someone typed
   `make all`.** `headings`, `ja-markers`, `anchors` and `workflow-observability` — among them the
   Japanese heading rule `AGENTS.md` documents as a convention, and the externally-cited-anchor
