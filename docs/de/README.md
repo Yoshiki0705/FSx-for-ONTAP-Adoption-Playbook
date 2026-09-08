@@ -188,13 +188,20 @@ Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIB
 
 ## Verwandte Repositories
 
-| Repository | Inhalt |
-|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Über 45 Serverless-Verarbeitungsmuster über S3 Access Points |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Observability-Integrationen (Metriken, Alarme, automatisierte Reaktion) |
-| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse-Integrationen (Databricks / Snowflake / Athena / Glue / EMR) |
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration VMware → EC2 + FSx for ONTAP |
-| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Erfassung über die S3-API, Nutzung über FlexCache NFS/SMB. **Hält die Messungen der Dateiprotokolle**, die der Großteil der Performance-Inhalte hier zitiert statt neu zu messen ([Zitationsindex](../ja/reference/cross-repo-index.md)) |
+**Dieses Repository behandelt Entscheidungen. Implementierungen und Messungen liegen in den Repositories unten.** Dieselbe Aussage an zwei Stellen veraltet an einer von beiden.
+
+**Wohin es weitergeht, hängt davon ab, was bereits entschieden ist.**
+
+| Hier entschieden | Weiter zu | Was dort liegt |
+|---|---|---|
+| **Die Quelle der Wahrheit ist Amazon S3, Nutzung überwiegend lesend** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Ein Entscheidungsbaum zur Übernahme dieser Architektur und **die Messungen der Dateiprotokolle** |
+| **Daten über einen S3-Zugriffspunkt bereitstellen und serverlos verarbeiten** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Implementierungen von Verarbeitungsmustern und Betriebsmuster für das Dateisystem |
+| **Eine KI- oder RAG-Pipeline speisen und die ursprünglichen Berechtigungen wahren** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Eine Implementierung auf Amazon Bedrock und AWS CDK. **Berechtigungen werden in einem separaten Index neu aufgebaut und beim Abruf ausgewertet** |
+| **Verstreute Edge- oder IoT-Daten vor der Analyse zusammenführen** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | Zusammenführung in ONTAP, dann Bedrock / Athena / SageMaker über S3-Zugriffspunkte. **Nur die IoT-spezifischen Unterschiede; die Wahl der Speicherschicht kommt von hier** |
+| **Auf welcher Schicht die Ransomware-Abwehr liegt** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP, ereignisgesteuerte Reaktion über FPolicy, Integrationen von Drittanbietern |
+| **Der Überwachungsweg ist gewählt** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Metriken, Alarme und automatisierte Reaktion |
+| **Die Daten auf eine Analyseplattform bringen** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Integrationen mit Databricks / Snowflake / Athena / Glue / EMR |
+| **Von VMware migrieren** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration zu Amazon EC2 mit FSx for ONTAP |
 
 ---
 

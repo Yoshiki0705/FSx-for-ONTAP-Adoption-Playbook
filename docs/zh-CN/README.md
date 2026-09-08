@@ -188,13 +188,20 @@ make all           # 以上全部
 
 ## 相关仓库
 
-| 仓库 | 内容 |
-|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | S3 Access Points 无服务器处理模式集（45+） |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 可观测性集成（指标、告警、自动响应） |
-| [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Lakehouse 集成（Databricks / Snowflake / Athena / Glue / EMR） |
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware → EC2 + FSx for ONTAP 迁移 |
-| [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 通过 S3 收集 → 经 FlexCache 的 NFS/SMB 使用。**持有文件协议的性能实测数据**，本仓库的性能描述大多引用自此处（[引用索引](../ja/reference/cross-repo-index.md)） |
+**本仓库负责判断，实现与实测在下列仓库中。** 同一事实放在两处，其中一处必然过时。
+
+**接下来去哪里，取决于你已经决定了什么。**
+
+| 在此已决定 | 前往 | 那里有什么 |
+|---|---|---|
+| **正本在 Amazon S3，以读取为主** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 判断是否采用该架构的决策树，以及**文件协议实测值** |
+| **通过 S3 接入点提供数据并以无服务器方式处理** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 处理模式实现，以及文件系统运维模式 |
+| **用于 AI / RAG，并保留原有权限** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | 基于 Amazon Bedrock 与 AWS CDK 的实现。**权限被重建为独立索引，在检索时判定** |
+| **汇聚分散的边缘 / IoT 数据后再分析** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | 汇聚到 ONTAP，再经 S3 接入点交给 Bedrock / Athena / SageMaker。**仅包含 IoT 特有差异，存储层选择以本仓库为准** |
+| **勒索软件防护置于哪一层** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP、基于 FPolicy 的事件驱动响应、第三方集成 |
+| **已确定监控路径** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 指标、告警与自动响应 |
+| **接入分析平台** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 集成 |
+| **从 VMware 迁移** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 迁移到 Amazon EC2 与 FSx for ONTAP |
 
 ---
 
