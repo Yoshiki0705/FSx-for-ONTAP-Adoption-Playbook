@@ -33,7 +33,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 API でデータを収集し、FlexCache の NFS/SMB で利用する。コピージョブなし、反映 p50 8 ms。HiL テストベンチ・EDA・レンダリング・IoT に向く | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | [ファイルポータル UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | NAS 上のファイルに VPN なしでブラウザアクセス + AI 処理（分類・異常検知・セマンティック検索）。Nextcloud との併用も可能 | Amplify Gen2 + Bedrock。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
 | [Lakehouse 連携](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark から S3 AP 経由でファイルを分析。データは NAS に残したまま | S3 AP + Glue / Athena |
-| [Agentic RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | NAS の権限を反映した RAG。元ファイルの ACL を AI パイプラインに伝播 | CDK + Bedrock |
+| [Agentic RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | 権限を意識した RAG。**元の ACL が引き継がれるのではなく、権限を別の索引に再構成して検索時に判定**します（[平坦化の意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味)を読んでから） | CDK + Bedrock |
 
 **「このモジュールのノートを読んだが、具体的なコードが欲しい」場合は上のリポジトリに進んでください。** 各リポジトリは独立して deploy 可能で、この Playbook は判断の根拠を、リポジトリは実装を担います。
 
