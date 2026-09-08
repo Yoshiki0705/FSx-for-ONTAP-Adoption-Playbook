@@ -107,6 +107,10 @@ lang: ja
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `SMB は NFS の 72.1%` | `retraction` | 同一環境・同一物理ポートでの NFS との比。**どちらが公表値に近いかを優劣の根拠にしない** |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/smb-multichannel-enablement.md` | `ONTAP 9 の SMB Multichannel は無効で出荷される` | `retraction` | SMB Multichannel が ONTAP で既定無効であること。**すべての SMB 数値の前提** |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/smb-multichannel-enablement.md` | `成功したという応答は、その接続に適用された証拠ではない` | `retraction` | 有効化が既に張られた接続に届かないこと（Tree Connect） |
+| `docs/ja/domains/data-utilization/notes/how-long-until-a-write-is-visible.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/cross-protocol-directions.md` | `正しい値は今回の p50 44 ms です` | `retraction` | 4 方向の反映速度と、NFS → S3 AP 方向の正しい値。**873 ms は CLI 起動コストを含む旧値で、引用してはいけない側** |
+| `docs/ja/domains/data-utilization/notes/how-long-until-a-write-is-visible.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-nfs-visibility.md` | `7 ms 対 2,171 ms` | `retraction` | 同一操作の観測値がクライアントのマウントオプションで 300 倍変わること。**「反映が遅い」の原因がストレージ側とは限らない根拠** |
+| `docs/ja/domains/data-utilization/notes/how-long-until-a-write-is-visible.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3files-measured.md` | `削除と上書きは、新規作成と同じ桁です` | `retraction` | Amazon S3 Files のファイル → S3 方向が新規作成・削除・上書きのいずれも 60 秒級であること。**片方向だけの現象ではないこと** |
+| `docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-operations.md` | `同一実行内の対照がすべて成功しているため、手順の誤りではありません` | `retraction` | `UploadPartCopy` の `NoSuchKey` に同一実行内の `CopyObject` 対照があること。**切り分けの手順そのもの** |
 
 <!-- cross-repo-table:end -->
 

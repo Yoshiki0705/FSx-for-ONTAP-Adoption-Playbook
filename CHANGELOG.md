@@ -271,6 +271,30 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The four directions of cross-protocol visibility, and the one value in them that must not be
+  quoted.** A pipeline that writes through one protocol and reads through the other waits, and how
+  long depends on which way round it is. Measured on Amazon FSx for NetApp ONTAP: S3 Access Point
+  `PutObject` → Origin NFS read **p50 3 ms**, → FlexCache NFS read **8 ms**, NFS write → FlexCache
+  **6 ms**, and the slow direction, NFS write → S3 Access Point `GetObject`, **44 ms** (2026-08-09,
+  ap-northeast-1, ONTAP 9.18.1P3D1, `SINGLE_AZ_1` / 128 MBps, NFSv3, `actimeo=0`, 64 B, concurrency
+  1, boto3 persistent session, `n=30`). Cited, not re-measured.
+  - **The excluded value is p50 873 ms for that same direction.** The source record retracted it
+    itself: it was measured by launching `aws s3api get-object` per iteration, so **process start and
+    the TLS handshake are inside every sample** — about 20x the corrected figure. Quoting it would
+    put the cost of a measurement method into a design as a property of the product.
+  - **A reader's mount options move the observed number by 300x.** Deletion propagating from S3 to
+    NFS is **7 ms** with `actimeo=0` and **2,171 ms** with the default (`acdirmin=30` /
+    `acdirmax=60`) — same file system, same operation. So "propagation is slow" is a claim about the
+    client until the client is ruled out. The note also says plainly not to make `actimeo=0` a
+    production default: it is a measurement setting.
+  - **Amazon S3 Files measured by the same method for contrast**: S3 → file **1,533 ms**, file → S3
+    **63,769 ms**, and delete and overwrite land in the same order of magnitude (64,941.5 ms /
+    64,975.9 ms). Presented as which direction sits on the critical path, not as a ranking — the
+    source states its mount options are not matched, and latency is one axis among several.
+  - Requested by a sibling repository's coverage report, which found this Playbook cites its
+    performance findings and **none of its behaviour findings.** Measured against the tree: most of
+    that list was already carried from another sibling, and propagation was the real gap.
+
 - **A tracked `pre-push` hook, because `git commit` is not the only way a commit appears.** Measured
   on git 2.54.0 with pre-commit wired, confirming in each case that a commit was actually created:
 
