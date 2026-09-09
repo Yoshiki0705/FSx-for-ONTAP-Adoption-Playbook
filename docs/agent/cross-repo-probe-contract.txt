@@ -30,12 +30,14 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migra
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/cost-measurement.md	retraction	Cost Explorer
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/multi-tenant-design.md	retraction	分離レベル
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	常にエージェントと Basic モードが必要です
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	5 GB → 50 GB
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
+S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	不可逆・作り直しになる操作
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	課金次元の対応
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要

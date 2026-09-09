@@ -60,6 +60,8 @@ lang: ja
 
 | 引用元 | リポジトリ | パス | 確認する文字列 | 役割 | 何を引いているか |
 |---|---|---|---|---|---|
+| `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/multi-tenant-design.md` | `分離レベル` | `retraction` | マルチテナントの分離パターン。**こちらは分割で何が固定されるかを持ち、パターンの比較は持ちません** |
+| `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/design-first-decisions.md` | `不可逆・作り直しになる操作` | `retraction` | ボリュームを作る前に決めることの順序。**同じ問いをボリューム側から扱っている文書**です |
 | `docs/ja/domains/cost/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-s3-vs-s3ap.md` | `課金次元の対応` | `retraction` | S3 標準と FSx for ONTAP S3 AP の費用構造の対応。**繰り返し読むか 1 回だけかで向く選択が変わる**という判断の所在 |
 | `docs/ja/domains/cost/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-performance-test-patterns.md` | `実際の請求ではない` | `retraction` | 測定環境そのものの費用。**単価の取得日とリージョンが付いていることが、この文書を引用できる理由**です |
 | `docs/ja/domains/cost/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/cost-model.md` | `デプロイの月額コストを見積もる` | `retraction` | 監視 3 経路の費用比較と、見積りに必要な入力値の一覧 |
