@@ -23,6 +23,7 @@
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	paused
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	reread	AWS サポートリクエストが必要な操作
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ

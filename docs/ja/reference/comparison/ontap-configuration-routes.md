@@ -43,6 +43,11 @@ lang: ja
 
 **`vsadmin` を使えるようにするかは、作成時に決まります。** `SvmAdminPassword` を指定しないと、その SVM の管理は `fsxadmin` になります。**`fsxadmin` はファイルシステム全体の管理者**なので、SVM 1 つの運用担当者に全体の権限を渡すことになります（[シークレットの扱い](../../playbooks/04-build/notes/what-iac-cannot-reach.md#シークレットの扱い)）。
 
+**どの経路を選んでも実行できない操作があります。** 委任された管理者アカウントの権限には上限があり、
+**その先は AWS サポートリクエストになります。** 現時点の一覧は
+[fsxadmin の権限と制約](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/fsxadmin-limitations.md)
+にあります。**こちらには転記しません** — 不可能なことの古い一覧は、一覧が無いより悪いためです。読者が今は可能な手段を探すのをやめます。
+
 **`FsxAdminPassword` には 8〜50 文字という制約があり、改行や特定の制御文字を含められません。** 自動生成のポリシーがこの範囲を外れていると作成時に失敗します。
 
 ---
