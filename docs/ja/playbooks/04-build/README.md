@@ -33,6 +33,7 @@
 | 5 | 環境の複製（開発・検証）をどう作るか | [開発・検証環境の複製](notes/what-iac-cannot-reach.md#開発検証環境の複製) |
 | 6 | この設定はテンプレートで作れるのか、ONTAP 側なのか | [この設定はどこから作るか](../../reference/decision-trees/where-a-setting-is-created.md) |
 | 7 | ONTAP 側に届く経路はどれで、何を引き換えにするか | [ONTAP 側の設定に届く経路の比較](../../reference/comparison/ontap-configuration-routes.md) |
+| 8 | どの経路を選んでも実行できない操作はあるか | **あります。** 委任された管理者アカウントで実行できず、AWS サポートリクエストが必要な操作があります（[fsxadmin の権限と制約](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/fsxadmin-limitations.md) に現時点の一覧） |
 
 ---
 
