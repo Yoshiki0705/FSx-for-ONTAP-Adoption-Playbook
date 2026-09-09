@@ -36,6 +36,27 @@
 
 ---
 
+## アーキテクチャを決めたあとの費用
+
+**このモジュールが持っているのは FSx for ONTAP の課金モデルです。** 何が確保で課金され、何が消費で課金されるか、階層化がどこまで下がるか。
+
+**構成そのものの費用構造は、その構成を運用しているリポジトリが持っています。** ここには転記していません。同じ数値を 2 か所に置くと、片方だけが古くなります。
+
+| 決めた構成 | 費用構造の所在 | そこにあるもの |
+|---|---|---|
+| **S3 で集めて、ファイルプロトコルで読む** | [FinOps — S3 標準と FSx for ONTAP S3 AP](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/comparison/finops-s3-vs-s3ap.md) | **課金次元の対応**と 3 つの構造的な違い。「同じデータを繰り返し読むか、1 回だけか」で向く選択が変わります |
+| **性能試験をこれから回す** | [FinOps — 性能試験のパターン別費用](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/comparison/finops-performance-test-patterns.md) | **測定環境そのものの費用**。何が時間課金で何が従量課金か、消し忘れると何が起きるか |
+| **監視経路を選ぶ** | [コストモデル — Direct Send / Collector / Firehose](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/cost-model.md) | 3 経路の月額の比較と、**見積りに必要な入力値の一覧** |
+| **監視を動かしたあと、見積りが合っているか** | [コスト検証](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/cost-validation.md) | 見積りと**実際の請求データの突き合わせ**の手順 |
+| **分析基盤に載せる（メタデータのみ / 全複製）** | [Cost Estimation](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/adoption-guide/cost-estimation.md) | 構成要素別の内訳と**スケーリングの算定式**。メタデータのみと全複製の比較 |
+| **S3 Access Point のポータルを動かした** | [コスト計測](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/ja/cost-measurement.md) | **Cost Explorer から実測する手順**。見積りではありません |
+
+**数値をここに持ってくるときは引用として登録します**（[引用索引](../../reference/cross-repo-index.md)）。単価を含む数値には取得日とリージョンが付いており、それを落とすと比較に使えません。
+
+**単価そのものは [AWS の料金ページ](https://aws.amazon.com/jp/fsx/netapp-ontap/pricing/) です。** どのリポジトリの数値も取得時点のもので、料金ページの代わりにはなりません。
+
+---
+
 ## 構成
 
 | ディレクトリ | 内容 |

@@ -35,6 +35,27 @@ the table of contents; this is the entry point.
 
 ---
 
+## Cost once the architecture is decided
+
+**This module holds the FSx for ONTAP billing model** — what is billed on what was provisioned, what on what was consumed, and how far tiering reduces it.
+
+**The cost structure of a particular architecture belongs to the repository that operates it.** Nothing is transcribed here: the same figure in two places goes stale in one of them.
+
+| Decided | Where the cost structure lives | What it holds |
+|---|---|---|
+| **Collect through S3, consume over a file protocol** | [FinOps — S3 standard against an FSx for ONTAP S3 access point](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/comparison/finops-s3-vs-s3ap.md) (日本語) | The billing-dimension mapping and three structural differences. **Reading the same data repeatedly, or once, changes which is cheaper** |
+| **About to run a performance test** | [FinOps — cost per test pattern](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/comparison/finops-performance-test-patterns.md) (日本語) | **The cost of the measurement environment itself**, what is billed by time against by usage, and what happens if it is left running |
+| **Choosing a monitoring route** | [Cost model — Direct Send / Collector / Firehose](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/cost-model.md) (日本語) | Monthly comparison across three routes, and **the input values an estimate needs** |
+| **Monitoring is running; is the estimate right** | [Cost validation](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/cost-validation.md) (日本語) | Reconciling the estimate against **actual billing data** |
+| **Putting data on an analytics platform** | [Cost estimation](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/adoption-guide/cost-estimation.md) | Component breakdown and **scaling formulas**. Metadata-only against full copy |
+| **The S3 access point portal has been running** | [Cost measurement](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/ja/cost-measurement.md) (日本語) | **Measuring from Cost Explorer.** Not an estimate |
+
+**A figure brought here is registered as a citation** ([citation index](../../../ja/reference/cross-repo-index.md) (日本語)). Unit prices carry a retrieval date and a region, and a figure without them cannot be compared.
+
+**Unit prices themselves are on the [AWS pricing page](https://aws.amazon.com/fsx/netapp-ontap/pricing/).** Every figure in those repositories is as of its retrieval date and does not replace it.
+
+---
+
 ## Structure
 
 | Directory | Contents |
