@@ -41,6 +41,24 @@
 > 各モジュールの README に、そのモジュールが答える問いと、対応するノートが一覧されています。
 > **答えが未収録の問いは `_未追加_` と表示されます。**
 
+### 症状からの引きかた
+
+**「やりたいこと」ではなく「起きていること」から入る場合はこちらです。** 決定木 10 本と比較 9 本の全体は
+[決定木の索引](docs/ja/reference/decision-trees/) と [比較の索引](docs/ja/reference/comparison/) にあります。
+
+| 起きていること | 引くもの |
+|---|---|
+| **請求が想定より高い** | [請求が想定より高いとき](docs/ja/reference/decision-trees/cost-higher-than-expected.md) — 確保で課金か消費で課金かが最初の分岐 |
+| **スループットが出ない** | [手元のスループット値は何を測ったのかを判定する](docs/ja/reference/decision-trees/measured-throughput-triage.md) — 4 か所ある上限のどこに当たっているか |
+| **設定を変えたいが順序が分からない** | [最適化で何をどの順に変えるか](docs/ja/reference/decision-trees/what-to-change-and-in-what-order.md) — 効果の大きさではなく戻せる順 |
+| **テンプレートは成功したのに構成が完成しない** | [この設定はどこから作るか](docs/ja/reference/decision-trees/where-a-setting-is-created.md) — AWS の API で作れるものと ONTAP 側にしかないもの |
+| **S3 Access Point 経由のリクエストが拒否される** | [S3 Access Point 経由のリクエストはどう判定されるか](docs/ja/reference/decision-trees/access-point-authorization.md) — 症状から落ちた段を逆引きする |
+| **アクセスを絞りたいが手立てが多すぎる** | [アクセスを絞る手立ての比較](docs/ja/reference/comparison/access-restriction-options.md) — 手立ては 1 つの層に並んでいません |
+| **棚卸しの値が判断に使えない** | [棚卸しの値をどこから取るかの比較](docs/ja/reference/comparison/inventory-sources.md) — 設定情報から作った一覧は実態と一致しません |
+| **ONTAP 側の設定にどう届かせるか決まらない** | [ONTAP 側の設定に届く経路の比較](docs/ja/reference/comparison/ontap-configuration-routes.md) — どの経路でもテンプレートの管理外に出ます |
+
+---
+
 ### いま読める知見
 
 各ノートは「1 ファイル = 1 論点」で、**一次情報の出典**と**自分の環境で確かめる手順**を必ず含みます。

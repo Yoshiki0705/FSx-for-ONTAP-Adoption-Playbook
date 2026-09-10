@@ -30,6 +30,23 @@
 > Das README jedes Moduls listet die Fragen und das jeweils zugehörige Dokument;
 > eine noch nicht beantwortete Frage ist mit `_未追加_` markiert. Die Notizen liegen derzeit auf Japanisch vor.
 
+### Einstieg über ein Symptom
+
+**Für den Fall, dass der Ausgangspunkt das Geschehen ist und nicht das Vorhaben.** Der vollständige Satz — 10 Entscheidungsbäume und 9 Vergleiche — steht im [Index der Entscheidungsbäume](../ja/reference/decision-trees/) (日本語) und im [Index der Vergleiche](../ja/reference/comparison/) (日本語).
+
+| Was geschieht | Wohin |
+|---|---|
+| **Die Rechnung liegt über der Erwartung** | [cost-higher-than-expected.md](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — Erste Verzweigung: nach Bereitgestelltem oder nach Verbrauch abgerechnet |
+| **Der Durchsatz bleibt aus** | [measured-throughput-triage.md](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — Welche der vier Obergrenzen erreicht wurde |
+| **Eine Änderung steht an, die Reihenfolge ist offen** | [what-to-change-and-in-what-order.md](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — Nach Umkehrbarkeit, nicht nach erwarteter Wirkung |
+| **Die Vorlage war erfolgreich und die Konfiguration ist unvollständig** | [where-a-setting-is-created.md](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — Was die AWS-API anlegt und was nur auf der ONTAP-Seite existiert |
+| **Eine Anfrage über einen S3-Zugriffspunkt wird abgewiesen** | [access-point-authorization.md](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — Vom Symptom zurück zur ablehnenden Schicht |
+| **Zu viele Mittel, den Zugriff einzuschränken** | [access-restriction-options.md](../ja/reference/comparison/access-restriction-options.md) (日本語) — Sie liegen nicht in einer Schicht |
+| **Ein Inventarwert taugt nicht zur Entscheidung** | [inventory-sources.md](../ja/reference/comparison/inventory-sources.md) (日本語) — Eine aus der Konfiguration gebaute Liste trifft die Realität nicht |
+| **Keine Entscheidung, wie die ONTAP-Seite erreicht wird** | [ontap-configuration-routes.md](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — Jede Route verlässt die Vorlagenverwaltung |
+
+---
+
 ### Heute verfügbar
 
 Jedes Dokument behandelt ein Thema pro Datei und führt stets **seine Primärquellen** sowie **ein Verfahren zur Prüfung in der eigenen Umgebung** mit.
