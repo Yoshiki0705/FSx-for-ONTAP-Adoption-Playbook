@@ -24,6 +24,7 @@
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	paused
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	reread	AWS サポートリクエストが必要な操作
+FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	Anti-Patterns
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
@@ -39,6 +40,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.m
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	5 GB → 50 GB
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	不可逆・作り直しになる操作
+S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測定前の合否基準の決定
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	課金次元の対応
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要

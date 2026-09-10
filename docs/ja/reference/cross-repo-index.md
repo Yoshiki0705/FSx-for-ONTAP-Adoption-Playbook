@@ -64,6 +64,10 @@ lang: ja
 | `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/design-first-decisions.md` | `不可逆・作り直しになる操作` | `retraction` | ボリュームを作る前に決めることの順序。**同じ問いをボリューム側から扱っている文書**です |
 | `docs/ja/playbooks/04-build/README.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `AWS サポートリクエストが必要な操作` | `reread` | 委任された管理者で実行できない操作の存在。**一覧はそちらが持ちます** — サービスが操作を得ると一覧は縮み、発火は撤回ではなく読み直しの合図です |
 | `docs/ja/reference/comparison/ontap-configuration-routes.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `AWS サポートリクエストが必要な操作` | `reread` | 同じ主張を、経路の比較の側から。**どの経路を選んでも越えられない上限がある**という位置づけ |
+| `docs/ja/playbooks/01-assess/README.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/adoption-assessment.md` | `Anti-Patterns` | `retraction` | 評価を成果物として構成する形。**適用しない条件の一覧を持っている点**が、こちらの棚卸し項目にない部分です |
+| `docs/ja/playbooks/01-assess/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/poc-checklist.md` | `測定前の合否基準の決定` | `retraction` | PoC の合否基準を測定前に決めること。**測ったあとに決めると出た数値が合格になる**という主張の所在 |
+| `docs/en/playbooks/01-assess/README.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/adoption-assessment.md` | `Anti-Patterns` | `retraction` | 同上（EN 版） |
+| `docs/en/playbooks/01-assess/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/poc-checklist.md` | `測定前の合否基準の決定` | `retraction` | 同上（EN 版） |
 | `docs/ja/domains/cost/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-s3-vs-s3ap.md` | `課金次元の対応` | `retraction` | S3 標準と FSx for ONTAP S3 AP の費用構造の対応。**繰り返し読むか 1 回だけかで向く選択が変わる**という判断の所在 |
 | `docs/ja/domains/cost/README.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-performance-test-patterns.md` | `実際の請求ではない` | `retraction` | 測定環境そのものの費用。**単価の取得日とリージョンが付いていることが、この文書を引用できる理由**です |
 | `docs/ja/domains/cost/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/cost-model.md` | `デプロイの月額コストを見積もる` | `retraction` | 監視 3 経路の費用比較と、見積りに必要な入力値の一覧 |

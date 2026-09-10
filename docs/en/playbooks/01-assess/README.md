@@ -36,6 +36,28 @@ the table of contents; this is the entry point.
 
 ---
 
+## Assessment against proof of concept
+
+**These answer different questions, and mistaking one for the other means judging a decision on the wrong evidence.**
+
+| | Answers | Finished when |
+|---|---|---|
+| **Assessment** | **whether to proceed** | a reason not to proceed appears, or its absence is confirmed |
+| **Proof of concept** | **whether it works** | **a result exists against pass criteria written before measuring** |
+
+**The most common failure in a proof of concept is deciding the criteria afterwards.** Then whatever came out is a pass. **Write what will be measured, which value passes, and who decides — before measuring — and keep it with the result.** A blank field means that phase cannot start yet.
+
+**The inventory items in this module feed the assessment.** Pass criteria differ per workload, so they are not here.
+
+| To know | Where |
+|---|---|
+| How an assessment is structured as a deliverable, **including where not to apply the pattern** | [Adoption Assessment Guide](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/adoption-guide/adoption-assessment.md) |
+| How to write pass criteria and keep the record | [PoC checklist](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/poc-checklist.md) (日本語) |
+
+**Both are specific to their own architecture.** No generic template is produced here — **a template nobody uses is worse than a pointer to one that is used.**
+
+---
+
 ## Structure
 
 | Directory | Contents |
