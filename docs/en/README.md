@@ -34,6 +34,23 @@
 > Each module README lists the questions it covers alongside the note that answers each one.
 > **A question whose answer is not yet written is marked `_未追加_`.**
 
+### Entering from a symptom
+
+**For when the starting point is what is happening rather than what you want to do.** The full set — 10 decision trees and 9 comparisons — is in the [decision tree index](reference/decision-trees/) and the [comparison index](../ja/reference/comparison/) (日本語).
+
+| What is happening | Where to go |
+|---|---|
+| **The bill is higher than expected** | [When the bill came in higher than expected](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — provisioned or consumed is the first branch |
+| **Throughput is disappointing** | [What a measured throughput figure actually measured](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — which of four ceilings it hit |
+| **A change is needed and the order is unclear** | [What to change, and in what order](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — by reversibility, not by expected effect |
+| **The template succeeded and the setup is incomplete** | [Where a setting can be created](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — the AWS API against the ONTAP side |
+| **A request through an S3 access point is refused** | [How a request through an S3 access point is judged](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — working back from the symptom to the layer that refused |
+| **Too many ways to restrict access** | [Comparing the ways to restrict access](../ja/reference/comparison/access-restriction-options.md) (日本語) — they do not sit in one layer |
+| **An inventory value cannot be used to decide** | [Where an inventory value can be taken from](../ja/reference/comparison/inventory-sources.md) (日本語) — a list built from configuration does not match reality |
+| **No decision on how to reach the ONTAP side** | [Routes to ONTAP-side configuration](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — every route puts the setting outside template management |
+
+---
+
 ### Available today
 
 Each note is one concern per file, and always carries **its primary sources** and **a procedure for checking it in your own environment**. The notes themselves are Japanese for now.

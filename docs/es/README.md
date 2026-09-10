@@ -30,6 +30,23 @@
 > El README de cada módulo enumera las preguntas y el documento correspondiente;
 > una pregunta sin respuesta escrita se marca con `_未追加_`. Las notas están por ahora en japonés.
 
+### Entrar desde un síntoma
+
+**Para cuando el punto de partida es lo que ocurre y no lo que se quiere hacer.** El conjunto completo — 10 árboles de decisión y 9 comparaciones — está en el [índice de árboles de decisión](../ja/reference/decision-trees/) (日本語) y el [índice de comparaciones](../ja/reference/comparison/) (日本語).
+
+| Lo que ocurre | A dónde ir |
+|---|---|
+| **La factura supera lo previsto** | [cost-higher-than-expected.md](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — Primera bifurcación: facturado por lo aprovisionado o por lo consumido |
+| **El rendimiento no llega** | [measured-throughput-triage.md](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — Cuál de los cuatro techos se alcanzó |
+| **Hace falta un cambio y el orden no está claro** | [what-to-change-and-in-what-order.md](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — Por reversibilidad, no por efecto esperado |
+| **La plantilla tuvo éxito y la configuración sigue incompleta** | [where-a-setting-is-created.md](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — Lo que crea la API de AWS y lo que solo existe en el lado ONTAP |
+| **Una solicitud por un punto de acceso S3 es rechazada** | [access-point-authorization.md](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — Del síntoma a la capa que rechazó |
+| **Demasiadas formas de restringir el acceso** | [access-restriction-options.md](../ja/reference/comparison/access-restriction-options.md) (日本語) — No están en una sola capa |
+| **Un valor de inventario no sirve para decidir** | [inventory-sources.md](../ja/reference/comparison/inventory-sources.md) (日本語) — Una lista hecha desde la configuración no coincide con la realidad |
+| **Sin decisión sobre cómo alcanzar la configuración de ONTAP** | [ontap-configuration-routes.md](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — Toda ruta sale de la gestión por plantilla |
+
+---
+
 ### Disponible hoy
 
 Cada documento trata un solo asunto por archivo y lleva siempre **sus fuentes primarias** y **un procedimiento para comprobarlo en tu propio entorno**.

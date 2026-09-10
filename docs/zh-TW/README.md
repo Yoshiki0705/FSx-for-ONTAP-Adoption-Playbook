@@ -30,6 +30,23 @@
 > 各模組的 README 列出了該模組回答的問題及對應的資料；
 > 尚未撰寫的問題會標示為 `_未追加_`。各篇筆記目前以日文撰寫。
 
+### 從症狀入手的方法
+
+**當起點是正在發生的事情而非想做的事情時使用。** 全部 10 個決策樹與 9 個比較表見[決策樹索引](../ja/reference/decision-trees/) (日本語) 和 [比較索引](../ja/reference/comparison/) (日本語)。
+
+| 正在發生的事情 | 前往 |
+|---|---|
+| **帳單高於預期** | [cost-higher-than-expected.md](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — 首個分支是按預留計費還是按消耗計費 |
+| **吞吐量上不去** | [measured-throughput-triage.md](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — 命中了四處上限中的哪一個 |
+| **想改設定但不知順序** | [what-to-change-and-in-what-order.md](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — 按可回退的順序，而非按效果大小 |
+| **範本成功了但設定沒完成** | [where-a-setting-is-created.md](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — AWS API 能建立的與只存在於 ONTAP 側的 |
+| **經 S3 存取點的請求被拒絕** | [access-point-authorization.md](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — 從症狀反推被哪一層拒絕 |
+| **想限制存取但手段太多** | [access-restriction-options.md](../ja/reference/comparison/access-restriction-options.md) (日本語) — 這些手段並不處於同一層 |
+| **盤點得到的值無法用於判斷** | [inventory-sources.md](../ja/reference/comparison/inventory-sources.md) (日本語) — 由設定資訊產生的清單與實際不一致 |
+| **尚未決定如何觸及 ONTAP 側設定** | [ontap-configuration-routes.md](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — 任何路徑都會脫離範本管理 |
+
+---
+
 ### 目前可閱讀的資料
 
 每篇資料均為「1 個檔案 = 1 個議題」，並且必定包含**一次資訊的出處**與**在自己環境中確認的步驟**。

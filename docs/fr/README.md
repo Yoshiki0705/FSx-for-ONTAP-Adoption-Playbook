@@ -30,6 +30,23 @@
 > Le README de chaque module liste les questions qu'il traite et le document correspondant ;
 > une question sans réponse écrite est marquée `_未追加_`. Les notes sont pour l'instant en japonais.
 
+### Entrer par un symptôme
+
+**Pour quand le point de départ est ce qui se passe plutôt que ce que l'on veut faire.** L'ensemble — 10 arbres de décision et 9 comparaisons — se trouve dans [l'index des arbres de décision](../ja/reference/decision-trees/) (日本語) et [l'index des comparaisons](../ja/reference/comparison/) (日本語).
+
+| Ce qui se passe | Où aller |
+|---|---|
+| **La facture dépasse les prévisions** | [cost-higher-than-expected.md](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — La première bifurcation : facturé sur le provisionné ou sur le consommé |
+| **Le débit ne suit pas** | [measured-throughput-triage.md](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — Lequel des quatre plafonds a été atteint |
+| **Un changement est nécessaire, l'ordre reste flou** | [what-to-change-and-in-what-order.md](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — Par réversibilité, pas par effet attendu |
+| **Le modèle a réussi et la configuration reste incomplète** | [where-a-setting-is-created.md](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — Ce que l'API AWS crée et ce qui n'existe que côté ONTAP |
+| **Une requête via un point d'accès S3 est refusée** | [access-point-authorization.md](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — Remonter du symptôme à la couche qui a refusé |
+| **Trop de moyens pour restreindre l'accès** | [access-restriction-options.md](../ja/reference/comparison/access-restriction-options.md) (日本語) — Ils ne se situent pas dans une seule couche |
+| **Une valeur d'inventaire inutilisable pour décider** | [inventory-sources.md](../ja/reference/comparison/inventory-sources.md) (日本語) — Une liste bâtie sur la configuration ne correspond pas au réel |
+| **Pas de décision sur l'accès à la configuration ONTAP** | [ontap-configuration-routes.md](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — Toute route sort de la gestion par modèle |
+
+---
+
 ### Disponible aujourd'hui
 
 Chaque document traite un seul sujet par fichier et porte toujours **ses sources primaires** ainsi qu'**une procédure de vérification dans votre propre environnement**.

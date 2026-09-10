@@ -30,6 +30,23 @@
 > 각 모듈 README에 그 모듈이 답하는 질문과 대응하는 자료가 정리되어 있으며,
 > 아직 작성되지 않은 질문은 `_未追加_`로 표시됩니다. 개별 노트는 현재 일본어로 작성되어 있습니다.
 
+### 증상에서 찾는 방법
+
+**하고 싶은 일이 아니라 일어나고 있는 일에서 출발할 때 사용합니다.** 결정 트리 10개와 비교 9개 전체는 [결정 트리 색인](../ja/reference/decision-trees/) (日本語) 과 [비교 색인](../ja/reference/comparison/) (日本語) 에 있습니다.
+
+| 일어나고 있는 일 | 찾아갈 곳 |
+|---|---|
+| **청구액이 예상보다 높다** | [cost-higher-than-expected.md](../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) — 확보 기준 과금인지 소비 기준 과금인지가 첫 분기입니다 |
+| **처리량이 나오지 않는다** | [measured-throughput-triage.md](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) — 네 곳의 상한 중 어디에 걸렸는지 |
+| **설정을 바꾸고 싶지만 순서를 모른다** | [what-to-change-and-in-what-order.md](../ja/reference/decision-trees/what-to-change-and-in-what-order.md) (日本語) — 효과의 크기가 아니라 되돌릴 수 있는 순서로 |
+| **템플릿은 성공했는데 구성이 완성되지 않는다** | [where-a-setting-is-created.md](../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — AWS API로 만들 수 있는 것과 ONTAP 쪽에만 있는 것 |
+| **S3 액세스 포인트 경유 요청이 거부된다** | [access-point-authorization.md](../ja/reference/decision-trees/access-point-authorization.md) (日本語) — 증상에서 거부한 계층을 역추적 |
+| **액세스를 제한하려는데 수단이 너무 많다** | [access-restriction-options.md](../ja/reference/comparison/access-restriction-options.md) (日本語) — 수단은 하나의 계층에 나열되어 있지 않습니다 |
+| **인벤토리 값을 판단에 쓸 수 없다** | [inventory-sources.md](../ja/reference/comparison/inventory-sources.md) (日本語) — 설정 정보로 만든 목록은 실태와 일치하지 않습니다 |
+| **ONTAP 쪽 설정에 어떻게 도달할지 정해지지 않는다** | [ontap-configuration-routes.md](../ja/reference/comparison/ontap-configuration-routes.md) (日本語) — 어떤 경로든 템플릿 관리 밖으로 나갑니다 |
+
+---
+
 ### 지금 읽을 수 있는 자료
 
 각 자료는 「1 파일 = 1 논점」이며, **일차 정보의 출처**와 **자신의 환경에서 확인하는 절차**를 반드시 포함합니다.
