@@ -156,6 +156,24 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 
 ---
 
+## Three distinct meanings of "maximum"
+
+**"Use Maximum" above is about monitoring, not about the headline number of a benchmark.** One word covers three different things, and **carrying the monitoring conclusion into a measurement plan produces confidently wrong answers.**
+
+| Use | What it is | Where it fits | Where it breaks |
+|---|---|---|---|
+| **The `Maximum` statistic** | CloudWatch returns the highest value in the period | **Monitoring.** The only way to see which party saturated | — |
+| **Maximum as a headline number** | Reporting the highest of several runs as "the value for this configuration" | **Nowhere** | **Benchmarking.** The noisier the series, the further the maximum is pulled upward — it is **the least reproducible statistic** |
+| **`max` as an instruction to the load generator** | `fio`'s `rate=` / `iorate=max`, meaning "do not cap" | When the goal is to saturate | **Not a statistic at all.** The achieved figure can land below the target, so the instruction cannot be recorded as the result |
+
+**The first two rows have opposite purposes.** Monitoring exists to **detect**, so it needs a statistic that reveals saturation that happened even once. Benchmarking exists to **reproduce**, so it needs a statistic another person can obtain. **The maximum suits the first best and the second worst.**
+
+**This distinction was made explicit after a citing repository raised it.** In that environment, repeated runs of an identical configuration varied by 45%, 300-second and 900-second runs settled on different values, and `iorate=max` landed below the target. **The measured figures stay with that repository** — they are environment-dependent, so they are not copied here.
+
+> **When carrying this into a measurement plan**: report the **median and the distribution** as the headline, and cite the maximum only to show whether outliers exist. **The maximum alone does not let the next person obtain the same number.**
+
+---
+
 ## Common misconceptions
 
 | Misconception | Reality |
