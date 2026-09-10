@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The S3 Access Point note told readers to measure `read_timeout` themselves, and the answer was in the
+  public API reference all along.** It had left open whether `CompleteMultipartUpload` streams bytes during
+  assembly or returns only once assembly finishes, because that decides whether a size-scaled timeout floor
+  is needed. The Amazon S3 `CompleteMultipartUpload` reference states that Amazon S3 periodically sends
+  white space characters while processing, specifically to keep the connection from timing out — so the
+  response does stream, and no floor is required. The instruction to measure is withdrawn: it would have
+  sent every reader to run an experiment that reading one page answers. This also settles the earlier "SDK
+  defaults fail" claim, already withdrawn as an inference, as wrong on the substance too.
+  Adds the consequence that matters more, from the same page: a request **can fail after the initial
+  `200 OK` has been sent**, so a `200 OK` may contain either a success or an error, and the error response
+  may be embedded in it. The SDKs detect that; code calling the API directly must parse the response body
+  or it will read a failure as a success. This is documented Amazon S3 behaviour rather than anything
+  specific to FSx for ONTAP. One item stays open — whether the service completes or aborts an assembly a
+  client abandons, which the page does not cover — and it is now an edge case, since a default timeout does
+  not fire.
 - **Three inbound citations of this repository were unregistered, and the anchor contract could not
   express one of them.** Closes the inbound-gating decision: the register stays here, in the existing
   mechanism, rather than being mirrored on the citing side.
