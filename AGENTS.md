@@ -209,7 +209,7 @@ Reaching for `hypothesis` there asserts reasoning the note does not have. See
 
 - First mention: **Amazon FSx for NetApp ONTAP**. Thereafter: **FSx for ONTAP**. These are the only accepted forms.
 - Forbidden, always correct to "FSx for ONTAP": `FSxN`, bare `FSx`, `FSx ONTAP`, `FSx NetApp`.
-- S3 Access Point in this context: write **FSx for ONTAP S3 AP** (not bare `S3 AP` when the FSx for ONTAP context matters).
+- S3 Access Point in this context: write **S3 Access Points** in full; `S3 AP` is not a form AWS sanctions. Existing uses are grandfathered.
 - **Do not propose these products anywhere**: NetApp Workload Factory, NetApp Console, BlueXP. Reframe to the native equivalent (Amazon CloudWatch, ONTAP REST API, FabricPool, AWS DataSync, Snapshot / FlexClone / SnapMirror).
 - Exception: verbatim external citation titles that literally contain a forbidden form. Mark the line with `<!-- allow:naming -->`.
 - Repository and directory names (`fsxn-adoption-playbook`) are identifiers, not prose, and are exempt. Prose referring to them needs `<!-- allow:naming -->`.
