@@ -35,6 +35,7 @@ Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を
 | 5 | 複数アカウント・複数拠点に広げると何が変わるか | [クロスアカウントは IAM ではなくネットワークの問題](notes/cross-account-is-a-network-problem.md) |
 | 6 | 認証・データ所在・サイジングで先に狭まる条件は何か | [経路は認証とアクセス経路で先に狭まる](notes/route-choice-is-bounded-by-access-and-auth.md) |
 | 7 | 監視の導入が管理面に持ち込むリスクは何か | [収集対象数がロック時の影響範囲を決める](notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) |
+| 8 | S3 Access Points 経由のアクセスのリクエスト数・エラー率を見られるか | **見られません。** どの経路を選んでも同じで、代替と限界は [S3 Access Points 経由のアクセスにおけるメトリクスの不在](notes/route-choice-is-bounded-by-access-and-auth.md#s3-access-points-経由のアクセスにおけるメトリクスの不在) にあります |
 
 ---
 

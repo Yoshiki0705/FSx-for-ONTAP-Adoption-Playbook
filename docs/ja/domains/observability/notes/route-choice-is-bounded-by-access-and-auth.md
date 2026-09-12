@@ -23,8 +23,9 @@ lang: ja
 | 2 | ONTAP の API をどちらで叩くか | **ZAPI の提供終了は無期限に延期されています。** 「廃止済みだから移行必須」と書くと、それ自体が誤情報になります |
 | 3 | 収集基盤をどう見積もるか | **サイジング指針が出典間で食い違います。** どちらか一方だけを引くと外れます |
 | 4 | データをどこに置くか | SaaS 経路は **AWS の VPC の外**にデータが出ます。所在の確認が要ります |
+| 5 | 見たいアクセス経路にメトリクスがあるか | **S3 Access Points 経由のアクセスは、どの経路を選んでも見えません。** メトリクスが提供されていないため、経路の選択では解決しません |
 
-> **Evidence**: `documented` — 4 条件すべて公式ドキュメントの記載に基づきます（**取得日 2026-09-05**）。**著者による実測は含みません。** 提供リージョンと製品名は変動するため、[自環境での確認手順](#自環境での確認手順) で最新を確認してください。
+> **Evidence**: `documented` — 5 条件すべて公式ドキュメントの記載に基づきます（**条件 1〜4 の取得日 2026-09-05、条件 5 は 2026-09-12**）。**著者による実測は含みません。** 提供リージョンと製品名は変動するため、[自環境での確認手順](#自環境での確認手順) で最新を確認してください。
 
 ---
 
@@ -135,6 +136,36 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 ---
 
+## S3 Access Points 経由のアクセスにおけるメトリクスの不在
+
+**条件 1〜4 は「どの経路を選ぶか」を狭めます。この条件だけは、どの経路を選んでも満たせません。**
+
+FSx for ONTAP のボリュームに接続した S3 Access Points 経由のアクセスについて、**リクエスト数・エラー率・レイテンシを取得する手段を、公開ドキュメントに見つけられませんでした**（2026-09-12 に下記を通読）。
+
+| 確認した範囲 | 結果 |
+|---|---|
+| [Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) のメトリクスのカテゴリ | **ファイルシステム / ファイルサーバー / アグリゲート / ボリュームの 4 系統**。S3 Access Points に対応するカテゴリとディメンションは列挙に現れません |
+| 同ページの名前空間 | メトリクスはすべて `AWS/FSx` に発行されます。S3 側の名前空間へ発行される記述はありません |
+| [Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) の監視手段の列挙 | CloudWatch / EMS イベント / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つ。**いずれも S3 Access Points 経由のデータ操作の記録を挙げていません** |
+
+**CloudTrail は代わりになりません。** CloudTrail が記録するのは Amazon FSx の API 呼び出しで、アクセスポイントを**作成した**操作は残りますが、そのアクセスポイントを**通ったデータ操作**は残りません。
+
+### 運用に与える帰結
+
+**S3 Access Points 経由のアクセスが失敗していることに、運用者が気づく手段がありません。** 監視画面に出せないため、利用者からの申告が最初の検知になります。
+
+経路の選択で埋められないので、**要件がある場合は監視の外側で担保します。**
+
+| 埋め方 | 見えるもの | 見えないもの |
+|---|---|---|
+| 呼び出し側（アプリケーション、Lambda など）で結果を記録する | 自分が発行したリクエストの成否とレイテンシ | 他の呼び出し元。呼び出し側を通らないアクセス |
+| ONTAP 側のファイルアクセス監査（`vserver audit`）を有効にする | ボリューム上のファイル操作 | **リクエスト単位の HTTP ステータスとレイテンシ。** S3 API の層は監査の対象ではありません |
+| 合成監視（既知のオブジェクトへ定期的にアクセスして結果を記録する） | 経路が生きているかどうか | **実利用のリクエスト数とエラー率。** 生死確認であって計測ではありません |
+
+**いずれも代替であって、同等ではありません。** 要件が「実利用のリクエスト数とエラー率」である場合、現時点では満たせないという結論を設計に持ち込む必要があります。
+
+---
+
 ## NetApp Data Infrastructure Insights の扱い
 
 **このリポジトリでは経路として扱いません。** ただし AWS の公式ドキュメント（FAQ、Harvest のページ、ブログ）が監視手段として挙げているため、黙って落とすと選定の材料が欠けます。事実を置きます。
@@ -168,6 +199,7 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 | 9 | SaaS を検討する場合、選定時点のリージョン一覧をベンダーの最新ドキュメントで確認する | **選択肢の実際の広さ。** 過去の情報は狭く見積もります |
 | 10 | 選んだ SaaS で、リージョン外に置かれる情報の有無を確認する | 前節の問い 7 |
 | 11 | 収集されるメトリクスのラベルに含まれる名前を実物で確認する | 前節の問い 1 |
+| 12 | `aws cloudwatch list-metrics --namespace AWS/FSx` を実行し、返るディメンションに S3 Access Points に対応するものがあるか確認する | **条件 5 が自環境でも成り立つか。** 提供が始まればここに現れます |
 
 **手順 11 が最も飛ばされます。** ラベルにボリューム名や共有名が入るかは、設定ではなく実物を見ないと分かりません。
 
@@ -189,6 +221,9 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 | SaaS はリージョンを選べば所在が決まる | **選んだリージョン以外に置かれる情報がある場合があります** |
 | SaaS の提供リージョンは変わらない | 変動します。選定時に最新を確認してください |
 | NetApp Cloud Insights が現行の名称である | **NetApp Data Infrastructure Insights に改称されています** |
+| S3 Access Points 経由のアクセスも `AWS/FSx` のメトリクスに出る | メトリクスのカテゴリは**ファイルシステム / ファイルサーバー / アグリゲート / ボリュームの 4 系統**で、S3 Access Points は列挙にありません（2026-09-12 確認） |
+| CloudTrail を有効にすれば S3 Access Points 経由の操作を追える | CloudTrail が残すのは **Amazon FSx の API 呼び出し**です。アクセスポイントの作成は残り、**通ったデータ操作は残りません** |
+| 監視経路を変えれば S3 Access Points も見えるようになる | **経路の問題ではありません。** メトリクス自体が提供されていないため、どの経路でも同じです |
 
 ---
 
@@ -199,6 +234,8 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 | Amazon Managed Grafana の認証方式が SAML 2.0 と IAM Identity Center の列挙であること、利用者への権限付与が必要であること、IdP 起点ログインが未サポートであること、IAM Identity Center 利用時に AWS Organizations が必要であること | [AWS: Authenticate users in Amazon Managed Grafana workspaces](https://docs.aws.amazon.com/grafana/latest/userguide/authentication-in-AMG.html) / [Learn how to create and use Amazon Managed Grafana resources](https://docs.aws.amazon.com/grafana/latest/userguide/getting-started-with-AMG.html) | 2026-09-05 |
 | CPC-00410（2024 年 6 月）で ZAPI の EOA が無期限に延期されたこと、REST 性能メトリクスが 9.11.1 から、9.12.1 で Harvest 22.11 の ZAPI 性能メトリクスと同等になること、9.12.1 以降での切り替え推奨、REST のみの機能と CLI パススルー、アップグレード後 30 日の自動無効化と CLI での再有効化 | [Harvest: REST strategy](https://github.com/NetApp/harvest/blob/main/docs/architecture/rest-strategy.md) | 2026-09-05 |
 | サイジングが監視対象数と収集メトリクス数に依存すること、10 台あたり 2 コア / メモリ 1 GB / ディスク 500 MB、`t3.micro` / `t3.xlarge` / `t3.2xlarge` のサンプル表 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
+| CloudWatch メトリクスのカテゴリが 4 系統であること、すべて `AWS/FSx` に発行されること（S3 Access Points に対応するカテゴリが列挙に無いこと） | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) | 2026-09-12 |
+| 監視手段の列挙が CloudWatch / EMS / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つであること、CloudTrail の対象が Amazon FSx の API 呼び出しであること | [AWS: Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) | 2026-09-12 |
 | Data Infrastructure Insights の旧称、ホストリージョン 3 つ、ホストリージョンに関わらず米国に置かれる情報、Workload Security と User Directory コレクタの収集対象、秘密鍵が Acquisition Unit に留まること | [NetApp: Information and Region](https://docs.netapp.com/us-en/data-infrastructure-insights/security_information_and_region.html) | 2026-09-05 |
 
 ---
