@@ -43,16 +43,27 @@ graph TD
 | 마이그레이션 원본이 Windows 파일 서버 (SMB / NTFS ACL 보존이 요건) | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) (日本語) | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) (English) |
 | 마이그레이션 원본이 ONTAP 이외의 NAS | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) (日本語) | [평가](../en/playbooks/01-assess/) (English) |
 | NFS와 SMB를 같은 데이터에 사용 | [보안 스타일이 권한 평가 모델을 결정한다](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [보안·거버넌스](../en/domains/security-governance/) (English) |
+| **SMB로 운영 중인 볼륨을 NFS에서도 사용하고 싶다** | [SMB로 운영 중인 볼륨에 NFS를 추가하는 데 복제는 필요 없다](../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) (日本語) | [보안 스타일이 권한 평가 모델을 결정한다](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
+| **NFS 측에서 권한을 확인하거나 거부 이유를 파악하고 싶다** | [NFS 측 권한 표현은 실제 허용/거부와 일치하지 않는다](../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) (日本語) | [보안 스타일이 권한 평가 모델을 결정한다](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | Active Directory 연동이 전제 | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) (English) | [설계](../en/playbooks/02-design/) (English) |
 | SMB 사용자 관리와 감사를 설계하고 싶다 | [SMB 사용자 관리와 감사 결정 트리](../en/reference/decision-trees/smb-identity-and-audit.md) (English) | [멀티프로토콜·ID](../en/domains/multiprotocol-identity/) (English) |
 | SMB가 갑자기 제공되지 않게 되었다 | [SMB를 제공할 수 없는 SVM](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB 사용자 관리와 감사 결정 트리](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
 | 감사 로그를 활성화하고 싶다 / 로컬 사용자를 정리하고 싶다 | [감사 대상 소진은 액세스를 멈춘다](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [최종 로그온 속성은 없다](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 | 신규 구축 (마이그레이션 원본 없음) | [설계](../en/playbooks/02-design/) (English) | [구축](../en/playbooks/04-build/) → [운영](../en/playbooks/05-operate/) (English) |
+| **Amazon EFS로 충분한지 FSx for ONTAP이 필요한지 판단이 서지 않는다** | [어느 AWS 파일 스토리지를 쓸지 결정 트리](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [파일 스토리지 선택지 비교](../ja/reference/comparison/file-storage-options.md) (日本語) |
+| **iSCSI / NVMe-oF로 블록을 제공한다** | [블록 프로토콜과 배치 결정 트리](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [블록 스토리지](../en/domains/block-storage/) (English) |
+| **블록으로 갈지 Amazon EBS로 충분한지 판단이 서지 않는다** | [블록 스토리지 선택지 비교](../ja/reference/comparison/block-storage-options.md) (日本語) | [공유 블록이 설계를 바꾸는 조건](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
+| **EBS로 운영 중인 구성의 비용과 비교하고 싶다** | [EBS가 더 저렴하지 않게 되는 경계는 대수가 아니라 같은 데이터의 복제 수](../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | [블록 스토리지를 30분에 움직이는 절차](../en/domains/block-storage/quickstart.md) (English) |
+| **블록(LUN)의 데이터를 운영에 영향을 주지 않고 파일이나 S3 API로 분석하고 싶다** | [LUN의 내용은 파일 프로토콜에 나타나지 않는다](../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) | [블록에서 파일로 옮기는 경로 비교](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **볼륨을 다른 SVM으로 옮기고 싶다 / FlexClone을 옮길 수 있는지 알고 싶다** | [`volume rehost`가 바꾸는 것은 소유 SVM뿐이며 내용은 바뀌지 않는다](../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) | [블록에서 파일로 옮기는 경로 비교](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **측정한 스루풋이 예상보다 낮다** | [손에 있는 스루풋 값이 무엇을 측정한 것인지 판정한다](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [스루풋을 올리는 수단 비교](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 이미 운영 중이며 성능을 개선하고 싶다 | [성능](../en/domains/performance/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | **모니터링을 어떻게 구성할지 정하고 싶다** | [모니터링 경로 결정 트리](../ja/reference/decision-trees/observability-route.md) (日本語) | [가관측성](../en/domains/observability/) (English) |
+| **자신의 업종에서 무엇을 결정해야 할지 알고 싶다** | [업종별 리소스 맵 — 읽는 순서](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [업종별 색인](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
 | 상한값에 걸리지 않는지 확인하고 싶다 | [상한값·쿼터](../ja/reference/limits/) | [설계](../en/playbooks/02-design/) (English) |
 | S3 API나 분석 플랫폼에서 접근하고 싶다 | [FSx for ONTAP S3 AP 전제 조건](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [액세스 포인트 정책 작성 방법](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
+| AI / ML 학습 데이터를 두고 실험별로 분기하고 싶다 | [학습 데이터셋 버전과 실험 브랜치의 제약](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [실험 브랜치를 배포할 때 제한할 3가지 대상](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
 
 위 링크에 대해 알아 두실 두 가지입니다.
 

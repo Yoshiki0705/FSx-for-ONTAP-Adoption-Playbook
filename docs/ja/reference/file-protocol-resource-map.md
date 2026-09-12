@@ -217,6 +217,9 @@ graph TD
 | [NetApp: FlexClone の概念](https://docs.netapp.com/us-en/ontap/concepts/flexclone-volumes-files-luns-concept.html) | **クローンに書き込んだ変更分は共有されません** |
 | [NetApp: FlexClone の使用領域の確認](https://docs.netapp.com/ja-jp/ontap/volumes/determine-space-used-flexclone-task.html) | 実際に消費している容量の確認手順 |
 | [NetApp: 親からのスプリット](https://docs.netapp.com/ja-jp/ontap/volumes/split-flexclone-from-parent-task.html) | **スプリットは共有を終わらせる明示の操作**（`volume clone split start`） |
+| [NetApp: `volume rehost` の前提条件](https://docs.netapp.com/us-en/ontap/volumes/rehost-volume-another-svm-task.html) | **クローンとクローンの親は rehost できません。** split が前提になります（[解説](../domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md)） |
+| [NetApp: rehost で非対応の機能](https://docs.netapp.com/us-en/ontap/volumes/features-supported-volume-rehost-concept.html) | SVM DR / MetroCluster / SnapLock / FlexGroup / クローンボリューム |
+| [NetApp: SAN ボリュームの rehost](https://docs.netapp.com/us-en/ontap/volumes/rehost-san-task.html) | **rehost 後に失われる設定 7 種。** LUN は保持されるが unmapped |
 | [NetApp KB: ONTAP Space Usage](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage) | 容量の内訳。**数字が合わないときに最初に開くページ** |
 | [NetApp KB: volume autosize とは](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/What_is_volume_autosize_in_Data_ONTAP) | **容量が埋まって書き込みが落ちたときの回避手段** |
 | [NetApp KB: FabricPool に階層化されたブロックへの効率化](https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Does_ONTAP_apply_efficiencies_to_blocks_that_are_tiered-out_to_Fabricpool%3F) | 階層化後に効率化が効くか |

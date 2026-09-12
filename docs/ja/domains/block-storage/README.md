@@ -21,6 +21,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | **数字**（公開ベンチマークの値、自分で測った値） | [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) | その数字が**何台を束ねた合計なのか**。台数を伏せた値は 1 台の性能として読めません |
 | **既存の構成**（いま Amazon EBS で回している） | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) | 前提が崩れる条件。**GB 単価では負けます。** 境目は台数ではありません |
 | **決めなければならない選択**（プロトコル、LUN の並べ方） | [ブロックプロトコルと配置の決定ツリー](../../reference/decision-trees/block-protocol-and-layout.md) | **先に狭まっている制約。** 世代と HA ペア数が選択肢を減らしたあとに残るものだけを比べます |
+| **ブロックのデータをファイルや S3 API で読みたい要件** | [LUN の中身はファイルプロトコルに現れない](notes/lun-contents-do-not-reach-file-protocols.md) | **境界を越えるにはホストを 1 台経由します。** FlexClone も `volume rehost` もこの境界を動かしません |
 
 **動かして確かめたい場合はここではなく [30 分で動かす手順](quickstart.md) から。**
 
@@ -47,6 +48,10 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 15 | Fibre Channel は使えるか | **AWS のドキュメントが列挙するブロックプロトコルは iSCSI と NVMe/TCP の 2 つで、FC は列挙に現れません。**使えないと明記されているのではなく、記載がない状態です（[用語集の FC の項](../../reference/glossary/README.md)、[プロトコルの選択](notes/protocol-choice-is-bounded-before-you-choose.md#結論)） |
 | 16 | とりあえず動かして確かめたい | [ブロックストレージを 30 分で動かす手順](quickstart.md) |
 | 17 | いま EBS で回している構成と費用を比べたい | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) |
+| 18 | LUN の中身を NFS / SMB / S3 API から読めるか | [LUN の中身はファイルプロトコルに現れない](notes/lun-contents-do-not-reach-file-protocols.md) |
+| 19 | ボリュームを別の SVM へ移すと何が変わり、何が失われるか | [`volume rehost` が変えるのは所有 SVM だけで、中身は変わらない](notes/volume-rehost-changes-ownership-not-contents.md) |
+| 20 | FlexClone のボリュームを別の SVM へ移せるか | **split が前提です。** 容量共有は失われますが、親を触らないという性質は残ります（[FlexClone との排他と split の代償](notes/volume-rehost-changes-ownership-not-contents.md#flexclone-との排他と-split-の代償)） |
+| 21 | 本番に影響を与えずにブロックのデータを分析したい | [ブロックからファイルへ運ぶ経路の比較](../../reference/comparison/block-to-file-routes.md) |
 
 ---
 
@@ -84,6 +89,8 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 - [ブロックストレージ横断リソースマップ](../../reference/block-storage-resource-map.md) — AWS / NetApp の一次情報と公開 IaC の索引
 - [ブロックプロトコルとレイアウトの決定木](../../reference/decision-trees/block-protocol-and-layout.md)
 - [ブロックストレージの選択肢の比較](../../reference/comparison/block-storage-options.md)
+- [ブロックからファイルへ運ぶ経路の比較](../../reference/comparison/block-to-file-routes.md) — ブロックのデータをファイルとして使う場合
+- [Domain — マルチプロトコル・ID](../multiprotocol-identity/) — 宛先側のセキュリティスタイルと権限評価
 - [ライフサイクル軸で探す](../../navigation.md#ライフサイクル軸--playbooks)
 - [ナビゲーションガイド](../../navigation.md)
 - [用語集](../../reference/glossary/)

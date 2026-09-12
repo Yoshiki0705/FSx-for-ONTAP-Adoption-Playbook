@@ -227,9 +227,12 @@ Resources:
         OntapVolumeType: RW
         SecurityStyle: UNIX
         StorageEfficiencyEnabled: 'true'
-        # JunctionPath is present because the CloudFormation resource handler rejects a volume
-        # without it - "Missing required parameter in OntapConfiguration: JunctionPath" - even
-        # though the property reference marks it as not required. A volume that only holds a LUN
+        # JunctionPath is present because the Amazon FSx API rejects a volume without it -
+        # "Missing required parameter in OntapConfiguration: JunctionPath" - even though the property
+        # reference marks it as not required. This comment previously attributed the rejection to the
+        # CloudFormation resource handler; `aws fsx create-volume` returns the same BadRequest with
+        # the same message, so the constraint is the service API and using a different client does
+        # not avoid it (measured 2026-09-11, ap-northeast-1). A volume that only holds a LUN
         # has no reason to be in the SVM namespace, so this is a constraint of the control plane
         # rather than a design choice. The LUN's contents stay unreadable over NFS regardless:
         # a client that mounts this junction sees the LUN as a file whose name and size are

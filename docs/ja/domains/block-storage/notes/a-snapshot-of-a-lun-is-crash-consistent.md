@@ -216,6 +216,7 @@ graph TD
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) — 相互整合とレイアウトの関係
+- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — **クローンから運んだデータがこの区分を引き継ぐこと**と、アプリケーション側で担保する選択肢
 - [容量は 3 か所で数えられる](capacity-is-counted-in-three-places.md) — Snapshot が握る容量
 - [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — ファイル側の同じ論点
 - [共有ブロックが設計を変える条件](when-shared-block-changes-the-design.md) — Snapshot が別課金にならないこと

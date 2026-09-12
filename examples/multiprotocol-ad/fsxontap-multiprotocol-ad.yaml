@@ -1,0 +1,1106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+# Provenance, because this template is derived rather than written from scratch:
+#   - examples/block-storage/fsxontap-iscsi-quickstart.yaml in this repository, for the secret
+#     handling, the security group split, the ONTAP name derivation and the resolved AMI parameters.
+#   - The AWS-published domain-join pattern in Solutions/DirectoryADClients/DIRECTORY-AD-CLIENTS.yaml
+#     of https://github.com/aws-cloudformation/aws-cloudformation-templates, for AWS::SSM::Association
+#     with AWS-JoinDirectoryServiceDomain targeting instance IDs.
+#   - AWS::DirectoryService::MicrosoftAD and AWS::FSx::StorageVirtualMachine property reference.
+#
+# The Description below is capped at 1024 characters by CloudFormation, so the reasoning that does
+# not fit lives in README.md and in the comments on each resource.
+
+Description: >-
+  Smallest reproducible Amazon FSx for NetApp ONTAP environment for observing how permissions set
+  over SMB are evaluated when the same data is read over NFSv4.1 by the same Active Directory user.
+  A first-generation Single-AZ file system, an AWS Managed Microsoft AD directory, two AD-joined
+  SVMs (the second exists so a volume can be rehosted between them), an NTFS-security-style volume,
+  a UNIX-security-style volume as the control, a domain-joined Windows client and a domain-joined
+  Amazon Linux 2023 client. Sized for observing behaviour, not for measuring throughput. The SMB
+  share, the export policy rules, the NTFS ACEs, the name mappings, any FlexClone and the volume
+  rehost are NOT created here, because the Amazon FSx API has no action for any of them; the scripts
+  alongside this file do those against the ONTAP REST API. See README.md.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Network
+        Parameters:
+          - VpcId
+          - PrimarySubnetId
+          - SecondAzSubnetId
+          - CreateClientVpcEndpoints
+      - Label:
+          default: Active Directory
+        Parameters:
+          - DomainName
+          - DomainShortName
+          - AdAdminSecretName
+          - OrganizationalUnitDistinguishedName
+      - Label:
+          default: File system
+        Parameters:
+          - FsxAdminSecretName
+          - StorageCapacityGiB
+          - ThroughputCapacity
+          - VolumeSizeBytes
+      - Label:
+          default: Clients
+        Parameters:
+          - WindowsInstanceType
+          - LinuxInstanceType
+          - WindowsAmiId
+          - LinuxAmiId
+      - Label:
+          default: Naming
+        Parameters:
+          - NamePrefix
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: fsxn-mp-ad
+    AllowedPattern: '^[a-z][a-z0-9-]{2,20}$'
+    Description: >-
+      Lower-case prefix for resource names. SVM and volume names derive from it with hyphens
+      removed, because ONTAP accepts only alphanumerics and underscores in those names.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: >-
+      Existing VPC. This template creates no network infrastructure. Both clients and the file
+      system live here, which is what makes the directory reachable: the security group AWS creates
+      for the domain controllers accepts Active Directory traffic from the VPC CIDR by default, so
+      nothing has to be added to it out of band. See
+      https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_best_practices.html
+
+  PrimarySubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      Subnet for the file system and both clients. Single-AZ places the NFS and SMB endpoints in
+      this subnet, so keeping the clients here removes any cross-subnet routing question.
+
+      The clients reach AWS Systems Manager to log in and to be domain-joined, AWS Secrets Manager
+      to read passwords, and the Amazon FSx API to resolve the ONTAP management address. Give the
+      subnet a NAT gateway, a public address, or interface VPC endpoints for ssm, ssmmessages,
+      ec2messages, secretsmanager and fsx. A subnet carrying only ssm and secretsmanager endpoints
+      leaves the Amazon FSx API unreachable, and the scripts then need --management-ip.
+
+  SecondAzSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      A second subnet in a DIFFERENT Availability Zone, used only by AWS Managed Microsoft AD.
+      The directory requires two subnets across two Availability Zones because it always deploys
+      two domain controllers; that is not optional and cannot be reduced to one while the directory
+      exists. The file system stays Single-AZ regardless.
+
+  CreateClientVpcEndpoints:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Create interface VPC endpoints for the two AWS APIs the client instances call themselves:
+      Directory Service (com.amazonaws.<region>.ds) and Amazon FSx (com.amazonaws.<region>.fsx).
+      Both were needed here, and both failures looked like something else.
+      (1) The seamless domain join runs ON the instance and calls the Directory Service API to create
+      the computer object. Measured 2026-09-11 in ap-northeast-1: in a subnet whose default route is
+      an internet gateway but whose instances have no public IP, the join failed on both hosts --
+      "Connect timeout on endpoint URL https://ds.<region>.amazonaws.com" on Linux, a ConnectFailure
+      WebException on Windows -- while Systems Manager, Secrets Manager and dnf all kept working
+      through their own endpoints, so every other signal said the hosts were healthy. Contrast the
+      SVMs, which joined the same directory successfully because Amazon FSx joins from the service
+      side and never traverses the VPC.
+      (2) The scripts resolve the management address and, for the rehost probe, poll the Amazon FSx
+      API for up to 25 minutes to time how long the AWS control plane takes to notice. Without a
+      route the scripts fall back to --management-ip, which covers ONTAP but leaves that timing
+      unmeasurable. The Linux role is granted fsx:Describe* either way, so omitting the endpoint
+      leaves a permission the instance cannot exercise.
+      Set to false when the subnet already has a NAT gateway or these endpoints.
+
+  DomainName:
+    Type: String
+    Default: corp.example.com
+    AllowedPattern: '^([a-zA-Z0-9]+[\.-])+([a-zA-Z0-9])+$'
+    Description: >-
+      Fully qualified domain name for the directory. Resolves inside the VPC only and does not need
+      to be publicly resolvable.
+
+  DomainShortName:
+    Type: String
+    Default: CORP
+    AllowedPattern: '^[A-Za-z0-9]{1,15}$'
+    Description: >-
+      NetBIOS name of the domain. The SVM NetBIOS names below must differ from this value.
+
+  AdAdminSecretName:
+    Type: String
+    MinLength: 1
+    Description: >-
+      Name or ARN of an existing AWS Secrets Manager secret whose SecretString is JSON containing a
+      "password" key. Used for the directory's built-in Admin user, and reused as the service
+      account that joins each SVM to the domain. Directory Service requires 8 to 64 characters with
+      three of the four character classes.
+
+  OrganizationalUnitDistinguishedName:
+    Type: String
+    MinLength: 1
+    Description: >-
+      Distinguished name of the OU that will hold the SVM computer objects. For AWS Managed
+      Microsoft AD this MUST include the intermediate OU that AWS inserts:
+
+        OU=Computers,OU=<DomainShortName>,DC=<label>,DC=<label>
+
+      For example, with corp.example.com and CORP:
+      OU=Computers,OU=CORP,DC=corp,DC=example,DC=com
+
+      This is a required parameter rather than a computed one on purpose. Omitting the intermediate
+      OU does not produce a validation error; the join fails afterwards and the SVM settles in
+      MISCONFIGURED. A self-managed Active Directory has no intermediate OU, so a value copied from
+      a self-managed setup is the usual cause.
+
+  FsxAdminSecretName:
+    Type: String
+    MinLength: 1
+    Description: >-
+      Name or ARN of an existing AWS Secrets Manager secret whose SecretString is JSON containing a
+      "password" key, for the ONTAP fsxadmin account. Resolved at create time, so the password
+      appears in no parameter value, no output and no CloudFormation log. Amazon FSx accepts 8 to
+      50 characters.
+
+  StorageCapacityGiB:
+    Type: Number
+    Default: 1024
+    MinValue: 1024
+    Description: >-
+      SSD capacity in GiB. 1024 is the documented minimum per HA pair and cannot be lowered. Usable
+      aggregate space is smaller than this figure.
+
+  ThroughputCapacity:
+    Type: Number
+    Default: 128
+    AllowedValues: [128, 256, 512, 1024, 2048, 4096]
+    Description: >-
+      Throughput capacity in MBps. 128 is the documented minimum for a first-generation file system
+      and is the reason this template uses SINGLE_AZ_1: the second-generation minimum is 384 MBps
+      at a higher per-MBps rate, and nothing being observed here depends on the generation.
+
+  VolumeSizeBytes:
+    Type: String
+    Default: '10737418240'
+    Description: >-
+      Size of each of the three volumes, in bytes. The default is 10 GiB, which is ample for a few
+      directories of test files. SnapshotPolicy is none on every volume, so the 5 percent reserve
+      exists but nothing fills it.
+
+  WindowsInstanceType:
+    Type: String
+    Default: t3.large
+    Description: >-
+      Windows client instance type. This host sets the NTFS ACEs and reads them back, so it needs
+      RSAT and a desktop session; t3.medium works but leaves little headroom.
+
+  LinuxInstanceType:
+    Type: String
+    Default: t3.medium
+    Description: >-
+      Linux client instance type. Chosen for cost. It cannot sustain the provisioned throughput, so
+      do not use this stack to measure throughput.
+
+  WindowsAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base
+    Description: Resolved from the AWS-published SSM public parameter so no AMI ID is pinned here.
+
+  LinuxAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Resolved from the AWS-published SSM public parameter so no AMI ID is pinned here.
+
+Conditions:
+  MakeClientEndpoints: !Equals [!Ref CreateClientVpcEndpoints, 'true']
+  FsxSecretGivenAsArn: !Equals [!Select [0, !Split [':', !Ref FsxAdminSecretName]], 'arn']
+  AdSecretGivenAsArn: !Equals [!Select [0, !Split [':', !Ref AdAdminSecretName]], 'arn']
+
+Resources:
+
+  # ------------------------------------------------------------------ directory
+
+  Directory:
+    Type: AWS::DirectoryService::MicrosoftAD
+    Properties:
+      Name: !Ref DomainName
+      ShortName: !Ref DomainShortName
+      # Standard is the cheaper of the two editions and is sufficient here. Edition cannot be
+      # changed without replacing the directory.
+      Edition: Standard
+      Password: !Sub '{{resolve:secretsmanager:${AdAdminSecretName}:SecretString:password}}'
+      VpcSettings:
+        VpcId: !Ref VpcId
+        SubnetIds:
+          - !Ref PrimarySubnetId
+          - !Ref SecondAzSubnetId
+
+  # ------------------------------------------------------------------ security groups
+
+  ClientSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Windows and Linux clients for the multiprotocol AD example. No inbound rules.
+      VpcId: !Ref VpcId
+      # Egress is enumerated by protocol and port rather than left as IpProtocol -1.
+      #
+      # This started as all-protocols-to-anywhere with a comment saying narrowing was "left to the
+      # reader". That is the wrong default for a template people copy: the reader who copies it is
+      # exactly the reader who will not narrow it, and an example carrying an unrestricted egress
+      # rule into a production account is a worse outcome than an example that needs one more edit.
+      #
+      # WHAT IS STILL BROAD, AND WHY. The destination CIDR stays 0.0.0.0/0 on the rules that leave
+      # the VPC. A CloudFormation template cannot portably discover either the VPC's own CIDR or the
+      # managed prefix list id of the S3 gateway endpoint that package installs go through, so
+      # narrowing those needs a value only the operator has. `preflight.sh` prints the subnet CIDR
+      # for that purpose. In a production copy, replace 0.0.0.0/0 with the VPC CIDR on the Active
+      # Directory rules and with the S3 prefix list on 443.
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: >-
+            HTTPS. Covers the Systems Manager, Secrets Manager, Directory Service and Amazon FSx
+            interface endpoints, the S3 gateway endpoint that package installs traverse, and the
+            ONTAP REST management endpoint. NARROW TO THE S3 PREFIX LIST AND THE VPC CIDR in
+            production: this rule as written permits HTTPS to anywhere.
+        # Active Directory. The set below is what a domain join and subsequent authentication use.
+        # A reader who only runs the Linux measurement can drop 135 and the ephemeral range: those
+        # are for the RPC calls the Active Directory Users and Computers snap-in makes from the
+        # Windows host.
+        - IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS over TCP to the domain controllers. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS to the domain controllers. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 88
+          ToPort: 88
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 88
+          ToPort: 88
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          CidrIp: 0.0.0.0/0
+          Description: NTP. Kerberos fails on clock skew, so this is not optional. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 135
+          ToPort: 135
+          CidrIp: 0.0.0.0/0
+          Description: RPC endpoint mapper, used by the Windows administration tools. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 389
+          ToPort: 389
+          CidrIp: 0.0.0.0/0
+          Description: LDAP. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 389
+          ToPort: 389
+          CidrIp: 0.0.0.0/0
+          Description: LDAP ping / CLDAP. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 445
+          ToPort: 445
+          CidrIp: 0.0.0.0/0
+          Description: SMB to the domain controllers, for the join and for group policy. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 464
+          ToPort: 464
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos password change. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 464
+          ToPort: 464
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos password change. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 636
+          ToPort: 636
+          CidrIp: 0.0.0.0/0
+          Description: LDAPS. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 3268
+          ToPort: 3269
+          CidrIp: 0.0.0.0/0
+          Description: Global catalog. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 49152
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+          Description: Dynamic RPC range, used by the Windows administration tools. NARROW TO THE VPC CIDR in production
+        # NFS and SMB to the file system. These reference the file system's group rather than a CIDR,
+        # which is the one place the destination can be named exactly.
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: rpcbind
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: rpcbind
+        - IpProtocol: tcp
+          FromPort: 635
+          ToPort: 635
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS mount
+        - IpProtocol: udp
+          FromPort: 635
+          ToPort: 635
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS mount
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS
+        - IpProtocol: tcp
+          FromPort: 4045
+          ToPort: 4046
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS lock manager. Locking is why port 2049 alone is not enough
+        - IpProtocol: udp
+          FromPort: 4045
+          ToPort: 4046
+          DestinationSecurityGroupId: !Ref FileSystemSecurityGroup
+          Description: NFS lock manager
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-clients'
+
+  FileSystemSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: FSx for ONTAP file system for the multiprotocol AD example.
+      VpcId: !Ref VpcId
+      # The SVM must reach the domain controllers for the join and, afterwards, for EVERY
+      # authentication. An AD-joined SVM that loses that reachability stops serving SMB -- so this
+      # rule set is a runtime dependency, not a one-time setup allowance.
+      #
+      # Enumerated for the same reason as the client group: an example that ships
+      # all-protocols-to-anywhere teaches that. The destination CIDR remains 0.0.0.0/0 because the
+      # template cannot discover the VPC CIDR; narrow it to the VPC in a production copy.
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS over TCP to the domain controllers. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS to the domain controllers. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 88
+          ToPort: 88
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 88
+          ToPort: 88
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          CidrIp: 0.0.0.0/0
+          Description: NTP. Kerberos fails on clock skew. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 389
+          ToPort: 389
+          CidrIp: 0.0.0.0/0
+          Description: LDAP. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 389
+          ToPort: 389
+          CidrIp: 0.0.0.0/0
+          Description: LDAP ping / CLDAP. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 445
+          ToPort: 445
+          CidrIp: 0.0.0.0/0
+          Description: SMB to the domain controllers. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 464
+          ToPort: 464
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos password change. NARROW TO THE VPC CIDR in production
+        - IpProtocol: udp
+          FromPort: 464
+          ToPort: 464
+          CidrIp: 0.0.0.0/0
+          Description: Kerberos password change. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 636
+          ToPort: 636
+          CidrIp: 0.0.0.0/0
+          Description: LDAPS. NARROW TO THE VPC CIDR in production
+        - IpProtocol: tcp
+          FromPort: 3268
+          ToPort: 3269
+          CidrIp: 0.0.0.0/0
+          Description: Global catalog. NARROW TO THE VPC CIDR in production
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-fs'
+
+  # ------------------------------------------------------------------ client-reached AWS endpoints
+  #
+  # Reached by software running ON the instances, not by the file system. See the
+  # CreateClientVpcEndpoints parameter for what the absence of each one looks like: a domain join
+  # that fails while Systems Manager, Secrets Manager and package installs all still work, and a
+  # rehost probe that cannot time the AWS control plane.
+  #
+  # One security group serves both endpoints. They are reached by the same instances, on the same
+  # port, for the same reason; splitting it would imply the two are separately restrictable and
+  # invite someone to keep them in step by hand.
+  ClientEndpointSecurityGroup:
+    Condition: MakeClientEndpoints
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Directory Service and Amazon FSx interface endpoints for the multiprotocol AD example.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref ClientSecurityGroup
+          Description: HTTPS from the clients calling the Directory Service and Amazon FSx APIs
+      # Left as all-outbound deliberately, and it is inert: the network interface of an interface
+      # VPC endpoint answers requests and does not originate connections, so no egress rule on it is
+      # ever evaluated. It is written out rather than omitted because omitting SecurityGroupEgress
+      # does not remove egress -- CloudFormation then creates the default allow-all rule, and the
+      # template would look more restrictive than the group it produced.
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Inert; an endpoint interface does not originate connections
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-client-endpoints'
+
+  DirectoryServiceEndpoint:
+    Condition: MakeClientEndpoints
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VpcId
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ds'
+      VpcEndpointType: Interface
+      # Without private DNS the instance would still resolve ds.<region>.amazonaws.com to the public
+      # address and still time out, so the endpoint would exist and change nothing.
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrimarySubnetId
+        - !Ref SecondAzSubnetId
+      SecurityGroupIds:
+        - !Ref ClientEndpointSecurityGroup
+
+  # Reached when a script resolves the management address from a file system ID, and when the rehost
+  # probe polls for how long the AWS control plane takes to reflect a change ONTAP has already made.
+  # Without it those scripts still work through --management-ip, but that timing cannot be measured.
+  FsxApiEndpoint:
+    Condition: MakeClientEndpoints
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VpcId
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.fsx'
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrimarySubnetId
+        - !Ref SecondAzSubnetId
+      SecurityGroupIds:
+        - !Ref ClientEndpointSecurityGroup
+
+  # Ingress rules live outside the group so the client group can be referenced without a circular
+  # dependency. Ports follow the set required for a successful NFS mount and for SMB locking
+  # behaviour, not port 2049 alone.
+  SmbFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 445
+      ToPort: 445
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: SMB
+
+  NfsTcpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: NFS
+
+  NfsUdpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: NFS
+
+  RpcBindTcpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: RPC bind
+
+  RpcBindUdpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: RPC bind
+
+  MountdTcpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 635
+      ToPort: 635
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: mountd
+
+  MountdUdpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 635
+      ToPort: 635
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: mountd
+
+  LockingTcpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 4045
+      ToPort: 4046
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: NLM and NSM. Locking fails silently without these when NFSv3 is also in use.
+
+  LockingUdpFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 4045
+      ToPort: 4046
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: NLM and NSM
+
+  OntapRestFromClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref ClientSecurityGroup
+      Description: >-
+        ONTAP REST API. Needed because the SMB share, the export policy rules, the name mappings and
+        the volume rehost have no Amazon FSx API action.
+
+  # ------------------------------------------------------------------ IAM
+
+  # Both roles carry AmazonSSMDirectoryServiceAccess in addition to AmazonSSMManagedInstanceCore.
+  # The seamless domain join performed by the AWS-JoinDirectoryServiceDomain document needs it; the
+  # join reports success without it on some paths and then leaves the host unjoined.
+  WindowsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # These two are exactly what the Directory Service guide names as the policies an EC2
+        # instance needs "to create users and groups", so no further IAM action is required for
+        # the Active Directory side of the work:
+        # https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_install_ad_tools.html
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonSSMDirectoryServiceAccess
+      Policies:
+        # What the guide does *not* provide is the domain Administrator credential -- it says only
+        # "you will need" it. This stack keeps that credential in Secrets Manager, so retrieving it
+        # from the instance needs an explicit grant. That is the entire reason this policy exists.
+        #
+        # Creating the test users is a Windows-only task because AWS Directory Service exposes no
+        # API for it: the documented procedure is the Active Directory Users and Computers snap-in
+        # (dsa.msc) on an instance with the administration tools installed.
+        # https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_manage_users_groups_create_user.html
+        #
+        # Install the tools over Session Manager rather than opening RDP ingress; the feature list
+        # and the port-forwarding approach are both in the AWS Cloud Operations Blog:
+        # https://aws.amazon.com/blogs/mt/manage-aws-managed-microsoft-ad-resources-with-session-manager-port-forwarding/
+        #   Install-WindowsFeature RSAT-AD-Tools,RSAT-AD-PowerShell,RSAT-ADDS,RSAT-AD-AdminCenter,RSAT-ADDS-Tools,RSAT-DNS-Server
+        #
+        # This instance is NOT how the test ACEs get set. Those go on through the ONTAP REST API
+        # from the Linux client (set-test-acls.sh), which does not involve an SMB client at all.
+        # set-test-acls.ps1 exists only to compare an SMB-side path against that, and is optional.
+        - PolicyName: read-ad-admin-secret
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                # The AD admin secret only. The fsxadmin secret is deliberately absent: this host
+                # has no reason to hold cluster credentials.
+                Resource:
+                  - !If
+                    - AdSecretGivenAsArn
+                    - !Ref AdAdminSecretName
+                    - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AdAdminSecretName}-??????'
+
+  WindowsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref WindowsRole
+
+  LinuxRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonSSMDirectoryServiceAccess
+      Policies:
+        - PolicyName: read-example-secrets
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                # Accepts either a name or an ARN. A name becomes an ARN pattern with the
+                # six-character suffix Secrets Manager appends.
+                Resource:
+                  - !If
+                    - FsxSecretGivenAsArn
+                    - !Ref FsxAdminSecretName
+                    - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${FsxAdminSecretName}-??????'
+                  - !If
+                    - AdSecretGivenAsArn
+                    - !Ref AdAdminSecretName
+                    - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AdAdminSecretName}-??????'
+        - PolicyName: describe-fsx
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - fsx:DescribeFileSystems
+                  - fsx:DescribeStorageVirtualMachines
+                  - fsx:DescribeVolumes
+                Resource: '*'
+
+  LinuxInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref LinuxRole
+
+  # ------------------------------------------------------------------ file system
+
+  FileSystem:
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: ONTAP
+      StorageType: SSD
+      StorageCapacity: !Ref StorageCapacityGiB
+      SubnetIds:
+        - !Ref PrimarySubnetId
+      SecurityGroupIds:
+        - !Ref FileSystemSecurityGroup
+      OntapConfiguration:
+        # SINGLE_AZ_1 is the first generation: minimum throughput 128 MBps against 384 MBps for
+        # SINGLE_AZ_2, at a lower per-MBps rate. HAPairs is left unset because the first generation
+        # has exactly one pair. Deployment type cannot be changed after creation.
+        DeploymentType: SINGLE_AZ_1
+        ThroughputCapacity: !Ref ThroughputCapacity
+        DiskIopsConfiguration:
+          Mode: AUTOMATIC
+        FsxAdminPassword: !Sub '{{resolve:secretsmanager:${FsxAdminSecretName}:SecretString:password}}'
+        # Backups are off. An automatic backup in progress can block operations that this example
+        # performs deliberately, and a retained backup outlives the stack and keeps being billed.
+        AutomaticBackupRetentionDays: 0
+      Tags:
+        - Key: Name
+          Value: !Ref NamePrefix
+
+  # ------------------------------------------------------------------ SVMs
+
+  # Two SVMs exist so that a volume can be rehosted from one to the other. Both are AD-joined:
+  # rehost is documented to lose the user and group IDs, which can only be observed if the
+  # destination is capable of evaluating AD identities in the first place.
+  #
+  # ActiveDirectoryConfiguration has no "managed AD" variant. Joining AWS Managed Microsoft AD uses
+  # SelfManagedActiveDirectoryConfiguration with the directory's DNS addresses, which is why the
+  # intermediate OU has to be spelled out in the parameter.
+  SourceSvm:
+    Type: AWS::FSx::StorageVirtualMachine
+    Properties:
+      FileSystemId: !Ref FileSystem
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}src']]
+      # UNIX at the root, and this is load-bearing rather than a preference.
+      #
+      # This was NTFS first, so that a volume created without an explicit style would inherit NTFS.
+      # That reason was already weak -- both test volumes set their style explicitly -- and it cost
+      # the whole measurement: with an NTFS-style SVM root, NO NFS client can traverse the namespace.
+      # Measured on ONTAP 9.18.1P6 in ap-northeast-1 on 2026-09-12:
+      #
+      #   mount 10.0.x.x:/ntfsvol  ->  mount.nfs4: access denied by server
+      #   mount 10.0.x.x:/unixvol  ->  mount.nfs4: access denied by server   (style is irrelevant)
+      #   mount 10.0.x.x:/         ->  succeeds, and then `ls` returns EACCES
+      #
+      # The error arrives on the CHILD volume, so it reads as a problem with that volume's export
+      # policy, which is the wrong place to look. root has no unix_win name mapping, so on an
+      # NTFS-style root ONTAP cannot evaluate it and denies the LOOKUP that traversal needs. The
+      # pair "mounting / works but ls / fails" is the signal that separates this from an export rule.
+      #
+      # Switching the root to UNIX fixed both mounts immediately and changes nothing about the
+      # measurement: the measured volume is explicitly NTFS, and the rehost differential depends on
+      # the DESTINATION root differing from the volume's own style, not on this one.
+      #
+      # DO NOT CHANGE THIS VALUE ON A STACK THAT ALREADY EXISTS.
+      #
+      # RootVolumeSecurityStyle requires REPLACEMENT of the SVM. Editing it and running update-stack
+      # makes CloudFormation try to create a second SVM and then delete the first -- taking its
+      # volumes with it. Measured 2026-09-12: the update failed and rolled back with
+      #   SourceSvm  "fsxnmpadsrc is already the name of a storage virtual machine associated with
+      #               fs-... (Service: AmazonFSx; Status Code: 400; Error Code: BadRequest)"
+      # It was the NAME COLLISION that stopped it, not any safeguard -- so a template that also
+      # changed NamePrefix, or one whose SVM name is generated, would have proceeded. Verify with a
+      # change set before any update that touches this property: Replacement: True on an SVM is the
+      # signal to stop.
+      #
+      # On a running SVM, change it through ONTAP instead, which takes effect immediately and is
+      # reflected by the Amazon FSx API within minutes:
+      #   PATCH /api/storage/volumes/{root_volume_uuid}  {"nas":{"security_style":"unix"}}
+      RootVolumeSecurityStyle: UNIX
+      ActiveDirectoryConfiguration:
+        # 15 characters or fewer, different from DomainShortName, and unique in the domain. Never
+        # reuse a name after a failed join: Active Directory keeps the orphaned computer account and
+        # the next attempt fails on the conflict.
+        NetBiosName: !Sub '${DomainShortName}SRC'
+        SelfManagedActiveDirectoryConfiguration:
+          DnsIps: !GetAtt Directory.DnsIpAddresses
+          DomainName: !Ref DomainName
+          # Domain Admins is what works. Another group AWS creates in the domain has been
+          # measured to have insufficient permissions for the SVM join, leaving the SVM in
+          # MISCONFIGURED: the one whose literal name is
+          # 'AWS Delegated FSx Administrators'. <!-- allow:naming -- literal AD group name -->
+          FileSystemAdministratorsGroup: Domain Admins
+          OrganizationalUnitDistinguishedName: !Ref OrganizationalUnitDistinguishedName
+          UserName: Admin
+          Password: !Sub '{{resolve:secretsmanager:${AdAdminSecretName}:SecretString:password}}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-src-svm'
+
+  DestinationSvm:
+    Type: AWS::FSx::StorageVirtualMachine
+    Properties:
+      FileSystemId: !Ref FileSystem
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}dst']]
+      # UNIX at the root, same as the source SVM. If a volume keeps its own NTFS style after being
+      # rehosted into an SVM whose root is UNIX, the style is a property of the volume and survives
+      # the move. If it does not, the destination root decided it.
+      #
+      # What makes those two outcomes distinguishable is that the REHOSTED VOLUME's style (NTFS,
+      # set explicitly) differs from this root's style -- not that the two SVM roots differ from
+      # each other. They no longer do, and the differential is unaffected.
+      RootVolumeSecurityStyle: UNIX
+      ActiveDirectoryConfiguration:
+        NetBiosName: !Sub '${DomainShortName}DST'
+        SelfManagedActiveDirectoryConfiguration:
+          DnsIps: !GetAtt Directory.DnsIpAddresses
+          DomainName: !Ref DomainName
+          FileSystemAdministratorsGroup: Domain Admins
+          OrganizationalUnitDistinguishedName: !Ref OrganizationalUnitDistinguishedName
+          UserName: Admin
+          Password: !Sub '{{resolve:secretsmanager:${AdAdminSecretName}:SecretString:password}}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-dst-svm'
+
+  # ------------------------------------------------------------------ volumes
+
+  # The volume under test. Permissions are set from Windows over SMB and read back from Linux over
+  # NFSv4.1 as the same Active Directory user.
+  NtfsVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}ntfsvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref SourceSvm
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: NTFS
+        StorageEfficiencyEnabled: 'true'
+        JunctionPath: /ntfsvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-ntfsvol'
+
+  # The control. Same clients, same export policy, same Active Directory user, same test files -
+  # only the security style differs. Without it, a result on the NTFS volume cannot be attributed to
+  # the security style rather than to an export policy or sssd misconfiguration.
+  UnixVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}unixvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref SourceSvm
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: UNIX
+        StorageEfficiencyEnabled: 'true'
+        JunctionPath: /unixvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-unixvol'
+
+  # The volume the rehost probe moves to DestinationSvm.
+  #
+  # Two warnings about this resource.
+  #
+  # JunctionPath is set because the Amazon FSx API rejects a volume without it - `aws fsx
+  # create-volume` returns the same BadRequest as CloudFormation does, so this is a service-API
+  # constraint rather than a resource-handler one (measured 2026-09-11). Meanwhile rehost requires a
+  # NAS volume to be unmounted and outside any junction path. rehost-probe.sh unmounts it first,
+  # which puts the stack out of step with reality on this one property.
+  #
+  # After a successful rehost this volume belongs to DestinationSvm, and the stack still records
+  # SourceSvm. Whether the AWS control plane follows the ownership change is exactly what the probe
+  # measures, so stack deletion may fail on this resource. rehost-probe.sh prints the manual
+  # teardown path before it changes anything.
+  RehostVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}rehostvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref SourceSvm
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: NTFS
+        StorageEfficiencyEnabled: 'true'
+        JunctionPath: /rehostvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-rehostvol'
+
+  # ------------------------------------------------------------------ clients
+
+  WindowsClient:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref WindowsAmiId
+      InstanceType: !Ref WindowsInstanceType
+      IamInstanceProfile: !Ref WindowsInstanceProfile
+      SubnetId: !Ref PrimarySubnetId
+      SecurityGroupIds:
+        - !Ref ClientSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 50
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: |
+          <powershell>
+          # The Active Directory administration tools, used to create the test user and to inspect
+          # the computer objects the SVM joins create. Creating a directory user has no AWS API, so
+          # this host is the documented way to do it:
+          # https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_manage_users_groups_create_user.html
+          #
+          # These two are enough, and that was measured rather than assumed. On 2026-09-11 in
+          # ap-northeast-1, Get-WindowsFeature on a host built by this template reported
+          # RSAT-ADDS-Tools and RSAT-AD-AdminCenter as Installed, and dsa.msc present, from this
+          # line alone -- RSAT-AD-Tools pulls both in. The longer feature list AWS publishes for a
+          # general-purpose AD management host also carries RSAT-DNS-Server, which is NOT a
+          # sub-feature (it stayed Available) and which this host has no use for:
+          # https://aws.amazon.com/blogs/mt/manage-aws-managed-microsoft-ad-resources-with-session-manager-port-forwarding/
+          Install-WindowsFeature -Name RSAT-AD-PowerShell,RSAT-AD-Tools
+          </powershell>
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-win'
+
+  LinuxClient:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LinuxAmiId
+      InstanceType: !Ref LinuxInstanceType
+      IamInstanceProfile: !Ref LinuxInstanceProfile
+      SubnetId: !Ref PrimarySubnetId
+      SecurityGroupIds:
+        - !Ref ClientSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # nfs4-acl-tools carries nfs4_getfacl, which is the only way to see the NFSv4 ACL rather
+          # than the mode bits the kernel synthesises from it. Reading only the mode bits is what
+          # makes a Deny ACE look absent.
+          #
+          # CREATE_COMPLETE does NOT mean this finished. There is no CreationPolicy and nothing calls
+          # cfn-signal. Before running the scripts, check on the host:
+          #   command -v nfs4_getfacl && id <DOMAIN>\\<user>
+          # and if either fails, read /var/log/example-setup.log -- a dnf failure is recorded only
+          # there.
+          dnf install -y nfs-utils nfs4-acl-tools cifs-utils jq >/var/log/example-setup.log 2>&1
+          systemctl enable --now rpcbind >>/var/log/example-setup.log 2>&1
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-linux'
+
+  # Seamless domain join for both hosts through the AWS-managed document, targeting instance IDs.
+  # Deliberately not SsmAssociations on the instance and deliberately not a custom aws:domainJoin
+  # document: both have been observed to report success while leaving the host unjoined.
+  # dnsIpAddresses is passed explicitly rather than relying on the VPC DHCP option set resolving the
+  # domain, so the stack does not depend on network configuration it did not create.
+  JoinDomainAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      AssociationName: !Sub '${NamePrefix}-join-domain'
+      Name: AWS-JoinDirectoryServiceDomain
+      Targets:
+        - Key: InstanceIds
+          Values:
+            - !Ref WindowsClient
+            - !Ref LinuxClient
+      Parameters:
+        directoryId:
+          - !Ref Directory
+        directoryName:
+          - !Ref DomainName
+        dnsIpAddresses: !GetAtt Directory.DnsIpAddresses
+
+Outputs:
+  FileSystemId:
+    Description: Pass this to the scripts as --file-system-id.
+    Value: !Ref FileSystem
+
+  DirectoryId:
+    Description: The AWS Managed Microsoft AD directory ID.
+    Value: !Ref Directory
+
+  DirectoryDnsIps:
+    Description: >-
+      The domain controller addresses. An AD-joined SVM needs these reachable for every
+      authentication, not only at join time.
+    Value: !Join [',', !GetAtt Directory.DnsIpAddresses]
+
+  SourceSvmName:
+    Description: Pass this to the scripts as --svm.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}src']]
+
+  DestinationSvmName:
+    Description: Pass this to rehost-probe.sh as --destination-svm.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}dst']]
+
+  NtfsVolumeName:
+    Description: The volume under test. NTFS security style.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}ntfsvol']]
+
+  UnixVolumeName:
+    Description: The control volume. UNIX security style.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}unixvol']]
+
+  RehostVolumeName:
+    Description: The volume rehost-probe.sh moves between the two SVMs.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}rehostvol']]
+
+  WindowsClientInstanceId:
+    Description: Connect with "aws ssm start-session --target <this>".
+    Value: !Ref WindowsClient
+
+  LinuxClientInstanceId:
+    Description: Connect with "aws ssm start-session --target <this>".
+    Value: !Ref LinuxClient
+
+  WhatIsNotCreatedHere:
+    Description: >-
+      The SMB share, the export policy rules, the NTFS ACEs, the name mappings, any FlexClone, and
+      the volume rehost. None of them has an Amazon FSx API action, so all of them are done against
+      the ONTAP REST API or from the Windows client by the scripts alongside this template.
+    Value: SMB share, export policy rules, NTFS ACEs, name mappings, FlexClone, volume rehost
+
+  BeforeYouStart:
+    Description: >-
+      Check both SVMs reached CREATED and not MISCONFIGURED before running anything. A join that
+      failed on the OU path or on the administrators group leaves the stack at CREATE_COMPLETE.
+    Value: >-
+      aws fsx describe-storage-virtual-machines --query
+      'StorageVirtualMachines[].[Name,Lifecycle,LifecycleTransitionReason.Message]' --output table
