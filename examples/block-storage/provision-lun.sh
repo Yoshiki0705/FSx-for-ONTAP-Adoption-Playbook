@@ -180,10 +180,23 @@ curl_credential() {
   printf 'user = "fsxadmin:%s"' "$escaped"
 }
 
-# ONTAP_STATUS carries the HTTP status of the last call. Without it a 401 or a proxy's HTML error
+# Without a recorded status a 401 or a proxy's HTML error
 # page reached jq as a non-JSON body: `jq -e` failed inside an `if`, was ignored, and the next
 # `jq -r` exited under `set -o pipefail`, killing the script with no message about authentication.
-ONTAP_STATUS=""
+# The HTTP status of the last ONTAP call. It is kept in a file, not in a variable, and that is
+# not incidental: every call site captures the body with out="$(ontap ...)", and a command
+# substitution runs the function in a SUBSHELL, so an assignment made inside ontap() never reaches
+# the caller. Measured on 2026-09-12: the status arrived empty, the case fell through to the
+# catch-all, and a response that was in fact HTTP 200 was reported as `failed: HTTP ` with no code.
+# A status that silently reads as empty is worse than no status at all, because every check that
+# consults it then reports the wrong cause.
+ONTAP_STATUS_FILE="$(mktemp "${TMPDIR:-/tmp}/ontap-status-XXXXXX")"
+trap 'rm -f "$ONTAP_STATUS_FILE"' EXIT
+
+ontap_status() { cat "$ONTAP_STATUS_FILE" 2>/dev/null || true; }
+
+# True when the last call returned 2xx.
+ontap_2xx() { case "$(ontap_status)" in 2*) return 0 ;; *) return 1 ;; esac; }
 
 ontap() {
   local method="$1" path="$2" body="${3:-}"
@@ -196,20 +209,20 @@ ontap() {
   [ -n "$body" ] && args+=(--data "$body")
   local raw
   raw="$(curl "${args[@]}" 3<<<"$(curl_credential)")" || raw=$'\n000'
-  ONTAP_STATUS="${raw##*$'\n'}"
+  printf '%s' "${raw##*$'\n'}" >"$ONTAP_STATUS_FILE"
   printf '%s' "${raw%$'\n'*}"
 }
 
 ontap_ok() {
   # Fails loudly on an ONTAP error payload instead of letting a later step misread it.
   local out="$1" what="$2"
-  case "$ONTAP_STATUS" in
+  case "$(ontap_status)" in
     2*) : ;;
     000) die "$what failed: no HTTP response from ${MGMT_IP} (check reachability on 443)" ;;
     401 | 403)
-      die "$what failed: HTTP $ONTAP_STATUS from ONTAP -- the fsxadmin credential was rejected"
+      die "$what failed: HTTP $(ontap_status) from ONTAP -- the fsxadmin credential was rejected"
       ;;
-    *) die "$what failed: HTTP $ONTAP_STATUS from ONTAP: $(printf '%s' "$out" | head -c 200)" ;;
+    *) die "$what failed: HTTP $(ontap_status) from ONTAP: $(printf '%s' "$out" | head -c 200)" ;;
   esac
   if printf '%s' "$out" | jq -e 'has("error")' >/dev/null 2>&1; then
     local msg

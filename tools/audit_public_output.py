@@ -156,6 +156,21 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
         ),
         "avoid marketing superlatives; show, don't tell",
     ),
+    (
+        # Positioning language. There is no context in this repository where an option needs to be
+        # framed as a differentiator: the comparison rule is "X suits A; Y suits B".
+        re.compile(r"差別化|\bdifferentiator\b", re.IGNORECASE),
+        "avoid positioning language; say which option suits which situation",
+    ),
+    (
+        # The reader here is a practitioner deciding about their own environment, not a customer
+        # being sold to. Writing 顧客環境 adopts a vendor's viewpoint about the reader, and it
+        # arrived in this repository three times purely by copying vendor phrasing.
+        # Use 自組織 / 利用者側 / 移行元 instead. Quoting a vendor document is not a reason to keep
+        # it -- paraphrase.
+        re.compile(r"顧客"),
+        "the reader is a practitioner, not a customer; use 自組織 / 利用者側 / 移行元",
+    ),
 ]
 
 # ---------------------------------------------------------------- pii / internal identifiers

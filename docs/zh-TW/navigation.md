@@ -43,16 +43,27 @@ graph TD
 | 遷移來源為 Windows 檔案伺服器（要求保留 SMB / NTFS ACL） | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [多協定與身分](../en/domains/multiprotocol-identity/) (English) |
 | 遷移來源為非 ONTAP 的 NAS | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [評估](../en/playbooks/01-assess/) (English) |
 | 對同一份資料同時使用 NFS 與 SMB | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [安全與治理](../en/domains/security-governance/) (English) |
+| **想讓已在提供 SMB 的磁碟區也能從 NFS 存取** | [為已在提供 SMB 的磁碟區加上 NFS 不需要複製](../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) (日本語) | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
+| **想從 NFS 端確認權限，或查明拒絕的原因** | [NFS 端看到的權限表現與實際結果不一致](../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) (日本語) | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
 | 以 Active Directory 整合為前提 | [多協定與身分](../en/domains/multiprotocol-identity/) (English) | [設計](../en/playbooks/02-design/) (English) |
 | 想設計 SMB 使用者管理與稽核 | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) | [多協定與身分](../en/domains/multiprotocol-identity/) (English) |
 | SMB 突然無法提供服務 | [無法提供 SMB 的 SVM](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
 | 想啟用稽核日誌 / 想清查本機使用者 | [稽核目的地耗盡會中斷存取](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [不存在最後登入屬性](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
 | 全新建置（無遷移來源） | [設計](../en/playbooks/02-design/) (English) | [建置](../en/playbooks/04-build/) → [運維](../en/playbooks/05-operate/) (English) |
+| **拿不定 Amazon EFS 是否足夠還是需要 FSx for ONTAP** | [選擇哪種 AWS 檔案儲存的決策樹](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [檔案儲存選項比較](../ja/reference/comparison/file-storage-options.md) (日本語) |
+| **透過 iSCSI / NVMe-oF 提供區塊儲存** | [區塊協定與配置決策樹](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [區塊儲存](../en/domains/block-storage/) (English) |
+| **拿不定該用區塊儲存還是 Amazon EBS 就夠** | [區塊儲存選項比較](../ja/reference/comparison/block-storage-options.md) (日本語) | [共享區塊改變設計的條件](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
+| **想與現有 Amazon EBS 架構的費用做比較** | [EBS 不再更便宜的分界不是台數而是同一份資料的副本數](../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | [30 分鐘跑起區塊儲存的步驟](../en/domains/block-storage/quickstart.md) (English) |
+| **想在不影響生產的前提下用檔案或 S3 API 分析區塊（LUN）上的資料** | [LUN 的內容不會出現在檔案協定上](../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **想把磁碟區搬到另一個 SVM / 想確認 FlexClone 能否搬移** | [`volume rehost` 改變的只有所屬 SVM，內容不變](../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **實測吞吐量低於預期** | [判定手上的吞吐量數值究竟測了什麼](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [提升吞吐量的手段比較](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 已在運行，希望調整效能 | [效能](../en/domains/performance/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | 已在運行，希望重新檢視成本 | [成本](../en/domains/cost/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | **希望決定如何建置監控** | [監控路徑決策樹](../ja/reference/decision-trees/observability-route.md) (日本語) | [可觀測性](../en/domains/observability/) (English) |
+| **想從自身所屬產業出發，釐清該決定什麼** | [產業資源圖 — 閱讀順序](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [產業索引](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
 | 想確認設計是否觸及上限值 | [上限值與配額](../ja/reference/limits/) | [設計](../en/playbooks/02-design/) (English) |
 | 想透過 S3 API 或分析平台存取 | [FSx for ONTAP S3 AP 的前提條件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [存取點政策的寫法](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
+| 想存放 AI / ML 訓練資料並依實驗分支 | [訓練資料集版本與實驗分支的限制](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [發放實驗分支時要約束的三個對象](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
 
 關於上述連結，有兩點需要了解。
 

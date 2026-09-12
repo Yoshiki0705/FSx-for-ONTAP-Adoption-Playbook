@@ -131,6 +131,7 @@ lang: ja
 | `docs/ja/domains/data-utilization/notes/how-long-until-a-write-is-visible.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-nfs-visibility.md` | `7 ms 対 2,171 ms` | `retraction` | 同一操作の観測値がクライアントのマウントオプションで 300 倍変わること。**「反映が遅い」の原因がストレージ側とは限らない根拠** |
 | `docs/ja/domains/data-utilization/notes/how-long-until-a-write-is-visible.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3files-measured.md` | `削除と上書きは、新規作成と同じ桁です` | `retraction` | Amazon S3 Files のファイル → S3 方向が新規作成・削除・上書きのいずれも 60 秒級であること。**片方向だけの現象ではないこと** |
 | `docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-operations.md` | `同一実行内の対照がすべて成功しているため、手順の誤りではありません` | `retraction` | `UploadPartCopy` の `NoSuchKey` に同一実行内の `CopyObject` 対照があること。**切り分けの手順そのもの** |
+| `docs/ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `AWS サポートリクエストが必要な操作` | `reread` | 委任された管理者で実行できない操作の一覧の所在。**`volume rehost` が FSx for ONTAP で実行できるかは AWS が文書化していないため、この一覧が判断の出発点になります。** 一覧はそちらが持ちます |
 
 <!-- cross-repo-table:end -->
 

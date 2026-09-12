@@ -159,6 +159,7 @@ volume show -vserver <svm> -fields volume,security-style
 ## 関連ドキュメント
 
 - [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
+- [SMB で運用中のボリュームに NFS を足すのに複製は要らない](adding-a-protocol-does-not-need-a-clone.md) — **スタイルが決めていないもの**と、変更する場合の経路
 - [Domain — セキュリティ・ガバナンス](../../security-governance/) — 権限設計の全体像
 - [Playbook 02 — 設計](../../../playbooks/02-design/) — セキュリティスタイルは設計時に決める項目
 - [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択に影響する

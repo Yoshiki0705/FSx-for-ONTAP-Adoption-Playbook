@@ -43,6 +43,8 @@ graph TD
 | 移行元が Windows ファイルサーバー（SMB / NTFS ACL 保持が要件） | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [マルチプロトコル・ID](domains/multiprotocol-identity/) |
 | 移行元が ONTAP 以外の NAS | [移行方式 決定ツリー](reference/decision-trees/migration-method.md) | [評価](playbooks/01-assess/) |
 | NFS と SMB を同じデータに対して使う | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [セキュリティ・ガバナンス](domains/security-governance/) |
+| **SMB で運用中のボリュームを NFS からも使いたい** | [SMB で運用中のボリュームに NFS を足すのに複製は要らない](domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
+| **NFS 側から権限を確認したい / 拒否の理由が分からない** | [NFS 側から見える権限表現が実際の可否と一致しない](domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [セキュリティスタイルが権限評価のモデルを決める](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
 | Active Directory 連携が前提 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | [設計](playbooks/02-design/) |
 | SMB のユーザー管理と監査を設計したい | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) | [マルチプロトコル・ID](domains/multiprotocol-identity/) |
 | SMB が急に提供できなくなった | [SMB を提供できない SVM がある](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [SMB のユーザー管理と監査 決定ツリー](reference/decision-trees/smb-identity-and-audit.md) |
@@ -52,6 +54,8 @@ graph TD
 | **iSCSI / NVMe-oF でブロックを提供する** | [ブロックプロトコルとレイアウトの決定木](reference/decision-trees/block-protocol-and-layout.md) | [ブロックストレージ](domains/block-storage/) |
 | **ブロックにするか Amazon EBS で足りるか迷っている** | [ブロックストレージの選択肢の比較](reference/comparison/block-storage-options.md) | [共有ブロックが設計を変える条件](domains/block-storage/notes/when-shared-block-changes-the-design.md) |
 | **EBS で回している構成の費用と比べたい** | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [ブロックストレージを 30 分で動かす手順](domains/block-storage/quickstart.md) |
+| **ブロック（LUN）のデータを本番に影響を与えずにファイルや S3 API で分析したい** | [LUN の中身はファイルプロトコルに現れない](domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) | [ブロックからファイルへ運ぶ経路の比較](reference/comparison/block-to-file-routes.md) |
+| **ボリュームを別の SVM へ移したい / FlexClone を移せるか調べたい** | [`volume rehost` が変えるのは所有 SVM だけで、中身は変わらない](domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [ブロックからファイルへ運ぶ経路の比較](reference/comparison/block-to-file-routes.md) |
 | **測ったスループットが想定より低い** | [手元のスループット値は何を測ったのかを判定する](reference/decision-trees/measured-throughput-triage.md) | [スループットを上げる手段の比較](reference/comparison/throughput-levers.md) |
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |

@@ -338,6 +338,8 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 ## 関連ドキュメント
 
 - [Domain — データ活用](../README.md) — このモジュールのハブ
+- [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — **ブロックのデータは AP の対象外**。分析するまでの 4 段
+- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — AP を転送先にする経路の `hypothesis` を含みます
 - [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) — AD 参加済み SVM での前提
 - [Playbook 02 — 設計](../../../playbooks/02-design/) — 不可逆な項目（`NetworkOrigin` など）は設計時に確定します
 - [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md) — S3 AP 関連の確認項目

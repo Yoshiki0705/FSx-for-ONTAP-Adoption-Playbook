@@ -29,3 +29,4 @@ docs/ja/reference/comparison/README.md	file:neutrality	1
 docs/ja/reference/glossary/README.md	naming	1
 docs/ja/reference/limits/README.md	naming	1
 docs/ja/workshop-studio/module-mapping.md	pii	1
+examples/multiprotocol-ad/fsxontap-multiprotocol-ad.yaml	naming	1
