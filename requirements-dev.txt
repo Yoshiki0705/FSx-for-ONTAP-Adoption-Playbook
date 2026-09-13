@@ -17,7 +17,15 @@ ruff==0.16.7
 # the day it runs.
 cfn-lint==1.56.3
 
+# Runs PSScriptAnalyzer on the .ps1 files under examples/, which no gate looked at before this was
+# added. It is a wrapper: it needs a PowerShell host on PATH, which GitHub-hosted runners already
+# have and macOS does not. `make powershell` says how to install one and fails rather than skipping.
+py-psscriptanalyzer==0.3.1
 # Not installable via pip — install separately, see CONTRIBUTING.md:
 #   markdownlint-cli2   npm install -g markdownlint-cli2@0.22.1
 #   gitleaks            brew install gitleaks
 #   shellcheck          brew install shellcheck
+#   PowerShell          brew install powershell   (the host py-psscriptanalyzer above needs)
+#                       A formula in homebrew-core, not a cask: `brew install --cask powershell`
+#                       fails with "No Cask with this name exists" and suggests powershell@preview,
+#                       which is the wrong thing to install. It pulls in dotnet and needs no sudo.

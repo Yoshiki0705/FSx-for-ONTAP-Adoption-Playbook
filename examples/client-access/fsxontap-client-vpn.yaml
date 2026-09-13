@@ -1,0 +1,253 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >-
+  AWS Client VPN endpoint giving a physical endpoint - a Windows machine, the Linux inside WSL2, or a
+  Mac - a route into the VPC holding an Amazon FSx for NetApp ONTAP file system. Mutual certificate
+  authentication, split tunnel on, and the VPC resolver set as the DNS server because without it the
+  connected endpoint keeps using its own local DNS and the file system's DNS name does not resolve.
+  Deploy it second, after fsxontap-client-access.yaml, with the same client CIDR.
+
+  BILLING IS KEYED ON THE SUBNET ASSOCIATION, NOT ON THE ENDPOINT. In ap-northeast-1 an association
+  costs $0.15 per hour and each connected client $0.05 per hour (AWS Price List API, On-Demand,
+  retrieved 2026-09-13). AssociateSubnet exists so the association can be removed without deleting
+  the endpoint and its certificates - set it to false and update the stack when you stop for the day.
+  Left associated for a month the association alone is about $109.50.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Where it attaches
+        Parameters: [VpcId, TargetSubnetId, TargetNetworkCidr, NamePrefix]
+      - Label:
+          default: Client addressing and name resolution
+        Parameters: [ClientCidrBlock, DnsServerIp]
+      - Label:
+          default: Mutual certificate authentication
+        Parameters: [ServerCertificateArn, ClientRootCertificateChainArn]
+      - Label:
+          default: Billing control
+        Parameters: [AssociateSubnet, EnableConnectionLogging]
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: fsxn-client-access
+    AllowedPattern: '^[a-z][a-z0-9-]{2,24}$'
+    Description: Lower-case prefix for resource names. Match fsxontap-client-access.yaml.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC holding the file system.
+
+  TargetSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      Subnet to associate the endpoint with. Use the file system's subnet unless you have a reason
+      not to: associating a subnet adds a route for that subnet's VPC CIDR automatically, which is
+      what carries traffic to the file system under split tunnel.
+
+  TargetNetworkCidr:
+    Type: String
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+    Description: >-
+      CIDR the connected endpoint is authorized to reach. The VPC CIDR is the usual answer. This is
+      an authorization rule, separate from routing: an endpoint can hold a route and still be
+      refused here, which presents as a timeout rather than as a denial.
+
+  ClientCidrBlock:
+    Type: String
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/(1[6-9]|2[0-2])$'
+    Description: >-
+      CIDR from which connected clients are assigned an address. Must not overlap the VPC CIDR or
+      anything else the client needs to reach, must be at least a /22, and CANNOT BE CHANGED after
+      the endpoint is created.
+
+      REQUIRED WITH NO DEFAULT ON PURPOSE. It has to be identical to ClientCidr in
+      fsxontap-client-access.yaml, because that is the range the file system security group admits.
+      A mismatch shows up as a mount that hangs rather than as a configuration error, and a shared
+      default would let both stacks be deployed without anyone looking at the value.
+
+  DnsServerIp:
+    Type: String
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}$'
+    Description: >-
+      The Route 53 Resolver address for the VPC: the base address of the VPC CIDR plus two. For a
+      /16 whose base is a.b.0.0 that is a.b.0.2. It is a parameter rather than a computed value
+      because CloudFormation cannot read the CIDR of a VPC without a custom resource.
+
+      THIS IS THE FIELD MOST OFTEN LEFT EMPTY. When a Client VPN endpoint specifies no DNS server,
+      the connected client keeps using the DNS configured on the local machine, so an FSx for ONTAP
+      DNS name does not resolve while the tunnel is plainly up. Mounting by IP then works, which
+      makes it easy to diagnose as a routing problem.
+
+  ServerCertificateArn:
+    Type: String
+    MinLength: 20
+    Description: >-
+      ACM ARN of the server certificate. make-client-vpn-certs.sh generates a self-signed CA and both
+      certificates and imports them, and prints both ARNs.
+
+  ClientRootCertificateChainArn:
+    Type: String
+    MinLength: 20
+    Description: >-
+      ACM ARN of the client certificate chain. With a single CA signing both, this may be the same
+      ARN as ServerCertificateArn.
+
+  AssociateSubnet:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Whether to associate the subnet. FALSE MEANS THE ENDPOINT EXISTS AND COSTS NOTHING PER HOUR but
+      accepts no traffic. Update the stack with false to stop the $0.15 per hour without discarding
+      the endpoint, the certificates or the client configuration file.
+
+  EnableConnectionLogging:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Log connection attempts to CloudWatch Logs. On by default because a failed connection is
+      otherwise invisible from the AWS side: the client shows an error and the endpoint shows
+      nothing. Costs CloudWatch Logs ingestion for a handful of lines per connection.
+
+Conditions:
+  WantAssociation: !Equals [!Ref AssociateSubnet, 'true']
+  WantLogging: !Equals [!Ref EnableConnectionLogging, 'true']
+
+Resources:
+  ConnectionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: WantLogging
+    # Retained on delete would leave a log group behind after teardown, which is the kind of leftover
+    # that makes a later "is anything still running" check ambiguous. Seven days is enough to read a
+    # failed connection and short enough to cost nothing worth naming.
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/aws/clientvpn/${NamePrefix}'
+      RetentionInDays: 7
+
+  # Given explicitly rather than left to the VPC's default security group. The default group is
+  # whatever the account has made of it over time, and an endpoint that inherits it is one more thing
+  # to check when traffic does not arrive.
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: >-
+        Client VPN endpoint for reaching the FSx for ONTAP file system. Egress only; the file system
+        group decides what is admitted, keyed on the client CIDR.
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          # No apostrophe, and nothing outside a-zA-Z0-9. _-:/()#,@[]+=&;{}!$* -- EC2 rejects a
+          # security group RULE description containing anything else, and cfn-lint does not check
+          # this field. It checks GroupDescription (E3031) and passes the rule descriptions straight
+          # through, so a template can lint clean and fail at CreateStack. That happened here: the
+          # word "system's" rolled the stack back after the file system had already started building.
+          Description: All outbound. Narrowing this duplicates the ingress rules on the file system.
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-cvpn'
+
+  ClientVpnEndpoint:
+    Type: AWS::EC2::ClientVpnEndpoint
+    Properties:
+      Description: !Sub 'Endpoint access to the ${NamePrefix} FSx for ONTAP file system'
+      # The apostrophe rule above applies per-field and is not documented in one place, so the
+      # descriptions on this resource and on the authorization rule are kept to the same character
+      # set rather than relying on them being exempt.
+      ClientCidrBlock: !Ref ClientCidrBlock
+      VpcId: !Ref VpcId
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      ServerCertificateArn: !Ref ServerCertificateArn
+      AuthenticationOptions:
+        - Type: certificate-authentication
+          MutualAuthentication:
+            ClientRootCertificateChainArn: !Ref ClientRootCertificateChainArn
+      # Split tunnel sends only the routes in the endpoint's route table over the VPN, leaving the
+      # endpoint's other traffic on its own network. That is the desirable default, and it is also
+      # what makes DnsServers necessary rather than optional: with the full tunnel off, nothing else
+      # is pointing the client at the VPC resolver.
+      SplitTunnel: true
+      DnsServers:
+        - !Ref DnsServerIp
+      TransportProtocol: udp
+      VpnPort: 443
+      ConnectionLogOptions: !If
+        - WantLogging
+        - Enabled: true
+          CloudwatchLogGroup: !Ref ConnectionLogGroup
+        - Enabled: false
+      TagSpecifications:
+        - ResourceType: client-vpn-endpoint
+          Tags:
+            - Key: Name
+              Value: !Sub '${NamePrefix}-cvpn'
+
+  # The association is what costs money and what makes the endpoint carry traffic. Associating a
+  # subnet also adds a route for that subnet's VPC CIDR automatically, so no explicit
+  # AWS::EC2::ClientVpnRoute is needed to reach the file system.
+  SubnetAssociation:
+    Type: AWS::EC2::ClientVpnTargetNetworkAssociation
+    Condition: WantAssociation
+    Properties:
+      ClientVpnEndpointId: !Ref ClientVpnEndpoint
+      SubnetId: !Ref TargetSubnetId
+
+  # Authorization is evaluated separately from routing. Both are required, and only one of them is
+  # created automatically, which is why a connected client with a correct route can still reach
+  # nothing.
+  AuthorizationRule:
+    Type: AWS::EC2::ClientVpnAuthorizationRule
+    Condition: WantAssociation
+    DependsOn: SubnetAssociation
+    Properties:
+      ClientVpnEndpointId: !Ref ClientVpnEndpoint
+      TargetNetworkCidr: !Ref TargetNetworkCidr
+      # Every certificate signed by the client CA is allowed. Group-based authorization needs an
+      # identity provider, which mutual certificate authentication does not have - so with this
+      # authentication type, possession of a client certificate IS the authorization. That is the
+      # trade-off for the shortest setup, and it is the reason the certificate files matter as much
+      # as they do.
+      AuthorizeAllGroups: true
+      Description: !Sub 'Reach ${TargetNetworkCidr} from a connected endpoint'
+
+Outputs:
+  ClientVpnEndpointId:
+    Description: >-
+      Download the client configuration with:
+      aws ec2 export-client-vpn-client-configuration --client-vpn-endpoint-id <this>
+      --output text > client-config.ovpn
+      then append the client certificate and key as make-client-vpn-certs.sh instructs.
+    Value: !Ref ClientVpnEndpoint
+
+  DnsServerConfigured:
+    Description: >-
+      The address connected clients will use for DNS. Verify from the endpoint with
+      "nslookup <svm-dns-name>" once connected; if it fails, this value is wrong or unset.
+    Value: !Ref DnsServerIp
+
+  ClientCidrBlockInUse:
+    Description: >-
+      Must match ClientCidr in fsxontap-client-access.yaml, which is what the file system's security
+      group admits.
+    Value: !Ref ClientCidrBlock
+
+  AssociationState:
+    Description: >-
+      Whether a subnet association exists, and therefore whether the hourly association charge is
+      running. Confirm with:
+      aws ec2 describe-client-vpn-target-networks --client-vpn-endpoint-id <endpoint-id>
+      A count of zero is the correct check for "stopped", not the absence of the endpoint.
+    Value: !If [WantAssociation, 'associated - billing at $0.15/hour', 'not associated - no hourly association charge']
+
+  HowToStopSpending:
+    Description: The cheapest pause that does not discard the setup.
+    Value: >-
+      Update this stack with AssociateSubnet=false. The endpoint, certificates and client
+      configuration survive; the hourly association charge stops.

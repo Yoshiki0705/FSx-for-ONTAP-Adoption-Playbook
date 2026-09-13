@@ -39,14 +39,39 @@ body:
       label: Topic domain
       multiple: true
       options:
+        - block-storage
+        - client-access
         - data-protection
         - data-utilization
         - security-governance
         - performance
         - cost
         - multiprotocol-identity
+        - observability
     validations:
       required: true
+
+  - type: dropdown
+    id: endpoint
+    attributes:
+      label: Endpoint you are connecting from
+      description: >-
+        Only for client-access requests. The module records how far it goes per endpoint, so
+        naming yours is what moves a row off "accepting requests".
+      multiple: true
+      options:
+        - Windows endpoint
+        - Linux inside WSL2
+        - Mac endpoint
+        - Native Linux endpoint
+        - Amazon WorkSpaces / AppStream 2.0
+        - Chromebook / iPad / Android (browser only)
+        - Thin client (VDI-only device)
+        - On-premises Windows Server
+        - EC2 instance (not an endpoint - see the block-storage module)
+        - Other / not listed
+    validations:
+      required: false
 
   - type: textarea
     id: context

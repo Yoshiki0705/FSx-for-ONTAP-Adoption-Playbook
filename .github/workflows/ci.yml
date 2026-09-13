@@ -68,6 +68,18 @@ jobs:
       - name: Lint shell scripts
         run: make shell
 
+      # GitHub-hosted runners ship PowerShell in the tools cache, so there is nothing to install.
+      # This step exists for the same reason the shellcheck one above does: `make powershell` fails
+      # when no host is on PATH, so a runner image that dropped PowerShell would read as a lint
+      # failure in the example scripts rather than as a missing tool, and cost a round trip to find.
+      - name: Verify PowerShell is available
+        run: pwsh --version
+
+      # Before this existed the .ps1 files under examples/ were checked by nothing at all, in either
+      # place: SH_PATHS matches *.sh only.
+      - name: Lint PowerShell scripts
+        run: make powershell
+
       - name: Lint CloudFormation templates
         run: make cfn
 

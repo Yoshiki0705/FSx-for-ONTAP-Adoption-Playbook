@@ -129,6 +129,7 @@
 | [`multiprotocol-identity/`](docs/ja/domains/multiprotocol-identity/) | NFS / SMB 共存・Active Directory 連携・ID マッピング |
 | [`block-storage/`](docs/ja/domains/block-storage/) | iSCSI / NVMe-oF・LUN レイアウト・マルチパス・容量の数え方 |
 | [`observability/`](docs/ja/domains/observability/) | 監視経路の選定・Harvest / Prometheus・データの所在 |
+| [`client-access/`](docs/ja/domains/client-access/) | Windows / WSL2 / Mac 端末からの到達経路・マウント・端末側の資格情報 |
 
 ### 横断リファレンス — `reference/`
 

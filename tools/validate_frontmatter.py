@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LIFECYCLE = {"assess", "design", "migrate", "build", "operate", "optimize"}
 DOMAINS = {
     "block-storage",
+    "client-access",
     "data-protection",
     "data-utilization",
     "security-governance",

@@ -119,6 +119,7 @@ Enter here when your question is "I need to research this specific concern." The
 | [`multiprotocol-identity/`](domains/multiprotocol-identity/) | NFS / SMB coexistence, Active Directory integration, ID mapping |
 | [`block-storage/`](domains/block-storage/) | iSCSI / NVMe-oF, LUN layout, multipathing, how capacity is counted |
 | [`observability/`](domains/observability/) | Choosing a monitoring route, Harvest / Prometheus, data residency |
+| [`client-access/`](domains/client-access/) | Reaching data from a Windows, WSL2, or Mac endpoint; mounting; endpoint credentials |
 
 ### Cross-cutting reference — `reference/`
 

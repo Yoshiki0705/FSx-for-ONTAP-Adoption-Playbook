@@ -1,0 +1,434 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >-
+  Smallest Amazon FSx for NetApp ONTAP environment reachable from a physical endpoint - a Windows
+  machine, the Linux inside WSL2, or a Mac. First-generation Single-AZ file system, one SVM with NO
+  Active Directory, three volumes (one for SMB, one for NFS, one to hold a LUN), and security group
+  rules admitting file, block and management traffic from a client CIDR you name. It creates NO EC2
+  instance on purpose: the client in this example is your own endpoint, and the reachability route is
+  a separate template (fsxontap-client-vpn.yaml). The SMB server, the local SMB user, the share, the
+  export policy, the LUN, the igroup and the LUN map are NOT created here - the Amazon FSx API has no
+  action for any of them; run provision-client-access.sh against the ONTAP REST API afterwards.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Where it goes
+        Parameters: [VpcId, FileSystemSubnetId, NamePrefix]
+      - Label:
+          default: Who may reach it
+        Parameters: [ClientCidr]
+      - Label:
+          default: Size and credentials
+        Parameters: [StorageCapacityGiB, ThroughputCapacity, VolumeSizeBytes, FsxAdminSecretName]
+      - Label:
+          default: Optional interface VPC endpoint
+        Parameters: [CreateS3InterfaceEndpoint]
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: fsxn-client-access
+    AllowedPattern: '^[a-z][a-z0-9-]{2,24}$'
+    Description: >-
+      Lower-case prefix for resource names. The SVM and volume names derive from it with hyphens
+      removed, because ONTAP accepts only alphanumerics and underscores there. Keep it short: the
+      SMB server NetBIOS name that provision-client-access.sh derives from it is capped at 15
+      characters by ONTAP.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC. This template creates no network infrastructure.
+
+  FileSystemSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      Existing subnet for the file system. Single-AZ places the NFS, SMB and iSCSI endpoints inside
+      this subnet, so an endpoint reaching them over a VPN needs a route to this CIDR. Use the same
+      subnet in fsxontap-client-vpn.yaml unless you have a reason not to.
+
+  ClientCidr:
+    Type: String
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+    Description: >-
+      CIDR the endpoint address comes from. For AWS Client VPN this is the client CIDR block of the
+      endpoint, NOT your home or office network - the client address is assigned by the VPN. Traffic
+      arrives at the file system with a source address from this range, so the security group rules
+      below reference it.
+
+      REQUIRED WITH NO DEFAULT ON PURPOSE. It has to be identical to ClientCidrBlock in
+      fsxontap-client-vpn.yaml, and a mismatch between the two is one of the failures this example
+      exists to prevent: the packets arrive, the group drops them, and the mount hangs without
+      anything logging a denial. A shared default would let both stacks be deployed without the
+      operator ever looking at the value that has to agree.
+
+  FsxAdminSecretName:
+    Type: String
+    MinLength: 1
+    Description: >-
+      Name or ARN of an existing AWS Secrets Manager secret whose SecretString is JSON containing a
+      "password" key. Resolved at create time, so the password appears in no parameter, no output and
+      no CloudFormation log. Amazon FSx accepts 8 to 50 characters.
+
+  StorageCapacityGiB:
+    Type: Number
+    Default: 1024
+    MinValue: 1024
+    Description: >-
+      SSD capacity in GiB. 1024 is the documented minimum per HA pair. Nothing in this example fills
+      it; the volumes below are 10 GiB each.
+
+  ThroughputCapacity:
+    Type: Number
+    Default: 128
+    AllowedValues: [128, 256, 512, 1024, 2048, 4096]
+    Description: >-
+      Throughput capacity in MBps. 128 is the documented minimum for the first generation and is the
+      largest single saving available here. Do not raise it hoping for a better measurement: this
+      example measures whether an endpoint can reach and mount the data, and any bandwidth figure
+      taken over a VPN describes the tunnel and the endpoint's own network rather than the file
+      system.
+
+  VolumeSizeBytes:
+    Type: String
+    Default: '10737418240'
+    Description: >-
+      Size of each of the three volumes, in bytes. The default is 10 GiB. The LUN that
+      provision-client-access.sh creates defaults to 5 GiB, which leaves room for the 5 percent
+      snapshot reserve plus the margin the documented guidance asks for.
+
+  CreateS3InterfaceEndpoint:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Create an interface VPC endpoint for Amazon S3. Needed to reach FSx for ONTAP S3 Access Points
+      from an endpoint over a VPN: a gateway endpoint does NOT route traffic that enters the VPC over
+      VPN, Direct Connect, Transit Gateway or peering. Billed per AZ-hour while it exists, so it
+      defaults to false - turn it on for the S3 Access Point measurement and remove it afterwards.
+
+Conditions:
+  WantS3Endpoint: !Equals [!Ref CreateS3InterfaceEndpoint, 'true']
+
+Resources:
+  FileSystemSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: >-
+        FSx for ONTAP file system reached from an endpoint. Ingress rules are separate resources
+        below so the set is readable one protocol at a time.
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: >-
+            All outbound. The file system needs it for DNS, and an SVM joined to Active Directory
+            would need it for the domain controllers. This example joins no domain.
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-fs'
+
+  # One rule per port group rather than one wide rule. The set below is the documented requirement,
+  # and the reason to spell it out is that "NFS needs 2049" is the most common way an endpoint mount
+  # half-works: the mount succeeds and locking fails later, which does not look like a firewall
+  # problem when it happens.
+  SmbFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 445
+      ToPort: 445
+      CidrIp: !Ref ClientCidr
+      Description: SMB over TCP. Windows binds 445 locally, which matters on the endpoint side.
+
+  NfsTcpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref ClientCidr
+      Description: rpcbind / portmapper, TCP.
+
+  NfsUdpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref ClientCidr
+      Description: rpcbind / portmapper, UDP.
+
+  NfsDataTcpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref ClientCidr
+      Description: NFS data, TCP.
+
+  NfsDataUdpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref ClientCidr
+      Description: NFS data, UDP.
+
+  NfsAuxTcpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 4045
+      ToPort: 4046
+      CidrIp: !Ref ClientCidr
+      Description: >-
+        NFS lock manager and status monitor, TCP. Absent, a mount can succeed while file locking
+        fails - which presents as an application bug rather than a network rule.
+
+  NfsAuxUdpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 4045
+      ToPort: 4046
+      CidrIp: !Ref ClientCidr
+      Description: NFS lock manager and status monitor, UDP.
+
+  NfsMountTcpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 635
+      ToPort: 635
+      CidrIp: !Ref ClientCidr
+      Description: NFS mount daemon, TCP.
+
+  NfsMountUdpFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: udp
+      FromPort: 635
+      ToPort: 635
+      CidrIp: !Ref ClientCidr
+      Description: NFS mount daemon, UDP.
+
+  IscsiFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3260
+      ToPort: 3260
+      CidrIp: !Ref ClientCidr
+      Description: >-
+        iSCSI. Reachable from a Windows endpoint and from a Linux one; macOS ships no initiator, so
+        this rule is unreachable from a Mac regardless of the route.
+
+  OntapManagementFromClient:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FileSystemSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref ClientCidr
+      Description: >-
+        ONTAP REST API. provision-client-access.sh runs from the endpoint over the same route,
+        because the SMB server, the share, the LUN and the igroup have no Amazon FSx API action.
+
+  S3InterfaceEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: WantS3Endpoint
+    Properties:
+      GroupDescription: Interface VPC endpoint for Amazon S3, reached from the client CIDR on 443.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref ClientCidr
+          Description: HTTPS from the endpoint, for S3 Access Point requests arriving over the VPN.
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-s3-endpoint'
+
+  S3InterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: WantS3Endpoint
+    Properties:
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcEndpointType: Interface
+      VpcId: !Ref VpcId
+      SubnetIds:
+        - !Ref FileSystemSubnetId
+      SecurityGroupIds:
+        - !Ref S3InterfaceEndpointSecurityGroup
+      # Private DNS on the S3 interface endpoint is deliberately left off. With it enabled the
+      # endpoint answers for the regional S3 name, which changes name resolution for every S3 request
+      # made from inside the VPC, not just the ones this example makes. Address the endpoint by its
+      # endpoint-specific DNS name instead; the output below carries it.
+      PrivateDnsEnabled: false
+
+  FileSystem:
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: ONTAP
+      StorageType: SSD
+      StorageCapacity: !Ref StorageCapacityGiB
+      SubnetIds:
+        - !Ref FileSystemSubnetId
+      SecurityGroupIds:
+        - !Ref FileSystemSecurityGroup
+      OntapConfiguration:
+        # SINGLE_AZ_1 is the first generation. It is chosen over the second generation because
+        # everything this example needs - SMB, NFS and iSCSI - runs on it, and its minimum throughput
+        # capacity is 128 MBps against 384 MBps, which is the largest cost difference available here.
+        # NVMe/TCP would require the second generation, and is out of scope: ONTAP does not support
+        # it with Windows Server, and macOS has no initiator of any kind.
+        DeploymentType: SINGLE_AZ_1
+        ThroughputCapacity: !Ref ThroughputCapacity
+        DiskIopsConfiguration:
+          Mode: AUTOMATIC
+        FsxAdminPassword: !Sub '{{resolve:secretsmanager:${FsxAdminSecretName}:SecretString:password}}'
+        AutomaticBackupRetentionDays: 0
+      Tags:
+        - Key: Name
+          Value: !Ref NamePrefix
+
+  # No ActiveDirectoryConfiguration. SMB still works: AWS documents creating an SMB server in a
+  # workgroup with `vserver cifs create -workgroup`, and provision-client-access.sh does the REST
+  # equivalent. What a workgroup gives up is listed in the README - it is a real list, not a
+  # formality, and it includes GPO, roaming profiles and VSS.
+  StorageVirtualMachine:
+    Type: AWS::FSx::StorageVirtualMachine
+    Properties:
+      FileSystemId: !Ref FileSystem
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}svm']]
+      # NTFS root so the SMB volume below inherits an ACL model that a Windows or macOS endpoint
+      # recognizes. The NFS volume overrides it to UNIX, which is what makes the two comparable.
+      RootVolumeSecurityStyle: NTFS
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-svm'
+
+  SmbVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}smbvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref StorageVirtualMachine
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: NTFS
+        StorageEfficiencyEnabled: 'true'
+        JunctionPath: /smbvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-smbvol'
+
+  NfsVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}nfsvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref StorageVirtualMachine
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: UNIX
+        StorageEfficiencyEnabled: 'true'
+        JunctionPath: /nfsvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-nfsvol'
+
+  LunVolume:
+    Type: AWS::FSx::Volume
+    Properties:
+      Name: !Join ['', !Split ['-', !Sub '${NamePrefix}lunvol']]
+      VolumeType: ONTAP
+      OntapConfiguration:
+        StorageVirtualMachineId: !Ref StorageVirtualMachine
+        SizeInBytes: !Ref VolumeSizeBytes
+        OntapVolumeType: RW
+        SecurityStyle: UNIX
+        StorageEfficiencyEnabled: 'true'
+        # Present because the Amazon FSx API rejects a volume without it, not because a volume
+        # holding only a LUN has any reason to be in the SVM namespace. Same constraint recorded in
+        # examples/block-storage/.
+        JunctionPath: /lunvol
+        SnapshotPolicy: none
+        TieringPolicy:
+          Name: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-lunvol'
+
+Outputs:
+  FileSystemId:
+    Description: Pass to provision-client-access.sh as --file-system-id.
+    Value: !Ref FileSystem
+
+  SvmName:
+    Description: Pass to provision-client-access.sh as --svm.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}svm']]
+
+  SmbVolumeName:
+    Description: Pass to provision-client-access.sh as --smb-volume.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}smbvol']]
+
+  NfsVolumeName:
+    Description: Pass to provision-client-access.sh as --nfs-volume.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}nfsvol']]
+
+  LunVolumeName:
+    Description: Pass to provision-client-access.sh as --lun-volume.
+    Value: !Join ['', !Split ['-', !Sub '${NamePrefix}lunvol']]
+
+  FileSystemSecurityGroupId:
+    Description: >-
+      The file system's security group. Only ClientCidr is admitted, so an endpoint whose VPN client
+      CIDR differs from ClientCidr is refused here rather than at the mount. Add a rule referencing
+      the VPC CIDR if something inside the VPC also needs to reach the file system.
+    Value: !Ref FileSystemSecurityGroup
+
+  S3InterfaceEndpointDnsEntries:
+    Condition: WantS3Endpoint
+    Description: >-
+      Endpoint-specific DNS names for the Amazon S3 interface endpoint. Private DNS is off, so
+      address the endpoint by one of these rather than by the regional S3 name.
+    Value: !Join [',', !GetAtt S3InterfaceEndpoint.DnsEntries]
+
+  WhatIsNotCreatedHere:
+    Description: >-
+      The SMB server in a workgroup, the local SMB user, the SMB share, the NFS export policy and
+      rule, the LUN, the igroup, the LUN map, and any FSx for ONTAP S3 Access Point. None has an
+      Amazon FSx API action or a CloudFormation resource type. provision-client-access.sh creates
+      them over the ONTAP REST API, run from your endpoint over the same route it will use for data.
+    Value: SMB server, local SMB user, SMB share, export policy, LUN, igroup, LUN map, S3 access point
+
+  NextStep:
+    Description: What to do after this stack completes.
+    Value: >-
+      Deploy fsxontap-client-vpn.yaml with the same ClientCidr, connect the endpoint, then run
+      provision-client-access.sh from the endpoint.

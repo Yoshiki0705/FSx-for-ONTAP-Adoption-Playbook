@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -513,13 +514,50 @@ SUPPORT_CITATION_PERMIT = re.compile(
 )
 
 
+def _git_ignored(root: Path, candidates: list[Path]) -> set[Path]:
+    """Paths git is configured to ignore.
+
+    This audit is about **published** output, so a path that can never be committed is a false
+    positive by construction. SKIP_DIRS alone cannot express that: it is a list of directory names
+    that has to be extended every time a new ignored directory appears, and the failure is silent in
+    the wrong direction - the audit reports a finding in a file no reader will ever see, and
+    `make all` stops. That happened the first time an example generated credential material into a
+    gitignored directory: the ACM certificate ARN it wrote was flagged as an account ID.
+
+    One batched `git check-ignore` call rather than one per file, and a failure to run git leaves
+    every candidate in the scan. Scanning too much is the safe direction for this tool.
+    """
+    if not candidates:
+        return set()
+    try:
+        result = subprocess.run(
+            ["git", "check-ignore", "--stdin", "-z"],
+            input="\0".join(str(p.relative_to(root)) for p in candidates),
+            capture_output=True,
+            text=True,
+            cwd=root,
+            check=False,
+        )
+    except (OSError, ValueError):
+        return set()
+    # Exit 0 means at least one path matched, 1 means none did; anything else is a real error and
+    # leaves the scan wide rather than narrowing it on a broken signal.
+    if result.returncode not in (0, 1):
+        return set()
+    return {root / name for name in result.stdout.split("\0") if name}
+
+
 def iter_files(root: Path):
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
-            continue
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        if path.suffix.lower() in SCAN_SUFFIXES:
+    candidates = [
+        path
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+        and not any(part in SKIP_DIRS for part in path.parts)
+        and path.suffix.lower() in SCAN_SUFFIXES
+    ]
+    ignored = _git_ignored(root, candidates)
+    for path in candidates:
+        if path not in ignored:
             yield path
 
 

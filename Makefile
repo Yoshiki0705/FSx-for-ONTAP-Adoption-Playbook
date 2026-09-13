@@ -6,7 +6,7 @@ PY ?= python3
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
-        frontmatter markdown headings python format-python new-note stats drift test secrets clean \
+        frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
@@ -19,6 +19,10 @@ PY_PATHS := tools scripts
 # range silently excludes the new thing.
 SH_PATHS := examples scripts tools
 CFN_PATHS := examples
+# Trees that may contain PowerShell. Separate from SH_PATHS because `find -name '*.sh'` never
+# matched a .ps1, which is how examples/multiprotocol-ad/set-test-acls.ps1 stayed unlinted while
+# sitting inside a directory the shell gate already walked.
+PS_PATHS := examples scripts tools
 
 # Every directory holding tests. A tests/ directory that is not listed here runs
 # nowhere: not locally, not in CI, and only when someone remembers a command from a
@@ -29,7 +33,7 @@ help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-lint: frontmatter markdown headings python shell cfn ## Frontmatter schema + Markdown lint + heading style + Python, shell and CloudFormation lint
+lint: frontmatter markdown headings python shell powershell cfn ## Frontmatter schema + Markdown lint + heading style + Python, shell, PowerShell and CloudFormation lint
 
 RUFF_PINNED := $(shell sed -n 's/^ruff==//p' requirements-dev.txt)
 
@@ -39,6 +43,10 @@ RUFF_PINNED := $(shell sed -n 's/^ruff==//p' requirements-dev.txt)
 # `make python` was linting with the wrong rule set. A .venv is gitignored, so this costs
 # nothing when there isn't one.
 RUFF := $(if $(wildcard .venv/bin/ruff),.venv/bin/ruff,$(shell command -v ruff 2>/dev/null))
+# Same precedence for PSScriptAnalyzer's wrapper, for the same reason: resolution by PATH order lets
+# a copy installed for something else win silently.
+PSA := .venv/bin/py-psscriptanalyzer
+PSA_CMD := $(if $(wildcard .venv/bin/py-psscriptanalyzer),.venv/bin/py-psscriptanalyzer,py-psscriptanalyzer)
 
 # The install line has to be one that works. `pip` is not always on PATH, and on a
 # Homebrew Python `pip install --user` is refused outright by PEP 668, so the instruction
@@ -115,6 +123,32 @@ cfn: ## Run cfn-lint on every CloudFormation template (fails when it is not inst
 	if [ -z "$$files" ]; then echo "cfn: no templates found"; else \
 		cfn-lint $$files && echo "cfn: $$(echo $$files | wc -w | tr -d ' ') template(s) clean"; \
 	fi
+# PSScriptAnalyzer, through the py-psscriptanalyzer wrapper so the same pinned invocation works on
+# macOS, on Linux and in CI. Until this existed, every .ps1 in examples/ was linted by nothing:
+# SH_PATHS matches *.sh only, so examples/multiprotocol-ad/set-test-acls.ps1 shipped unchecked for
+# readers to run against their own accounts. A file that no gate looks at is indistinguishable from
+# a file that passes.
+powershell: ## Run PSScriptAnalyzer on every PowerShell script (fails when it is not installed)
+	@files=$$(find $(PS_PATHS) -name '*.ps1' -type f 2>/dev/null); \
+	if [ -z "$$files" ]; then echo "powershell: no scripts found"; exit 0; fi; \
+	if [ ! -x "$(PSA)" ] && ! command -v py-psscriptanalyzer >/dev/null 2>&1; then \
+		echo "error: py-psscriptanalyzer is not installed, so this gate would check nothing."; \
+		echo "       Install it:  python3 -m venv .venv && .venv/bin/python -m pip install -r requirements-dev.txt"; \
+		exit 1; \
+	fi; \
+	if ! command -v pwsh >/dev/null 2>&1 && ! command -v powershell >/dev/null 2>&1; then \
+		echo "error: PSScriptAnalyzer needs a PowerShell host and none is on PATH, so this gate"; \
+		echo "       would check nothing. It is NOT skipped: a .ps1 in examples/ is run by readers"; \
+		echo "       against their own accounts, and CI checks it either way -- skipping locally"; \
+		echo "       only moves the finding to a red pull request."; \
+		echo "       macOS:  brew install powershell   (a formula, not a cask, and needs no sudo)"; \
+		echo "       Linux:  https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux"; \
+		echo "       GitHub-hosted runners already have it."; \
+		exit 1; \
+	fi; \
+	set -e; \
+	$(PSA_CMD) --severity Warning $$files && \
+		echo "powershell: $$(echo $$files | wc -w | tr -d ' ') script(s) clean at Warning severity"
 frontmatter: ## Validate YAML frontmatter on all notes
 	@$(PY) tools/validate_frontmatter.py
 
