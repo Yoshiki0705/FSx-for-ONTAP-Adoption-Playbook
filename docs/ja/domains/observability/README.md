@@ -36,6 +36,7 @@ Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を
 | 6 | 認証・データ所在・サイジングで先に狭まる条件は何か | [経路は認証とアクセス経路で先に狭まる](notes/route-choice-is-bounded-by-access-and-auth.md) |
 | 7 | 監視の導入が管理面に持ち込むリスクは何か | [収集対象数がロック時の影響範囲を決める](notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) |
 | 8 | S3 Access Points 経由のアクセスのリクエスト数・エラー率を見られるか | **見られません。** どの経路を選んでも同じで、代替と限界は [S3 Access Points 経由のアクセスにおけるメトリクスの不在](notes/route-choice-is-bounded-by-access-and-auth.md#s3-access-points-経由のアクセスにおけるメトリクスの不在) にあります |
+| 9 | push 経路（FPolicy）を選んだとき、運用に何が乗るか | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](../data-utilization/notes/fpolicy-fits-by-how-writes-land.md) — **データ活用ドメインにあります。** 別プロジェクトの実測の転記を含むため、このモジュールの外に置いています |
 
 ---
 
@@ -110,7 +111,7 @@ graph TD
 | オンプレの Grafana ダッシュボードがそのまま使える | **10 種が非サポート、8 種は既定で無効です。** Health と Headroom の不在は運用設計に影響します |
 | Harvest を入れれば Amazon Managed Service for Prometheus に直接送れる | **remote_write を持ちません。** スクレイパ + SigV4 の 1 ホップが必要です |
 | クロスアカウント監視は IAM の設定で済む | **相手は ONTAP の管理 LIF でネットワーク到達性の問題です。** AWS API ではありません |
-| クロスプラットフォームはクロスアカウントの延長でできる | **構成が質的に変わります。** 各拠点に collector を置く分散構成になります |
+| クロスプラットフォームはクロスアカウントの延長でできる | **構成が質的に変わります。** ただし変わるのは収集の分散化ではありません — **pull 経路は拠点をまたいでも 1 か所に集められ、拠点ごとに収集元が必要になるのは push 経路（FPolicy）だけです**（[収集元の数を決めるのは接続の向き](notes/cross-account-is-a-network-problem.md#収集元の数を決めるのは接続の向き)）。増えるのはルート・資格情報・切り分けです |
 | Amazon Managed Grafana を自社ポータルに埋め込める | **匿名アクセスをサポートしません。** IdP 起点のログインも未サポートです |
 | ZAPI は廃止済みなので REST に移行が必須 | **EOA は無期限に延期されています。** 移行の理由は廃止ではなく機能セットの広さです |
 | サイジングは公式に 1 つの指針がある | **出典間で食い違います。** 台数とメトリクス数で自分の要件を決める必要があります |

@@ -29,6 +29,13 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retr
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	no break and no clone
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the volume is a FlexCache
+FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
+FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
+FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
+FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	NOT used for routing FPolicy traffic
+FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	Immediate (observed at 0.3 s)
+FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	no spontaneous disconnect
+FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	raised no FPolicy notification
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode

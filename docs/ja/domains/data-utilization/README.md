@@ -20,6 +20,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **AI / RAG に載せたい** | [権限が平坦化されることの意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味) | **元の ACL は引き継がれません。** 判定を索引側に設計する必要があります |
 | **コピーを増やしたくない** | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) | 3 つの手段と、それぞれが引き受ける制約 |
 | **複製先を分析基盤から読みたい** | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) | **break は不要です。** 止めているのは junction path であってボリューム種別ではありません |
+| **ファイルの到着でパイプラインを起動したい** | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) | **判定は書き込みが着地するプロトコルです。** 読む側は入りません |
 
 ---
 
@@ -36,6 +37,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 7 | AI / ML の学習データセットの版と実験ブランチをどう扱うか | [学習データセットの版をスケジュール Snapshot に載せると消える](notes/dataset-versions-and-experiment-branches.md) |
 | 8 | 書いたものが反対側で見えるまでどれくらいか。方向で違うか | [書いた側と読む側が違うと、見えるまでの時間は方向で決まる](notes/how-long-until-a-write-is-visible.md) |
 | 9 | 複製先のデータを分析基盤に読ませられるか。SnapMirror を止める必要はあるか | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) |
+| 10 | ファイルの到着をイベントとして受け取れるか。FPolicy が使えるのはどの場合か | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) |
 
 ---
 
