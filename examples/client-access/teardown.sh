@@ -45,7 +45,8 @@ Optional:
   --vpn-stack        Stack from fsxontap-client-vpn.yaml. Default: fsxn-client-access-vpn
   --svm              SVM name. Needed to remove the ONTAP objects. Without it, those steps are
                      skipped and reported as skipped rather than as done.
-  --file-system-id   Used to resolve the ONTAP management address.
+  --file-system-id   Used to resolve the ONTAP management address, and to mark which file system in
+                     step 5 belongs to this example.
   --management-ip    The management address directly.
   --secret-id        Secrets Manager secret holding the fsxadmin password.
   --password-stdin   Read the fsxadmin password from standard input instead.
@@ -163,9 +164,14 @@ else
     fi
 
     BASE="https://$MGMT_IP/api"
+    # --connect-timeout and --max-time are not optional here. A teardown is frequently run when the
+    # route is already gone -- the VPN is down, or the association was removed in step 1 of this very
+    # script -- and without them curl waits on a dead address indefinitely. A report that hangs is
+    # worse than one that says UNREACHABLE, because the operator cannot tell it apart from slowness
+    # and leaves it running while the file system keeps billing.
     ontap() {
       local method="$1" path="$2"
-      curl -sk -u "fsxadmin:$PASSWORD" -X "$method" "$BASE$path"
+      curl -sk --connect-timeout 8 --max-time 20 -u "fsxadmin:$PASSWORD" -X "$method" "$BASE$path"
     }
 
     # Order: LUN maps before igroups and LUNs, because a mapped LUN and a mapped igroup both refuse
@@ -181,8 +187,15 @@ else
     do
       label="${query%%:*}"
       path="${query#*:}"
-      body="$(ontap GET "$path" || true)"
-      count="$(printf '%s' "$body" | jq -r '.num_records // 0' 2>/dev/null || echo 0)"
+      # "could not ask" and "asked, found none" must not print the same thing. The first version
+      # printed an empty string for both, because a failed curl produces no body, jq turns that into
+      # nothing, and the `|| echo 0` never fires since the pipeline itself succeeded. A blank next to
+      # "lun-maps:" reads as zero, so a teardown run with no route to ONTAP looked like a clean SVM.
+      if ! body="$(ontap GET "$path")" || [ -z "$body" ]; then
+        note "$label: UNREACHABLE (not asked -- this is not the same as none)"
+        continue
+      fi
+      count="$(printf '%s' "$body" | jq -r '.num_records // "unparseable"' 2>/dev/null || echo unparseable)"
       note "$label: $count"
     done
 
@@ -266,9 +279,26 @@ step "5. Still present"
 
 FS_LEFT="$(aws fsx describe-file-systems --region "$REGION" \
   --query 'FileSystems[].[FileSystemId,Lifecycle]' --output text 2>/dev/null || true)"
-note "Amazon FSx file systems in $REGION:"
-if [ -z "$FS_LEFT" ]; then note "  none"; else printf '%s\n' "$FS_LEFT" | sed 's/^/      /'; fi
-note "Any file system listed above bills until it is deleted and cannot be stopped."
+note "Amazon FSx file systems in $REGION -- EVERY ONE, not only the one this example created:"
+if [ -z "$FS_LEFT" ]; then
+  note "  none"
+else
+  # The one this example owns is marked. Without the marker a reader who has just watched the stack
+  # delete sees an AVAILABLE file system on the next line and reads the teardown as having failed,
+  # when what they are looking at is somebody else's environment.
+  printf '%s\n' "$FS_LEFT" | while read -r fs_id fs_state; do
+    if [ -n "$FILE_SYSTEM_ID" ] && [ "$fs_id" = "$FILE_SYSTEM_ID" ]; then
+      note "      $fs_id $fs_state   <-- THIS EXAMPLE. Still here, so the deletion did not finish."
+    else
+      note "      $fs_id $fs_state   (not this example)"
+    fi
+  done
+fi
+note "Any file system listed above bills until it is deleted and cannot be stopped. Leave the ones"
+note "marked 'not this example' alone -- they belong to something else in this account."
+if [ -z "$FILE_SYSTEM_ID" ]; then
+  note "Pass --file-system-id to have the one this example created marked in the list above."
+fi
 
 if [ "$APPLY" != "true" ]; then
   echo
