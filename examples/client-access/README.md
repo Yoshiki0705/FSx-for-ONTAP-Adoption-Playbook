@@ -257,6 +257,17 @@ The order matters, and the first step is the only one that stops money quickly.
 #   openvpn: nothing further, the file was the profile
 ```
 
+**Read step 2 and step 5 carefully rather than skimming them.** Both were changed after the first real
+teardown run showed they could mislead:
+
+- Step 2 prints `UNREACHABLE (not asked -- this is not the same as none)` when it cannot reach ONTAP.
+  It used to print a blank, which reads as zero — so a teardown run with the tunnel already down
+  looked like an SVM with nothing on it. A teardown is exactly when the route is most likely gone,
+  including because step 1 of this same script just removed the association.
+- Step 5 lists **every** file system in the region and marks which one this example created. Pass
+  `--file-system-id` to get the marker. Without it, an operator who has just watched the stack delete
+  sees another `AVAILABLE` file system on the next line and reads the teardown as having failed.
+
 `teardown.sh` reports the ONTAP objects rather than sweeping them. That is deliberate: the same script
 pointed at a shared SVM would delete someone else's share, and deleting the volumes with the stack
 removes the LUN and the share along with them anyway. The script prints the DELETE calls for the cases
