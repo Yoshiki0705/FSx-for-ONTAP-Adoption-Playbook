@@ -54,6 +54,15 @@ docs/_assets/diagrams/.$*
 # --- Credentials (defense in depth; should never exist here) ---
 *.pem
 *.key
+# Defence in depth only. make-client-vpn-certs.sh now writes its CA, server and client keys to
+# $HOME/.fsxn-client-access/pki, outside the repository, because ignoring them here was not enough:
+# `make secrets` runs gitleaks against the WORKTREE, so four gitignored private keys still failed the
+# commit gate. These entries remain for a reader who overrides --out-dir to a path inside the tree.
+examples/client-access/pki/
+examples/client-access/*.ovpn
+examples/client-access/*.crt
+examples/client-access/*.key
+examples/client-access/*.csr
 .env
 .env.*
 !.env.example

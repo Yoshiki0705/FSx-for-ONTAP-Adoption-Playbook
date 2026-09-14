@@ -28,6 +28,7 @@ LIFECYCLE_BY_DIR = {
 }
 VALID_DOMAINS = {
     "block-storage",
+    "client-access",
     "data-protection",
     "data-utilization",
     "security-governance",

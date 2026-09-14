@@ -37,7 +37,7 @@ trees, comparisons, limits, glossary — currently bilingual single files, see L
 python3 -m venv .venv                                          # preferred
 .venv/bin/python -m pip install -r requirements-dev.txt        # ruff, exact-pinned
 npm install -g markdownlint-cli2                               # not pip-installable
-brew install gitleaks                                          # not pip-installable
+brew install gitleaks powershell                               # not pip-installable
 ```
 
 **`make python` uses `.venv/bin/ruff` when it exists, before anything on `PATH`.** That removes the

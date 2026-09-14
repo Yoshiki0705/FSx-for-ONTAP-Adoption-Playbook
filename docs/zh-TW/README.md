@@ -84,6 +84,7 @@
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 共存、Active Directory 整合、ID 對應 |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF、LUN 佈局、多重路徑、容量計算方式 |
 | [`observability/`](../en/domains/observability/) | 監控路徑的選擇、Harvest / Prometheus、資料存放地 |
+| [`client-access/`](../en/domains/client-access/) | 從 Windows / WSL2 / Mac 終端的到達路徑、掛載、終端側憑證 |
 
 ### 橫向參考 — `reference/`
 

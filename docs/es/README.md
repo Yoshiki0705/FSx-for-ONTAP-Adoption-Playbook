@@ -84,6 +84,7 @@ La entrada cuando la pregunta es «necesito investigar este asunto concreto». S
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | Coexistencia NFS / SMB, integración con Active Directory, mapeo de identidades |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, disposición de LUN, multipathing, cómputo de la capacidad |
 | [`observability/`](../en/domains/observability/) | Elección de la vía de monitorización, Harvest / Prometheus, residencia de los datos |
+| [`client-access/`](../en/domains/client-access/) | Acceso desde un equipo Windows, WSL2 o Mac: vía de acceso, montaje, credenciales en el equipo |
 
 ### Referencia transversal — `reference/`
 

@@ -60,6 +60,8 @@ graph TD
 | すでに稼働中で、性能を詰めたい | [性能](domains/performance/) | [最適化](playbooks/06-optimize/) |
 | すでに稼働中で、コストを見直したい | [コスト](domains/cost/) | [最適化](playbooks/06-optimize/) |
 | **監視をどう構成するか決めたい** | [監視経路の選択 決定木](reference/decision-trees/observability-route.md) | [可観測性](domains/observability/) |
+| **手元の Windows / Mac / WSL2 から使いたい** | [端末からデータに届く経路の決定木](reference/decision-trees/client-access-route.md) | [クライアントアクセス](domains/client-access/) |
+| **端末からマウントできない / VPN は繋がっているのに届かない** | [端末の到達経路の比較](reference/comparison/endpoint-reachability-options.md) | [端末別にできることの比較](reference/comparison/client-endpoint-capabilities.md) |
 | **自分の業種から、何を決めればよいか調べたい** | [業種別リソースマップ — 読む順序](reference/industry-resource-map.md#業種から入ったときの読む順序) | [業種別索引](reference/industry-resource-map.md#業種別索引) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
@@ -98,6 +100,7 @@ graph TD
 | [マルチプロトコル・ID](domains/multiprotocol-identity/) | NFS と SMB で権限がなぜ食い違うか |
 | [ブロックストレージ](domains/block-storage/) | iSCSI / NVMe-oF で LUN を出すとき何が先に決まるか |
 | [可観測性](domains/observability/) | どの経路で監視するか / データをどこに置けるか |
+| [クライアントアクセス](domains/client-access/) | 手元の端末からどう届くか / 端末の種類で何が使えなくなるか |
 
 ---
 

@@ -84,6 +84,7 @@
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS / SMB 공존·Active Directory 연계·ID 매핑 |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF·LUN 배치·멀티패스·용량 계산 방식 |
 | [`observability/`](../en/domains/observability/) | 모니터링 경로 선정·Harvest / Prometheus·데이터 소재 |
+| [`client-access/`](../en/domains/client-access/) | Windows / WSL2 / Mac 단말에서의 도달 경로·마운트·단말 측 자격 증명 |
 
 ### 횡단 참조 — `reference/`
 

@@ -73,17 +73,17 @@ catch {
           "and that this host is joined to the same domain."
 }
 
-Write-Host "== target =="
-Write-Host ("share      : {0}" -f $SharePath)
-Write-Host ("test user  : {0} ({1})" -f $AdUser, $resolved.Value)
+Write-Output "== target =="
+Write-Output ("share      : {0}" -f $SharePath)
+Write-Output ("test user  : {0} ({1})" -f $AdUser, $resolved.Value)
 
 # Setting the ACEs is administrative work, but reading them back must not be. Say so once here so the
 # operator does not carry the same session into the measurement.
 $isAdmin = ([Security.Principal.WindowsPrincipal] `
     [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)
-Write-Host ("running as : {0}{1}" -f $env:USERNAME, $(if ($isAdmin) { ' (elevated)' } else { '' }))
-Write-Host ''
+Write-Output ("running as : {0}{1}" -f $env:USERNAME, $(if ($isAdmin) { ' (elevated)' } else { '' }))
+Write-Output ''
 
 $paths = @{
     allow     = Join-Path $SharePath 'allow'
@@ -94,10 +94,10 @@ $paths = @{
 foreach ($p in $paths.Values) {
     if (-not (Test-Path -LiteralPath $p)) {
         New-Item -ItemType Directory -Path $p | Out-Null
-        Write-Host ("created    : {0}" -f $p)
+        Write-Output ("created    : {0}" -f $p)
     }
     else {
-        Write-Host ("exists     : {0}" -f $p)
+        Write-Output ("exists     : {0}" -f $p)
     }
 }
 
@@ -110,8 +110,8 @@ foreach ($p in $paths.Values) {
     }
 }
 
-Write-Host ''
-Write-Host "== setting ACEs =="
+Write-Output ''
+Write-Output "== setting ACEs =="
 
 # ------------------------------------------------------------------ allow
 
@@ -124,7 +124,7 @@ $allowAce = New-Object System.Security.AccessControl.FileSystemAccessRule(
     [System.Security.AccessControl.AccessControlType]::Allow)
 $acl.AddAccessRule($allowAce)
 Set-Acl -LiteralPath $paths.allow -AclObject $acl
-Write-Host ("allow      : Modify for {0}, not inheritable" -f $AdUser)
+Write-Output ("allow      : Modify for {0}, not inheritable" -f $AdUser)
 
 # ------------------------------------------------------------------ deny
 
@@ -145,7 +145,7 @@ $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRul
     [System.Security.AccessControl.PropagationFlags]::None,
     [System.Security.AccessControl.AccessControlType]::Deny)))
 Set-Acl -LiteralPath $paths.deny -AclObject $acl
-Write-Host ("deny       : Allow ReadAndExecute plus explicit Deny Write for {0}" -f $AdUser)
+Write-Output ("deny       : Allow ReadAndExecute plus explicit Deny Write for {0}" -f $AdUser)
 
 # ------------------------------------------------------------------ inherited
 
@@ -161,16 +161,16 @@ $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRul
     [System.Security.AccessControl.PropagationFlags]::None,
     [System.Security.AccessControl.AccessControlType]::Allow)))
 Set-Acl -LiteralPath $paths.inherited -AclObject $acl
-Write-Host ("inherited  : Modify for {0}, ContainerInherit + ObjectInherit on the parent" -f $AdUser)
+Write-Output ("inherited  : Modify for {0}, ContainerInherit + ObjectInherit on the parent" -f $AdUser)
 
 $child = Join-Path $paths.inherited 'child'
 if (-not (Test-Path -LiteralPath $child)) {
     New-Item -ItemType Directory -Path $child | Out-Null
-    Write-Host ("           : created {0} after the parent ACE, so its ACE is inherited" -f $child)
+    Write-Output ("           : created {0} after the parent ACE, so its ACE is inherited" -f $child)
 }
 else {
-    Write-Host ("           : {0} already existed. If it predates the parent ACE its ACE may not " -f $child)
-    Write-Host  "             be inherited. Delete it and re-run to be sure."
+    Write-Output ("           : {0} already existed. If it predates the parent ACE its ACE may not " -f $child)
+    Write-Output  "             be inherited. Delete it and re-run to be sure."
 }
 Set-Content -LiteralPath (Join-Path $child 'probe.txt') `
     -Value 'multiprotocol permission probe' -Encoding UTF8
@@ -219,15 +219,15 @@ $record = [pscustomobject]@{
 
 $record | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $OutFile -Encoding UTF8
 
-Write-Host ''
-Write-Host "== record =="
-Write-Host ("written to : {0}" -f (Resolve-Path -LiteralPath $OutFile))
-Write-Host ''
-Write-Host "Next, on the Linux client, as an ordinary Active Directory user:"
-Write-Host "  ./read-effective-permissions.sh --nfs-endpoint <ip> --junction /<ntfs volume> \"
-Write-Host "      --style ntfs --ontap-version <version> --out ntfs.json"
-Write-Host "  ./read-effective-permissions.sh --nfs-endpoint <ip> --junction /<unix volume> \"
-Write-Host "      --style unix --ontap-version <version> --out unix.json"
-Write-Host ''
-Write-Host "The second run is the control. Without it, a result on the NTFS volume cannot be"
-Write-Host "attributed to the security style rather than to the export policy or to sssd."
+Write-Output ''
+Write-Output "== record =="
+Write-Output ("written to : {0}" -f (Resolve-Path -LiteralPath $OutFile))
+Write-Output ''
+Write-Output "Next, on the Linux client, as an ordinary Active Directory user:"
+Write-Output "  ./read-effective-permissions.sh --nfs-endpoint <ip> --junction /<ntfs volume> \"
+Write-Output "      --style ntfs --ontap-version <version> --out ntfs.json"
+Write-Output "  ./read-effective-permissions.sh --nfs-endpoint <ip> --junction /<unix volume> \"
+Write-Output "      --style unix --ontap-version <version> --out unix.json"
+Write-Output ''
+Write-Output "The second run is the control. Without it, a result on the NTFS volume cannot be"
+Write-Output "attributed to the security style rather than to the export policy or to sssd."

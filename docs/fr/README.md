@@ -84,6 +84,7 @@ L'entrée à privilégier quand la question est « je dois creuser ce sujet pré
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | Coexistence NFS / SMB, intégration Active Directory, mappage d'identités |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, disposition des LUN, multipathing, comptage de la capacité |
 | [`observability/`](../en/domains/observability/) | Choix de la voie de supervision, Harvest / Prometheus, résidence des données |
+| [`client-access/`](../en/domains/client-access/) | Accès depuis un poste Windows, WSL2 ou Mac : voie d'accès, montage, identifiants sur le poste |
 
 ### Référence transversale — `reference/`
 

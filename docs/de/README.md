@@ -84,6 +84,7 @@ Der Einstieg, wenn die Frage lautet: „Ich muss dieses konkrete Thema recherchi
 | [`multiprotocol-identity/`](../en/domains/multiprotocol-identity/) | NFS- / SMB-Koexistenz, Active-Directory-Integration, ID-Mapping |
 | [`block-storage/`](../en/domains/block-storage/) | iSCSI / NVMe-oF, LUN-Layout, Multipathing, Kapazitätsberechnung |
 | [`observability/`](../en/domains/observability/) | Wahl des Monitoring-Wegs, Harvest / Prometheus, Datenresidenz |
+| [`client-access/`](../en/domains/client-access/) | Zugriff von einem Windows-, WSL2- oder Mac-Endgerät: Zugangsweg, Mounten, Anmeldedaten auf dem Gerät |
 
 ### Übergreifende Referenz — `reference/`
 

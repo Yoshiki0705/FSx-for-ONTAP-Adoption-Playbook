@@ -338,6 +338,7 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 ## 関連ドキュメント
 
 - [Domain — データ活用](../README.md) — このモジュールのハブ
+- [SnapMirror の宛先は break せずに S3 API で読める](serving-a-replication-destination-over-s3.md) — 複製先に AP を取り付ける経路。**FlexCache の Cache Volume には取り付けられません**
 - [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — **ブロックのデータは AP の対象外**。分析するまでの 4 段
 - [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — AP を転送先にする経路の `hypothesis` を含みます
 - [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) — AD 参加済み SVM での前提

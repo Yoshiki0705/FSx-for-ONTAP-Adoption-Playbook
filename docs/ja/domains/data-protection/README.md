@@ -33,7 +33,8 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 5 | ランサムウェア対策として何が有効か | [ランサムウェア対策は層で考える](notes/snaplock-and-layered-ransomware-readiness.md#層で考えるランサムウェア対策) |
 | 6 | 別リージョン・別アカウントへどう退避するか | [バックアップコピーは復元するまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) |
 | 7 | バックアップコピーと SnapMirror をどう選び分けるか | [SnapMirror との選び分け](notes/backup-copies-across-regions-and-accounts.md#snapmirror-との選び分け) |
-| 8 | Snapshot をデータセットの「版」として使えるか | [版を Snapshot に載せるときの 3 つの落とし穴](../data-utilization/notes/dataset-versions-and-experiment-branches.md#版を-snapshot-に載せるときの-3-つの落とし穴) |
+| 8 | 複製先のデータを分析基盤に読ませられるか。SnapMirror を止める必要はあるか | [SnapMirror の宛先は break せずに S3 API で読める](../data-utilization/notes/serving-a-replication-destination-over-s3.md) |
+| 9 | Snapshot をデータセットの「版」として使えるか | [版を Snapshot に載せるときの 3 つの落とし穴](../data-utilization/notes/dataset-versions-and-experiment-branches.md#版を-snapshot-に載せるときの-3-つの落とし穴) |
 
 ---
 
