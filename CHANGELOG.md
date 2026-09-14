@@ -42,10 +42,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     `git log --oneline origin/main..HEAD` before pushing — reading whether the commits about to enter
     a pull request are the intended ones. `AGENTS.md` already requires it. **It was not run**, which
     is the whole of the cause; a rule that exists and is skipped does not need a second rule.
-  - Two edits to the example's teardown never reached either branch: they existed **only in the git
-    index**, survived a `checkout -b` into the second branch as staged changes, and were destroyed by
-    the unstage that followed. Recovered with `git fsck --unreachable` and committed separately, from
-    `main`, as their own change.
+  - **Two edits to the example's teardown existed only in the git index, never on disk, and how they
+    got there is not established.** They were in no commit, no stash and no reflog entry; recovered
+    with `git fsck --unreachable` after the unstage that discarded the index copy destroyed it, and
+    committed separately from `main` as their own change. **The mechanism is the same signature this
+    repository already documents** — `scripts/tests/gitenv.py` records a leaked `git add` from a test
+    shelling out to git with the hook's `GIT_INDEX_FILE` still set, diagnosed from an
+    `docs/agent/orphan.md` that was in the index and never on disk. What is different is that **the
+    known path is closed and asserted**: every test in `scripts/tests/` calling git uses
+    `scrubbed_env()`, the context-budget fixture refuses to run unless it owns its own git dir, and no
+    test references `client-access` at all. So the writing path here is a **different one, still
+    unidentified**.
+  - **An earlier version of this entry said the edits were carried across by the `checkout -b` as
+    staged changes. That is withdrawn, and the timestamps refute it.** The branch was created at
+    02:09:35, and the loose object holding the improved script was written at 09:13:10 — seven hours
+    later. `git add` hashes what is on disk at that moment, so the content did not exist when the
+    branch was cut and there was nothing to carry. **Two sessions sharing one working tree fits the
+    evidence and the single-session account does not**, but that remains the likelier reading rather
+    than a finding: nothing observed names the writer. Recorded as open.
 - **The S3 Access Point note told readers to measure `read_timeout` themselves, and the answer was in the
   public API reference all along.** It had left open whether `CompleteMultipartUpload` streams bytes during
   assembly or returns only once assembly finishes, because that decides whether a size-scaled timeout floor
@@ -398,6 +412,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Note: [a SnapMirror destination can be read over S3 without breaking the relationship](docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md).**
+  The question arrives as "the destination is read-only, so an S3 Access Point cannot be attached to
+  it" — and **that framing is the error.** Amazon FSx states the condition for attaching an access
+  point as the volume being mounted, and says nothing about `RW` versus `DP`. **What decides is the
+  presence of a junction path.** Mount the destination from the ONTAP side and the relationship keeps
+  running while reads are served; writes are refused, and a case that needs to write clones a
+  destination snapshot instead. Breaking is for taking over production on the destination, not for
+  reading.
+  - **The two APIs refuse the same invalid input differently, and the one that mutates state is the
+    silent one.** `CreateVolume` refuses a `JunctionPath` on a `DP` volume and names the field.
+    `UpdateVolume` returns HTTP 200 with the whole volume object and does nothing — no error, no
+    `AdministrativeActions` entry, no message. Automation treating that 200 as proof of configuration
+    proceeds on a false premise; the check is to re-read `JunctionPath` from `DescribeVolumes`.
+  - **The design cost is the wait, not the operation.** The ONTAP mount takes seconds; the junction
+    path reaching the Amazon FSx control plane takes minutes to tens of minutes, and attaching before
+    it does fails with `the volume is not mounted`. So "clone it and hand it to the analytics engine in
+    minutes" does not hold for a first setup, though the steady state after one does. Poll
+    `JunctionPath`, **never `VolumeType`**, which keeps reporting `DP` even after a break.
+  - **`documented`, and deliberately without numbers.** The measurements are the sibling project's;
+    this note carries the decisions and links to them rather than restating figures that only mean
+    something together with the environment they came from. Three probes registered in
+    `cross-repo-index.md`, and `make cross-repo-external` run authenticated with zero `INCONCLUSIVE`
+    — then verified the other way, by breaking one probe and confirming the gate fails.
+  - **`FC-002` corrected from `version_gated` to `unsupported`.** A FlexCache cache volume cannot take
+    an S3 Access Point, and no ONTAP version changes that: the 9.18.1 support NetApp documents is for
+    ONTAP-native S3 NAS buckets, a different mechanism. Measured on two 9.18.1 patch levels across two
+    Regions, refused identically. **The route for reading remote data over S3 is the SnapMirror
+    destination in this note, not FlexCache.**
+  - Recorded here after the fact, for the same reason as the module below: the entry was missing.
 - **A client-access module, for the question of reaching the file system from a machine someone
   actually sits at.** FSx for ONTAP does not support access from the public internet and detaches an
   Elastic IP attached to a file system network interface, so reaching it from Windows, from the Linux
