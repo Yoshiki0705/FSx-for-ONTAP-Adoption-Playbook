@@ -9,6 +9,43 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A whole module arrived under a subject that says nothing about it, and its authoring record was
+  the part that did not survive.** The client-access module — 40 files — is in `main` inside the squash
+  of the SnapMirror-over-S3 note (#240), because that branch was cut from the module's still-open
+  branch instead of from `main`. The squash kept the note's message, so `git log` attributes the module
+  to a subject about reading a replication destination over S3, and `git log --oneline -- <path>` on
+  any of those 40 files answers with it.
+  - **The content was verified present before anything was decided**: `git diff --stat` between `main`
+    and the module branch reported only the **removal** of the note's own seven files, so the branch
+    held nothing `main` lacked. Merging #239 would have changed nothing, and it was closed rather than
+    merged.
+  - **Reverting the 40 files was considered and rejected, on a mechanical ground rather than a
+    tidiness one.** That commit mixes the module with infrastructure `main` now depends on:
+    `audit_public_output.py` skipping paths git ignores — whose own message records that the previous
+    behaviour was *stopping the gate* — `make powershell` in the Makefile and in CI, and the
+    PSScriptAnalyzer pin that target needs. **Reverting to correct an attribution would have broken
+    working gates**, and a partial revert of three infrastructure changes out of one commit is a
+    larger risk than the misattribution it repairs.
+  - **What was actually lost is reasoning, not code**: why a workgroup SMB server rather than Active
+    Directory, why reachability is a separate opt-in template, the three failures found by running the
+    example after the linters reported clean, and why the six notes stayed `documented`. It is now in
+    the **Added** entry above and in the annotated tag `kept/pr-239-client-access-module`, which holds
+    the commits independently of the deleted branch.
+  - **That tag stretches what `kept/*` is for, deliberately.** `CONTRIBUTING.md` defines it for work
+    that is *absent* from `main`; here the content is present and the message is absent. The stretch
+    earns its place twice over: without it those commits become unreachable, and a later branch sweep
+    reading only `CLOSED` would follow the rule for unmerged work, hold judgement, and wait for an
+    answer nobody is coming to give. The tag body says which of the two cases it is.
+  - **Neither gate could see this, and none is being added.** `make all` checks the tree, not which
+    commit a file arrived in, and a branch cut from the wrong base produces a tree that is correct in
+    every respect. The check that would have caught it is
+    `git log --oneline origin/main..HEAD` before pushing — reading whether the commits about to enter
+    a pull request are the intended ones. `AGENTS.md` already requires it. **It was not run**, which
+    is the whole of the cause; a rule that exists and is skipped does not need a second rule.
+  - Two edits to the example's teardown never reached either branch: they existed **only in the git
+    index**, survived a `checkout -b` into the second branch as staged changes, and were destroyed by
+    the unstage that followed. Recovered with `git fsck --unreachable` and committed separately, from
+    `main`, as their own change.
 - **The S3 Access Point note told readers to measure `read_timeout` themselves, and the answer was in the
   public API reference all along.** It had left open whether `CompleteMultipartUpload` streams bytes during
   assembly or returns only once assembly finishes, because that decides whether a size-scaled timeout floor
@@ -361,6 +398,40 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A client-access module, for the question of reaching the file system from a machine someone
+  actually sits at.** FSx for ONTAP does not support access from the public internet and detaches an
+  Elastic IP attached to a file system network interface, so reaching it from Windows, from the Linux
+  inside WSL2, or from a Mac always carries a reachability design. **No module owned that question**:
+  client-side material was scattered across block-storage, multiprotocol-identity and `02-design`,
+  macOS appeared in exactly one table cell, and endpoint credential storage appeared nowhere.
+  - The module hub in Japanese and English, one decision tree that narrows route before endpoint, two
+    comparison matrices, six notes, and a runnable example under `examples/client-access/`.
+  - **The example uses a workgroup SMB server rather than Active Directory**, which AWS documents for
+    FSx for ONTAP and which removes two domain controllers and about 40 minutes of build from the
+    cost. What workgroup mode gives up is listed rather than glossed. Reachability is a separate
+    opt-in template because AWS Client VPN bills per subnet association, so the association can be
+    removed without discarding the endpoint.
+  - **Three failures found by running it, each after the linters reported clean**, and each recorded
+    in the example README: EC2 refuses an apostrophe in a security group *rule* description and
+    `cfn-lint` checks `GroupDescription` but not that field, so the template linted clean and rolled
+    the stack back after the file system had started billing; a server certificate with a bare common
+    name imports into ACM and is then refused by the Client VPN endpoint, because the AWS procedure
+    uses easy-rsa which adds the `subjectAltName` by itself and so never states the requirement; and
+    gitleaks reads the worktree, so four gitignored private keys still failed the commit gate — the
+    keys now default outside the repository rather than teaching the scanner to stay quiet about
+    private keys under `examples/`.
+  - **`make powershell` (PSScriptAnalyzer, pinned) arrives with it, because nothing checked the
+    `.ps1` files before**: `SH_PATHS` matches `*.sh` only. Its first run found 27
+    `PSAvoidUsingWriteHost` findings in `examples/multiprotocol-ad/set-test-acls.ps1`, which had
+    shipped unchecked for readers to run against their own accounts.
+  - **The six notes are `documented`, not `verified`.** One measurement is in: with no tunnel the SVM
+    DNS name does not resolve at all from the public internet, which is a stronger statement than
+    resolving to an unreachable address. The per-endpoint SMB symptom table, the WSL2 networking
+    modes, and whether `Install-WindowsFeature` exists on a client SKU are marked as expectations
+    awaiting measurement. Promoting them is a separate commit, so a diff shows which claims became
+    measured.
+  - Recorded here after the fact. The module reached `main` inside another commit; see the entry under
+    **Fixed** for why, and for what that cost.
 - **A note on what a red gate will mean on a day nobody has reached yet.** The probe registered
   against the FPolicy / S3 Access Point errata is `retraction`, and the most likely cause of it firing
   is that **a later ONTAP began accepting `s3` as an FPolicy event protocol** — today only `cifs`,
