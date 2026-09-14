@@ -662,6 +662,20 @@ aws s3control delete-access-point-policy \
 2026-08-26、ONTAP 9.18.1P3D1 で測定した。当該リリースが受け付けるプロトコルごとに event を作り、
 全 file operation を有効にし、対象ボリュームに scope を限定した構成である。
 
+**この節の測定日は frontmatter の `verified_on` と違う。** このノートは 2026-08-18 の権限設計の検証で
+作られ、FPolicy の測定は 08-26 に追記された。`verified_on` は単一値なので 2 つの検証イベントを
+表現できず、**主たる検証を frontmatter が保持し、2 つ目をここに書いている。**
+
+**手順・環境表・生の件数は
+[FSx-for-ONTAP-Observability-integrations の検証記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/verification-results-fpolicy-s3ap-and-session.md)
+にある。** ここにあるのは結論で、**方法に到達するにはそちらを読む。**
+
+**プロトコル集合の側は後の版でも変わっていない。** `cifs` / `nfsv3` / `nfsv4` の 3 値と、
+`s3` / `object` / `http` / `smb` が HTTP 400 で拒否されることを **ONTAP 9.18.1P5 で再確認した**
+（[FSx-for-ONTAP-Lakehouse-Integrations の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml)、
+2026-09-14）。**再確認は構造の側だけである。** 通知の有無と `mandatory` での遮断は 9.18.1P5 で
+測り直していないので、下の表のその 2 列は 9.18.1P3D1 の測定の継承である。
+
 | 経路 | FPolicy 通知 | `mandatory` ポリシーによる遮断 | ONTAP 監査 | ARP の検知 |
 |---|---|---|---|---|
 | NFS / SMB | 発火する | **される** — `Permission denied` | 記録される | する |
@@ -678,9 +692,16 @@ FPolicy の event が受け付けるプロトコルは `cifs` / `nfsv3` / `nfsv4
 閾値がサージ判定であり、同じようには効かない。遮断については、境界をアクセスポイントポリシーと
 IAM の側で表現する必要がある。
 
+**この節が効かない範囲を書いているのは、制御としての FPolicy を扱っているからである。**
+**FPolicy が動く条件と、動かし続けるための運用要件は
+[FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](../../data-utilization/notes/fpolicy-fits-by-how-writes-land.md)
+にある。** 上の表の「NFS / SMB は発火する」行は、イベントソースとして成立する側の入口でもある。
+
 ログを解析する場合の細部をもう 1 つ。`ListObjectsV2` は `Source=HTTP` ではなく `Source=S3` で、
 オブジェクトではなくボリュームルートに対して記録される。`HeadObject` は 6 回発行して監査レコードが
-1 件も出なかった。
+1 件も出なかった。**この 2 つは当リポジトリの観測で、上記の検証記録には含まれない。** 一方
+**ARP の 150 件は検証記録の側にもある**ので、[引用索引](../../../reference/cross-repo-index.md#まだ-probe-を張れていない引用)に
+probe を張れるようになった時点でそちらへ寄せる対象である。
 
 ### UNIX セキュリティスタイルのボリュームでの監査記録の不在
 

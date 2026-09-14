@@ -136,6 +136,15 @@ lang: ja
 | `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `no break and no clone` | `retraction` | 稼働中の SnapMirror 宛先を break もクローンもなしに読めること。**この主張は 2026-09-13 に逆向きへ訂正された経緯があるため、probe が生きていても本文が現在の結論と一致しているかを併せて確認してください** |
 | `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `PERMISSION_DENIED` | `retraction` | 宛先への書き込みがエンジン層で拒否されること。**読めることだけを引くと書けると誤読されるため、上の行と 2 行で 1 組** |
 | `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `integrations/snapmirror-flexcache-multicloud/docs/en/research.md` | `the volume is a FlexCache` | `retraction` | FlexCache の Cache Volume に S3 Access Point を取り付けられないこと。**Amazon FSx が返すエラー文字列そのものなので、文言が変われば発火します** |
+| `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml` | `is an invalid value for field "protocol"` | `retraction` | FPolicy の event が `s3` を受け付けないことを ONTAP 9.18.1P5 で再確認した記録。**ONTAP が返すエラー文字列そのものなので、後の版が `s3` を受け付けるようになれば発火します。** 候補集合を指す `accepted:` の行ではなくこちらを取るのは、YAML のリストが整形で改行され得るためです |
+| `docs/en/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml` | `is an invalid value for field "protocol"` | `retraction` | 同上（EN 版）|
+| `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `raised no FPolicy notification` | `retraction` | S3 Access Point 経由の操作が FPolicy 通知を発火しないこと、およびその測定の手順・環境表・生の件数の所在。**結論だけを持っていて方法に到達できない状態を解消するための行です** |
+| `docs/en/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `raised no FPolicy notification` | `retraction` | 同上（EN 版）|
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `no spontaneous disconnect` | `retraction` | 72 時間の連続観測で自発的な切断が 0 件だったこと。**1 回・1 構成の測定なので、一般化していないことも併せて転記しています** |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `Immediate (observed at 0.3 s)` | `retraction` | 通知の遅延がサブ秒であること。**こちらは桁だけを判定として書き、正確な値はこの引用先に置いています** |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/operational-notes-fpolicy.md` | `NOT used for routing FPolicy traffic` | `retraction` | NLB を FPolicy の経路に置けず、ヘルスチェック専用になること。**同じファイルの KeepAlive の記述は訂正が進行中で、そちらは引用していません**（[保留](#まだ-probe-を張れていない引用)）|
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/fpolicy-production-architecture-patterns.md` | `fails over to secondary servers` | `retraction` | 冗長化が ONTAP のネイティブなフェイルオーバーであること。**AWS 側のロードバランサでは代替できない根拠** |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/fpolicy-production-architecture-patterns.md` | `~2 minute recovery gap` | `retraction` | 再起動時の欠落窓が分の桁であること。**取り込みに使う場合、この窓は読み込まれないファイルになります** |
 <!-- cross-repo-table:end -->
 
 ---
@@ -158,6 +167,30 @@ lang: ja
 引用先のリポジトリからの指摘で判明しました。**こちらは「文がそのまま残る → 何も起きない」と書いており、それが誤りでした。** 完了は Issue で知らされる必要があり、**沈黙を「まだ測っていない」と読むと、待ち続けます。**
 
 **probe が答えるのは 1 つだけです。「引いている主張がまだそこにあるか」。** 相手の進捗は答えません。
+
+### 引用先が自己矛盾している場合の沈黙
+
+**上の[引用表の注記](#引用表)は、引用元がこちら側で自己矛盾する場合を扱っています。引用先が
+自己矛盾する場合は別の盲点で、こちらのほうが検出できません。**
+
+引用先のリポジトリが同じ主張について 2 つのファイルで違う値を持っているとき、**probe はどちらに
+張っても沈黙します。** 正しい側に張れば文字列は存在し、誤った側に張れば**そちらの文字列も存在する**
+からです。**ゲートは 2 つの値の食い違いを見ていません。**
+
+実例があります。FPolicy の KeepAlive の間隔について、引用先の一方は測定に基づく値へ訂正済みで、
+他方は訂正前の値のままでした。**桁が 1 桁違います。** 訂正済みの側に probe を張れば通り、訂正前の
+側に張っても通ります。**「probe が通っているから引用先は整合している」は成り立ちません。**
+
+| 引用先の状態 | probe |
+|---|---|
+| 主張が撤回された | **発火** |
+| 主張が移動した | **発火** |
+| **同じ主張について 2 つのファイルが違う値を持っている** | **沈黙**（どちらに張っても） |
+| **引用していない別の主張が誤っている** | **沈黙** |
+
+**したがって取れる手は 2 つだけです。** 争点になっている値を引用しない（[保留](#まだ-probe-を張れていない引用)に
+検査できる解除条件つきで置く）か、逆リンクを依頼するときに**引用している主張が同じリポジトリの
+他のファイルと一致しているかを併せて訊く**か。**ゲートを厚くしても解決しません。**
 
 ### 発火の意味が 1 通りでない probe の扱い
 
@@ -224,10 +257,26 @@ issue 本文や説明文へ転記すると同じ問題が再発します。**故
 未コミットの間は probe を張れず、**張ると `make cross-repo` が落ちます。** 落ちるのが正しい挙動なので、
 「通すために probe を緩める」のではなく、ここに保留として書きます。
 
-| 引用元 | 根拠の所在 | 待っているもの |
+**保留には型が 3 つあり、解消のしかたが違います。** 型を取り違えると沈黙を進捗と読みます。
+
+| 型 | 何を待っているか | 解消したときの動き |
 |---|---|---|
-| `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | Observability 側の実装ファイルのコミット。**回答時点で約 67 件が未コミットでした** |
-| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | [Issue #162 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG/issues/162#issuecomment-5563205901)（公開 URL、恒久） | **何も待っていません。** 実装のファイル名・関数名を転記しない方針で、**転記しないなら probe を張る対象がありません。** 二重管理を避けた結果としてゲートの外に出ます |
+| コミット待ち | 引用先の既定ブランチにファイルが現れること | 引用表へ移して probe を張る |
+| **対象外** | **何も待っていません。** 転記しない方針の結果で、照合する文字列がそもそも存在しません | 解消しません。方針が変わらない限り恒久です |
+| **訂正待ち** | 引用先の記述そのものが訂正されること。**ファイルは既に存在します** | 訂正の完了を確認してから引用表へ移す |
+
+**そして「相手からの通知待ち」と書かないでください。** 通知は届かないことがあり、届かないことと
+起きていないことを区別できません。**検査できる条件に書き換えられるなら、そうします。**
+
+| 引用元 | 根拠の所在 | 型 | 検査できる解除条件 |
+|---|---|---|---|
+| `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | コミット待ち | **未確定。** 回答時点で約 67 件が未コミットで、**どのファイルが根拠になるかを特定できていません。** 特定できた時点で 1 行の検査に書き換えます |
+| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | [Issue #162 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG/issues/162#issuecomment-5563205901)（公開 URL、恒久） | 対象外 | **ありません。** 実装のファイル名・関数名を転記しない方針で、**転記しないなら probe を張る対象がありません。** 二重管理を避けた結果としてゲートの外に出ます |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md`（**KeepAlive の間隔のみ**） | `FSx-for-ONTAP-Observability-integrations` の `docs/en/operational-notes-fpolicy.md` と `docs/en/verification-results-fpolicy-s3ap-and-session.md` | 訂正待ち | **`docs/en/operational-notes-fpolicy.md` に `6 second` が含まれないこと。** 2 文書が桁の違う 2 つの値を持っており、訂正されるまで**桁でも引用していません** |
+
+**3 行目が保留しているのは 1 つの数値だけです。** 同じ引用先の他の主張（NLB の役割、欠落窓、
+セッションの継続）は争点になっていないので、**上の引用表に probe を張ってあります。** 引用先の
+ファイル単位で保留すると、争点になっていない主張の撤回も検出できなくなります。
 
 **Issue のコメントは公開されていて消えませんが、ファイルではないので probe の対象にできません。**
 つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。

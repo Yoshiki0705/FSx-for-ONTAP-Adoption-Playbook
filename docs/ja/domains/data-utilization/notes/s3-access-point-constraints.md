@@ -70,9 +70,9 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 | オブジェクトサイズの上限は**バイナリ単位**（ドキュメント上の "GB" 表記と一致しない） | 境界値ぎりぎりの設計は破綻します |
 | 単一 `PutObject` と `UploadPart` あたり 5 GiB、オブジェクト全体で 50 GiB | Amazon S3 本体（単一 PUT 5 GB / オブジェクト最大 50 TB）とは桁が違います |
 | 全体サイズの超過は `CompleteMultipartUpload` の時点で初めて判定される | **全ペイロードを転送し終えた後に失敗します。** 転送時間と転送料が無駄になります |
-| **AP 経由の操作は FPolicy 通知を発火しない。`mandatory` 指定の同期ポリシーでも遮断されない** | FPolicy を前提にしたリアルタイム検知・DLP・遮断は、この経路に効きません。同じボリュームを NFS / SMB で触れば発火します |
+| **AP 経由の操作は FPolicy 通知を発火しない。`mandatory` 指定の同期ポリシーでも遮断されない** | FPolicy を前提にしたリアルタイム検知・DLP・遮断は、この経路に効きません。**同じボリュームを NFS / SMB で触れば発火します** — 適合するかは書き込みが着地するプロトコルで決まり、読む側は判定に入りません（[FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](fpolicy-fits-by-how-writes-land.md)） |
 | AP 経由の操作は ONTAP ネイティブ監査ログには記録される。ただし要求者は記録されない | 「何が操作されたか」は追えます。「誰が」は追えません。要求元の IAM プリンシパルは S3 Access Point に対する CloudTrail データイベント側にあります |
-| AP 経由の書き込みは ARP が検知する | ランサムウェア検知については、FPolicy の穴を ARP が埋めます（実測: AP 経由で書いた高エントロピーオブジェクト 150 件が suspect として記録、2026-08-26 / ONTAP 9.18.1P3D1 / ARP/AI）。**観測された検知理由は高エントロピーのみで、他の理由で検知されるかは測っていません。** 改名・削除のレートも ARP の検知入力ですが、**閾値がサージ判定なので同じようには効きません**（[暗号化を伴わない攻撃](../../data-protection/notes/snaplock-and-layered-ransomware-readiness.md#暗号化を伴わない攻撃)）。**ただし検知は遮断ではありません。** ベンダーの応答手順は警告・Snapshot・管理者による分類で、**書き込みを拒否する段がありません**（[ベンダーのドキュメント](https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html)は「detecting and warning」と記載、2026-09-05 に確認）。遮断は AP ポリシーと IAM の側で表現してください |
+| AP 経由の書き込みは ARP が検知する | ランサムウェア検知については、FPolicy の穴を ARP が埋めます（実測: AP 経由で書いた高エントロピーオブジェクト 150 件が suspect として記録、2026-08-26 / ONTAP 9.18.1P3D1 / ARP/AI。**手順と生の件数の所在は [この経路を見ない FPolicy](../../security-governance/notes/access-point-authorization-layers.md#この経路を見ない-fpolicy) 側に書いてあります**）。**観測された検知理由は高エントロピーのみで、他の理由で検知されるかは測っていません。** 改名・削除のレートも ARP の検知入力ですが、**閾値がサージ判定なので同じようには効きません**（[暗号化を伴わない攻撃](../../data-protection/notes/snaplock-and-layered-ransomware-readiness.md#暗号化を伴わない攻撃)）。**ただし検知は遮断ではありません。** ベンダーの応答手順は警告・Snapshot・管理者による分類で、**書き込みを拒否する段がありません**（[ベンダーのドキュメント](https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html)は「detecting and warning」と記載、2026-09-05 に確認）。遮断は AP ポリシーと IAM の側で表現してください |
 | **同一 SVM に ONTAP のオブジェクトストアサーバーがあると AP を作成できない** | 下記のとおり自環境で実測。ONTAP の S3 機能と S3 AP は**同じ SVM では併存しませんでした** |
 | **オブジェクトタグの一部の Unicode 文字が `InvalidTag` で拒否される** | 後述のとおり**不具合**であり、意図された制限ではありません。修正までタグ値を ASCII に限定してください |
 | **`UploadPartCopy` が同一 AP 内のコピーで `NoSuchKey` を返す** | 後述のとおり**不具合**です。copy-source のキーにパーセントエンコード対象の文字（`/` など）が含まれる場合に発生します |
@@ -321,6 +321,7 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 | サイズ超過は転送前に弾かれる | 全体サイズの判定は `CompleteMultipartUpload` 時点です。**転送し終えてから失敗します** |
 | S3 Event Notifications でイベント駆動にできる | 使えません。EventBridge Scheduler によるポーリングか、ONTAP ネイティブ監査ログを起点にします |
 | S3 Event が無くても FPolicy で代替できる | **できません。** AP 経由の操作は FPolicy 通知を発火せず、`mandatory` 指定でも遮断されません（実測） |
+| FPolicy はイベントソースとして使えない | **使えます。** 効かないのは AP 経由の書き込みに対してだけで、**NFS / SMB で着地する書き込みには動きます**（[書き込みの着地経路で決まること](fpolicy-fits-by-how-writes-land.md)） |
 
 ---
 
@@ -338,6 +339,7 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 ## 関連ドキュメント
 
 - [Domain — データ活用](../README.md) — このモジュールのハブ
+- [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](fpolicy-fits-by-how-writes-land.md) — **上表の「FPolicy は代替になりません」の肯定側**。NFS / SMB で着地する書き込みには動き、そのときの運用要件
 - [SnapMirror の宛先は break せずに S3 API で読める](serving-a-replication-destination-over-s3.md) — 複製先に AP を取り付ける経路。**FlexCache の Cache Volume には取り付けられません**
 - [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — **ブロックのデータは AP の対象外**。分析するまでの 4 段
 - [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — AP を転送先にする経路の `hypothesis` を含みます
