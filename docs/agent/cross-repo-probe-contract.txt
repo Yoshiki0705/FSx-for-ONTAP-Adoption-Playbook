@@ -26,6 +26,9 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	r
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	reread	AWS サポートリクエストが必要な操作
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	Anti-Patterns
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
+FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
+FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	no break and no clone
+FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the volume is a FlexCache
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode

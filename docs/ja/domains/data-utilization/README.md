@@ -19,6 +19,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **S3 API で読み書きしたい** | [FSx for ONTAP S3 AP は「S3 として使える」わけではない](notes/s3-access-point-constraints.md) | **同一アカウント・同一リージョンなどの前提が設計段階の制約になります** |
 | **AI / RAG に載せたい** | [権限が平坦化されることの意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味) | **元の ACL は引き継がれません。** 判定を索引側に設計する必要があります |
 | **コピーを増やしたくない** | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) | 3 つの手段と、それぞれが引き受ける制約 |
+| **複製先を分析基盤から読みたい** | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) | **break は不要です。** 止めているのは junction path であってボリューム種別ではありません |
 
 ---
 
@@ -34,6 +35,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 6 | エンドユーザーにブラウザや SFTP で見せる経路はどれか | [エンドユーザーがデータに届く経路は 4 つある](../../playbooks/02-design/notes/how-end-users-reach-the-data.md) |
 | 7 | AI / ML の学習データセットの版と実験ブランチをどう扱うか | [学習データセットの版をスケジュール Snapshot に載せると消える](notes/dataset-versions-and-experiment-branches.md) |
 | 8 | 書いたものが反対側で見えるまでどれくらいか。方向で違うか | [書いた側と読む側が違うと、見えるまでの時間は方向で決まる](notes/how-long-until-a-write-is-visible.md) |
+| 9 | 複製先のデータを分析基盤に読ませられるか。SnapMirror を止める必要はあるか | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) |
 
 ---
 

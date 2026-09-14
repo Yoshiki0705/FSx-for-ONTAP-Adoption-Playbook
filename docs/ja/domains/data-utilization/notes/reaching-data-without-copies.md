@@ -51,7 +51,8 @@ FlexCache と FlexClone は **ONTAP CLI で作成・管理します。** テン�
 |---|---|
 | S3 Access Point 経由（S3 API） | S3 を前提とする分析サービスから読みたい場合 |
 | NFS / SMB でマウント | 既存のファイルアクセス前提のツールを変えずに使う場合 |
-| FlexCache で読み取り側に近づける | 読み取り主体で、元データの変更が少ない場合 |
+| FlexCache で読み取り側に近づける | 読み取り主体で、元データの変更が少ない場合。**ただし S3 API では読めません**（下記） |
+| SnapMirror の宛先に S3 Access Point | 複製先のデータを S3 API で読ませたい場合。**break は不要です**（[別ノート](serving-a-replication-destination-over-s3.md)） |
 
 S3 Access Point には**前提条件と S3 との差分**があります。同一アカウント・同一リージョンなどの制約は設計段階で効くので、[FSx for ONTAP S3 AP は「S3 として使える」わけではない](s3-access-point-constraints.md) を先に確認してください。**ボリューム数の上限も下がります。**
 
@@ -120,6 +121,12 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 | オンプレミスの NetApp ONTAP | FSx for ONTAP |
 | FSx for ONTAP | オンプレミスの NetApp ONTAP |
 | FSx for ONTAP | FSx for ONTAP |
+
+**キャッシュボリュームへのアクセスは NFS / SMB のみです。S3 Access Point は取り付けられません。** ボリューム種別を理由に Amazon FSx コントロールプレーンが拒否します。
+
+**ONTAP のバージョンでは解決しません。** NetApp は ONTAP **ネイティブ**の S3 NAS bucket について Cache Volume 対応を ONTAP 9.18.1 以降と記載していますが、FSx for ONTAP S3 Access Points はその上位にある別の機構で、判定しているのは Amazon FSx 側です。sibling プロジェクトが 9.18.1 の 2 つのパッチレベル・2 リージョンで実測し、いずれも同一のエラーで拒否されています（`documented`。実測は [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/integrations/snapmirror-flexcache-multicloud/docs/en/research.md) の FC-002）。
+
+**リモートのデータを S3 API で読ませる要件なら、FlexCache ではなく SnapMirror の宛先を提供してください。** 手順と制約は [SnapMirror の宛先は break せずに S3 API で読める](serving-a-replication-destination-over-s3.md) にあります。
 
 ### 計画と監視で見るもの
 

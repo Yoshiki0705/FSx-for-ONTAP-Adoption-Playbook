@@ -133,6 +133,9 @@ lang: ja
 | `docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-operations.md` | `同一実行内の対照がすべて成功しているため、手順の誤りではありません` | `retraction` | `UploadPartCopy` の `NoSuchKey` に同一実行内の `CopyObject` 対照があること。**切り分けの手順そのもの** |
 | `docs/ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `AWS サポートリクエストが必要な操作` | `reread` | 委任された管理者で実行できない操作の一覧の所在。**`volume rehost` が FSx for ONTAP で実行できるかは AWS が文書化していないため、この一覧が判断の出発点になります。** 一覧はそちらが持ちます |
 
+| `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `no break and no clone` | `retraction` | 稼働中の SnapMirror 宛先を break もクローンもなしに読めること。**この主張は 2026-09-13 に逆向きへ訂正された経緯があるため、probe が生きていても本文が現在の結論と一致しているかを併せて確認してください** |
+| `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `PERMISSION_DENIED` | `retraction` | 宛先への書き込みがエンジン層で拒否されること。**読めることだけを引くと書けると誤読されるため、上の行と 2 行で 1 組** |
+| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `integrations/snapmirror-flexcache-multicloud/docs/en/research.md` | `the volume is a FlexCache` | `retraction` | FlexCache の Cache Volume に S3 Access Point を取り付けられないこと。**Amazon FSx が返すエラー文字列そのものなので、文言が変われば発火します** |
 <!-- cross-repo-table:end -->
 
 ---
