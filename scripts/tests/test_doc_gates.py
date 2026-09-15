@@ -461,6 +461,31 @@ class GateStillDetects(unittest.TestCase):
         with temp_files({f"docs/en/domains/cost/notes/{PROBE}.md": en}):
             self.assert_rejected(run_gate("check_ja_only_markers.py"), PROBE)
 
+    def test_stale_japanese_marker_on_a_translated_link_is_rejected(self) -> None:
+        """The other direction of the same rule, which nothing checked for as long as it existed.
+
+        The forward rule adds a marker while the translation is missing. Nothing removed it once the
+        translation arrived, and seventeen links across seven files ended up saying `(日本語)` while
+        pointing at English prose that existed. Neither gate could see it: this checker only asked
+        whether a marker was absent, and `switcher-check` only reports a link aimed at `ja` when `en`
+        has the file. An English reader who believes the label does not follow the link.
+        """
+        target = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe target\n"
+        )
+        linking = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n\n"
+            + f"See [Already translated]({PROBE}-target.md) (日本語).\n"
+        )
+        probe = {
+            f"docs/en/domains/cost/notes/{PROBE}-target.md": target,
+            f"docs/en/domains/cost/notes/{PROBE}.md": linking,
+        }
+        with temp_files(probe):
+            self.assert_rejected(run_gate("check_ja_only_markers.py"), PROBE)
+
     def test_diagram_label_below_the_readability_floor_is_rejected(self) -> None:
         """The size every diagram here was authored at, which no gate reported for months.
 

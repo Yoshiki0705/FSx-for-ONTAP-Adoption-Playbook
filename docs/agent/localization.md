@@ -88,6 +88,19 @@ where a reader meets it:
 The items to clear are in [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語).
 ```
 
+**Remove the marker in the commit that adds the translation.** The gate checks both directions: a
+missing marker on a link into Japanese prose, and **a `(日本語)` on a link that resolves to a file
+inside `docs/en/`**. The second direction went unchecked for as long as the first was enforced, and
+seventeen links across seven files ended up labelled `(日本語)` while pointing at English prose that
+existed. Neither gate saw them — `ja-markers` only asked whether a marker was absent, and
+`switcher-check` only reports a link aimed at `ja` when `en` has the file, which these were not. **An
+English reader who believes the label does not follow the link, so the effect is the same as the
+failure the marker exists to prevent.**
+
+The inverse direction resolves the target on disk, because "is this already translated" is a question
+about what exists rather than about the text. It considers `.md` targets only: a directory link stays
+`switcher-check`'s concern, the same boundary the forward rule draws.
+
 ## What qualifies for eight languages
 
 Tier 1 is **first-touch material only**: how to find your way around, and how to read the confidence

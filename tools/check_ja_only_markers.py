@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -73,16 +74,62 @@ def offending_links(text: str) -> list[tuple[int, str]]:
     return found
 
 
+def stale_markers(path: Path, text: str, english: Path) -> list[tuple[int, str, str]]:
+    """Return (line, link text, target) for each `(日本語)` on a link that resolves inside `docs/en`.
+
+    This is the other direction of the same rule, and it was the direction nothing checked. The
+    forward rule requires a marker where the translation is missing; nothing removed the marker once
+    the translation arrived. Seventeen links across seven files said `(日本語)` while pointing at
+    English prose that existed, and neither gate could see it: this checker only asked whether a
+    marker was absent, and `switcher-check` only reports a link aimed at `ja` when `en` has the file
+    — these were aimed at `en` already. An English reader who believes the label does not follow the
+    link.
+
+    Only `.md` targets are considered. A directory link is `sync_lang_switcher.py`'s concern, the same
+    boundary the forward rule draws, and putting one rule behind two gates is how they drift apart.
+    """
+    found: list[tuple[int, str, str]] = []
+    in_fence = False
+    for number, line in enumerate(text.splitlines(), 1):
+        if re.match(r"\s*(```|~~~)", line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if "lang-switcher" in line or line.lstrip().startswith("🌐"):
+            continue
+        for match in LINK.finditer(line):
+            label, href = match.group(1), match.group(2)
+            if not line[match.end() :].lstrip().startswith(MARKER):
+                continue
+            target = href.split("#", 1)[0]
+            if not target.endswith(".md") or target.startswith(("http", "/")):
+                continue
+            resolved = (path.parent / target).resolve()
+            if not resolved.is_file():
+                continue
+            if not resolved.is_relative_to(english.resolve()):
+                continue
+            found.append((number, label, target))
+    return found
+
+
 def check(base: Path) -> list[str]:
     issues: list[str] = []
     english = base / "en"
     if not english.is_dir():
         return issues
     for path in sorted(english.rglob("*.md")):
-        for number, label in offending_links(path.read_text(encoding="utf-8")):
-            rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+        text = path.read_text(encoding="utf-8")
+        rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+        for number, label in offending_links(text):
             issues.append(
                 f"{rel}:{number}: link into a Japanese-only page without {MARKER}: [{label}]"
+            )
+        for number, label, target in stale_markers(path, text, english):
+            issues.append(
+                f"{rel}:{number}: {MARKER} on a link that resolves inside docs/en: "
+                f"[{label}] -> {target}"
             )
     return issues
 
@@ -114,6 +161,56 @@ def selftest() -> int:
         if actual != expected:
             failures += 1
         print(f"  {status} {name} (expected {expected}, got {actual})")
+
+    # The other direction needs a filesystem, because "is this already translated" is a question
+    # about what exists rather than about the text. Built in a temporary tree so the cases do not
+    # depend on which notes happen to be translated today.
+    with tempfile.TemporaryDirectory() as tmp:
+        docs = Path(tmp) / "docs"
+        en_note = docs / "en" / "domains" / "cost" / "notes" / "translated.md"
+        en_note.parent.mkdir(parents=True)
+        en_note.write_text("# translated\n", encoding="utf-8")
+        (docs / "en" / "domains" / "cost" / "notes" / "sub").mkdir()
+        readme = docs / "en" / "domains" / "cost" / "README.md"
+        english = docs / "en"
+
+        stale = "| 1 | q | [Translated](notes/translated.md) (日本語) |\n"
+        anchored = (
+            "| 1 | q | [Translated](notes/translated.md#what-is-billed) (日本語) |\n"
+        )
+        correct = "| 1 | q | [Translated](notes/translated.md) |\n"
+        into_ja = (
+            "See [Untranslated](../../../ja/domains/cost/notes/other.md) (日本語).\n"
+        )
+        missing_file = "See [Gone](notes/absent.md) (日本語).\n"
+        directory = "See [`notes/`](notes/sub/) (日本語).\n"
+        fenced_stale = "```text\n[Translated](notes/translated.md) (日本語)\n```\n"
+        switcher_line = (
+            "🌐 [日本語](../../../ja/domains/cost/notes/translated.md) | "
+            "[English](notes/translated.md) (日本語)\n"
+        )
+
+        inverse_cases = [
+            ("stale marker on a translated file is flagged", stale, 1),
+            ("stale marker survives an anchor", anchored, 1),
+            ("no marker on a translated file is accepted", correct, 0),
+            ("marker on a link into ja is accepted", into_ja, 0),
+            (
+                "marker on a link to a file that does not exist is left alone",
+                missing_file,
+                0,
+            ),
+            ("directory link is the switcher's concern", directory, 0),
+            ("fenced example is not a link", fenced_stale, 0),
+            ("generated switcher line is skipped", switcher_line, 0),
+        ]
+        for name, body, expected in inverse_cases:
+            actual = len(stale_markers(readme, body, english))
+            status = "ok  " if actual == expected else "FAIL"
+            if actual != expected:
+                failures += 1
+            print(f"  {status} {name} (expected {expected}, got {actual})")
+
     print("selftest: " + ("passed" if not failures else f"{failures} case(s) failed"))
     return 1 if failures else 0
 

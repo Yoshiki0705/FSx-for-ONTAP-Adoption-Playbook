@@ -29,9 +29,9 @@ the table of contents; this is the entry point.
 |---|---|---|
 | 1 | Which method to choose (SnapMirror / DataSync / host-side copy) | [Choosing a migration method](../../../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 2 | What is required to migrate while preserving ACLs | [Preserving ACLs is a privilege problem, not a tool problem](../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) |
-| 3 | How to plan initial and incremental sync | [Baseline and incremental sync](notes/where-the-rollback-window-closes.md#baseline-sync-and-incremental-sync) (日本語) |
-| 4 | How to minimize cutover downtime | [The cutover sequence](notes/where-the-rollback-window-closes.md#cutover-sequence) (日本語) |
-| 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) (日本語) |
+| 3 | How to plan initial and incremental sync | [Baseline and incremental sync](notes/where-the-rollback-window-closes.md#baseline-sync-and-incremental-sync) |
+| 4 | How to minimize cutover downtime | [The cutover sequence](notes/where-the-rollback-window-closes.md#cutover-sequence) |
+| 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) |
 | 6 | What to settle before choosing a method when the source is SaaS / cloud storage | [Migrating from SaaS starts with classifying the source](notes/saas-source-migration-scoping.md) |
 | 7 | With AWS Transform, which step needs how much capacity | [AWS Transform's Finalize is not cleanup - it is where physical capacity peaks](../../../ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) (日本語) |
 
