@@ -22,13 +22,13 @@
 # An absence claim ("the column is not in the table", "not stated in public documentation") is a
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
-FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	paused
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	require metadata operations that fail on S3 AP
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	no break and no clone
-FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the volume is a FlexCache
+FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
@@ -47,7 +47,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migra
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
-FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	5 GB → 50 GB
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
 S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに合否を決めると、出た数値が合格になる。
@@ -62,12 +62,10 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキ�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
-S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	0.18 倍
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 → 2 では逐次スループットが 1 バイトも動かない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 接続でのプロトコル差は再現しなかった
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	12,173 MiB/s = **102 Gbps**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	4 台と 8 台で止まった
-S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	45% 違った
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	500 MiBps に一致する
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	8 台の 11,194.7 MiB/s は 94 Gbps である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	EC2 の 1 フローあたり全二重 5 Gbps
@@ -85,6 +83,8 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	範囲 500〜592 MB/s は「これを超える多重度 1 の実測が無い」という意味ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	行を足さず、範囲（500〜592 MB/s）も変えない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	観測したチャネル数は 4 であり
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	違いはキャッシュに何が残っていたか
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	違いはデータを共有しているかどうかだけである
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	EFS は `nconnect` にも非対応
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv2 と NFSv3 は非対応
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv4.2 は対応プロトコルとして挙げられていない
@@ -96,4 +96,4 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない
-VMware-Migration-EC2-ONTAP	docs/ja/atx-fsxn-ga-verification.md	retraction	承認を得て実行
+VMware-Migration-EC2-ONTAP	docs/ja/atx-fsxn-ga-verification.md	retraction	約 3 分後に開始し 60 秒未満で完了
