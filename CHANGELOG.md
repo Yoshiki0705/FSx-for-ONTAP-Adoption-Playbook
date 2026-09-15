@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The `(日本語)` rule was enforced in one direction only, and seventeen links sat on the unchecked
+  side.** `ja-markers` asked whether a marker was missing on a link into Japanese prose. Nothing
+  removed the marker once the translation arrived, so seventeen links across seven files under
+  `docs/en/` said `(日本語)` while pointing at English prose that existed.
+  - **Neither existing gate could see it.** This checker only tested for absence, and
+    `switcher-check` only reports a link aimed at `ja` when `en` has the file — these were aimed at
+    `en` already. **The rule and its inverse were one rule with one gate.**
+  - **The effect is the failure the marker exists to prevent, reversed.** An English reader who
+    believes the label does not follow a link to English prose. `docs/en/domains/cost/README.md` had
+    it on all five of its question rows.
+  - **The check is in the same file as the forward one**, because two files enforcing one rule is how
+    they drift apart — the reason `localization.md` already gives for not widening this pattern into
+    `switcher-check`'s territory. It resolves the target on disk, since "already translated" is a
+    question about what exists, and considers `.md` targets only so that directory links stay
+    `switcher-check`'s concern.
+  - **Confirmed by failing first**: the new direction reported all seventeen before any were fixed,
+    and `scripts/tests/test_doc_gates.py` gains a break case so a future refactor cannot quietly drop
+    it. Eight selftest cases cover the inverse, including an anchored link, a target that does not
+    exist, and a fenced example.
 - **A whole module arrived under a subject that says nothing about it, and its authoring record was
   the part that did not survive.** The client-access module — 40 files — is in `main` inside the squash
   of the SnapMirror-over-S3 note (#240), because that branch was cut from the module's still-open
