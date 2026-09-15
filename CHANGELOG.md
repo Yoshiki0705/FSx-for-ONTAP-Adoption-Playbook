@@ -412,6 +412,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **What can refuse a write, stated per write path — and the answer is not the same as what can see
+  one.** Two documents landed in `main` within an hour of each other: the antivirus note, whose
+  on-access policy takes `CIFS` as its protocol, and the FPolicy note, whose measured table shows a
+  `mandatory` policy failing to block an S3 access point write. **Neither said what the pair implies.**
+  - **A write landing through an S3 access point cannot be refused at the moment it lands.** On-access
+    scanning cannot be configured for that path, and FPolicy has no `s3` event protocol to attach to.
+  - **It can still be seen.** ONTAP auditing records it and Autonomous Ransomware Protection detects
+    it, both measured. **The absent capability is inline refusal, not observation** — and conflating
+    the two turns a specific gap into "nothing protects this path", which is false and would send a
+    reader looking for a replacement they do not need.
+  - **On-demand scanning reaches the files afterwards.** So the requirement this path fails is
+    real-time refusal, not coverage.
+  - Written as a five-mechanism table with the tier marked per row, because three rows are measured
+    elsewhere in this repository and two are read off vendor documentation. **The composition is
+    labelled as a composition**: no measurement of Vscan against an S3 access point write was made
+    here, and the Vscan row is derived from the protocol parameter rather than observed.
+  - The three documents now cross-link. The gap existed because two concurrent branches each held
+    half of it, which no gate detects — a link check cannot fail on a link nobody wrote.
 - **A problem-first index of ISV and SaaS options, and the first design note under it.** Third-party
   product combinations were an axis this repository did not have: a full-text search for the two
   products that prompted the work returned nothing, and the only adjacent material stated the
