@@ -61,6 +61,7 @@ graph TD
 | 已在运行，希望重新审视成本 | [成本](../en/domains/cost/) (English) | [优化](../en/playbooks/06-optimize/) (English) |
 | **希望决定如何搭建监控** | [监控路径决策树](../ja/reference/decision-trees/observability-route.md) (日本語) | [可观测性](../en/domains/observability/) (English) |
 | **想从自己所属行业出发，弄清该决定什么** | [行业资源图 — 阅读顺序](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [行业索引](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
+| **想将已在使用的产品与 FSx for ONTAP 组合** | [按课题划分的 ISV / SaaS 解决方案图](../ja/reference/isv-solution-map.md) (日本語) | [未满足收录标准的候选](../ja/reference/isv-solution-map.md#掲載基準を満たさないもの) (日本語) |
 | 想确认设计是否触及上限值 | [上限值与配额](../ja/reference/limits/) | [设计](../en/playbooks/02-design/) (English) |
 | 想通过 S3 API 或分析平台访问 | [FSx for ONTAP S3 AP 的前提条件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [访问点策略的写法](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 | 想存放 AI / ML 训练数据并按实验分支 | [训练数据集版本与实验分支的约束](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [分发实验分支时要约束的三个对象](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
