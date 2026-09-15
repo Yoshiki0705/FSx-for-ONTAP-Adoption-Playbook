@@ -42,7 +42,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from check_cross_repo import OWNER, REPO_REF, THIS_REPO, prose_files, strip_code
+from check_cross_repo import OWNER, REPO_REF, THIS_REPO, prose_files
+from probe_strength import strip_code, verdict
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "docs" / "agent" / "inbound-probe-contract.txt"
@@ -129,22 +130,6 @@ def parse_contract() -> tuple[list[Row], list[str], list[str]]:
             continue
         rows.append(Row(*parts))
     return rows, unknown, problems
-
-
-def verdict(probe: str, text: str) -> str:
-    """Classify one pinned string against the document that holds it.
-
-    Kept pure and separate so the four outcomes can be pinned as a truth table. Three of them are
-    silent in normal use — a passing gate looks identical whether the rule is right or absent.
-    """
-    hits = [line for line in strip_code(text).splitlines() if probe in line]
-    if not hits:
-        return "absent"
-    if all(line.lstrip().startswith("#") for line in hits):
-        return "heading-only"
-    if len(hits) > 1:
-        return "duplicated"
-    return "ok"
 
 
 EXPLANATION = {

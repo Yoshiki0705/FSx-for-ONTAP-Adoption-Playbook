@@ -52,6 +52,8 @@ import urllib.request
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from probe_strength import strip_code, verdict
+
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "docs" / "ja" / "reference" / "cross-repo-index.md"
 CONTRACT = ROOT / "docs" / "agent" / "cross-repo-probe-contract.txt"
@@ -140,18 +142,6 @@ class Row:
     what: str
     line: int
     ref: str = "main"
-
-
-def strip_code(text: str) -> str:
-    """Blank out fenced blocks so an example link inside one is not read as a citation."""
-    out, fenced = [], False
-    for line in text.splitlines():
-        if re.match(r"^\s*(```|~~~)", line):
-            fenced = not fenced
-            out.append("")
-            continue
-        out.append("" if fenced else line)
-    return "\n".join(out)
 
 
 def prose_files() -> list[Path]:
@@ -574,10 +564,26 @@ def check_external(rows: list[Row]) -> list[str]:
         body = cache[key]
         if body is None:
             continue
-        if row.probe not in body:
+        # Presence and strength are answered by the same fetch, so classifying costs nothing extra.
+        # `absent` keeps its original wording: it is the one verdict that says something about the
+        # cited side rather than about our choice of string.
+        result = verdict(row.probe, body)
+        if result == "absent":
             problems.append(
                 f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} is gone. Either the claim moved "
                 f"or it was retracted — check before adjusting {row.citing}."
+            )
+        elif result == "duplicated":
+            problems.append(
+                f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} occurs more than once, so "
+                "either copy can be reworded with this gate still green. Re-pin to a string that "
+                f"appears once and names the claim {row.citing} rests on."
+            )
+        elif result == "heading-only":
+            problems.append(
+                f"{row.repo}@{row.ref}/{row.path}: the probe {row.probe!r} matches only a heading, so "
+                "the section can keep its title while the content is replaced. Re-pin to the claim "
+                "in body text."
             )
     if undetermined:
         print(

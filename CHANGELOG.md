@@ -412,6 +412,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The outbound probe strength rule, and the six rows that did not satisfy it.** `make
+  inbound-probes` already rejected a pinned string that occurs twice or only in a heading. The
+  outbound direction — the strings this repository pins in other repositories — had no such check,
+  so the two directions enforced different rules while both reported success.
+  - `make cross-repo-external` now classifies as well as confirms presence. It costs no extra
+    fetches: presence and strength are answered by the same request.
+  - **The rule lives in one place**, `tools/probe_strength.py`, read by both directions, with a test
+    that neither carries its own copy and that the verdict names are not restated in prose. A second
+    copy is how they drift.
+  - **Six probes were re-pinned**: `paused`, `the volume is a FlexCache`, `5 GB → 50 GB`, `0.18 倍`,
+    `45% 違った`, `承認を得て実行` — each occurred two or three times in the cited file, so either
+    copy could have been reworded with the gate still green. Each replacement names the claim the
+    citing document actually rests on and was verified as occurring exactly once in body text.
+  - **The two weakness classes do not overlap.** Six heading-only probes were fixed earlier, six
+    duplicated ones here, and no row appeared in both sets. Holding one rule is indistinguishable
+    from holding none for the class it cannot see.
+  - **A limit that cannot be closed here**: the cited files are in other repositories, so this check
+    needs the network and stays out of the commit gate. A weak probe is caught when the external
+    check runs, not when it is registered.
+  - One replacement had to be chosen twice: the first candidate quoted a sentence containing a bare
+    product abbreviation, which the naming audit rejects. The gate was right — a probe is quoted
+    text, and it lands in a published artifact.
 - **A single-connection block measurement is not a planning input, because the same configuration
   moved 1.92x between runs.** NVMe/TCP at one I/O queue measured 591.64 MB/s — 4.73 Gbps, sitting on
   the documented 5 Gbps single-flow position, matching that environment's NFS single connection

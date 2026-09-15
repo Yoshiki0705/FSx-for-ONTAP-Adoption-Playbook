@@ -80,7 +80,7 @@ lang: ja
 | `docs/en/domains/cost/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/cost-validation.md` | `実際の AWS 請求データ` | `retraction` | 見積りと実請求の突き合わせ。**見積りの妥当性を確かめる側**で、見積り自体は上の行にあります（EN 版）|
 | `docs/en/domains/cost/README.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/cost-estimation.md` | `scaling formulas` | `retraction` | 構成要素別の内訳と算定式。メタデータのみと全複製の比較（EN 版）|
 | `docs/en/domains/cost/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/cost-measurement.md` | `Cost Explorer` | `retraction` | 実測の手順。**見積りではありません** — この区別が落ちると、実測値が見積りとして引用されます（EN 版）|
-| `docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/arp-configuration.md` | `paused` | `retraction` | 説明側の 6 値だけを実装に写すと `paused` のボリュームが有効なまま「無効」と表示されること。**こちらは文書の不一致を、そちらは実害の形を持っています** |
+| `docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/arp-configuration.md` | `まだ有効なボリュームを無効と表示する` | `retraction` | 説明側の 6 値だけを実装に写すと、遷移中のボリュームが有効なまま「無効」と表示されること。**こちらは文書の不一致を、そちらは実害の形を持っています。** probe は実害を述べた文を指します — `paused` という値そのものは列挙にも説明にも現れるので、**どちらの側が変わっても発火しません** |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `EC2 の 1 フローあたり全二重 5 Gbps` | `retraction` | FSx for ONTAP の単一接続が当たっているのは EC2 の 1 フロー上限であること |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | `reread` | ファイルプロトコルの単一接続が 625 MBps に届かないこと。範囲の両端が単一接続の実測 3 行から出ているので、4 本目が足されれば動きます。**この行は「ブロックの 1 セッションが測られた時点で発火する見込み」と書いていました。測られましたが、発火しませんでした** — 引用先が行を足さない判断を測る前に決めていたためです（次の行の probe がその判断を指します）。**沈黙は「まだ測っていない」ではありませんでした** |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `行を足さず、範囲（500〜592 MB/s）も変えない` | `retraction` | ブロックの値を単一接続の 3 行に足さない、という測定前の判断。**上の行の probe が沈黙している理由そのものです。** これが消えたら、範囲が広がって上の probe が発火する可能性を検討してください |
@@ -92,8 +92,8 @@ lang: ja
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `範囲 500〜592 MB/s は「これを超える多重度 1 の実測が無い」という意味ではない` | `retraction` | 引用先の表が動かないことが、測っていないことの証拠にならないという明示。**こちらが `500〜592 MB/s に収まる` を `reread` で引き続けられる理由**で、範囲の不変を「ブロックは未測定」と読み替えない歯止めです |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `別の上限である` | `retraction` | 近い値を同じ原因に束ねないという訂正そのもの。**ブロックの値をファイルの値で代用しない根拠。** 幅を含まないので、行が増えても動きません |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500 MiBps に一致する` | `retraction` | Amazon EFS の 499.79 MB/s は 1 フロー上限ではなくクライアント単位のクォータに一致すること。**近い値を同じ原因に束ねない。** クォータの固定値を指すので、行が増えても動きません |
-| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `45% 違った` | `retraction` | 同一構成・同一パラメータで 2 回測って 45% 振れ、違いはキャッシュに何が残っていたかだけだったこと |
-| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `0.18 倍` | `retraction` | 8 台・128 接続で、同じファイルを共有した場合と重ならない領域を読んだ場合の差 |
+| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `違いはキャッシュに何が残っていたか` | `retraction` | 同一構成・同一パラメータで 2 回測って 45% 振れ、違いはキャッシュに何が残っていたかだけだったこと。**probe は振れ幅ではなく原因を指します** — 振れ幅は導入部と該当節の 2 か所にあり、**こちらの記述が依拠しているのは原因の側**です |
+| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `違いはデータを共有しているかどうかだけである` | `retraction` | 8 台・128 接続で、同じファイルを共有した場合と重ならない領域を読んだ場合の差。**probe は倍率ではなく原因の帰属を指します** — 倍率はブロック側との対比でも使われており、そちらだけが書き換わる形があります |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `既定 65,536 のままだと` | `retraction` | 既定 65,536 のままだと `rsize` が 64 KiB に切り下がるため、測定前に引き上げていること |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-protocol-matrix-plan.md` | `コマンドラインでは渡せない` | `retraction` | 測定に使った器具と、パラメータがコマンドラインから渡せない制約 |
 
@@ -107,8 +107,8 @@ lang: ja
 | `docs/ja/playbooks/02-design/notes/how-end-users-reach-the-data.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/file-portal-amplify-gen2.md` | `作らずに済むかもしれません` | `retraction` | ブラウザ UI を自作する前に AWS Transfer Family で足りるかを先に判定すること |
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/saas-to-fsx-ontap-migration.md` | `常にエージェントと Basic モードが必要です` | `retraction` | FSx for ONTAP を宛先にすると AWS DataSync でエージェントと Basic モードが必要になること |
 | `docs/ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/en/saas-to-fsx-ontap-migration.md` | `always requires an agent and Basic mode` | `retraction` | An FSx for ONTAP destination always needs an agent and Basic mode in AWS DataSync |
-| `docs/ja/reference/limits/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `5 GB → 50 GB` | `retraction` | オブジェクトサイズ上限の記載変更に対して、実際にエラーになるサイズを実測で確定したこと |
-| `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `承認を得て実行` | `retraction` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を承認のうえ実行した結果（split の所要時間と不可逆性） |
+| `docs/ja/reference/limits/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `上限は正確に 50 GiB = 53,687,091,200 バイト` | `retraction` | オブジェクトサイズ上限の記載変更に対して、実際にエラーになるサイズを実測で確定したこと。**probe は確定した値そのものを指します** — 記載変更を表す `5 GB → 50 GB` は目的の節と質問の節にあり、**実測結果が変わっても動きません** |
+| `docs/ja/reference/recent-updates.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/atx-fsxn-ga-verification.md` | `約 3 分後に開始し 60 秒未満で完了` | `retraction` | AWS Transform の FSx for ONTAP 対応 GA スコープの実機確認と、Finalize を承認のうえ実行した結果（split の所要時間と不可逆性）。**probe は所要時間の実測を指します** — 「承認を得て実行」はステータス行・未解消項目の表・本文の 3 か所にあり、**不可逆性の記述も 3 か所あるため pin できません** |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv2 と NFSv3 は非対応` | `retraction` | Amazon EFS が NFSv3 に対応しないこと。NFSv3 が要件なら EFS が選択肢から外れる根拠 |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `NFSv4.2 は対応プロトコルとして挙げられていない` | `retraction` | Amazon EFS の NFSv4.2 非対応。**列挙に無いことが根拠**で、非対応と明記されているわけではありません |
 | `docs/ja/reference/comparison/file-storage-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/protocol-matrix-efs-vs-ontap.md` | `Windows を実行する EC2 インスタンスからの EFS のマウントは非対応` | `retraction` | Amazon EFS が Windows から使えないこと。**「EFS は SMB 非対応」の唯一の根拠でもあり、SMB 非対応を独立の主張として書かない** |
@@ -142,7 +142,7 @@ lang: ja
 
 | `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `no break and no clone` | `retraction` | 稼働中の SnapMirror 宛先を break もクローンもなしに読めること。**この主張は 2026-09-13 に逆向きへ訂正された経緯があるため、probe が生きていても本文が現在の結論と一致しているかを併せて確認してください** |
 | `docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/s3ap-flexcache-snapmirror-considerations.md` | `PERMISSION_DENIED` | `retraction` | 宛先への書き込みがエンジン層で拒否されること。**読めることだけを引くと書けると誤読されるため、上の行と 2 行で 1 組** |
-| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `integrations/snapmirror-flexcache-multicloud/docs/en/research.md` | `the volume is a FlexCache` | `retraction` | FlexCache の Cache Volume に S3 Access Point を取り付けられないこと。**Amazon FSx が返すエラー文字列そのものなので、文言が変われば発火します** |
+| `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `integrations/snapmirror-flexcache-multicloud/docs/en/research.md` | `the refusal is by volume kind` | `retraction` | FlexCache の Cache Volume に S3 Access Point を取り付けられないこと。**probe はエラー文字列ではなく再確認の記述を指します** — エラー文は表と根拠欄の 2 か所にあり、片方を書き換えても発火しないためです。指しているのは**拒否がボリュームの種別によるものだ**という、この制約の非自明な部分です — マウント済みで API が RW と報告する状態でも阻まれます |
 | `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml` | `is an invalid value for field "protocol"` | `retraction` | FPolicy の event が `s3` を受け付けないことを ONTAP 9.18.1P5 で再確認した記録。**ONTAP が返すエラー文字列そのものなので、後の版が `s3` を受け付けるようになれば発火します。** 候補集合を指す `accepted:` の行ではなくこちらを取るのは、YAML のリストが整形で改行され得るためです |
 | `docs/en/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml` | `is an invalid value for field "protocol"` | `retraction` | 同上（EN 版）|
 | `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `raised no FPolicy notification` | `retraction` | S3 Access Point 経由の操作が FPolicy 通知を発火しないこと、およびその測定の手順・環境表・生の件数の所在。**結論だけを持っていて方法に到達できない状態を解消するための行です** |
@@ -183,6 +183,44 @@ lang: ja
 
 **probe が答えるのは 1 つだけです。「引いている主張がまだそこにあるか」。** 相手の進捗は答えません。
 
+### probe が主張を名指していない 2 つの形
+
+**「引用先に文字列が存在する」ことは、probe が機能していることではありません。** 存在したまま
+何も守らなくなる形が 2 つあり、**規則が別なので互いを見つけられません。**
+
+| 形 | 何が起きるか | 発火 |
+|---|---|---|
+| **見出しのみ** | 節が題を保ったまま中身が反対の所見に置き換わる | **しない** |
+| **多重一致** | 2 か所以上にあり、片方を書き換えても残る | **しない** |
+
+**この 2 集合は重なりませんでした。** 見出しのみを検出する規則を持つ側と多重一致を検出する規則を
+持つ側が、それぞれ 6 件を報告し、**同じ行は 1 件もありませんでした。** つまり片方の規則しか持たない
+状態は、見えない側の形については**規則が無いのと区別できません。**
+
+判定は [`tools/probe_strength.py`](../../../tools/probe_strength.py) の 1 か所にあり、
+**outbound（`make cross-repo-external`）と inbound（`make inbound-probes`）が同じ関数を読みます。**
+2 つ目のコピーを作ると、両方が成功を報告しながら別の規則を強制する状態になります。
+
+**強制の場所が方向で違います。**
+
+| 方向 | 検査 | `make all` |
+|---|---|---|
+| inbound | pin されたファイルがこのツリーにあるのでオフライン | **入っています** |
+| outbound | 引用先のファイルを取得するのでネットワークが必要 | **入っていません**（`make cross-repo-external` が opt-in）|
+
+**outbound をコミットゲートに入れられないのは構造的な制約です。** 引用先のファイルはこちらに
+ありません。**したがって弱い probe を登録した瞬間には止まらず、外部チェックを走らせたときに
+止まります。** 登録の手順（[引用を足すときの手順](#引用を足すときの手順)）の手順 8 がその機会です。
+
+**第 3 の形は規則で判定できません。** 1 回・本文にあっても主張を運んでいない文字列があり、
+**検出器は報告しません。** `Cost Explorer` は 13 文字の製品名で、その文書が実測手順であることを
+やめても残ります。**長さは基準になりません** — 8 文字でも特定の実測比を名指す文字列は強く、
+13 文字の製品名は何も守りません。行ごとの判断になります。
+
+**3 つの形は独立です。** 主張を名指していても多重一致でありえます。`0.18 倍` は特定の実測比なので
+第 3 の形では強く、**2 か所にあったので再登録の対象になりました。** 片方の観点で合格したことは、
+他方の観点について何も言いません。
+
 ### 引用先が自己矛盾している場合の沈黙
 
 **上の[引用表の注記](#引用表)は、引用元がこちら側で自己矛盾する場合を扱っています。引用先が
@@ -221,8 +259,9 @@ lang: ja
 | `retraction` | それ以外 | **主張が消えたか移動した。** こちら側の記述は根拠を失っています |
 
 **基準を「幅を含むか」ではなく「集合の最小値・最大値か」に絞ってあります。** 特定の 2 点の比
-（`0.18 倍`、`45% 違った`）や観測値そのもの（`12,173 MiB/s = **102 Gbps**`）は、引用先が測定を
-足しても書き換わりません。**`reread` を広く付けると、その主張については撤回を検出できなくなります。**
+（`7 ms 対 2,171 ms`、`SMB は NFS の 72.1%`）や観測値そのもの（`12,173 MiB/s = **102 Gbps**`）は、
+引用先が測定を足しても書き換わりません。**`reread` を広く付けると、その主張については撤回を検出
+できなくなります。**
 
 **不在の主張は第 3 の形で、意図して `retraction` に置いています。** 「性能仕様表に列がない」
 「公開ドキュメントに記載がない」は、真でなくなった瞬間にこちら側の指針が変わります。**これは
@@ -356,12 +395,12 @@ issue 本文や説明文へ転記すると同じ問題が再発します。**故
 |---|---|---|
 | 1 | 引用先の主張を読み、**条件（世代・容量・IOPS・キャッシュ・クライアント型・並列度・測定日）を確認する** | 条件のない数値は設計に使えません |
 | 2 | 本文に引用先ファイルへのリンクを書く。`blob/main` のパスまで指す | 行番号を指すと編集で外れます |
-| 3 | 上の表に 1 行足す。**確認する文字列は主張を指すもの**にする | 見出しだと主張の撤回を検出できません |
+| 3 | 上の表に 1 行足す。**確認する文字列は主張を指し、引用先に 1 回だけ現れ、見出しではないもの**にする | 見出しだと撤回を検出できず、2 か所にあると片方を書き換えられても発火しません |
 | 4 | **役割を決める。** 集合の最小値・最大値を含むなら `reread`、それ以外は `retraction` | 発火の意味が 1 通りに読めなくなります |
 | 5 | `python3 tools/check_cross_repo.py --write-contract` を実行する | **引用先が読むのは公開した契約で、この表ではありません** |
 | 6 | 条件を本文に併記する。引用先だけに置かない | 読者が引用先を開かずに誤用します |
 | 7 | `make cross-repo` を実行する | リンクと表の対応、および契約が表と一致すること |
-| 8 | `make cross-repo-external` を実行する | 引用先に主張がまだあるか |
+| 8 | `make cross-repo-external` を実行する | 引用先に主張がまだあるか、**および probe が見出しのみ・多重一致でないか。** ネットワークが要るのでコミットゲートには入らず、**弱い probe が止まる唯一の機会がここです** |
 | 9 | 引用先が未測定としている範囲も書く | **引用は都合のよい部分だけを取り出せます** |
 
 ---
