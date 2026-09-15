@@ -412,6 +412,22 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A single-connection block measurement is not a planning input, because the same configuration
+  moved 1.92x between runs.** NVMe/TCP at one I/O queue measured 591.64 MB/s — 4.73 Gbps, sitting on
+  the documented 5 Gbps single-flow position, matching that environment's NFS single connection
+  (591.62), and pinned within 591.5–591.7 across all four read/write workloads, which is the shape of
+  hitting one path's ceiling. Re-measured with the same requested and negotiated parameters it
+  returned 1,135.88. **The cited record rules out the environment with controls** (4 KiB random reads
+  within 4% across three configurations, `connect-all` sequential matching to 0.007%) and does not
+  identify the cause.
+  - This sharpens rather than reverses the retraction recorded below. The withdrawn instruction
+    assumed block would land where the file protocols land, and **one block measurement did exactly
+    that** — so agreeing with the divisor was never confirmation either. Both directions can move.
+  - [`paths-are-the-failover-mechanism.md`](docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md)
+    now carries both multiplicity-1 block values, the 0.06% protocol equivalence between them, and
+    the two separate unconfirmed questions kept apart: why block exceeds the file protocols, and why
+    the same configuration moved. **Different candidate lists, so they must not be explained by one
+    cause.**
 - **`make inbound-probes`, and the artifact it reads.** Cross-repository citation had one direction
   guarded: what this repository cites, and whether the cited claim still exists. The other direction
   had nothing. Another repository pins three strings inside
