@@ -82,7 +82,12 @@ lang: ja
 | `docs/en/domains/cost/README.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/cost-measurement.md` | `Cost Explorer` | `retraction` | 実測の手順。**見積りではありません** — この区別が落ちると、実測値が見積りとして引用されます（EN 版）|
 | `docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/arp-configuration.md` | `paused` | `retraction` | 説明側の 6 値だけを実装に写すと `paused` のボリュームが有効なまま「無効」と表示されること。**こちらは文書の不一致を、そちらは実害の形を持っています** |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `EC2 の 1 フローあたり全二重 5 Gbps` | `retraction` | FSx for ONTAP の単一接続が当たっているのは EC2 の 1 フロー上限であること |
-| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | `reread` | ファイルプロトコルの単一接続が 625 MBps に届かず、625 で割る形が必要セッション数を約 5% 少なく出すこと。**範囲の両端が単一接続の実測 3 行から出ているので、4 本目が足されるだけで動きます** — ブロックの 1 セッションが測られた時点で発火する見込みです |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500〜592 MB/s に収まる` | `reread` | ファイルプロトコルの単一接続が 625 MBps に届かないこと。範囲の両端が単一接続の実測 3 行から出ているので、4 本目が足されれば動きます。**この行は「ブロックの 1 セッションが測られた時点で発火する見込み」と書いていました。測られましたが、発火しませんでした** — 引用先が行を足さない判断を測る前に決めていたためです（次の行の probe がその判断を指します）。**沈黙は「まだ測っていない」ではありませんでした** |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `行を足さず、範囲（500〜592 MB/s）も変えない` | `retraction` | ブロックの値を単一接続の 3 行に足さない、という測定前の判断。**上の行の probe が沈黙している理由そのものです。** これが消えたら、範囲が広がって上の probe が発火する可能性を検討してください |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `セッション数を帯域の割り算で決める形そのものが成立していない` | `retraction` | 必要セッション数を除数で割って出す算術が成立しないこと。**このノートが以前その算術に補正を足す指示を書いていた根拠を、正面から否定する主張です** |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `iSCSI の 1 本はその約 2 倍を運んだ` | `retraction` | ブロックの単一接続がファイル側の約 2 倍だったこと。**「ブロックが同じ位置に来るなら」という前提が偽だった根拠**で、以前の指示が逆向きだったことの出どころです |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `1 → 2 では逐次スループットが 1 バイトも動かない` | `retraction` | 線形性が成立しないこと。**セッションを増やせば比例して伸びるという前提を否定します** |
+| `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `1 接続でのプロトコル差は再現しなかった` | `retraction` | iSCSI と NVMe/TCP の単一接続に差が無いこと。**プロトコルの選択を単一接続のスループットで決めない根拠** |
 | `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `別の上限である` | `retraction` | 近い値を同じ原因に束ねないという訂正そのもの。**ブロックの値をファイルの値で代用しない根拠。** 幅を含まないので、行が増えても動きません |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500 MiBps に一致する` | `retraction` | Amazon EFS の 499.79 MB/s は 1 フロー上限ではなくクライアント単位のクォータに一致すること。**近い値を同じ原因に束ねない。** クォータの固定値を指すので、行が増えても動きません |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `45% 違った` | `retraction` | 同一構成・同一パラメータで 2 回測って 45% 振れ、違いはキャッシュに何が残っていたかだけだったこと |
@@ -163,6 +168,14 @@ lang: ja
 | **測ったが、その表に載せない判断になった** | **不変** | **沈黙** |
 
 **下 2 行が問題です。** 4 通りのうち 2 通りで、測定が完了しても probe は沈黙します。**つまり probe は完了の合図として使えません。**
+
+**下から 2 行目の実例があります。** ブロックの単一接続が測られ、`500〜592 MB/s に収まる` を引く行は
+**「ブロックの 1 セッションが測られた時点で発火する見込み」と書いていました。測定は完了し、probe は
+沈黙しました。** 引用先が、その値を単一接続の 3 行に足さないことを**測る前に**決めていたためです。
+**そして沈黙している間に、こちらの記述は誤ったままでした** — 「ブロックが同じ位置に来るなら」という
+前提で補正を足す指示を出しており、実測は約 2 倍で、指示の向きが逆でした。**発火の予想を書くと、
+沈黙が「まだ起きていない」の確認に見えます。** 予想は書かず、沈黙の理由を指す probe を別に張る形に
+変えました。
 
 引用先のリポジトリからの指摘で判明しました。**こちらは「文がそのまま残る → 何も起きない」と書いており、それが誤りでした。** 完了は Issue で知らされる必要があり、**沈黙を「まだ測っていない」と読むと、待ち続けます。**
 
