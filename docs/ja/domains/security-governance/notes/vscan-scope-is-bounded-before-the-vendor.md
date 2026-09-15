@@ -9,6 +9,10 @@ lang: ja
 
 # ウイルス対策の選択はベンダーより前に決まる
 
+<!-- lang-switcher:start -->
+🌐 [日本語](vscan-scope-is-bounded-before-the-vendor.md) | [English](../../../../en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
@@ -266,3 +270,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](vscan-scope-is-bounded-before-the-vendor.md) | [English](../../../../en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

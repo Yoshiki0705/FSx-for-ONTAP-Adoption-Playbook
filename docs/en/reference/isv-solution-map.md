@@ -73,8 +73,8 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 **And what can be refused in real time depends on where a write lands.** A write arriving through an S3 access point cannot be refused at the moment it lands (recording and detection still work). **Reading this index row alone, as "pick one of six", never reaches that constraint.**
 
-- Design note: [The antivirus choice is settled before the vendor](../../ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) (日本語)
-- Decision tree: [How far antivirus scanning applies](../../ja/reference/decision-trees/vscan-antivirus-scope.md) (日本語)
+- Design note: [The antivirus choice is settled before the vendor](../domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md)
+- Decision tree: [How far antivirus scanning applies](decision-trees/vscan-antivirus-scope.md)
 
 ---
 
@@ -104,7 +104,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 **And for the goal of spending less, external archiving and the FSx for ONTAP capacity pool tier read as one column and are in fact ordered.** That the published reduction rate is measured against the customer's own legacy environment also needs checking before the figure is used.
 
-- Design note: [Archiving and the capacity pool tier are ordered, not alternatives](../../ja/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) (日本語)
+- Design note: [Archiving and the capacity pool tier are ordered, not alternatives](../domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
 - Decision tree: [Choosing a migration method](../../ja/reference/decision-trees/migration-method.md) (日本語)
 - Design note: [Preserving ACLs is a permissions problem, not a tooling problem](../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語)
 - See also: the manufacturing case (3 PB migrated) is in the [industry resource map](../../ja/reference/industry-resource-map.md#製造) (日本語)
@@ -135,7 +135,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 **AWS-native options sit beside it.** FSx for ONTAP volume backups with AWS Backup, and ONTAP snapshots with SnapMirror.
 
-- Design note: [A third-party backup product reaches it by a route that is not the AWS API](../../ja/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) (日本語)
+- Design note: [A third-party backup product reaches it by a route that is not the AWS API](../domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md)
 - Design note: [Having a snapshot is not the same as being able to recover](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md)
 - Design note: [A backup copy holds no file system until it is restored](../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語)
 
@@ -244,7 +244,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 - [Reference](../../ja/reference/README.md) — the cross-cutting reference hub
 - [Industry resource map](../../ja/reference/industry-resource-map.md) (日本語) — reading order when entering from an industry, plus the case-study index
 - [Cross-repository citation index](../../ja/reference/cross-repo-index.md) (日本語) — where implementations belong
-- [The antivirus choice is settled before the vendor](../../ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) (日本語) — an example of a problem with a design note
+- [The antivirus choice is settled before the vendor](../domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) — an example of a problem with a design note
 - [Choosing a migration method](../../ja/reference/decision-trees/migration-method.md) (日本語) — the method that is settled before the product
 - [Evidence Policy](../evidence-policy.md) — how the inclusion criteria relate to the `evidence` tiers
 

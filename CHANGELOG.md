@@ -431,6 +431,24 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The three design notes and the decision tree under the ISV index are translated.** The index was
+  translated first and labelled every one of them `(日本語)`; those labels are now gone because the
+  pages exist. All four had settled — two were untouched since they were written, two had changed once.
+  - **`docs/en/` gains** `security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md`,
+    `data-protection/notes/third-party-backup-reaches-it-by-another-route.md`,
+    `cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md`, and
+    `reference/decision-trees/vscan-antivirus-scope.md`.
+  - **Nine link errors were caught by gates rather than by reading.** `switcher-check` found five
+    links in the English index still aimed at Japanese; `make links` found two paths one directory
+    level out and a Japanese anchor pointing into a file whose English copy has English headings;
+    **`ja-markers`, in the direction added immediately before this, found two markers on a note that
+    was already translated.** Each is the failure that gate exists for.
+  - **The Japanese anchor is the one worth naming.** `access-point-authorization-layers.md` exists in
+    English, so the link resolved — to a fragment that does not exist there. **GitHub answers an
+    unknown fragment with the top of the page**, so nothing would have reported it to a reader.
+  - Links into pages that are still Japanese-only — the FPolicy note, the irreversible-approval note,
+    the block-storage note, four reference leaves — keep their markers, which is now checked in both
+    directions.
 - **The ISV index is translated, and the search date was consolidated first so that translating it did
   not double a volatile value.** `docs/agent/localization.md` asks that a document be settled before it
   is translated; this one had changed in three of the four preceding pull requests, so the objection was

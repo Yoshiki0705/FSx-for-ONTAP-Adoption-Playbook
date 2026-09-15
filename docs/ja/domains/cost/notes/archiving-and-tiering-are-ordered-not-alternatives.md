@@ -9,6 +9,10 @@ lang: ja
 
 # 外部ツールのアーカイブと容量プール階層は代替ではなく順序を持つ
 
+<!-- lang-switcher:start -->
+🌐 [日本語](archiving-and-tiering-are-ordered-not-alternatives.md) | [English](../../../../en/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
 
 ---
@@ -176,3 +180,7 @@ AWS Storage Blog が公開している事例では、**2 段が順序を持っ�
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](archiving-and-tiering-are-ordered-not-alternatives.md) | [English](../../../../en/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
