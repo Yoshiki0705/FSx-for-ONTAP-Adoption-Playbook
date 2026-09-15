@@ -8,7 +8,7 @@ PY ?= python3
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
-        inbound-probes inbound-probes-refresh
+        inbound-probes inbound-probes-refresh gate
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -248,6 +248,13 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
+
+# The guarded form of `all`, and what both hooks run. It asserts the gate did not change the git
+# index — a check that writes to the real repository has left edits in the index and nowhere else.
+# `all` cannot assert this about itself: a recipe runs after its prerequisites, so it cannot see the
+# state before they ran.
+gate: ## Run `all` and assert it did not change the git index (what the hooks run)
+	@scripts/run_gate.sh /tmp/gate.log
 
 all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo inbound-probes anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."

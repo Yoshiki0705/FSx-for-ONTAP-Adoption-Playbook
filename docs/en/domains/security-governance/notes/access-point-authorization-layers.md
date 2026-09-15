@@ -695,9 +695,11 @@ HTTP 400. There is no configuration that puts the S3 path under FPolicy.
 
 **Consequence for a design.** Real-time controls built on FPolicy — ransomware detection, DLP, and
 a `mandatory` policy intended to deny an operation — do not apply to writes that arrive through an
-access point. For ransomware specifically, ARP does cover this path (measured: 150 high-entropy
-objects written through an access point were recorded as ARP suspects). For blocking, the boundary
-has to be expressed on the S3 side, in the access point policy and IAM.
+access point. For ransomware specifically, ARP does cover this path (measured: high-entropy objects
+written through an access point were recorded as ARP suspects. **The counts, and the control on the
+file-protocol side, are in the cited record** — both paths were detected and **no difference by
+path was observed**). For blocking, the boundary has to be expressed on the S3 side, in the access
+point policy and IAM.
 
 **This section states where FPolicy does not reach because it treats FPolicy as a control.** **The
 conditions under which FPolicy does work, and what running it costs, are in
@@ -708,9 +710,8 @@ event source.
 One more detail for anyone parsing these logs: a `ListObjectsV2` is audited with `Source=S3`, not
 `Source=HTTP`, and against the volume root rather than an object. Six `HeadObject` calls produced
 no audit record at all. **Those two are this repository's own observations and are not in the record
-cited above.** The ARP count of 150, by contrast, **is** in that record, so it moves there once a
-probe can be registered
-([citation index](../../../../ja/reference/cross-repo-index.md#まだ-probe-を張れていない引用) (日本語)).
+cited above.** The ARP counts, by contrast, **are** in that record, so they are not held here. Two
+copies of a number end with the stale one still being read.
 
 ### On a UNIX-security-style volume, enabling auditing records nothing
 

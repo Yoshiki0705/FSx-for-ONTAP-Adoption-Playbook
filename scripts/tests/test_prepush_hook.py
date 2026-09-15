@@ -101,12 +101,17 @@ class TrackedHookIsWired(unittest.TestCase):
         """A hook can be gutted by an edit and still look present.
 
         The behaviour cases below cover what it does. This covers what it aims at: without it, an
-        edit removing the `make all` call leaves every other test in this file passing, because a
-        hook that does nothing exits 0 and the allow cases are satisfied.
+        edit removing the gate call leaves every other test in this file passing, because a hook
+        that does nothing exits 0 and the allow cases are satisfied.
+
+        The gate is reached through `scripts/run_gate.sh`, so both halves are pinned rather than
+        the literal `make all` in this file — a comment naming it would satisfy the old assertion.
         """
         body = HOOK.read_text(encoding="utf-8")
-        self.assertIn("make all", body, "the hook no longer runs the gate")
+        self.assertIn("run_gate.sh", body, "the hook no longer runs the gate")
         self.assertIn("SKIP_GATE", body, "the documented override is gone")
+        runner = (REPO / "scripts" / "run_gate.sh").read_text(encoding="utf-8")
+        self.assertIn("make all", runner, "the gate runner no longer runs the gate")
 
     def test_the_override_is_the_same_name_as_pre_commit(self) -> None:
         """Two names for one decision is a way to have the override not work when it matters."""
