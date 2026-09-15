@@ -28,7 +28,7 @@ lang: ja
 
 そして FSx for ONTAP 側のトレードオフも対称に置きます。**HA ペア 6 組の天井があり、ホスト側の multipath と書き込み整合性は利用者の責任として残り、制御面が AWS と ONTAP の 2 つになります。**
 
-> **区分**: `documented` — 各サービスの制約と上限は AWS / NetApp 公式ドキュメントの記載に基づきます（2026-09-05 に確認）。最小構成コストは Price List API から同日取得しました。
+> **区分**: `documented` — 各サービスの制約と上限は AWS / NetApp 公式ドキュメントの記載に基づきます（2026-09-05 に確認）。最小構成コストは Price List API から同日取得しました。[ホスト側のクラスタ機能を担う製品](#ホスト側のクラスタ機能を担う製品) の節はベンダー告知と AWS のブログに基づき、**2026-09-15 に追記**しました。
 > **性能の比較は含めません。** 公開されている数値の読み方は [公開ベンチマークの読み方](#公開ベンチマークの読み方) にあります。
 > 自環境での確認手順は [自環境での確認手順](#自環境での確認手順) にあります。
 
@@ -85,12 +85,34 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 |---|---|---|
 | **HA ペア 6 組の天井** | 7 組目を追加した時点で iSCSI と NVMe/TCP が使えなくなります。**追加した HA ペアは削除できません** | 6 組を上限に設計する。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
 | **ホスト側 multipath の責任** | パスの構成・タイムアウト・切り替わりの確認はホスト側の作業です | 手順は文書化されています。[パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) |
-| **書き込み整合性の責任** | 複数ホストから同じ LUN に書くとき、調停はホスト側のクラスタ機能が行います | Amazon EBS Multi-Attach でも同じです。**共有ブロックに共通の性質です** |
+| **書き込み整合性の責任** | 複数ホストから同じ LUN に書くとき、調停はホスト側のクラスタ機能が行います | Amazon EBS Multi-Attach でも同じです。**共有ブロックに共通の性質です**。担い手の選択肢は [ホスト側のクラスタ機能を担う製品](#ホスト側のクラスタ機能を担う製品) |
 | **制御面が 2 つ** | LUN・igroup・NVMe subsystem は AWS の API に存在しません | [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) |
 | **既定の Snapshot は crash-consistent** | アプリケーションを静止させる仕組みは別に必要です | [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) |
 | **最小構成のコスト** | SSD 1,024 GiB + スループット 384 MBps が下限です | 小さい要件には Amazon EBS を使う |
 | **NVMe/TCP は第 2 世代のみ** | 第 1 世代では作り直し以外に道がありません。**Windows Server との NVMe/TCP は ONTAP 側で非対応です** | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) |
 | **スループットは HA ペア単位で共有** | NFS・SMB・S3 Access Point と同じ帯域を分け合います | [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) |
+
+---
+
+## ホスト側のクラスタ機能を担う製品
+
+**上のトレードオフ表にある「書き込み整合性の責任」は、責任の所在を述べているだけで、誰が担うかを述べていません。** ここを空欄のまま設計すると、共有ブロックを選んだのに調停の実装が決まっていない状態になります。
+
+担い手は 3 通りあります。**どれを選んでも、調停がホスト側にあるという性質は変わりません。**
+
+| 担い手 | 内容 |
+|---|---|
+| OS に同梱された機構 | Windows Server フェイルオーバークラスタリング、Linux の Pacemaker など |
+| クラスタファイルシステム | 複数ホストから同時にファイルシステムとして使う場合に必要になります |
+| 第三者のクラスタソフトウェア | 監視・切り替え・リソース依存関係の定義まで含めて引き受けます |
+
+**3 番目のうち、FSx for ONTAP との組み合わせのサポートが公表されているものが 1 つあります。**
+
+SIOS LifeKeeper について、ベンダーは **2024-11-28 からサポートサービスを提供**すると告知しており、記載されている対応範囲は **Linux 版が iSCSI と NFS、Windows 版が iSCSI**（LifeKeeper for Linux ver.9.9.0 / LifeKeeper for Windows ver.8.10.1）です。AWS 側にも Prescriptive Guidance のブログ記事があります。
+
+**この記載が意味するのはサポートの所在で、当リポジトリでの検証結果ではありません。** 版の組み合わせと対応プロトコルは選定時点でベンダーの最新情報を確認してください。
+
+**他の候補について、こちらが到達できていない範囲があります。** 同じ課題領域で日本の環境から想起される製品のうち、**FSx for ONTAP を名指しした対応記述に到達できていないものがあります**（検索日 2026-09-15）。到達できていないことは非対応を意味しません。調査状態は [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#掲載基準を満たさないもの) に記録しています。
 
 ---
 
@@ -176,6 +198,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | 1 TB のデータベースの iSCSI LUN クローンが通常 5 分以内であること | [AWS: Using SnapCenter to protect SQL Server workloads](https://aws.amazon.com/blogs/storage/using-netapp-snapcenter-with-amazon-fsx-for-netapp-ontap-to-protect-your-sql-server-workloads) |
 | iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| 第三者のクラスタソフトウェアとの組み合わせのサポートが公表されていること（2024-11-28 開始、Linux 版は iSCSI と NFS、Windows 版は iSCSI） | [ベンダー告知](https://sios.jp/news/info/2024/20241128_lk-fsx.html) · [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/)（いずれも 2026-09-15 に確認） |
 
 ---
 
@@ -189,6 +212,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 - [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア単位の共有
 - [再現できるベンチマークの条件](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) — 測定の設計
 - [ブロックストレージ横断リソースマップ](../../../reference/block-storage-resource-map.md) — 一次情報の索引
+- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md) — 調停を担う製品の索引と、こちらが到達できていない範囲
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---
