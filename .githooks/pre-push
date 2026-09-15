@@ -58,9 +58,7 @@ if [ "${SKIP_GATE:-}" = "1" ]; then
     exit 0
 fi
 
-printf '▶  make all (SKIP_GATE=1 to bypass)\n'
-if ! make all >/tmp/pre-push-gate.log 2>&1; then
-    tail -n 25 /tmp/pre-push-gate.log >&2
-    fail "make all failed — full log: /tmp/pre-push-gate.log"
-fi
-printf '\033[32m✅ make all\033[0m\n'
+# Same delegation as pre-commit, and for the same two reasons: the index assertion around `make all`
+# lives in one place rather than two, and the path is resolved from this file rather than from
+# `--show-toplevel`, which a leaked GIT_DIR redirects.
+"$(dirname "$0")/../scripts/run_gate.sh" /tmp/pre-push-gate.log || exit 1

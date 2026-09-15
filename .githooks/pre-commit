@@ -36,13 +36,14 @@ esac
 #
 # Running the gate *here* removes the class rather than the instance. git checks this hook's
 # exit code itself, so no amount of piping upstream can hide a failure.
+# The run is delegated so the index assertion exists once. Both hooks run `make all`, and a check
+# with two copies is a check whose copies drift — the same reason the probe-strength rule is in one
+# module read by both directions.
 if [ "${SKIP_GATE:-}" = "1" ]; then
     printf '\033[33m⚠  SKIP_GATE=1 — committing without running the gate\033[0m\n'
 else
-    printf '▶  make all (SKIP_GATE=1 to bypass)\n'
-    if ! make all >/tmp/pre-commit-gate.log 2>&1; then
-        tail -n 25 /tmp/pre-commit-gate.log >&2
-        fail "make all failed — full log: /tmp/pre-commit-gate.log"
-    fi
-    printf '\033[32m✅ make all\033[0m\n'
+    # Resolved from this file's own location, not from `git rev-parse --show-toplevel`. A hook runs
+    # with GIT_DIR exported, and under a leaked one `--show-toplevel` answers for whichever
+    # repository that points at — which is the class of defect this whole area exists to close.
+    "$(dirname "$0")/../scripts/run_gate.sh" /tmp/pre-commit-gate.log || exit 1
 fi
