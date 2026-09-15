@@ -19,6 +19,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | **Snapshot は取っている** | [Snapshot があることと復旧できることは別](notes/snapshots-are-not-a-recovery-plan.md#守れる対象) | 仕組みごとに守れる障害が違います。**Snapshot はボリュームと一緒に失われます** |
 | **別リージョン・別アカウントへ退避したい** | [バックアップコピーは復元するまでファイルシステムを持たない](notes/backup-copies-across-regions-and-accounts.md) | 退避先で何が存在し、何が存在しないか。**SnapMirror との選び分けもここです** |
 | **ランサムウェア対策を求められている** | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) | **不可逆な選択が 3 段あります。** 特権削除は満了後には使えません |
+| **既存のバックアップ製品を使っている** | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) | **経路が違う場合があります。** 「非対応」と「書かれていない」の区別も要ります |
 
 ---
 
@@ -35,6 +36,8 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 7 | バックアップコピーと SnapMirror をどう選び分けるか | [SnapMirror との選び分け](notes/backup-copies-across-regions-and-accounts.md#snapmirror-との選び分け) |
 | 8 | 複製先のデータを分析基盤に読ませられるか。SnapMirror を止める必要はあるか | [SnapMirror の宛先は break せずに S3 API で読める](../data-utilization/notes/serving-a-replication-destination-over-s3.md) |
 | 9 | Snapshot をデータセットの「版」として使えるか | [版を Snapshot に載せるときの 3 つの落とし穴](../data-utilization/notes/dataset-versions-and-experiment-branches.md#版を-snapshot-に載せるときの-3-つの落とし穴) |
+| 10 | 既存の第三者バックアップ製品をそのまま使えるか | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) |
+| 11 | ベンダー資料の「対応」をどう読むか。列挙に無いことは非対応か | [明示的な除外と列挙の不在の区別](notes/third-party-backup-reaches-it-by-another-route.md#明示的な除外と列挙の不在の区別) |
 
 ---
 

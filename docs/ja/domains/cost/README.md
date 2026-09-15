@@ -19,6 +19,7 @@
 | **請求書**（想定より高い） | [請求が想定より高いとき](../../reference/decision-trees/cost-higher-than-expected.md) | **確保で課金か消費で課金かが最初の分岐。** 使用量を減らしても動かない項目があります |
 | **見積もり**（これから作る） | [見積もりが外れる典型的な前提](notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) | 外れる前提。**重複排除と圧縮は SSD の請求を下げません** |
 | **削る候補が決まっている** | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) | 削ると何を引き換えにするか。**要件で確保量が決まっているなら削れません** |
+| **公開事例の削減率**（自環境に当てられるか調べたい） | [公開された削減率の基準](notes/archiving-and-tiering-are-ordered-not-alternatives.md#削減率の基準と脚注に書かれた構成) | **基準は自社の旧環境です。** 構成が違えば率は移りません |
 
 ---
 
@@ -33,6 +34,8 @@
 | 5 | コストと可用性・性能のトレードオフをどう見比べて決めるか | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) |
 | 6 | 請求が想定より高いとき、どこから確かめるか | [請求が想定より高いとき](../../reference/decision-trees/cost-higher-than-expected.md) |
 | 7 | 最小構成そのものが高いのではないか。複製が 1 つだけの場合はどうか | [最小構成の床](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) / [台数の問いから複製の問いへ](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#台数の問いから複製の問いへの置き換え) |
+| 8 | 外部ツールのアーカイブと容量プール階層はどちらを選ぶのか | [代替ではなく順序を持ちます](notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
+| 9 | 公開事例の削減率を自環境の見積もりに使えるか | [削減率の基準と、脚注に書かれた構成](notes/archiving-and-tiering-are-ordered-not-alternatives.md#削減率の基準と脚注に書かれた構成) |
 
 ---
 

@@ -412,6 +412,34 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Two notes under the ISV index, one per problem area, and one candidate deliberately left as an
+  index row.** The index had a column recording whether a design note existed for each row; it now
+  reads "あり" for two more.
+  - **`data-protection/notes/third-party-backup-reaches-it-by-another-route.md`** — a vendor's own
+    documentation shows three routes with FSx for ONTAP placed differently in each. The AWS plug-in,
+    which works through AWS Backup, **excludes it by name**; the ONTAP plug-in's supported-systems
+    list **does not mention it**; the remaining route treats the file system as unstructured data over
+    NFS or SMB.
+  - **The distinction between those two is the point.** A stated exclusion and an absence from an
+    enumeration support different conclusions, and reading the second as non-support is a move
+    `fsx-ontap-fit-conditions.md` already names as forbidden. The note says the vendor was not asked.
+  - **Scope discipline on the Vault Lock finding.** The same page states that cloud-native backups
+    cannot be stored in a logically air-gapped vault or one with AWS Backup Vault Lock enabled — a
+    constraint on the route FSx for ONTAP is excluded from. It is recorded as an instance of an
+    irreversible setting closing a tool route, and explicitly as not binding here.
+  - **`cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md`** — external archiving and the
+    capacity pool tier read as competing line items and are in fact sequential, acting on different
+    billing dimensions: the first leaves the file system, the second stays inside it and is charged
+    per request.
+  - **The published total does not follow from the published parts.** 70% archived plus 60% of the
+    remaining 30% is 88, not the "over 90%" stated, and the counting method is absent. **The ordering
+    is citable; the total is not**, and the note says which is which.
+  - **The reduction figure has a stated basis, which is rare enough to be the reason to cite the
+    case**: over 50% against the customer's own legacy environment at $1/GB/year, with the
+    configuration footnoted and third-party licensing included in it. Three inputs that move the rate
+    are named, so a reader can see why it does not transfer.
+  - **Datadobi stays an index row.** It meets the inclusion bar on a vendor announcement, but there is
+    no primary source to derive constraints from, and a note without a claim would be filler.
 - **What can refuse a write, stated per write path — and the answer is not the same as what can see
   one.** Two documents landed in `main` within an hour of each other: the antivirus note, whose
   on-access policy takes `CIFS` as its protocol, and the FPolicy note, whose measured table shows a
