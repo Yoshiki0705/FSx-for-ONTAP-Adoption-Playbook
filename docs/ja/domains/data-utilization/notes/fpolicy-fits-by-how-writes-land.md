@@ -201,6 +201,7 @@ S3 Access Point で書いたファイルを後からファイルプロトコル�
 - [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../security-governance/notes/access-point-authorization-layers.md#この経路を見ない-fpolicy) — 制御としての FPolicy と、監査・ARP との役割の違い
 - [クロスアカウントは IAM ではなくネットワークの問題](../../observability/notes/cross-account-is-a-network-problem.md#収集元の数を決めるのは接続の向き) — push 経路として見た FPolicy。**拠点を増やすと収集元が増える唯一の経路です**
 - [多層のランサムウェア対策](../../data-protection/notes/snaplock-and-layered-ransomware-readiness.md) — 予防層としての FPolicy の位置づけ
+- [ウイルス対策の選択はベンダーより前に決まる](../../security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md#書き込みの着地経路によるインラインでの拒否の可否) — **Vscan の on-access も同じ経路に届きません。** 着地経路ごとに 5 つの手立てを並べた表があります
 - [Domain — 可観測性](../../observability/README.md) — 監視パイプラインとしての経路選定
 - [プロジェクト間の引用索引](../../../reference/cross-repo-index.md) — この転記の登録状況
 - [知見の分類ポリシー](../../../evidence-policy.md)

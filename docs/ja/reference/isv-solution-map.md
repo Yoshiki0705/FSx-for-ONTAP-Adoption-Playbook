@@ -66,6 +66,8 @@ lang: ja
 
 **選ぶ前に決まることが 4 つあります。** AD 参加の有無、対象プロトコル、`scan-mandatory` の設定、既定の除外条件。**6 社の差はこの 4 つの後にしか効きません。**
 
+**そして書き込みの着地経路によって、リアルタイムに拒否できる範囲が変わります。** S3 Access Point 経由で着地する書き込みには、着地の瞬間に拒否する手立てがありません（記録と検知は成立します）。**この索引の行だけを見て「6 社から選べばよい」と読むと、この制約に到達しません。**
+
 - 判断ノート: [ウイルス対策の選択はベンダーより前に決まる](../domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md)
 - 決定木: [ウイルス対策の適用範囲をどこまでにするか](decision-trees/vscan-antivirus-scope.md)
 
