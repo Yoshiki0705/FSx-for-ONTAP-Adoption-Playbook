@@ -7,7 +7,8 @@ PY ?= python3
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
-        diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external
+        diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
+        inbound-probes inbound-probes-refresh
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -211,6 +212,14 @@ cross-repo: ## Check that sibling-repository citations are registered
 	@$(PY) tools/check_cross_repo.py
 cross-repo-external: ## Also fetch each cited file and confirm the probe string survives
 	@$(PY) tools/check_cross_repo.py --external
+# The mirror image of the two above, and the half that was missing. Those guard what this repository
+# cites; this guards what other repositories cite *from* here. The offline direction is ours to
+# check, because the pinned files are in this tree — so it belongs in the commit gate, unlike
+# cross-repo-external. Discovery needs the network and is opt-in.
+inbound-probes: ## Check that strings other repositories pin in our files still occur exactly once
+	@$(PY) tools/check_inbound_probes.py
+inbound-probes-refresh: ## Re-read each sibling's published contract and rewrite the artifact
+	@$(PY) tools/check_inbound_probes.py --refresh
 
 headings: ## Check that Japanese section headings are noun phrases
 	@$(PY) tools/check_heading_style.py --selftest >/dev/null
@@ -240,7 +249,7 @@ pr-verify: ## Confirm CI passed for the commit a PR will merge (PR=<number>)
 links-external: ## Check internal + external links (network required)
 	@$(PY) tools/check_links.py --external
 
-all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo inbound-probes anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

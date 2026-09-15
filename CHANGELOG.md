@@ -441,6 +441,64 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     responsibility its trade-off table already assigned to the host. Japanese only for now;
     `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
     a Japanese-only page.
+- **The outbound probe strength rule, and the six rows that did not satisfy it.** `make
+  inbound-probes` already rejected a pinned string that occurs twice or only in a heading. The
+  outbound direction — the strings this repository pins in other repositories — had no such check,
+  so the two directions enforced different rules while both reported success.
+  - `make cross-repo-external` now classifies as well as confirms presence. It costs no extra
+    fetches: presence and strength are answered by the same request.
+  - **The rule lives in one place**, `tools/probe_strength.py`, read by both directions, with a test
+    that neither carries its own copy and that the verdict names are not restated in prose. A second
+    copy is how they drift.
+  - **Six probes were re-pinned**: `paused`, `the volume is a FlexCache`, `5 GB → 50 GB`, `0.18 倍`,
+    `45% 違った`, `承認を得て実行` — each occurred two or three times in the cited file, so either
+    copy could have been reworded with the gate still green. Each replacement names the claim the
+    citing document actually rests on and was verified as occurring exactly once in body text.
+  - **The two weakness classes do not overlap.** Six heading-only probes were fixed earlier, six
+    duplicated ones here, and no row appeared in both sets. Holding one rule is indistinguishable
+    from holding none for the class it cannot see.
+  - **A limit that cannot be closed here**: the cited files are in other repositories, so this check
+    needs the network and stays out of the commit gate. A weak probe is caught when the external
+    check runs, not when it is registered.
+  - One replacement had to be chosen twice: the first candidate quoted a sentence containing a bare
+    product abbreviation, which the naming audit rejects. The gate was right — a probe is quoted
+    text, and it lands in a published artifact.
+- **A single-connection block measurement is not a planning input, because the same configuration
+  moved 1.92x between runs.** NVMe/TCP at one I/O queue measured 591.64 MB/s — 4.73 Gbps, sitting on
+  the documented 5 Gbps single-flow position, matching that environment's NFS single connection
+  (591.62), and pinned within 591.5–591.7 across all four read/write workloads, which is the shape of
+  hitting one path's ceiling. Re-measured with the same requested and negotiated parameters it
+  returned 1,135.88. **The cited record rules out the environment with controls** (4 KiB random reads
+  within 4% across three configurations, `connect-all` sequential matching to 0.007%) and does not
+  identify the cause.
+  - This sharpens rather than reverses the retraction recorded below. The withdrawn instruction
+    assumed block would land where the file protocols land, and **one block measurement did exactly
+    that** — so agreeing with the divisor was never confirmation either. Both directions can move.
+  - [`paths-are-the-failover-mechanism.md`](docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md)
+    now carries both multiplicity-1 block values, the 0.06% protocol equivalence between them, and
+    the two separate unconfirmed questions kept apart: why block exceeds the file protocols, and why
+    the same configuration moved. **Different candidate lists, so they must not be explained by one
+    cause.**
+- **`make inbound-probes`, and the artifact it reads.** Cross-repository citation had one direction
+  guarded: what this repository cites, and whether the cited claim still exists. The other direction
+  had nothing. Another repository pins three strings inside
+  `docs/ja/reference/comparison/block-to-file-routes.md` — **two adjacent lines carry all three** —
+  and nothing here recorded that. Rewording that paragraph would have broken their gate with no
+  signal on this side. The three were found only because that repository mentioned the risk in
+  passing; no mechanism here would have surfaced them.
+  - The gate demands more than presence: **exactly one occurrence, in body text.** Zero fails
+    because their gate then reads our edit as a retraction of their claim. **Two or more fails
+    because their gate stays green while one copy can be reworded**, so the probe silently stops
+    guarding anything. Heading-only fails for the same reason it does on the outbound side.
+  - **Writing prose about a pinned string is the ordinary way to create the second copy.** The
+    repository that reported the class did exactly that while documenting it. The note added to
+    `block-to-file-routes.md` therefore points at the artifact instead of quoting the strings.
+  - **Coverage is a floor.** Discovery reads each sibling's *published* contract, and most publish
+    none. Those are recorded as unknown rather than counted as clean — a contract file's absence is
+    not a probe's absence. The sibling list is derived from repository references in prose rather
+    than hardcoded, which is how discovery found one repository a hand-written list had missed.
+  - The offline half runs in `make all` because the pinned files are in this tree. Only discovery
+    needs the network (`make inbound-probes-refresh`).
 - **Note: [a SnapMirror destination can be read over S3 without breaking the relationship](docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md).**
   The question arrives as "the destination is read-only, so an S3 Access Point cannot be attached to
   it" — and **that framing is the error.** Amazon FSx states the condition for attaching an access

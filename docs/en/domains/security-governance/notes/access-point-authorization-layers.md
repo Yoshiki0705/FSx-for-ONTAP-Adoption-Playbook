@@ -668,6 +668,23 @@ mechanisms and they answer differently, so one cannot stand in for the other.
 Measured 2026-08-26 on ONTAP 9.18.1P3D1, with an FPolicy policy carrying one event per protocol
 the release accepts, every file operation enabled, scoped to the volume under test.
 
+**This section's measurement date differs from `verified_on` in the frontmatter.** The note was
+created for the 2026-08-18 authorization work, and the FPolicy measurement was appended on 08-26.
+`verified_on` holds a single value and cannot express two verification events, so **the frontmatter
+keeps the primary one and the second is recorded here.**
+
+**The procedure, the environment table and the raw counts are in the
+[FSx-for-ONTAP-Observability-integrations record](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/verification-results-fpolicy-s3ap-and-session.md).**
+What is here is the conclusion; **the method is reachable only through that record.**
+
+**The protocol set has not changed in a later release.** The three values `cifs` / `nfsv3` /
+`nfsv4`, and the HTTP 400 rejection of `s3` / `object` / `http` / `smb`, were **re-confirmed on
+ONTAP 9.18.1P5**
+([FSx-for-ONTAP-Lakehouse-Integrations record](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml),
+2026-09-14). **The re-confirmation covers the structural side only.** Whether a notification fires,
+and whether a `mandatory` policy blocks, were not re-measured on 9.18.1P5, so those two columns
+below are inherited from the 9.18.1P3D1 measurement.
+
 | Path | FPolicy notification | Blocked by a `mandatory` policy | ONTAP audit | Detected by ARP |
 |---|---|---|---|---|
 | NFS / SMB | fires | **yes** — `Permission denied` | records | yes |
@@ -682,9 +699,18 @@ access point. For ransomware specifically, ARP does cover this path (measured: 1
 objects written through an access point were recorded as ARP suspects). For blocking, the boundary
 has to be expressed on the S3 side, in the access point policy and IAM.
 
+**This section states where FPolicy does not reach because it treats FPolicy as a control.** **The
+conditions under which FPolicy does work, and what running it costs, are in
+[FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](../../../../ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md) (日本語).**
+The "NFS / SMB fires" row above is also the entry point to the side where FPolicy holds up as an
+event source.
+
 One more detail for anyone parsing these logs: a `ListObjectsV2` is audited with `Source=S3`, not
 `Source=HTTP`, and against the volume root rather than an object. Six `HeadObject` calls produced
-no audit record at all.
+no audit record at all. **Those two are this repository's own observations and are not in the record
+cited above.** The ARP count of 150, by contrast, **is** in that record, so it moves there once a
+probe can be registered
+([citation index](../../../../ja/reference/cross-repo-index.md#まだ-probe-を張れていない引用) (日本語)).
 
 ### On a UNIX-security-style volume, enabling auditing records nothing
 

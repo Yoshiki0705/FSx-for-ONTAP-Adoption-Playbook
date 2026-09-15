@@ -110,7 +110,7 @@ See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 | The on-premises Grafana dashboards work as they are | **10 are unsupported and 8 are disabled by default.** The absence of Health and Headroom affects operational design |
 | Harvest can send straight to Amazon Managed Service for Prometheus | **It has no remote_write.** A scraper plus SigV4 adds one hop |
 | Cross-account monitoring is an IAM configuration | **The target is the ONTAP management LIF, so it is a network reachability problem.** It is not an AWS API |
-| Cross-platform is an extension of cross-account | **The design changes in kind.** It becomes a distributed layout with a collector at each site |
+| Cross-platform is an extension of cross-account | **The design changes in kind.** What changes is not that collection becomes distributed, though — **a pull route still collects into one place across sites, and only the push route (FPolicy) needs a collector per site**, because ONTAP holds the external engine's IP and opens the connection itself. What grows is routes, credentials and fault isolation ([details](../../../ja/domains/observability/notes/cross-account-is-a-network-problem.md#収集元の数を決めるのは接続の向き) (日本語)) |
 | Amazon Managed Grafana can be embedded in a company portal | **It does not support anonymous access.** IdP-initiated login is unsupported too |
 | ZAPI is deprecated, so migrating to REST is mandatory | **End of availability was postponed indefinitely.** The reason to prefer REST is feature coverage, not deprecation |
 | There is one official sizing guideline | **The sources disagree.** You have to settle it against your own target count and metric count |
