@@ -117,6 +117,13 @@ jobs:
       - name: Check cross-repository citations are registered
         run: make cross-repo
 
+      # The inbound direction, which needs no network: the pinned files are in this tree. Another
+      # repository's gate depends on exact strings here, and it cannot warn us first -- its check
+      # runs against a tree it does not have. A duplicated string fails too, because that leaves
+      # their gate green while one copy can be reworded.
+      - name: Check strings other repositories pin in our files
+        run: make inbound-probes
+
       # Renaming a heading another repository cites by fragment is invisible from the other side:
       # GitHub answers an unknown fragment with the top of the page, so the citing document keeps
       # resolving and stops pointing at anything. This gate is the only place that break surfaces,
