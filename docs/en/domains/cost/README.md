@@ -32,6 +32,8 @@ the table of contents; this is the entry point.
 | 3 | Which assumptions typically break an estimate | [The assumptions that break an estimate](notes/provisioned-versus-consumed.md#typical-estimation-assumptions-that-break) |
 | 4 | How to account for Snapshot capacity impact | [Snapshots show up as capacity](notes/provisioned-versus-consumed.md#snapshots-consume-capacity) |
 | 5 | How to weigh the cost-availability-performance trade-off | [Weighing the trade-off symmetrically](notes/provisioned-versus-consumed.md#how-to-weigh-trade-offs) |
+| 6 | Whether to choose external archiving or the capacity pool tier | [They are ordered, not alternatives](notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
+| 7 | Whether a published reduction rate can be used as an estimate | [The basis for the reduction, and the configuration in the footnote](notes/archiving-and-tiering-are-ordered-not-alternatives.md#the-basis-for-the-reduction-and-the-configuration-in-the-footnote) |
 
 ---
 

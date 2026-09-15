@@ -9,6 +9,10 @@ lang: ja
 
 # 第三者バックアップ製品が届く経路は AWS の API 側ではない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](third-party-backup-reaches-it-by-another-route.md) | [English](../../../../en/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
 
 ---
@@ -141,3 +145,7 @@ lang: ja
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](third-party-backup-reaches-it-by-another-route.md) | [English](../../../../en/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

@@ -37,6 +37,8 @@ the table of contents; this is the entry point.
 | 8 | What to bound when handing out snapshots and clones without admin rights | [What you bound when handing out experiment branches is more than permissions](../../../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
 | 9 | Whether SMB logon success, failure, and logoff are recorded in the audit log | [4624 is recorded, but what it counts is sessions](notes/smb-logon-audit-event-coverage.md) |
 | 10 | What happens to availability when auditing is enabled | [An exhausted audit destination stops access, but not at the moment it fills](notes/audit-log-space-and-client-access.md) |
+| 11 | How far antivirus can be applied, and what is settled before the product | [The antivirus choice is settled before the vendor](notes/vscan-scope-is-bounded-before-the-vendor.md) |
+| 12 | In what order to decide how far antivirus scanning applies | [How far antivirus scanning applies](../../reference/decision-trees/vscan-antivirus-scope.md) |
 
 ---
 

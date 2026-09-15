@@ -32,6 +32,8 @@ the table of contents; this is the entry point.
 | 3 | How to use WORM / SnapLock and what is irreversible | [Enabling SnapLock is not the same as locking](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) |
 | 4 | How to verify the recovery procedure | [Actually exercising a restore](notes/snapshots-are-not-a-recovery-plan.md#verify-in-your-own-environment) |
 | 5 | What is effective as ransomware readiness | [Ransomware readiness is layered](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#層で考えるランサムウェア対策) (日本語) |
+| 6 | Whether an existing third-party backup product can be used as it is | [It reaches it by a route that is not the AWS API](notes/third-party-backup-reaches-it-by-another-route.md) |
+| 7 | How to read "supported" in vendor material; whether absence from a list means non-support | [Telling a stated exclusion from an absence](notes/third-party-backup-reaches-it-by-another-route.md#telling-a-stated-exclusion-from-an-absence) |
 
 ---
 

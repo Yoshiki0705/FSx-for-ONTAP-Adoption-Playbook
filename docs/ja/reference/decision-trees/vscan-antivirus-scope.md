@@ -9,6 +9,10 @@ lang: ja
 
 # ウイルス対策の適用範囲をどこまでにするか
 
+<!-- lang-switcher:start -->
+🌐 [日本語](vscan-antivirus-scope.md) | [English](../../../en/reference/decision-trees/vscan-antivirus-scope.md) | [🏠 リポジトリトップ](../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../README.md) | [Reference](../README.md) | [決定木](README.md) | [Domain — セキュリティ・ガバナンス](../../domains/security-governance/README.md)
 
 ---
@@ -165,3 +169,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../README.md) | [Reference](../README.md) | [決定木](README.md) | [Domain — セキュリティ・ガバナンス](../../domains/security-governance/README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](vscan-antivirus-scope.md) | [English](../../../en/reference/decision-trees/vscan-antivirus-scope.md) | [🏠 リポジトリトップ](../../../../README.md)
+<!-- lang-switcher:end -->
