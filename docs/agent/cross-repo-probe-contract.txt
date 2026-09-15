@@ -81,6 +81,8 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	別の上限である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	同一ファイル側の伸びは、ONTAP のメモリが重なりを供給した結果である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	既定 65,536 のままだと
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	環境が違ったから single が動いたのではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	範囲 500〜592 MB/s は「これを超える多重度 1 の実測が無い」という意味ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	行を足さず、範囲（500〜592 MB/s）も変えない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	観測したチャネル数は 4 であり
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	EFS は `nconnect` にも非対応
