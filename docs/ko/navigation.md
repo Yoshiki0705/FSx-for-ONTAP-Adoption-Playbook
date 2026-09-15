@@ -61,7 +61,7 @@ graph TD
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | **모니터링을 어떻게 구성할지 정하고 싶다** | [모니터링 경로 결정 트리](../ja/reference/decision-trees/observability-route.md) (日本語) | [가관측성](../en/domains/observability/) (English) |
 | **자신의 업종에서 무엇을 결정해야 할지 알고 싶다** | [업종별 리소스 맵 — 읽는 순서](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [업종별 색인](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
-| **이미 사용 중인 제품을 FSx for ONTAP과 조합하고 싶다** | [과제별 ISV / SaaS 솔루션 맵](../ja/reference/isv-solution-map.md) (日本語) | [게재 기준을 충족하지 않는 후보](../ja/reference/isv-solution-map.md#掲載基準を満たさないもの) (日本語) |
+| **이미 사용 중인 제품을 FSx for ONTAP과 조합하고 싶다** | [과제별 ISV / SaaS 솔루션 맵](../en/reference/isv-solution-map.md) (English) | [게재 기준을 충족하지 않는 후보](../en/reference/isv-solution-map.md#candidates-that-did-not-meet-the-bar) (English) |
 | 상한값에 걸리지 않는지 확인하고 싶다 | [상한값·쿼터](../ja/reference/limits/) | [설계](../en/playbooks/02-design/) (English) |
 | S3 API나 분석 플랫폼에서 접근하고 싶다 | [FSx for ONTAP S3 AP 전제 조건](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [액세스 포인트 정책 작성 방법](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 | AI / ML 학습 데이터를 두고 실험별로 분기하고 싶다 | [학습 데이터셋 버전과 실험 브랜치의 제약](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [실험 브랜치를 배포할 때 제한할 3가지 대상](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |

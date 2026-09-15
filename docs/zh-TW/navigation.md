@@ -61,7 +61,7 @@ graph TD
 | 已在運行，希望重新檢視成本 | [成本](../en/domains/cost/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |
 | **希望決定如何建置監控** | [監控路徑決策樹](../ja/reference/decision-trees/observability-route.md) (日本語) | [可觀測性](../en/domains/observability/) (English) |
 | **想從自身所屬產業出發，釐清該決定什麼** | [產業資源圖 — 閱讀順序](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [產業索引](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
-| **想將既有產品與 FSx for ONTAP 組合** | [依課題劃分的 ISV / SaaS 解決方案圖](../ja/reference/isv-solution-map.md) (日本語) | [未達收錄標準的候選](../ja/reference/isv-solution-map.md#掲載基準を満たさないもの) (日本語) |
+| **想將既有產品與 FSx for ONTAP 組合** | [依課題劃分的 ISV / SaaS 解決方案圖](../en/reference/isv-solution-map.md) (English) | [未達收錄標準的候選](../en/reference/isv-solution-map.md#candidates-that-did-not-meet-the-bar) (English) |
 | 想確認設計是否觸及上限值 | [上限值與配額](../ja/reference/limits/) | [設計](../en/playbooks/02-design/) (English) |
 | 想透過 S3 API 或分析平台存取 | [FSx for ONTAP S3 AP 的前提條件](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [存取點政策的寫法](../en/domains/security-governance/notes/access-point-authorization-layers.md) (English) |
 | 想存放 AI / ML 訓練資料並依實驗分支 | [訓練資料集版本與實驗分支的限制](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [發放實驗分支時要約束的三個對象](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |

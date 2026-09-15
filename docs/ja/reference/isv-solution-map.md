@@ -9,6 +9,10 @@ lang: ja
 
 # 課題別 ISV / SaaS ソリューションマップ
 
+<!-- lang-switcher:start -->
+🌐 [日本語](isv-solution-map.md) | [English](../../en/reference/isv-solution-map.md) | [🏠 リポジトリトップ](../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../README.md) | [Reference](README.md)
 
 ---
@@ -24,7 +28,8 @@ lang: ja
 
 **製品の形態は課題では決まりません。** 同じ課題に対して、EC2 に載せるソフトウェア・SaaS・AWS のマネージドサービスが並びます。だから形態は列の 1 つとして持ち、括りには使いません。
 
-> **区分**: `documented` — 各行の出典の所在を記載しています。**製品の動作を当リポジトリで検証したものは、判断ノートの列に記載があるものだけ**です。検索日は各行に記載しています。
+> **区分**: `documented` — 各行の出典の所在を記載しています。**製品の動作を当リポジトリで検証したものは、判断ノートの列に記載があるものだけ**です。
+> **本表と [掲載基準を満たさないもの](#掲載基準を満たさないもの) の全行は 2026-09-15 に検索しました。** 以降に追加した行は、その行に検索日を併記します。**日付を行ごとに繰り返さないのは、同じ値を 11 か所に持つと更新が漏れるためです。**
 
 ---
 
@@ -60,9 +65,9 @@ lang: ja
 
 **この課題は AWS 自身のユーザーガイドに専用ページがあります。** 本表の中で、AWS のドキュメントが ISV 名を列挙している唯一の行です。
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| Deep Instinct / SentinelOne / Symantec / Trellix / Trend Micro / OPSWAT（ONTAP Vscan 経由） | EC2 に載せるソフトウェア（Vscan サーバー） | [AWS: Use NetApp ONTAP Vscan with FSx for ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-vscan.html) · [NetApp: Vscan パートナー解決策](https://docs.netapp.com/ja-jp/ontap/antivirus/vscan-partner-solutions.html) · [AWS Storage Blog](https://aws.amazon.com/jp/blogs/storage/securing-your-amazon-fsx-for-ontap-windows-share-smb-against-viruses/) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| Deep Instinct / SentinelOne / Symantec / Trellix / Trend Micro / OPSWAT（ONTAP Vscan 経由） | EC2 に載せるソフトウェア（Vscan サーバー） | [AWS: Use NetApp ONTAP Vscan with FSx for ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-vscan.html) · [NetApp: Vscan パートナー解決策](https://docs.netapp.com/ja-jp/ontap/antivirus/vscan-partner-solutions.html) · [AWS Storage Blog](https://aws.amazon.com/jp/blogs/storage/securing-your-amazon-fsx-for-ontap-windows-share-smb-against-viruses/) |
 
 **選ぶ前に決まることが 4 つあります。** AD 参加の有無、対象プロトコル、`scan-mandatory` の設定、既定の除外条件。**6 社の差はこの 4 つの後にしか効きません。**
 
@@ -75,9 +80,9 @@ lang: ja
 
 ### アプリケーションの単一障害点の除去
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| SIOS LifeKeeper | EC2 に載せるソフトウェア | [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/) · [ベンダー告知（2024-11-28）](https://sios.jp/news/info/2024/20241128_lk-fsx.html) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| SIOS LifeKeeper | EC2 に載せるソフトウェア | [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/) · [ベンダー告知（2024-11-28）](https://sios.jp/news/info/2024/20241128_lk-fsx.html) |
 
 **ベンダー告知に記載されている対応範囲**は、Linux 版が iSCSI と NFS、Windows 版が iSCSI です（LifeKeeper for Linux ver.9.9.0 / LifeKeeper for Windows ver.8.10.1、2024-11-28 開始）。
 
@@ -90,10 +95,10 @@ lang: ja
 
 ### NAS 移行とデータの可視化
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| Komprise | SaaS（管理面）+ 移行ワーカー | [AWS Storage Blog: Cost-optimized file storage with FSx for ONTAP and Komprise](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/) · [ベンダー告知](https://www.komprise.com/blog/komprise-and-aws-fsx-for-netapp-ontap/) | 2026-09-15 |
-| Datadobi StorageMAP | ソフトウェア | [ベンダー告知](https://datadobi.com/post_news/organizations-can-now-accelerate-journey-to-the-cloud-with-amazon-fsx-for-netapp-ontap-and-datadobis-storagemap/) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| Komprise | SaaS（管理面）+ 移行ワーカー | [AWS Storage Blog: Cost-optimized file storage with FSx for ONTAP and Komprise](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/) · [ベンダー告知](https://www.komprise.com/blog/komprise-and-aws-fsx-for-netapp-ontap/) |
+| Datadobi StorageMAP | ソフトウェア | [ベンダー告知](https://datadobi.com/post_news/organizations-can-now-accelerate-journey-to-the-cloud-with-amazon-fsx-for-netapp-ontap-and-datadobis-storagemap/) |
 
 **AWS ネイティブの手立てが同じ課題に並びます。** AWS DataSync と、移行元が ONTAP なら NetApp SnapMirror。**製品を検討する前に方式が決まっている場合があります。**
 
@@ -110,9 +115,9 @@ lang: ja
 
 ### ブロックを含むサーバー移行
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| Cirrus Data Migrate Cloud | ソフトウェア（ホストに導入） | [NetApp: FSx for ONTAP を使用した EC2 への VM 移行](https://docs.netapp.com/ja-jp/netapp-solutions-virtualization/migration/migrate-vms-to-ec2-fsxn-deploy.html) · [ベンダーページ](https://cirrusdata.com/cloud-migration-amazon-fsxn) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| Cirrus Data Migrate Cloud | ソフトウェア（ホストに導入） | [NetApp: FSx for ONTAP を使用した EC2 への VM 移行](https://docs.netapp.com/ja-jp/netapp-solutions-virtualization/migration/migrate-vms-to-ec2-fsxn-deploy.html) · [ベンダーページ](https://cirrusdata.com/cloud-migration-amazon-fsxn) |
 
 **このリポジトリに判断ノートはありません。** ブロックの移行方式そのものは扱っていますが、この製品を前提にした判断は整理していません。**手順は一次情報側にあります。**
 
@@ -120,9 +125,9 @@ lang: ja
 
 ### 既存バックアップ基盤への統合
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| Veeam Backup & Replication | ソフトウェア | [ベンダーユーザーガイド](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) · [NetApp ONTAP プラグインのリリース情報](https://www.veeam.com/kb4904) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| Veeam Backup & Replication | ソフトウェア | [ベンダーユーザーガイド](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) · [NetApp ONTAP プラグインのリリース情報](https://www.veeam.com/kb4904) |
 
 **制約が先に決まる行です。** 経路が 3 つあり、**AWS Backup を経由するクラウドネイティブな経路からは名指しで除外**され、ファイル共有側の機能へ案内されています。**「既存のバックアップ製品を使っているから同じ運用で入る」という前提が崩れる箇所です。**
 
@@ -156,16 +161,16 @@ lang: ja
 
 **掲載基準を満たす選択肢が 0 件です。** 詳細は [掲載基準を満たさないもの](#掲載基準を満たさないもの) にあります。
 
-**AWS ネイティブの手立ては存在します。** AWS Transfer Family は FSx for ONTAP と S3 Access Points を組み合わせた SFTP 共有の構成が AWS Storage Blog に記載されています（[出典](https://aws.amazon.com/blogs/storage/secure-sftp-file-sharing-with-aws-transfer-family-amazon-fsx-for-netapp-ontap-and-s3-access-points/)、検索日 2026-09-15）。
+**AWS ネイティブの手立ては存在します。** AWS Transfer Family は FSx for ONTAP と S3 Access Points を組み合わせた SFTP 共有の構成が AWS Storage Blog に記載されています（[出典](https://aws.amazon.com/blogs/storage/secure-sftp-file-sharing-with-aws-transfer-family-amazon-fsx-for-netapp-ontap-and-s3-access-points/)）。
 
 ---
 
 ### VMware ワークロードの移行と保護
 
-| 選択肢 | 形態 | 出典 | 検索日 |
-|---|---|---|---|
-| VMware HCX（移行） | ソフトウェア | [NetApp: HCX を使用した FSx for ONTAP データストアへの移行](https://docs.netapp.com/ja-jp/netapp-solutions-cloud/vmware/vmw-aws-vmc-migrate-hcx.html) | 2026-09-15 |
-| Veeam Backup & Replication（NFS データストア上の VM の保護） | ソフトウェア | [NetApp: VMware Cloud での Veeam のバックアップとリストア](https://docs.netapp.com/ja-jp/netapp-solutions-cloud/vmware/vmw-aws-vmc-backup-restore-veeam.html) | 2026-09-15 |
+| 選択肢 | 形態 | 出典 |
+|---|---|---|
+| VMware HCX（移行） | ソフトウェア | [NetApp: HCX を使用した FSx for ONTAP データストアへの移行](https://docs.netapp.com/ja-jp/netapp-solutions-cloud/vmware/vmw-aws-vmc-migrate-hcx.html) |
+| Veeam Backup & Replication（NFS データストア上の VM の保護） | ソフトウェア | [NetApp: VMware Cloud での Veeam のバックアップとリストア](https://docs.netapp.com/ja-jp/netapp-solutions-cloud/vmware/vmw-aws-vmc-backup-restore-veeam.html) |
 
 **判断ノートはありません。** VMware 側の構成はこのリポジトリの範囲外で、**sibling リポジトリ** [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) に実装があります。
 
@@ -175,10 +180,10 @@ lang: ja
 
 **ここに置くことは「非対応」を意味しません。** こちらが FSx for ONTAP を名指しした記述に到達できていない、という調査状態の記録です。
 
-| 候補 | 課題 | 確認できたこと | 到達できなかったこと | 検索日 |
-|---|---|---|---|---|
-| NEC CLUSTERPRO X | アプリケーションの単一障害点の除去 | AWS 向けの HA クラスタ構築ガイド（Linux / Windows、複数版）と動作確認済みソフトウェア一覧が公開されています。HULFT を AWS 上で冗長化する手順の記事もあります | **FSx for ONTAP を名指しした対応記述**。上記の資料群の中で確認できませんでした | 2026-09-15 |
-| HULFT | ファイル転送 / データ連携 | HULFT10 for Container Services が Amazon ECS / AWS Fargate と Amazon S3 に対応していること。ベンダー技術者による AWS 連携記事が複数あること | **FSx for ONTAP との組み合わせを記載した資料**。0 件でした | 2026-09-15 |
+| 候補 | 課題 | 確認できたこと | 到達できなかったこと |
+|---|---|---|---|
+| NEC CLUSTERPRO X | アプリケーションの単一障害点の除去 | AWS 向けの HA クラスタ構築ガイド（Linux / Windows、複数版）と動作確認済みソフトウェア一覧が公開されています。HULFT を AWS 上で冗長化する手順の記事もあります | **FSx for ONTAP を名指しした対応記述**。上記の資料群の中で確認できませんでした |
+| HULFT | ファイル転送 / データ連携 | HULFT10 for Container Services が Amazon ECS / AWS Fargate と Amazon S3 に対応していること。ベンダー技術者による AWS 連携記事が複数あること | **FSx for ONTAP との組み合わせを記載した資料**。0 件でした |
 
 **この 2 行を落とさずに置く理由**は、日本の読者がこの課題領域で必ず想起する製品だからです。**行が無いと「調べていない」のか「非対応」のかを読者が区別できません。**
 
@@ -216,7 +221,7 @@ lang: ja
 
 | 前提 | 内容 |
 |---|---|
-| **出典の日付** | 対応状況は変わります。各行の検索日を見て、選定時点で最新を確認してください |
+| **出典の日付** | 対応状況は変わります。**本表の検索日は 2026-09-15 です**（個別に日付を持つ行はその行に記載）。選定時点で最新を確認してください |
 | **版の組み合わせ** | 「対応」の記載は特定の版の組み合わせを意味します。ベンダーの相互運用性情報で確認が必要です |
 | **サポート境界** | AWS のサポート範囲と ベンダーのサポート範囲は別です。**組み合わせた構成の切り分け責任がどちらにあるかを契約時に確定させてください** |
 
@@ -246,3 +251,7 @@ lang: ja
 ---
 
 [🏠 リポジトリトップ](../../../README.md) | [Reference](README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](isv-solution-map.md) | [English](../../en/reference/isv-solution-map.md) | [🏠 リポジトリトップ](../../../README.md)
+<!-- lang-switcher:end -->
