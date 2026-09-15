@@ -19,6 +19,7 @@
 | **アクセスを絞りたい** | [アクセスを絞る手立ての比較](../../reference/comparison/access-restriction-options.md) | **手立ては 1 つの層に並んでいません。** どれか 1 つを選ぶ表ではありません |
 | **「誰が読んだか」に答えを求められている** | [監査は 2 つの面に分かれ、片方に穴があります](notes/what-the-platform-gives-and-what-stays-yours.md#監査の-2-つの面と片方の穴の存在) | **答えられない範囲があります。** 記録されない読み取りが存在します |
 | **取り消せない操作をこれから実行する** | [不可逆な操作の承認は作業の承認とは別に取る](notes/irreversible-operations-need-separate-approval.md) | **承認を分ける理由と、実行前に確定させる値** |
+| **ウイルス対策の製品を選ぼうとしている** | [ウイルス対策の選択はベンダーより前に決まる](notes/vscan-scope-is-bounded-before-the-vendor.md) | **製品の前に 4 つが決まります。** 対応ベンダー一覧から入ると順序が逆になります |
 
 ---
 
@@ -38,6 +39,8 @@
 | 10 | 監査を有効化すると可用性に何が起きるか | [監査宛先の枯渇はアクセスを止める。ただし満杯の瞬間ではない](notes/audit-log-space-and-client-access.md) |
 | 11 | アクセスを絞る手立てはいくつあり、どの層に効くか | [アクセスを絞る手立ての比較](../../reference/comparison/access-restriction-options.md) |
 | 12 | S3 Access Point 経由のリクエストが落ちた段をどう逆引きするか | [S3 Access Point 経由のリクエストはどう判定されるか](../../reference/decision-trees/access-point-authorization.md) |
+| 13 | ウイルス対策をどの範囲に適用できるか。製品を選ぶ前に何が決まるか | [ウイルス対策の選択はベンダーより前に決まる](notes/vscan-scope-is-bounded-before-the-vendor.md) |
+| 14 | ウイルス対策の適用範囲をどの順で決めるか | [ウイルス対策の適用範囲をどこまでにするか](../../reference/decision-trees/vscan-antivirus-scope.md) |
 
 ---
 

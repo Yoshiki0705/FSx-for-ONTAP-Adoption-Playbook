@@ -412,6 +412,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A problem-first index of ISV and SaaS options, and the first design note under it.** Third-party
+  product combinations were an axis this repository did not have: a full-text search for the two
+  products that prompted the work returned nothing, and the only adjacent material stated the
+  host-side arbitration principle without naming anyone who implements it.
+  - **`docs/ja/reference/isv-solution-map.md`** covers eight problem areas. An option is listed only
+    when AWS or NetApp published the combination, or the vendor announced FSx for ONTAP support
+    itself. **Community articles are excluded** — not because they are wrong, but because citing one
+    as the source would misstate the tier. A column records whether a design note exists for the row,
+    so an entry whose constraints were actually read is distinguishable from a bare link.
+  - **Candidates that did not meet the bar are kept, in a separate table with the search date.** Not
+    reaching a statement of support is a fact about the search, not about the product, and a missing
+    row would leave a reader unable to tell "not investigated" from "not supported".
+  - **`docs/ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md`** takes
+    the strongest-sourced area. The AWS guide names six antivirus vendors and states no constraints;
+    the constraints are on the ONTAP side and settle the configuration first — on-access takes
+    `CIFS`, the privileged user is a domain account, `scan-mandatory on` refuses client access when
+    no scanner answers, and an excluded file is not scanned even then, with the default size
+    exclusion at 2 GB. An SMB share marked continuously available is not scanned at all and there is
+    no way to enable it.
+  - **Every constraint is attributed to ONTAP in general.** No FSx for ONTAP-specific difference was
+    found, which is recorded as a search result rather than as an absence, and whether `fsxadmin` can
+    run the `vserver vscan` commands is listed as unverified so it can be promoted later.
+  - **`docs/ja/reference/decision-trees/vscan-antivirus-scope.md`** stops short of naming a vendor.
+    The differences between the six are decided by an interoperability matrix and an existing
+    contract, so a terminal that named one would be a recommendation without material behind it.
+  - `when-shared-block-changes-the-design.md` gains one section naming who can carry the write-arbitration
+    responsibility its trade-off table already assigned to the host. Japanese only for now;
+    `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
+    a Japanese-only page.
 - **The outbound probe strength rule, and the six rows that did not satisfy it.** `make
   inbound-probes` already rejected a pinned string that occurs twice or only in a heading. The
   outbound direction — the strings this repository pins in other repositories — had no such check,
