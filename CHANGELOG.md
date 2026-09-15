@@ -441,6 +441,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     responsibility its trade-off table already assigned to the host. Japanese only for now;
     `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
     a Japanese-only page.
+- **The gate now asserts it did not change the git index.** Two edits once existed only in the index
+  — no commit, no stash, no reflog entry — and unstaging them destroyed the only copy. The known
+  path for that (a hook exporting `GIT_DIR` into a test suite that shells out to git) was closed and
+  asserted in `gitenv.py`; this was a second path and it is **still unidentified.** So the invariant
+  is asserted instead of the path being chased: any leak is caught regardless of which one it is.
+  - `scripts/run_gate.sh` wraps `make all`, and both hooks call it. One copy, because a check
+    written twice is a check whose copies drift. `make gate` runs the same guarded form by hand.
+  - **`git diff-index --cached`, not a hash of `.git/index`.** A `stat` refresh rewrites that file
+    and moves its digest with no change of meaning, so it would fire on ordinary work — and a check
+    that fires on ordinary work gets bypassed, then is absent when a real leak arrives. **The
+    no-fire direction is tested**, alongside the fire direction.
+  - **Before and after, not against empty.** Inside `pre-commit` the index legitimately holds the
+    commit being made, so the invariant is "unchanged", not "clean".
+  - **A failed read is not an unchanged index.** The read's exit status is checked separately from
+    the comparison — two failed reads both return empty and would compare equal, reporting a pass.
+    An earlier draft had `fail` inside `$(...)`, where `exit` leaves only the subshell; that is the
+    same shape this repository has hit twice from a different cause.
+  - The hooks resolve the script from their own location rather than `git rev-parse --show-toplevel`,
+    which a leaked `GIT_DIR` redirects to another repository — the class of defect this area exists
+    to close.
+  - **Not covered, by construction**: a bare `make all`. A recipe runs after its prerequisites, so
+    the target cannot observe the state before they ran, and CI runs the leaf targets individually
+    where nothing is staged. The commit and push path is where the incident did its damage.
 - **The KeepAlive figure held back from the FPolicy note, now that the upstream contradiction is
   resolved** — and the operational rule that matters more than the interval itself: **a diagnostic
   window narrower than `keep_alive_interval` reports a healthy pipeline as broken.** The two are

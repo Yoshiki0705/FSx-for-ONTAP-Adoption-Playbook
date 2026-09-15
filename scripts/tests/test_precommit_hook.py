@@ -116,12 +116,19 @@ class TrackedHookIsWired(unittest.TestCase):
 
         The block cases below run the hook, so they cover behaviour. This covers
         the target: that the body still invokes the gate and still names a trunk
-        branch. Without it, a future edit that removes the `make all` call leaves
-        every other test in this file passing.
+        branch. Without it, a future edit that removes the gate call leaves every
+        other test in this file passing.
+
+        The gate is reached through `scripts/run_gate.sh`, so the literal
+        `make all` moved there. Asserting on a comment mentioning it would be a
+        test satisfied by prose, so both halves are pinned: the hook delegates,
+        and the script it delegates to runs the gate.
         """
         body = HOOK.read_text(encoding="utf-8")
-        self.assertIn("make all", body, "the hook no longer runs the gate")
+        self.assertIn("run_gate.sh", body, "the hook no longer runs the gate")
         self.assertIn("main", body, "the hook no longer names a trunk branch")
+        runner = (REPO / "scripts" / "run_gate.sh").read_text(encoding="utf-8")
+        self.assertIn("make all", runner, "the gate runner no longer runs the gate")
 
     def test_activation_is_not_asserted_on_purpose(self) -> None:
         """`core.hooksPath` is clone-local, so asserting its value would be red in CI.
