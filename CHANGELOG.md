@@ -412,6 +412,27 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The ISV index is translated, and the search date was consolidated first so that translating it did
+  not double a volatile value.** `docs/agent/localization.md` asks that a document be settled before it
+  is translated; this one had changed in three of the four preceding pull requests, so the objection was
+  raised and the cost reduced rather than the request refused.
+  - **Eleven identical `2026-09-15` cells became one statement.** Every row carried the same date, so
+    translating as-is would have produced twenty-two copies of a value that changes together. The date
+    now sits in the evidence line and in the premises table, and a row added later carries its own.
+    **The information is unchanged; what shrank is the number of places an update has to reach.**
+  - **`docs/en/reference/isv-solution-map.md`** follows the split-leaf rule for `reference/`: leaves
+    split per language, hubs stay bilingual. `sync_lang_switcher.py --write` generated both switcher
+    blocks; neither was hand-written.
+  - **Translating a leaf moves every other language's link.** All six secondary languages now point at
+    the English file with `(English)` instead of the Japanese one with `(日本語)`, and the English
+    navigation rows became local links. `switcher-check` is what caught them, along with two breadcrumbs
+    aimed at the Japanese hub and one design note that **already had an English counterpart** and so
+    should never have carried a marker.
+  - **Intra-file anchors are English; cross-file anchors into Japanese pages stay Japanese.** The
+    manifest's rule not to translate anchor IDs governs the second, not the first, and conflating them
+    would have produced fragments that resolve to the top of the page with nothing reporting it.
+  - **Scope held to the index.** The three design notes and the decision tree hanging off it stay
+    Japanese-only, linked with markers, so that an `i18n-check` failure has one cause.
 - **The ISV index is now reachable from `navigation.md` in all eight languages.** It was held back
   deliberately while only one design note hung off it: a Tier 1 row would have sent seven languages to
   a Japanese-only page for a document that was still mostly a link list. Three notes now hang off it,
