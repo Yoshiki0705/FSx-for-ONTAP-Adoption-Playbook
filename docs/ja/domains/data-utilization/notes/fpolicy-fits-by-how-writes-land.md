@@ -28,9 +28,8 @@ lang: ja
 
 > **Evidence**: `documented` — **著者が別プロジェクトで実測した記録の転記です。** このリポジトリでの再測定は含みません。
 > 測定条件・未測定の範囲は下記の該当節に転記し、引用は [引用索引](../../../reference/cross-repo-index.md) に登録済みです。
-> **1 点だけ引用していません。KeepAlive の間隔です。** 引用先の 2 文書が桁の違う値を持っていて訂正が進行中で、
-> **probe を張ってもその食い違いは検出できません**（[引用先が自己矛盾している場合の沈黙](../../../reference/cross-repo-index.md#引用先が自己矛盾している場合の沈黙)）。
-> **そのため桁でも書いていません。** 解除条件は [保留表](../../../reference/cross-repo-index.md#まだ-probe-を張れていない引用) にあります。
+> **保留していた 1 点は解消しました。** KeepAlive の間隔は引用先の 2 文書が桁の違う値を持っていた間、
+> 桁でも書いていませんでした。訂正が入り、**旧値は撤回として明示されています。**
 
 ---
 
@@ -86,6 +85,19 @@ ONTAP は外部エンジンを **`primary-servers` に IP アドレスで保持�
 
 **取り込みに使う場合、この窓は「読み込まれないファイル」です。** 監視のダッシュボードなら穴として見えますが、取り込みパイプラインでは**そのファイルが存在しないのと同じ**になります。窓の間に着地したファイルを後から回収する手段を、設計に別途持つ必要があります。
 
+### 健全性の指標が届く間隔と、診断窓の下限
+
+**接続が生きていることは KeepAlive で分かります。届く間隔は分の桁です**（正確な値は引用先。
+ONTAP の既定は `keep_alive_interval` に従います）。
+
+**そして診断の窓をその間隔より狭くすると、健全なパイプラインを異常と報告します。** 引用先は窓が
+`keep_alive_interval` を超えている必要があると明記していて、**既定より狭い窓では健全な接続が
+高い確率で「何も出ない」ように見えます。** 通知が来ないことと、窓が短いことを区別できません。
+
+**この間隔には撤回された旧値があります。** 引用先の一方が桁の違う短い値を載せていた期間があり、
+**実測で再現せず撤回されました。** 撤回の記述は引用先に残っているので、**古い値を根拠にした
+監視設定が現場にある可能性を前提にしてください。**
+
 ### enabled ポリシーの変更不可
 
 **有効なポリシーは変更できません。** 監視するイベントや scope を後から変えるには `disable` → 変更 → `enable` の順になり、**その窓の操作は捕捉されません。**
@@ -129,7 +141,7 @@ S3 Access Point で書いたファイルを後からファイルプロトコル�
 | **engine IP を再登録した後の挙動** | 再登録が継続性に与える影響は別の問いとして残っています |
 | **ロードバランサを前段に置いた場合** | 置けないという記述は構成上の理由に基づき、置いた場合の測定はありません |
 | **パターン 2 / 3 / 4** | 設計として整理されており、実行されていません |
-| **KeepAlive の間隔** | **引用先の 2 文書間で値が食い違っており、訂正が進行中です。** 桁が違う 2 つの値が並んでいるため、このノートには桁でも書いていません |
+| **KeepAlive の間隔以外の健全性指標** | **KeepAlive の有無しか測られていません。** 遅延の増大や欠落の部分的な発生を検出する手立ては測定範囲の外です |
 | S3 Access Point 経由の遮断 | 通知が無いため、遮断の可否は「該当しない」であって測定結果ではありません |
 
 **環境は窓の確認後に削除されています。** ログ保持は 30 日ですが、ロググループが Fargate スタックの資源なのでスタックと一緒に消えます。**再検査できるのは集計と、削除前に取得した窓全体のサーバーログのエクスポートだけです。**
@@ -144,6 +156,7 @@ S3 Access Point で書いたファイルを後からファイルプロトコル�
 | 2 | 同じボリュームに NFS / SMB と S3 Access Point の両方で書き、通知の有無を比べる | 経路による差が自環境でも出ること |
 | 3 | event の protocol に `s3` を指定してみる | HTTP 400 で拒否されること（[プロトコル集合の再確認](../../security-governance/notes/access-point-authorization-layers.md#この経路を見ない-fpolicy)） |
 | 4 | FPolicy サーバーのタスクを意図的に置き換え、再登録までの時間を測る | **自環境での欠落窓の桁** |
+| 4b | `keep-alive-interval` を engine から読み、監視・診断の窓がそれより広いか確認する | **健全な接続を異常と報告しないこと。** 窓が狭いと「通知が来ない」と区別できません |
 | 5 | 手順 4 の窓の間に着地したファイルを、後から回収できるか試す | **取り込みに使う場合の穴の埋め方があるか** |
 | 6 | ポリシーの scope を変更してみる | `disable` → 変更 → `enable` になること、その窓が欠落すること |
 | 7 | 通知をファイル名ではなくタイムスタンプで突き合わせる | 読み取り由来の通知を書き込みと誤認しないこと |
@@ -163,6 +176,7 @@ S3 Access Point で書いたファイルを後からファイルプロトコル�
 | 有効にすればイベントは連続する | **再起動で分の桁の欠落窓が出ます。** 取り込みではそのファイルが存在しないのと同じです |
 | 監視対象は稼働中に変更できる | **enabled のポリシーは変更できません。** `disable` → 変更 → `enable` の窓は捕捉されません |
 | 通知はファイル名で突き合わせればよい | **読み取りでも同じ名前の通知が出ます。** タイムスタンプで突き合わせてください |
+| KeepAlive が見えなければ接続が切れている | **窓が `keep_alive_interval` より狭いだけの場合があります。** 既定より短い窓では、健全な接続が高い確率で「何も出ない」ように見えます |
 | 本番構成は実測済みである | **実行されたのは単一タスクのパターンだけです。** 残る 3 つは設計です |
 
 ---
@@ -174,7 +188,7 @@ S3 Access Point で書いたファイルを後からファイルプロトコル�
 | 論点 | 出典 |
 |---|---|
 | 通知の遅延、72 時間のセッション継続、測定条件、未測定の範囲、ファイル名で突き合わせられないこと、`enabled` ポリシーの変更不可 | [FSx-for-ONTAP-Observability-integrations: verification-results-fpolicy-s3ap-and-session.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/verification-results-fpolicy-s3ap-and-session.md) |
-| NLB の役割、engine IP の自動更新の実装 | [同: operational-notes-fpolicy.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/operational-notes-fpolicy.md) — **KeepAlive の間隔について訂正が進行中です** |
+| NLB の役割、engine IP の自動更新の実装、KeepAlive の間隔と診断窓の条件 | [同: operational-notes-fpolicy.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/operational-notes-fpolicy.md) |
 | 本番アーキテクチャの 4 パターン、障害モードの対応表 | [同: fpolicy-production-architecture-patterns.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/fpolicy-production-architecture-patterns.md) |
 | `primary-servers` / `secondary-servers` による外部エンジンの構成 | [NetApp: Create FPolicy external engines](https://docs.netapp.com/us-en/ontap/nas-audit/create-fpolicy-external-engine-task.html) |
 

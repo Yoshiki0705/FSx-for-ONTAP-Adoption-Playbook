@@ -32,8 +32,11 @@ FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multiclou
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
+FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	KeepAlive messages to the FPolicy server every 120 seconds
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	NOT used for routing FPolicy traffic
+FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	The query window has to be wider than
 FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	Immediate (observed at 0.3 s)
+FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	no difference by path was observed
 FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	no spontaneous disconnect
 FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	raised no FPolicy notification
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
