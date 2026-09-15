@@ -412,6 +412,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The ISV index is now reachable from `navigation.md` in all eight languages.** It was held back
+  deliberately while only one design note hung off it: a Tier 1 row would have sent seven languages to
+  a Japanese-only page for a document that was still mostly a link list. Three notes now hang off it,
+  which was the stated condition.
+  - **The row goes where a reader is, not where the file is.** Every language gains a situational row —
+    "combining a product you already run with FSx for ONTAP" — beside the industry row, because that
+    table is the one entered from what the reader has in hand.
+  - **Only Japanese and English also gain a reference-table row.** The other six list directories there
+    and no individual files, which is how `industry-resource-map.md` is already treated. Adding a file
+    row to those six would have implied a file-level convention they do not have.
+  - **The links carry `(日本語)` even though `ja-markers` does not require it.** That gate exempts
+    `reference/`, on the ground that its hubs are bilingual single files — which this leaf is not. The
+    marker is the honest label, and the existing rows for `industry-resource-map.md` and
+    `cross-repo-index.md` already carry it by hand.
+  - Anchors are left untranslated, per the promotion checklist in `docs/i18n-manifest.txt`.
 - **Two notes under the ISV index, one per problem area, and one candidate deliberately left as an
   index row.** The index had a column recording whether a design note existed for each row; it now
   reads "あり" for two more.
