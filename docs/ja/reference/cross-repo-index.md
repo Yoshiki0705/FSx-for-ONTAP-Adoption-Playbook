@@ -303,6 +303,41 @@ issue 本文や説明文へ転記すると同じ問題が再発します。**故
 どちらを選んでも失うものがあり、ここでは**腐った記述が残るより、ゲートの外にあることが記録されている
 ほうがましだと判断しました。** この判断は方針であって、ゲートの不足ではありません。
 
+### 他リポジトリがこちらを pin している probe
+
+**この索引は outbound だけを扱います。** 逆向き——**他リポジトリがこちらのファイルの文字列を pin
+している**——は別の artefact になりました。
+
+| 向き | 追跡 | ゲート |
+|---|---|---|
+| outbound（こちらが他所を pin） | この索引と [probe 契約](../../agent/cross-repo-probe-contract.txt) | `make cross-repo` / `make cross-repo-external` |
+| **inbound（他所がこちらを pin）** | [inbound-probe-contract.txt](../../agent/inbound-probe-contract.txt) | **`make inbound-probes`** |
+| 外部から引用されている見出し | [アンカー契約](../../agent/external-anchor-contract.txt) | `make anchors` |
+
+**inbound の検査はネットワークを使いません。** pin されているファイルがこちらのツリーにあるので、
+`make all` の中に入っています。**発見のほうだけがネットワークを要します**（`make inbound-probes-refresh`）。
+
+**inbound には「存在すること」より強い規則が要ります。**
+
+| 状態 | 相手のゲート | 意味 |
+|---|---|---|
+| 1 回・本文 | 緑 | 正常 |
+| **0 回** | **赤** | **こちらの編集が、相手側では主張の撤回として報告されます** |
+| **2 回以上** | **緑** | **片方を書き換えても鳴りません。probe が何も守らなくなります** |
+| **見出しのみ** | **緑** | 節の題が残ったまま中身が入れ替わります |
+
+**2 行目と 3 行目の非対称が要点です。** 消すと相手が赤くなって気づけますが、**増やすと誰も気づき
+ません。** そして **probe について書くこと自体が 2 回目を作ります** — 引用元のリポジトリが、まさに
+この現象を文書化している最中に踏んでいます。だから
+[block-to-file-routes.md](comparison/block-to-file-routes.md) の注記は文字列を引用せず、所在だけを
+指しています。
+
+**網羅は下限です。** 発見は各 sibling が**公開している**契約を読み、sibling の一覧は本文中の
+リポジトリ参照から導出します（固定の一覧を持ちません）。**契約ファイルの不在は probe の不在では
+ありません。** 公開していない sibling は artefact の末尾に unknown として並ぶので、**どこまでが
+検査済みでどこからが不明かは artefact を見てください** — 件数をここに書くと更新が人手に残ります。
+**現状は大半が unknown です。**
+
 ### この索引が捕まえない逆リンク
 
 **外部から `docs/ja|en/domains/data-utilization/` へ向かうリンクが存在します**（[FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) の

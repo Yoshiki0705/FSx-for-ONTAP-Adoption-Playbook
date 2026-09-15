@@ -412,6 +412,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`make inbound-probes`, and the artifact it reads.** Cross-repository citation had one direction
+  guarded: what this repository cites, and whether the cited claim still exists. The other direction
+  had nothing. Another repository pins three strings inside
+  `docs/ja/reference/comparison/block-to-file-routes.md` — **two adjacent lines carry all three** —
+  and nothing here recorded that. Rewording that paragraph would have broken their gate with no
+  signal on this side. The three were found only because that repository mentioned the risk in
+  passing; no mechanism here would have surfaced them.
+  - The gate demands more than presence: **exactly one occurrence, in body text.** Zero fails
+    because their gate then reads our edit as a retraction of their claim. **Two or more fails
+    because their gate stays green while one copy can be reworded**, so the probe silently stops
+    guarding anything. Heading-only fails for the same reason it does on the outbound side.
+  - **Writing prose about a pinned string is the ordinary way to create the second copy.** The
+    repository that reported the class did exactly that while documenting it. The note added to
+    `block-to-file-routes.md` therefore points at the artifact instead of quoting the strings.
+  - **Coverage is a floor.** Discovery reads each sibling's *published* contract, and most publish
+    none. Those are recorded as unknown rather than counted as clean — a contract file's absence is
+    not a probe's absence. The sibling list is derived from repository references in prose rather
+    than hardcoded, which is how discovery found one repository a hand-written list had missed.
+  - The offline half runs in `make all` because the pinned files are in this tree. Only discovery
+    needs the network (`make inbound-probes-refresh`).
 - **Note: [a SnapMirror destination can be read over S3 without breaking the relationship](docs/ja/domains/data-utilization/notes/serving-a-replication-destination-over-s3.md).**
   The question arrives as "the destination is read-only, so an S3 Access Point cannot be attached to
   it" — and **that framing is the error.** Amazon FSx states the condition for attaching an access
