@@ -441,6 +441,23 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     responsibility its trade-off table already assigned to the host. Japanese only for now;
     `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
     a Japanese-only page.
+- **The KeepAlive figure held back from the FPolicy note, now that the upstream contradiction is
+  resolved** — and the operational rule that matters more than the interval itself: **a diagnostic
+  window narrower than `keep_alive_interval` reports a healthy pipeline as broken.** The two are
+  indistinguishable from the outside, so a short window manufactures an outage. The note carries the
+  order of magnitude and a check step; the exact value stays behind a probe.
+  - The withdrawn shorter figure is named as withdrawn rather than omitted, because monitoring
+    configured against it may still be running.
+  - The ARP suspect count moves to the cited record, as planned. The claim that stays here is
+    stronger than the number was: **both paths were detected and no difference by path was
+    observed** — the file-protocol control is what makes the S3-path result mean something.
+- **A release condition cannot be written as the absence of the old value.** The hold was released
+  when a corrected document said 120 seconds, but the recorded condition — that `6 second` no longer
+  appears — **stayed false, because the correction quotes what it corrected.** The document was right
+  and the condition was wrong.
+  - Same shape as a duplicated probe: **writing about a value creates an occurrence of it.**
+  - Conditions are now written as the **presence of the corrected state**. Corrections preserve
+    history, so absence never arrives.
 - **The outbound probe strength rule, and the six rows that did not satisfy it.** `make
   inbound-probes` already rejected a pinned string that occurs twice or only in a heading. The
   outbound direction — the strings this repository pins in other repositories — had no such check,

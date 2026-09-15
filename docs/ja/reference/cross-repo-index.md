@@ -149,7 +149,11 @@ lang: ja
 | `docs/en/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `raised no FPolicy notification` | `retraction` | 同上（EN 版）|
 | `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `no spontaneous disconnect` | `retraction` | 72 時間の連続観測で自発的な切断が 0 件だったこと。**1 回・1 構成の測定なので、一般化していないことも併せて転記しています** |
 | `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `Immediate (observed at 0.3 s)` | `retraction` | 通知の遅延がサブ秒であること。**こちらは桁だけを判定として書き、正確な値はこの引用先に置いています** |
-| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/operational-notes-fpolicy.md` | `NOT used for routing FPolicy traffic` | `retraction` | NLB を FPolicy の経路に置けず、ヘルスチェック専用になること。**同じファイルの KeepAlive の記述は訂正が進行中で、そちらは引用していません**（[保留](#まだ-probe-を張れていない引用)）|
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/operational-notes-fpolicy.md` | `NOT used for routing FPolicy traffic` | `retraction` | NLB を FPolicy の経路に置けず、ヘルスチェック専用になること |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/operational-notes-fpolicy.md` | `KeepAlive messages to the FPolicy server every 120 seconds` | `retraction` | 健全性の指標が届く間隔。**訂正が入るまで桁でも引用していなかった値**で、こちらは桁だけを書いて正確な値をここから引きます |
+| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/operational-notes-fpolicy.md` | `The query window has to be wider than` | `retraction` | 診断の窓が KeepAlive の間隔より広くなければならないこと。**これが無いと「通知が来ない」と「窓が短い」を区別できず、健全なパイプラインを異常と報告します** |
+| `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `no difference by path was observed` | `retraction` | ARP の検知に経路による差が無いこと。**件数をこちらから移した先**で、ファイルプロトコル側の対照を含みます |
+| `docs/en/domains/security-governance/notes/access-point-authorization-layers.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-fpolicy-s3ap-and-session.md` | `no difference by path was observed` | `retraction` | 同上（EN 版）|
 | `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/fpolicy-production-architecture-patterns.md` | `fails over to secondary servers` | `retraction` | 冗長化が ONTAP のネイティブなフェイルオーバーであること。**AWS 側のロードバランサでは代替できない根拠** |
 | `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/fpolicy-production-architecture-patterns.md` | `~2 minute recovery gap` | `retraction` | 再起動時の欠落窓が分の桁であること。**取り込みに使う場合、この窓は読み込まれないファイルになります** |
 <!-- cross-repo-table:end -->
@@ -326,11 +330,26 @@ issue 本文や説明文へ転記すると同じ問題が再発します。**故
 |---|---|---|---|
 | `docs/ja/domains/observability/notes/cross-account-is-a-network-problem.md` | [Issue #71 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/issues/71)（公開 URL、恒久） | コミット待ち | **未確定。** 回答時点で約 67 件が未コミットで、**どのファイルが根拠になるかを特定できていません。** 特定できた時点で 1 行の検査に書き換えます |
 | `docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md` | [Issue #162 の回答](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG/issues/162#issuecomment-5563205901)（公開 URL、恒久） | 対象外 | **ありません。** 実装のファイル名・関数名を転記しない方針で、**転記しないなら probe を張る対象がありません。** 二重管理を避けた結果としてゲートの外に出ます |
-| `docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md`（**KeepAlive の間隔のみ**） | `FSx-for-ONTAP-Observability-integrations` の `docs/en/operational-notes-fpolicy.md` と `docs/en/verification-results-fpolicy-s3ap-and-session.md` | 訂正待ち | **`docs/en/operational-notes-fpolicy.md` に `6 second` が含まれないこと。** 2 文書が桁の違う 2 つの値を持っており、訂正されるまで**桁でも引用していません** |
 
-**3 行目が保留しているのは 1 つの数値だけです。** 同じ引用先の他の主張（NLB の役割、欠落窓、
-セッションの継続）は争点になっていないので、**上の引用表に probe を張ってあります。** 引用先の
-ファイル単位で保留すると、争点になっていない主張の撤回も検出できなくなります。
+**保留を 1 つの数値に絞る形は機能しました。** KeepAlive の間隔を訂正待ちとして保留した行は解消し、
+引用表へ移しました。同じ引用先の他の主張（NLB の役割、欠落窓、セッションの継続）は争点ではなかった
+ので probe を張ったままにしてあり、**引用先のファイル単位で保留していれば、それらの撤回も検出でき
+なくなっていました。**
+
+### 解除条件を「文字列が無いこと」で書けない理由
+
+**上の行の解除条件は誤って設計されていました。** 「`docs/en/operational-notes-fpolicy.md` に
+`6 second` が含まれないこと」と書きましたが、**訂正が入っても満たされませんでした。** 訂正が
+旧値を撤回として明示的に引用しているためです。**文書は直っていて、条件だけが偽を返しました。**
+
+| 条件の書き方 | 訂正後の挙動 |
+|---|---|
+| **旧値の不在**（`6 second` が無いこと） | **偽のまま。** 撤回の記述が旧値を引用します |
+| **新値の存在**（訂正後の値が現れること） | **真になります** |
+
+**訂正は履歴を残すので、不在で条件を書くと解消を検出できません。** 同じ形は probe の多重一致でも
+起きています——**値について書くこと自体が、その値の出現を作ります。** 解除条件は
+**訂正後の状態の存在**で書いてください。
 
 **Issue のコメントは公開されていて消えませんが、ファイルではないので probe の対象にできません。**
 つまりこの引用は、**索引に載っていても撤回を検出できない**状態です。
