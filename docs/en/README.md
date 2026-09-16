@@ -72,7 +72,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [An S3 access point authorizes every request as one identity](../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry into an AI or RAG pipeline reading through it |
 | [At rest is automatic, in transit is off by default](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
 | [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) | Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed one HA pair |
-| [p99 cannot be read from the CloudWatch metrics](../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) (日本語) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
+| [p99 cannot be read from the CloudWatch metrics](domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) | Tiering carries per-request charges, and deduplication does not lower the bill |
 | [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
 | [The AD dependency lasts the lifetime, not just the join](domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | An expired service account is symptomless until the next maintenance window |

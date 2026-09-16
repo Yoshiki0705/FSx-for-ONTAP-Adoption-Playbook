@@ -256,7 +256,7 @@ The smallest environment that reproduces this, with scripts, is
 
 - [Where to verify who can access a file after a protocol change](../../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語) — **mapping from the configuration you are moving from.** Decides whether your current verification mechanism still works after the move
 - [A volume's security style determines the permission model](security-style-and-permission-evaluation.md)
-- [Adding NFS to a volume already serving SMB needs no clone](../../../../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) (日本語)
+- [Adding NFS to a volume already serving SMB needs no clone](adding-a-protocol-does-not-need-a-clone.md)
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) — the reproduction environment
 - [Evidence classification policy](../../../evidence-policy.md)
 

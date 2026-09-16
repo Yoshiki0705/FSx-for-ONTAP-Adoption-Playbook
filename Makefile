@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
+.PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
         inbound-probes inbound-probes-refresh gate
@@ -171,6 +171,9 @@ markdown: ## Run markdownlint (fails when it is not installed)
 		exit 1; \
 	}
 	@markdownlint-cli2 $(MD_GLOBS)
+
+i18n-status: ## Report how much of each module is still Japanese-only (not a gate)
+	@$(PY) tools/report_i18n_status.py
 
 i18n-check: ## Check Tier 1 cross-language section parity
 	@$(PY) tools/check_i18n_parity.py
