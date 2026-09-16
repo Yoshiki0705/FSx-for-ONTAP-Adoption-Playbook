@@ -177,6 +177,17 @@ point at a hub that was deliberately never created — while the same link writt
 resolves to a file with no counterpart and is correctly treated as an allowed fallback. Two links in
 `docs/en/` hit this when the first leaf was split.
 
+**The fallback order is the reader's own language, then English, then Japanese**, and `switcher-check`
+checks both steps. A page in one of the six secondary languages that links at a Japanese page whose
+English copy exists is an error: the reader is sent to a language they did not choose while one they
+are likelier to read is already there. Only the first step was checked at one point, and forty-eight
+links sat on the second — forty-two of them for as long as the rule had existed.
+
+**The second step tests for a file, not for a path that exists**, and the reason is the
+bare-directory trap above. Once one leaf is translated the language's directory exists while the hub
+`README.md` inside it deliberately does not, so a presence test would report a bare-directory link as
+needing to point at a file that was never created.
+
 `check_ja_only_markers.py` does not require a `(日本語)` marker on links into `docs/ja/reference/**`,
 because the hubs are bilingual and a marker there would announce a translation that is not missing.
 That exemption is structural — its pattern only covers `notes/` and `checklists/` — so it also skips a

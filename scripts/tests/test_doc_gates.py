@@ -445,6 +445,41 @@ class GateStillDetects(unittest.TestCase):
         with temp_files(probe):
             self.assert_rejected(run_gate("sync_lang_switcher.py"), PROBE)
 
+    def test_secondary_language_linking_past_an_english_copy_is_rejected(self) -> None:
+        """The second step of the fallback order, which went unchecked for as long as the first held.
+
+        A reader falls back to their own language, then English, then Japanese. The check asked only
+        whether the page's own language had a copy, so a Korean page linking at a Japanese note whose
+        English copy existed passed — and forty-eight links did, forty-two of them from before the rule.
+        The reader was sent to a language they had not chosen while one they were likelier to read
+        already existed.
+        """
+        ja = NOTE_HEADER.format(evidence="hypothesis", lang="ja") + "\n# gate probe\n"
+        en = NOTE_HEADER.format(evidence="hypothesis", lang="en") + "\n# gate probe\n"
+        ko = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ko")
+            + "\n# gate probe\n\n"
+            + f"See [the note](../../../ja/domains/cost/notes/{PROBE}.md) (日本語).\n"
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+            f"docs/ko/domains/cost/notes/{PROBE}-ko.md": ko,
+        }
+        with temp_files(probe):
+            self.assert_rejected(run_gate("sync_lang_switcher.py"), PROBE)
+
+    def test_bare_directory_link_past_a_bilingual_hub_stays_allowed(self) -> None:
+        """The false positive the fallback step must not reintroduce.
+
+        Once one leaf under `reference/decision-trees/` is translated, `docs/en/reference/decision-trees`
+        exists as a directory while its hub `README.md` deliberately does not — the bilingual-hub rule in
+        `docs/agent/localization.md`. An `exists()` test there reports a bare-directory link as needing to
+        point at a file that was never created, which is why the step tests `is_file()`. This is the
+        current tree, so it passing is the assertion.
+        """
+        self.assertEqual(run_gate("sync_lang_switcher.py").returncode, 0)
+
     def test_unlabelled_link_into_japanese_prose_is_rejected(self) -> None:
         """An English reader must not reach Japanese prose without being told first.
 
