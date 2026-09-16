@@ -55,6 +55,15 @@ CITED_ANCHORS: dict[str, frozenset[str]] = {
     "docs/ja/reference/industry-resource-map.md": frozenset(
         {"業種から入ったときの読む順序"}
     ),
+    # One anchor each, and both documents are long. `a-single-connection-measures-the-client.md`
+    # has twelve headings; the citing side wants the one that says when a block figure may be put
+    # in that table. Recording the other eleven fires this gate on renames that break nothing.
+    "docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md": frozenset(
+        {"ブロックの値をこの表に並べる条件"}
+    ),
+    "docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md": frozenset(
+        {"実測した次元とメトリクス"}
+    ),
 }
 
 HEADER = """\
@@ -100,6 +109,14 @@ def tracked_files() -> list[Path]:
     every citing tree on every commit, and a sibling reporting a citation is still the only way one
     gets registered in time. What measuring establishes is how far behind the register drifts when
     nobody reports, and the answer here was three days.
+
+    The last two came from the reverse direction being noticed as missing. `S3-Burst-on-ONTAP-Files`
+    registers 25 probes into one of its own measurement records that this repository cites, and its
+    measurement records cited nothing back - the guidance side read the numbers, and a reader inside
+    the numbers had no route to the guidance. Adding the citations there hit the ordering stated
+    above: its gate refused an anchored citation into a document not listed here, so these two are
+    registered first. Both are cited by fragment and both are long, so they go in `CITED_ANCHORS`
+    with one anchor each rather than being tracked whole.
     """
     return [
         ROOT
@@ -133,6 +150,20 @@ def tracked_files() -> list[Path]:
         ROOT / "docs" / "ja" / "reference" / "industry-resource-map.md",
         ROOT / "docs" / "ja" / "navigation.md",
         ROOT / "docs" / "en" / "README.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "domains"
+        / "performance"
+        / "notes"
+        / "a-single-connection-measures-the-client.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "domains"
+        / "block-storage"
+        / "notes"
+        / "what-block-monitoring-shows.md",
     ]
 
 
