@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`switcher-check` checked one step of a two-step fallback order.** A reader falls back to their own
+  language, then English, then Japanese. The check asked only whether the page's own language had a
+  copy, so a page in one of the six secondary languages linking at a Japanese note whose English copy
+  existed passed. **Forty-eight links sat on that unchecked step**, forty-two of them for as long as
+  the rule had.
+  - **The reader is the argument.** They were sent to a language they had not chosen while one they
+    were likelier to read was already there — the same outcome the rule exists to prevent, one step
+    further out.
+  - **The second step tests for a file rather than a path that exists**, which is not incidental. Once
+    one leaf is translated the language's directory exists while its hub `README.md` deliberately does
+    not, and a presence test reported four bare-directory links as needing to point at files that were
+    never created. That false positive is one `localization.md` already warns about, and it appeared
+    within a minute of the first implementation.
+  - **Confirmed by failing first**: one of the forty-eight was reintroduced deliberately and the gate
+    reported it, then passed once reverted. `test_doc_gates.py` gains two cases — the fallback step
+    rejecting a Korean page that links past an English copy, and the bare-directory link staying
+    allowed, so a later refactor cannot buy the first by reintroducing the second.
+  - **This closes the ordering weakness recorded with the previous change**, where the forty-eight were
+    corrected while the gate that would catch a recurrence still scanned one tree.
 - **Forty-eight links in the six secondary languages pointed at Japanese pages that exist in English.**
   Six belonged to the note translated here; **forty-two were pre-existing.** `switcher-check` reports
   this class of error, but scans `docs/en/` only, so the other six language trees were outside it.

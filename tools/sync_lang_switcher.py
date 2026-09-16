@@ -34,6 +34,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # Order is fixed so the switcher reads identically everywhere.
 LANGS = ("ja", "en", "ko", "zh-CN", "zh-TW", "fr", "de", "es")
+# The language a reader falls back to when their own has no copy, before Japanese. It is a step in
+# the fallback order, not a second reference language: `docs/ja/` is still where content originates.
+FALLBACK_LANG = "en"
 LANG_NAMES = {
     "ja": "日本語",
     "en": "English",
@@ -264,22 +267,42 @@ def check_language_links(rel: str) -> list[str]:
             continue
 
         own_subpath = other[1]
-        own = path_for(lang, own_subpath)
-        if not own.exists():
-            continue  # legitimate fallback: this language has no such page
+
+        # The fallback order is: the reader's own language, then English, then Japanese. Checking
+        # only the first step left the second unchecked, and forty-eight links across the six
+        # secondary languages pointed at a Japanese page whose English copy existed — forty-two of
+        # them for as long as the rule had. Their own language had no copy, so the first step passed
+        # them, and the reader was sent to a language they had not chosen while one they were more
+        # likely to read was already there.
+        preferred: Path | None = None
+        for candidate_lang in (lang, FALLBACK_LANG):
+            if candidate_lang == other[0]:
+                break  # the link already points at the best available language
+            candidate = path_for(candidate_lang, own_subpath)
+            # `is_file()`, not `exists()`. Once one leaf is translated the language's directory
+            # exists, while the hub `README.md` inside it was deliberately never created — the
+            # bilingual-hub rule in `docs/agent/localization.md`. Accepting a directory here reports a
+            # bare-directory link as needing to point at a file that does not exist, which is the
+            # false positive that document already warns about.
+            if candidate.is_file():
+                preferred = candidate
+                preferred_lang = candidate_lang
+                break
+        if preferred is None:
+            continue  # legitimate fallback: nothing closer to this reader exists
 
         # Deliberately bilingual lines pair both languages on one line:
         #   - [知見の分類ポリシー](../../evidence-policy.md) / [Evidence Policy](../../../en/…)
-        own_rel = normalize(relative(own, source))
+        preferred_rel = normalize(relative(preferred, source))
         if any(
-            normalize(candidate.split("#", 1)[0].rstrip("/")) == own_rel
+            normalize(candidate.split("#", 1)[0].rstrip("/")) == preferred_rel
             for candidate in LINK.findall(line)
         ):
             continue
 
         problems.append(
             f"{rel}:{lineno}: links to {other[0]} ({raw}) but "
-            f"{own.relative_to(ROOT)} exists in {lang}"
+            f"{preferred.relative_to(ROOT)} exists in {preferred_lang}"
         )
     return problems
 
