@@ -52,6 +52,15 @@ This is a deliberate stopping point, not a backlog:
 | `notes/`, `checklists/` | Optional | These carry numbers, thresholds, and irreversible operations. A mistranslation here does not announce itself |
 | `reference/` | Not split | Written as bilingual single files; Japanese and English prose share the same tables |
 
+**`make i18n-status` supplies the inputs to that decision.** It reports, per module, how many leaves
+are still Japanese-only, how many lines that is, and — as a settledness proxy — the commit count and
+most recent change date across them. **It is not a gate**: an untranslated note is not a failure, and
+a gate here would create pressure to translate for the number rather than for the reader.
+
+It exists because the backlog was once reported as "7 pages" when it was 83. The figure had never been
+derived, and a count carried in someone's head is wrong by the time it is quoted. **Do not write the
+current numbers into this file** — they are derivable, so a copy here is a copy that goes stale.
+
 **Do not translate a note merely because it is untranslated.** Translate one when both hold:
 
 1. It is the primary answer to a Tier 2 question that an English reader will reach from a module README

@@ -18,7 +18,7 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 |---|---|---|
 | 1 | [Working out what a measured throughput figure actually measured](../../../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | Which of four ceilings the figure hit. **The remedy for one is a no-op for the others** |
 | 2 | [Levers for raising throughput](../../../ja/reference/comparison/throughput-levers.md) (日本語) | Six levers against the ceiling each one moves. **The two that moved the measured figure most carry no additional charge** |
-| 3 | [A figure from a single connection measures the client, not the storage](../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md) (日本語) | The measured figures and every condition behind them |
+| 3 | [A figure from a single connection measures the client, not the storage](notes/a-single-connection-measures-the-client.md) | The measured figures and every condition behind them |
 
 **If you are about to write a throughput requirement, read 3 first.** A requirement stated only in MB/s does not settle anything.
 
@@ -29,12 +29,12 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 | # | Question | Notes |
 |---|---|---|
 | 1 | Where throughput is determined and where it is shared | [Throughput is not set by one value](notes/where-throughput-is-determined-and-shared.md) |
-| 2 | How bandwidth is shared across protocols | [How bandwidth is shared across protocols](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#プロトコル間での帯域の分け合い方) (日本語) |
-| 3 | How to look at latency tails (p99) | [p99 cannot be read from the CloudWatch metrics](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) (日本語) |
-| 4 | What makes a workload benefit from caching | [When caching helps](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#キャッシュが効く条件) (日本語) |
-| 5 | How to design a benchmark that reproduces | [What a reproducible benchmark records](../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) (日本語) |
-| 6 | What a figure measured here is actually measuring | [A figure from a single connection measures the client, not the storage](../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md) (日本語) |
-| 7 | Why the same configuration returns different numbers | [Where the 45% spread comes from](../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md#45-の幅の正体) (日本語) |
+| 2 | How bandwidth is shared across protocols | [How bandwidth is shared across protocols](notes/what-you-cannot-read-from-cloudwatch.md#how-bandwidth-is-shared-between-protocols) |
+| 3 | How to look at latency tails (p99) | [p99 cannot be read from the CloudWatch metrics](notes/what-you-cannot-read-from-cloudwatch.md) |
+| 4 | What makes a workload benefit from caching | [When caching helps](notes/what-you-cannot-read-from-cloudwatch.md#when-the-cache-helps) |
+| 5 | How to design a benchmark that reproduces | [What a reproducible benchmark records](notes/what-you-cannot-read-from-cloudwatch.md#what-a-reproducible-benchmark-requires) |
+| 6 | What a figure measured here is actually measuring | [A figure from a single connection measures the client, not the storage](notes/a-single-connection-measures-the-client.md) |
+| 7 | Why the same configuration returns different numbers | [Where the 45% spread comes from](notes/a-single-connection-measures-the-client.md#what-the-45-range-actually-is) |
 | 8 | Which lever to try first | [Levers for raising throughput](../../../ja/reference/comparison/throughput-levers.md) (日本語) |
 
 ---

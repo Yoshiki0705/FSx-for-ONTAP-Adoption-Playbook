@@ -9,6 +9,18 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Forty-eight links in the six secondary languages pointed at Japanese pages that exist in English.**
+  Six belonged to the note translated here; **forty-two were pre-existing.** `switcher-check` reports
+  this class of error, but scans `docs/en/` only, so the other six language trees were outside it.
+  - **All forty-eight were repointed** at the English copy with `(English)` rather than `(日本語)`.
+    A residual scan across all seven non-Japanese trees now reports zero.
+  - **They were fixed together rather than six at a time** because the stale links sit in the same
+    table rows as the six: correcting one link in a row and leaving its neighbour stale is worse than
+    either state on its own.
+  - **The ordering is the reverse of the marker fix, and that is a weakness.** There the gate went in
+    first and caught the content; here the content is corrected while the gate that would catch a
+    recurrence still scans one tree. Extending its scope to the other six languages is the next
+    change, not a completed one.
 - **The `(日本語)` rule was enforced in one direction only, and seventeen links sat on the unchecked
   side.** `ja-markers` asked whether a marker was missing on a link into Japanese prose. Nothing
   removed the marker once the translation arrived, so seventeen links across seven files under
@@ -430,6 +442,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   enabled and does not depend on these parameters**.
 
 ### Added
+
+- **Three modules are now closed in English, and the translation backlog is measurable instead of
+  recalled.** The backlog was reported as "7 pages"; it was 83, because the figure had never been
+  derived. `make i18n-status` derives it.
+  - **`cost`, `multiprotocol-identity` and `performance` have no Japanese-only leaves left.** Three
+    notes closed them: `adding-a-protocol-does-not-need-a-clone.md`,
+    `what-you-cannot-read-from-cloudwatch.md` and `a-single-connection-measures-the-client.md`.
+  - **Closing a module is the unit worth reaching.** Translating an arbitrary slice of 43 candidate
+    pages would have closed nothing while adding the same dual-maintenance surface. The existing
+    English tree already followed module boundaries, so this matches it rather than inventing a rule.
+  - **`client-access` was deliberately left out.** Its six notes each have one commit — settled by
+    never having been revised rather than by having stabilized, which is a different thing, and a
+    correction arriving after translation costs two files instead of one.
+  - **`make i18n-status` reports and exits 0.** A gate here would create pressure to translate for the
+    number, which is the opposite of what `localization.md` asks. The settledness columns are labelled
+    a proxy, since a count alone cannot separate a note revised over weeks from one written yesterday.
+  - **`localization.md` records the target and says not to write the current numbers into it.** They
+    are derivable, so a copy there is a copy that goes stale — which is how the wrong figure was
+    quoted in the first place.
 
 - **The three design notes and the decision tree under the ISV index are translated.** The index was
   translated first and labelled every one of them `(日本語)`; those labels are now gone because the

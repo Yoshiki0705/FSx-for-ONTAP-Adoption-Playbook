@@ -42,13 +42,13 @@ graph TD
 | 遷移來源為 ONTAP（地端 / 其他雲） | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [評估](../en/playbooks/01-assess/) → [設計](../en/playbooks/02-design/) (English) |
 | 遷移來源為 Windows 檔案伺服器（要求保留 SMB / NTFS ACL） | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [多協定與身分](../en/domains/multiprotocol-identity/) (English) |
 | 遷移來源為非 ONTAP 的 NAS | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) | [評估](../en/playbooks/01-assess/) (English) |
-| 對同一份資料同時使用 NFS 與 SMB | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) | [安全與治理](../en/domains/security-governance/) (English) |
-| **想讓已在提供 SMB 的磁碟區也能從 NFS 存取** | [為已在提供 SMB 的磁碟區加上 NFS 不需要複製](../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) (日本語) | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
-| **想從 NFS 端確認權限，或查明拒絕的原因** | [NFS 端看到的權限表現與實際結果不一致](../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) (日本語) | [安全樣式決定權限評估模型](../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (日本語) |
+| 對同一份資料同時使用 NFS 與 SMB | [安全樣式決定權限評估模型](../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (English) | [安全與治理](../en/domains/security-governance/) (English) |
+| **想讓已在提供 SMB 的磁碟區也能從 NFS 存取** | [為已在提供 SMB 的磁碟區加上 NFS 不需要複製](../en/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) (English) | [安全樣式決定權限評估模型](../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (English) |
+| **想從 NFS 端確認權限，或查明拒絕的原因** | [NFS 端看到的權限表現與實際結果不一致](../en/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) (English) | [安全樣式決定權限評估模型](../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) (English) |
 | 以 Active Directory 整合為前提 | [多協定與身分](../en/domains/multiprotocol-identity/) (English) | [設計](../en/playbooks/02-design/) (English) |
 | 想設計 SMB 使用者管理與稽核 | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) | [多協定與身分](../en/domains/multiprotocol-identity/) (English) |
-| SMB 突然無法提供服務 | [無法提供 SMB 的 SVM](../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (日本語) | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
-| 想啟用稽核日誌 / 想清查本機使用者 | [稽核目的地耗盡會中斷存取](../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) (日本語) | [不存在最後登入屬性](../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (日本語) |
+| SMB 突然無法提供服務 | [無法提供 SMB 的 SVM](../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) (English) | [SMB 使用者管理與稽核決策樹](../en/reference/decision-trees/smb-identity-and-audit.md) (English) |
+| 想啟用稽核日誌 / 想清查本機使用者 | [稽核目的地耗盡會中斷存取](../en/domains/security-governance/notes/audit-log-space-and-client-access.md) (English) | [不存在最後登入屬性](../en/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) (English) |
 | 全新建置（無遷移來源） | [設計](../en/playbooks/02-design/) (English) | [建置](../en/playbooks/04-build/) → [運維](../en/playbooks/05-operate/) (English) |
 | **拿不定 Amazon EFS 是否足夠還是需要 FSx for ONTAP** | [選擇哪種 AWS 檔案儲存的決策樹](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [檔案儲存選項比較](../ja/reference/comparison/file-storage-options.md) (日本語) |
 | **透過 iSCSI / NVMe-oF 提供區塊儲存** | [區塊協定與配置決策樹](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [區塊儲存](../en/domains/block-storage/) (English) |

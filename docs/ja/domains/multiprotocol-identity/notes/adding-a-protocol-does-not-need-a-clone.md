@@ -9,6 +9,10 @@ lang: ja
 
 # SMB で運用中のボリュームに NFS を足すのに複製は要らない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](adding-a-protocol-does-not-need-a-clone.md) | [English](../../../../en/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
@@ -187,3 +191,7 @@ export-policy rule show -vserver <svm> -policyname <policy>
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](adding-a-protocol-does-not-need-a-clone.md) | [English](../../../../en/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
