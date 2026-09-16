@@ -40,6 +40,8 @@ docs/en/domains/security-governance/notes/access-point-authorization-layers.md#t
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#verify-it-in-your-own-environment
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#what-you-are-actually-configuring
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#who-appears-in-the-audit-log
+docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md#実測した次元とメトリクス
+docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md#ブロックの値をこの表に並べる条件
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#p99-は-cloudwatch-のメトリクスからは出せない
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#よくある誤解
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#キャッシュが効く条件
