@@ -20,6 +20,7 @@ the table of contents; this is the entry point.
 | **Serving the same data over NFS and SMB** | [Security style decides the permission model](notes/security-style-and-permission-evaluation.md) | **decide the style first.** Changing it later changes how permissions are evaluated |
 | **AD integration, planned or already joined** | [The AD dependency lasts the lifetime, not the join](notes/ad-dependency-lasts-the-lifetime.md) | **an expired credential is asymptomatic until the next maintenance window** |
 | **SMB will not connect** | [Some SVMs cannot serve SMB](notes/smb-service-lost-on-cifs-server-delete.md) | **the cause is a deleted CIFS server, not when the SVM was created** |
+| **The SMB error string does not narrow the cause** | [An SMB error string does not name its cause](notes/smb-errors-do-not-name-their-cause.md) | **what looks like a wrong password is an absent account.** Three generic messages and where to read each |
 | **Checking permissions from NFS, or explaining a denial** | [The NFS-side permission view does not match the enforced outcome](notes/nfs-side-view-does-not-explain-ntfs-denials.md) | **neither the Deny nor the principal appears on the NFS side.** Measured: an NTFS refusal and a UNIX permit produced identical representations |
 | **Access is refused after the name mapping was created** | [The backslash disappearing from a name-mapping replacement](notes/nfs-side-view-does-not-explain-ntfs-denials.md#the-backslash-disappearing-from-a-name-mapping-replacement) | **`\` in `DOMAIN\user` is consumed as an escape.** The rule reports success and only the name resolution fails |
 
@@ -40,6 +41,8 @@ the table of contents; this is the entry point.
 | 9 | Whether permissions on an NTFS-style volume can be verified from NFS | **the representation is readable but does not explain the outcome** ([The NFS-side permission view does not match the enforced outcome](notes/nfs-side-view-does-not-explain-ntfs-denials.md)) |
 | 10 | Which check does answer it, and who can run it | [ONTAP's effective-permissions agreed with the outcome in every case](notes/nfs-side-view-does-not-explain-ntfs-denials.md#where-the-usable-answer-is) — and it needs an ONTAP credential |
 | 11 | Whether the verification mechanism in use today survives the move | [Where to verify who can access a file after a protocol change](../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語) |
+| 12 | Whether creating a volume makes it visible over SMB | **No. Creating a share is a separate step** ([SMB reaches shares and nothing else](notes/smb-errors-do-not-name-their-cause.md#smb-reaches-shares-and-nothing-else)) |
+| 13 | Whether `c$` is acceptable for a connectivity check | **It costs representativeness.** Mapping as an administrator bypasses part of the permission evaluation ([the default administrative shares](notes/smb-errors-do-not-name-their-cause.md#do-not-count-the-default-administrative-shares-as-a-share-exists)) |
 
 ---
 
