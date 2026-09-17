@@ -62,6 +62,8 @@ lang: ja
 |---|---|---|---|---|---|
 | `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/multi-tenant-design.md` | `テナント ID をパーティションキーにする` | `retraction` | マルチテナントの分離パターン。**こちらは分割で何が固定されるかを持ち、パターンの比較は持ちません** |
 | `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/design-first-decisions.md` | `取り消せない。**保持期間を明示した指示がない限り有効化しない**` | `retraction` | ボリュームを作る前に決めることの順序。**同じ問いをボリューム側から扱っている文書**です |
+| `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/flexcache-security-style-inheritance.md` | `Modification of the following fields is not allowed for FlexCache volumes: security-style.` | `retraction` | Cache ボリュームのセキュリティスタイルを作成後に変更できないこと。**ONTAP が返すエラー文字列そのもの**なので、後の版が変更を許すようになれば発火します。継承そのものを指す文ではなくこちらを取るのは、**不可逆だという主張を支えているのが「変えられない」側**だからです |
+| `docs/ja/playbooks/02-design/notes/the-split-decides-what-cannot-be-revisited.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/flexcache-security-style-inheritance.md` | `値は Origin から来ています` | `retraction` | 継承が起きていること、およびそれを既定値との一致から切り離した対照の存在。**対照が無ければ「継承した」と「既定のままだった」が区別できません** — probe は対照から結論を述べた文を指します |
 | `docs/ja/playbooks/04-build/README.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `一部の操作は AWS サポートへの連絡が必要` | `retraction` | 委任された管理者で実行できない操作の**存在**。**一覧はそちらが持ちます。** probe は一覧の中身ではなく存在を主張する文を指すので、**項目が増減しても動きません。** 発火するのは「サポートが必要な操作はもう無い」に変わったときで、そのときこちらの記述は根拠を失います |
 | `docs/ja/reference/comparison/ontap-configuration-routes.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `一部の操作は AWS サポートへの連絡が必要` | `retraction` | 同じ主張を、経路の比較の側から。**どの経路を選んでも越えられない上限がある**という位置づけ |
 | `docs/ja/playbooks/01-assess/README.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/adoption-assessment.md` | `require metadata operations that fail on S3 AP` | `retraction` | 評価を成果物として構成する形。**適用しない条件の一覧を持っている点**が、こちらの棚卸し項目にない部分です |
@@ -96,12 +98,16 @@ lang: ja
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `違いはデータを共有しているかどうかだけである` | `retraction` | 8 台・128 接続で、同じファイルを共有した場合と重ならない領域を読んだ場合の差。**probe は倍率ではなく原因の帰属を指します** — 倍率はブロック側との対比でも使われており、そちらだけが書き換わる形があります |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `既定 65,536 のままだと` | `retraction` | 既定 65,536 のままだと `rsize` が 64 KiB に切り下がるため、測定前に引き上げていること |
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-protocol-matrix-plan.md` | `コマンドラインでは渡せない` | `retraction` | 測定に使った器具と、パラメータがコマンドラインから渡せない制約 |
+| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/block-protocol-matrix-plan.md` | `書き換えの形を測る前に決めておく` | `retraction` | ブロックの値が出たときに単一接続の表をどう書き換えるかを、**測定前に** 4 通りで決めていたこと。**上の表が 3 行のまま動かない理由の所在**です |
+| `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/block-protocol-matrix-plan.md` | `範囲に入ったことを原因が同じ証拠にしない` | `retraction` | 同じ範囲に収まったことを同じ上限に当たった証拠にしない、という歯止め。**引用元が EFS で 1 度誤った形**で、こちらの「似た値・別の上限」という主旨を支えています |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `EC2 の 1 フローあたり全二重 5 Gbps` | `retraction` | FSx for ONTAP の単一接続が当たっているのは EC2 の 1 フロー上限であること |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `500 MiBps に一致する` | `retraction` | Amazon EFS の 499.79 MB/s は 1 フロー上限ではなくクライアント単位のクォータに一致すること。**近い値を同じ原因に束ねない。** クォータの固定値を指すので、行が増えても動きません |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `違いはキャッシュに何が残っていたか` | `retraction` | 同一構成・同一パラメータで 2 回測って 45% 振れ、違いはキャッシュに何が残っていたかだけだったこと。**probe は振れ幅ではなく原因を指します** — 振れ幅は導入部と該当節の 2 か所にあり、**こちらの記述が依拠しているのは原因の側**です |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `違いはデータを共有しているかどうかだけである` | `retraction` | 8 台・128 接続で、同じファイルを共有した場合と重ならない領域を読んだ場合の差。**probe は倍率ではなく原因の帰属を指します** — 倍率はブロック側との対比でも使われており、そちらだけが書き換わる形があります |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `既定 65,536 のままだと` | `retraction` | 既定 65,536 のままだと `rsize` が 64 KiB に切り下がるため、測定前に引き上げていること |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-protocol-matrix-plan.md` | `コマンドラインでは渡せない` | `retraction` | 測定に使った器具と、パラメータがコマンドラインから渡せない制約 |
+| `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/block-protocol-matrix-plan.md` | `書き換えの形を測る前に決めておく` | `retraction` | ブロックの値が出たときに単一接続の表をどう書き換えるかを、**測定前に** 4 通りで決めていたこと。**上の表が 3 行のまま動かない理由の所在**です |
+| `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/block-protocol-matrix-plan.md` | `範囲に入ったことを原因が同じ証拠にしない` | `retraction` | 同じ範囲に収まったことを同じ上限に当たった証拠にしない、という歯止め。**引用元が EFS で 1 度誤った形**で、こちらの「似た値・別の上限」という主旨を支えています |
 
 | `docs/ja/reference/comparison/throughput-levers.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `3,551〜5,149 MB/s` | `reread` | 接続数を上げたときの実測値と、それが追加料金なしで最も大きく動いた手段だったこと |
 | `docs/ja/reference/comparison/throughput-levers.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `観測したチャネル数は 4 であり` | `retraction` | SMB Multichannel のチャネル数が設定を上げても 4 で止まったこと |
@@ -200,6 +206,15 @@ lang: ja
 変えました。
 
 引用先のリポジトリからの指摘で判明しました。**こちらは「文がそのまま残る → 何も起きない」と書いており、それが誤りでした。** 完了は Issue で知らされる必要があり、**沈黙を「まだ測っていない」と読むと、待ち続けます。**
+
+**そして、指摘を待つ必要はありませんでした。** 予想を書いたのが 2026-09-08 で、引用先が 4 通りの
+着地点と**そのうち 2 通りで probe が発火しないこと**を書き下したのが 2026-09-10 です。**2 日後には
+沈黙が設計だと読める文書が公開されていました。** こちらがそれを引かなかったので、予想は 1 週間
+そのまま残りました。所在は `docs/ja/verification/block-protocol-matrix-plan.md` で、**上の表にも
+登録しました。**
+
+**手順として残すのはこれです。probe を張る前に、引用先が probe の挙動そのものを決めていないかを
+読んでください。** 測定計画は結果より先に公開されます。**発火の予想は、それを読まずに書いた推測です。**
 
 **probe が答えるのは 1 つだけです。「引いている主張がまだそこにあるか」。** 相手の進捗は答えません。
 

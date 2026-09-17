@@ -62,7 +62,11 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
+S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	範囲に入ったことを原因が同じ証拠にしない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	Modification of the following fields is not allowed for FlexCache volumes: security-style.
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	値は Origin から来ています
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 → 2 では逐次スループットが 1 バイトも動かない

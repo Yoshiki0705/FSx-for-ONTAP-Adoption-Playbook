@@ -9,6 +9,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The pre-production checklist said a volume's security style is changeable, without qualification.**
+  That holds for an ordinary volume and is **false for a FlexCache Cache volume**, where the style is
+  the Origin's and neither settable at creation nor changeable afterwards. A reader taking the row at
+  face value would plan a change that has no route. The row is now scoped to ordinary volumes and the
+  FlexCache case is listed as irreversible, with the note that its refusal returns as a success.
+
+- **A section claimed no block throughput figure existed in this repository or the cited source.** Two
+  do, at a multiplicity of one. The claim was true when written and was not revisited when the
+  measurement landed.
+
 - **`switcher-check` checked one step of a two-step fallback order.** A reader falls back to their own
   language, then English, then Japanese. The check asked only whether the page's own language had a
   copy, so a page in one of the six secondary languages linking at a Japanese note whose English copy
@@ -461,6 +471,42 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   enabled and does not depend on these parameters**.
 
 ### Added
+
+- **A second way a volume split fails to give independence, and it points the other way.** The design
+  note recorded one exception — a SnapLock audit log volume locking the whole file system — and called
+  it the only one. **FlexCache is the second: the Cache volume's security style is the Origin's, and
+  there is no route to choose it on the Cache side.** It cannot be passed at creation
+  (`Unexpected argument "nas".`) and cannot be changed afterwards
+  (`security-style` is refused for FlexCache volumes), so changing it means a different Origin.
+  - **This one crosses the file system boundary.** One choice made while creating the Origin decides
+    the character of a Cache in another cluster, so splitting file systems does not separate them.
+  - **The refusal returns in the shape of a success.** The modifying PATCH returns a job UUID and
+    succeeds at the HTTP layer; the refusal appears only as the job's `state: failure`. **Confirming
+    an irreversible field from a return value records a refusal as an application** — so the
+    verification steps now require reading the value back.
+  - **What makes the finding an inheritance rather than a default is the control.** The Cache SVM's
+    default is `unix`, so a UNIX Origin proves nothing; a plain volume with no style specified was
+    created to read that default, and an NTFS Origin's Cache came out `ntfs`.
+  - Transcribed from `S3-Burst-on-ONTAP-Files`, both clusters ONTAP 9.18.1P6 in `ap-northeast-1` on
+    2026-09-13. **The unmeasured ranges travel with it**: an on-premises Cache, `mixed`, whether the
+    ONTAP CLI refuses the same two ways, and whether an NTFS Cache is actually reachable over SMB.
+
+- **The reason the single-connection table stays at three rows is now linked, not just asserted.**
+  The measured block figures are iSCSI 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s at a multiplicity of
+  one, roughly 1.8× the EC2 single-flow ceiling.
+  - **They are still not added, and that was settled before the measurement ran.** The cited source
+    tabulated four possible landing points and how the sentence would be rewritten in each, in
+    advance, so that the wording could not be chosen to suit the number that came out. That table
+    lives in `block-protocol-matrix-plan.md`, which this repository had never cited.
+  - **Two probes now point at it**, one at the pre-decision and one at the rule that landing in the
+    same range is not evidence of the same ceiling — the error the source made once with EFS.
+
+- **The prediction that a probe would fire was not corrected by a report; it was answerable two days
+  after it was written.** The prediction was recorded on 2026-09-08. The cited source published, on
+  2026-09-10, that two of the four outcomes leave the probe silent and that silence does not mean the
+  measurement is unfinished. **It stayed wrong for a week because this repository did not cite the
+  document that said so.** The index now carries the procedure: before pinning a probe, read whether
+  the cited side has already decided the probe's behaviour. Measurement plans publish before results.
 
 - **Three modules are now closed in English, and the translation backlog is measurable instead of
   recalled.** The backlog was reported as "7 pages"; it was 83, because the figure had never been
