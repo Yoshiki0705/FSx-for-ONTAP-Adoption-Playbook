@@ -82,8 +82,39 @@ FileServer = FsxIdEXAMPLE-02
 | LUN の使用量と予約 | `lun show -vserver <svm> -fields path,size,size-used,space-reserve` |
 | iSCSI のセッション | `vserver iscsi session show -vserver <svm> -fields lif,initiator-name,tpgroup` |
 | NVMe のコントローラ | `vserver nvme subsystem controller show` |
+| **NVMe/TCP の経路別バイト数** | **`nvmf_tcp_port` のカウンタ。** `nvmf_lif` と `lif` では取れません（下記） |
 
 **これらは CloudWatch には流れません。** ONTAP に接続して取る経路が別に必要になります。**自作する前に [可観測性](../../observability/) の経路の比較を見てください** — NetApp Harvest の サポート対象ダッシュボードには LUN のものが含まれ、NVMe Namespaces は既定で無効なだけです（[オンプレのダッシュボードはそのまま移らない](../../observability/notes/on-prem-dashboards-do-not-transfer.md)）。自作は「欲しい値が数個だけ」のときの選択肢です。
+
+---
+
+## NVMe/TCP の経路別バイト数を持つテーブルが 1 つだけであること（引用）
+
+**当方の検証ではありません。** 以下は sibling repo の実測の転記です。
+
+**2 本目のパスが実際にトラフィックを運んでいるかを ONTAP 側で確かめるとき、名前から先に試す 2 つが
+どちらも空を返します。**
+
+| テーブル | NVMe/TCP のトラフィックに対する挙動 |
+|---|---|
+| `nvmf_lif` | **行を 0 件返す。** 600 GiB を書いたあとでも空 |
+| `lif` | 2 本の LIF を **0 バイト**と報告する（NVMe-oF を数えていない） |
+| **`nvmf_tcp_port`** | **実データを持つ。** 経路ごとに読み・書きのバイト数と ops |
+
+**どちらの空も「トラフィックが無い」と同じ見え方をします。** 引用元は `nvmf_tcp_port` の差分で、
+optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized 側に ±0 バイト**を割り当てて
+います（[引用元の測定結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)）。
+
+**クライアント側の出力は代わりになりません。** `nvme list-subsys` は経路が 2 本あることを示しますが、
+**2 本使っていることは示しません。**
+
+> **0 行を 0 として報告しないこと。** 「テーブルはあるが空」と「このバージョンにそのテーブルは無い」は、
+> 合計すると同じ見え方になります。**取得側は 0 行で失敗させてください。**
+> これは監視の作り方の話で、[可観測性](../../observability/) の経路にも同じことが言えます。
+
+> **区分**: `documented`（sibling repo の実測の引用、ONTAP 9.18.1、`ap-northeast-1`）。
+> **`nvmf_lif` が空である理由は引用元でも未解明**で、ベンダーへの確認事項として残っています。
+> **「NVMe-oF では per-LIF カウンタが取れない仕様」と読まないでください。**
 
 ---
 
@@ -137,6 +168,7 @@ FileServer = FsxIdEXAMPLE-02
 | ノード間で I/O が偏っていたら異常 | **1 HA ペアでは aggregate を片方が所有します。** 偏るのが正常です |
 | ONTAP で作ったボリュームも CloudWatch に出る | **出ません。** `fsvol-` の ID が無いためです |
 | ブロックだからボリュームも ONTAP 側で作るしかない | **ボリュームは AWS の API で作れます。** ONTAP 側でしか作れないのは LUN・igroup・namespace・subsystem です |
+| NVMe/TCP の経路別バイト数は `nvmf_lif` で取れる | **行を 0 件返します**（引用）。`lif` は NVMe-oF を数えません。実データは `nvmf_tcp_port` です |
 
 ---
 

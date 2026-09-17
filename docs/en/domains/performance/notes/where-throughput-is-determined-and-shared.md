@@ -67,6 +67,34 @@ And **raising the setting alone does not reach the ceiling.** A corresponding co
 | Random reads are slow | Workload does not fit in cache. Raising the throughput setting also increases cache capacity |
 | Only writes are slow | Writes are mirrored between HA pair nodes. The path differs from reads |
 
+### Two published statements for second-generation writes, and where they disagree (cited)
+
+**A write estimate changes depending on which published statement you apply.** The performance page
+gives a general rule for second generation — reads get the full throughput setting, writes one third
+of it — and separately lists **6,144 MBps as an exception**, with Single-AZ write given as
+**1,024 MBps**.
+
+**In a sibling repository's measurements, which statement matches inverts with the configured
+value.** This is a citation, not a measurement of ours.
+
+| Configured | Measured (sustained, median) | General rule (÷3) | Exception table (1,024) |
+|---|---|---|---|
+| 1,536 MBps | 1,333 MB/s | 512 → **off by 2.60×** | 1.30× |
+| 6,144 MBps | 2,097 MB/s | 2,048 → **within 2.4%** | 2.05× |
+
+**The general rule matches at the value the page calls an exception, and misses by 2.60× where the
+general rule should apply.** Source:
+[the cited measurement record](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md).
+
+**One design consequence: do not build a write estimate from either statement alone.** At 1,536 MBps
+four independent measurements fall within 1,270–1,350 MB/s, so this is not run-to-run variation.
+
+> **Stage**: `documented` (cited measurement from a sibling repository — `ap-northeast-1`, Single-AZ,
+> 1 HA pair, ONTAP 9.18.1P3D1, non-compressible data, efficiency disabled). **Neither the cited
+> record nor this repository decides which statement is correct.**
+> **Do not cite this as "twice the published figure"** — the multiple depends on which statement you
+> put in the denominator. **Multi-AZ and two or more HA pairs are unmeasured.**
+
 ### Changing the setting triggers a non-disruptive failover
 
 Changing the throughput setting causes the **file server to switch over.** Both Single-AZ and Multi-AZ experience automatic failover and failback, typically completing within minutes. For NFS / SMB / iSCSI clients this is transparent, requiring no workload interruption or manual intervention.
@@ -168,6 +196,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 | Throughput changes are non-disruptive so can be done casually | The file server switches over, triggering failover. Changes may be delayed during maintenance windows |
 | Adding readers raises the combined throughput | **They divide the capacity that was purchased.** Measured across two hosts, the total barely moved and the per-host figure halved — the opposite of an elastic service |
 | The MBps you set is the read ceiling | **A 128 MBps configuration measured 579.3 MB/s on read, 4.5× the setting.** The setting is the ceiling on the write side |
+| Second-generation writes can be estimated as one third of the setting | **The published spec carries a general rule and an exception table, and which one matches measurement inverts with the configured value** (cited). Do not estimate from one of them alone |
 
 ---
 

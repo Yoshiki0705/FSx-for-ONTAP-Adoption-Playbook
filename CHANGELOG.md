@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A note said the behaviour of an ANA-enabled kernel was unconfirmed. It had been measured, and this
+  side did not know.** `paths-are-the-failover-mechanism.md` carried "not confirmed in this
+  verification" for the case where `CONFIG_NVME_MULTIPATH` is set, while a sibling had measured it
+  against the same file system, namespace and filled data, with the kernel's ANA support as the only
+  difference between the two clients.
+  - **The citation is `documented`, not a promotion to `verified`.** The environment belongs to the
+    repository that measured it, and this one does not re-measure.
+  - **Half of the original statement still stands and is now said separately.** What was measured is
+    the merge into one device and the read figure. **The failover gap on such a kernel has no
+    measurement on either side** — the 412.741 second figure here has no counterpart. Recording the
+    promotion without that would have retired a known gap by wording.
+  - **`make cross-repo-external` could not have caught this.** It verifies that a cited string still
+    exists at the far end, not that a statement on this side went stale — a blind spot the citation
+    index already documents. Found by re-reading. **No new gate is proposed**: the judgement is
+    text-dependent, and a detector here would report coverage it does not have.
 - **The 50 GiB object-size limit was recorded as a property of the route when it binds only writes.**
   AWS states it plainly — `Maximum object size is 50 GiB for uploads, but you can download objects
   larger than that` (checked 2026-09-14) — and four places here said or implied that objects above it
@@ -527,6 +542,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     50 GiB — but writing from the cache side over NFS or SMB has nothing capping size.
   - **Both vendor pages were read in full on 2026-09-14** rather than transcribed from the sibling.
 
+- **Three measured findings that had no route into this repository** (cited, `documented`).
+  - **`iopolicy` is `queue-depth` where the AWS procedure instructs verifying `round-robin`.** The
+    value is set by the udev rule `nvme-cli` 2.16-1.el9 ships, and the kernel default is `numa` — so
+    the procedure's value is neither. **Recorded as an expected-output mismatch, not a performance
+    problem**: the difference between policies measured 0.5%. A reader following the guide correctly
+    sees a value the guide calls wrong.
+  - **`nvmf_lif` returns no rows and `lif` does not count NVMe-oF**, so both tables a reader reaches
+    for first are indistinguishable from an idle path. The per-path bytes are in `nvmf_tcp_port`,
+    which attributed ±0 bytes to the non-optimized path across four workloads. **A 0-row result has
+    to fail rather than be reported as zero** — otherwise "the table is empty" and "this version has
+    no such table" look identical.
+  - **The second-generation write ceiling has two published statements that disagree** (ja + en). A
+    general rule of one third of the setting, and an exception table giving Single-AZ 1,024 MBps. The
+    measurement matches the general rule at the value the page calls an exception (within 2.4% at
+    6,144 MBps) and misses it by 2.60× where the general rule should apply (1,536 MBps). **Which
+    figure is correct is not decided here or in the cited record.**
+- **The AL2023 kernel evidence widened from one lineage to three.** This repository had measured
+  6.18.44; the cited record read the config out of the `amazonlinux` repository packages for
+  6.1.186-228.374, 6.12.103-127.188 and 6.18.48-107.148, all unset. **The pre-build check is still
+  required** — three matching lineages make it less likely to be a waste of time, not skippable.
 - **`multiprotocol-identity`: an SMB error string does not name its cause** (ja + en). Three generic
   client messages each mean a missing piece in a different layer, and **the most misleading one reads
   as a credential problem when the account does not exist in the domain** — so the time goes into
