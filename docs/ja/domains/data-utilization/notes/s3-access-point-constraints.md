@@ -51,13 +51,53 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 
 | 観点 | 実際 |
 |---|---|
-| 対応する S3 API 操作 | バケット向け Access Point と同一ではありません。**対応操作の一覧を確認してください** |
+| 対応する S3 API 操作 | バケット向け Access Point と同一ではありません。**設計を変える差分は下の[対応表を読むときに効く差分](#対応表を読むときに効く差分)にあります** |
 | ストレージクラス | FSx for ONTAP ボリューム上のファイルは `StorageClass` が `FSX_ONTAP` として識別されます。`STANDARD` 等を前提にした処理は動きません |
 | クロスアカウント（AP の**作成**） | 不可。ファイルシステムと AP は同一アカウント所有が必須です |
 | クロスアカウント（AP 経由の**データアクセス**） | **可能です。** AP ポリシーで許可すれば別アカウント・別組織のプリンシパルから読めます（実測）。[S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](../../security-governance/notes/access-point-authorization-layers.md#クロスアカウントデータアクセスの成立) を参照 |
 | S3 Event Notifications | 使えません。**FPolicy は代替になりません**（下記の実測制約を参照）。Amazon EventBridge Scheduler によるポーリングか、ONTAP のネイティブ監査ログを起点にします |
 
 **`StorageClass` を条件分岐に使っている既存コードは、そのままでは動きません。** 分析基盤やデータパイプラインを繋ぐ前に確認してください。
+
+---
+
+## 対応表を読むときに効く差分
+
+**[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)の全行はここに写しません。** AWS 自身が partial list と明記しているので写しても網羅にならず、**写した表は更新されないまま残ります。** ここに置くのは**設計を変える行だけ**です。**2026-09-14 に全文を確認しました。**
+
+### パターンごと成立しない 4 つの不在
+
+| 使えないもの | 成立しなくなるパターン |
+|---|---|
+| **条件付き書き込み**（conditional writes） | **`If-None-Match` / `If-Match` による楽観的排他が使えません。** 「同じキーが既にあれば書かない」「読んだときの版のままなら書く」を S3 の側で表現できないので、**上書き競合の防止をアプリケーション側かファイル側のロックに移す必要があります** |
+| **Object Versioning**（`ListObjectVersions` も非対応） | **世代管理を S3 の機能で持てません。** 版が要るなら ONTAP の Snapshot 側で設計します |
+| **Object Lifecycle** | **経過日数による移行・削除の自動化ができません。** 階層化は FabricPool 側の仕組みで、ライフサイクルルールとは別の設定です |
+| **Object Lock**（`PutObjectRetention` / `PutObjectLegalHold` も非対応） | **WORM をこの経路では表現できません。** 必要なら SnapLock で、**これは不可逆なので保持期間を名指しした承認が要ります**（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)） |
+
+**他に非対応なのは** ACL（`bucket-owner-full-control` 以外）、Object Annotations、Requester Pays、Static Website Hosting、MFA delete、`RestoreObject`、そしてバケット設定の読み取り系（`GetBucketAcl` / `GetBucketCors` / `GetBucketPolicy` / `GetBucketNotificationConfiguration`）です。**`GetBucketNotificationConfiguration` が非対応であることは、イベント通知が無いことと同じ側の事実です。**
+
+### 完全性の検証がそのままでは移らないこと
+
+**ETag もチェックサムも、Amazon S3 で使っていた形では使えません。**
+
+| 項目 | この経路での挙動 |
+|---|---|
+| **ETag** | オブジェクト内容のハッシュですが、**MD5 ダイジェストではありません。** メタデータの変更では変わりません |
+| **チェックサム** | アップロード時に指定すると**転送中の検証には使われます。** ただし**値はボリュームに保存されず、応答にも返らず、ダウンロード時の検証には使われません** |
+
+**収集パイプラインが完全性を ETag の突き合わせやチェックサムの再検証で担保しているなら、そこは作り直しになります。** 「S3 に置いたから同じ検証ができる」とは読めません。
+
+### コピーの範囲が同一 Access Point 内に限られること
+
+`CopyObject` と `UploadPartCopy` は**同一リージョンのコピーで、かつコピー元とコピー先が同一の Access Point 内にある場合に限り**対応します。**別の Access Point へ、あるいは Amazon S3 のバケットへ直接コピーする形にはなりません。** `CopyObject` では `x-amz-object-annotation-directive` ヘッダーも非対応です。
+
+### Presign が対応に変わっていること
+
+**対応表は現在 `Presign` を Supported としています**（2026-09-14 に確認）。**署名付き URL による短命・資格情報なしのアクセスがこの経路で使えます。** ブラウザ経路を自分で組む場合の選択肢に入ります（[エンドユーザーがデータに届く経路](../../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路を自分で組む場合の選択肢)）。
+
+> **このリポジトリでは測っていません。** 隣のリポジトリが 2026-08-19 に `PutObject` / `HeadObject` / `GetObject` の 3 つで成功を実測していますが、**その時点の対応表は非対応としており、記録も「対応表が非対応としている間は依存させない」という条件付きの助言でした。** 表が変わったのでその条件は解けましたが、**実測は表の変更より前です。** 依存する前に自環境で確認してください。
+
+**この節を「非対応の網羅」として引かないでください。** 上のとおり元の表が partial list です。**「X ができない」の根拠にするときは、表が網羅でないことを添えてください。**
 
 ---
 
@@ -365,6 +405,11 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 | オブジェクトサイズ上限は Amazon S3 と同じ | 桁が違います。全体で 50 GiB 水準です（実測、姉妹リポジトリ参照） |
 | サイズ超過は転送前に弾かれる | 全体サイズの判定は `CompleteMultipartUpload` 時点です。**転送し終えてから失敗します** |
 | 50 GiB を超えるオブジェクトはこの経路では扱えない | **書き込みだけです。** ファイル側で作った 50 GiB 超のファイルは S3 API で取得できます（実測、50 GiB + 1 バイト） |
+| ETag を突き合わせれば完全性を検証できる | **MD5 ダイジェストではありません。** チェックサムも保存されず応答に返らないので、**ダウンロード時の検証には使えません** |
+| `If-None-Match` で上書き競合を防げる | **条件付き書き込みが非対応です。** 排他はアプリケーション側かファイル側のロックに移します |
+| S3 のライフサイクルで階層化を自動化できる | **非対応です。** 階層化は FabricPool 側の別の設定です |
+| 署名付き URL は使えない | **対応表は現在 Supported としています**（2026-09-14 に確認）。以前は非対応と記載されていました |
+| `CopyObject` で別の Access Point やバケットへコピーできる | **同一 Access Point 内の同一リージョンコピーに限られます** |
 | S3 Event Notifications でイベント駆動にできる | 使えません。EventBridge Scheduler によるポーリングか、ONTAP ネイティブ監査ログを起点にします |
 | S3 Event が無くても FPolicy で代替できる | **できません。** AP 経由の操作は FPolicy 通知を発火せず、`mandatory` 指定でも遮断されません（実測） |
 | FPolicy はイベントソースとして使えない | **使えます。** 効かないのは AP 経由の書き込みに対してだけで、**NFS / SMB で着地する書き込みには動きます**（[書き込みの着地経路で決まること](fpolicy-fits-by-how-writes-land.md)） |
@@ -378,6 +423,7 @@ AD 参加済み SVM で S3 AP を使う場合、データ操作には AD ドメ�
 | ONTAP 9.17.1 以降、同一アカウント、同一リージョンの各要件 | [AWS: Access points naming rules, restrictions, and limitations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-restrictions-limitations-naming-rules.html) |
 | S3 AP 使用時のボリューム数上限、AP 数のクォータ | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | `StorageClass` が `FSX_ONTAP`、対応 API 操作の一覧の所在 | [AWS: Using access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-usage-examples.html) |
+| **`Presign` が Supported であること**、条件付き書き込み / Object Versioning / Object Lifecycle / Object Lock / Object Annotations / Requester Pays / Static Website Hosting / MFA delete / `RestoreObject` / バケット設定の読み取り系が非対応であること、`CopyObject` と `UploadPartCopy` が同一 Access Point 内の同一リージョンコピーに限られること、ETag が MD5 ダイジェストでないこと、チェックサムが保存も返却もされずダウンロード時の検証に使われないこと、50 GiB がアップロードの上限でダウンロードには上限がないこと、表が partial list であること | [AWS: Access point compatibility](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)（**2026-09-14 に全文確認**） |
 | オブジェクトサイズ上限と判定タイミング（**実測 / ドキュメント外**） | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) |
 
 ---

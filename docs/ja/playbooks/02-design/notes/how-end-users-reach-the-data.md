@@ -121,6 +121,12 @@ FSx for ONTAP 上のデータをブラウザで見せる実装は、姉妹リポ
 | OSS のファイル共有製品 | 既製の UI と同期クライアントが要る | 実行基盤（EC2 / ECS）の運用が増える |
 | 独自実装（CDK + 任意のフレームワーク） | 既存の社内ポータルに組み込みたい | 認証・認可を含めて全部自分で持つ |
 
+**どの選択肢でも、ダウンロードとアップロードの実体には署名付き URL を使えます。** 対応表は
+`Presign` を Supported としています（2026-09-14 に確認）。**ブラウザへバイト列を通さずに、短命の
+URL を発行する形が取れます** — 認可の判定はアプリケーション側に残り、転送はクライアントと
+S3 Access Point の間で完結します。**ただしこのリポジトリでは測っていません**（以前の対応表は
+非対応と記載しており、[実測は表の変更より前です](../../../domains/data-utilization/notes/s3-access-point-constraints.md#presign-が対応に変わっていること)）。依存する前に自環境で確認してください。
+
 **どれが優れているという話ではありません。** チームが既に持っているスキル、運用の好み、
 コンプライアンス要件で決まります。3 者の比較と選び方は
 [File Portal UI Options（姉妹リポジトリ）](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/file-portal-amplify-gen2.md)

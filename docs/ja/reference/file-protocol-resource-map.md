@@ -125,7 +125,7 @@ graph TD
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | 制約 | [AWS: Restrictions, limitations, and naming rules](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-restrictions-limitations-naming-rules.html) | 同一アカウント・同一リージョンなどの計画段階の制約 |
-| 対応表 | [AWS: Object API support](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html) | どの S3 操作が通るか。**この表は AWS 自身が partial list と明記しています。ここから作った「非対応の一覧」は網羅ではありません** |
+| 対応表 | [AWS: Access point compatibility](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html) | どの S3 操作が通るか。**この表は AWS 自身が partial list と明記しています。ここから作った「非対応の一覧」は網羅ではありません。** 設計を変える差分と確認日は [対応表を読むときに効く差分](../domains/data-utilization/notes/s3-access-point-constraints.md#対応表を読むときに効く差分)。**行は動きます** — `Presign` は非対応から Supported に変わりました |
 | 認可 | [AWS: Managing access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) | **AWS 側と ONTAP 側の両方が許可する必要があること**（二層認可） |
 | 参照 | [AWS: Referencing access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/referencing-access-points-for-fsxn.html) | virtual-hosted-style URI での参照形式 |
 | ネットワーク | [AWS: Configuring network access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html) | VPC エンドポイントの構成 |
@@ -304,7 +304,7 @@ graph TD
 | 3 | Amazon S3 Files が NFSv4.0 に対応するか | 制約の一覧は「NFSv4.1 と NFSv4.2」、機能の説明は「NFSv4.2・NFSv4.1・NFSv4.0」。**どちらも AWS 公式です** | **狭いほう（v4.1 / v4.2）を採ります。** v4.0 のクライアントしか使えない場合は実機で確認してください |
 | 4 | Amazon EFS の Provisioned スループットの上限 | 費用の想定は「東京は下位グループ」だったのに、実際の投入では 3,072 MiB/s が `exceeds the maximum limit 1024.000000 MiB/s` で失敗 | **1,024 MiB/s を Service Quotas の値として扱い、リージョンの上限として一般化しません。** 教訓は「表を持っているだけでは足りず、投入値が表と一致しているかを実行前に照合する」です |
 | 5 | Amazon S3 Files のファイルシステム作成時間 | 公開されている実測記事は「数分〜十数分」。供出元は初回ポーリングで既に available、マウントターゲット 77 秒 | **どちらが代表的かを判定しません。** 供出元は 1 回しか作成していません |
-| 6 | S3 Access Point の対応オペレーション表 | これは食い違いではなく表の性質です。**AWS の対応表は自身を partial list と明記しています** | **「X ができない」の根拠にこの表を使うときは、網羅でないことを添えます** |
+| 6 | S3 Access Point の対応オペレーション表 | これは食い違いではなく表の性質です。**AWS の対応表は自身を partial list と明記しています。** 加えて**行が動きます** — `Presign` は非対応から Supported に変わりました | **「X ができない」の根拠にこの表を使うときは、網羅でないことと確認日を添えます。** 実測が表と食い違った記録を引くときは、**その実測が表のどの時点に対するものかを見てください** |
 | 7 | FSx for ONTAP の課金項目の粒度 | ユーザーガイドの課金ページと AWS Storage Blog のサイジング記事で、コスト構成要素の挙げ方が違います | **どちらを引いたかを明記します。** SnapLock が独立したライセンス項目である点はユーザーガイド側にあります |
 
 ---

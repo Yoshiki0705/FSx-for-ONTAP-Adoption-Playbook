@@ -24,6 +24,36 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     exists at the far end, not that a statement on this side went stale — a blind spot the citation
     index already documents. Found by re-reading. **No new gate is proposed**: the judgement is
     text-dependent, and a detector here would report coverage it does not have.
+
+- **The access point compatibility table was deferred to entirely, so four absences that break a
+  pattern were nowhere in this repository.** The constraints note said "check the list of supported
+  operations" and sent the reader off-site. **The table was read in full on 2026-09-14** and the rows
+  that change a decision are now recorded, with the date.
+  - **Conditional writes are not supported**, so `If-None-Match` / `If-Match` optimistic concurrency
+    does not exist on this route. Preventing an overwrite race moves to the application or to a
+    file-side lock. **This is the absence most likely to be assumed present**, and it was missing here.
+  - **Object Versioning, Object Lifecycle and Object Lock are not supported** — generations go to ONTAP
+    snapshots, tiering is a FabricPool setting rather than a lifecycle rule, and WORM means SnapLock,
+    which is irreversible and needs an approval naming the retention period.
+  - **Integrity verification does not carry over.** The ETag is a content hash but **not an MD5
+    digest**, and a checksum supplied on upload is used in transit only: **not stored, not returned in
+    the response, not used to verify on download.** A pipeline that verifies by comparing ETags or
+    re-checking checksums is rebuilt, not ported.
+  - **`CopyObject` and `UploadPartCopy` are confined to same-Region copies within one access point**, so
+    copying to another access point or to an S3 bucket is not that call.
+  - The full table is deliberately **not transcribed**: AWS states it is a partial list, so a copy would
+    be neither complete nor maintained. Only decision-changing rows, plus the date checked.
+
+- **`Presign` is listed as Supported, and this repository said nothing about presigned URLs at all.**
+  Short-lived, credential-free access is available on this route, which is an option for the
+  browser-facing designs the 02-design note enumerates.
+  - **The row moved.** A sibling measured `PutObject` / `HeadObject` / `GetObject` succeeding on
+    2026-08-19 while the table then said unsupported, and recorded advice conditional on that state.
+    The condition has lifted, **but the measurement predates the table change**, so this is recorded as
+    a documented capability that is unverified here rather than as a verified one.
+  - **The resource map now says the table's rows move**, not just that it is partial. A record of a
+    measurement disagreeing with the table has to be read against the table's state at that time.
+
 - **The 50 GiB object-size limit was recorded as a property of the route when it binds only writes.**
   AWS states it plainly — `Maximum object size is 50 GiB for uploads, but you can download objects
   larger than that` (checked 2026-09-14) — and four places here said or implied that objects above it
