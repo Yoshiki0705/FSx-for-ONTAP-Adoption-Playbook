@@ -96,6 +96,27 @@ After adding HA pairs, **you must expand the FlexGroup to the new aggregates —
 
 ---
 
+## How it scales when you add readers
+
+**A purchased ceiling and an elastic one behave in opposite directions as clients are added.** A sibling repository ran the same configuration from one host, then from two simultaneously.
+
+| Target | 1 host | 2 hosts combined | Per host |
+|---|---|---|---|
+| FSx for ONTAP S3 Access Point read | 585.3 MB/s | **592.5 MB/s** | **Halved** |
+| Amazon S3 read | 649.3 MB/s | **1,308.9 MB/s (2.02×)** | Essentially unchanged |
+
+**The FSx for ONTAP side divides the capacity that was purchased, so adding readers does not raise the total.** On the Amazon S3 side the total doubles and the per-host figure holds. **The 649 MB/s visible from a single host was that client's ceiling, not S3's.**
+
+**The unit of capacity planning differs.** For FSx for ONTAP you plan per file system; for an elastic service you plan against the clients' own bandwidth. **This is not about which is faster — it is that they grow in opposite directions.** It is the previous section's "the unit of sharing is the HA pair" seen from the number of readers.
+
+**And the write setting cannot be used to estimate reads.** On the same 128 MBps configuration, an 8 MiB write at a concurrency of 16 reached 129.5 MB/s — the setting — while the read reached **579.3 MB/s**, **4.5× what was purchased.** Reads hit the cache and network ceilings instead, so the setting is not their limit ([A single connection measures the client](a-single-connection-measures-the-client.md#the-two-stage-ceiling)).
+
+**Measurement conditions**: `ap-northeast-1`, `SINGLE_AZ_1` / 128 MBps, 8 MiB objects, concurrency 16, zero 503 responses at every point. Source: [S3 Files compared with this architecture](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) (日本語). **Not re-measured here.**
+
+**The cited record covers one host and two, and nothing beyond.** Three or more hosts, directions other than read, and configurations other than 128 MBps are not in it. **Do not read it as a general rule that throughput halves per added client** — what was observed is a single point at two.
+
+---
+
 ## Decision flow
 
 ```mermaid
@@ -145,6 +166,8 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 | Using FlexGroup automatically delivers full performance | It must span all aggregates with evenly distributed constituents |
 | Adding HA pairs only increases cost by the capacity portion | **The minimum throughput also rises** (1,536 MBps per pair with 2nd generation, 2+ pairs) |
 | Throughput changes are non-disruptive so can be done casually | The file server switches over, triggering failover. Changes may be delayed during maintenance windows |
+| Adding readers raises the combined throughput | **They divide the capacity that was purchased.** Measured across two hosts, the total barely moved and the per-host figure halved — the opposite of an elastic service |
+| The MBps you set is the read ceiling | **A 128 MBps configuration measured 579.3 MB/s on read, 4.5× the setting.** The setting is the ceiling on the write side |
 
 ---
 

@@ -19,6 +19,13 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   do, at a multiplicity of one. The claim was true when written and was not revisited when the
   measurement landed.
 
+- **A 20× measurement artifact was stated as a generalization without its counter-example.** Measuring
+  a visibility delay by launching a CLI once per request cost 873 ms against 44 ms for a persistent
+  session — but in the opposite direction the same difference is 14 ms against 8 ms, six milliseconds.
+  **The cited source isolated the startup cost in the slow direction only and says so.** Carrying 20×
+  as a correction factor would be reading a bound it does not claim. The three measurements of that
+  direction (7 / 8 / 14 ms, differing only in connection reuse) and which one to cite are recorded.
+
 - **`switcher-check` checked one step of a two-step fallback order.** A reader falls back to their own
   language, then English, then Japanese. The check asked only whether the page's own language had a
   copy, so a page in one of the six secondary languages linking at a Japanese note whose English copy
@@ -471,6 +478,41 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   enabled and does not depend on these parameters**.
 
 ### Added
+
+- **A purchased ceiling and an elastic one grow in opposite directions, which changes the unit of
+  capacity planning.** Run from one host, the FSx for ONTAP S3 Access Point read reached 585.3 MB/s;
+  run from two at once, the combined figure was 592.5 MB/s — **the total did not move and the per-host
+  figure halved.** The same test against Amazon S3 went 649.3 → 1,308.9 MB/s, 2.02×, with the per-host
+  figure unchanged.
+  - **So the 649 MB/s visible from one host was that client's ceiling, not the service's.** For
+    FSx for ONTAP you plan per file system; for an elastic service you plan against the clients' own
+    bandwidth. It is the same "unit of sharing is the HA pair" finding seen from the reader count.
+  - **The write setting is not the read ceiling.** On the same 128 MBps configuration, an 8 MiB write
+    at concurrency 16 reached 129.5 MB/s — the setting — while the read reached 579.3 MB/s, **4.5× what
+    was purchased.**
+  - **One host and two is the whole of it.** Three or more, directions other than read, and other
+    configurations are not in the record, so the halving is a single observed point rather than a rule.
+
+- **A warm-versus-cold difference that was explained by cache state turned out not to exist.** The
+  cited source recorded a file-path read as warm 1,164.1 / cold 751.0 MB/s, a ratio of 1.55, and
+  **retracted both.** Both read files written from `/dev/zero`, and **ONTAP returns zero blocks without
+  going to disk.** Changing only the data to incompressible gave warm 297.8 against cold 297.2 — a
+  ratio of 1.00.
+  - **The conclusion survived and its reason did not.** Not "a warm cache was being measured" but
+    "read performance was not being measured at all." **Confirm the test data is incompressible before
+    attributing a difference to cache warmth** is now a row in the countermeasures table, because a
+    cache explanation is exactly what the retracted figures had.
+
+- **An unsupported mount option can hang rather than fail.** Passing `nconnect` to Amazon S3 Files
+  neither errored nor was ignored — **the mount hung, timing out at 90 seconds.** The comparison
+  matrix has said "unsupported" for that option all along, which a reader may read as "specifying it
+  fails". Use `timeout` when testing one.
+  - **And the reason the option cannot help is structural, not a gap in support.** The mount peer is
+    `127.0.0.1` — a local `efs-proxy` — so more connections would be connections to a local process.
+    Streams measured 67.9 / 264.3 / 451.3 MB/s at 1 / 4 / 8 and **did not rise at 16.** 450 MB/s is
+    3.6 Gbps, below the single-flow ceiling, and the CPU during the run sat in `efs-proxy`. **The
+    remedy is a larger host, not a mount option** — so it is now a row in the table of where a ceiling
+    sits, alongside the purchased-capacity one.
 
 - **A second way a volume split fails to give independence, and it points the other way.** The design
   note recorded one exception — a SnapLock audit log volume locking the whole file system — and called

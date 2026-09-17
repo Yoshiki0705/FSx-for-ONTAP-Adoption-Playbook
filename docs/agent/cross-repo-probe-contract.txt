@@ -65,6 +65,9 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキ�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	範囲に入ったことを原因が同じ証拠にしない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	Origin への往復が不要になります
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	代表値として引くなら 8 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	差の 6 ms がすべて起動コストである、とまでは言えません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	Modification of the following fields is not allowed for FlexCache volumes: security-style.
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	値は Origin から来ています
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
@@ -100,6 +103,13 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	ret
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7 ms 対 2,171 ms
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	8 ストリームで約 450 MB/s に達し、16 では伸びません
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	warm と cold の差は存在しませんでした
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	ゼロブロックをディスクに行かずに返します
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	指定するとマウントはハングしました
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	止めているのはローカルのプロキシです
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した 128 MBps の 4.5 倍です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した容量を分け合うので、クライアントを増やしても合計は増えません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	27 分でバースト枠が尽き、2.0 倍の段差がつく
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	なだらかな低下ではなく、階段である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	再現性は傾きについて言えることで、持続時間について
