@@ -60,6 +60,9 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architect
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	50 GiB を超えるファイルは、ファイル側で作れば S3 側から読める
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	所要時間をディスク読み取りの性能として引用してはいけない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	経路が生きていることを示さずに大きい側だけ測ると
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	リーフとその下の階層に同じ名前を使わない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	作成経路によって成否が変わるので、CLI で失敗しても仕様上不可能とは判断しない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	衝突するのは経路が変わったときである
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NFS / SMB から見えるので、収集層のボリュームを人が覗く運用では
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイルシステムは満杯ではなく
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイル単位クローンだけがジョブを残さない
