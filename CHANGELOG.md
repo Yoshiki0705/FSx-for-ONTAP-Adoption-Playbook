@@ -513,6 +513,35 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **FlexCache had only one write mode here, and it was the default one.** The note described writes as
+  acknowledged by the origin without naming that as write-around behaviour, so **write-back — and the
+  constraints that swap in when you choose it — was absent.**
+  - **A write-back cache reverts to write-around, silently, when the origin's free space reaches 20% or
+    below.** No error; you notice through write latency. **The threshold is evaluated against both the
+    origin volume's reported free space and the aggregate's available physical capacity**, so an
+    overprovisioned origin trips it earlier than expected. A design that runs capacity tight cannot rest
+    a performance assumption on write-back.
+  - **A snapshot at the origin recalls outstanding dirty data from every write-back cache attached to
+    that origin volume**, and may need several retries during a write-heavy window. Frequent snapshots
+    and write-back are a poor pairing.
+  - **Three operations evict a file from the cache**, each blocking further operations on it until the
+    dirty data drains: renaming it, writing to an SMB alternate data stream (which evicts the *main*
+    file), and changing any attribute outside the six that can be set at the cache. **An S3 key is the
+    NFS path, so re-partitioning is a directory rename** — key design is not something to plan on
+    redoing. SMB write oplocks are unsupported with write-back.
+  - **Deciding the ONTAP version per layer leaves you short.** The access point needs 9.17.1 or later;
+    write-back arrived in 9.15.1 but **9.17.1P1 or later is strongly recommended at both origin and
+    cache**, and 9.15.1 is not recommended for production. Sum both layers before choosing.
+  - **Two requirements converge on one shape**: AWS requires a FlexCache volume to be a FlexGroup, and
+    the write-back guidelines recommend a single constituent for the whole volume — so a FlexGroup with
+    one constituent. **And the creation path decides whether that succeeds**: creating the FlexGroup
+    through the ONTAP CLI produced a FabricPool compatibility error while the Amazon FSx API worked, so
+    a CLI failure is not proof that something is impossible.
+  - **Validated range**: files under 100 GB and WAN round-trips within 200 ms, with no stated bandwidth
+    figure. **Collecting through the access point cannot reach the size boundary** — objects stop at
+    50 GiB — but writing from the cache side over NFS or SMB has nothing capping size.
+  - **Both vendor pages were read in full on 2026-09-14** rather than transcribed from the sibling.
+
 - **Three measured findings that had no route into this repository** (cited, `documented`).
   - **`iopolicy` is `queue-depth` where the AWS procedure instructs verifying `round-robin`.** The
     value is set by the udev rule `nvme-cli` 2.16-1.el9 ships, and the kernel default is `numa` — so
