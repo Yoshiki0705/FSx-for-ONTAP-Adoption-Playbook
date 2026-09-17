@@ -102,6 +102,62 @@ To match that, FSx for ONTAP provides **a baseline speed sustainable around the 
 
 **The balance is visible in `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance`.** Unlike the other metrics, these two are emitted at **five-minute intervals**. The granularity list is in [Monitoring granularity and retention](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#monitoring-granularity-and-retention).
 
+### How large the step is, and how long until it falls
+
+**The table above is the mechanism; it never carried the size.** The measurement is in the
+[cited record](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md)
+(日本語) — second generation `SINGLE_AZ_2`, provisioned 1,536 MBps, 1 MiB sequential read over a
+1,800 GiB file.
+
+| Observation | Value |
+|---|---|
+| The step | **2.0x** (2,882 MB/s → 1,439 MB/s) |
+| Time until it falls | **about 27 minutes from a full balance** |
+| Recovery to full | about 30 minutes idle |
+| Reproducibility of a short (~2 minute) window | 0.16% across two runs. **What reproduces is the burst figure** |
+
+**The provisioned value is neither figure.** At 1,536 both 2,882 and 1,439 were observed, so
+**the provisioned value cannot be used as the read ceiling.**
+
+**The fall is a step, not a decay.** It completed within one 10-second interval. **Extending a test
+slightly moves nothing, and then the figure is simply different past the boundary.** The procedure
+above — lengthen the test until the number drops — assumes that shape.
+
+**Sizing from a five-minute measurement errs in one direction: overestimation.** It starts from
+burst, so the figure to take is the one after the balance is spent. Which one applies is decided by
+the shape of the workload.
+
+| Workload shape | Figure to use |
+|---|---|
+| Work under 30 minutes, with gaps over 30 minutes between runs | the burst side |
+| Continuous, or gaps under 30 minutes | the baseline side |
+| Cannot be determined | **the baseline side** — the one that does not overestimate |
+
+> **The 27 minutes is a single observation.** The consumption and recovery slopes are each linear
+> over four or more points, but **the duration itself was not measured twice.** Reproducibility is
+> a statement about the slopes, not about the duration.
+
+### The absent balance metric on a configuration with no burst
+
+**Raising the provisioned value removes the burst allowance itself.** The published disk-burst
+column reads "—" from 3,072 upward, and the cited record measures **no decay over 30 minutes** at
+6,144 — the step seen at 1,536 is absent.
+
+**And that turns into a question of how to read CloudWatch.**
+
+| Configuration | `FileServerDiskThroughputBalance` |
+|---|---|
+| 1,536 (allowance present) | 99% → 0% over 27 minutes |
+| **6,144 (no allowance)** | **not a single data point is published** |
+
+**"Returns 0" and "returns no records" have to be read differently.** A spent balance and an absent
+allowance are different states, and **reading absence as zero produces a dashboard that reports
+permanent exhaustion.** The NVMe cache records take the same shape.
+
+**Write it down as a trade.** A higher provisioned value buys a stable figure and **gives up the
+room to absorb a short peak.** The cited record notes that the burst at 1,536 (3,125) is close to
+the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
+
 ---
 
 ## What a reproducible benchmark requires
@@ -177,7 +233,9 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 | p99 is visible in CloudWatch | **Only the form that derives an average from totals is provided.** The tail is measured on the client |
 | There is a latency metric | There is a **total** of time and a **total** of counts; you divide them for an average |
 | A benchmark reproduces if the procedure is the same | **A different credit balance yields a different figure** |
-| A short test shows sustained performance | A short test measures burst |
+| A short test shows sustained performance | A short test measures burst. **Measured at 2.0x, and the error is always an overestimate** |
+| The provisioned throughput capacity is the read ceiling | **It is not.** At 1,536 both 2,882 and 1,439 were observed. **Neither is the provisioned value** |
+| A balance metric reading 0 means exhaustion | **A configuration with no allowance emits no records at all.** Read 0 and absence differently |
 | Cache size can be configured | **It is determined by throughput capacity.** It cannot be set directly |
 | The cache helps every workload | It helps when the working set fits |
 | Bandwidth can be allocated per protocol | **No allocation exists.** It is shared per HA pair |
@@ -194,6 +252,7 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 | That `DataReadOperationTime` is a total of time with `Sum` as its valid statistic, and that `DataReadOperations` / `DataWriteOperations` / `MetadataOperations` are totals of counts with `Sum` as their valid statistic | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
 | That each file server has an in-memory cache and an NVMe cache; the three performance characteristics; that network I/O and cache size are determined by throughput capacity alone while disk I/O is determined by the combination of throughput capacity and SSD IOPS; that file-based workloads are spiky; bursting and the network I/O credit mechanism; that credits accumulate while running below the baseline | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
 | That `NetworkThroughputUtilization` is a ratio against one HA pair's worth and covers all traffic including background tasks | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
+| **The size of the step (2.0x), the ~27 minutes until it falls, the recovery slope, the step shape, and the balance metric being absent at 6,144** (**measured / outside the documentation**; conditions and unmeasured ranges are in the cited record) | [S3-Burst-on-ONTAP-Files: throughput capacity, burst and baseline](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) (日本語) |
 | That `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` are emitted at five-minute intervals | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
 | That client traffic takes precedence over background tasks | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 | That adding an HA pair enables the NVMe cache by default, and that disabling it is recommended for throughput-oriented workloads | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |

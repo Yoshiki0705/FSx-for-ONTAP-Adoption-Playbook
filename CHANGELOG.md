@@ -610,6 +610,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     responsibility its trade-off table already assigned to the host. Japanese only for now;
     `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
     a Japanese-only page.
+- **How large the burst step is, and how long until a benchmark falls off it.** The burst-and-credit
+  section held the mechanism — a short test measures burst — and never carried the size, so a reader
+  told to "lengthen the test until the number drops" had no idea what they were looking for.
+  Measured: **a 2.0x step** (2,882 → 1,439 MB/s) at a provisioned 1,536 MBps, **about 27 minutes**
+  from a full balance, recovering in about 30 minutes idle.
+  - **The provisioned value is neither figure.** At 1,536 both 2,882 and 1,439 were observed, so it
+    cannot be used as the read ceiling.
+  - **The fall is a step, not a decay** — complete within one 10-second interval. Lengthening a test
+    slightly moves nothing; past the boundary the figure is simply different. The existing procedure
+    assumed a shape it never stated.
+  - **Sizing from a short window errs in one direction**: overestimation, because it starts from
+    burst. Which figure applies is decided by workload shape, with "cannot tell" resolving to the
+    baseline side.
+  - **A balance metric that returns no records is not a balance of zero.** At 6,144 the allowance
+    does not exist and the metric publishes nothing, so reading absence as zero produces a dashboard
+    reporting permanent exhaustion. That belongs in this note more than anywhere else.
+  - The 27 minutes is **a single observation**; the consumption and recovery slopes are linear over
+    four or more points, the duration was not measured twice. Transcribed as such.
+  - The block note's caveat — "a 300-second window includes burst and is not a baseline" — now has a
+    route to what that costs. It asserted the caveat and left the reader nowhere.
 - **The gate now asserts it did not change the git index.** Two edits once existed only in the index
   — no commit, no stash, no reflog entry — and unstaging them destroyed the only copy. The known
   path for that (a hook exporting `GIT_DIR` into a test suite that shells out to git) was closed and

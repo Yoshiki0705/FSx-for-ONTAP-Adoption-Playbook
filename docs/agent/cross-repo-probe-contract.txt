@@ -96,6 +96,11 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	ret
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7 ms 対 2,171 ms
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	27 分でバースト枠が尽き、2.0 倍の段差がつく
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	なだらかな低下ではなく、階段である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	再現性は傾きについて言えることで、持続時間について
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	枠が無い構成では、残枠のメトリクスが 0 ではなく不在である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	満タンから 27 分バーストでき、30 分の無負荷で満タンに戻る
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない
