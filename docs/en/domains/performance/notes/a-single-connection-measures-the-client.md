@@ -129,6 +129,11 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 | Make the working set larger than the cache | Total test data scales with the number of servers. It is decided by both the client count and the file size |
 | Record the state before measuring | Without recording what was read immediately before, the second run cannot be compared with the first |
 | Report a range | **Reporting a single point is indistinguishable from having picked the convenient side** |
+| **Use incompressible test data** | **Reading a file written from `/dev/zero` never reaches disk.** The measurement above used incompressible data; with compressible data, something that looks like a cache difference comes from another cause (below) |
+
+**That last row comes from a case where figures explained as a cache difference were withdrawn.** A sibling repository recorded a file-path read as warm 1,164.1 / cold 751.0 MB/s — a ratio of 1.55 — and **later retracted both** ([S3 Files compared with this architecture](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) (日本語)). Both were reads of files written from `/dev/zero`, and **ONTAP returns zero blocks without going to disk.** With the same configuration and the same intervening volume, changing only the data to incompressible produced **warm 297.8 against cold 297.2, a ratio of 1.00: no warm-versus-cold difference existed.**
+
+**The surviving conclusion is that the figure is not this file system's read performance — but the reason changed places.** Not "a warm cache was being measured" but **"read performance was not being measured at all."** **Confirm the test data is incompressible before attributing a difference to cache warmth.** With compressible data, the two runs may not be taking the same path.
 
 ---
 
