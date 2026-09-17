@@ -19,6 +19,7 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 | **NFS と SMB で同じデータを出したい** | [セキュリティスタイルが権限評価のモデルを決める](notes/security-style-and-permission-evaluation.md) | **先にスタイルを決めます。** 後から変えると権限評価のモデルが変わります |
 | **AD 連携がこれから / すでに参加済み** | [AD への依存は参加時ではなく生涯続く](notes/ad-dependency-lasts-the-lifetime.md) | **資格情報の失効は平常時に無症状で、次のメンテナンスで顕在化します** |
 | **SMB につながらない** | [SMB を提供できない SVM がある](notes/smb-service-lost-on-cifs-server-delete.md) | **原因は作成時期ではなく CIFS サーバーの削除です。** REST で作り直せば戻ります |
+| **SMB のエラー文字列から原因を絞れない** | [SMB のエラー文字列は原因を名指さない](notes/smb-errors-do-not-name-their-cause.md) | **パスワード誤りに見えるものがアカウント不在です。** 3 つの汎用メッセージと、それぞれ読むべき場所 |
 | **SMB で運用中のボリュームを NFS からも使いたい** | [SMB で運用中のボリュームに NFS を足すのに複製は要らない](notes/adding-a-protocol-does-not-need-a-clone.md) | **複製も SVM の移動も要りません。** 届かない原因は 4 つで、どれも複製せずに直せます |
 | **NFS 側で権限を確認したい / 拒否の理由を知りたい** | [NFS 側から見える権限表現が実際の可否と一致しない](notes/nfs-side-view-does-not-explain-ntfs-denials.md) | **Deny も主体名も NFS 側には現れません。** NTFS の拒否と UNIX の許可が同一表現になった実測付き |
 | **移行後も今の確認手段が使えるか知りたい** | [プロトコルを変えたあと「誰がこのファイルにアクセスできるか」をどこで確認するか](../../reference/decision-trees/verifying-permissions-after-a-protocol-change.md) | **製品名ではなく仕組みで入ります。** 手続き書に手段名が書かれていないかの確認項目付き |
@@ -43,6 +44,8 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 | 11 | NTFS スタイルのボリュームで、NFS 側から権限を確認できるか | **表現は読めても可否は説明できません**（[NFS 側から見える権限表現が実際の可否と一致しない](notes/nfs-side-view-does-not-explain-ntfs-denials.md)） |
 | 12 | SVM ルートボリュームのセキュリティスタイルは NFS 到達性に影響するか | **します。** NTFS ルートでは NFS が名前空間を辿れません（[同ノートの再現環境](../../../../examples/multiprotocol-ad/README.md)） |
 | 13 | ブロックのデータをファイルプロトコルから読めるか | **読めません。** マルチプロトコルは NFS / SMB / S3 の間で成立する性質です（[LUN の中身はファイルプロトコルに現れない](../block-storage/notes/lun-contents-do-not-reach-file-protocols.md)） |
+| 14 | ボリュームを作れば SMB で見えるか | **見えません。共有の作成が別に必要です**（[SMB で到達できるのは共有だけ](notes/smb-errors-do-not-name-their-cause.md#smb-で到達できるのは共有だけ)） |
+| 15 | 疎通確認に `c$` を使ってよいか | **代表性が落ちます。** 管理者でマップすると権限評価の一部を迂回します（[既定で存在する共有を「共有あり」と数えないこと](notes/smb-errors-do-not-name-their-cause.md#既定で存在する共有を共有ありと数えないこと)） |
 
 ---
 

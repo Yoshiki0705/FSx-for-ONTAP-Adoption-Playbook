@@ -57,8 +57,18 @@ S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに�
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	片方にあって他方にない項目が、そのまま設計上の制約になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	50 GiB を超えるファイルは、ファイル側で作れば S3 側から読める
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	所要時間をディスク読み取りの性能として引用してはいけない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	経路が生きていることを示さずに大きい側だけ測ると
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NFS / SMB から見えるので、収集層のボリュームを人が覗く運用では
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイルシステムは満杯ではなく
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイル単位クローンだけがジョブを残さない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	ONTAP 9 の SMB Multichannel は無効で出荷される
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	成功したという応答は、その接続に適用された証拠ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	junction path は共有名ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	シークレットの存在はアカウントの存在ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	同じ環境の中で区切り文字が混在することは普通にある
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	既定 ACL は Everyone / Full Control である
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない

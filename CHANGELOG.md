@@ -9,6 +9,25 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The 50 GiB object-size limit was recorded as a property of the route when it binds only writes.**
+  AWS states it plainly — `Maximum object size is 50 GiB for uploads, but you can download objects
+  larger than that` (checked 2026-09-14) — and four places here said or implied that objects above it
+  cannot be handled over the S3 Access Point at all.
+  - **That removed a documented escape hatch.** A file larger than 50 GiB created over NFS or SMB **is
+    readable over the S3 API**, measured at 50 GiB + 1 byte with a full GET, plus range GETs at both
+    ends, with a 1 GiB control in the same session so that a failure could not be read as "too large"
+    when it would have meant "the route was broken".
+  - **The 537 seconds that GET took is not a read-throughput figure.** The file was sparse
+    (`truncate`, `blocks=0`), so the size limit was exercised while the disk was not, and the cited
+    record also notes its ONTAP version was never captured.
+  - Corrected in the constraints note, the limits table, the assessment inventory checklist and the
+    migration scoping note.
+
+- **A unit note said the documentation reads "50 GB" against a binary measured value.** The page now
+  reads GiB — the discrepancy was raised with the vendor and the correction has landed, so the note
+  was describing a state that no longer holds. **The 5 GiB single-`PutObject` limit is the one with no
+  locatable public page**, which is a different problem and now stated as such.
+
 - **The pre-production checklist said a volume's security style is changeable, without qualification.**
   That holds for an ordinary volume and is **false for a FlexCache Cache volume**, where the style is
   the Origin's and neither settable at creation nor changeable afterwards. A reader taking the row at
@@ -478,6 +497,36 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   enabled and does not depend on these parameters**.
 
 ### Added
+
+- **`multiprotocol-identity`: an SMB error string does not name its cause** (ja + en). Three generic
+  client messages each mean a missing piece in a different layer, and **the most misleading one reads
+  as a credential problem when the account does not exist in the domain** — so the time goes into
+  doubting the secret's value. **A secret existing is not an account existing.**
+  - **`The network name cannot be found.` means the share does not exist**, and a volume's junction
+    path is not a share name: SMB reaches shares, so creating a volume creates no name that reaches it.
+  - **The default administrative shares are not a data share.** `ipc$` cannot be used, `admin$` has not
+    been created by default since ONTAP 9.8, and `c$` resolves but maps as an administrator — which
+    bypasses part of the permission evaluation and makes the mapping account part of the result.
+  - **A newly created share defaults to Everyone / Full Control**, which proves connectivity and is
+    useless for measuring permissions.
+  - **Read identifiers from the API that owns them.** Separators are mixed within a single
+    environment — hyphens in an SVM name, underscores in a volume name — so deriving one from the other
+    was wrong. An ID is not a name.
+
+- **Which ONTAP features were measured to work through an S3 Access Point, and the two failures that
+  are shaped like successes.** qtree, tree quota, FlexClone at volume and file level, and FlexGroup
+  were all exercised with controls, including attaching an access point to a clone and cloning a
+  FlexGroup that has one.
+  - **A quota rejection arrives as HTTP 507 `InsufficientCapacity` naming the file system's capacity.**
+    The file system was not full; a qtree file-count quota was reached. Raising the limit from 10 to 50
+    let the same rejected PUT through. **An operator reading that response would size up the file
+    system.**
+  - **A file-level clone that creates nothing still returns 202** with a job UUID that cannot be
+    resolved, while volume create and volume clone return resolvable jobs in the same session — so it
+    is not permissions. Judge it by looking at the destination file. **Same shape as the FlexCache
+    security-style refusal below.**
+  - **An internal `____NTAP_S3_MAPPING` directory appears on a volume with an access point** and is
+    visible over NFS and SMB, so anyone browsing the collection volume will see it.
 
 - **A purchased ceiling and an elastic one grow in opposite directions, which changes the unit of
   capacity planning.** Run from one host, the FSx for ONTAP S3 Access Point read reached 585.3 MB/s;
