@@ -107,7 +107,8 @@ aws ssm start-session \
 |---|---|---|---|---|
 | 単一 `PutObject` | 5 GiB (5,368,709,120 B) | 実測 | 2026-08-02 | `Content-Length` で即時拒否。400 `EntityTooLarge` + `MaxSizeAllowed` |
 | `UploadPart` 1 パート | 5 GiB | 実測 | 2026-08-02 | 同上 |
-| オブジェクト全体 | 50 GiB (53,687,091,200 B) | 実測 | 2026-08-02 | **`CompleteMultipartUpload` でのみ検査**。全ペイロード転送後に判明する |
+| オブジェクト全体（**アップロード**） | 50 GiB (53,687,091,200 B) | 実測 + ドキュメント記載 | 2026-08-02 | **`CompleteMultipartUpload` でのみ検査**。全ペイロード転送後に判明する |
+| オブジェクト全体（**ダウンロード**） | **上限なし** | 実測 + ドキュメント記載 | 2026-09-11 | **50 GiB + 1 バイトの全体 GET が成功**。ファイル側で作った大きいファイルは S3 API で読める |
 
 > **設計上の注意**: オブジェクト全体の上限は転送完了後にしか検査されません。`UploadPart` に
 > 累積チェックはなく、`Complete` のエラーには `MaxSizeAllowed` が含まれません。
@@ -117,10 +118,24 @@ aws ssm start-session \
 > `UploadPart` has no cumulative check, and the `Complete` error omits `MaxSizeAllowed`.
 > **Validate object size client-side before uploading.**
 
-> **単位の注意**: ドキュメントは "5 GB" / "50 GB" と記載していますが、実測値はいずれも **binary
-> (GiB)** です。
+> **方向の注意**: 50 GiB は**アップロードの上限**で、ダウンロードには上限がありません。
+> AWS の記載は `Maximum object size is 50 GiB for uploads, but you can download objects larger
+> than that` です（2026-09-14 に確認）。**ファイル側で作った 50 GiB 超のファイルは S3 API で
+> 読めます。**
 >
-> **Unit note**: Documentation says "5 GB" / "50 GB", but both measured values are **binary (GiB)**.
+> **Direction note**: 50 GiB is the **upload** ceiling; downloads have none. AWS states
+> `Maximum object size is 50 GiB for uploads, but you can download objects larger than that`
+> (checked 2026-09-14). **A file larger than that, created on the file side, is readable over the
+> S3 API.**
+
+> **単位の注意**: 50 GiB は現在のドキュメントの表記どおりです（以前は "50 GB" 表記で、2 進値との
+> 食い違いをベンダーへ照会した経緯があり、**修正は反映済み**）。一方**単一 `PutObject` の 5 GiB を
+> 書いた公開ページは特定できていません。** こちらは実測のみを根拠としています。
+>
+> **Unit note**: 50 GiB matches the current documentation (it previously read "50 GB"; the
+> discrepancy with the binary value was raised with the vendor and **the correction has landed**).
+> **No public page stating the 5 GiB single-`PutObject` limit has been located**, so that row rests
+> on measurement alone.
 
 検証環境 / Environment: `ap-northeast-1`
 

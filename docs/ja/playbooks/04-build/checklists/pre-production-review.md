@@ -108,7 +108,8 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 | **Snapshot locking の有効化** | **全ロック済み Snapshot の失効まで不可** | **非 SnapLock ボリュームでも発生します。** 保持期間は時間単位から選べるので、**短い値を明示的に決めてから**有効にしてください |
 | S3 Access Point の `NetworkOrigin` | 不可 | Access Point を作り直す |
 | ボリューム名 | 不可 | 新しいボリュームを作成してデータを移す |
-| ボリュームのセキュリティスタイル | 可（ただし権限評価が変わる） | 影響範囲を確認してから変更する |
+| ボリュームのセキュリティスタイル（通常ボリューム） | 可（ただし権限評価が変わる） | 影響範囲を確認してから変更する |
+| **FlexCache の Cache ボリュームのセキュリティスタイル** | **不可。Origin の値を継承します** | **作成時に指定できず（`Unexpected argument "nas".`）、作成後に変更できません（`security-style` は FlexCache では変更不可）。** 別のスタイルにするには**別の Origin**が必要です。**変更の PATCH は job UUID を返して HTTP では成功するので、値を読み直すまで拒否だと分かりません**（[分割の単位が決めているのは、後で決め直せない範囲](../../02-design/notes/the-split-decides-what-cannot-be-revisited.md#分けても独立にならない-2-つの経路)） |
 | SVM の NetBIOS 名 | 可（ただし AD 側に痕跡が残る） | 新しい名前を使う。失敗した名前は再利用しない |
 
 ---

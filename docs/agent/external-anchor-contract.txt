@@ -52,6 +52,8 @@ docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#ベン
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#参照した一次情報
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#性能を決めている-3-つの要素
+docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#枠が無い構成における残枠メトリクスの不在
+docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#段差の大きさと落ちるまでの時間
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#測定フロー
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#結論
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#自環境での確認手順

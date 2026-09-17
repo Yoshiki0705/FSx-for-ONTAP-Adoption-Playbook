@@ -72,10 +72,14 @@ lang: ja
 | **保管量に比例するベースライン** | Amazon EFS の Bursting スループット（EFS Standard / One Zone 1 TiB あたり 50 MB/s） | 保管量かスループットモードの問題です |
 | **保管量に比例する単位スループット** | FSx for Lustre（SSD で 1 TiB あたり 50〜1,000 MBps を選択） | 容量か単位スループットの問題です |
 | **ファイルシステムのスループット容量** | FSx for ONTAP。ネットワークとキャッシュサイズを決めます | 設定値の問題です |
+| **クライアント上のローカルプロキシの CPU** | Amazon S3 Files。**マウントの相手は `127.0.0.1` で、同じホスト上の `efs-proxy` です** | **超えられません。** 対処はホストを太くする方向で、マウントオプションではありません |
+| **購入した容量を読み手で分け合う形** | FSx for ONTAP。**読み手を増やしても合計は増えません**（[実測](../../domains/performance/notes/where-throughput-is-determined-and-shared.md#読み手を増やしたときの伸び方)） | 台数ではなく容量の問題です |
 
 **実測で最も紛らわしいのが最初の 2 行です。** sibling プロジェクトの測定では、EFS の素マウントが 3 条件すべてで 499.79 MB/s に張り付き、これは 1 フロー上限ではなく documented なクライアント単位クォータに一致しました。マウントヘルパー使用時の倍率は 2.97 で、`倍率 2.97 は **1,500 ÷ 500 = 3.0** に一致しており` とあるとおり、フロー数には比例していません。
 
 **FSx for ONTAP 側の上限は 1 本のデータ LIF ではありません。** 8 台 128 接続で同じファイルを共有した測定では ONTAP 物理ポートの累積カウンタ差分が `12,173 MiB/s = **102 Gbps**` に達しています。単一接続の数字からファイルシステムの上限を外挿できません。
+
+**Amazon S3 Files の行は「遅い」ではなく「止まる場所が違う」です。** ストリーム数を上げた実測は 1 本 67.9、4 本 264.3、8 本 451.3 MB/s で、**16 本では伸びません**（404.8 / 450.0）。450 MB/s は 3.6 Gbps なので、**1 フロー上限（約 5 Gbps）には当たっていません。** 16 ストリーム読み取り中の CPU が `efs-proxy` に 67.3% + 18.1% + 14.9%（8 vCPU）で、マウントの相手が `127.0.0.1` であることと整合します。**`nconnect` が効かないのは非対応だからというより、増えるのがローカルプロセスへの接続だからです** — FSx for ONTAP のマウントは相手がファイルシステム自身なので、そこが構造的に違います（出典は下の[参照した一次情報](#参照した一次情報)、c5n.2xlarge、非圧縮、`O_DIRECT`）。
 
 切り分けの順序は [手元のスループット値は何を測ったのかを判定する](../decision-trees/measured-throughput-triage.md) にあります。
 
@@ -172,6 +176,7 @@ graph TD
 | **容量が埋まると書き込みが落ちる** | sibling 側の測定では、自動日次バックアップのスナップショットが上書き前ブロックを保持して容量を食い、ボリューム使用率 88% → 100% で書き込みが `2,200 MB/s → 267 MB/s` に落ちました。**測定ファイルを `rm` しても空きは戻りません。** 回復には `volume autosize` と `snapshot autodelete` の設定が必要です。原因と回避手段はどちらも公式に記載があり、発見ではなく設計漏れです |
 | **同じ構成でも数字が振れる** | キャッシュに何が残っていたかで変わります。ベンチマークはクレジット残高込みで設計してください（[p99 は CloudWatch のメトリクスからは出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md)） |
 | **S3 Access Point の対応表は網羅ではない** | AWS の対応オペレーション表が自身を partial list と明記しています。ここから作った「非対応の一覧」を網羅として扱わないでください |
+| **非対応オプションはエラーで返らないことがある** | Amazon S3 Files に `nconnect` を渡すと、**拒否も黙殺もされずマウントがハングしました**（90 秒でタイムアウト）。上の比較表の「非対応」は、指定すると失敗するという意味ではありません。**未対応オプションを試すときは `timeout` を付けてください**（[出典](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md)、2026-09、ap-northeast-1） |
 
 ---
 
@@ -275,6 +280,7 @@ graph TD
 | EFS のクライアント単位クォータに一致した実測値、マウントヘルパー使用時の倍率 2.97、ONTAP 物理ポートの累積カウンタ差分 102 Gbps、SMB Multichannel のチャネル数と理由の未確認、NFS 16 接続列とのキャッシュ温度の不揃い | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
 | Amazon EFS の非対応プロトコルの実測確認、`nconnect` を実効オプションではなく接続数で判定したこと | [S3-Burst-on-ONTAP-Files: プロトコル可否の実測](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/protocol-matrix-efs-vs-ontap.md) |
 | 容量使用率の上昇による書き込み低下と、`rm` では空きが戻らないこと | [S3-Burst-on-ONTAP-Files: 性能測定のガイド](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/performance-testing-guide.md) |
+| Amazon S3 Files がストリーム数 8 で約 450 MB/s に頭打ちすること、止めているのが `efs-proxy` の CPU であること、マウントの相手が `127.0.0.1` であること、`nconnect` の指定でマウントがハングすること、購入した容量が読み手で分割される実測（1 台 585.3 → 2 台合計 592.5） | [S3-Burst-on-ONTAP-Files: S3 Files と本構成の比較検証](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) |
 
 ---
 

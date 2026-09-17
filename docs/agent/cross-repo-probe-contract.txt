@@ -57,14 +57,31 @@ S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに�
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	片方にあって他方にない項目が、そのまま設計上の制約になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	50 GiB を超えるファイルは、ファイル側で作れば S3 側から読める
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	所要時間をディスク読み取りの性能として引用してはいけない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	経路が生きていることを示さずに大きい側だけ測ると
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NFS / SMB から見えるので、収集層のボリュームを人が覗く運用では
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイルシステムは満杯ではなく
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイル単位クローンだけがジョブを残さない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	ONTAP 9 の SMB Multichannel は無効で出荷される
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	成功したという応答は、その接続に適用された証拠ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	junction path は共有名ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	シークレットの存在はアカウントの存在ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	同じ環境の中で区切り文字が混在することは普通にある
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	既定 ACL は Everyone / Full Control である
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
+S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	範囲に入ったことを原因が同じ証拠にしない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	Origin への往復が不要になります
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	代表値として引くなら 8 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	差の 6 ms がすべて起動コストである、とまでは言えません
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	Modification of the following fields is not allowed for FlexCache volumes: security-style.
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	値は Origin から来ています
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 → 2 では逐次スループットが 1 バイトも動かない
@@ -100,7 +117,19 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	ret
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7 ms 対 2,171 ms
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	8 ストリームで約 450 MB/s に達し、16 では伸びません
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	warm と cold の差は存在しませんでした
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	ゼロブロックをディスクに行かずに返します
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	指定するとマウントはハングしました
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	止めているのはローカルのプロキシです
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した 128 MBps の 4.5 倍です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した容量を分け合うので、クライアントを増やしても合計は増えません
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	27 分でバースト枠が尽き、2.0 倍の段差がつく
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	この 1,024 という数字が何を指しているのかは確認できていない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	なだらかな低下ではなく、階段である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	再現性は傾きについて言えることで、持続時間について
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	枠が無い構成では、残枠のメトリクスが 0 ではなく不在である
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	満タンから 27 分バーストでき、30 分の無負荷で満タンに戻る
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない

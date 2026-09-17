@@ -129,6 +129,11 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 | Make the working set larger than the cache | Total test data scales with the number of servers. It is decided by both the client count and the file size |
 | Record the state before measuring | Without recording what was read immediately before, the second run cannot be compared with the first |
 | Report a range | **Reporting a single point is indistinguishable from having picked the convenient side** |
+| **Use incompressible test data** | **Reading a file written from `/dev/zero` never reaches disk.** The measurement above used incompressible data; with compressible data, something that looks like a cache difference comes from another cause (below) |
+
+**That last row comes from a case where figures explained as a cache difference were withdrawn.** A sibling repository recorded a file-path read as warm 1,164.1 / cold 751.0 MB/s — a ratio of 1.55 — and **later retracted both** ([S3 Files compared with this architecture](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) (日本語)). Both were reads of files written from `/dev/zero`, and **ONTAP returns zero blocks without going to disk.** With the same configuration and the same intervening volume, changing only the data to incompressible produced **warm 297.8 against cold 297.2, a ratio of 1.00: no warm-versus-cold difference existed.**
+
+**The surviving conclusion is that the figure is not this file system's read performance — but the reason changed places.** Not "a warm cache was being measured" but **"read performance was not being measured at all."** **Confirm the test data is incompressible before attributing a difference to cache warmth.** With compressible data, the two runs may not be taking the same path.
 
 ---
 
@@ -168,7 +173,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ## What a block figure would need before it joins this table
 
-**There is not one throughput figure for the block protocols (iSCSI, NVMe/TCP) in this repository or in the cited source.** Placing one in the table above when it arrives requires **two conditions to travel with it.** Both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
+**The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, iSCSI reached 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s ([Paths are the failover mechanism](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと) (日本語)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
 
 | Condition | In the file-side measurement | What to expect for block |
 |---|---|---|
@@ -179,7 +184,11 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 **A comparison between iSCSI and NVMe/TCP, on the other hand, holds cleanly.** The same host, the same OS, the same `openflag` and the same LIF leave a single parameter line as the difference.
 
-**The current position — that the protocol choice is settled by generation and HA pair count before performance enters — stands until that measurement exists.** Whether a note is needed will be judged once it does.
+**The measurement did not land where that expectation put it.** 1,135 MB/s is roughly 1.8× the EC2 single-flow ceiling of 625 MB/s, so **it does not belong in a comparison premised on landing in the same place.** The table above therefore still has three rows, and **the position that the protocol choice is settled by generation and HA pair count before performance enters is unchanged.**
+
+**The decision not to add a row was made before the measurement ran.** The cited source split the possible outcomes for a single flow four ways and tabulated, **in advance,** how the table above would be rewritten in each case ([Block protocol measurement plan](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/block-protocol-matrix-plan.md) (日本語)). **Deciding after measuring allows the wording to be chosen to suit whatever number came out.**
+
+> **Do not treat landing in the same range as evidence of the same cause.** The point of the table above is not the range but that similar values arise from different ceilings. **The cited source got this wrong once, for EFS, and corrected it** ([Conclusion](#conclusion)). If a block figure lands in the same range, whether the EC2 single-flow ceiling is the cause has to be confirmed separately.
 
 ## Verify in your own environment
 

@@ -9,6 +9,57 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **A note said the behaviour of an ANA-enabled kernel was unconfirmed. It had been measured, and this
+  side did not know.** `paths-are-the-failover-mechanism.md` carried "not confirmed in this
+  verification" for the case where `CONFIG_NVME_MULTIPATH` is set, while a sibling had measured it
+  against the same file system, namespace and filled data, with the kernel's ANA support as the only
+  difference between the two clients.
+  - **The citation is `documented`, not a promotion to `verified`.** The environment belongs to the
+    repository that measured it, and this one does not re-measure.
+  - **Half of the original statement still stands and is now said separately.** What was measured is
+    the merge into one device and the read figure. **The failover gap on such a kernel has no
+    measurement on either side** — the 412.741 second figure here has no counterpart. Recording the
+    promotion without that would have retired a known gap by wording.
+  - **`make cross-repo-external` could not have caught this.** It verifies that a cited string still
+    exists at the far end, not that a statement on this side went stale — a blind spot the citation
+    index already documents. Found by re-reading. **No new gate is proposed**: the judgement is
+    text-dependent, and a detector here would report coverage it does not have.
+- **The 50 GiB object-size limit was recorded as a property of the route when it binds only writes.**
+  AWS states it plainly — `Maximum object size is 50 GiB for uploads, but you can download objects
+  larger than that` (checked 2026-09-14) — and four places here said or implied that objects above it
+  cannot be handled over the S3 Access Point at all.
+  - **That removed a documented escape hatch.** A file larger than 50 GiB created over NFS or SMB **is
+    readable over the S3 API**, measured at 50 GiB + 1 byte with a full GET, plus range GETs at both
+    ends, with a 1 GiB control in the same session so that a failure could not be read as "too large"
+    when it would have meant "the route was broken".
+  - **The 537 seconds that GET took is not a read-throughput figure.** The file was sparse
+    (`truncate`, `blocks=0`), so the size limit was exercised while the disk was not, and the cited
+    record also notes its ONTAP version was never captured.
+  - Corrected in the constraints note, the limits table, the assessment inventory checklist and the
+    migration scoping note.
+
+- **A unit note said the documentation reads "50 GB" against a binary measured value.** The page now
+  reads GiB — the discrepancy was raised with the vendor and the correction has landed, so the note
+  was describing a state that no longer holds. **The 5 GiB single-`PutObject` limit is the one with no
+  locatable public page**, which is a different problem and now stated as such.
+
+- **The pre-production checklist said a volume's security style is changeable, without qualification.**
+  That holds for an ordinary volume and is **false for a FlexCache Cache volume**, where the style is
+  the Origin's and neither settable at creation nor changeable afterwards. A reader taking the row at
+  face value would plan a change that has no route. The row is now scoped to ordinary volumes and the
+  FlexCache case is listed as irreversible, with the note that its refusal returns as a success.
+
+- **A section claimed no block throughput figure existed in this repository or the cited source.** Two
+  do, at a multiplicity of one. The claim was true when written and was not revisited when the
+  measurement landed.
+
+- **A 20× measurement artifact was stated as a generalization without its counter-example.** Measuring
+  a visibility delay by launching a CLI once per request cost 873 ms against 44 ms for a persistent
+  session — but in the opposite direction the same difference is 14 ms against 8 ms, six milliseconds.
+  **The cited source isolated the startup cost in the slow direction only and says so.** Carrying 20×
+  as a correction factor would be reading a bound it does not claim. The three measurements of that
+  direction (7 / 8 / 14 ms, differing only in connection reuse) and which one to cite are recorded.
+
 - **`switcher-check` checked one step of a two-step fallback order.** A reader falls back to their own
   language, then English, then Japanese. The check asked only whether the page's own language had a
   copy, so a page in one of the six secondary languages linking at a Japanese note whose English copy
@@ -462,6 +513,127 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Three measured findings that had no route into this repository** (cited, `documented`).
+  - **`iopolicy` is `queue-depth` where the AWS procedure instructs verifying `round-robin`.** The
+    value is set by the udev rule `nvme-cli` 2.16-1.el9 ships, and the kernel default is `numa` — so
+    the procedure's value is neither. **Recorded as an expected-output mismatch, not a performance
+    problem**: the difference between policies measured 0.5%. A reader following the guide correctly
+    sees a value the guide calls wrong.
+  - **`nvmf_lif` returns no rows and `lif` does not count NVMe-oF**, so both tables a reader reaches
+    for first are indistinguishable from an idle path. The per-path bytes are in `nvmf_tcp_port`,
+    which attributed ±0 bytes to the non-optimized path across four workloads. **A 0-row result has
+    to fail rather than be reported as zero** — otherwise "the table is empty" and "this version has
+    no such table" look identical.
+  - **The second-generation write ceiling has two published statements that disagree** (ja + en). A
+    general rule of one third of the setting, and an exception table giving Single-AZ 1,024 MBps. The
+    measurement matches the general rule at the value the page calls an exception (within 2.4% at
+    6,144 MBps) and misses it by 2.60× where the general rule should apply (1,536 MBps). **Which
+    figure is correct is not decided here or in the cited record.**
+- **The AL2023 kernel evidence widened from one lineage to three.** This repository had measured
+  6.18.44; the cited record read the config out of the `amazonlinux` repository packages for
+  6.1.186-228.374, 6.12.103-127.188 and 6.18.48-107.148, all unset. **The pre-build check is still
+  required** — three matching lineages make it less likely to be a waste of time, not skippable.
+- **`multiprotocol-identity`: an SMB error string does not name its cause** (ja + en). Three generic
+  client messages each mean a missing piece in a different layer, and **the most misleading one reads
+  as a credential problem when the account does not exist in the domain** — so the time goes into
+  doubting the secret's value. **A secret existing is not an account existing.**
+  - **`The network name cannot be found.` means the share does not exist**, and a volume's junction
+    path is not a share name: SMB reaches shares, so creating a volume creates no name that reaches it.
+  - **The default administrative shares are not a data share.** `ipc$` cannot be used, `admin$` has not
+    been created by default since ONTAP 9.8, and `c$` resolves but maps as an administrator — which
+    bypasses part of the permission evaluation and makes the mapping account part of the result.
+  - **A newly created share defaults to Everyone / Full Control**, which proves connectivity and is
+    useless for measuring permissions.
+  - **Read identifiers from the API that owns them.** Separators are mixed within a single
+    environment — hyphens in an SVM name, underscores in a volume name — so deriving one from the other
+    was wrong. An ID is not a name.
+
+- **Which ONTAP features were measured to work through an S3 Access Point, and the two failures that
+  are shaped like successes.** qtree, tree quota, FlexClone at volume and file level, and FlexGroup
+  were all exercised with controls, including attaching an access point to a clone and cloning a
+  FlexGroup that has one.
+  - **A quota rejection arrives as HTTP 507 `InsufficientCapacity` naming the file system's capacity.**
+    The file system was not full; a qtree file-count quota was reached. Raising the limit from 10 to 50
+    let the same rejected PUT through. **An operator reading that response would size up the file
+    system.**
+  - **A file-level clone that creates nothing still returns 202** with a job UUID that cannot be
+    resolved, while volume create and volume clone return resolvable jobs in the same session — so it
+    is not permissions. Judge it by looking at the destination file. **Same shape as the FlexCache
+    security-style refusal below.**
+  - **An internal `____NTAP_S3_MAPPING` directory appears on a volume with an access point** and is
+    visible over NFS and SMB, so anyone browsing the collection volume will see it.
+
+- **A purchased ceiling and an elastic one grow in opposite directions, which changes the unit of
+  capacity planning.** Run from one host, the FSx for ONTAP S3 Access Point read reached 585.3 MB/s;
+  run from two at once, the combined figure was 592.5 MB/s — **the total did not move and the per-host
+  figure halved.** The same test against Amazon S3 went 649.3 → 1,308.9 MB/s, 2.02×, with the per-host
+  figure unchanged.
+  - **So the 649 MB/s visible from one host was that client's ceiling, not the service's.** For
+    FSx for ONTAP you plan per file system; for an elastic service you plan against the clients' own
+    bandwidth. It is the same "unit of sharing is the HA pair" finding seen from the reader count.
+  - **The write setting is not the read ceiling.** On the same 128 MBps configuration, an 8 MiB write
+    at concurrency 16 reached 129.5 MB/s — the setting — while the read reached 579.3 MB/s, **4.5× what
+    was purchased.**
+  - **One host and two is the whole of it.** Three or more, directions other than read, and other
+    configurations are not in the record, so the halving is a single observed point rather than a rule.
+
+- **A warm-versus-cold difference that was explained by cache state turned out not to exist.** The
+  cited source recorded a file-path read as warm 1,164.1 / cold 751.0 MB/s, a ratio of 1.55, and
+  **retracted both.** Both read files written from `/dev/zero`, and **ONTAP returns zero blocks without
+  going to disk.** Changing only the data to incompressible gave warm 297.8 against cold 297.2 — a
+  ratio of 1.00.
+  - **The conclusion survived and its reason did not.** Not "a warm cache was being measured" but
+    "read performance was not being measured at all." **Confirm the test data is incompressible before
+    attributing a difference to cache warmth** is now a row in the countermeasures table, because a
+    cache explanation is exactly what the retracted figures had.
+
+- **An unsupported mount option can hang rather than fail.** Passing `nconnect` to Amazon S3 Files
+  neither errored nor was ignored — **the mount hung, timing out at 90 seconds.** The comparison
+  matrix has said "unsupported" for that option all along, which a reader may read as "specifying it
+  fails". Use `timeout` when testing one.
+  - **And the reason the option cannot help is structural, not a gap in support.** The mount peer is
+    `127.0.0.1` — a local `efs-proxy` — so more connections would be connections to a local process.
+    Streams measured 67.9 / 264.3 / 451.3 MB/s at 1 / 4 / 8 and **did not rise at 16.** 450 MB/s is
+    3.6 Gbps, below the single-flow ceiling, and the CPU during the run sat in `efs-proxy`. **The
+    remedy is a larger host, not a mount option** — so it is now a row in the table of where a ceiling
+    sits, alongside the purchased-capacity one.
+
+- **A second way a volume split fails to give independence, and it points the other way.** The design
+  note recorded one exception — a SnapLock audit log volume locking the whole file system — and called
+  it the only one. **FlexCache is the second: the Cache volume's security style is the Origin's, and
+  there is no route to choose it on the Cache side.** It cannot be passed at creation
+  (`Unexpected argument "nas".`) and cannot be changed afterwards
+  (`security-style` is refused for FlexCache volumes), so changing it means a different Origin.
+  - **This one crosses the file system boundary.** One choice made while creating the Origin decides
+    the character of a Cache in another cluster, so splitting file systems does not separate them.
+  - **The refusal returns in the shape of a success.** The modifying PATCH returns a job UUID and
+    succeeds at the HTTP layer; the refusal appears only as the job's `state: failure`. **Confirming
+    an irreversible field from a return value records a refusal as an application** — so the
+    verification steps now require reading the value back.
+  - **What makes the finding an inheritance rather than a default is the control.** The Cache SVM's
+    default is `unix`, so a UNIX Origin proves nothing; a plain volume with no style specified was
+    created to read that default, and an NTFS Origin's Cache came out `ntfs`.
+  - Transcribed from `S3-Burst-on-ONTAP-Files`, both clusters ONTAP 9.18.1P6 in `ap-northeast-1` on
+    2026-09-13. **The unmeasured ranges travel with it**: an on-premises Cache, `mixed`, whether the
+    ONTAP CLI refuses the same two ways, and whether an NTFS Cache is actually reachable over SMB.
+
+- **The reason the single-connection table stays at three rows is now linked, not just asserted.**
+  The measured block figures are iSCSI 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s at a multiplicity of
+  one, roughly 1.8× the EC2 single-flow ceiling.
+  - **They are still not added, and that was settled before the measurement ran.** The cited source
+    tabulated four possible landing points and how the sentence would be rewritten in each, in
+    advance, so that the wording could not be chosen to suit the number that came out. That table
+    lives in `block-protocol-matrix-plan.md`, which this repository had never cited.
+  - **Two probes now point at it**, one at the pre-decision and one at the rule that landing in the
+    same range is not evidence of the same ceiling — the error the source made once with EFS.
+
+- **The prediction that a probe would fire was not corrected by a report; it was answerable two days
+  after it was written.** The prediction was recorded on 2026-09-08. The cited source published, on
+  2026-09-10, that two of the four outcomes leave the probe silent and that silence does not mean the
+  measurement is unfinished. **It stayed wrong for a week because this repository did not cite the
+  document that said so.** The index now carries the procedure: before pinning a probe, read whether
+  the cited side has already decided the probe's behaviour. Measurement plans publish before results.
+
 - **Three modules are now closed in English, and the translation backlog is measurable instead of
   recalled.** The backlog was reported as "7 pages"; it was 83, because the figure had never been
   derived. `make i18n-status` derives it.
@@ -610,6 +782,26 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     responsibility its trade-off table already assigned to the host. Japanese only for now;
     `navigation.md` is deliberately untouched, since a Tier 1 row would send seven other languages to
     a Japanese-only page.
+- **How large the burst step is, and how long until a benchmark falls off it.** The burst-and-credit
+  section held the mechanism — a short test measures burst — and never carried the size, so a reader
+  told to "lengthen the test until the number drops" had no idea what they were looking for.
+  Measured: **a 2.0x step** (2,882 → 1,439 MB/s) at a provisioned 1,536 MBps, **about 27 minutes**
+  from a full balance, recovering in about 30 minutes idle.
+  - **The provisioned value is neither figure.** At 1,536 both 2,882 and 1,439 were observed, so it
+    cannot be used as the read ceiling.
+  - **The fall is a step, not a decay** — complete within one 10-second interval. Lengthening a test
+    slightly moves nothing; past the boundary the figure is simply different. The existing procedure
+    assumed a shape it never stated.
+  - **Sizing from a short window errs in one direction**: overestimation, because it starts from
+    burst. Which figure applies is decided by workload shape, with "cannot tell" resolving to the
+    baseline side.
+  - **A balance metric that returns no records is not a balance of zero.** At 6,144 the allowance
+    does not exist and the metric publishes nothing, so reading absence as zero produces a dashboard
+    reporting permanent exhaustion. That belongs in this note more than anywhere else.
+  - The 27 minutes is **a single observation**; the consumption and recovery slopes are linear over
+    four or more points, the duration was not measured twice. Transcribed as such.
+  - The block note's caveat — "a 300-second window includes burst and is not a baseline" — now has a
+    route to what that costs. It asserted the caveat and left the reader nowhere.
 - **The gate now asserts it did not change the git index.** Two edits once existed only in the index
   — no commit, no stash, no reflog entry — and unstaging them destroyed the only copy. The known
   path for that (a hook exporting `GIT_DIR` into a test suite that shells out to git) was closed and
