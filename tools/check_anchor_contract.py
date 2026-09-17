@@ -37,6 +37,12 @@ PATH_ONLY = frozenset(
         "docs/ja/reference/decision-trees/access-point-authorization.md",
         "docs/ja/navigation.md",
         "docs/en/README.md",
+        # Cited without a fragment from three of `S3-Burst-on-ONTAP-Files`' measurement records, as
+        # the route from a reader inside the numbers to the guidance built on them. Path-only is the
+        # citing side's choice and it is the right one here: both documents are long, and what would
+        # break for that side is the file moving, not a heading being renamed inside it.
+        "docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md",
+        "docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md",
     }
 )
 
@@ -117,6 +123,13 @@ def tracked_files() -> list[Path]:
     above: its gate refused an anchored citation into a document not listed here, so these two are
     registered first. Both are cited by fragment and both are long, so they go in `CITED_ANCHORS`
     with one anchor each rather than being tracked whole.
+
+    The final two arrived the same way and settled in the other bucket. Completing that reverse
+    direction added citations from a third measurement record, and all three point at these two
+    documents **without a fragment** - so they go in `PATH_ONLY`. That the same round of work
+    produced entries in both buckets is the distinction doing its job: what the citing side needs
+    protected is whichever of path or heading its link actually depends on, and it differs per link
+    rather than per document.
     """
     return [
         ROOT
@@ -164,6 +177,20 @@ def tracked_files() -> list[Path]:
         / "block-storage"
         / "notes"
         / "what-block-monitoring-shows.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "domains"
+        / "block-storage"
+        / "notes"
+        / "paths-are-the-failover-mechanism.md",
+        ROOT
+        / "docs"
+        / "ja"
+        / "domains"
+        / "performance"
+        / "notes"
+        / "where-throughput-is-determined-and-shared.md",
     ]
 
 

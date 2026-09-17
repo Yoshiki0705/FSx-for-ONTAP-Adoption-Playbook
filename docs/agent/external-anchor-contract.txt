@@ -40,6 +40,7 @@ docs/en/domains/security-governance/notes/access-point-authorization-layers.md#t
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#verify-it-in-your-own-environment
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#what-you-are-actually-configuring
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#who-appears-in-the-audit-log
+docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md
 docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md#実測した次元とメトリクス
 docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md#ブロックの値をこの表に並べる条件
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#p99-は-cloudwatch-のメトリクスからは出せない
@@ -55,6 +56,7 @@ docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#測定
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#結論
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#自環境での確認手順
 docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md#関連ドキュメント
+docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#accessdenied-のメッセージによる層の切り分け
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#ap-側のパラメータ--policy-以外は作成時に確定
 docs/ja/domains/security-governance/notes/access-point-authorization-layers.md#aws-cli
