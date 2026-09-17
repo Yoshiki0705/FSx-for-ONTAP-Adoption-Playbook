@@ -15,7 +15,7 @@ ruff==0.16.7
 # Validates the CloudFormation template under examples/. Pinned for the same reason as ruff:
 # cfn-lint adds rules between minor versions, so an unpinned copy makes the verdict depend on
 # the day it runs.
-cfn-lint==1.56.3
+cfn-lint==1.57.0
 
 # Runs PSScriptAnalyzer on the .ps1 files under examples/, which no gate looked at before this was
 # added. It is a wrapper: it needs a PowerShell host on PATH, which GitHub-hosted runners already
