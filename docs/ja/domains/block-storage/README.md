@@ -1,9 +1,5 @@
 # Domain — ブロックストレージ (Block Storage)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/block-storage/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築・運用を扱います。ファイル共有と違い、**整合性とパスの面倒はホスト側の責任として残ります。** その分界線がこのモジュールの中心です。

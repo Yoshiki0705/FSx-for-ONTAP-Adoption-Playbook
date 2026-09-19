@@ -425,6 +425,153 @@ class GateStillDetects(unittest.TestCase):
         """The narrowing above must not start failing on intentional placeholders."""
         self.assertEqual(run_gate("validate_frontmatter.py").returncode, 0)
 
+    def test_missing_language_switcher_is_rejected(self) -> None:
+        """Every localized pair needs one generated footer block."""
+        ja = NOTE_HEADER.format(evidence="hypothesis", lang="ja") + "\n# gate probe\n"
+        en = NOTE_HEADER.format(evidence="hypothesis", lang="en") + "\n# gate probe\n"
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"), "missing switcher markers"
+            )
+
+    def test_duplicate_language_switchers_are_rejected(self) -> None:
+        """The former header copy must not survive beside the footer copy."""
+        block = "<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n"
+            + block
+            + "\nbody\n\n"
+            + block
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n\n"
+            + block
+            + "\nbody\n\n"
+            + block
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"), "expected exactly 1"
+            )
+
+    def test_language_switcher_above_the_footer_is_rejected(self) -> None:
+        """One block is not sufficient when content follows it."""
+        block = "<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n"
+            + block
+            + "\ntrailing content\n"
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n\n"
+            + block
+            + "\ntrailing content\n"
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(run_gate("sync_lang_switcher.py"), "final content")
+
+    def test_generated_footer_language_switcher_is_accepted(self) -> None:
+        """The writer produces a footer block that check mode accepts."""
+        footer = "\n<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n"
+            + footer
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n"
+            + footer
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            written = run_gate("sync_lang_switcher.py", "--write")
+            self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+            checked = run_gate("sync_lang_switcher.py")
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+
+    def test_orphan_language_switcher_start_is_rejected(self) -> None:
+        """An unterminated start marker must not disappear from the block count."""
+        footer = "\n<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n<!-- lang-switcher:start -->\nbody\n"
+            + footer
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n"
+            + footer
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"), "nested switcher start"
+            )
+
+    def test_orphan_language_switcher_end_is_rejected(self) -> None:
+        """An end marker without a start must fail before complete blocks are checked."""
+        footer = "\n<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n\n<!-- lang-switcher:end -->\n"
+            + footer
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n"
+            + footer
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(run_gate("sync_lang_switcher.py"), "no matching start")
+
+    def test_unterminated_language_switcher_start_is_rejected(self) -> None:
+        """A final start marker without an end must not be accepted as no block."""
+        footer = "\n<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->\n"
+        ja = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="ja")
+            + "\n# gate probe\n"
+            + footer
+        )
+        en = (
+            NOTE_HEADER.format(evidence="hypothesis", lang="en")
+            + "\n# gate probe\n"
+            + footer
+            + "\n<!-- lang-switcher:start -->\n"
+        )
+        probe = {
+            f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+            f"docs/en/domains/cost/notes/{PROBE}.md": en,
+        }
+        with temp_files(probe):
+            self.assert_rejected(run_gate("sync_lang_switcher.py"), "no matching end")
+
     def test_hand_edited_language_switcher_is_rejected(self) -> None:
         """Switcher blocks are generated; a hand-edited one drifts from the tree."""
         block = (

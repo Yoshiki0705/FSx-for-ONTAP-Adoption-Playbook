@@ -11,10 +11,6 @@ lang: ja
 
 # SMB ログオン監査 — 4624 は記録される。ただし数えられるのはセッションであってログイン操作ではない
 
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-logon-audit-event-coverage.md) | [English](../../../../en/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---

@@ -9,10 +9,6 @@ lang: en
 
 # A figure measured over a single connection is not the storage's performance
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md) | [English](a-single-connection-measures-the-client.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
 ---

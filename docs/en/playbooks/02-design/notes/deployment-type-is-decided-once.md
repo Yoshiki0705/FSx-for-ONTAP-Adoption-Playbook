@@ -9,10 +9,6 @@ lang: en
 
 # The deployment type is decided once
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) | [English](deployment-type-is-decided-once.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 02 — Design](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

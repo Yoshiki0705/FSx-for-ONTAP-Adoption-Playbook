@@ -9,10 +9,6 @@ lang: ja
 
 # 単一接続で測った値はストレージの性能ではない
 
-<!-- lang-switcher:start -->
-🌐 [日本語](a-single-connection-measures-the-client.md) | [English](../../../../en/domains/performance/notes/a-single-connection-measures-the-client.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---

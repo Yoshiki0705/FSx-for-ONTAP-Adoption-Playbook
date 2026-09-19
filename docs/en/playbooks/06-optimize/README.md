@@ -1,9 +1,5 @@
 # Playbook 06 — Optimize
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/06-optimize/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Performance and cost tuning once you are in steady state. Optimization cannot begin without measurement.

@@ -9,10 +9,6 @@ lang: en
 
 # ISV and SaaS solution map by problem
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../ja/reference/isv-solution-map.md) | [English](isv-solution-map.md) | [🏠 Repository home](../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../README.md) | [Reference](../../ja/reference/README.md)
 
 ---

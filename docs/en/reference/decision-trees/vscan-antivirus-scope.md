@@ -9,10 +9,6 @@ lang: en
 
 # How far antivirus scanning applies
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/reference/decision-trees/vscan-antivirus-scope.md) | [English](vscan-antivirus-scope.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../README.md) | [Decision trees index](../../../ja/reference/decision-trees/README.md) | [Domain — Security and governance](../../domains/security-governance/README.md)
 
 ---

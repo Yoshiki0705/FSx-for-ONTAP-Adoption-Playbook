@@ -9,10 +9,6 @@ lang: en
 
 # The antivirus choice is settled before the vendor
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [English](vscan-scope-is-bounded-before-the-vendor.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
 ---

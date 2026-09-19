@@ -1,9 +1,5 @@
 # Navigationsleitfaden
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/navigation.md) | [English](../en/navigation.md) | [한국어](../ko/navigation.md) | [简体中文](../zh-CN/navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](navigation.md) | [Español](../es/navigation.md) | [🏠 Repository-Startseite](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## Fazit

@@ -1,9 +1,5 @@
 # 导航指南
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/navigation.md) | [English](../en/navigation.md) | [한국어](../ko/navigation.md) | [简体中文](navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](../de/navigation.md) | [Español](../es/navigation.md) | [🏠 仓库首页](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## 结论

@@ -1,9 +1,5 @@
 # Playbook 06 — 最適化 (Optimize)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/06-optimize/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 定常運用に入ってからの性能とコストの詰めを扱います。最適化は測定なしには始められません。

@@ -1,9 +1,5 @@
 # Domain — Cost
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/cost/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers capacity, tiering, and the gap between estimates and measurements. Estimates usually miss because of assumptions, not unit prices.

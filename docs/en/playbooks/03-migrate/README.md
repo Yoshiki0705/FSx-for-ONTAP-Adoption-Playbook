@@ -1,9 +1,5 @@
 # Playbook 03 — Migrate
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/03-migrate/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers method selection, cutover, and rollback. A migration plan without a rollback procedure is an incomplete plan.

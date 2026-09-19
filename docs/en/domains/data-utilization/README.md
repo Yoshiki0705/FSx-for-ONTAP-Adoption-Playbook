@@ -1,9 +1,5 @@
 # Domain — Data Utilization
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/data-utilization/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 How to use NAS-resident data from analytics, AI, and applications without multiplying copies of it.

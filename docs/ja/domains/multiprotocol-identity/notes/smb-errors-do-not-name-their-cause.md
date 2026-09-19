@@ -9,10 +9,6 @@ lang: ja
 
 # SMB のエラー文字列は原因を名指さない
 
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-errors-do-not-name-their-cause.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-errors-do-not-name-their-cause.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---

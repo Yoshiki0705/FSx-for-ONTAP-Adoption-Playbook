@@ -11,10 +11,6 @@ lang: en
 
 # SMB logon auditing — 4624 is recorded, but what it counts is sessions rather than login actions
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [English](smb-logon-audit-event-coverage.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

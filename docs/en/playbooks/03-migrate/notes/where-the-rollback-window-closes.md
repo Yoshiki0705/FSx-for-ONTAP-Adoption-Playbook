@@ -9,10 +9,6 @@ lang: en
 
 # The Rollback Window Closes the Moment a Client Writes
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [English](where-the-rollback-window-closes.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy.

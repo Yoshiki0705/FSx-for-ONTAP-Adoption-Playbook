@@ -11,10 +11,6 @@ lang: ja
 
 # ブロックストレージを 30 分で動かす手順
 
-<!-- lang-switcher:start -->
-🌐 [日本語](quickstart.md) | [English](../../../en/domains/block-storage/quickstart.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## この手順で到達する状態

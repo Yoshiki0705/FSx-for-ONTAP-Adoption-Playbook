@@ -10,9 +10,6 @@ lang: ja
 ---
 
 # S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層
-<!-- lang-switcher:start -->
-🌐 [日本語](access-point-authorization-layers.md) | [English](../../../../en/domains/security-governance/notes/access-point-authorization-layers.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 

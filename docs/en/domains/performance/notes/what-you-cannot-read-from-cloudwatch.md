@@ -9,10 +9,6 @@ lang: en
 
 # p99 cannot be read from the CloudWatch metrics
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [English](what-you-cannot-read-from-cloudwatch.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
 ---

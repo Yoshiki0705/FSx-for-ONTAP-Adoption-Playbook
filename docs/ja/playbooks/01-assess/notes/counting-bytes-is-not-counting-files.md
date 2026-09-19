@@ -9,10 +9,6 @@ lang: ja
 
 # 容量が余っていても書けなくなる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](counting-bytes-is-not-counting-files.md) | [English](../../../../en/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 01 — 現状把握](../README.md)
 
 ---

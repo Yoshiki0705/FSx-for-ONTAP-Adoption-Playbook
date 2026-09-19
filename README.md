@@ -1,49 +1,66 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## 対象読者
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](docs/en/README.md) | [한국어](docs/ko/README.md) | [简体中文](docs/zh-CN/README.md) | [繁體中文](docs/zh-TW/README.md) | [Français](docs/fr/README.md) | [Deutsch](docs/de/README.md) | [Español](docs/es/README.md)
-<!-- lang-switcher:end -->
+- FSx for ONTAP の採用可否や構成を判断するアーキテクト
+- 移行、構築、本番投入を計画する実装担当者
+- 稼働後の性能、保護、セキュリティ、コストを管理する運用担当者
 
----
+## 対象外
 
-> **Amazon FSx for NetApp ONTAP** への移行と、その後の設計・構築・運用を進めるための知見集です。
-> ライフサイクル（評価 → 設計 → 移行 → 構築 → 運用 → 最適化）と、テーマ（データ保護・データ活用・セキュリティ・性能・コスト・マルチプロトコル ID）の **2 軸**で引けます。
->
-> 技術支援の現場で得た知見を、匿名化した参考情報として整理しています。人間の読者と、AI エージェント / Web クローラーの双方から参照できる構造を意図しています。
+このリポジトリは、次の作業や判断を代行しません。
 
----
+- 契約条件の策定や契約手続き
+- ライセンス条件の解釈
+- 価格の提示や見積書の発行
+- SaaS ファイル共有サービスからの移行手順
+- 個別環境での採用判断や調達判断
+- 法務、コンプライアンス、規制上の最終判断
+
+公開情報に基づく判断材料と、文書化された事実から明確に分離した構築者の観測・設計上の見解は対象です。
+
+## 翻訳状況
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語と English で提供します。`notes/` と `checklists/` の本文は日本語を基本とし、一部を English に翻訳しています。日本語版が技術的な正典です。
+
+## 本番投入前の確認
+
+- [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) — 不可逆な設定と本番前に試す項目
+- [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — 転送時暗号化と監査の責任境界
 
 ## はじめかた
 
 | やりたいこと | ガイド | 所要時間 |
 |---|---|---|
-| **FSx for ONTAP が自分の課題に合うか判断する** | [どの AWS ファイルストレージかを決める](docs/ja/reference/decision-trees/file-storage-selection.md) | 10 分 |
-| **選択肢のトレードオフを対称に読む** | [ファイルストレージの選択肢の比較](docs/ja/reference/comparison/file-storage-options.md) | 15 分 |
+| FSx for ONTAP が自分の課題に合うか判断する | [どの AWS ファイルストレージかを決める](docs/ja/reference/decision-trees/file-storage-selection.md) | 10 分 |
 | このリポジトリの歩き方を知る | [ナビゲーションガイド](docs/ja/navigation.md) | 3 分 |
-| 移行できるか / どう移行するか判断する | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) | 10 分 |
-| SMB の ID 管理と監査を設計する | [SMB のユーザー管理と監査 決定ツリー](docs/ja/reference/decision-trees/smb-identity-and-audit.md) | 10 分 |
-| 検証済みの上限値を確認する | [上限値・クォータ](docs/ja/reference/limits/) | 5 分 |
-| 選択肢のトレードオフを比べる | [比較マトリクス](docs/ja/reference/comparison/) | 10 分 |
 | 知見の信頼度の見かたを知る | [知見の分類ポリシー](docs/ja/evidence-policy.md) | 5 分 |
-| 公開情報から一次情報を探す | [公開されている一次情報と事例の入口](docs/ja/case-studies/public-references.md) | 5 分 |
-| 自分の業種・ワークロードの事例を探す | [公開されている FSx for ONTAP の事例](docs/ja/case-studies/public-case-studies.md) | 10 分 |
-| **自分の業種から、何を決めればよいか調べる** | [業種別リソースマップ — 読む順序](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) | 10 分 |
-| 判断を誤った事例から学ぶ | [事例集](docs/ja/case-studies/) | 10 分 |
-| 知見を追加する（執筆） | [CONTRIBUTING.md](CONTRIBUTING.md) | 10 分 |
 
-> **最初の 1 行**: 上の決定木は **7 つの終端のうち 4 つで FSx for ONTAP に落ちません。**
-> FSx for ONTAP でなければならない終端は 1 つだけです（SMB と NFS を同じデータに同時に出す場合）。
-> **適合しないと分かった時点で読むのをやめられる**ようにしてあります。
+<details>
+<summary><strong>その他の入口</strong></summary>
 
-> **収録状況**: **12 モジュールすべてに中身があります。**
-> 各モジュールの README に、そのモジュールが答える問いと、対応するノートが一覧されています。
-> **答えが未収録の問いは `_未追加_` と表示されます。**
+| 状況 | 入口 |
+|---|---|
+| 移行方式を選ぶ | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) |
+| 上限値やクォータを確認する | [上限値・クォータ](docs/ja/reference/limits/) |
+| 選択肢のトレードオフを比べる | [比較マトリクス](docs/ja/reference/comparison/) |
+| 業種やワークロードから読む順序を決める | [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) |
+| 知見を追加する | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+</details>
+
+> **最初の 1 行**: ファイルストレージの決定木は、適合しないと分かった時点で読むのをやめられる構造です。
+> 各モジュールの README は、そのモジュールが答える問いと対応するノートを一覧にしています。
+> 答えが未収録の問いは `_未追加_` と表示されます。
+
+<details>
+<summary><strong>症状別の入口と収録内容</strong></summary>
 
 ### 症状からの引きかた
 
-**「やりたいこと」ではなく「起きていること」から入る場合はこちらです。** 決定木 10 本と比較 9 本の全体は
+**「やりたいこと」ではなく「起きていること」から入る場合はこちらです。** 全体は
 [決定木の索引](docs/ja/reference/decision-trees/) と [比較の索引](docs/ja/reference/comparison/) にあります。
 
 | 起きていること | 引くもの |
@@ -96,6 +113,8 @@
 | [共有ブロックが設計を変える条件](docs/ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) | 単独接続で足りるなら Amazon EBS が素直です。100 万 IOPS は 10 台を束ねた値です |
 | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](docs/ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | GB 単価では負けます。最小構成の月額は 83% がスループット容量です |
 | [Kubernetes のブロック PV はボリューム数の上限に当たる](docs/ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | 詰まるのは容量ではなくボリューム数。ドライバの選択がその天井を決めます |
+
+</details>
 
 ---
 

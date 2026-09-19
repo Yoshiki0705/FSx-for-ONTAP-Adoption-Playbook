@@ -1,9 +1,5 @@
 # Política de clasificación del conocimiento
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/evidence-policy.md) | [English](../en/evidence-policy.md) | [한국어](../ko/evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](evidence-policy.md) | [🏠 Inicio del repositorio](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## Conclusión

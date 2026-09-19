@@ -10,9 +10,6 @@ lang: en
 ---
 
 # S3 Access Point Authorization Design — Evaluation Order and the Two Layers That Narrow Access
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/access-point-authorization-layers.md) | [English](access-point-authorization-layers.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 Repository Top](../../../README.md) | [Domain — Security & Governance](../README.md)
 

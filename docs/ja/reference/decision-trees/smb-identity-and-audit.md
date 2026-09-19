@@ -9,10 +9,6 @@ lang: ja
 
 # SMB のユーザー管理と監査は 2 つの選択で決まる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-identity-and-audit.md) | [English](../../../en/reference/decision-trees/smb-identity-and-audit.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 [決定ツリー一覧](README.md)
 
 ---

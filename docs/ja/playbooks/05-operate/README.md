@@ -1,9 +1,5 @@
 # Playbook 05 — 運用 (Operate)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/05-operate/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 監視・容量管理・障害対応・変更管理を扱います。「動いている」ことの確認と「壊れたときにどうするか」の両方が必要です。

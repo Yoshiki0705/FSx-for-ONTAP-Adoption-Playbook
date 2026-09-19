@@ -1,9 +1,5 @@
 # Domain — Multiprotocol & Identity
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/multiprotocol-identity/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Most "permissions are wrong" problems trace back to ID mapping.

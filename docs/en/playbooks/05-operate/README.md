@@ -1,9 +1,5 @@
 # Playbook 05 — Operate
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/05-operate/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers monitoring, capacity management, incident response, and change management. You need both confirmation that things work and a plan for when they break.

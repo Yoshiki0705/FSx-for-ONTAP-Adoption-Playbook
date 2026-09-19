@@ -9,10 +9,6 @@ lang: ja
 
 # p99 は CloudWatch のメトリクスからは出せない
 
-<!-- lang-switcher:start -->
-🌐 [日本語](what-you-cannot-read-from-cloudwatch.md) | [English](../../../../en/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---

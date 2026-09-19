@@ -9,10 +9,6 @@ lang: en
 
 # The IaC boundary is set by the API surface, not by preference
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) | [English](what-iac-cannot-reach.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 04 — Build](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

@@ -1,9 +1,5 @@
 # Domain — マルチプロトコル・ID (Multiprotocol & Identity)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/multiprotocol-identity/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 NFS と SMB の共存、Active Directory 連携、ID マッピングを扱います。多くの「権限がおかしい」問題は、ID マッピングの理解不足に起因します。

@@ -9,10 +9,6 @@ lang: en
 
 # Billing splits into "provisioned" and "consumed"
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/cost/notes/provisioned-versus-consumed.md) | [English](provisioned-versus-consumed.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

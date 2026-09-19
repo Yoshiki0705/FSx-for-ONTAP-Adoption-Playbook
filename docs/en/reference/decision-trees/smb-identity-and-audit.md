@@ -9,10 +9,6 @@ lang: en
 
 # Two choices decide SMB user management and auditing
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/reference/decision-trees/smb-identity-and-audit.md) | [English](smb-identity-and-audit.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 [Decision trees index](../../../ja/reference/decision-trees/README.md)
 
 ---
