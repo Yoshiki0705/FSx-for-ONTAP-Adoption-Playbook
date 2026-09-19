@@ -1,5 +1,5 @@
 ---
-title: Throughput is not determined by a single setting — it is shared per HA pair, and FlexVol cannot span beyond one pair
+title: Throughput is not determined by a single setting — it is shared per HA pair, and FlexVol is placed on one pair's aggregate
 lifecycle: [design, optimize]
 domains: [performance, cost]
 evidence: documented
@@ -28,7 +28,7 @@ lang: en
 | Conditions to reach the ceiling | The throughput setting alone is not enough. **A corresponding SSD capacity and IOPS configuration is required** |
 | The unit of sharing | **Per HA pair.** The standby node does not add capacity |
 
-And the most overlooked point: **A FlexVol can only reside on a single aggregate (= 1 HA pair).** Even if you create a file system with 12 HA pairs, placing data in a FlexVol means **you get only 1 pair's worth of performance.** To use multiple pairs under a single namespace, you need FlexGroup.
+And the most overlooked point: **The Amazon FSx API specifies that each HA pair has one aggregate and a FlexVol's `AggregateConfiguration` always contains one aggregate.** The file system as a whole can scale to 12 HA pairs on second-generation Single-AZ, but a FlexVol's placement and performance path belong to one HA pair. FlexGroup is required to use multiple pairs under one namespace. File systems using block protocols have a separate supported ceiling of 6 HA pairs.
 
 > **Evidence**: `documented` — based entirely on AWS official documentation.
 > **No measured values are included.** Ceiling values represent "the maximum achievable with that configuration" — what your environment actually delivers under your workload is a separate matter. See "[Verify in your own environment](#verify-in-your-own-environment)" for measurement guidance.
@@ -109,7 +109,7 @@ Each HA pair holds **one aggregate**. This directly affects volume design.
 
 | Volume type | Placement | Available performance |
 |---|---|---|
-| **FlexVol** | Single aggregate (always one) | **Capped at 1 HA pair** |
+| **FlexVol** | Single aggregate (the API response always has one entry) | **Path through the 1 HA pair that owns that aggregate** |
 | **FlexGroup** | Spans multiple aggregates | Sum of configured aggregates |
 
 FlexGroup places "constituents" on each aggregate. **To achieve full performance, the FlexGroup must span all aggregates with an even number of constituents per aggregate** (recommended: 8). Imbalance produces proportionally uneven performance.
@@ -152,7 +152,7 @@ graph TD
     MULTI -->|No — Multi-AZ required| CAP[Multi-AZ is limited to 1 pair<br/>Reconcile requirements with availability]
 
     MP --> VOL{Volume design}
-    VOL -->|FlexVol| WARN[Only 1 pair's performance<br/>Multiple pairs serve no purpose]
+    VOL -->|FlexVol| WARN[Placed on one aggregate<br/>That aggregate belongs to one pair]
     VOL -->|FlexGroup| BAL[Span all aggregates<br/>Distribute constituents evenly]
 
     ONE --> REG[Confirm region ceiling values]
@@ -168,7 +168,7 @@ graph TD
 | # | Step | What it verifies |
 |---|---|---|
 | 1 | Confirm the ceiling values for your region | The design ceiling. 1st generation halves by region |
-| 2 | Check the target volume's type and aggregate placement | If FlexVol, 1 pair is the ceiling |
+| 2 | Check the target volume's type and aggregate placement | Whether a FlexVol is placed on one HA pair's aggregate |
 | 3 | Measure throughput, IOPS, and latency with Amazon CloudWatch | If pinned to provisioned values, you are being throttled |
 | 4 | Measure with a read/write ratio and file sizes close to your workload | Results change significantly depending on whether data fits in cache |
 | 5 | Record measurement conditions (generation / region / throughput setting / SSD capacity / volume type) | Provides a comparison baseline for next time |
@@ -186,7 +186,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 | Raising the throughput setting reaches the ceiling | A corresponding SSD capacity and IOPS configuration is required. The setting alone does not get you there |
 | Documentation ceiling values are the same across all regions | 1st generation IOPS and throughput ceilings halve depending on region |
 | An HA pair has 2 nodes so performance doubles | Active-standby configuration. **The standby does not add performance** |
-| Adding HA pairs speeds up existing volumes | FlexVol is fixed to 1 aggregate. Unless you expand FlexGroup to new aggregates, they remain unused |
+| Adding HA pairs speeds up existing volumes | A FlexVol is placed on one aggregate. Unless you expand FlexGroup to new aggregates, the added pairs remain unused by that volume |
 | Using FlexGroup automatically delivers full performance | It must span all aggregates with evenly distributed constituents |
 | Adding HA pairs only increases cost by the capacity portion | **The minimum throughput also rises** (1,536 MBps per pair with 2nd generation, 2+ pairs) |
 | Throughput changes are non-disruptive so can be done casually | The file server switches over, triggering failover. Changes may be delayed during maintenance windows |
@@ -203,7 +203,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 | Active-standby configuration, HA pair counts and ceilings per generation, each pair has 1 aggregate | [AWS: Managing high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/HA-pairs.html) |
 | IOPS / throughput ceilings by region, minimum throughput, recommended SSD utilization | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | What the throughput setting determines, configuration required to reach ceiling, failover on change | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
-| FlexVol is always on a single aggregate, FlexGroup constituents | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
+| A FlexVol's `AggregateConfiguration` always contains 1 aggregate, and each aggregate belongs to 1 HA pair; FlexGroup constituents | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
 | FlexGroup should span all aggregates evenly, expansion after adding HA pairs | [AWS: Moving volumes between aggregates](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/moving-fg-volumes.html) |
 | Differences in FlexVol / FlexGroup creation methods with multiple HA pairs | [AWS: Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) |
 

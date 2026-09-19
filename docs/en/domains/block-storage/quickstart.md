@@ -298,7 +298,7 @@ makes **the parent volume, its SVM and the entire file system undeletable.**
 | NVMe/TCP | It depends on the kernel, which is too much for a first pass. **`verify-block.sh` reports `CONFIG_NVME_MULTIPATH`**; it is not set on Amazon Linux 2023, and failover does not work in that state — see [the measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
 | Windows and MPIO | A separate set of PowerShell steps. Host-side defaults are in [Paths are the failover mechanism](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) |
 | Multi-AZ | Address layout and failover behaviour both change — see [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
-| More than one HA pair | Block protocols are limited to six pairs and are disabled above that |
+| More than one HA pair | Block protocols are supported only on file systems with 6 or fewer pairs; transition behaviour while adding pair 7 is not documented |
 | Performance figures | A `t3.medium` cannot sustain 384 MBps, which is 3.07 Gbps. Methodology is in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
 | CHAP and portsets | Authentication defaults to none. Configuration and failure symptoms are in [igroups are not the only access control](notes/igroups-are-not-the-only-access-control.md) |
 

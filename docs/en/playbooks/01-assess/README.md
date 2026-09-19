@@ -13,7 +13,7 @@ the table of contents; this is the entry point.
 
 | What you have | Read first | What it settles |
 |---|---|---|
-| **A number from the source** (capacity, file count) | [Free capacity does not mean you can still write](notes/counting-bytes-is-not-counting-files.md) | why counting bytes is not enough. **The inode default does not grow with capacity** |
+| **A number from the source** (capacity, file count) | [Free capacity does not mean you can still write](notes/counting-bytes-is-not-counting-files.md) | why counting bytes is not enough. **AWS's documented 648 GiB cap conflicts with the proportional count observed on 2026-08-06, so check your environment** |
 | **An existing setup** whose actual use is unknown | [Configured is not the same as used](notes/counting-bytes-is-not-counting-files.md#the-difference-between-configured-and-in-use) | why a configuration listing is not evidence of use |
 | **A migration method still to be chosen** | [Migration method decision tree](../../../ja/reference/decision-trees/migration-method.md) (日本語) | **working back from the decisions that cannot be undone** tells you what to collect now |
 

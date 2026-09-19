@@ -1,5 +1,5 @@
 ---
-title: スループットは 1 つの設定値では決まらない — HA ペア単位で共有され、FlexVol は 1 ペアを超えられない
+title: スループットは 1 つの設定値では決まらない — HA ペア単位で共有され、FlexVol は 1 ペアの aggregate に配置される
 lifecycle: [design, optimize]
 domains: [performance, cost]
 evidence: documented
@@ -24,7 +24,7 @@ lang: ja
 | 上限に到達する条件 | スループット設定だけでは足りません。**対応する SSD 容量と IOPS の構成が必要**です |
 | 共有される単位 | **HA ペア単位。** 待機側ノードは容量を増やしません |
 
-そして最も見落とされる点です。**FlexVol は 1 つのアグリゲート（= 1 HA ペア）にしか置けません。** HA ペアを 12 個持つファイルシステムを作っても、データを FlexVol に置けば **1 ペア分の性能しか出ません。** 複数ペアを 1 つの名前空間で使うには FlexGroup が必要です。
+そして最も見落とされる点です。**Amazon FSx API は、各 HA ペアが 1 aggregate を持ち、FlexVol の `AggregateConfiguration` には常に 1 aggregate だけが入ると規定しています。** ファイルシステム全体は第 2 世代 Single-AZ で最大 12 HA ペアまで増やせますが、FlexVol の配置と性能経路は 1 HA ペア分です。複数ペアを 1 つの名前空間で使うには FlexGroup が必要です。ブロックプロトコルを使うファイルシステムは別途 6 HA ペア以下がサポート範囲です。
 
 > **Evidence**: `documented` — すべて AWS 公式ドキュメントの記載に基づきます。
 > **実測値は含みません。** 上限値は「その構成で到達可能な最大」であり、自環境のワークロードで
@@ -103,7 +103,7 @@ lang: ja
 
 | ボリューム種別 | 配置 | 使える性能 |
 |---|---|---|
-| **FlexVol** | 単一のアグリゲート（常に 1 つ） | **1 HA ペア分が上限** |
+| **FlexVol** | 単一の aggregate（API 応答は常に 1 エントリ） | **その aggregate を持つ 1 HA ペアの経路** |
 | **FlexGroup** | 複数のアグリゲートにまたがる | 構成したアグリゲートの合計 |
 
 FlexGroup は各アグリゲート上に「コンスティチュエント」を持ちます。**性能を出すには全アグリゲートにまたがり、アグリゲートあたりのコンスティチュエント数が均等である必要があります**（推奨は 8）。偏るとその分だけ偏った性能になります。
@@ -146,7 +146,7 @@ graph TD
     MULTI -->|いいえ Multi-AZ が要件| CAP[Multi-AZ は 1 ペア上限<br/>要件と可用性を再調整]
 
     MP --> VOL{ボリューム設計}
-    VOL -->|FlexVol| WARN[1 ペア分しか出ない<br/>複数ペアの意味がない]
+    VOL -->|FlexVol| WARN[1 aggregate に配置<br/>その aggregate は 1 ペアに属する]
     VOL -->|FlexGroup| BAL[全アグリゲートにまたがり<br/>コンスティチュエントを均等配置]
 
     ONE --> REG[リージョンの上限値を確認]
@@ -162,7 +162,7 @@ graph TD
 | # | 手順 | 確認できること |
 |---|---|---|
 | 1 | 自リージョンの上限値を確認する | 設計の天井。第 1 世代はリージョンで半減します |
-| 2 | 対象ボリュームの種別とアグリゲート配置を確認する | FlexVol なら 1 ペアが上限であること |
+| 2 | 対象ボリュームの種別と aggregate 配置を確認する | FlexVol が 1 HA ペアの aggregate に配置されること |
 | 3 | Amazon CloudWatch でスループット・IOPS・レイテンシを実測する | プロビジョニング値に張り付いていればスロットリングです |
 | 4 | ワークロードに近い読み書き比率とファイルサイズで測る | キャッシュに乗るかどうかで結果が大きく変わります |
 | 5 | 測定条件（世代 / リージョン / スループット設定 / SSD 容量 / ボリューム種別）を記録する | 次回の比較対象になります |
@@ -180,7 +180,7 @@ graph TD
 | スループット設定を上げれば上限まで出る | 対応する SSD 容量と IOPS の構成が必要です。設定だけでは到達しません |
 | ドキュメントの上限値は全リージョン共通 | 第 1 世代はリージョンによって IOPS とスループットの上限が半分になります |
 | HA ペアは 2 ノードあるので 2 倍の性能が出る | アクティブ・スタンバイ構成です。**待機側は性能を足しません** |
-| HA ペアを増やせば既存ボリュームが速くなる | FlexVol は 1 アグリゲート固定です。FlexGroup を新アグリゲートへ拡張しない限り使われません |
+| HA ペアを増やせば既存ボリュームが速くなる | FlexVol の配置先 aggregate は 1 つです。FlexGroup を新しい aggregate へ拡張しない限り追加分は使われません |
 | FlexGroup にすれば自動的に全性能が出る | 全アグリゲートにまたがり、コンスティチュエントが均等である必要があります |
 | HA ペアを増やせばコストは容量分だけ増える | **最小スループットも上がります**（第 2 世代 2 ペア以上で 1 ペアあたり 1,536 MBps） |
 | スループット変更は無停止なので気軽に変えられる | ファイルサーバーが入れ替わり、フェイルオーバーが発生します。メンテナンスウィンドウ中は遅延しえます |
@@ -197,7 +197,7 @@ graph TD
 | アクティブ・スタンバイ構成、世代ごとの HA ペア数と上限、各ペアが 1 アグリゲート | [AWS: Managing high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/HA-pairs.html) |
 | リージョン別の IOPS / スループット上限、最小スループット、SSD 使用率の推奨 | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | スループット設定が決める範囲、上限到達に必要な構成、変更時のフェイルオーバー | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
-| FlexVol は常に単一アグリゲート、FlexGroup のコンスティチュエント | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
+| FlexVol の `AggregateConfiguration` は常に 1 aggregate であり、各 aggregate は 1 HA ペアに属すること。FlexGroup のコンスティチュエント | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
 | FlexGroup は全アグリゲートにまたがり均等であるべき、HA ペア追加後の拡張 | [AWS: Moving volumes between aggregates](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/moving-fg-volumes.html) |
 | 複数 HA ペアでの FlexVol / FlexGroup 作成手段の違い | [AWS: Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) |
 

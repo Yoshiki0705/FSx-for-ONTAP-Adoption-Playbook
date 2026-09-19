@@ -62,15 +62,14 @@ graph TD
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| 手順 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) | **プロトコルの可否がここで決まる。** iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 |
-| 手順 | [AWS: Supported clients](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) | SVM のエンドポイントは 5 種（`Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management`）。iSCSI と NVMe/TCP は同じ LIF を使う |
+| 手順 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) | **プロトコルの可否がここで決まる。** iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下。SVM のエンドポイントは 5 種（`Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management`）で、iSCSI と NVMe/TCP は同じ LIF を使う |
 | 手順 | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) | LUN 最大 128 TB、ボリュームは LUN より 5% 以上大きく、`-space-allocation enabled` 推奨、`ostype` は Windows でも `windows_2008` |
 | 手順 | [AWS: Provisioning iSCSI for Linux](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html) | `replacement_timeout` を 120 から **5** へ、`mpathconf --enable`、WWID は `3600a0980` + シリアル hex |
 | 手順 | [AWS: Provisioning iSCSI for Windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-windows.html) | `Install-WindowsFeature Multipath-IO`、`New-MSDSMSupportedHW -VendorId MSFT2005`、負荷分散は round robin、検証スクリプト `CheckiSCSI.ps1` |
 | 手順 | [AWS: Provisioning NVMe/TCP for Linux](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) | namespace → subsystem → map → host NQN の順。データポート **4420**、discovery **8009**、`nvme connect-all -l 1800` |
 | 上限 | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) | 第 2 世代 1 HA ペアの下限スループットは **384 MBps**。**LUN・igroup・namespace の上限は 1 つも載っていません** |
 | 上限 | [AWS: Availability and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) | 世代ごとのスループット選択肢。第 2 世代 1 HA ペアは 384 / 768 / 1,536 / 3,072 / 6,144 MBps |
-| 制約 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) | 7 組目を足すとブロックプロトコルが使えなくなり、**足した HA ペアは削除できません** |
+| 制約 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) | ブロックプロトコルのサポート範囲は 6 組以下。7 組目追加時の遷移動作は未記載で、**足した HA ペアは削除できません** |
 | 制約 | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) | スループット変更はフェイルオーバーを伴い、**NFS / SMB / iSCSI に透過的**と書かれています（NVMe/TCP は名指しされていません） |
 | ポート | [AWS: Security groups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) | iSCSI の 3260 は載っています。**4420 と 8009 は載っていません**（2026-09-05 確認）。**必要なポートは使うプロトコルの手順ページから拾ってください** |
 

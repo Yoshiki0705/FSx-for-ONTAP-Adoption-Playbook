@@ -124,7 +124,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 | 項目 | なぜ確認するのか |
 |---|---|
 | 階層化ポリシーと cooling period | **作成経路によって既定が違います。** [階層化の既定値は作成方法で違う](../../06-optimize/notes/tiering-defaults-differ-by-creation-method.md) |
-| inode 上限 | 既定は 648 GiB を超えると増えません。[容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) |
+| inode 上限 | AWS 文書は 648 GiB で頭打ちとしますが、2026-08-06 の観測では比例して増えました。[容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) |
 | SMB 暗号化の強制 | SVM 作成時点では無効です |
 | ボリュームスタイル | HA ペア数によって既定が FlexVol / FlexGroup と変わります |
 

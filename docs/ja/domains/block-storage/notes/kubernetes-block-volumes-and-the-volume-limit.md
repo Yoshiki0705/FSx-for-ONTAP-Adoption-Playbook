@@ -53,7 +53,7 @@ Trident の `ontap-san` ドライバは **PV 1 つごとに FlexVol を 1 つ作
 | 第 2 世代・1 HA ペア | 500 | 同上 |
 | 第 2 世代・2 組以上 | **1,000（全 HA ペア合計）** | HA ペアを増やしても 1,000 が上限です |
 
-**HA ペアを増やしてもボリューム数の上限は 1,000 で止まります。** そして **7 組目からブロックプロトコルが使えなくなる**ため、ブロック PV を使う構成では 6 組が上限です。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
+**HA ペアを増やしてもボリューム数の上限は 1,000 で止まります。** ブロックプロトコルを使うファイルシステムは **6 組以下だけがサポート対象**なので、ブロック PV を使う構成では 6 組が上限です。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
 
 **FlexGroup の構成ボリュームもこの数に含まれます。** ファイル用の FlexGroup を同じファイルシステムに置いている場合、ブロック PV に使える枠はその分減ります。
 
@@ -103,7 +103,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 | 誤解 | 実際 |
 |---|---|
 | PV の数はストレージ容量で決まる | **`ontap-san` ではボリューム数の上限で決まります。** 容量が余っていても PV を作れなくなります |
-| HA ペアを増やせば PV をいくらでも増やせる | **全 HA ペア合計で 1,000 が上限**で、しかも 7 組目からブロックが使えなくなります |
+| HA ペアを増やせば PV をいくらでも増やせる | **全 HA ペア合計で 1,000 が上限**で、ブロック構成は 6 組以下だけがサポート対象です |
 | `ontap-san-economy` のほうが常に良い | ボリューム単位の Snapshot・SnapMirror・QoS を **PV 単位で掛けられなくなります** |
 | ドライバは後から変えられる | StorageClass に紐づくため、**新しい StorageClass での再作成**になります |
 | RWX にすれば複数 Pod から安全に書ける | **raw block device が複数ノードに見えるだけです。** 調停はクラスタファイルシステムの責任です |
@@ -121,7 +121,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 | Trident と FSx for ONTAP の連携でブロックとファイルの永続ボリュームを供給できること | [NetApp: Use Trident with Amazon FSx for NetApp ONTAP](https://docs.netapp.com/us-en/trident/trident-use/trident-fsx.html) |
 | ボリューム数の上限が第 2 世代 1 HA ペア 500、2 組以上で合計 1,000、第 1 世代 500 であること。FlexGroup の構成ボリュームが数に含まれること | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | ボリュームが LUN の入れ物であること | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
-| 7 組目からブロックプロトコルが使えなくなること | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| ブロックプロトコルが HA ペア 6 組以下のファイルシステムでのみサポートされること | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |
 
 ---

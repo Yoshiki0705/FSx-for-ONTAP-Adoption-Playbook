@@ -1,21 +1,32 @@
 # Current accuracy audit inventory
 
-This is an English, nonlocalized current-state report for Amazon FSx for NetApp ONTAP documentation. It records audit targets and missing evidence metadata; it does not verify, correct, or extend any source claim.
+This is an English, nonlocalized current-state report for Amazon FSx for NetApp ONTAP documentation. It records audit targets, completed claim audits, and missing evidence metadata. It does not replace the linked primary sources.
 
 ## Priority accuracy areas
 
 | Priority area | Status | Current scope |
 |---|---|---|
-| Inode defaults | NOT YET AUDITED | Locate each default-value claim, then compare it with a public primary source and its stated applicability. |
-| Deployment-type immutability | NOT YET AUDITED | Locate each immutability claim, then check scope, lifecycle boundary, and public primary source. |
-| HA-pair scale limits | NOT YET AUDITED | Locate each scale-limit claim, then check deployment type, region or version scope, and public primary source. |
+| Inode defaults | AUDITED | AWS documents one inode per 32 KiB through 648 GiB and a cap of 21,251,126. A contrary 2026-08-06 observation is retained beside every summary. |
+| Deployment-type immutability | AUDITED | AWS explicitly states that deployment type cannot change after creation and directs migration to a new file system. |
+| HA-pair scale limits | AUDITED WITH OPEN TRANSITION | Second-generation Single-AZ supports up to 12 HA pairs; block protocols are supported only with 6 or fewer; each FlexVol has one aggregate entry belonging to one HA pair. |
 | Maintenance deferral windows | NOT YET AUDITED | Locate each timing claim, then check the documented window, conditions, and public primary source. |
 | Encryption defaults | NOT YET AUDITED | Locate each at-rest and in-transit default claim, then check protocol and configuration scope against public primary sources. |
 | FSx for ONTAP S3 Access Points prerequisites and authorization | NOT YET AUDITED | Locate each prerequisite and authorization claim, then check every policy and infrastructure layer against public primary sources. |
 | Amazon CloudWatch percentile availability | NOT YET AUDITED | Locate each percentile claim, then check metric type, statistic support, and public primary source. |
 | Billing components | NOT YET AUDITED | Locate each billing-component claim, then check the named charge dimensions and public primary source without producing a cost estimate. |
 
-No area above has been reviewed claim by claim for this report. There are therefore no entries classified as audited and unresolved.
+The first three areas above were audited against the full current primary pages. The remaining five areas have not yet been reviewed claim by claim for this report.
+
+## Capacity and scaling audit
+
+| Area | Primary sources read in full | Files examined | Corrections and remaining scope |
+|---|---|---|---|
+| Inode defaults | [Volume storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) | `README.md`; `docs/en/README.md`; JA/EN Assess module READMEs and inode notes; JA/EN IaC-boundary notes; inventory checklist and comparison; limits; case study; `llms.txt`; `CHANGELOG.md` | Eight short summaries now distinguish the documented 648 GiB cap from the contrary 2026-08-06 observation. The detailed note, limits ledger, and case study already preserved both. |
+| Deployment type | [Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html); [Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) | JA/EN design notes and module READMEs; decision and comparison references; data-protection and security notes; limits; examples; `CHANGELOG.md` | Universal immutability now rests on AWS's explicit statement, not on the absence of an update CLI parameter. |
+| HA-pair scale and block scope | [Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html); [Managing HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/HA-pairs.html); [Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html); [Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html); [Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) | JA/EN design and performance notes; block notes, quickstarts, checklist, resource map, decision tree, comparison; block example; backup note; `CHANGELOG.md` | The general 12-pair file-system ceiling, the 6-pair block-protocol support scope, and one-aggregate FlexVol placement are now separate claims. |
+| FlexVol placement | [AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html); [Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) | JA/EN performance and CloudWatch notes; README summaries; backup note; `CHANGELOG.md` | Source links now point to the API statement that FlexVol always has one aggregate entry and each HA pair has one aggregate. |
+
+**Unresolved claim:** the primary pages state only that iSCSI is available on file systems with 6 or fewer HA pairs and NVMe/TCP on second-generation file systems with 6 or fewer. They do not state what happens to existing LUNs, namespaces, or connections while a seventh pair is added or after it completes. The documentation therefore supports a configuration boundary, not a transition-behavior claim.
 
 ## Missing verified metadata
 
@@ -74,4 +85,4 @@ The current report lists 34 verified documents with future metadata gaps. Thirty
 
 ## Pending audit scope
 
-A complete claim-by-claim audit is pending. Later work must inspect each claim in context, record its file and line, compare it with an existing public primary source, and classify the result without treating this inventory as evidence. Numeric values, defaults, service behavior, timing, limits, availability, and billing statements remain in scope for that audit.
+The remaining five priority areas require a complete claim-by-claim audit. Later work must inspect each claim in context, record its file and line, compare it with an existing public primary source, and classify the result without treating this inventory as evidence. Numeric values, defaults, service behavior, timing, limits, availability, and billing statements in those five areas remain in scope.

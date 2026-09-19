@@ -128,7 +128,7 @@ graph TD
 | Multi-Attach は 16 インスタンスまで無条件で使える | Nitro、同一 AZ、`io1` は 3 リージョンのみ、Windows は `io2` のみ、起動ディスク不可という条件が付きます |
 | FSx for ONTAP の Snapshot はタダ | **別建ての課金項目にならないだけです。** 確保済み SSD 容量を消費し、満杯になると LUN が read-only に落ちます |
 | NVMe/TCP は iSCSI の置き換えなのでどの構成でも使える | **第 2 世代のファイルシステムに限られます。** 第 1 世代では作り直し以外に道がありません |
-| ブロックにすれば HA ペアを増やして性能を伸ばせる | **7 組目からブロックプロトコルが使えなくなります。** 上限は 6 組です |
+| ブロックにすれば HA ペアを増やして性能を伸ばせる | **ブロック構成は 6 組以下だけがサポート対象です。** 7 組目追加時の遷移動作は文書化されていません |
 
 ---
 
@@ -138,7 +138,7 @@ graph TD
 |---|---|
 | Multi-Attach の 16 インスタンス、同一 AZ、Nitro、`io1`/`io2` の別、Windows は `io2` のみ、起動ディスク不可、クラスタファイルシステム必須、`io2` の I/O fencing | [AWS: Attach an EBS volume to multiple EC2 instances using Multi-Attach](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volumes-multi.html) |
 | `io2` Block Express の容量・IOPS・スループットの上限、`gp3` の IOPS 範囲 | [AWS: Amazon EBS Provisioned IOPS SSD volumes](https://docs.aws.amazon.com/ebs/latest/userguide/provisioned-iops.html) |
-| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | 第 2 世代 1 HA ペアの最小スループット 384 MBps、最小 SSD 1,024 GiB | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | スループット変更時のフェイルオーバーが NFS / SMB / iSCSI に透過的であること | [AWS: Managing throughput capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-throughput-capacity.html) |
 | NVMe/TCP が iSCSI に比べ MPIO の構成を単純にすること | [AWS: FSx for ONTAP supports NVMe-over-TCP](https://aws.amazon.com/about-aws/whats-new/2024/07/amazon-fsx-netapp-ontap-nvme-over-tcp) |

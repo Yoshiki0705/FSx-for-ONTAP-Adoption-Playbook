@@ -166,7 +166,7 @@ the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
 | The test duration | A short test measures burst |
 | Region, generation, deployment type | The ceiling itself changes |
 | The throughput capacity and SSD IOPS settings | They bear on all three performance characteristics |
-| HA pair count and volume style (FlexVol / FlexGroup) | A FlexVol cannot exceed one pair |
+| HA pair count and volume style (FlexVol / FlexGroup) | Distinguish the file-system ceiling from the one HA pair whose aggregate holds the FlexVol |
 | Tiering policy and cooling period | Whether reads come from SSD or the capacity pool changes |
 | Background tasks running at the same time | They use the same bandwidth |
 | The client-side measurement (**including the tail**) | The storage side yields only an average |

@@ -82,7 +82,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 
 | 知見 | 答えていること |
 |---|---|
-| [容量が余っていても書けなくなる](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | 棚卸しでファイル数を数える理由。inode の既定値は 648 GiB を超えると増えません |
+| [容量が余っていても書けなくなる](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | AWS 文書は inode の既定値を 648 GiB で上限としますが、2026-08-06 の観測では容量に比例しました。自環境の値を確認します |
 | [デプロイタイプは一度しか決められない](docs/ja/playbooks/02-design/notes/deployment-type-is-decided-once.md) | 可用性の選択がスケールアウトの上限も決めます。Multi-AZ は HA ペア 1 組で固定です |
 | [ACL 保持は権限の問題であってツールの問題ではない](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) | 既定値のまま実行すると ACL が黙って落ち、それでも「成功」で終わります |
 | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](docs/ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | 「切り替えを戻す」操作は存在しません。差分同期は共通 Snapshot に依存します |
@@ -97,7 +97,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](docs/ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) | FlexClone のスプリットで移行データ 1 本分の物理容量が一時的に必要になります |
 | [S3 Access Point は全リクエストを 1 つの ID で認可する](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI / RAG のパイプラインに引き継がれません |
 | [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
-| [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わり、FlexVol は 1 HA ペアを超えられません |
+| [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 第 2 世代 Single-AZ は最大 12 HA ペア、ブロック構成は最大 6。FlexVol は 1 HA ペアの aggregate に配置されます |
 | [p99 は CloudWatch のメトリクスからは出せない](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られません。ベンチマークはクレジット残高に左右されます |
 | [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |
 | [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |

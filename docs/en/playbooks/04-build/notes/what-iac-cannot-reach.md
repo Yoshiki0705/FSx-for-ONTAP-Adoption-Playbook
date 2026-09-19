@@ -127,7 +127,7 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 | Item | Why check it |
 |---|---|
 | Tiering policy and cooling period | **The default differs by creation route.** [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) |
-| Inode ceiling | The default stops growing past 648 GiB. [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) |
+| Inode ceiling | AWS documents a cap at 648 GiB, while the 2026-08-06 observation grew proportionally. [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) |
 | Required SMB encryption | Disabled at the time the SVM is created |
 | Volume style | The default varies between FlexVol and FlexGroup with the HA pair count |
 
