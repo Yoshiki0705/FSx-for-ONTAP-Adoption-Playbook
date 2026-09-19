@@ -146,7 +146,7 @@ FSx for ONTAP のボリュームに接続した S3 Access Points について、
 | [Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html)、[File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html)、[Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) | ボリューム・ファイルシステム・`FileServer`・`Aggregate` 単位の系列があります。基盤の I/O と利用率は見えますが、S3 Access Points のリクエストとして分離されません |
 | [Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) の監視手段の列挙 | CloudWatch / EMS イベント / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つ。**いずれも S3 Access Points 経由のデータ操作の記録を挙げていません** |
 
-**CloudTrail の記録範囲も、この監査では確定していません。** 確認した Amazon FSx for NetApp ONTAP の監視ページは Amazon FSx API 呼び出しを挙げていますが、S3 data event 側の記録可否まではこのページから判断できません。Access Point 作成の管理イベントと、Access Point を通るデータ操作を分けて検証します。
+[Amazon S3 の Access Point 監視ページ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)は、Access Point 経由のリクエストを CloudTrail に記録できることと、Amazon FSx ボリュームに接続した Access Point では `AWS::FSx::Volume` がリソースとして記録されることを明記しています。**記録には S3 データイベントの構成が必要です。** Access Point の作成などの管理イベントとは別に設定します。
 
 ### 運用に与える帰結
 
@@ -156,9 +156,10 @@ FSx for ONTAP のボリュームに接続した S3 Access Points について、
 |---|---|---|
 | 呼び出し側（アプリケーション、Lambda など）で結果を記録する | 自分が発行したリクエストの成否とレイテンシ | 他の呼び出し元。呼び出し側を通らないアクセス |
 | ONTAP 側のファイルアクセス監査（`vserver audit`）を有効にする | Access Point 経由のファイル操作（実測ではオブジェクト操作が `Source=HTTP`、LIST が `Source=S3`） | **リクエスト単位の HTTP ステータスとレイテンシ、および呼び出し元 IAM プリンシパル。** Access Point に固定したファイルシステム ID として記録されます |
+| CloudTrail の S3 データイベントを Access Point に構成する | IAM プリンシパル、S3 API 操作、Access Point に接続した `AWS::FSx::Volume` | CloudWatch のリクエスト数・HTTP エラー率・レイテンシ系列ではありません。データイベントの記録には追加設定が必要です |
 | 合成監視（既知のオブジェクトへ定期的にアクセスして結果を記録する） | 経路が生きているかどうか | **実利用のリクエスト数とエラー率。** 生死確認であって計測ではありません |
 
-**これらは Access Point 単位の実利用リクエスト数・HTTP エラー率・リクエストレイテンシと同じものではありません。** その粒度を必須要件にする場合、確認済みの公開メトリクスだけでは満たせません。CloudTrail の S3 data event を含む別経路の可否は、本監査では `open` です。
+**これらは Access Point 単位の CloudWatch リクエスト数・HTTP エラー率・リクエストレイテンシと同じものではありません。** CloudTrail はデータイベントを構成した後の API 操作と主体を記録し、呼び出し側記録と合成監視は成否を補います。必要な粒度に応じて組み合わせます。
 
 ---
 
@@ -218,7 +219,7 @@ FSx for ONTAP のボリュームに接続した S3 Access Points について、
 | SaaS の提供リージョンは変わらない | 変動します。選定時に最新を確認してください |
 | NetApp Cloud Insights が現行の名称である | **NetApp Data Infrastructure Insights に改称されています** |
 | S3 Access Points 経由のアクセスは `AWS/FSx` では何も見えない | ファイルシステム・ファイルサーバー・アグリゲート・ボリュームの集約系列はあります。Access Point 単位のリクエスト数・HTTP エラー率・リクエストレイテンシが列挙されていないこととは別です |
-| CloudTrail を有効にすれば S3 Access Points 経由の操作を追える | 確認した Amazon FSx for NetApp ONTAP の監視ページは Amazon FSx API の管理イベントを説明します。S3 data event 側の可否は本監査では `open` です |
+| CloudTrail を有効にすれば S3 Access Points 経由の操作を追える | S3 データイベントを Access Point に構成すると、IAM プリンシパルと API 操作を記録できます。管理イベントだけの既定構成では足りません |
 | 監視経路を変えれば Access Point 単位の実利用メトリクスが得られる | 呼び出し側記録と合成監視は成否を検知できますが、すべての呼び出し元の実利用リクエスト数・HTTP エラー率・レイテンシを同じ粒度で置き換えるものではありません |
 
 ---
@@ -232,6 +233,7 @@ FSx for ONTAP のボリュームに接続した S3 Access Points について、
 | サイジングが監視対象数と収集メトリクス数に依存すること、10 台あたり 2 コア / メモリ 1 GB / ディスク 500 MB、`t3.micro` / `t3.xlarge` / `t3.2xlarge` のサンプル表 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
 | CloudWatch のカテゴリ、ボリューム・ファイルシステム・第 2 世代メトリクスの統計と次元、S3 Access Points 単位の系列が列挙されていないこと | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) / [Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) / [File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) / [Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) | 2026-09-12 |
 | 監視手段の列挙が CloudWatch / EMS / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つであること、CloudTrail の対象が Amazon FSx の API 呼び出しであること | [AWS: Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) | 2026-09-12 |
+| Access Point 経由のリクエストを CloudTrail の S3 データイベントとして記録できること、Amazon FSx ボリュームでは `AWS::FSx::Volume` がリソースとして記録されること | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) | 2026-09-20 |
 | Data Infrastructure Insights の旧称、ホストリージョン 3 つ、ホストリージョンに関わらず米国に置かれる情報、Workload Security と User Directory コレクタの収集対象、秘密鍵が Acquisition Unit に留まること | [NetApp: Information and Region](https://docs.netapp.com/us-en/data-infrastructure-insights/security_information_and_region.html) | 2026-09-05 |
 
 ---

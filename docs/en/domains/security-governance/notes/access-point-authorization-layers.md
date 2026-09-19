@@ -650,7 +650,7 @@ These are the fields from `PutObject` and `GetObject` through a `WINDOWS`-type a
 
 **Two consequences for operations.**
 
-1. **The audit log alone does not identify who acted.** What remains is the SID of the identity bound to the access point. **Recovering the calling IAM principal requires correlating with AWS CloudTrail.** Splitting access points by use case reduces that correlation work.
+1. **The ONTAP audit log alone does not identify who acted.** What remains is the SID of the identity bound to the access point. **Configure CloudTrail S3 data events for the access point to record the calling IAM principal and API operation.** Splitting access points by use case reduces that correlation work.
 2. **Source-address tracing is not possible.** `SubjectIP` is an AWS service-side address and changed within a single session. **An audit requirement expressed in terms of caller IP cannot be met on this path.**
 
 > **Governance note**: a design that shares one access point across use cases rather than splitting
@@ -819,7 +819,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 | `AccessDenied` can be diagnosed from the policy | An unqualified `Access Denied` is **Layer 2** (file permissions). Searching the policy will not find the cause |
 | With no `s3:` action in the access point policy, the files cannot be touched | They can. **The two layers are independent.** If the identity-based policy allows it and the bound identity holds the file permission, it goes through |
 | A UNIX identity needs LDAP, and a Windows identity needs an AD join | Neither is required. **Measured with an SVM-local UNIX user and a workgroup-mode local Windows user** |
-| The audit log tells you the calling IAM principal | It does not. Only the **SID of the identity bound to the access point** remains, and the name is not resolved. **Identifying the caller requires correlating with CloudTrail** |
+| The ONTAP audit log tells you the calling IAM principal | It records the identity bound to the access point. Configure CloudTrail S3 data events for the access point to record the caller |
 | `SubjectIP` in the audit log traces the caller | It does not. It is an AWS service-side address, and **it changed between consecutive requests in one session** |
 | Enabling auditing on the SVM records every volume | A UNIX-style volume with only mode bits produced **zero records**. An audit ACE is required |
 
@@ -853,6 +853,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 | `CreateAndAttachS3AccessPoint` parameters and constraints | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
 | That `FileSystemIdentity` authorizes all file access requests and takes a UNIX or Windows identity | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
 | Same-account evaluation of identity-based and resource-based policies | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
+| CloudTrail can record requests made through an Access Point when S3 data-event logging is configured; an Access Point attached to an Amazon FSx volume records an `AWS::FSx::Volume` resource | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) |
 | CloudFormation properties | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN form, the authorization model, triage signals | [Authorization model in FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.en.md) |
 | Documents the Windows identity for a "joined Active Directory domain" (**the measurement here is broader**) | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |

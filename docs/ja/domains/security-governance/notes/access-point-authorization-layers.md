@@ -644,7 +644,7 @@ aws s3control delete-access-point-policy \
 
 **運用に効く点が 2 つあります。**
 
-1. **「誰が」を監査ログだけで特定できません。** 残るのは AP に固定した ID の SID です。**呼び出し元の IAM プリンシパルを知るには AWS CloudTrail 側と突き合わせる必要があります。** AP を用途ごとに分けておくと、この突き合わせの手間が減ります。
+1. **「誰が」を ONTAP 監査ログだけで特定できません。** 残るのは AP に固定した ID の SID です。**[CloudTrail の S3 データイベント](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)を Access Point に構成すると、呼び出し元の IAM プリンシパルと API 操作を記録できます。** AP を用途ごとに分けておくと、この突き合わせの手間が減ります。
 2. **送信元アドレスによる追跡はできません。** `SubjectIP` は AWS のサービス側アドレスで、同一セッション内でも変わります。**呼び出し元 IP で絞り込む監査要件は、この経路では満たせません。**
 
 > **ガバナンスに関する補足**: 「S3 AP を用途別ではなく共用で 1 つ作る」設計は、AP ポリシーで
@@ -811,7 +811,7 @@ graph TD
 | `AccessDenied` はポリシーを見れば分かる | 修飾のない `Access Denied` は **Layer 2**（ファイル権限）です。ポリシーを探しても原因はありません |
 | AP ポリシーに `s3:` のアクションが 1 つも無ければ、ファイルには触れられない | 触れられます。**Layer 1 と Layer 2 は独立です。** identity-based ポリシーが許可し、AP の ID がファイル権限を持てば通ります |
 | UNIX ID を使うには LDAP、Windows ID を使うには AD 参加が必要 | どちらも必須ではありません。**SVM のローカルユーザー、および workgroup モードのローカル Windows ユーザーで実測しました** |
-| 監査ログを見れば呼び出し元の IAM プリンシパルが分かる | 分かりません。残るのは **AP に固定した ID の SID** だけで、名前も解決されません。**呼び出し元の特定には CloudTrail 側との突き合わせが必要です** |
+| 監査ログを見れば呼び出し元の IAM プリンシパルが分かる | ONTAP 監査には AP に固定した ID が残ります。呼び出し元は、Access Point に構成した CloudTrail の S3 データイベントで確認します |
 | 監査ログの `SubjectIP` で呼び出し元を追える | 追えません。AWS のサービス側アドレスで、**同一セッションの連続リクエストでも変わりました** |
 | SVM で監査を有効化すれば全ボリュームで記録される | UNIX スタイルで mode bits だけのボリュームは **0 件でした。** 監査 ACE が必要です |
 
@@ -845,6 +845,7 @@ graph TD
 | `CreateAndAttachS3AccessPoint` のパラメータと制約 | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
 | `FileSystemIdentity` が全ファイルアクセス要求の認可に使われ、UNIX または Windows ID を取ること | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
 | identity-based と resource-based ポリシーの同一アカウント評価 | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
+| Access Point 経由のリクエストを CloudTrail の S3 データイベントとして記録できること、Amazon FSx ボリュームでは `AWS::FSx::Volume` がリソースとして記録されること | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) |
 | CloudFormation のプロパティ | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN 形式、二層認可の整理、トラブルシュートの手がかり | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns の認可モデル](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.md) |
 | Windows ID は「AD 参加済みドメイン」の場合を記述（**本ノートの実測はこれより広い**） | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
