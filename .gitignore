@@ -35,9 +35,8 @@ venv/
 .ruff_cache/
 .pytest_cache/
 
-# --- Node (markdownlint / link check) ---
+# --- Node (markdownlint / editorial report) ---
 node_modules/
-package-lock.json
 
 # --- Build / scratch ---
 build/

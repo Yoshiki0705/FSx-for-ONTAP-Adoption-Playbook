@@ -58,23 +58,26 @@ Do not use superiority claims, marketing adjectives, or unsupported outcome clai
 Notes created or migrated in later phases use the following order.
 This phase does not rewrite the existing note corpus.
 
-1. A question-form H1.
+1. A question-form H1 as the first non-empty content after frontmatter.
 2. A one-line summary.
-3. Two bullets describing what the reader will learn.
-4. Two bullets describing what the note does not answer.
-5. A prerequisite level.
-6. The body.
-7. Environment verification with expected output.
-8. Exactly one `Read next` link.
+3. Exactly two bullets under `## What you will learn`.
+4. Exactly two bullets under `## What this note does not answer`.
+5. One of `basic`, `intermediate`, or `advanced` under `## Prerequisite level`.
+6. `## Body`.
+7. A non-empty language-tagged command fence and independently non-empty content under `### Expected output` within `## Verify it in your environment`.
+8. Exactly one link under `## Read next`.
+
+Keep the summary to 15 words or fewer.
+The structure report treats the headings above as fixed labels.
 
 ## Future checklist order
 
 Operational checklists use a separate contract and the following order.
 
-1. Purpose.
-2. Applicability.
-3. Verification procedure.
-4. Exactly one `Read next` link.
+1. `## Purpose`.
+2. `## Applicability`.
+3. `## Verification procedure`.
+4. Exactly one link under `## Read next`.
 
 ## Review before contribution
 
