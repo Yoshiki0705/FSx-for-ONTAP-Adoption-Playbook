@@ -116,8 +116,8 @@ Transit Gateway は AWS のリージョン内の構成要素です。オンプ�
 
 | 順序 | 何が壊れるか | どう見えるか |
 |---|---|---|
-| 1 | **到達性** | **無言のタイムアウト。** VPC 内の Lambda に Gateway Endpoint しか無い構成が実測された最頻の失敗です |
-| 2 | **認可** | **IAM の問題として誤って報告されます。** ポリシーが 1 つも存在しないのに `AccessDenied ... explicit deny in a resource-based policy` が返る形、AD 参加済み SVM で `HeadBucket` が 200 を返す一方 `ListObjectsV2` が失敗する形が該当します |
+| 1 | **到達性** | VPC 外から入る通信を私設経路に限定するのにインターフェイスエンドポイントが無い場合などは、無言のタイムアウトになります。VPC 内で発生した通信はゲートウェイエンドポイントを利用でき、`Internet` origin はポリシーが許可すれば公開 S3 エンドポイントから到達できます |
+| 2 | **認可** | **IAM の問題として誤って報告される場合があります。** ポリシーが 1 つも存在しないのに `AccessDenied ... explicit deny in a resource-based policy` が返る形が該当します。`HeadBucket` の成功だけではデータ操作の認可を確認できません。AD 到達不能時の挙動は `open` です |
 | 3 | スループット | **観測されていません** |
 
 **pull 経路はネットワークの変更、push 経路（FPolicy）はアーキテクチャの変更です。** この順に書くのは、
@@ -125,7 +125,7 @@ Transit Gateway は AWS のリージョン内の構成要素です。オンプ�
 だから**です。**誤りではなく、範囲が狭い正解**として扱ってください。
 
 認可が IAM を指して見える点は [アクセスポイントの認可は 2 層](../../security-governance/notes/access-point-authorization-layers.md)
-と同じ論点です。**`HeadBucket` の 200 を到達性と認可の両方の確認に使えません。**
+と同じ論点です。**`HeadBucket` の成功だけではファイル権限を含むデータ経路を確認できません。**
 
 ## 自環境での確認手順
 

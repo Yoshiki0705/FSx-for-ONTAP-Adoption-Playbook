@@ -70,7 +70,7 @@ graph TD
 
     W -->|ファイル| WSMB["SMB を選ぶ<br/>AD 参加か workgroup かを決める"]
     W -->|ブロック| WISCSI["iSCSI イニシエータ + MPIO<br/>MPIO の有効化コマンドが<br/>Server と client SKU で違う"]
-    W -->|オブジェクト| WS3["AWS CLI / SDK<br/>インターフェースエンドポイントが必要"]
+    W -->|オブジェクト| WS3["AWS CLI / SDK<br/>origin と呼び出し元で経路を選択"]
 
     L -->|ファイル| LSMB["NFS または cifs-utils"]
     L -->|ブロック| LISCSI{"カーネルに iscsi_tcp があるか"}

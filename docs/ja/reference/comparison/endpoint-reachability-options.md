@@ -122,7 +122,7 @@ graph TD
 | 1 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.EndpointIpAddressRange'` | **Multi-AZ の場合、エンドポイントの IP 範囲が VPC の CIDR の外にあるかどうか。** 外なら Transit Gateway 側の追加ルーティングが要ります（[詳細](../../domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md)） |
 | 2 | `aws ec2 describe-client-vpn-endpoints --query 'ClientVpnEndpoints[].[ClientVpnEndpointId,Status.Code,DnsServers,SplitTunnel]'` | **既に払い出したエンドポイントがあるか。`DnsServers` が空なら名前解決が届きません** |
 | 3 | `aws ec2 describe-client-vpn-target-networks --client-vpn-endpoint-id <id>` | **関連付けが残っていないか。$0.15/時 はここに付きます** |
-| 4 | `aws ec2 describe-vpc-endpoints --query 'VpcEndpoints[].[ServiceName,VpcEndpointType]'` | インターフェースエンドポイントの有無。**S3 Access Points に端末から届くには必要です** |
+| 4 | `aws ec2 describe-vpc-endpoints --query 'VpcEndpoints[].[ServiceName,VpcEndpointType]'` | VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入る端末通信を私設経路に限定する場合に、インターフェイスエンドポイントがあるか。VPC 内で発生した通信はゲートウェイエンドポイントを利用できます |
 | 5 | 端末から `nslookup <svm-dns-name>` と `nc -vz <svm-ip> 445` を別々に実行する | **名前解決と到達性を分けて確認する。** どちらが欠けているかで打つ手が変わります |
 
 **手順 3 を撤去のチェックにも使ってください。** 「エンドポイントを消したから止まった」ではなく、

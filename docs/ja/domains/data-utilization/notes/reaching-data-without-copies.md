@@ -97,7 +97,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 そして **Access Point に与える ID の権限が、そのパイプラインの上限になります。** 広い権限の ID を指定すると、パイプライン全体がその範囲を見ます。最小権限の考え方は [管理者を分ける](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) と同じです。
 
-なお AD 参加済み SVM では、S3 Access Point のデータ操作にドメインコントローラーへの到達性が必要になる場合があります。前提は [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) にあります。
+Windows の `FileSystemIdentity` は参加済み Active Directory ドメインで解決できる必要があり、名前サービスへ到達できない場合は Access Point が `MISCONFIGURED` になりえます。**AD 参加済み SVM の全データ操作が常にドメインコントローラー到達性を必要とするかは、公開一次情報と完全な再現記録を確認できていないため `open` です。** 前提と未解決範囲は [エンドポイントから S3 Access Points に届くための条件](../../client-access/notes/what-an-endpoint-needs-to-reach-s3-access-points.md#AD-参加-SVM-に関する未解決の範囲) にあります。
 
 ---
 

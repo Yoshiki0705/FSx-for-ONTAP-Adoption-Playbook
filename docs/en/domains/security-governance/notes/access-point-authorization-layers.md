@@ -246,8 +246,9 @@ The caller subnet's route table carries **both an IGW default route and an S3 pr
 > key is not populated ([source](#primary-sources)).
 >
 > **Gateway endpoints do not route traffic that enters the VPC from outside.** Callers arriving over
-> VPN, Direct Connect, Transit Gateway or VPC peering need an **Interface** endpoint. If only
-> on-premises callers get `AccessDenied`, this is the likely cause. That is documented by AWS.
+> VPN, Direct Connect, Transit Gateway or VPC peering need an **Interface** endpoint when the design
+> requires a private path. If only on-premises callers get `AccessDenied`, this is a possible cause.
+> That is documented by AWS.
 
 The denial text contains `with an explicit deny in a resource-based policy`, which **separates this cause from a missing IAM grant.** Worth remembering as a triage signal.
 

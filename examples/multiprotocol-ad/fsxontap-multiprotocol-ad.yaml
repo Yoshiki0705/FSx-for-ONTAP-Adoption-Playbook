@@ -397,9 +397,10 @@ Resources:
     Properties:
       GroupDescription: FSx for ONTAP file system for the multiprotocol AD example.
       VpcId: !Ref VpcId
-      # The SVM must reach the domain controllers for the join and, afterwards, for EVERY
-      # authentication. An AD-joined SVM that loses that reachability stops serving SMB -- so this
-      # rule set is a runtime dependency, not a one-time setup allowance.
+      # The SVM must reach the domain controllers for the join and, afterwards, for SMB
+      # authentication and identity resolution that use Active Directory. This is a runtime
+      # dependency for those AD-backed paths, not a one-time setup allowance; it does not describe
+      # local identities or non-AD protocol paths.
       #
       # Enumerated for the same reason as the client group: an example that ships
       # all-protocols-to-anywhere teaches that. The destination CIDR remains 0.0.0.0/0 because the
@@ -1061,8 +1062,8 @@ Outputs:
 
   DirectoryDnsIps:
     Description: >-
-      The domain controller addresses. An AD-joined SVM needs these reachable for every
-      authentication, not only at join time.
+      The domain controller addresses. An AD-joined SVM needs these reachable after the join for
+      SMB authentication and identity resolution that use Active Directory.
     Value: !Join [',', !GetAtt Directory.DnsIpAddresses]
 
   SourceSvmName:

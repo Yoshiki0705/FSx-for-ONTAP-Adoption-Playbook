@@ -2035,7 +2035,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   type AWS Backup does not fully manage; the pricing page says the charge goes to the account
   transferring the data out, which is the source. FSx for ONTAP is exactly such a resource type, so
   the disagreement lands on this case. Both are now quoted side by side and the point is marked
-  `unverified`, with the advice to run one copy and read the bill.
+  `open`, with the advice to run one copy and read the bill.
 - **The note block's longest line ran off the exported canvas.** With `whiteSpace=wrap` a long line
   wraps at the geometry width, but it is drawn starting from `spacingLeft`, so it overruns the right
   edge by that much — and the 12px export border does not cover the overrun. In the English diagram

@@ -32,6 +32,7 @@ the table of contents; this is the entry point.
 | 5 | What changes when spanning accounts or sites | [Cross-account is a network problem, not an IAM one](../../../ja/domains/observability/notes/cross-account-is-a-network-problem.md) (日本語) |
 | 6 | Which conditions narrow the choice before you make it | [Route choice is bounded by access and authentication](../../../ja/domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md) (日本語) |
 | 7 | What operational risk monitoring itself introduces | [The number of monitored targets sets the blast radius of a lockout](../../../ja/domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) (日本語) |
+| 8 | Whether request count, HTTP error rate, or request latency is available per S3 Access Point | **The reviewed AWS pages do not list Access Point-level series.** Keep these separate from aggregate file-system, file-server, aggregate, and volume telemetry. CloudTrail S3 data-event coverage remains [open in the route note](../../../ja/domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md#s3-access-points-経由のリクエスト単位メトリクスで確認できない範囲) (日本語) |
 
 ---
 
