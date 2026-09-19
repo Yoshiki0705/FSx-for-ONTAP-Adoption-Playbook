@@ -1,0 +1,75 @@
+name: Translation request
+description: Report a meaning, terminology, or wording problem in translated content
+title: "[Translation] "
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Japanese is the authoritative source language. Select the translated target language below.
+        Use the accuracy correction form when the underlying Japanese claim is inaccurate, and use
+        the new note proposal form for missing topics.
+
+        Do not include private case data, organization or personal names, real identifiers,
+        private addresses or hostnames, support correspondence, or internal references.
+
+  - type: input
+    id: file
+    attributes:
+      label: File and line
+      description: Identify the translated text that needs review.
+      placeholder: docs/en/domains/performance/README.md:24
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target_language
+    attributes:
+      label: Target language
+      options:
+        - en
+        - ko
+        - zh-CN
+        - zh-TW
+        - fr
+        - de
+        - es
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Translation problem
+      options:
+        - Meaning differs from the source
+        - Fixed terminology is inconsistent
+        - Wording is unclear or unnatural
+        - Link or label points to the wrong language
+        - Other translation problem
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Problem and source meaning
+      description: Explain the intended meaning and why the current translation does not preserve it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested replacement
+      description: Optional. A location and problem report are sufficient.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: I removed private case data and identifying or internal information.
+          required: true

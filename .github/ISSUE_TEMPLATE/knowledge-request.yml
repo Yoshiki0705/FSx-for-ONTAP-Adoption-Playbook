@@ -1,20 +1,23 @@
-name: Knowledge request
-description: Request a note on a topic that is missing or unclear
-title: "[Knowledge] "
+name: New note proposal
+description: Propose one unanswered technical question for a new note
+title: "[New note] "
 labels: ["knowledge-request"]
 body:
   - type: markdown
     attributes:
       value: |
-        Do not include company names, real identifiers, IP addresses, account IDs, or support case
-        numbers. Describe your situation by industry and scale band instead.
+        Use this form when the repository does not answer a technical question. Use the accuracy
+        correction form for an existing claim and the translation request form for translated text.
+
+        Do not include private case data, organization or personal names, real identifiers,
+        private addresses or hostnames, support correspondence, or internal references.
 
   - type: textarea
     id: question
     attributes:
-      label: The question you need answered
-      description: State it as a question, not a topic label.
-      placeholder: Why does throughput drop when NFS and SMB clients access the same volume concurrently?
+      label: Question the note should answer
+      description: State one question rather than a topic label.
+      placeholder: How should clients validate failover behavior before production use?
     validations:
       required: true
 
@@ -51,44 +54,36 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: endpoint
-    attributes:
-      label: Endpoint you are connecting from
-      description: >-
-        Only for client-access requests. The module records how far it goes per endpoint, so
-        naming yours is what moves a row off "accepting requests".
-      multiple: true
-      options:
-        - Windows endpoint
-        - Linux inside WSL2
-        - Mac endpoint
-        - Native Linux endpoint
-        - Amazon WorkSpaces / AppStream 2.0
-        - Chromebook / iPad / Android (browser only)
-        - Thin client (VDI-only device)
-        - On-premises Windows Server
-        - EC2 instance (not an endpoint - see the block-storage module)
-        - Other / not listed
-    validations:
-      required: false
-
   - type: textarea
-    id: context
+    id: reader
     attributes:
-      label: Context
-      description: Industry, scale band, and protocols in use. No identifying details.
-      placeholder: |
-        Industry: manufacturing
-        Scale: several hundred TB
-        Protocols: SMB primary, NFS for a build pipeline
+      label: Reader and decision
+      description: Describe who needs the answer and which decision or action it supports.
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: searched
     attributes:
-      label: What you already checked
-      description: Which existing notes or documents you looked at, so the answer does not duplicate them.
+      label: Existing material checked
+      description: Link the repository pages you checked so the proposal does not duplicate them.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Primary sources or reproducible context
+      description: >-
+        Link applicable primary sources. For a proposed reproduction, state the environment,
+        procedure, and expected comparison without including identifying details.
     validations:
       required: false
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: I removed private case data and identifying or internal information.
+          required: true
