@@ -11,6 +11,10 @@ body:
         [プロジェクト間の引用索引](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/blob/main/docs/ja/reference/cross-repo-index.md)
         for the division of labour and how a citation gets registered.
 
+        Do not include private case data, organization or personal names, real account IDs,
+        private addresses or hostnames, support correspondence or case numbers, or internal
+        references. Describe only the minimum reproducible context.
+
         Use this template in either direction:
 
         - **Absorb** — a sibling project measured or established something, and the guidance here
@@ -19,8 +23,10 @@ body:
           place to close.
 
         For a factual error in existing content use
-        [Correction](?template=correction.yml) instead. For a topic with no source yet, use
-        [Knowledge request](?template=knowledge-request.yml).
+        [Accuracy correction](?template=correction.yml) instead. For a technical question that
+        needs a new note, use [New note proposal](?template=knowledge-request.yml). For a meaning
+        or wording problem limited to translated content, use
+        [Translation request](?template=translation-request.yml).
 
   - type: dropdown
     id: direction

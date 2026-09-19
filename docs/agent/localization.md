@@ -6,8 +6,15 @@
 
 ## Path model
 
-A document's language is its directory, never a filename suffix. `README.en.md` and friends do not
-exist; the counterpart of `docs/ja/domains/cost/README.md` is `docs/en/domains/cost/README.md`.
+A reader-facing document's language is its directory, never a filename suffix. `README.en.md` and
+friends do not exist; the counterpart of `docs/ja/domains/cost/README.md` is
+`docs/en/domains/cost/README.md`. Contributor-only bilingual contracts such as
+`docs/style-guide.ja.md` and `docs/style-guide.en.md` stay together under `docs/`; they are tooling
+instructions rather than localized reader content.
+
+This exception applies only to contributor machinery, not to reader content. A new style guide or
+reference document still belongs under `docs/<lang>/` unless the file itself defines a paired
+cross-language contract.
 
 Because the two files sit at the same depth, **a translation is a copy plus text replacement — every
 relative link stays byte-identical**. If you find yourself adjusting `../` counts while translating,

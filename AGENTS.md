@@ -17,9 +17,9 @@ validators under `tools/`, and the smallest runnable environment per topic under
 example exists so a claim in the prose can be reproduced, and is verified by being run, not by
 passing a linter.
 
-**Every localizable document lives under `docs/<lang>/`.** Japanese is the reference language and the
-only complete tree. The one exception is the root `README.md`, which *is* the Japanese hub — so
-`docs/ja/README.md` does not exist.
+**Reader-facing localized documents live under `docs/<lang>/`.** Japanese is the complete
+reference tree. Contributor-only bilingual contracts may use paired files under `docs/`. The root
+`README.md` is the Japanese hub; `docs/ja/README.md` does not exist.
 
 Two navigation axes, mirrored in each language:
 

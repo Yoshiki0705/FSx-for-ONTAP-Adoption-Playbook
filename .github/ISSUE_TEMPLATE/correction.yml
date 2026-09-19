@@ -1,74 +1,70 @@
-name: Correction
-description: Report something in this repository that is wrong, stale, or misleading
-title: "[Correction] "
+name: Accuracy correction
+description: Report an inaccurate, stale, or unsupported claim in existing content
+title: "[Accuracy correction] "
 labels: ["correction"]
 body:
   - type: markdown
     attributes:
       value: |
-        Corrections are as valuable as new content. If a note's `evidence` tier overstates its
-        support, that is worth reporting even when the underlying claim turns out to be right.
+        Use this form for accuracy problems in existing content. Use the translation request form
+        for a meaning or wording problem limited to a translation.
 
-        **Translation reports are equally welcome.** Everything outside Japanese and English is
-        machine-assisted and has not been reviewed by a native speaker before publication, so
-        awkward phrasing and mistranslated terms are expected to reach you before they reach us.
-        You do not need to propose a replacement — pointing at the sentence is enough.
+        Do not include private case data, organization or personal names, real identifiers,
+        private addresses or hostnames, support correspondence, or internal references.
 
   - type: input
     id: file
     attributes:
       label: File and line
+      description: Identify the existing claim that needs correction.
       placeholder: docs/ja/domains/performance/notes/example.md:42
     validations:
       required: true
 
   - type: dropdown
-    id: language
-    attributes:
-      label: Language
-      description: The language of the file you are reporting. Leave as-is if it does not apply.
-      options:
-        - Not language-specific
-        - ja
-        - en
-        - ko
-        - zh-CN
-        - zh-TW
-        - fr
-        - de
-        - es
-    validations:
-      required: false
-
-  - type: dropdown
     id: kind
     attributes:
-      label: Kind of problem
+      label: Accuracy problem
       options:
         - Factually incorrect
-        - Stale (was correct, no longer is)
+        - Stale
         - Evidence tier overstates the support
-        - Number published without its measurement environment
-        - Vendor-versus framing or unbalanced trade-offs
-        - Broken link or navigation dead end
-        - Translation diverges from the Japanese source
-        - Other
+        - Measurement conditions are missing
+        - Claim is broader than its source or observation
+        - Other accuracy problem
     validations:
       required: true
 
   - type: textarea
-    id: detail
+    id: current
     attributes:
-      label: What is wrong, and what it should say
+      label: Current claim and problem
+      description: Quote only the minimum text needed and explain why it is inaccurate.
     validations:
       required: true
 
   - type: textarea
-    id: basis
+    id: correction
     attributes:
-      label: Basis
-      description: >
-        Documentation URL, or your own measurement with ONTAP version, region, and configuration.
-        If you have not verified it yourself, say so - a hypothesis is still worth filing.
+      label: Proposed correction
+      description: State the corrected claim and its limits.
     validations:
-      required: false
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Primary source or reproducible evidence
+      description: >-
+        Link the primary source, or provide the environment, date, procedure, and observed result.
+        State any conditions where the correction does not apply.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: I removed private case data and identifying or internal information.
+          required: true
