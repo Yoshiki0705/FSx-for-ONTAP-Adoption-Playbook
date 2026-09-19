@@ -11,10 +11,6 @@ lang: ja
 
 # SMB ローカルユーザーに最終ログオン属性は無い。棚卸しは監査ログから起こすしかなく、削除の自動化は別の判断
 
-<!-- lang-switcher:start -->
-🌐 [日本語](local-user-inventory-without-last-logon.md) | [English](../../../../en/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---

@@ -1,9 +1,5 @@
 # Case Studies
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../ja/case-studies/README.md) | [English](README.md) | [🏠 Repository home](../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Findings from field technical-support work, organized as **generalized lessons**.

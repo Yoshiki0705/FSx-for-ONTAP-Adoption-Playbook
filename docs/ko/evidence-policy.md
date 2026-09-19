@@ -1,9 +1,5 @@
 # 근거 분류 정책
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/evidence-policy.md) | [English](../en/evidence-policy.md) | [한국어](evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](../es/evidence-policy.md) | [🏠 저장소 홈](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## 결론

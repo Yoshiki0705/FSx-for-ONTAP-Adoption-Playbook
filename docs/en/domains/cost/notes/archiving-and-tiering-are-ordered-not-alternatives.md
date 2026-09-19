@@ -9,10 +9,6 @@ lang: en
 
 # Archiving with an external tool and the capacity pool tier are ordered, not alternatives
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) | [English](archiving-and-tiering-are-ordered-not-alternatives.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Cost](../README.md)
 
 ---

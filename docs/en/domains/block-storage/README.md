@@ -1,9 +1,5 @@
 # Domain — Block Storage
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/block-storage/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers designing, building, and operating LUNs and NVMe namespaces served over iSCSI and NVMe/TCP. Unlike a file share, **consistency and path management stay on the host side.** Where that boundary falls is what this module is about.

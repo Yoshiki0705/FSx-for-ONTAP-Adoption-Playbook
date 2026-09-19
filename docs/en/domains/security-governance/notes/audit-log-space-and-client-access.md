@@ -11,10 +11,6 @@ lang: en
 
 # An exhausted audit destination stops client access, but not at the moment it fills, and not one record is lost
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) | [English](audit-log-space-and-client-access.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

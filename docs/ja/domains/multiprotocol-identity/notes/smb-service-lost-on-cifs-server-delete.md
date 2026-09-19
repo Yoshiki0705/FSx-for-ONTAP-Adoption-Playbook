@@ -11,10 +11,6 @@ lang: ja
 
 # SMB を提供できない SVM がある。原因は作成時期ではなく CIFS サーバーの削除で、ONTAP REST で作り直せば戻る
 
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-service-lost-on-cifs-server-delete.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---

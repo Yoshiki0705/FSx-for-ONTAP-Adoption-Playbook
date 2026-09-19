@@ -1,9 +1,5 @@
 # Evidence Policy
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/evidence-policy.md) | [English](evidence-policy.md) | [한국어](../ko/evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](../es/evidence-policy.md) | [🏠 Repository home](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## Conclusion

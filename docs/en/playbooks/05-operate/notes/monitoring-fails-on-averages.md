@@ -9,10 +9,6 @@ lang: en
 
 # Monitoring fails on averages
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [English](monitoring-fails-on-averages.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

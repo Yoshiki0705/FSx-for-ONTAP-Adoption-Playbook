@@ -1,9 +1,5 @@
 # Domain — 性能 (Performance)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/performance/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 スループット設計、レイテンシ、キャッシュ、共有帯域の挙動を扱います。数値は必ず測定環境とセットで読んでください。

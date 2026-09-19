@@ -1,9 +1,5 @@
 # Domain — クライアントアクセス (Client Access)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/client-access/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 手元の端末 — Windows、WSL2 の Linux、Mac — から Amazon FSx for NetApp ONTAP のデータに届くまでの知見です。

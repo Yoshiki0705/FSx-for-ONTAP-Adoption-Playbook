@@ -11,10 +11,6 @@ lang: ja
 
 # 監査宛先が枯渇するとクライアントアクセスは止まる。止まるのは満杯になった瞬間ではなく、観測できない緩衝が吸収し切った時点で、記録は 1 件も落ちない
 
-<!-- lang-switcher:start -->
-🌐 [日本語](audit-log-space-and-client-access.md) | [English](../../../../en/domains/security-governance/notes/audit-log-space-and-client-access.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---

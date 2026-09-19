@@ -1,9 +1,5 @@
 # Playbook 01 — Assess
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/01-assess/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Before migrating, establish what exists on the current NAS and what will constrain the move. Gaps here translate directly into rework cost in later phases.

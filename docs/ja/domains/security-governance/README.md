@@ -1,9 +1,5 @@
 # Domain — セキュリティ・ガバナンス (Security & Governance)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/security-governance/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 暗号化、監査、権限設計、規制ワークロードでの考慮事項を扱います。ここに書かれているのは設計上の考慮事項であり、法務・コンプライアンス上の判断ではありません。

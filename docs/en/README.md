@@ -1,42 +1,66 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## Audience
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](README.md) | [한국어](../ko/README.md) | [简体中文](../zh-CN/README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](../de/README.md) | [Español](../es/README.md)
-<!-- lang-switcher:end -->
+- Architects deciding whether and how to adopt FSx for ONTAP
+- Builders planning migration, implementation, and production readiness
+- Operators managing performance, protection, security, and cost after launch
 
----
+## Non-goals
 
-> A knowledge base for migrating to **Amazon FSx for NetApp ONTAP** and for the design, build, and operations work that follows.
-> Two navigation axes: the lifecycle (assess → design → migrate → build → operate → optimize) and the topic (data protection, data utilization, security, performance, cost, multiprotocol identity).
->
-> Findings from field technical-support work are organized here as anonymized reference material. The structure is intended to be readable by humans and by AI agents / web crawlers alike.
+This repository does not perform or replace:
 
----
+- Contracting or contract negotiation
+- License interpretation
+- Price quotations or formal estimates
+- Procedures for migrating from SaaS file-sharing services
+- Environment-specific adoption or procurement decisions
+- Final legal, compliance, or regulatory judgments
+
+Decision inputs grounded in public sources remain in scope, as do builder observations and design views when they are clearly separated from documented facts.
+
+## Translation status
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier 1 first-touch guidance is available in eight languages. Tier 2 module hubs are available in Japanese and English. Note and checklist bodies are primarily Japanese, with selected English translations. The Japanese version is authoritative for technical accuracy.
+
+## Before production
+
+- [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — irreversible settings and checks to exercise before launch
+- [At rest is automatic; in transit is off by default](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — responsibility boundaries for encryption in transit and auditing
 
 ## Get Started
 
 | What you want to do | Guide | Time |
 |---|---|---|
+| Decide whether FSx for ONTAP fits the workload | [Choose an AWS file storage service](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10 min |
 | Learn how to navigate this repository | [Navigation Guide](navigation.md) | 3 min |
-| Decide whether and how to migrate | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) | 10 min |
-| Check verified limits and quotas | [Limits and Quotas](../ja/reference/limits/) | 5 min |
-| Compare the trade-offs between options | [Comparison Matrices](../ja/reference/comparison/) | 10 min |
-| Learn how to read the confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
-| Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
-| Find a case study for your industry or workload | [Published FSx for ONTAP case studies](../ja/case-studies/public-case-studies.md) (日本語) | 10 min |
-| **Work out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | 10 min |
-| Learn from a judgement that went wrong | [Case studies](case-studies/README.md) | 10 min |
-| Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
+| Learn how to read confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
 
-> **Coverage**: **all 12 modules have content.**
-> Each module README lists the questions it covers alongside the note that answers each one.
-> **A question whose answer is not yet written is marked `_未追加_`.**
+<details>
+<summary><strong>More entry points</strong></summary>
+
+| Situation | Entry point |
+|---|---|
+| Choose a migration method | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| Check limits and quotas | [Limits and Quotas](../ja/reference/limits/) |
+| Compare option trade-offs | [Comparison Matrices](../ja/reference/comparison/) (日本語) |
+| Start from an industry or workload | [Industry resource map](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Contribute knowledge | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> The file-storage decision tree is designed to let readers stop once FSx for ONTAP is not a fit.
+> Each module README lists the questions it answers and the corresponding notes.
+> Questions without an answer are marked `_未追加_`.
+
+<details>
+<summary><strong>Symptom routes and available material</strong></summary>
 
 ### Entering from a symptom
 
-**For when the starting point is what is happening rather than what you want to do.** The full set — 10 decision trees and 9 comparisons — is in the [decision tree index](reference/decision-trees/) and the [comparison index](../ja/reference/comparison/) (日本語).
+**For when the starting point is what is happening rather than what you want to do.** Browse the [decision tree index](reference/decision-trees/) and the [comparison index](../ja/reference/comparison/) (日本語).
 
 | What is happening | Where to go |
 |---|---|
@@ -86,6 +110,8 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [LUNs and igroups sit outside the AWS API](domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | CloudFormation exposes six Amazon FSx resource types, and none of them is a block object |
 | [When shared block changes the design](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) | Amazon EBS is the straightforward choice for a single attachment. The million-IOPS figure is ten file systems combined |
 | [Kubernetes block volumes meet the volume limit](../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) | What runs out is volumes, not capacity, and the driver choice sets that ceiling |
+
+</details>
 
 ---
 

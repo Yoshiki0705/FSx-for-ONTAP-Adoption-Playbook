@@ -1,9 +1,5 @@
 # Playbook 01 — 評価 (Assess)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/01-assess/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 移行の前に、現行 NAS に何があり、何が制約になるかを把握します。ここでの見落としが、後続フェーズのやり直しコストに直結します。

@@ -1,9 +1,5 @@
 # Domain — データ保護 (Data Protection)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/data-protection/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対策を扱います。「保護している」ことと「復旧できる」ことは別の主張です。

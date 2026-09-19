@@ -9,10 +9,6 @@ lang: en
 
 # You can run out of writes with capacity to spare
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | [English](counting-bytes-is-not-counting-files.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 01 — Assess](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

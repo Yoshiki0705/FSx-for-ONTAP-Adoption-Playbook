@@ -1,9 +1,5 @@
 # Playbook 03 — 移行 (Migrate)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/03-migrate/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 移行方式の選択、切り替え手順、そして戻す手順を扱います。ロールバック手順のない移行計画は計画として未完成です。

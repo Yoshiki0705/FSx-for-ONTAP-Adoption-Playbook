@@ -9,10 +9,6 @@ lang: ja
 
 # AD への依存は参加時ではなく生涯続く
 
-<!-- lang-switcher:start -->
-🌐 [日本語](ad-dependency-lasts-the-lifetime.md) | [English](../../../../en/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---

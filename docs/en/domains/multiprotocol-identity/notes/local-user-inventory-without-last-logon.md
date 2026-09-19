@@ -11,10 +11,6 @@ lang: en
 
 # SMB local users carry no last-logon attribute. An inventory has to be built from audit logs, and automating deletion is a separate judgment
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) | [English](local-user-inventory-without-last-logon.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

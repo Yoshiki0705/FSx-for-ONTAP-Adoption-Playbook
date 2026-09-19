@@ -9,10 +9,6 @@ lang: ja
 
 # SaaS からの移行は転送方式より先に移行元の群を確定させる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](saas-source-migration-scoping.md) | [English](../../../../en/playbooks/03-migrate/notes/saas-source-migration-scoping.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
 
 ---

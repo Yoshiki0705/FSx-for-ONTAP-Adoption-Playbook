@@ -1,38 +1,65 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## 대상 독자
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](../en/README.md) | [한국어](README.md) | [简体中文](../zh-CN/README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](../de/README.md) | [Español](../es/README.md)
-<!-- lang-switcher:end -->
+- FSx for ONTAP 도입 여부와 구성을 결정하는 아키텍트
+- 마이그레이션, 구축, 프로덕션 전환을 계획하는 구현 담당자
+- 운영 후 성능, 보호, 보안, 비용을 관리하는 운영 담당자
 
----
+## 다루지 않는 범위
 
-> **Amazon FSx for NetApp ONTAP** 로의 마이그레이션과 그 이후의 설계·구축·운영을 진행하기 위한 지식 모음입니다.
-> 라이프사이클(평가 → 설계 → 마이그레이션 → 구축 → 운영 → 최적화)과 주제(데이터 보호·데이터 활용·보안·성능·비용·멀티프로토콜 ID)의 **두 축**으로 찾을 수 있습니다.
->
-> 기술 지원 현장에서 얻은 지식을 익명화된 참고 자료로 정리하고 있습니다. 사람인 독자와 AI 에이전트 / 웹 크롤러 양쪽에서 참조할 수 있는 구조를 의도했습니다.
+이 리포지토리는 다음 작업이나 판단을 대신하지 않습니다.
 
----
+- 계약 조건 수립 또는 계약 절차
+- 라이선스 조건 해석
+- 가격 견적 또는 공식 견적서 발행
+- SaaS 파일 공유 서비스에서의 마이그레이션 절차
+- 개별 환경의 도입 또는 조달 결정
+- 법률, 컴플라이언스, 규제에 관한 최종 판단
+
+공개 자료에 근거한 판단 자료와, 문서화된 사실에서 명확히 구분한 구축자의 관찰 또는 설계 관점은 범위에 포함됩니다.
+
+## 번역 상태
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier 1 첫 안내는 8개 언어로, Tier 2 모듈 허브는 일본어와 English로 제공합니다. `notes/`와 `checklists/` 본문은 주로 일본어이며 일부가 English로 번역되어 있습니다. 기술적 정확성의 기준은 일본어판입니다.
+
+## 프로덕션 전 확인
+
+- [프로덕션 전 검토](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — 되돌릴 수 없는 설정과 전환 전에 시험할 항목
+- [저장 시 암호화는 자동이지만 전송 시 암호화는 기본적으로 꺼져 있음](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 전송 시 암호화와 감사의 책임 경계
 
 ## 시작하기
 
 | 하려는 작업 | 가이드 | 소요 시간 |
 |---|---|---|
+| FSx for ONTAP이 워크로드에 적합한지 판단 | [AWS 파일 스토리지 선택](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10분 |
 | 이 리포지토리를 둘러보는 방법 알기 | [내비게이션 가이드](navigation.md) | 3분 |
-| 마이그레이션 가능성과 방법 판단 | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) | 10분 |
-| 검증된 상한값 확인 | [상한값·쿼터](../ja/reference/limits/) | 5분 |
 | 지식의 신뢰도를 읽는 방법 알기 | [지식 분류 정책](evidence-policy.md) | 5분 |
-| 공개 정보에서 1차 정보를 찾는다 | [공개된 1차 정보와 사례의 입구](../ja/case-studies/public-references.md) (日本語) | 5분 |
-| 지식 추가하기(집필) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10분 |
 
-> **수록 현황**: **12개 모듈 모두 내용이 있습니다.**
-> 각 모듈 README에 그 모듈이 답하는 질문과 대응하는 자료가 정리되어 있으며,
-> 아직 작성되지 않은 질문은 `_未追加_`로 표시됩니다. 개별 노트는 현재 일본어로 작성되어 있습니다.
+<details>
+<summary><strong>추가 진입점</strong></summary>
+
+| 상황 | 진입점 |
+|---|---|
+| 마이그레이션 방식 선택 | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| 상한값과 쿼터 확인 | [상한값·쿼터](../ja/reference/limits/) |
+| 선택지의 트레이드오프 비교 | [비교 매트릭스](../ja/reference/comparison/) (日本語) |
+| 업종이나 워크로드에서 시작 | [업종별 리소스 맵](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 지식 기여 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> 파일 스토리지 결정 트리는 FSx for ONTAP이 적합하지 않다고 판단되는 즉시 읽기를 중단할 수 있도록 구성되어 있습니다.
+> 각 모듈 README는 답하는 질문과 관련 자료를 나열합니다. 답이 없는 질문은 `_未追加_`로 표시됩니다.
+
+<details>
+<summary><strong>증상별 경로와 수록 내용</strong></summary>
 
 ### 증상에서 찾는 방법
 
-**하고 싶은 일이 아니라 일어나고 있는 일에서 출발할 때 사용합니다.** 결정 트리 10개와 비교 9개 전체는 [결정 트리 색인](../ja/reference/decision-trees/) (日本語) 과 [비교 색인](../ja/reference/comparison/) (日本語) 에 있습니다.
+**하고 싶은 일이 아니라 일어나고 있는 일에서 출발할 때 사용합니다.** 전체 목록은 [결정 트리 색인](../ja/reference/decision-trees/) (日本語) 과 [비교 색인](../ja/reference/comparison/) (日本語) 에 있습니다.
 
 | 일어나고 있는 일 | 찾아갈 곳 |
 |---|---|
@@ -51,6 +78,8 @@
 
 각 자료는 「1 파일 = 1 논점」이며, **일차 정보의 출처**와 **자신의 환경에서 확인하는 절차**를 반드시 포함합니다.
 본문은 현재 일본어입니다. 목록은 각 모듈의 README에 질문과 함께 정리되어 있습니다 — [라이프사이클](../ja/playbooks/) / [테마](../ja/domains/) / [참조](../ja/reference/).
+
+</details>
 
 ---
 

@@ -11,10 +11,6 @@ lang: en
 
 # Block storage running in about thirty minutes
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/block-storage/quickstart.md) | [English](quickstart.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## What you end up with

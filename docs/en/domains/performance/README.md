@@ -1,9 +1,5 @@
 # Domain — Performance
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/performance/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers throughput design, latency, caching, and shared-bandwidth behavior. Always read a number together with the environment it was measured in.

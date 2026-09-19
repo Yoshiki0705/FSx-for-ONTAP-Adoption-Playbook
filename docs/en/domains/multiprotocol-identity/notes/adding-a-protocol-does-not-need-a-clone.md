@@ -9,10 +9,6 @@ lang: en
 
 # Adding NFS to a volume already serving SMB needs no clone
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [English](adding-a-protocol-does-not-need-a-clone.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 ---

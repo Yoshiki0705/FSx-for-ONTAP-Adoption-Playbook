@@ -32,8 +32,8 @@ cp -r docs/ja/domains/_template docs/ja/domains/my-new-domain
 #    Add a row to the two-axis navigation table in the root README (all 8 languages)
 
 # 5. スイッチャーを生成 / Generate the language switcher
-#    H1 直後と末尾に <!-- lang-switcher:start --> / <!-- lang-switcher:end --> を置いてから実行
-#    Place the marker pair after the H1 and at the end of the file, then run:
+#    末尾に <!-- lang-switcher:start --> / <!-- lang-switcher:end --> を 1 組置いてから実行
+#    Place one marker pair at the end of the file, then run:
 make switcher-write
 
 # 6. 検証 / Verify

@@ -9,10 +9,6 @@ lang: ja
 
 # ボリュームのセキュリティスタイルが権限評価のモデルを決める
 
-<!-- lang-switcher:start -->
-🌐 [日本語](security-style-and-permission-evaluation.md) | [English](../../../../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---

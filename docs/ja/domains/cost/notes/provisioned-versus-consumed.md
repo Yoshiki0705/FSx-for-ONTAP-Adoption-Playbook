@@ -9,10 +9,6 @@ lang: ja
 
 # 課金は「確保した量」と「使った量」に分かれる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](provisioned-versus-consumed.md) | [English](../../../../en/domains/cost/notes/provisioned-versus-consumed.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
 
 ---

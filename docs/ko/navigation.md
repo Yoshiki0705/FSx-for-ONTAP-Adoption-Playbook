@@ -1,9 +1,5 @@
 # 내비게이션 가이드
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../ja/navigation.md) | [English](../en/navigation.md) | [한국어](navigation.md) | [简体中文](../zh-CN/navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](../de/navigation.md) | [Español](../es/navigation.md) | [🏠 저장소 홈](README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## 결론

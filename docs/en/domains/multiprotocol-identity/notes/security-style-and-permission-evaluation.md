@@ -9,10 +9,6 @@ lang: en
 
 # A volume's security style determines the permission model
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [English](security-style-and-permission-evaluation.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Domain — Multiprotocol & Identity](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.

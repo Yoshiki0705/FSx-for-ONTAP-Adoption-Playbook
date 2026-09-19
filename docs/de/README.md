@@ -1,38 +1,65 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## Zielgruppe
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](../en/README.md) | [한국어](../ko/README.md) | [简体中文](../zh-CN/README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](README.md) | [Español](../es/README.md)
-<!-- lang-switcher:end -->
+- Architekten, die über Einführung und Konfiguration von FSx for ONTAP entscheiden
+- Umsetzungsverantwortliche, die Migration, Aufbau und Produktionsfreigabe planen
+- Betriebsverantwortliche, die danach Performance, Schutz, Sicherheit und Kosten verwalten
 
----
+## Nicht abgedeckt
 
-> Eine Wissensbasis für die Migration zu **Amazon FSx for NetApp ONTAP** und für die anschließende Arbeit an Design, Aufbau und Betrieb.
-> Zwei Navigationsachsen: der Lebenszyklus (bewerten → entwerfen → migrieren → aufbauen → betreiben → optimieren) und das Thema (Datenschutz, Datennutzung, Sicherheit, Performance, Kosten, Multiprotokoll-Identität).
->
-> Erkenntnisse aus der technischen Unterstützung im Feld sind hier als anonymisiertes Referenzmaterial aufbereitet. Die Struktur ist für menschliche Leser wie für KI-Agenten und Web-Crawler gleichermaßen gedacht.
+Dieses Repository ersetzt nicht:
 
----
+- Vertragsgestaltung oder Vertragsverhandlungen
+- Auslegung von Lizenzbedingungen
+- Preisangebote oder formale Kostenvoranschläge
+- Migrationsanleitungen von SaaS-Dateifreigabediensten
+- Umgebungsbezogene Einführungs- oder Beschaffungsentscheidungen
+- Abschließende rechtliche, Compliance- oder Regulierungsentscheidungen
+
+Entscheidungsgrundlagen aus öffentlichen Quellen bleiben im Umfang, ebenso Beobachtungen aus der Umsetzung und Designansichten, wenn sie klar von dokumentierten Fakten getrennt sind.
+
+## Übersetzungsstatus
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier-1-Einstiegsinformationen gibt es in acht Sprachen. Tier-2-Modul-Hubs gibt es auf Japanisch und English. Die Texte in `notes/` und `checklists/` sind überwiegend japanisch; ausgewählte Inhalte liegen auf English vor. Für die technische Richtigkeit ist die japanische Version maßgeblich.
+
+## Prüfung vor Produktion
+
+- [Prüfung vor der Produktionsfreigabe](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — irreversible Einstellungen und vor dem Start auszuführende Prüfungen
+- [Verschlüsselung im Ruhezustand ist automatisch, während der Übertragung standardmäßig aus](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — Verantwortungsgrenzen für Transportverschlüsselung und Audit
 
 ## Erste Schritte
 
 | Was Sie vorhaben | Leitfaden | Dauer |
 |---|---|---|
+| Entscheiden, ob FSx for ONTAP zur Arbeitslast passt | [AWS-Dateispeicher auswählen](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10 Min. |
 | Verstehen, wie man dieses Repository durchsucht | [Navigationsleitfaden](navigation.md) | 3 Min. |
-| Entscheiden, ob und wie migriert wird | [Entscheidungsbaum: Migrationsmethode](../ja/reference/decision-trees/migration-method.md) | 10 Min. |
-| Verifizierte Grenzwerte nachsehen | [Grenzwerte und Kontingente](../ja/reference/limits/) | 5 Min. |
-| Verstehen, wie die Vertrauensstufen zu lesen sind | [Evidenzrichtlinie](evidence-policy.md) | 5 Min. |
-| Öffentliche Primärquellen finden | [Öffentliche Quellen und ihre Gewichtung](../ja/case-studies/public-references.md) (日本語) | 5 Min. |
-| Wissen ergänzen (Verfassen) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 Min. |
+| Vertrauensstufen verstehen | [Evidenzrichtlinie](evidence-policy.md) | 5 Min. |
 
-> **Abdeckungsstand**: **Alle 12 Module haben Inhalt.**
-> Das README jedes Moduls listet die Fragen und das jeweils zugehörige Dokument;
-> eine noch nicht beantwortete Frage ist mit `_未追加_` markiert. Die Notizen liegen derzeit auf Japanisch vor.
+<details>
+<summary><strong>Weitere Einstiegspunkte</strong></summary>
+
+| Situation | Einstiegspunkt |
+|---|---|
+| Migrationsmethode auswählen | [Entscheidungsbaum zur Migration](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| Grenzwerte und Kontingente prüfen | [Grenzwerte und Kontingente](../ja/reference/limits/) |
+| Abwägungen vergleichen | [Vergleichsmatrizen](../ja/reference/comparison/) (日本語) |
+| Von Branche oder Arbeitslast ausgehen | [Branchen-Ressourcenkarte](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Wissen beitragen | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> Der Entscheidungsbaum für Dateispeicher ermöglicht den Ausstieg, sobald FSx for ONTAP nicht passt.
+> Jedes Modul-README listet Fragen und zugehörige Dokumente; fehlende Antworten sind mit `_未追加_` markiert.
+
+<details>
+<summary><strong>Symptombasierte Wege und verfügbare Inhalte</strong></summary>
 
 ### Einstieg über ein Symptom
 
-**Für den Fall, dass der Ausgangspunkt das Geschehen ist und nicht das Vorhaben.** Der vollständige Satz — 10 Entscheidungsbäume und 9 Vergleiche — steht im [Index der Entscheidungsbäume](../ja/reference/decision-trees/) (日本語) und im [Index der Vergleiche](../ja/reference/comparison/) (日本語).
+**Für den Fall, dass der Ausgangspunkt das Geschehen ist und nicht das Vorhaben.** Nutzen Sie den [Index der Entscheidungsbäume](../ja/reference/decision-trees/) (日本語) und den [Index der Vergleiche](../ja/reference/comparison/) (日本語).
 
 | Was geschieht | Wohin |
 |---|---|
@@ -51,6 +78,8 @@
 
 Jedes Dokument behandelt ein Thema pro Datei und führt stets **seine Primärquellen** sowie **ein Verfahren zur Prüfung in der eigenen Umgebung** mit.
 Der Text liegt derzeit auf Japanisch vor. Die vollständige Liste steht im README jedes Moduls neben den jeweiligen Fragen — [Lifecycle](../ja/playbooks/) / [Themen](../ja/domains/) / [Referenz](../ja/reference/).
+
+</details>
 
 ---
 

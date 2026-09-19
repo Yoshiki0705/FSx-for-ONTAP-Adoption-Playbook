@@ -150,6 +150,30 @@ def build_block(rel: str) -> tuple[str | None, str | None]:
     return "🌐 " + " | ".join(parts), None
 
 
+def marker_errors(lines: list[str]) -> list[str]:
+    """Return malformed marker-stream errors before complete blocks are interpreted."""
+    errors: list[str] = []
+    start: int | None = None
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == START:
+            if start is not None:
+                errors.append(
+                    f"line {index + 1}: nested switcher start; "
+                    f"the previous start is on line {start + 1}"
+                )
+            else:
+                start = index
+        elif stripped == END:
+            if start is None:
+                errors.append(f"line {index + 1}: switcher end has no matching start")
+            else:
+                start = None
+    if start is not None:
+        errors.append(f"line {start + 1}: switcher start has no matching end")
+    return errors
+
+
 def find_blocks(lines: list[str]) -> list[tuple[int, int]]:
     blocks: list[tuple[int, int]] = []
     start: int | None = None
@@ -171,6 +195,9 @@ def sync_file(rel: str, write: bool) -> list[str]:
     path = ROOT / rel
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
+    malformed = marker_errors(lines)
+    if malformed:
+        return [f"{rel}: {problem}" for problem in malformed]
     blocks = find_blocks(lines)
     problems: list[str] = []
 
@@ -197,25 +224,57 @@ def sync_file(rel: str, write: bool) -> list[str]:
         return [
             (
                 f"{rel}: missing switcher markers; add {START} / {END} "
-                f"immediately after the H1 and at the end of the file"
+                "at the end of the file"
             )
         ]
-    if len(blocks) != 2:
-        problems.append(
-            f"{rel}: found {len(blocks)} switcher block(s), expected 2 "
-            f"(one after the H1, one at the end)"
-        )
 
     changed = False
-    for start, end in reversed(blocks):
-        current = lines[start + 1 : end]
-        if current == [expected]:
-            continue
+    if len(blocks) != 1:
         if not write:
-            problems.append(f"{rel}:{start + 2}: switcher block is out of date")
-            continue
-        lines[start + 1 : end] = [expected]
-        changed = True
+            problems.append(
+                f"{rel}: found {len(blocks)} switcher block(s), expected exactly 1 at the footer"
+            )
+        else:
+            # The former contract generated the same block after the H1 and at the footer. Keep the
+            # footer copy and remove every earlier copy so --write can migrate the existing corpus.
+            for start, end in reversed(blocks[:-1]):
+                del lines[start : end + 1]
+                if (
+                    0 < start < len(lines)
+                    and lines[start - 1].strip() == ""
+                    and lines[start].strip() == ""
+                ):
+                    del lines[start]
+            changed = True
+            blocks = find_blocks(lines)
+
+    if len(blocks) == 1:
+        start, end = blocks[0]
+        last_content = max(
+            (index for index, line in enumerate(lines) if line.strip()),
+            default=-1,
+        )
+        if end != last_content:
+            if not write:
+                problems.append(
+                    f"{rel}:{start + 1}: switcher block must be the final content in the file"
+                )
+            else:
+                block = lines[start : end + 1]
+                del lines[start : end + 1]
+                while lines and not lines[-1].strip():
+                    lines.pop()
+                lines.extend(["", *block])
+                changed = True
+                start, end = find_blocks(lines)[0]
+
+        current = lines[start + 1 : end]
+        if current != [expected]:
+            if not write:
+                problems.append(f"{rel}:{start + 2}: switcher block is out of date")
+            else:
+                lines[start + 1 : end] = [expected]
+                changed = True
 
     if write and changed:
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")

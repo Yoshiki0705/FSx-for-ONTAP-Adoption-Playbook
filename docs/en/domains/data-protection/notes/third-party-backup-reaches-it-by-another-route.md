@@ -9,10 +9,6 @@ lang: en
 
 # A third-party backup product reaches it by a route that is not the AWS API
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [English](third-party-backup-reaches-it-by-another-route.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Data protection](../README.md)
 
 ---

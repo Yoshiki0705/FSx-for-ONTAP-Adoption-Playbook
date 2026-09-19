@@ -1,9 +1,5 @@
 # Domain — Security & Governance
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/security-governance/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers encryption, audit, permission design, and considerations for regulated workloads. What is written here are design considerations, not legal or compliance judgments.

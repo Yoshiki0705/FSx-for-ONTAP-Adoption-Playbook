@@ -1,9 +1,5 @@
 # Domain — Observability
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/observability/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers **how to choose a collection route** when monitoring Amazon FSx for NetApp ONTAP. What to monitor and where to set thresholds belongs to [Operate](../../playbooks/05-operate/); how throughput and latency are determined belongs to [Performance](../performance/). This module only covers which route the values come through.

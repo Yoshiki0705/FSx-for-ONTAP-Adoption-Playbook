@@ -9,10 +9,6 @@ lang: en
 
 # Migrating From SaaS Starts With Classifying the Source
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md) | [English](saas-source-migration-scoping.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

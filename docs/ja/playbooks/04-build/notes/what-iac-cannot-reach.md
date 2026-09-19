@@ -9,10 +9,6 @@ lang: ja
 
 # IaC の境界は好みではなく API の表面で決まる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](what-iac-cannot-reach.md) | [English](../../../../en/playbooks/04-build/notes/what-iac-cannot-reach.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
 
 ---

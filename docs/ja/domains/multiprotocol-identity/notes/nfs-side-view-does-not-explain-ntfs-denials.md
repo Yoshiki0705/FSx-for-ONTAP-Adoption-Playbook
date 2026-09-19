@@ -9,9 +9,6 @@ ontap_version: 9.18.1P6
 lang: ja
 ---
 # NTFS スタイルのボリュームでは、NFS 側から見える権限表現が実際の可否と一致しない
-<!-- lang-switcher:start -->
-🌐 [日本語](nfs-side-view-does-not-explain-ntfs-denials.md) | [English](../../../../en/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 

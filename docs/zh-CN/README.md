@@ -1,38 +1,65 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## 目标读者
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](../en/README.md) | [한국어](../ko/README.md) | [简体中文](README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](../de/README.md) | [Español](../es/README.md)
-<!-- lang-switcher:end -->
+- 判断是否采用 FSx for ONTAP 以及如何配置的架构师
+- 规划迁移、构建和投产的实施人员
+- 投产后管理性能、保护、安全与成本的运维人员
 
----
+## 不包含的范围
 
-> 面向迁移到 **Amazon FSx for NetApp ONTAP** 以及后续设计、构建、运维工作的知识库。
-> 提供**两个检索轴**：生命周期（评估 → 设计 → 迁移 → 构建 → 运维 → 优化）与主题（数据保护、数据利用、安全、性能、成本、多协议身份）。
->
-> 将技术支持现场获得的经验整理为匿名化的参考资料。结构上同时面向人类读者与 AI 代理 / 网络爬虫。
+本仓库不代替以下工作或判断：
 
----
+- 制定合同条件或办理签约
+- 解释许可条款
+- 提供价格或正式报价
+- 从 SaaS 文件共享服务迁移的操作步骤
+- 针对具体环境的采用或采购决策
+- 最终的法律、合规或监管判断
+
+基于公开资料的决策输入仍在范围内；与文档事实明确区分的构建者观察或设计观点也在范围内。
+
+## 翻译状态
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier 1 首次访问指南提供 8 种语言。Tier 2 模块枢纽提供日语与 English。`notes/` 和 `checklists/` 正文以日语为主，部分已有 English 译文。技术准确性以日语版为准。
+
+## 投产前确认
+
+- [投产前评审](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — 不可逆设置与投产前应实际验证的项目
+- [静态加密自动启用，传输中加密默认关闭](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 传输中加密与审计的责任边界
 
 ## 开始使用
 
 | 你想做的事 | 指南 | 预计时间 |
 |---|---|---|
+| 判断 FSx for ONTAP 是否适合该工作负载 | [选择 AWS 文件存储服务](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10 分钟 |
 | 了解如何浏览本仓库 | [导航指南](navigation.md) | 3 分钟 |
-| 判断能否迁移以及如何迁移 | [迁移方式决策树](../ja/reference/decision-trees/migration-method.md) | 10 分钟 |
-| 查看已验证的上限值 | [上限值与配额](../ja/reference/limits/) | 5 分钟 |
 | 了解如何判读知识的可信度 | [知识分类政策](evidence-policy.md) | 5 分钟 |
-| 从公开信息中查找一次信息 | [公开的一次信息与案例入口](../ja/case-studies/public-references.md) (日本語) | 5 分钟 |
-| 补充知识（撰写） | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 分钟 |
 
-> **收录情况**：**12 个模块全部具备内容。**
-> 各模块的 README 列出了该模块回答的问题及对应的资料；
-> 尚未撰写的问题会标示为 `_未追加_`。各篇笔记目前以日语撰写。
+<details>
+<summary><strong>更多入口</strong></summary>
+
+| 情况 | 入口 |
+|---|---|
+| 选择迁移方式 | [迁移方式决策树](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| 查看上限值与配额 | [上限值与配额](../ja/reference/limits/) |
+| 比较选项的权衡 | [比较矩阵](../ja/reference/comparison/) (日本語) |
+| 从行业或工作负载开始 | [行业资源地图](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 贡献知识 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> 文件存储决策树让读者在确认 FSx for ONTAP 不适用时即可停止阅读。
+> 各模块 README 列出其回答的问题和对应资料；暂无答案的问题标为 `_未追加_`。
+
+<details>
+<summary><strong>按症状查找与现有内容</strong></summary>
 
 ### 从症状入手的方法
 
-**当起点是正在发生的事情而非想做的事情时使用。** 全部 10 个决策树与 9 个比较表见[决策树索引](../ja/reference/decision-trees/) (日本語) 和 [比较索引](../ja/reference/comparison/) (日本語)。
+**当起点是正在发生的事情而非想做的事情时使用。** 完整内容见[决策树索引](../ja/reference/decision-trees/) (日本語) 和 [比较索引](../ja/reference/comparison/) (日本語)。
 
 | 正在发生的事情 | 前往 |
 |---|---|
@@ -51,6 +78,8 @@
 
 每篇资料均为「1 个文件 = 1 个议题」，并且必定包含**一次信息的出处**与**在自己环境中确认的步骤**。
 正文目前为日语。完整列表连同各自的问题一并整理在各模块的 README 中 —— [生命周期](../ja/playbooks/) / [主题](../ja/domains/) / [参考](../ja/reference/)。
+
+</details>
 
 ---
 

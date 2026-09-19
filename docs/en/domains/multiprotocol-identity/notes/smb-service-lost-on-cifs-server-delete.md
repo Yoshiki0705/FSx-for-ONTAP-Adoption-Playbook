@@ -11,10 +11,6 @@ lang: en
 
 # Some SVMs cannot serve SMB. The cause is a deleted CIFS server, and the ONTAP REST API restores it
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [English](smb-service-lost-on-cifs-server-delete.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

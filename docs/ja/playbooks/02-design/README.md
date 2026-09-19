@@ -1,9 +1,5 @@
 # Playbook 02 — 設計 (Design)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/02-design/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 評価結果をもとに、移行先の構成を決めます。容量とスループットは後から変更できますが、一部の選択（セキュリティスタイル、SnapLock 有効化など）は不可逆です。

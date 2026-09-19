@@ -9,10 +9,6 @@ lang: en
 
 # An SMB error string does not name its cause
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-errors-do-not-name-their-cause.md) | [English](smb-errors-do-not-name-their-cause.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol and identity](../README.md)
 
 ---

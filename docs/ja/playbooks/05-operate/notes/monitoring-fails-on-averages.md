@@ -9,10 +9,6 @@ lang: ja
 
 # 監視は平均値で失敗する
 
-<!-- lang-switcher:start -->
-🌐 [日本語](monitoring-fails-on-averages.md) | [English](../../../../en/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
 ---

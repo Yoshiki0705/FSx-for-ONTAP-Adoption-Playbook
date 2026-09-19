@@ -9,10 +9,6 @@ lang: en
 
 # The AD dependency lasts a lifetime, not just the join
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | [English](ad-dependency-lasts-the-lifetime.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.

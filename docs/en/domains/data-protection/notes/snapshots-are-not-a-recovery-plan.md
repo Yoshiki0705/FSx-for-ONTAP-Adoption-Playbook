@@ -9,10 +9,6 @@ lang: en
 
 # Having Snapshots and Being Able to Recover Are Different Things
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [English](snapshots-are-not-a-recovery-plan.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Domain — Data Protection](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy.

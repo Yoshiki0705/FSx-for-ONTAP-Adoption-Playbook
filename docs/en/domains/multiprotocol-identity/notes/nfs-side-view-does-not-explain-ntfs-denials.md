@@ -9,9 +9,6 @@ ontap_version: 9.18.1P6
 lang: en
 ---
 # On an NTFS-style volume the permission view available from NFS does not match the enforced outcome
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [English](nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 Repository Top](../../../README.md) | [Domain — Multiprotocol & Identity](../README.md)
 

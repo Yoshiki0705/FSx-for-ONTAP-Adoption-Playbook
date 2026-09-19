@@ -9,10 +9,6 @@ lang: en
 
 # Throughput is not determined by a single setting
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | [English](where-throughput-is-determined-and-shared.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository Top](../../../README.md) | [Domain — Performance](../README.md)
 
 ---
