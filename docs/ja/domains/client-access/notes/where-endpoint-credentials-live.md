@@ -128,7 +128,7 @@ lang: ja
 - [端末から S3 Access Points に届く条件](what-an-endpoint-needs-to-reach-s3-access-points.md) — AWS 資格情報の使われ方
 - [SMB の落ち方は端末ごとに違う](how-smb-fails-per-endpoint.md) — 資格情報の失敗がどう見えるか
 - [igroup の外側にある 2 つの制御](../../block-storage/notes/igroups-are-not-the-only-access-control.md) — CHAP の位置
-- [保存時の暗号化は自動、転送時は既定で無効](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — プラットフォームが担う範囲
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — プラットフォームが担う範囲
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---

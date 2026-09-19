@@ -1,5 +1,5 @@
 ---
-title: メンテナンスは 14 日を超えて延期できない — 2 つの状態がパッチ適用を悪化させる
+title: パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される — 2 つの状態がパッチ適用を悪化させる
 lifecycle: [operate, design]
 domains: [performance, cost]
 evidence: documented
@@ -7,7 +7,7 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.ht
 lang: ja
 ---
 
-# メンテナンスは 14 日を超えて延期できない
+# パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
@@ -17,7 +17,7 @@ lang: ja
 
 **ONTAP のパッチ適用はサービス側が実施します。** 自分でバージョンを選ぶ操作ではありません。決められるのは**いつ実施されるか**だけです。
 
-そして延期には上限があります。**メンテナンスウィンドウは 14 日に 1 回は発生する必要があります。** パッチが公開されてから 14 日以内にウィンドウが来ない場合、**FSx for ONTAP はメンテナンスを実施します。** 無期限に避けることはできません。
+メンテナンスウィンドウは必要に応じて移動できます。ただし、**ONTAP パッチが公開され、その後 14 日以内にメンテナンスウィンドウが来ない場合、FSx for ONTAP はメンテナンスを実施します。** 14 日は通常のメンテナンス周期ではなく、この条件におけるパッチ公開後の期間です。パッチ適用自体は通常、数週間に 1 回程度です。
 
 さらに重要なのは、**2 つの状態がパッチ適用を悪化させる**という点です。どちらも事前に解消できます。
 
@@ -65,7 +65,7 @@ lang: ja
 | 例 | `1:05:00` は月曜 5 時（UTC） |
 | 作成時に未指定の場合 | **自動的に割り当てられます** |
 | 変更 | 必要に応じて何度でも変更できます |
-| 制約 | **14 日に 1 回はウィンドウが発生する必要があります** |
+| 移動の条件 | **パッチ公開後 14 日以内にウィンドウが来ない場合は、サービスがメンテナンスを実施します** |
 
 **UTC であることに注意してください。** 現地時間で夜間を狙って設定したつもりが、業務時間に当たることがあります。
 
@@ -185,7 +185,7 @@ graph TD
 | 誤解 | 実際 |
 |---|---|
 | ONTAP のバージョンを自分で選んで更新する | サービス側が実施します。決められるのは実施時刻です |
-| メンテナンスは延期し続けられる | **14 日以内にウィンドウがなければ実施されます** |
+| メンテナンスは常に 14 日周期で実施される | パッチ適用は通常、数週間に 1 回程度です。**パッチ公開後 14 日以内にウィンドウがない場合**はサービスが実施します |
 | 停止は切り替わるときの 1 回だけ | **フェイルオーバーとフェイルバックで 2 回**発生しえます |
 | パッチ適用は一斉に行われる | ファイルサーバーを 1 台ずつ、1 台あたり最大 1 時間程度です |
 | ウィンドウを指定しなければメンテナンスされない | 未指定なら**自動的に割り当てられます** |
@@ -201,7 +201,7 @@ graph TD
 
 | 論点 | 出典 |
 |---|---|
-| パッチ頻度が数週間に 1 回程度であること、1 台ずつ最大 1 時間程度、フェイルオーバーとフェイルバックでそれぞれ 60 秒未満の I/O 一時停止、性能への影響、ウィンドウの指定と自動割り当て、14 日に 1 回の制約と超過時に実施されること、オフラインボリュームが online にされクライアントからアクセスできないこと、日和見ロックを閉じて保留書き込みを完了させること | [AWS: Optimizing performance with Amazon FSx maintenance windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.html) |
+| パッチ頻度が通常数週間に 1 回程度であること、1 台ずつ最大 1 時間程度、フェイルオーバーとフェイルバックでそれぞれ 60 秒未満の I/O 一時停止、性能への影響、ウィンドウの指定と自動割り当て、パッチ公開後 14 日以内にウィンドウがなければサービスが実施すること、オフラインボリュームが online にされクライアントからアクセスできないこと、日和見ロックを閉じて保留書き込みを完了させること | [AWS: Optimizing performance with Amazon FSx maintenance windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.html) |
 | SSD 階層が 90% を超えたままウィンドウを迎えるとパッチ適用の間スループットが絞られること、解消手段（容量追加・データ削除・Snapshot 削除） | [AWS: Your file system is in a MISCONFIGURED state](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-in-misconfigured-state.html) |
 | route が欠けていて route table に空きがない場合、次のウィンドウまでに追加しないとパッチ適用中にクライアントが切断されること | [AWS: You can't access your file system](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/unable-to-access.html) |
 | 更新できるプロパティ（自動日次バックアップ、週次メンテナンスウィンドウ、`fsxadmin` パスワード、VPC route table）、Multi-AZ が浮動 IP を使うこと、タグベース認証と `Key: AmazonFSx` / `Value: ManagedByAmazonFSx`、CloudFormation では手動でのタグ追加が推奨されること | [AWS: Updating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-file-system.html) |

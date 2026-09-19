@@ -28,7 +28,7 @@ Tier 1 首次访问指南提供 8 种语言。Tier 2 模块枢纽提供日语与
 ## 投产前确认
 
 - [投产前评审](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — 不可逆设置与投产前应实际验证的项目
-- [静态加密自动启用，传输中加密默认关闭](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 传输中加密与审计的责任边界
+- [静态加密自动启用，传输中加密的条件因方式而异](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 传输中加密与审计的责任边界
 
 ## 开始使用
 

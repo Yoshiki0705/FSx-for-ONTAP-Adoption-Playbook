@@ -28,7 +28,7 @@ Tier 1 first-touch guidance is available in eight languages. Tier 2 module hubs 
 ## Before production
 
 - [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — irreversible settings and checks to exercise before launch
-- [At rest is automatic; in transit is off by default](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — responsibility boundaries for encryption in transit and auditing
+- [At-rest encryption is automatic; in-transit conditions differ by method](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — responsibility boundaries for encryption in transit and auditing
 
 ## Get Started
 
@@ -88,13 +88,13 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [The IaC boundary is set by the API surface](playbooks/04-build/notes/what-iac-cannot-reach.md) | A successful template is not a complete configuration — ONTAP-level settings are out of reach |
 | [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | Checklist of the irreversible settings and what to actually exercise before going live |
 | [Monitoring fails on averages](playbooks/05-operate/notes/monitoring-fails-on-averages.md) | Why the statistic is decided before the threshold — standby nodes pull the average down |
-| [Maintenance cannot be deferred past 14 days](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
+| [Maintenance proceeds if no window occurs within 14 days after a patch release](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
 | [Tiering defaults differ by creation method](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) | The console and IaC do not produce the same default policy. Order changes by whether they can be undone |
 | [Having snapshots is not the same as being able to recover](domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | Each mechanism covers a different failure. A snapshot is lost along with its volume |
 | [Enabling SnapLock is not the same as locking](../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | Three separate irreversible decisions, and privileged delete does not work after expiry |
 | [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account and same-Region prerequisites become plan-level constraints |
 | [An S3 access point authorizes every request as one identity](../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry into an AI or RAG pipeline reading through it |
-| [At rest is automatic, in transit is off by default](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
+| [At-rest encryption is automatic; in-transit conditions differ by method](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
 | [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) | Second-generation Single-AZ supports up to 12 HA pairs, block configurations up to 6; a FlexVol is placed on one HA pair's aggregate |
 | [p99 cannot be read from the CloudWatch metrics](domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) | Tiering carries per-request charges, and deduplication does not lower the bill |

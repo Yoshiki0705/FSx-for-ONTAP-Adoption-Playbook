@@ -28,7 +28,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 ## 本番投入前の確認
 
 - [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) — 不可逆な設定と本番前に試す項目
-- [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — 転送時暗号化と監査の責任境界
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — 転送時暗号化と監査の責任境界
 
 ## はじめかた
 
@@ -89,14 +89,14 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | [IaC の境界は API の表面で決まる](docs/ja/playbooks/04-build/notes/what-iac-cannot-reach.md) | テンプレートが成功しても構成は完成しません。ONTAP レベルの設定は届きません |
 | [本番投入前レビュー](docs/ja/playbooks/04-build/checklists/pre-production-review.md) | 不可逆な設定と、本番前に実際に試しておく項目のチェックリスト |
 | [監視は平均値で失敗する](docs/ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | 閾値より先に統計値を決める理由。待機系ノードが平均を引き下げます |
-| [メンテナンスは 14 日を超えて延期できない](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超と route 不足が、パッチ適用を悪化させます |
+| [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超と route 不足が、パッチ適用を悪化させます |
 | [階層化の既定値は作成方法で違う](docs/ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) | コンソールと IaC で既定のポリシーが違います。変更は戻せる順に試します |
 | [Snapshot があることと復旧できることは別](docs/ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | 仕組みごとに守れる障害が違います。Snapshot はボリュームと一緒に失われます |
 | [SnapLock は有効化とロックが別](docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) | 不可逆な選択が 3 段あります。特権削除は満了後には使えません |
 | [FSx for ONTAP S3 AP は「S3 として使える」わけではない](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・同一リージョンなどの前提条件が設計段階の制約になります |
 | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](docs/ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) | FlexClone のスプリットで移行データ 1 本分の物理容量が一時的に必要になります |
 | [S3 Access Point は全リクエストを 1 つの ID で認可する](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI / RAG のパイプラインに引き継がれません |
-| [保存時の暗号化は自動、転送時は既定で無効](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
+| [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
 | [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 第 2 世代 Single-AZ は最大 12 HA ペア、ブロック構成は最大 6。FlexVol は 1 HA ペアの aggregate に配置されます |
 | [p99 は CloudWatch のメトリクスからは出せない](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られません。ベンチマークはクレジット残高に左右されます |
 | [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |

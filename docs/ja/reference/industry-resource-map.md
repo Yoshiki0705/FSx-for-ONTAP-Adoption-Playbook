@@ -170,7 +170,7 @@ lang: ja
 | 認証 | [FedRAMP / DoD SRG IL2-IL5 対応](https://www.netapp.com/blog/fsx-ontap-fedramp-and-dod-authorized/) | GovCloud (US) リージョン |
 | パターン | [UC15: defense-satellite](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/defense-satellite/) | 衛星画像解析 |
 | パターン | [UC16: government-archives](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/government-archives/) | 公文書・FOIA |
-| ノート | [保存時の暗号化は自動、転送時は既定で無効](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | セキュリティの責任境界 |
+| ノート | [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | セキュリティの責任境界 |
 
 ### メディア / エンタメ
 
@@ -196,7 +196,7 @@ lang: ja
 |------|----------|------|
 | 事例 | [Allcargo](https://aws.amazon.com/blogs/storage/how-allcargo-migrated-vdi-workload-to-amazon-fsx-using-aws-datasync/) | 3,500 VDI ユーザーの移行。ログインストーム・Outlook キャッシュ書き込みストーム対策。DataSync + SnapMirror |
 | パターン | [UC12: logistics-ocr](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/logistics-ocr/) | 配送伝票 OCR |
-| ノート | [メンテナンスは 14 日を超えて延期できない](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
+| ノート | [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
 
 ### スポーツ / 小売
 

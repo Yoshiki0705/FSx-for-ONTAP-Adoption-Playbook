@@ -28,7 +28,7 @@ Tier-1-Einstiegsinformationen gibt es in acht Sprachen. Tier-2-Modul-Hubs gibt e
 ## Prüfung vor Produktion
 
 - [Prüfung vor der Produktionsfreigabe](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — irreversible Einstellungen und vor dem Start auszuführende Prüfungen
-- [Verschlüsselung im Ruhezustand ist automatisch, während der Übertragung standardmäßig aus](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — Verantwortungsgrenzen für Transportverschlüsselung und Audit
+- [Verschlüsselung im Ruhezustand ist automatisch; die Bedingungen während der Übertragung unterscheiden sich je nach Methode](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — Verantwortungsgrenzen für Transportverschlüsselung und Audit
 
 ## Erste Schritte
 

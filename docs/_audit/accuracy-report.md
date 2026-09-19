@@ -9,13 +9,13 @@ This is an English, nonlocalized current-state report for Amazon FSx for NetApp 
 | Inode defaults | AUDITED | AWS documents one inode per 32 KiB through 648 GiB and a cap of 21,251,126. A contrary 2026-08-06 observation is retained beside every summary. |
 | Deployment-type immutability | AUDITED | AWS explicitly states that deployment type cannot change after creation and directs migration to a new file system. |
 | HA-pair scale limits | AUDITED WITH OPEN TRANSITION | Second-generation Single-AZ supports up to 12 HA pairs; block protocols are supported only with 6 or fewer; each FlexVol has one aggregate entry belonging to one HA pair. |
-| Maintenance deferral windows | NOT YET AUDITED | Locate each timing claim, then check the documented window, conditions, and public primary source. |
-| Encryption defaults | NOT YET AUDITED | Locate each at-rest and in-transit default claim, then check protocol and configuration scope against public primary sources. |
+| Maintenance deferral windows | AUDITED | Patching is typically once every several weeks. The 14-day condition applies only after a patch release when no maintenance window occurs in that period. |
+| Encryption defaults | AUDITED WITH OPEN SOURCE DIFFERENCES | At-rest encryption is automatic, while KMS key selection remains a creation-time choice. In-transit behavior is recorded separately for Nitro, SMB, NFS Kerberos, and IPsec. |
 | FSx for ONTAP S3 Access Points prerequisites and authorization | NOT YET AUDITED | Locate each prerequisite and authorization claim, then check every policy and infrastructure layer against public primary sources. |
 | Amazon CloudWatch percentile availability | NOT YET AUDITED | Locate each percentile claim, then check metric type, statistic support, and public primary source. |
 | Billing components | NOT YET AUDITED | Locate each billing-component claim, then check the named charge dimensions and public primary source without producing a cost estimate. |
 
-The first three areas above were audited against the full current primary pages. The remaining five areas have not yet been reviewed claim by claim for this report.
+The first five areas above were audited against the full current primary pages. The remaining three areas have not yet been reviewed claim by claim for this report.
 
 ## Capacity and scaling audit
 
@@ -27,6 +27,16 @@ The first three areas above were audited against the full current primary pages.
 | FlexVol placement | [AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html); [Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) | JA/EN performance and CloudWatch notes; README summaries; backup note; `CHANGELOG.md` | Source links now point to the API statement that FlexVol always has one aggregate entry and each HA pair has one aggregate. |
 
 **Unresolved claim:** the primary pages state only that iSCSI is available on file systems with 6 or fewer HA pairs and NVMe/TCP on second-generation file systems with 6 or fewer. They do not state what happens to existing LUNs, namespaces, or connections while a seventh pair is added or after it completes. The documentation therefore supports a configuration boundary, not a transition-behavior claim.
+
+## Maintenance and encryption audit
+
+| Area | Primary sources read in full | Files examined | Corrections and remaining scope |
+|---|---|---|---|
+| Maintenance deferral | [Maintenance windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.html) | Root and English hubs; JA/EN Operate module READMEs; maintenance note; JA/EN AD-lifecycle notes; limits and industry references; `llms.txt`; `CHANGELOG.md` | Removed wording that turned the 14-day post-patch condition into a maintenance frequency. The title, navigation, summaries, Mermaid labels, limits text, and source ledger now retain both conditions: a patch has been released, and no maintenance window occurs within 14 days. |
+| At-rest encryption and KMS selection | [Data protection](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/data-protection.html); [Encryption at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html); [Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html); [AWS::FSx::FileSystem](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-filesystem.html) | All eight Tier 1 READMEs; JA/EN security and IaC module material; glossary and comparison references; three CloudFormation examples and their READMEs; `llms.txt`; `CHANGELOG.md` | Separated automatic at-rest encryption from the creation-time KMS key choice. The examples intentionally omit `KmsKeyId`; comments now state that this selects the Amazon FSx-managed key and that changing the property replaces the file system. |
+| In-transit encryption | [Encryption in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html); [Enable SMB encryption](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html); [Document History](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html); [What is FSx for ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) | All title and navigation followers; JA security note; JA/EN AD-lifecycle and IaC notes; recent updates; glossary and file-storage comparison; `llms.txt`; `CHANGELOG.md` | Removed the shared "off by default" claim. Nitro automatic application, SMB creation default, NFS Kerberos prerequisites, and IPsec configuration are now stated separately. The recent-updates entry now limits all-Region availability to second-generation file systems and retains the first-generation Region and creation-date constraints. |
+
+**Unresolved source differences:** the data-protection page says Kerberos-based encryption over NFS and SMB is available when the SVM joins Active Directory or a domain using LDAP. The detailed in-transit page describes NFS Kerberos for child volumes of SVMs joined to Microsoft Active Directory, and its automatic-Nitro overview names Linux and Windows while its client-factor section also names Mac. The report does not infer a protocol-wide LDAP scope or one common Nitro client list from those differences.
 
 ## Missing verified metadata
 
@@ -85,4 +95,4 @@ The current report lists 34 verified documents with future metadata gaps. Thirty
 
 ## Pending audit scope
 
-The remaining five priority areas require a complete claim-by-claim audit. Later work must inspect each claim in context, record its file and line, compare it with an existing public primary source, and classify the result without treating this inventory as evidence. Numeric values, defaults, service behavior, timing, limits, availability, and billing statements in those five areas remain in scope.
+The remaining three priority areas require a complete claim-by-claim audit. Later work must inspect each claim in context, record its file and line, compare it with an existing public primary source, and classify the result without treating this inventory as evidence. Numeric values, defaults, service behavior, timing, limits, availability, and billing statements in those three areas remain in scope.

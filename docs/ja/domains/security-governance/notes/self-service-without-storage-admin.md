@@ -256,7 +256,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 - [Domain — セキュリティ / ガバナンス](../README.md) — このモジュールのハブ
 - [学習データセットの版をスケジュール Snapshot に載せると消える](../../data-utilization/notes/dataset-versions-and-experiment-branches.md) — 版と実験ブランチの制約
 - [不可逆な操作の承認は作業の承認とは別に取る](irreversible-operations-need-separate-approval.md) — この窓口に載せない操作
-- [保存時の暗号化は自動、転送時は既定で無効](what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) — 管理者の分け方と監査の 2 つの面
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) — 管理者の分け方と監査の 2 つの面
 - [S3 Access Point は全リクエストを 1 つの ID で認可する](../../data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) — AI パイプライン側の権限設計
 - [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — クローンがテンプレートから届かない理由
 - [知見の分類ポリシー](../../../evidence-policy.md)

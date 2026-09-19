@@ -762,6 +762,9 @@ Resources:
         - !Ref PrimarySubnetId
       SecurityGroupIds:
         - !Ref FileSystemSecurityGroup
+      # KmsKeyId is omitted deliberately. At-rest encryption is still automatic, and omission uses
+      # the Amazon FSx-managed KMS key for this account. Specifying a customer-managed key is a
+      # creation-time choice; changing KmsKeyId replaces the file system.
       OntapConfiguration:
         # SINGLE_AZ_1 is the first generation: minimum throughput 128 MBps against 384 MBps for
         # SINGLE_AZ_2, at a lower per-MBps rate. HAPairs is left unset because the first generation

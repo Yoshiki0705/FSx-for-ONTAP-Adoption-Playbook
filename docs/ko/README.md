@@ -28,7 +28,7 @@ Tier 1 첫 안내는 8개 언어로, Tier 2 모듈 허브는 일본어와 Englis
 ## 프로덕션 전 확인
 
 - [프로덕션 전 검토](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — 되돌릴 수 없는 설정과 전환 전에 시험할 항목
-- [저장 시 암호화는 자동이지만 전송 시 암호화는 기본적으로 꺼져 있음](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 전송 시 암호화와 감사의 책임 경계
+- [저장 시 암호화는 자동이며, 전송 시 암호화 조건은 방식마다 다름](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 전송 시 암호화와 감사의 책임 경계
 
 ## 시작하기
 

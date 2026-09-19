@@ -103,6 +103,10 @@ that control-plane boundary, the same one that puts LUNs and igroups outside the
 | `rehost-probe.sh` | Records the volume before and after a `volume rehost`. Records only, unless `--apply` | ONTAP REST API, AWS API |
 | `teardown.sh` | Removes everything in the order measured to work, refuses to start when something would strand the stack, and proves afterwards that each resource is gone. Reports only, unless `--apply` | AWS API, ONTAP REST API |
 
+The file-system resource intentionally omits `KmsKeyId`. At-rest encryption remains automatic, and
+CloudFormation then uses the Amazon FSx-managed KMS key for the account. A customer-managed key can
+be selected by adding `KmsKeyId` before creation; changing it replaces the file system.
+
 ## What a finished run looks like
 
 Check against this rather than against "the scripts exited 0". Each row is a file or a value you

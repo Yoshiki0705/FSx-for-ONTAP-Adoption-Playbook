@@ -28,7 +28,7 @@ Les guides de premier accès Tier 1 sont disponibles en huit langues. Les hubs d
 ## Vérifications avant production
 
 - [Revue avant production](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — réglages irréversibles et contrôles à exercer avant le lancement
-- [Le chiffrement au repos est automatique, celui en transit est désactivé par défaut](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — limites de responsabilité pour le chiffrement en transit et l'audit
+- [Le chiffrement au repos est automatique ; les conditions du chiffrement en transit dépendent de la méthode](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — limites de responsabilité pour le chiffrement en transit et l'audit
 
 ## Démarrer
 
