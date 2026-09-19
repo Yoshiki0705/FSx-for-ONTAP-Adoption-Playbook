@@ -6,6 +6,7 @@ evidence: verified
 verified_on: 2026-09-12
 region: ap-northeast-1
 ontap_version: 9.18.1P6
+deployment_type: SINGLE_AZ_1
 lang: ja
 ---
 # NTFS スタイルのボリュームでは、NFS 側から見える権限表現が実際の可否と一致しない

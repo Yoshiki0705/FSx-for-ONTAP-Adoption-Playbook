@@ -6,6 +6,7 @@ evidence: verified
 verified_on: 2026-09-12
 region: ap-northeast-1
 ontap_version: 9.18.1P6
+deployment_type: SINGLE_AZ_1
 lang: en
 ---
 # On an NTFS-style volume the permission view available from NFS does not match the enforced outcome

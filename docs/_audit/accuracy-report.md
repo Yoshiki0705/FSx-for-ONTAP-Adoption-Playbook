@@ -13,9 +13,9 @@ This is an English, nonlocalized current-state report for Amazon FSx for NetApp 
 | Encryption defaults | AUDITED WITH OPEN SOURCE DIFFERENCES | At-rest encryption is automatic, while KMS key selection remains a creation-time choice. In-transit behavior is recorded separately for Nitro, SMB, NFS Kerberos, and IPsec. |
 | FSx for ONTAP S3 Access Points prerequisites and authorization | AUDITED WITH OPEN AD DATA-PATH CLAIM | Creation ownership is separate from cross-account use; caller location determines the endpoint type; the controlled in-VPC gateway-endpoint measurement is retained. |
 | Amazon CloudWatch percentile availability | AUDITED | The p99 limitation is scoped to volume read/write/metadata operation-time/count pairs whose valid statistic is `Sum`; other metrics retain their documented statistics and dimensions. |
-| Billing components | NOT YET AUDITED | Locate each billing-component claim, then check the named charge dimensions and public primary source without producing a cost estimate. |
+| Billing components | AUDITED | Charge dimensions now follow the current pricing and billing pages without fixed component counts or price quotes. Native `CopyBackup` transfer billing and the AWS Backup cross-account transfer payer remain open. |
 
-The first seven areas above were audited against the full current primary pages. Billing components remain unaudited for this report.
+All eight areas above were audited against the full current primary pages.
 
 ## Capacity and scaling audit
 
@@ -48,6 +48,15 @@ The first seven areas above were audited against the full current primary pages.
 
 **Unresolved claims:** current public pages state that the Windows file-system identity must resolve in the joined Active Directory domain and that an unreachable name service can place an access point in `MISCONFIGURED`. They do not establish that every S3 data operation on every AD-joined SVM requires live domain-controller reachability, or that `HeadBucket` succeeds specifically while that dependency is unavailable. The tracked carry-over lacks a complete reader-facing environment, procedure, result and control, so both runtime claims remain `open` and are not attributed to private correspondence. The reviewed Amazon FSx for NetApp ONTAP monitoring page describes Amazon FSx API events but does not settle whether S3 data events can provide Access Point data-operation records; that CloudTrail path also remains `open`.
 
+## Billing audit
+
+| Area | Primary sources read in full | Files examined | Corrections and remaining scope |
+|---|---|---|---|
+| FSx for ONTAP charge dimensions | [Pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/); [What is FSx for ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html); [AWS billing and usage reports](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/FSxONTAP-Billing.html); [Sizing blog](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) | JA/EN provisioned-versus-consumed notes; root and English hubs; JA/EN Cost module hubs; JA/EN tiering notes; cost decision trees and comparisons; data-protection comparison; block-storage comparisons and shared-block note; backup-copy note; `CHANGELOG.md` | Removed conflicting fixed component counts. Capacity-pool request charges now name capacity-pool reads and writes. SnapLock usage is GB-month storage used by SnapLock volumes. S3 charges are limited to access through attached FSx for ONTAP S3 Access Points. No price quote was added or changed. |
+| Backup storage and recovery points | [FSx for ONTAP pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/); [AWS Backup metering and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html); [AWS Backup pricing](https://aws.amazon.com/backup/pricing/) | JA/EN provisioned-versus-consumed notes; data-protection comparison; backup-copy note; block-storage cost comparison | Incremental backup wording now describes changed blocks and retained recovery points rather than claiming that incremental storage prevents duplicate billing. |
+| Transfer scope and payer | [FSx for ONTAP pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/); [AWS Backup metering and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html); [AWS Backup pricing](https://aws.amazon.com/backup/pricing/); [EBS snapshot-copy transfer blog](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/) | JA/EN provisioned-versus-consumed notes; backup-copy note; related `CHANGELOG.md` entries | Included Multi-AZ transfer is limited to service replication between Availability Zones, not client traffic, backup copies, or SnapMirror. The EBS blog establishes EBS transfer billing only. Native `CopyBackup` cross-Region transfer billing remains open. AWS Backup's guide assigns non-fully-managed resource transfer to the destination account, while its pricing page assigns transfer to the sending account; payer ownership remains open. |
+| Fee wording and configuration floor | [FSx for ONTAP pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/) | JA/EN provisioned-versus-consumed notes; block-storage cost comparison and quickstarts | No service setup or minimum fee is separate from the minimum provisionable SSD and throughput configuration of a created file system. Existing dated estimates were not repriced. |
+
 ## Missing verified metadata
 
 Reproduce this inventory from the repository root:
@@ -56,15 +65,13 @@ Reproduce this inventory from the repository root:
 make frontmatter-report
 ```
 
-The current report lists 34 verified documents with future metadata gaps. Thirty-two documents are missing `deployment_type`; two documents are missing both `ontap_version` and `deployment_type`. These entries identify absent metadata only. They do not establish which value applies.
+The current worktree report lists 15 verified documents with future metadata gaps. A prior working inventory stated a total of 22, but only 19 documents had individually established values; the total of 22 was internally inconsistent. Those 19 established documents were filled. No review-round metadata is recorded here. The remaining entries are reported as absent or ambiguous without inferring values.
 
-### Missing `deployment_type`
+### Absent `deployment_type` metadata
 
 #### English documents
 
-- `docs/en/domains/block-storage/quickstart.md`
 - `docs/en/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md`
-- `docs/en/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md`
 - `docs/en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md`
 - `docs/en/domains/security-governance/notes/access-point-authorization-layers.md`
 - `docs/en/domains/security-governance/notes/audit-log-space-and-client-access.md`
@@ -72,37 +79,18 @@ The current report lists 34 verified documents with future metadata gaps. Thirty
 
 #### Japanese documents
 
-- `docs/ja/domains/block-storage/checklists/iscsi-cutover.md`
-- `docs/ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md`
-- `docs/ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md`
-- `docs/ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md`
-- `docs/ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md`
-- `docs/ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md`
-- `docs/ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md`
-- `docs/ja/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md`
-- `docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md`
-- `docs/ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md`
-- `docs/ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md`
-- `docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md`
-- `docs/ja/domains/block-storage/quickstart.md`
-- `docs/ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md`
 - `docs/ja/domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md`
-- `docs/ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md`
 - `docs/ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md`
 - `docs/ja/domains/security-governance/notes/access-point-authorization-layers.md`
 - `docs/ja/domains/security-governance/notes/audit-log-space-and-client-access.md`
-- `docs/ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md`
 - `docs/ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md`
 - `docs/ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md`
 - `docs/ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md`
 - `docs/ja/reference/comparison/ontap-configuration-routes.md`
-- `docs/ja/reference/decision-trees/where-a-setting-is-created.md`
 
-### Missing `ontap_version` and `deployment_type`
+### Ambiguous `ontap_version` and `deployment_type` metadata
 
 - `docs/ja/workshop-studio/eda-s3-access-points-90min/facilitation-risks.md`
 - `docs/ja/workshop-studio/eda-s3-access-points-90min/measured-timings.md`
 
-## Pending audit scope
-
-Billing components still require a complete claim-by-claim audit. Later work must inspect each claim in context, record its file and line, compare it with an existing public primary source, and classify the result without treating this inventory as evidence. Numeric values, defaults, service behavior, timing, limits, availability, and billing statements in that area remain in scope.
+The report establishes absence for 13 documents and ambiguity for 2 documents. It does not establish the missing values.
