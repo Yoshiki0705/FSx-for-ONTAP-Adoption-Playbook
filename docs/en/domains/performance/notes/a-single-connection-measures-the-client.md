@@ -236,7 +236,7 @@ Step 5 is what the cited source does. **A client-side total alone cannot isolate
 
 - [Domain — Performance](../README.md) — this module's hub
 - [Throughput is not set by one value](where-throughput-is-determined-and-shared.md) — what the throughput capacity setting determines, and sharing per HA pair
-- [p99 cannot be read from the CloudWatch metrics](what-you-cannot-read-from-cloudwatch.md) — the measuring instrument's limits, and burst credits
+- [p99 is not available from volume operation-time metric pairs](what-you-cannot-read-from-cloudwatch.md) — the measuring instrument's limits, and burst credits
 - [Cross-repository citation index](../../../../ja/reference/cross-repo-index.md) (日本語) — where these figures are cited from, and the division of labour
 - [Reading a published benchmark](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) — checking the conditions behind a published figure
 - [Evidence Policy](../../../evidence-policy.md)

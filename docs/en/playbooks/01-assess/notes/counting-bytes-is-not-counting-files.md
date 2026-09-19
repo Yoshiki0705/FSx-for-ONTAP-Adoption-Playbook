@@ -154,7 +154,7 @@ When someone says it got slower after the migration, **there is nothing to verif
 
 | What to record | Why |
 |---|---|
-| Maximum, not average | Averages hide saturation. The reason is in [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) |
+| Maximum and average, plus each published dimensional series | Averages hide saturation, while Maximum alone does not show persistence. The reason is in [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) |
 | The peak-period value and the time it occurred | An average alone does not describe the conditions to reproduce |
 | A breakdown per share and per volume | A whole-system figure cannot identify the volume responsible |
 | The region and generation at measurement time | The ceilings themselves differ, so a figure without its conditions cannot be compared |

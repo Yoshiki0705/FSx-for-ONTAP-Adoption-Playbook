@@ -53,7 +53,7 @@ lang: ja
 | 金融 | [ブロックストレージ](../domains/block-storage/) | [データ保護](../domains/data-protection/) | **不可逆な保持設定と、戻したあとにアプリが起動するか**（[本番投入前レビュー](../playbooks/04-build/checklists/pre-production-review.md)） |
 | 保険 | [移行](../playbooks/03-migrate/) | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | 権限が移行先に持ち越されるか |
 | ヘルスケア / 医療 | [データ保護](../domains/data-protection/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **Snapshot があることと復旧できることが別だという点** |
-| 通信 | [運用](../playbooks/05-operate/) | [性能](../domains/performance/) | **監視が平均値で失敗すること。p99 は CloudWatch から出せません** |
+| 通信 | [運用](../playbooks/05-operate/) | [性能](../domains/performance/) | **監視が平均値で失敗すること。ボリュームの read/write/metadata operation-time/count ペアから p99 は出ません** |
 | 防衛 / 公共 | [セキュリティ・ガバナンス](../domains/security-governance/) | [データ保護](../domains/data-protection/) | 責任境界と、不可逆な設定の承認手順 |
 | メディア / エンタメ | [設計](../playbooks/02-design/) | [性能](../domains/performance/) | **デプロイタイプは一度しか決められません。** 同時台数はデータを共有するかで 5.5 倍変わります |
 | 教育 | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | [コスト](../domains/cost/) | 利用者が多いときの ID の置き方と、確保した量への課金 |
@@ -243,7 +243,7 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | パターン | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Datadog / Splunk / New Relic 等への監査ログ転送 |
-| ノート | [p99 は CloudWatch のメトリクスからは出せない](../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られない |
+| ノート | [ボリュームの操作時間メトリクスから p99 は出せない](../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | read/write/metadata の時間合計と回数合計から得られるのは平均。ほかのメトリクスは統計と次元を個別に選ぶ |
 
 ### データレイク / Lakehouse（業種横断）
 

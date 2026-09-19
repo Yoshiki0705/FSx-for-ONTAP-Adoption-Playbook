@@ -1,5 +1,5 @@
 ---
-title: p99 cannot be read from the CloudWatch metrics — design a benchmark with the credit balance in it
+title: p99 is not available from volume operation-time metric pairs — design a benchmark with the credit balance in it
 lifecycle: [optimize, operate]
 domains: [performance, cost]
 evidence: documented
@@ -7,7 +7,7 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html
 lang: en
 ---
 
-# p99 cannot be read from the CloudWatch metrics
+# p99 is not available from volume operation-time metric pairs
 
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
@@ -15,13 +15,13 @@ lang: en
 
 ## Conclusion
 
-**Volume latency is available from the CloudWatch metrics only as an average.**
+**For FSx for ONTAP volume-operation latency, CloudWatch operation-time/count metric pairs yield only an average. This does not mean that CloudWatch generally lacks percentile support.**
 
-`DataReadOperationTime` is the **total time** spent on read operations, and its valid statistic is `Sum`. `DataReadOperations` is the **total count** of operations, and its valid statistic is `Sum` as well.
+`DataReadOperationTime` / `DataReadOperations`, `DataWriteOperationTime` / `DataWriteOperations`, and `MetadataOperationTime` / `MetadataOperations` are totals of time and operation count; `Sum` is the valid statistic for both sides of each pair.
 
-So latency is derived as **total time divided by total count**, which **is structurally the average over that period.** The tail (p99) is not in it.
+For each pair, **total time divided by total count** is the period average. These pairs do not contain a request distribution, so p99 is not present.
 
-**If p99 is needed, it has to be measured on the client.** No amount of detail in the storage-side metrics produces it.
+**When p99 is required, obtain a distribution from client instrumentation or other request-level telemetry.** Other FSx for ONTAP file-system and second-generation metrics support `Average`, `Minimum`, and `Maximum`; second-generation metrics also emit per-`FileServer` or per-`Aggregate` series. Choose the statistic and dimensions that match the saturation question.
 
 And one more thing. **A benchmark is affected by the burst credit balance.** A file system accumulates credits while it runs below its baseline and spends them to exceed the baseline. **Re-run the same test with a depleted balance and a different figure comes out.**
 
@@ -169,8 +169,8 @@ the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
 | HA pair count and volume style (FlexVol / FlexGroup) | Distinguish the file-system ceiling from the one HA pair whose aggregate holds the FlexVol |
 | Tiering policy and cooling period | Whether reads come from SSD or the capacity pool changes |
 | Background tasks running at the same time | They use the same bandwidth |
-| The client-side measurement (**including the tail**) | The storage side yields only an average |
-| The statistic used (Average / Maximum) | An average hides saturation |
+| Client-side or other request-level measurement (**including the tail**) | Volume operation-time/count pairs yield an average, so obtain the distribution separately |
+| Statistic and dimensions (`Average` / `Minimum` / `Maximum`, `FileServer` / `Aggregate`) | Averages and aggregation can hide saturation; choose them for the question |
 
 **The last two rows are a point that recurs throughout this repository.** The reasoning is in [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md).
 
@@ -183,7 +183,7 @@ graph TD
     A[Evaluate performance] --> Q{What do you want to know}
 
     Q -->|Average latency| AVG["Divide the Sum of DataReadOperationTime<br/>by the Sum of DataReadOperations"]
-    Q -->|The tail, p99| TAIL["Not available from the storage side<br/>measure on the client"]
+    Q -->|The tail, p99| TAIL["Not in volume operation-time/count pairs<br/>measure a request-level distribution separately"]
     Q -->|Sustained performance| SUS[Check the credit balance first]
     Q -->|Burst performance| BURST[Short test with the balance high]
 
@@ -208,7 +208,7 @@ graph TD
 | # | Step | What it establishes |
 |---|---|---|
 | 1 | Derive average latency as `DataReadOperationTime` ÷ `DataReadOperations` | **That this is an average.** The tail is not in it |
-| 2 | Measure the latency distribution on the client and derive p99 | **The gap against the storage-side average.** The tail, measured |
+| 2 | Measure the latency distribution with client instrumentation or other request-level telemetry and derive p99 | **The gap against the volume operation-time/count pair's average.** The tail, measured |
 | 3 | Record `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` before the test | Whether you are measuring burst or sustained |
 | 4 | Re-run the same test with the balance depleted and compare | **How much the credits contribute.** The basis for reproducibility |
 | 5 | Lengthen the test in stages and find where the figure drops | How long until it falls to the baseline |
@@ -226,7 +226,7 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 
 | Misconception | Actually |
 |---|---|
-| p99 is visible in CloudWatch | **Only the form that derives an average from totals is provided.** The tail is measured on the client |
+| CloudWatch cannot expose any p99 for FSx for ONTAP | **The volume read/write/metadata operation-time/count pairs yield only averages.** This does not make a general claim about CloudWatch or statistics for other metrics |
 | There is a latency metric | There is a **total** of time and a **total** of counts; you divide them for an average |
 | A benchmark reproduces if the procedure is the same | **A different credit balance yields a different figure** |
 | A short test shows sustained performance | A short test measures burst. **Measured at 2.0x, and the error is always an overestimate** |
@@ -245,7 +245,9 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 
 | Point | Source |
 |---|---|
-| That `DataReadOperationTime` is a total of time with `Sum` as its valid statistic, and that `DataReadOperations` / `DataWriteOperations` / `MetadataOperations` are totals of counts with `Sum` as their valid statistic | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
+| That `DataReadOperationTime` / `DataReadOperations`, `DataWriteOperationTime` / `DataWriteOperations`, and `MetadataOperationTime` / `MetadataOperations` are totals with `Sum` as their valid statistic | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
+| File-system metric statistics and how data points are aggregated | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
+| Second-generation metric statistics and the `FileServer` / `Aggregate` dimensions | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
 | That each file server has an in-memory cache and an NVMe cache; the three performance characteristics; that network I/O and cache size are determined by throughput capacity alone while disk I/O is determined by the combination of throughput capacity and SSD IOPS; that file-based workloads are spiky; bursting and the network I/O credit mechanism; that credits accumulate while running below the baseline | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
 | That `NetworkThroughputUtilization` is a ratio against one HA pair's worth and covers all traffic including background tasks | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
 | **The size of the step (2.0x), the ~27 minutes until it falls, the recovery slope, the step shape, and the balance metric being absent at 6,144** (**measured / outside the documentation**; conditions and unmeasured ranges are in the cited record) | [S3-Burst-on-ONTAP-Files: throughput capacity, burst and baseline](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) (日本語) |

@@ -9,6 +9,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **S3 Access Points access and CloudWatch metric claims were narrowed to the scopes established by current AWS pages and controlled measurements.**
+  - An Internet-origin access point is reachable through an S3 gateway endpoint from an in-VPC subnet whose route table selects the S3 prefix-list route. Gateway endpoints do not route traffic entering over VPN, Direct Connect, Transit Gateway, or peering; those callers use an Interface endpoint for a private path.
+  - Same-account ownership constrains access point creation, not every later data request. Cross-account use requires both the access point policy and the caller's identity-based policy to allow it.
+  - The existing AD/domain-controller and `HeadBucket` statement is now `open`: public pages establish identity resolution and name-service reachability, but the tracked record does not establish the previous universal runtime claim. The same correction now covers the workshop prerequisite.
+  - S3 Access Points request-level fields are separated from aggregate storage telemetry. The reviewed pages do not list Access Point request count, HTTP error rate, or request latency, while file-system, file-server, aggregate, and volume metrics still expose underlying load. CloudTrail S3 data-event coverage remains `open`.
+  - p99 unavailability is scoped to the volume read/write/metadata operation-time/count pairs whose valid statistic is `Sum`. Other file-system and second-generation metrics expose other statistics and per-`FileServer` or per-`Aggregate` series; `Maximum` is one monitoring choice rather than the only telemetry path.
+  - The externally cited H1 anchor changed from `#p99-は-cloudwatch-のメトリクスからは出せない` to `#ボリュームの操作時間メトリクスから-p99-は出せない`; the anchor contract records the change. The citing repository must update its fragment when this commit becomes reachable.
+
 - **A note said the behaviour of an ANA-enabled kernel was unconfirmed. It had been measured, and this
   side did not know.** `paths-are-the-failover-mechanism.md` carried "not confirmed in this
   verification" for the case where `CONFIG_NVME_MULTIPATH` is set, while a sibling had measured it
@@ -1326,11 +1334,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   FPolicy**, because ONTAP holds the external engine's IP in `primary-servers` and the ingress comes
   from the SVM itself. No routing fixes that.
   - **So "network change or architecture change" has different answers per path, and the paths are hit
-    in a fixed order.** Reachability breaks first, silently, as a timeout. Authorization breaks second
-    and misreports itself as IAM — `AccessDenied … explicit deny in a resource-based policy` with no
-    policy present, `HeadBucket` returning 200 while `ListObjectsV2` fails on an AD-joined SVM.
-    Throughput never appeared. A team therefore concludes "network change" and **is right until it adds
-    FPolicy**, which makes the earlier answer narrow rather than wrong.
+  in a fixed order.** Reachability breaks first, silently, as a timeout. Authorization breaks second.
+  An earlier entry attributed one `HeadBucket` / `ListObjectsV2` split on an AD-joined SVM to domain-controller
+  reachability, but the current audit found no public source or complete tracked reproduction for that universal
+  explanation, so it remains `open`. Throughput never appeared. A team therefore concludes "network change"
+  and **is right until it adds FPolicy**, which makes the earlier answer narrow rather than wrong.
   - Answered by the repository that holds the collection stack. **It could not measure a cross-site
     deployment either**, so the mechanism is `documented` and the deployment stays unmeasured.
 - **A citation was recorded as pending rather than gated, because the cited work is uncommitted.** A
@@ -3250,8 +3258,8 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     question answered in **under 54 seconds**.
   - **`Status: ACTIVE` from the API is not readiness.** `list-knowledge-bases` reported `ACTIVE`
     after 16.4 s while the console still showed `Syncing / In progress` for another eleven minutes.
-    This is the same shape as `HeadBucket` succeeding on an access point whose data operations fail:
-    the API that reports success and the state you can actually use are different things.
+    A status or metadata operation and a data-path operation can cover different layers, so readiness checks
+    must exercise the path the next step will use.
   - **The answer was verified against ground truth, not just observed.** Quick's per-feature
     breakdown of license failures matched the summary CSV exactly (17 total; 6/5/4/1/1), and it cited
     individual log files. Recorded alongside it: the same data supports two defensible counts of
@@ -3455,11 +3463,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     require, so the boundary between observed and cited is visible rather than implied. No note was
     promoted to `verified` wholesale, because no note's central thesis was reproduced end to end — only
     specific values were.
-- Note: [p99 cannot be read from the CloudWatch metrics](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
-  The volume latency metrics expose **total time and total operation count, with `Sum` as the valid
-  statistic** — so dividing them yields an average by construction and **tail latency is not derivable
-  from them at all.** p99 has to be measured at the client; no amount of detail on the storage side
-  produces it.
+- Note: [p99 is not available from volume operation-time metric pairs](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
+  The volume read/write/metadata latency pairs expose **total time and total operation count, with `Sum`
+  as the valid statistic** — so dividing each pair yields a period average and does not produce a request
+  distribution. Obtain p99 from client or other request-level telemetry. Other FSx for ONTAP CloudWatch
+  metrics support other statistics and per-dimension series.
   - The reproducibility finding: **burst credits sway a benchmark.** A file system accrues credits while
     below baseline and spends them to exceed it, so the same test run with a depleted balance returns a
     different number. A benchmark that does not record `FileServerDiskThroughputBalance` and
@@ -3654,8 +3662,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     claimed for both.
 - Note: [FSx for ONTAP S3 AP is not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md).
   Access points attached to an FSx for ONTAP volume carry restrictions that bucket access points do
-  not: ONTAP 9.17.1 or later, same AWS account, same Region. Cross-account designs do not work at all,
-  which is a plan-level constraint rather than a configuration detail.
+  not: ONTAP 9.17.1 or later, same AWS account and same Region for **creation**. The same-account
+  rule does not prohibit cross-account data use; both the access point policy and the caller's
+  identity-based policy must allow that request.
   - Enabling S3 access points **lowers the volume-count ceiling** — 500 to 491, and 1,000 to 975 at
     two HA pairs or 903 at twelve. More pairs means a larger reduction, so "add pairs to get more
     volumes" does not hold.

@@ -249,7 +249,7 @@ NVMe/TCP 1,135.88 MB/s です（[パスはフェイルオーバーの仕組み�
 
 - [Domain — 性能](../README.md) — このモジュールのハブ
 - [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — スループット容量が決めているもの、HA ペア単位の共有
-- [p99 は CloudWatch のメトリクスからは出せない](what-you-cannot-read-from-cloudwatch.md) — 測る側の道具の制約とバーストクレジット
+- [ボリュームの操作時間メトリクスから p99 は出せない](what-you-cannot-read-from-cloudwatch.md) — 測る側の道具の制約とバーストクレジット
 - [プロジェクト間の引用索引](../../../reference/cross-repo-index.md) — この数値をどこから引いているか、分担の原則
 - [公開ベンチマークの読み方](../../block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) — 公開値を読むときの条件の確認
 - [知見の分類ポリシー](../../../evidence-policy.md)
