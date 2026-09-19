@@ -2010,15 +2010,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   assumed eleven listed words covered an open class. What actually keeps those nouns clean is that
   `ない` is a literal rather than `い$`, so that boundary is now asserted directly in
   `scripts/tests/test_heading_style_detection.py` and fails loudly if it is widened.
-- **"Not in the price list, so not charged" was wrong about `CopyBackup` cross-Region transfer.** The
-  reasoning was that backups sit in AWS-managed S3 and never traverse the customer VPC, so an
-  EC2-style inter-Region charge cannot apply. EBS snapshots refute it: they are also in AWS-managed
-  storage, also never traverse a VPC, and their cross-Region copies do incur AWS Data Transfer,
-  billed as `*-AWS-Out-Byte` under "EC2 - Other". The check behind the claim was also unsound —
-  inter-Region transfer bills under `AWSDataTransfer`, not under the originating service's price
-  list, and there is a generic service-agnostic SKU at the same rate as the AWS Backup Amazon FSx one. The
-  note now says to budget as though it is charged, still `unverified` because it was not reconciled
-  against a bill.
+- **Native `CopyBackup` cross-Region transfer billing remains open.** The prior conclusion that
+  absence from the FSx for ONTAP price list meant no charge was unsupported. The EBS snapshot
+  transfer example and generic `AWSDataTransfer` SKUs establish other billing paths, but neither
+  proves that they apply to `CopyBackup`. The note now leaves the charge open until a direct public
+  source or bill reconciliation settles it.
 - **The measured restore duration was left without its scaling.** 13 to 16 minutes was a 9.4 MiB
   volume, and quoting it in an RTO table invited extrapolation. Restore is a background process
   bounded by unused throughput capacity, so `min(published rate, throughput capacity)` governs:
@@ -2742,12 +2738,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   Directory, and repointing clients because the new file system has different DNS names and IPs. The
   first three finish on their own; the rest need a person, during an incident. A SnapMirror design
   skips the first three and has the SVM already joined.
-- **The native `CopyBackup` path has no cross-Region transfer charge that could be found.** The
-  `AmazonFSx` price list contains no transfer usage type at all, for any Amazon FSx file system type,
-  and the FSx for ONTAP pricing page scopes its data transfer line to S3 Access Point access.
-  Backups live in AWS-managed S3 rather than in the customer VPC, so the copy is not egress from an
-  ENI and does not have the shape those charges apply to. Recorded as `unverified` rather than as
-  "free": absence from a price list is not proof, and it was not reconciled against a bill.
+- **The native `CopyBackup` cross-Region transfer charge could not be established.** The
+  FSx for ONTAP pricing page scopes its data transfer line to S3 Access Point access, but absence of
+  a `CopyBackup` item does not establish that the copy is free. The EBS snapshot-copy example and
+  generic transfer SKUs do not establish the FSx for ONTAP path either. Recorded as `open` until a
+  direct public source or bill reconciliation settles it.
 - **The data-protection comparison matrix carries the replication-versus-copy split too.** The table
   already used 複製 for SnapMirror and コピー for backup copies, but never said the two words describe
   different operations, so a reader could take both rows as answers to the same question. The new

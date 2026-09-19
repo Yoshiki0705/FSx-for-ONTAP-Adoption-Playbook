@@ -6,6 +6,7 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: ja
 ---
 

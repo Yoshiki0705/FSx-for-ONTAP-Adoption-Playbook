@@ -5,6 +5,7 @@ domains: [security-governance, data-protection]
 evidence: verified
 verified_on: 2026-08-06
 ontap_version: 9.17.1P7D1
+deployment_type: SINGLE_AZ_1
 region: ap-northeast-1
 lang: ja
 ---

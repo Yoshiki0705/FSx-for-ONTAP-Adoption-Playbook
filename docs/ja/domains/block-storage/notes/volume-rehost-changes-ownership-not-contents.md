@@ -6,6 +6,7 @@ evidence: verified
 verified_on: 2026-09-12
 region: ap-northeast-1
 ontap_version: 9.18.1P6
+deployment_type: SINGLE_AZ_1
 source: https://docs.netapp.com/us-en/ontap/volumes/rehost-volume-another-svm-task.html
 lang: ja
 ---
