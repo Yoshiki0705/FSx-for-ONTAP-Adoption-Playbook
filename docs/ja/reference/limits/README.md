@@ -43,13 +43,14 @@ the version, so the retrieval path is itself worth recording.
 | ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 / 2026-08-17 | 未認証は `401` |
 
 > **記録したバージョンは古くなります。** 同じファイルシステムで 11 日後に再取得したら別の版でした。
-> ONTAP のパッチ適用はサービス側で実施され、14 日ごとに保守が発生するため、**バージョンを前提にした
-> 記述は取得日と一緒に読む必要があります。** 版に依存する挙動を書くときは、取得日を必ず添えてください。
+> ONTAP のパッチ適用はサービス側で実施されます。通常は数週間に 1 回程度で、パッチ公開後 14 日以内に
+> メンテナンスウィンドウが来ない場合はサービスが実施します。**バージョンを前提にした記述は取得日と
+> 一緒に読む必要があります。** 版に依存する挙動を書くときは、取得日を必ず添えてください。
 >
 > **A recorded version goes stale.** Re-reading the same file system 11 days later returned a different
-> release. ONTAP patching is performed by the service and maintenance occurs at least every 14 days, so
-> **any statement premised on a version has to be read together with the date it was read.** Always
-> attach that date when recording version-dependent behaviour.
+> release. ONTAP patching is performed by the service, typically once every several weeks. If no
+> maintenance window occurs within 14 days after a patch is released, the service proceeds with
+> maintenance. **Any statement premised on a version has to be read together with the date it was read.**
 
 > **保存された資格情報は、実際のパスワードと無言で乖離します。** 2026-08-17 の再取得時、Secrets Manager に
 > 保存されていた `fsxadmin` の値は `401 User is not authorized` になりました。過去 3 バージョンを試しても

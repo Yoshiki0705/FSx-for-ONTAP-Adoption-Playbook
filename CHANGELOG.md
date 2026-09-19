@@ -3472,8 +3472,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - Note: [the AD dependency lasts the lifetime, not just the join](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md).
   A valid service account is required **for the lifetime of the file system**, because replacing a failed
   file system or SVM and patching ONTAP both require unjoining and rejoining the domain. So an expired
-  credential is **symptomless in normal operation** and surfaces at the next maintenance window — which,
-  per the maintenance note, cannot be deferred past 14 days. "AD integration is working" is a statement
+  credential is **symptomless in normal operation** and surfaces at the next maintenance window. If no
+  maintenance window occurs within 14 days after an ONTAP patch is released, the service proceeds with
+  maintenance. "AD integration is working" is a statement
   about normal operation only.
   - Two AD-side actions silently break things: **moving the computer objects FSx for ONTAP created**, and
     **deleting the directory while an SVM is joined**. Both leave the SVM misconfigured.
@@ -3509,10 +3510,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     catches extension-driven behaviour, detection is not recovery, snapshots live in the same file system
     and die with the volume, and SnapLock Compliance buys immutability at the price of **not being able to
     delete it yourself either**, which is a capacity commitment for the length of the retention period.
-- Note: [maintenance cannot be deferred past 14 days](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
-  ONTAP patching is performed by the service, so the only decision is when. And the deferral has a hard
-  edge: **a maintenance window must occur at least once every 14 days**, and if a patch is released and no
-  window happens in that period, maintenance proceeds anyway.
+- Note: [maintenance proceeds if no window occurs within 14 days after a patch release](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
+  ONTAP patching is performed by the service and typically occurs once every several weeks. The 14-day
+  condition applies **after a patch is released**: if no maintenance window occurs in that period,
+  maintenance proceeds. It is not a statement that maintenance occurs every 14 days.
   - Two states make patching materially worse, and both are avoidable in advance. **SSD above 90% causes
     throughput to be throttled for the duration of patching** — a third consequence of that band, on top
     of the caching change already recorded. And on Multi-AZ, **missing routes with no room left in the
@@ -3558,12 +3559,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - Records an ordering rule the repository had not stated: **try changes in order of reversibility**,
     not expected impact. Tiering policy and storage efficiency are reversible, throughput is reversible
     with a failover, and adding HA pairs is not reversible at all — so it goes last.
-- Note: [at rest is automatic, in transit is off by default](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
-  Encryption at rest cannot be disabled and covers data and metadata, so it is not a design decision.
-  Encryption in transit is the opposite: **not enabled by default**, and Kerberos for NFS and SMB
-  requires the SVM to be joined to Active Directory or LDAP — which makes AD a prerequisite for
-  in-transit encryption, not only for authentication. Requiring SMB encryption also **disconnects
-  clients that do not support it**, so it is a security change and an availability change at once.
+- Note: [at-rest encryption is automatic; in-transit conditions differ by method](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
+  Encryption at rest cannot be disabled and covers data and metadata. Key selection remains a creation-time
+  decision: omitting `KmsKeyId` uses the Amazon FSx-managed key, while a customer-managed key can be
+  specified. There is no shared in-transit default. Nitro encryption is automatic when its EC2 client,
+  generation, Region and network-path conditions hold; SMB encryption is off when the SVM is created and
+  can be required per SVM or share; NFS Kerberos and IPsec each have their own prerequisites. Requiring SMB
+  encryption also **disconnects clients that do not support it**, so it is a security change and an
+  availability change at once.
   - The finding most likely to surface during an audit: **SMB access auditing records only the first
     read and the first write per object.** Opens, deletes, renames and unlinks are recorded, but
     "how many times did this user read this file" cannot be answered from the log.

@@ -28,7 +28,7 @@ La orientación inicial Tier 1 está disponible en ocho idiomas. Los hubs de mó
 ## Comprobaciones antes de producción
 
 - [Revisión antes de producción](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — ajustes irreversibles y pruebas que deben ejecutarse antes del lanzamiento
-- [El cifrado en reposo es automático; en tránsito está desactivado por defecto](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — límites de responsabilidad del cifrado en tránsito y la auditoría
+- [El cifrado en reposo es automático; las condiciones del cifrado en tránsito dependen del método](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — límites de responsabilidad del cifrado en tránsito y la auditoría
 
 ## Empezar
 

@@ -22,7 +22,7 @@ lang: ja
 - **障害が発生したファイルシステムまたは SVM の交換**
 - **NetApp ONTAP ソフトウェアのパッチ適用**
 
-つまり **サービスアカウントの資格情報が失効していても、平常時は何も起きません。** 顕在化するのは次のメンテナンスウィンドウか、障害時です。**そしてパッチ適用は 14 日を超えて延期できません。** 関係は [メンテナンスは 14 日を超えて延期できない](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) にあります。
+つまり **サービスアカウントの資格情報が失効していても、平常時は何も起きません。** 顕在化するのは次のメンテナンスウィンドウか、障害時です。**ONTAP パッチ公開後 14 日以内にメンテナンスウィンドウが来ない場合は、サービスがメンテナンスを実施します。** 関係は [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) にあります。
 
 **「AD 連携は動いているから大丈夫」は、平常時にしか成り立たない判断です。**
 
@@ -113,7 +113,7 @@ lang: ja
 |---|---|
 | SVM の交換（障害時） | **unjoin と rejoin が必要なため、有効なサービスアカウントがないと実行できません** |
 | ONTAP のパッチ適用 | 同様に unjoin と rejoin を伴います |
-| SMB / NFS の Kerberos 転送時暗号化 | **AD または LDAP への参加が前提です。** [転送時の暗号化に前提条件があります](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#転送時の暗号化の前提条件) |
+| NFS の Kerberos 転送時暗号化 | 詳細ページは Microsoft Active Directory に参加した SVM の子ボリュームを対象に説明します。データ保護ページは AD または LDAP ドメイン参加を挙げており、LDAP のプロトコル別範囲は記述が一致しません。[転送時の暗号化に前提条件があります](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#転送時の暗号化の前提条件) |
 | SVM の状態 | AD を削除すると `misconfigured` になります |
 
 **構成情報を最新に保つことが要件として明記されています。** サービスアカウントの資格情報を変更したら、Amazon FSx 側の構成も更新してください。
@@ -134,7 +134,7 @@ graph TD
     JOIN --> LIFE["生涯にわたって<br/>有効な資格情報が必要"]
     LIFE --> WHEN{いつ必要になるか}
     WHEN --> W1[障害時の SVM 交換]
-    WHEN --> W2["ONTAP のパッチ適用<br/>14 日を超えて延期できない"]
+    WHEN --> W2["ONTAP パッチ公開後 14 日以内に<br/>ウィンドウがなければ実施"]
 
     W1 --> ROT{資格情報を<br/>更新したか}
     W2 --> ROT
@@ -201,8 +201,8 @@ graph TD
 
 - [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
 - [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md) — ボリューム層の条件
-- [保存時の暗号化は自動、転送時は既定で無効](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — Kerberos 転送時暗号化の前提
-- [メンテナンスは 14 日を超えて延期できない](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) — 顕在化のタイミング
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — Kerberos 転送時暗号化の前提
+- [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) — 顕在化のタイミング
 - [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — シークレットと AD 自動化
 - [知見の分類ポリシー](../../../evidence-policy.md)
 

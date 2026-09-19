@@ -28,7 +28,7 @@ Tier 1 首次造訪指南提供 8 種語言。Tier 2 模組樞紐提供日語與
 ## 上線前確認
 
 - [上線前審查](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — 不可逆設定與上線前應實際驗證的項目
-- [靜態加密自動啟用，傳輸中加密預設關閉](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 傳輸中加密與稽核的責任邊界
+- [靜態加密自動啟用，傳輸中加密的條件因方式而異](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — 傳輸中加密與稽核的責任邊界
 
 ## 開始使用
 

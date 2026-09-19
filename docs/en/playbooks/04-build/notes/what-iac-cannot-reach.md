@@ -250,7 +250,7 @@ Step 1 is the most valuable. **"The list of settings not in the template" is exa
 - [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) — the representative case of defaults varying by creation route
 - [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — the inode ceiling is set from ONTAP CLI
 - [The deployment type is decided once](../../02-design/notes/deployment-type-is-decided-once.md) — the premise behind choosing FlexGroup
-- [Encryption at rest is automatic; in transit is off by default](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — SMB encryption and separating administrators
+- [At-rest encryption is automatic; in-transit conditions differ by method](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — SMB encryption and separating administrators
 - [A volume's security style determines the permission model](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — the premise behind a choice that carries Replacement
 - [Evidence classification policy](../../../evidence-policy.md)
 

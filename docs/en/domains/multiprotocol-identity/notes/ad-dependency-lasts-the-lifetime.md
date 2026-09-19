@@ -24,7 +24,7 @@ The reason is that **some operations require FSx for ONTAP to unjoin from AD and
 - **Replacing a failed file system or SVM**
 - **Applying NetApp ONTAP software patches**
 
-Which means **an expired service account credential causes nothing at all in steady state.** It surfaces at the next maintenance window, or during a failure. **And patching cannot be deferred past 14 days.** That connection is in [Maintenance cannot be deferred past 14 days](../../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語).
+Which means **an expired service account credential causes nothing at all in steady state.** It surfaces at the next maintenance window, or during a failure. **If no maintenance window occurs within 14 days after an ONTAP patch is released, the service proceeds with maintenance.** That connection is in [Maintenance proceeds if no window occurs within 14 days after a patch release](../../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語).
 
 **"AD integration is working, so we are fine" is a judgment that only holds in steady state.**
 
@@ -115,7 +115,7 @@ Enabled versions are visible in `vserver nfs show`. Enabling a specific version 
 |---|---|
 | Replacing an SVM (during a failure) | **Requires unjoin and rejoin, so it cannot run without a valid service account** |
 | Applying ONTAP patches | Likewise involves unjoin and rejoin |
-| Kerberos in-transit encryption for SMB / NFS | **Requires membership in AD or LDAP.** [In-transit encryption has prerequisites](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#転送時の暗号化の前提条件) (日本語) |
+| NFS Kerberos encryption in transit | The detailed page describes child volumes of an SVM joined to Microsoft Active Directory. The data-protection page also names an AD or LDAP domain, leaving the protocol-specific LDAP scope inconsistent. [In-transit encryption has prerequisites](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#転送時の暗号化の前提条件) (日本語) |
 | SVM state | Deleting the AD leaves it `misconfigured` |
 
 **Keeping the configuration current is stated as a requirement.** When the service account credential changes, update the configuration on the Amazon FSx side too.
@@ -136,7 +136,7 @@ graph TD
     JOIN --> LIFE["A valid credential is needed<br/>for the whole lifetime"]
     LIFE --> WHEN{When it is needed}
     WHEN --> W1[SVM replacement during a failure]
-    WHEN --> W2["ONTAP patching<br/>cannot be deferred past 14 days"]
+    WHEN --> W2["If no window occurs within 14 days<br/>after an ONTAP patch release,<br/>maintenance proceeds"]
 
     W1 --> ROT{"Was the credential<br/>updated"}
     W2 --> ROT
@@ -203,8 +203,8 @@ Steps 2 and 8 are worth the most. **An expiry produces no symptoms in steady sta
 
 - [Domain — Multiprotocol identity](../README.md) — this module's hub
 - [Security style determines the permission evaluation model](security-style-and-permission-evaluation.md) — the volume layer's condition
-- [Encryption at rest is automatic; in transit it is off by default](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — the prerequisite for Kerberos in-transit encryption
-- [Maintenance cannot be deferred past 14 days](../../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) — when it surfaces
+- [At-rest encryption is automatic; in-transit conditions differ by method](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — the prerequisite for Kerberos in-transit encryption
+- [Maintenance proceeds if no window occurs within 14 days after a patch release](../../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) — when it surfaces
 - [What IaC cannot reach is decided by the API surface](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — secrets and AD automation
 - [Evidence Policy](../../../evidence-policy.md)
 
