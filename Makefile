@@ -9,7 +9,8 @@ PY ?= python3
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
         inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
-        knowledge-quality-status-ci
+        knowledge-quality-status-ci editorial-report sentence-report glossary-report \
+        structure-report mermaid-report frontmatter-report vocabulary-report
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -153,6 +154,26 @@ powershell: ## Run PSScriptAnalyzer on every PowerShell script (fails when it is
 		echo "powershell: $$(echo $$files | wc -w | tr -d ' ') script(s) clean at Warning severity"
 frontmatter: ## Validate YAML frontmatter on all notes
 	@$(PY) tools/validate_frontmatter.py
+
+frontmatter-report: ## Report missing future verified metadata (not a gate)
+	@$(PY) tools/validate_frontmatter.py --report-missing-verified
+
+sentence-report: ## Report Japanese sentence length migration findings (not a gate)
+	@$(PY) tools/check_sentence_length.py
+
+glossary-report: ## Report unlinked glossary first uses (not a gate)
+	@$(PY) tools/check_glossary_first_use.py
+
+structure-report: ## Report future note/checklist structure findings (not a gate)
+	@$(PY) tools/check_document_structure.py
+
+vocabulary-report: ## Report staged sales-vocabulary findings (not a gate)
+	@$(PY) tools/audit_public_output.py --only sales-vocabulary --report
+
+mermaid-report: ## Parse/render every Mermaid block with mmdc (not a gate; run npm ci first)
+	@$(PY) tools/check_mermaid.py
+
+editorial-report: frontmatter-report sentence-report glossary-report structure-report vocabulary-report mermaid-report ## Run all staged editorial reports (not a gate)
 
 # Single definition of the lint scope. Ignores live in .markdownlint-cli2.jsonc so the
 # CI action and this target apply the same exclusions; scripts/tests/test_gate_integrity.py
