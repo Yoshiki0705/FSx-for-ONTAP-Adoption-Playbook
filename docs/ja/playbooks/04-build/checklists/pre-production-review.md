@@ -38,7 +38,7 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 - [ ] **Snapshot locking と階層化の併用可否を確認した**。ONTAP のドキュメントは FabricPool を非サポートとし、FSx for ONTAP を例外とする NetApp KB もあります。**容量プール階層化は FabricPool なので、同一ボリュームでの併用は設計レビューで確認**してください
 - [ ] **不可逆な操作を実行する前の承認手順を決めた**。保持期間の値・最も広い影響範囲・その期間のコスト・早期解除の経路を提示してから実行する運用になっているか。自動化や AI エージェントに実行させる場合も同じです
 - [ ] **ONTAP CLI / REST に到達できる資格情報の範囲を確認した**。Snapshot locking は **AWS API にパラメータがないため、IAM 条件キーやコンソール警告では止められません。** ONTAP へ到達できる資格情報は、そのまま削除ロックを作れる権限です
-- [ ] **S3 Access Point の `NetworkOrigin`（`Internet` / `VPC`）を決めた**。作成後に変更できません。`Internet` オリジンは S3 Gateway VPC エンドポイント経由では到達しません
+- [ ] **S3 Access Point の `NetworkOrigin`（`Internet` / `VPC`）を決めた**。作成後に変更できません。VPC 内で発生した通信はゲートウェイエンドポイントを使えます。VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入る通信を私設経路に限定する場合は、インターフェイスエンドポイントが必要です
 - [ ] **ボリュームのセキュリティスタイル（UNIX / MIXED / NTFS）を決めた**。これは「保存できるプロトコル」ではなく「権限評価に使うモデル」を決めます。詳細は [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md)
 - [ ] **ボリューム名の命名規則を決めた**。使えるのは英数字とアンダースコアのみです。ハイフンを含む命名規則を全社標準にしている場合、ここで衝突します
 - [ ] **SVM の NetBIOS 名を決めた**。15 文字以内、AD ドメインの短縮名とは別の名前、同一 AD 内で一意。AD 参加に失敗した名前は再利用しないでください（AD 側に計算機アカウントが残ります）
@@ -64,7 +64,7 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 - [ ] **AD 参加に必要なポートが、SVM の ENI から DC へ開いている**。DNS 53、Kerberos 88 / 464、LDAP 389 / 636、SMB 445、RPC 135 と動的ポート、グローバルカタログ 3268、AD Web Services 9389、NTP 123
 - [ ] **`FileSystemAdministratorsGroup` に指定するグループを決めた**。権限が不足すると SVM の AD 参加が失敗し、`MISCONFIGURED` 状態になります
 - [ ] **OU のパスを実際の AD 構成で確認した**。AWS Managed Microsoft AD はドメイン短縮名の中間 OU を作ります。中間 OU を省いたパスは、エラーにならず静かに失敗する形で現れます
-- [ ] **AD が到達不能になったときの影響範囲を把握した**。AD 参加済み SVM では、AD DC への到達性が失われるとアクセスが成立しなくなります。単なる認証遅延では済みません
+- [ ] **AD が到達不能になったときの影響範囲を把握した**。AD 参加済み SVM では、AD を使う SMB 認証や Windows `FileSystemIdentity` の名前解決が DC 到達性に依存します。NFS やローカル ID を含む全データ経路が停止するという意味ではありません
 - [ ] **管理者グループに属さない一般ユーザーでアクセス制御を検証した**。管理者相当のアカウントは一部の制御を素通りします
 
 ---

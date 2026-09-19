@@ -58,11 +58,14 @@ AWS のドキュメントは 2 つのことを書いています。
 |---|---|
 | NFS / SMB / iSCSI のデータ経路 | **届きません** |
 | ONTAP の管理エンドポイント（REST / SSH） | **届きません。** 同じ VPC の中にあります |
-| Amazon FSx の AWS API（`fsx.<region>.amazonaws.com`） | **届きます。** パブリックアドレスに解決されます |
-| S3 Access Points 経由のデータ | **VPC 内のインターフェースエンドポイントが必要です**（[詳細](what-an-endpoint-needs-to-reach-s3-access-points.md)） |
+| Amazon FSx の AWS API（`fsx.<region>.amazonaws.com`） | 公開リージョナルエンドポイントを使う場合はパブリックアドレスに解決されます。Amazon FSx インターフェイス VPC エンドポイントで Private DNS を有効にした場合は、同じ名前がエンドポイントのプライベートアドレスに解決されます |
+| S3 Access Points 経由のデータ | `Internet` origin はポリシーが許可すれば公開 S3 エンドポイントから到達できます。VPC 内で発生した通信はゲートウェイエンドポイントを使えます。VPN 等で VPC に入る通信を私設経路に限定する場合はインターフェイスエンドポイントが必要です（[詳細](what-an-endpoint-needs-to-reach-s3-access-points.md)） |
 
-**3 行目があるため、split-tunnel の VPN でも `aws fsx describe-file-systems` は動きます。**
-これが「AWS CLI は通るのにマウントできない」の形になり、経路の問題を認証の問題と誤診する原因になります。
+**3 行目は、公開リージョナルエンドポイントを使い、Private DNS で上書きしていない場合の挙動です。**
+split-tunnel の VPN でも `aws fsx describe-file-systems` は端末側のインターネット経路から動きます。
+Amazon FSx インターフェイス VPC エンドポイントを使う構成では、端末の DNS と経路がそのエンドポイントへ
+向いていることを別に確認します。どちらの場合も、AWS API の成功は NFS / SMB / iSCSI のデータ経路の
+到達性を証明しません。
 
 ---
 
