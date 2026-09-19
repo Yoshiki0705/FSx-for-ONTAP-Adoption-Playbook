@@ -193,8 +193,9 @@ Resources:
       SecurityGroupIds:
         - !Ref FileSystemSecurityGroup
       OntapConfiguration:
-        # SINGLE_AZ_2 is the second generation, which iSCSI and NVMe over TCP both require. Block
-        # protocols are disabled above six HA pairs, so HAPairs stays at 1 here.
+        # SINGLE_AZ_2 provides the current second-generation baseline for this example. iSCSI is
+        # available on either generation; NVMe over TCP requires the second generation. AWS supports
+        # block protocols only on file systems with six or fewer HA pairs, so HAPairs stays at 1 here.
         DeploymentType: SINGLE_AZ_2
         HAPairs: 1
         ThroughputCapacity: !Ref ThroughputCapacity

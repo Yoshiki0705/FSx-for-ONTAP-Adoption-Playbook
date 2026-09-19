@@ -3589,8 +3589,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   it becomes a rebuild and a data migration.
   - Adding HA pairs has consequences the checklist did not cover: the new pair arrives with **matching
     SSD capacity**, so it is a cost decision too; **existing volumes must be moved and clients remounted**
-    before anything gets faster; the pairs **cannot be removed**; and **past six pairs iSCSI and NVMe/TCP
-    stop being available**, which combined with non-removability makes it a one-way door.
+    before anything gets faster; the pairs **cannot be removed**; and **block protocols are supported
+    only on file systems with six or fewer pairs**. The documentation does not establish what happens
+    to existing LUNs or connections while pair seven is added.
   - Covers file-system-level irreversibility, complementing the volume- and SVM-level table already in
     the pre-production checklist rather than restating it.
 - `llms.txt` now carries a **findings section** listing each note with a one-line statement of what it
@@ -3602,14 +3603,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     failure mode is silent and worth closing off rather than trusting.
 - Note: [free space does not mean you can still write](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md).
   A volume counts files, directories **and snapshot copies** as inodes, and once inodes are exhausted
-  the volume rejects writes even with capacity left. The trap is in how the default scales: **one inode
-  per 32 KiB only up to 648 GiB.** Past that, every volume gets the same 21,251,126 regardless of size,
-  so a 10 TiB volume has the same default inode budget as a 648 GiB one.
-  - The note publishes the break-even average file size derived from that default — below roughly
-    **505 KiB on a 10 TiB volume, or 2.5 MiB on a 50 TiB volume**, inodes run out before capacity. These
-    are labelled as arithmetic from the documented default, not measurements. Raising the limit helps but
-    is bounded: one inode per 4 KiB, hard-capped at 2 billion per volume, which still leaves ~27 KiB as
-    the break-even on 50 TiB.
+  the volume rejects writes even with capacity left. AWS documents the default as **one inode per
+  32 KiB only up to 648 GiB**, then 21,251,126 regardless of size. A later 2026-08-06 observation did
+  not reproduce that cap and is recorded below; the documented calculation must not be treated as the
+  observed default.
+  - The note originally published break-even average file sizes derived from the documented cap — roughly
+    **505 KiB on a 10 TiB volume, or 2.5 MiB on a 50 TiB volume**. These were documented arithmetic,
+    not measurements, and were later removed after the contrary observation below. Raising the limit is
+    bounded at one inode per 4 KiB and 2 billion per volume.
   - The rest of the inventory is organized by **which later decision consumes each measurement**, on the
     principle that an item is only worth collecting if a decision changes based on its value — and that
     the items skipped are the ones that resurface as irreversible settings. Each row links to the note
@@ -3665,10 +3666,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   reach half the documented IOPS and throughput outside four named regions. Raising the throughput
   setting alone does not reach the ceiling either; it requires a matching SSD capacity and IOPS
   configuration.
-  - The consequence most likely to be designed around wrongly: a FlexVol lives on exactly one
-    aggregate, and each HA pair has one aggregate. So a file system with twelve HA pairs still serves
-    a FlexVol at one pair's performance. Using more than one pair in a single namespace requires a
-    FlexGroup, spanning all aggregates with an even constituent count.
+  - The placement constraint most likely to be designed around wrongly: the Amazon FSx API reports
+    exactly one aggregate for a FlexVol, and each HA pair has one aggregate. A file system can scale to
+    twelve HA pairs, while that FlexVol's path remains on the HA pair owning its aggregate. Using more
+    than one pair in a single namespace requires a FlexGroup.
   - Also recorded that adding HA pairs raises the **minimum** throughput, not just the maximum, so
     it is a cost decision as well as a performance one.
 - Note: [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md).

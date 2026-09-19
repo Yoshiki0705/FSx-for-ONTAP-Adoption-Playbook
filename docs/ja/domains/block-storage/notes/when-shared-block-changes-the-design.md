@@ -83,7 +83,7 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 
 | トレードオフ | 内容 | 逃げ道 |
 |---|---|---|
-| **HA ペア 6 組の天井** | 7 組目を追加した時点で iSCSI と NVMe/TCP が使えなくなります。**追加した HA ペアは削除できません** | 6 組を上限に設計する。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
+| **HA ペア 6 組の天井** | iSCSI は 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下のファイルシステムだけがサポート対象です。**7 組目追加時の遷移動作は文書化されていません** | 6 組を上限に設計する。追加した HA ペアは削除できません。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
 | **ホスト側 multipath の責任** | パスの構成・タイムアウト・切り替わりの確認はホスト側の作業です | 手順は文書化されています。[パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) |
 | **書き込み整合性の責任** | 複数ホストから同じ LUN に書くとき、調停はホスト側のクラスタ機能が行います | Amazon EBS Multi-Attach でも同じです。**共有ブロックに共通の性質です**。担い手の選択肢は [ホスト側のクラスタ機能を担う製品](#ホスト側のクラスタ機能を担う製品) |
 | **制御面が 2 つ** | LUN・igroup・NVMe subsystem は AWS の API に存在しません | [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) |
@@ -197,7 +197,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 | SAN の LUN と NAS 共有を同じ FlexVol に混在させることが推奨されないこと | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | 1 TB のデータベースの iSCSI LUN クローンが通常 5 分以内であること | [AWS: Using SnapCenter to protect SQL Server workloads](https://aws.amazon.com/blogs/storage/using-netapp-snapcenter-with-amazon-fsx-for-netapp-ontap-to-protect-your-sql-server-workloads) |
-| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | 第三者のクラスタソフトウェアとの組み合わせのサポートが公表されていること（2024-11-28 開始、Linux 版は iSCSI と NFS、Windows 版は iSCSI） | [ベンダー告知](https://sios.jp/news/info/2024/20241128_lk-fsx.html) · [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/)（いずれも 2026-09-15 に確認） |
 
 ---

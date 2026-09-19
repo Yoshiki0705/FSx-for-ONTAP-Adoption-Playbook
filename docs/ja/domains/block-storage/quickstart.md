@@ -267,7 +267,7 @@ LUN マップの削除は [DELETE /protocols/san/lun-maps/{lun.uuid}/{igroup.uui
 | NVMe/TCP | カーネル依存があるため 1 本目には入れませんでした。**`verify-block.sh` が `CONFIG_NVME_MULTIPATH` を報告します。** Amazon Linux 2023 では無効で、その状態ではフェイルオーバーが効きません（[実測したフェイルオーバー](notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー)） |
 | Windows と MPIO | PowerShell 一式が別物になります。ホスト側の既定値は [パスはフェイルオーバーの仕組みそのもの](notes/paths-are-the-failover-mechanism.md) にあります |
 | Multi-AZ | アドレスの配置とフェイルオーバーの挙動が変わります（[Multi-AZ が動かすのはアドレスではなくルート](notes/multi-az-moves-a-route-not-an-address.md)） |
-| HA ペア複数 | ブロックは 6 組までです。それ以上ではプロトコルが無効になります |
+| HA ペア複数 | ブロックプロトコルを使うファイルシステムは 6 組以下だけがサポート対象です。7 組目追加時の遷移動作は文書化されていません |
 | 性能値 | `t3.medium` は 384 MBps = 3.07 Gbps を持続できません。測定方法は [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) |
 | CHAP と portset | 既定は認証なしです。設定方法と失敗時の症状は [igroup の外側にある 2 つの制御](notes/igroups-are-not-the-only-access-control.md) |
 

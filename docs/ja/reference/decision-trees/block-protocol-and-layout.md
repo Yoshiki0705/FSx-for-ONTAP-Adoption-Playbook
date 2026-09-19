@@ -18,7 +18,7 @@ lang: ja
 **順序があります。プロトコルを選ぶ前に、選択肢を狭めている条件を確認してください。**
 
 1. **デプロイタイプと世代** — NVMe/TCP は第 2 世代のみ。作成後に変更できません
-2. **HA ペア数** — 6 組を超えるとブロックプロトコルが使えなくなり、増やした HA ペアは削除できません
+2. **HA ペア数** — ブロックプロトコルは 6 組以下のファイルシステムだけがサポート対象で、増やした HA ペアは削除できません
 3. **ホスト OS** — **Windows Server との NVMe/TCP は ONTAP 側で非対応です**（AWS 固有の制約ではありません）
 4. **LUN のレイアウト** — 決めているのは復旧の粒度です
 5. **容量** — 3 か所で数えられ、足りなくなると LUN が read-only に落ちます
@@ -101,10 +101,10 @@ graph TD
 
 | 分岐 | 条件 | 出典 |
 |---|---|---|
-| NVMe/TCP は第 2 世代のみ | 「第 2 世代かつ HA ペア 6 組以下」 | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| NVMe/TCP は第 2 世代のみ | 「第 2 世代かつ HA ペア 6 組以下」 | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | iSCSI は世代を問わない | 「HA ペア 6 組以下のすべてのファイルシステム」 | 同上 |
-| デプロイタイプは変更不可 | 変更操作が存在せず、移行手段はバックアップ復元・SnapMirror・DataSync・サードパーティ | [AWS: Availability and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
-| 7 組目でブロックが使えなくなる。HA ペアは削除不可 | 「6 組を超えるファイルシステムではサポートされません」 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| デプロイタイプは変更不可 | AWS は作成後に変更できないと明記し、移行手段としてバックアップ復元・SnapMirror・DataSync・サードパーティを列挙 | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) |
+| ブロックプロトコルのサポート範囲は 6 組以下。HA ペアは削除不可 | 7 組目追加時の既存 LUN と接続の遷移動作は記載されていません | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | **Windows Server との NVMe/TCP は ONTAP 側で非対応** | Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られる。回避策として挙げられている NVMe/FC は、FC を提供しない FSx for ONTAP では使えません | [NetApp KB: Does ONTAP SAN support NVMe/TCP with Windows Server](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server) |
 | AWS が列挙しているブロックの手順は 3 つ | iSCSI for Linux / iSCSI for Windows / NVMe/TCP for Linux | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
 | Windows 版が無いことを欠落と見なさない判断 | **これは当方の推論で、出典の記述ではありません。** 上流が非対応であることから、AWS 側に手順が無いことは説明が付く、という読みです | — |
@@ -150,7 +150,7 @@ graph TD
 | 1 LUN 1 ボリュームが常に正解 | NetApp は 1:1 を formal best practice としていません。**決めているのは復旧の粒度です** |
 | ボリュームと LUN を同じサイズにすればよい | **ボリュームは LUN より 5% 以上大きく**することが推奨されています |
 | Snapshot があればデータベースをその時点から起動できる | 既定は crash-consistent です。起動できるかはアプリケーション側の復旧処理に依存します |
-| HA ペアを増やしてブロックの性能を伸ばす | **7 組目からブロックが使えなくなります** |
+| HA ペアを増やしてブロックの性能を伸ばす | **ブロック構成は 6 組以下だけがサポート対象です** |
 
 ---
 

@@ -319,7 +319,7 @@ Backup failed. Please delete the backup and try again.
 | SSD 容量 | リストアされるデータは**まず SSD 層に書かれます**。空きが尽きるとリストアは一時停止し、空きができると自動再開します | `documented` |
 | 世代 | **第 2 世代はリストア中でも読み取り可能**（メタデータのロード後）。**第 1 世代は完了待ち** | `documented` |
 | 背景処理の優先度 | バックアップとリストアは**クライアント I/O より優先度が低く**、未使用のスループット容量を使います | `documented` |
-| FlexVol の範囲 | FlexVol は 1 つの HA ペアを超えられません。大きなボリュームのリストア先は世代と容量で決まります | `documented` |
+| FlexVol の配置 | FlexVol の `AggregateConfiguration` は常に 1 aggregate で、その aggregate は 1 HA ペアに属します。大きなボリュームのリストア先は世代と容量で決まります | `documented` |
 
 3 行目には運用上の含意があります。**業務のピークにバックアップを重ねると、どちらも遅くなります。**
 
@@ -617,7 +617,7 @@ graph TD
 | CLI / コンソールでのコピー手順、バックアップコピーと SnapMirror の選び分け、RPO 60 分 / 5 分と RTO の目安 | [AWS: Copying backups within the same AWS account](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copying-backups-same-account.html) |
 | リストア先がバックアップと同一リージョンに限られること、リストアは新規ボリュームになること、SnapLock FlexGroup がバックアップ対象外であること、リストア・バックアップのスループット目安 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
 | リストアがボリューム作成 API であること | [AWS: CreateVolumeFromBackup](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateVolumeFromBackup.html) / [Restoring a backup to a new volume](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/to-restore-backups.html) |
-| 第 1 世代・第 2 世代の最小スループットと最小 SSD 容量、FlexVol が 1 HA ペアを超えられないこと | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+| FlexVol の `AggregateConfiguration` が常に 1 aggregate で、各 aggregate が 1 HA ペアに属すること | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
 | リストアが SSD 層優先であること、SSD 不足で一時停止すること、第 2 世代はリストア中に読めること、バックアップ / リストアが背景処理であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
 | `AWS::FSx::Volume` の `BackupId` でバックアップから新規ボリュームを作れること | [AWS CloudFormation: AWS::FSx::Volume](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-volume.html) |
 | AWS Backup のバックアッププランでコピー先リージョンを指定できること | [AWS Backup: Creating backup copies across AWS Regions](https://docs.aws.amazon.com/aws-backup/latest/devguide/cross-region-backup.html) |

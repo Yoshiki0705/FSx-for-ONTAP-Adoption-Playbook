@@ -3,7 +3,7 @@ title: The deployment type is decided once — the availability choice also fixe
 lifecycle: [design, assess]
 domains: [performance, cost]
 evidence: documented
-source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html
+source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html
 lang: en
 ---
 
@@ -17,7 +17,7 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 ## Conclusion
 
-**A file system's deployment type cannot be changed after creation.** Changing it means creating a new file system and moving the data — there is no other route.
+**AWS explicitly states that a file system's deployment type cannot be changed after creation.** Changing it requires a new file system and data migration by backup restore, SnapMirror, AWS DataSync, or a copy tool.
 
 What matters is that **this single choice fixes both availability and the scale-out ceiling at the same time.**
 
@@ -41,7 +41,7 @@ So the approach of "start on Multi-AZ and add HA pairs later if performance runs
 | `MULTI_AZ_1` | First generation | 1 | **No** |
 | `MULTI_AZ_2` | Second generation | 1 | **No** |
 
-**Going from `SINGLE_AZ_1` to `SINGLE_AZ_2` is also a rebuild.** Same Single-AZ or not, a different generation is a different deployment type, and no change operation exists.
+**Going from `SINGLE_AZ_1` to `SINGLE_AZ_2` is also a rebuild.** Same Single-AZ or not, a different generation is a different deployment type, and AWS directs you to migrate to a new file system.
 
 The migration routes are restore from backup, SnapMirror, AWS DataSync, and third-party copy tools. Choosing among them is in [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md).
 
@@ -83,16 +83,16 @@ In the documentation's example, adding one pair to a file system of 2 pairs at 1
 
 ---
 
-## Protocols that become unavailable as HA pairs are added
+## The 6-HA-pair ceiling for block protocols
 
 | Protocol | Condition |
 |---|---|
 | iSCSI | Available on file systems with **6 or fewer HA pairs** |
 | NVMe/TCP | Available on **second generation with 6 or fewer HA pairs** |
 
-**Adding the seventh pair takes the block protocols away.** And since an HA pair cannot be removed, that operation cannot be undone.
+AWS supports iSCSI on file systems with 6 or fewer HA pairs, and NVMe/TCP on second-generation file systems with 6 or fewer HA pairs. **This documentation does not define what happens to existing LUNs or connections while a seventh pair is added.**
 
-If block protocols are in the plan, **design with 6 pairs as the ceiling.**
+If block protocols are in the plan, **design the file system with 6 pairs as the ceiling.** An added HA pair cannot be removed.
 
 Note also that adding an HA pair enables the NVMe cache by default on the new nodes. Disabling it is recommended for throughput-oriented workloads.
 
@@ -171,13 +171,13 @@ Step 5 **belongs in a test environment.** An added HA pair cannot be removed.
 
 | Misconception | Reality |
 |---|---|
-| The deployment type can be changed later | **No change operation exists.** You create a new file system and move the data |
+| The deployment type can be changed later | **AWS states that it cannot be changed after creation.** Create a new file system and move the data |
 | Single-AZ 1 to Single-AZ 2 is a settings change | It is a different deployment type. It becomes a rebuild |
 | HA pairs can be added later on Multi-AZ too | **They cannot.** Both generations are fixed at one pair |
 | Adding an HA pair automatically makes things faster | Existing volumes have to be moved to the new pair and remounted |
 | An HA pair can be added when needed and taken back later | **It cannot be removed.** A temporary boost is done by adjusting throughput capacity |
 | Adding an HA pair is purely a performance decision | SSD capacity grows in the same proportion. It is a cost decision too |
-| HA pairs behave the same however many you add | **At 7 or more, iSCSI and NVMe/TCP become unavailable** |
+| HA pairs behave the same however many you add | **Only file systems with 6 or fewer pairs are supported for block protocols.** The transition when adding pair 7 is not documented |
 | Multi-AZ always wins on performance | Its write ceiling is higher, but the single-HA-pair ceiling applies |
 | Single-AZ has lower availability | It is placed in a separate fault domain within one AZ, with the same synchronous replication and failover. The difference is continuity through an AZ failure |
 

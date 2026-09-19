@@ -368,7 +368,7 @@ Defaults observed read-only in the same environment. **All matched the documenta
 | `NONE` の cooling period | 値なし | 実測 | 2026-08-06 | 階層化しないため |
 | cooling period の設定可能性 | 7 日 / 90 日の実例あり | 実測 | 2026-08-06 | 既定以外の値が設定できることの確認 |
 | 第 1 世代 Single-AZ の HA ペア数 | **1** | 実測 | 2026-08-06 | 2 ファイルシステムとも `HAPairs=1` |
-| デプロイタイプの変更可否 | **変更手段なし** | 実測 | 2026-08-06 | `aws fsx update-file-system` に該当パラメータが存在しません（0 件） |
+| デプロイタイプの変更可否 | **作成後は変更不可** | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) | — | AWS が明記。新しいファイルシステムへ移行する |
 | メンテナンスウィンドウの形式 | `d:HH:MM`（UTC） | 実測 | 2026-08-06 | `4:16:00` と `6:20:00` を観測 |
 | ボリュームスタイルの既定 | HA ペア 1 組では FlexVol | 実測 | 2026-08-06 | FlexGroup は明示指定したものだけでした |
 | セキュリティスタイル | `UNIX` / `NTFS` / `MIXED` が併存 | 実測 | 2026-08-06 | 同一ファイルシステム内で混在可能 |

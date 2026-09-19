@@ -22,7 +22,7 @@ lang: ja
 | 条件 | 効き方 |
 |---|---|
 | **世代** | **NVMe/TCP は第 2 世代のみ。** 第 1 世代では作り直し以外に道がありません |
-| **HA ペア数** | **どちらも 6 組以下。** 7 組目を足すと両方使えなくなり、**足した HA ペアは削除できません** |
+| **HA ペア数** | **どちらも 6 組以下のファイルシステムがサポート対象。** 7 組目追加時の遷移動作は文書化されておらず、**足した HA ペアは削除できません** |
 | **ホスト OS** | **Windows Server で NVMe/TCP は ONTAP 側で非対応です。** AWS に手順が無いのはその反映で、AWS 固有の制約ではありません（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)） |
 
 **世代と HA ペア数は作成後に変えられません。** プロトコルの比較を始める前にここを確認してください。
@@ -60,13 +60,13 @@ lang: ja
 | 第 1 世代（`SINGLE_AZ_1` / `MULTI_AZ_1`） | **使える** | **使えない** |
 | 第 2 世代（`SINGLE_AZ_2` / `MULTI_AZ_2`） | 使える | **使える** |
 | HA ペア 1〜6 組 | 使える | 第 2 世代なら使える |
-| HA ペア 7 組以上 | **使えない** | **使えない** |
+| HA ペア 7 組以上 | **非サポート** | **非サポート** |
 
 **HA ペアを 7 組以上にできるのは第 2 世代の Single-AZ だけです。** つまり「ブロックを使いながらスケールアウトの上限まで伸ばす」ことはできません。**ブロックを使う構成の HA ペア上限は 6 組です。**
 
-**足した HA ペアは削除できません。** 7 組目を足した後にブロックが必要になったら、ファイルシステムを作り直すことになります。デプロイタイプと世代の不可逆性は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
+**足した HA ペアは削除できません。** ブロックが必要なら、6 組をファイルシステムの上限として設計します。デプロイタイプと世代の不可逆性は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
 
-**既存の LUN が 7 組目の追加でどうなるかは、AWS のドキュメントに記載がありません。** 「6 組を超えるファイルシステムではサポートされない」と書かれているだけです。**未記載を「消える」とも「残る」とも読み替えないでください。**
+**7 組目の追加中または追加後に既存 LUN と接続がどうなるかは、AWS のドキュメントに記載がありません。** 「6 組以下のファイルシステムで利用可能」と書かれているだけです。**未記載を「無効になる」「消える」「残る」のいずれにも読み替えないでください。**
 
 ---
 
@@ -239,8 +239,8 @@ graph TD
 | Windows Server 2022 なら `os_type` に新しい値がある | **`windows_2022` は拒否されました。** `windows_2008` を使います |
 | LUN と igroup の `os_type` は同じ値 | LUN は `windows_2008`、igroup は `windows` でした |
 | Windows で NVMe/TCP は使えない | **ドキュメントが沈黙しているだけです。** ただし手順がないものは本番の前提にできません |
-| HA ペアを増やしてブロックの帯域を伸ばせる | **7 組目から使えなくなります。** 上限は 6 組です |
-| 7 組目を足しても既存の LUN は残る | **記載がありません。** 未記載を「残る」と読み替えないでください |
+| HA ペアを増やしてブロックの帯域を伸ばせる | **ブロック構成は 6 組以下だけがサポート対象です。** 7 組目追加時の遷移動作は文書化されていません |
+| 7 組目の追加中も既存 LUN の接続は維持される | **記載がありません。** 未記載を遷移動作へ読み替えないでください |
 
 ---
 
@@ -264,8 +264,8 @@ graph TD
 
 | 論点 | 出典 |
 |---|---|
-| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) · [AWS: Supported clients](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
-| 7 組目でブロックプロトコルがサポートされなくなること、追加した HA ペアが削除できないこと | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
+| 6 組以下がブロックプロトコルのサポート範囲であること、追加した HA ペアが削除できないこと。7 組目追加時の既存 LUN と接続の遷移動作は未記載 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | デプロイタイプと世代が作成後に変更できないこと、世代ごとのスループット選択肢 | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | `os_type` に `windows_2008` を使うこと、`space-allocation` の推奨、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | NVMe/TCP の namespace → subsystem → map → host NQN の順序、ポート 4420 と discovery 8009、前提クライアントが RHEL 9.3 であること、`iscsi_1` が iSCSI と NVMe/TCP の両方に使われること | [AWS: Provisioning NVMe/TCP for Linux](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) |
