@@ -138,7 +138,7 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 ## S3 Access Points 経由のリクエスト単位メトリクスで確認できない範囲
 
-FSx for ONTAP のボリュームに接続した S3 Access Points について、**Access Point 単位のリクエスト数・HTTP エラー率・リクエストレイテンシは、2026-09-12 に通読した下記の AWS ページには列挙されていません。** これは確認した公開ページの範囲を述べるもので、CloudWatch の全メトリクスや、基盤 I/O の可視性全体が存在しないという主張ではありません。
+FSx for ONTAP のボリュームに接続した S3 Access Points について、Amazon FSx の CloudWatch ページには Access Point 単位のリクエスト数・HTTP エラー率・リクエストレイテンシが列挙されていません。一方、[Amazon S3 の Access Point 監視ページ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)は、Access Point をフィルターにした opt-in の request metrics を説明しています。**その構成が FSx for ONTAP のボリュームに接続した Access Point にも適用できるかは、ページから確定できないため `open` です。**
 
 | 確認した範囲 | 結果 |
 |---|---|
@@ -150,7 +150,7 @@ FSx for ONTAP のボリュームに接続した S3 Access Points について、
 
 ### 運用に与える帰結
 
-**CloudWatch の集約ストレージメトリクスでは、基盤の I/O や利用率を監視できます。** ただし S3 Access Points の実利用リクエスト数、HTTP エラー率、リクエストレイテンシとして分離できません。障害検知には呼び出し側の結果記録や合成監視を追加できるため、利用者の申告だけが検知経路ではありません。
+**CloudWatch の集約ストレージメトリクスでは、基盤の I/O や利用率を監視できます。** Amazon S3 は Access Point フィルター付き request metrics を提供しますが、FSx for ONTAP 接続型への適用可否は `open` です。確認できるまでは、呼び出し側の結果記録、CloudTrail の S3 データイベント、ONTAP 監査、合成監視を用途別に組み合わせます。
 
 | 埋め方 | 見えるもの | 見えないもの |
 |---|---|---|
