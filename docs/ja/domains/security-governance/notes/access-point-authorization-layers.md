@@ -791,7 +791,7 @@ graph TD
 | 誤解 | 実際 |
 |---|---|
 | FSx for ONTAP S3 AP にバケットポリシーを設定する | バケットが無いので設定できません。アクセスポイントポリシーです |
-| 同一アカウント所有が必須なので、別アカウントからは読めない | **読めます。** 同一アカウント所有は AP を作る側の制約です。AP ポリシーで許可すれば別組織のアカウントからも通ります（実測） |
+| 同一アカウント所有が必須なので、別アカウントからは読めない | **読めます。** 同一アカウント所有は AP を作る側の制約です。AP ポリシーと呼び出し元の identity-based ポリシーの両方が許可すれば、別組織のアカウントからも通ります（実測） |
 | AP ポリシーを付けないと誰もアクセスできない | identity-based ポリシーが許可していればアクセスできます |
 | AP ポリシーの `Allow` に書いた範囲しか通らない | 同一アカウントでは結合で評価されます。絞るには明示的な拒否が必要です |
 | `Allow` の `Action` に書いていない操作はできない | できます。`Action` を狭く書いても絞り込みになりません |
@@ -843,6 +843,8 @@ graph TD
 | AP ポリシーは 20 KB、VPC 設定は作成後に変更不可、HTTPS のみ対応で HTTP はリダイレクト、10,000 AP / アカウント / リージョン | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 | AP 作成時に指定するプロパティ、ボリュームに junction path が必要 | [AWS: Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) |
 | `CreateAndAttachS3AccessPoint` のパラメータと制約 | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
+| `FileSystemIdentity` が全ファイルアクセス要求の認可に使われ、UNIX または Windows ID を取ること | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
+| identity-based と resource-based ポリシーの同一アカウント評価 | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
 | CloudFormation のプロパティ | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN 形式、二層認可の整理、トラブルシュートの手がかり | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns の認可モデル](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.md) |
 | Windows ID は「AD 参加済みドメイン」の場合を記述（**本ノートの実測はこれより広い**） | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |

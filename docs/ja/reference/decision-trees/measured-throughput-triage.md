@@ -104,7 +104,7 @@ graph TD
 |---|---|
 | 接続数を増やす手段の選び方 | [スループットを上げる手段の比較](../comparison/throughput-levers.md) |
 | スループット容量の設定値が何を決めているか | [スループットは 1 つの設定値では決まらない](../../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
-| p99 レイテンシをどう見るか | [p99 は CloudWatch のメトリクスからは出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) |
+| p99 レイテンシをどう見るか | [ボリュームの操作時間メトリクスから p99 は出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) |
 | 世代差・S3 API との比較 | **未測定です。** 引用元が未測定として挙げている範囲は [引用元が未測定としている範囲](../../domains/performance/notes/a-single-connection-measures-the-client.md#引用元が未測定としている範囲) にあります |
 | コストとの兼ね合い | [EBS が安くなくなる境目](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) |
 

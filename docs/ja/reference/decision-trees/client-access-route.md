@@ -136,8 +136,8 @@ graph TD
 | WSL2 のネットワークは既定でホストと同一ではない | WSL2 は仮想化されたネットワークインターフェースと NAT を持ちます。mirrored モードでは Windows ホストと WSL2 が `localhost` で相互に到達できます | [Microsoft: Accessing network applications with WSL](https://learn.microsoft.com/en-us/windows/wsl/networking) |
 | **mirrored モードで NFS マウントが壊れる報告がある** | Microsoft の WSL リポジトリに `WSL 2 mirrored networking breaks NFS mounts ("Connection timed out")` として Issue が立っています。**未解決の報告であり、当方でも未確認です** | [microsoft/WSL Issue #12508](https://github.com/microsoft/WSL/issues/12508) |
 | SMB の同時利用に Multichannel を使う場合、ONTAP 側は既定無効 | このリポジトリの比較表に記録があります | [ファイルストレージの選択肢の比較](../comparison/file-storage-options.md#すべての-smb-数値の前提) |
-| **端末から S3 Access Points に届くにはインターフェースエンドポイントが要る** | ゲートウェイエンドポイントは VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入るトラフィックをルーティングしません | [S3 Access Point の権限設計](../../domains/security-governance/notes/access-point-authorization-layers.md) |
-| AD 参加 SVM では S3 Access Points の全データ操作に DC 到達性が必要 | `HeadBucket` は AD が到達不能でも成功するため疎通確認に使うと偽陽性になります | [AD への依存は参加時ではなく生涯続く](../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+| **VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入る端末通信を私設経路に限定するにはインターフェースエンドポイントが要る** | ゲートウェイエンドポイントは VPC 内で発生した通信には使えますが、VPC 外から入るトラフィックをルーティングしません | [S3 Access Point の権限設計](../../domains/security-governance/notes/access-point-authorization-layers.md) |
+| AD 参加 SVM の全データ操作における DC 依存と `HeadBucket` の挙動は未解決 | AWS は Windows ID の解決と名前サービス到達性を要件にしますが、既存の universal claim を支える完全な公開記録はありません | [端末から S3 Access Points に届く条件](../../domains/client-access/notes/what-an-endpoint-needs-to-reach-s3-access-points.md#AD-参加-SVM-に関する未解決の範囲) |
 
 ### 出典の性質が違う 2 行
 
@@ -177,7 +177,7 @@ graph TD
 | 5 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` | クライアント SKU で MPIO をどう有効化するか。**`Install-WindowsFeature` が使えるかはここで分かります** |
 | 6 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことの確認は自環境で取るのがいちばん確実です** |
 | 7 | WSL2: `wsl.exe --version` と `cat /etc/wsl.conf` でネットワークモードを確認し、`ip route` を Windows 側の `route print` と比べる | WSL2 がホストの VPN 経路を共有しているか |
-| 8 | 端末から `aws s3api list-objects-v2 --bucket <access-point-alias>` を試す | S3 Access Points への到達。**ゲートウェイエンドポイントしか無い場合はここで落ちます** |
+| 8 | 端末から `aws s3api list-objects-v2 --bucket <access-point-alias>` を試す | S3 Access Points への到達。VPC 外から入る端末通信を私設経路に限定する場合は、インターフェースエンドポイントと名前解決を確認します |
 
 手順 4 から 8 は**検証用のファイルシステムで行ってください。** 本番の SVM に対して端末から試すと、
 失敗した認証が監査ログに残り、ロックアウトの閾値に近づきます（[fsxadmin はロックされる](../../playbooks/05-operate/notes/admin-account-lockout-and-recovery.md)）。

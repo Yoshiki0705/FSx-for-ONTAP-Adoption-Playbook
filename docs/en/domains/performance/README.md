@@ -26,7 +26,7 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 |---|---|---|
 | 1 | Where throughput is determined and where it is shared | [Throughput is not set by one value](notes/where-throughput-is-determined-and-shared.md) |
 | 2 | How bandwidth is shared across protocols | [How bandwidth is shared across protocols](notes/what-you-cannot-read-from-cloudwatch.md#how-bandwidth-is-shared-between-protocols) |
-| 3 | How to look at latency tails (p99) | [p99 cannot be read from the CloudWatch metrics](notes/what-you-cannot-read-from-cloudwatch.md) |
+| 3 | How to look at latency tails (p99) | [p99 is not available from volume operation-time metric pairs](notes/what-you-cannot-read-from-cloudwatch.md) |
 | 4 | What makes a workload benefit from caching | [When caching helps](notes/what-you-cannot-read-from-cloudwatch.md#when-the-cache-helps) |
 | 5 | How to design a benchmark that reproduces | [What a reproducible benchmark records](notes/what-you-cannot-read-from-cloudwatch.md#what-a-reproducible-benchmark-requires) |
 | 6 | What a figure measured here is actually measuring | [A figure from a single connection measures the client, not the storage](notes/a-single-connection-measures-the-client.md) |

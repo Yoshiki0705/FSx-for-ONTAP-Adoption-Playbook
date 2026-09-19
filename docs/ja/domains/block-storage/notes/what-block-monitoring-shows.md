@@ -21,7 +21,7 @@ lang: ja
 
 **ただしボリューム単位の I/O メトリクスは存在します。** そのため **1 ボリュームに 1 LUN を置く構成では、ボリュームの次元が実質的に LUN の次元になります。** これは復旧の粒度の話とは別に、**監視の粒度としての 1:1 の理由**です。
 
-**ただし置き換わるのは粒度だけで、統計の種類は置き換わりません。** これらのボリュームメトリクスは合計値で、有効な統計は `Sum` です。**そこから出せるレイテンシは平均で、テールは出せません**（[p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md)）。LUN ごとの p99 が要件なら、この 1:1 では届きません。
+**ただし置き換わるのは粒度だけで、統計の種類は置き換わりません。** ボリュームの `DataReadOperationTime` / `DataReadOperations`、`DataWriteOperationTime` / `DataWriteOperations`、`MetadataOperationTime` / `MetadataOperations` は合計値で、有効な統計は `Sum` です。**各ペアから出せるレイテンシは平均で、テールは出せません**（[ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md)）。ほかのボリューム容量メトリクスには `Average` や `Maximum` を取るものもあるため、ボリュームメトリクス全体を `Sum` のみとは扱いません。
 
 **LUN 単位の数字が要るなら ONTAP 側に聞くことになります。** `statistics lun show` と `lun show -fields size-used` があります。
 

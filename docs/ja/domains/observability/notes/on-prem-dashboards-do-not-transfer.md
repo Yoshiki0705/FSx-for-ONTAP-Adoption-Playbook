@@ -78,7 +78,7 @@ Aggregate / cDOT / Cluster / Compliance / Datacenter / Data Protection / LUN / N
 | **Health** | **「システム全体が健全か」を 1 画面で見る入口がありません。** 健全性の判断は、個別メトリクスの組み合わせと Amazon CloudWatch のアラーム、および FSx for ONTAP 側が出す警告に置き換える設計になります |
 | **Headroom** | **性能の余裕をどれだけ残しているかの指標が出ません。** 「あと何割まで負荷を上げられるか」の判断材料を、スループット容量とクレジット残高の側から自分で作ることになります |
 
-Headroom の代替として何を見るかは [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) と [p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) にあります。**クレジット残高が性能の余裕そのものを左右する**ため、Headroom の不在はベンチマークの設計にも波及します。
+Headroom の代替として何を見るかは [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) と [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) にあります。**クレジット残高が性能の余裕そのものを左右する**ため、Headroom の不在はベンチマークの設計にも波及します。
 
 > **設計に関する補足**: Health ダッシュボードの代替を「アラームを増やす」で埋めると、平常時に無症状の劣化を見落とします。閾値の置き方は運用側のノートを先に読んでください。
 
@@ -162,7 +162,7 @@ ONTAP の Disk は非対応）。**あちらの README が Disk のダッシュ�
 - [監視経路の比較](../../../reference/comparison/observability-routes.md) — 経路別のトレードオフ
 - [Harvest は remote_write を持たない](harvest-has-no-remote-write.md) — Harvest を選んだ後に来る運用
 - [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 何を監視し閾値をどこに置くか
-- [p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) — Headroom の代替に使う指標
+- [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) — Headroom の代替に使う指標
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---

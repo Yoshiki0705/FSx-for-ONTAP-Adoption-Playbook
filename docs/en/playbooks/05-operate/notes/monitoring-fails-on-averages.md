@@ -158,11 +158,11 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 
 | Use | What it is | Where it fits | Where it breaks |
 |---|---|---|---|
-| **The `Maximum` statistic** | CloudWatch returns the highest value in the period | **Monitoring.** The only way to see which party saturated | — |
+| **The `Maximum` statistic** | CloudWatch returns the highest value in the period | **A monitoring choice.** Inspect peaks in utilization series, together with per-`FileServer` / per-`Aggregate` series on second-generation systems | Judging from Maximum alone while discarding averages, minima, and per-dimension series |
 | **Maximum as a headline number** | Reporting the highest of several runs as "the value for this configuration" | **Nowhere** | **Benchmarking.** The noisier the series, the further the maximum is pulled upward — it is **the least reproducible statistic** |
 | **`max` as an instruction to the load generator** | `fio`'s `rate=` / `iorate=max`, meaning "do not cap" | When the goal is to saturate | **Not a statistic at all.** The achieved figure can land below the target, so the instruction cannot be recorded as the result |
 
-**The first two rows have opposite purposes.** Monitoring exists to **detect**, so it needs a statistic that reveals saturation that happened even once. Benchmarking exists to **reproduce**, so it needs a statistic another person can obtain. **The maximum suits the first best and the second worst.**
+**The first two rows have opposite purposes.** Monitoring exists to **detect**, so use `Maximum` for peaks and the per-`FileServer` / per-`Aggregate` series AWS publishes when those dimensions answer the question. Benchmarking exists to **reproduce**, so it needs a statistic another person can obtain. **Maximum is a monitoring choice, not a suitable benchmark headline.**
 
 **This distinction was made explicit after a citing repository raised it.** In that environment, repeated runs of an identical configuration varied by 45%, 300-second and 900-second runs settled on different values, and `iorate=max` landed below the target. **The measured figures stay with that repository** — they are environment-dependent, so they are not copied here.
 

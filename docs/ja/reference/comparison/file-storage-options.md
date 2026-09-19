@@ -174,7 +174,7 @@ graph TD
 | 論点 | 内容 |
 |---|---|
 | **容量が埋まると書き込みが落ちる** | sibling 側の測定では、自動日次バックアップのスナップショットが上書き前ブロックを保持して容量を食い、ボリューム使用率 88% → 100% で書き込みが `2,200 MB/s → 267 MB/s` に落ちました。**測定ファイルを `rm` しても空きは戻りません。** 回復には `volume autosize` と `snapshot autodelete` の設定が必要です。原因と回避手段はどちらも公式に記載があり、発見ではなく設計漏れです |
-| **同じ構成でも数字が振れる** | キャッシュに何が残っていたかで変わります。ベンチマークはクレジット残高込みで設計してください（[p99 は CloudWatch のメトリクスからは出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md)） |
+| **同じ構成でも数字が振れる** | キャッシュに何が残っていたかで変わります。ベンチマークはクレジット残高込みで設計してください（[ボリュームの操作時間メトリクスから p99 は出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md)） |
 | **S3 Access Point の対応表は網羅ではない** | AWS の対応オペレーション表が自身を partial list と明記しています。ここから作った「非対応の一覧」を網羅として扱わないでください |
 | **非対応オプションはエラーで返らないことがある** | Amazon S3 Files に `nconnect` を渡すと、**拒否も黙殺もされずマウントがハングしました**（90 秒でタイムアウト）。上の比較表の「非対応」は、指定すると失敗するという意味ではありません。**未対応オプションを試すときは `timeout` を付けてください**（[出典](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md)、2026-09、ap-northeast-1） |
 

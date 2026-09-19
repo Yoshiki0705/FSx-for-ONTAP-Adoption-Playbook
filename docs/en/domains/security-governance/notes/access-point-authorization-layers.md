@@ -798,7 +798,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 | Misconception | Reality |
 |---|---|
 | You attach a bucket policy to an FSx for ONTAP S3 AP | There is no bucket, so you cannot. It is an access point policy |
-| Same-account ownership is required, so another account cannot read the data | **It can.** Same-account ownership constrains creating the access point. With the policy allowing it, a principal in another organization's account gets through (measured) |
+| Same-account ownership is required, so another account cannot read the data | **It can.** Same-account ownership constrains creating the access point. When both the access point policy and the caller's identity-based policy allow it, a principal in another organization's account gets through (measured) |
 | Without an access point policy, nobody has access | If the identity-based policy allows it, they do |
 | Only what the `Allow` lists gets through | Same-account evaluation is a union. Narrowing needs an explicit `Deny` |
 | An action missing from `Allow` cannot be performed | It can. Writing a narrower action set does not narrow either |
@@ -850,6 +850,8 @@ The diagram carries the same content as the tables above: **pick a condition key
 | 20 KB policy limit, VPC configuration immutable after creation, HTTPS-only with an HTTP redirect, 10,000 access points per account per Region | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 | Properties specified when creating an access point, the volume needing a junction path | [AWS: Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) |
 | `CreateAndAttachS3AccessPoint` parameters and constraints | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
+| That `FileSystemIdentity` authorizes all file access requests and takes a UNIX or Windows identity | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
+| Same-account evaluation of identity-based and resource-based policies | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
 | CloudFormation properties | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN form, the authorization model, triage signals | [Authorization model in FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.en.md) |
 | Documents the Windows identity for a "joined Active Directory domain" (**the measurement here is broader**) | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
