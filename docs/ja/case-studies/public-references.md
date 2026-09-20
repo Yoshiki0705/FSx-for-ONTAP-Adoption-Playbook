@@ -68,7 +68,7 @@ Amazon FSx for NetApp ONTAP の情報は、**AWS 側と NetApp 側の 2 系統�
 | サイジングの考え方（層構成、レイテンシ水準、キャッシュ） | [How to size an Amazon FSx for NetApp ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
 | 使用率ごとのティアリング挙動（50% / 90% / 98%） | [Modify storage data tiering policies](https://repost.aws/knowledge-center/fsx-ontap-modify-data-tiering) |
 | 大容量移行時にティアリングが追いつかない場合 | [Cloud Write mode for petabyte-scale migrations](https://aws.amazon.com/blogs/storage/streamline-petabyte-scale-data-migrations-with-cloud-write-mode-on-amazon-fsx-for-netapp-ontap/) |
-| SQL Server ワークロードの構成指針 | [Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
+| SQL Server ワークロードの構成指針 | [Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
 | オンプレミス ONTAP からの移行 | [Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 | ストレージ全般の設計・事例記事 | [AWS Storage Blog](https://aws.amazon.com/blogs/storage/) |
 

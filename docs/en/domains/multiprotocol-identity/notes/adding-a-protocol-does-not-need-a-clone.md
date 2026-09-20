@@ -49,7 +49,7 @@ Follow that and you arrive at a procedure: make a FlexClone, then `volume rehost
 | 1 | **Is the NFS protocol enabled on the SVM** | Add the protocol to the SVM. The same structure applies to SMB; enabling is an SVM-level setting | Not needed |
 | 2 | **Does the volume have a junction path** | Mount it into the SVM's namespace. **A volume with no junction path does not appear in the NFS namespace** | Not needed |
 | 3 | **Does the export policy permit the client** | Add a rule. **A default policy may carry no rules, and in that case it denies everything** | Not needed |
-| 4 | **Does name mapping resolve** | Configure the mapping. **On an NTFS-style volume, permission evaluation uses the NTFS ACL, so a win-to-unix mapping is not consulted** ([How a security style maps to permission evaluation](security-style-and-permission-evaluation.md#security-style-and-permission-evaluation)) | Not needed |
+| 4 | **Does name mapping resolve** | Configure the mapping. **On an NTFS-style volume, permission evaluation uses the NTFS ACL, so a Windows-to-UNIX mapping is not consulted** ([How a security style maps to permission evaluation](security-style-and-permission-evaluation.md#security-style-and-permission-evaluation)) | Not needed |
 
 **The security style appears in none of the four.** What the style decides is which permission model evaluates access once the request has arrived.
 

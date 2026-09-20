@@ -83,7 +83,7 @@ The reasoning behind the branches:
 |---|---|
 | Side effect of enabling | **When the audit destination volume fills, client access stops.** Not at the moment it becomes full |
 | Scope of the stop | **Only paths carrying a SACL.** Volumes in the same SVM that are not audited are unaffected |
-| Means of detection | **The EMS event that directly reports the write failure is not visible to customers.** What remains are capacity-side proxies |
+| Means of detection | **The EMS event that directly reports the write failure is not exposed through the available interfaces.** What remains are capacity-side proxies |
 | Judging health | `vserver audit show` reports `Auditing State: true` **even while access is stopped**. It cannot serve as a health signal |
 | Retention settings | The rotation-count method and the retention-period method are **mutually exclusive**. Setting one disables the other |
 | Side effect on the inventory | **The very share given a SACL for the inventory is the first to stop when capacity runs out.** Widening the scope widens the outage |
@@ -105,7 +105,7 @@ The reasoning behind the branches:
 | Workgroup | **Local users carry no last-logon attribute.** An inventory has to be built from audit logs, and "no activity" does not mean "not needed", so automating deletion is a separate judgment | [No last-logon attribute exists](../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md) |
 | Workgroup | **Logon audit events are per session, not per login action.** Counting them wrongly produces false positives in the inventory | [4624 is recorded, but what it counts is sessions](../../domains/security-governance/notes/smb-logon-audit-event-coverage.md) |
 | AD membership | **The AD dependency lasts for the life of the SVM, not just the join.** Service account credential expiry is symptomless in steady state and surfaces at the next maintenance | [The AD dependency lasts a lifetime](../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
-| Auditing enabled | **Destination exhaustion stops client access.** No customer-visible EMS event reports the write failure, leaving only capacity-side proxies | [Destination exhaustion stops access](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
+| Auditing enabled | **Destination exhaustion stops client access.** No EMS event exposed through the available interfaces reports the write failure, leaving only capacity-side proxies | [Destination exhaustion stops access](../../domains/security-governance/notes/audit-log-space-and-client-access.md) |
 
 ---
 
@@ -134,7 +134,7 @@ The reasoning behind the branches:
 | Inability to serve SMB depends on when the SVM was created | What correlates is not creation date but the **CIFS server deletion history** |
 | Enabling auditing can only stop auditing | **Client access to paths carrying a SACL stops** |
 | `vserver audit show` tells you whether auditing is writing | It reports `Auditing State: true` **even while stopped** |
-| The write failure can be detected from an EMS event | **The event that reports it directly is not visible to customers.** Capacity-side proxies are what remain |
+| The write failure can be detected from an EMS event | **The event that reports it directly is not exposed through the available interfaces.** Capacity-side proxies are what remain |
 | Local users also have a last logon record | **No such attribute exists** |
 | Counting logon events gives a login count | They are **per session**. Reusing an existing session emits no new event |
 | AD membership is a build-time task | **The dependency lasts for the life of the SVM** |

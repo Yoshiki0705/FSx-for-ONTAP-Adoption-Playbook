@@ -242,7 +242,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     is still the only way one gets registered in time. What measuring establishes is how far the
     register drifts when nobody reports.
 - **Seven of the eight languages defined an evidence tier differently from Japanese, and `AGENTS.md`
-  — which wins on any disagreement — carried the incomplete definition.** `docs/ja/evidence-policy.md`
+  — which is authoritative on any disagreement — carried the incomplete definition.** `docs/ja/evidence-policy.md`
   states that transcribing another project's measurement is `documented`, with three conditions of its
   own: every measurement condition transcribed, the source's own unmeasured gaps transcribed, and a row
   in the cross-project citation index so a retraction is detected. **English, Korean, both Chinese
@@ -797,7 +797,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     remaining 30% is 88, not the "over 90%" stated, and the counting method is absent. **The ordering
     is citable; the total is not**, and the note says which is which.
   - **The reduction figure has a stated basis, which is rare enough to be the reason to cite the
-    case**: over 50% against the customer's own legacy environment at $1/GB/year, with the
+    case**: over 50% against the adopting organization's legacy environment at $1/GB/year, with the
     configuration footnoted and third-party licensing included in it. Three inputs that move the rate
     are named, so a reader can see why it does not transfer.
   - **Datadobi stays an index row.** It meets the inclusion bar on a vendor announcement, but there is
@@ -1304,7 +1304,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     gate is the thing that found it, no link check covered that path. The message says so. Here the
     external link check is opt-in, so that second defect is real and still open.
 - **`make hooks` replaces the instruction to run `git config` by hand, and reports the state neither
-  side had named.** A global `core.hooksPath` wins in any clone that has not set the local one, so
+  side had named.** A global `core.hooksPath` takes precedence in any clone that has not set the local one, so
   the tracked hook is present, correct, executable — **and never runs.** That clone looks protected,
   which is worse than having no hook. It fires on this machine.
   - **Activation cannot be enforced from inside the repository**, and asserting the config value in
@@ -1755,7 +1755,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   change is the only way in, and second-generation file systems refuse another for six hours.
 - **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
   for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
-  stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
+  stall. AWS Support has now confirmed that event is not exposed through the available interfaces by design — retracting
   guidance from an earlier reply in the same case that had suggested monitoring it, which this note had
   adopted. A detector that cannot fire says nothing when it is silent, so the inference never held.
   The conclusion survives on other grounds: Support confirmed that exhausting the **destination**
@@ -1765,7 +1765,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   to see staging pressure from outside" — it is not a way at all.
 - **`adt.dest.directory.full` was missing, and it is the event that matches the symptom.** Its ONTAP
   definition states it can lead to denial of service on SACL-enabled objects, which is precisely what
-  was measured over SMB. It is also not customer-visible. That makes the note's central claim stronger
+  was measured over SMB. It is also not exposed through the available interfaces. That makes the note's central claim stronger
   and differently grounded: no path exists to ask whether auditing is still writing, not because the
   search missed one, but because both events that would answer it are unreachable. The observable-signal
   table now separates what was measured, what AWS expects to be visible but is unverified here
@@ -2488,7 +2488,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **`docs/ja/reference/block-storage-resource-map.md`.** An index of the AWS user guide, AWS blogs,
   re:Post, NetApp documentation, and public infrastructure as code for block storage — and, more
   usefully, a table of **seven places those sources disagree with each other**: the LUN-to-volume ratio
-  (two AWS posts recommend different layouts, and NetApp states 1:1 is not a formal best practice), the
+  (two AWS posts recommend different layouts, and NetApp states 1:1 is not a general recommendation), the
   iSCSI session count (the eight-session guidance is sized for the first generation's 4,000 MBps
   ceiling), paths per LUN, the NVMe/TCP ports missing from the security-group requirements table, and
   failover transparency, which is documented for iSCSI and silent for NVMe/TCP. Also carries a section
@@ -2776,7 +2776,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `KeyManager: AWS`, and the copy still succeeded. That is looser than the general documented
   statement, so the two paths cannot be described under one condition. The design consequence is on
   ordering, not on configuration: a file system's KMS key is fixed at creation and
-  `update-file-system` has no argument that changes it, so a customer-managed key is a decision that
+  `update-file-system` has no argument that changes it, so a KMS key that you manage is a decision that
   precedes the file system. Recorded with the cross-Region result as `verified` and the
   cross-account restriction as `documented`, since it was not measured.
 - **Region exceptions to the copy paths are enumerated rather than summarized.** Cross-Region copy
@@ -3414,7 +3414,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     this repository's terms — they establish that an organization published an account, not a value to
     design against. A seven-point "what to check while reading" table makes that judgement transferable
     instead of asking readers to take it on trust.
-  - Industry-specific *design* material is listed separately from case studies, since an EDA best-practices
+  - Industry-specific *design* material is listed separately from case studies, since an EDA design-guidance
     paper is more use for a decision than an EDA success story. TR-4937 is cited **by report number rather
     than URL**, because that distribution URL moves and a number does not.
   - The directory now separates **three** kinds rather than two: public, field, and verification.
@@ -3564,7 +3564,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     with a failover, and adding HA pairs is not reversible at all — so it goes last.
 - Note: [at-rest encryption is automatic; in-transit conditions differ by method](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
   Encryption at rest cannot be disabled and covers data and metadata. Key selection remains a creation-time
-  decision: omitting `KmsKeyId` uses the Amazon FSx-managed key, while a customer-managed key can be
+  decision: omitting `KmsKeyId` uses the Amazon FSx-managed key, while a KMS key that you manage can be
   specified. There is no shared in-transit default. Nitro encryption is automatic when its EC2 client,
   generation, Region and network-path conditions hold; SMB encryption is off when the SVM is created and
   can be required per SVM or share; NFS Kerberos and IPsec each have their own prerequisites. Requiring SMB

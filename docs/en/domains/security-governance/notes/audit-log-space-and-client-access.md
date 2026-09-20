@@ -193,7 +193,7 @@ There are no entries matching your query.
 
 ## The signals you can observe
 
-**Across both stops, what was recorded is the destination volume's capacity events. The event reporting the write failure itself is defined but not visible to customers** (below).
+**Across both stops, what was recorded is the destination volume's capacity events. The event reporting the write failure itself is defined but not exposed through the available interfaces** (below).
 
 ```text
 FsxIdEXAMPLE::> event log show -message-name *wafl.vol.full*
@@ -207,9 +207,9 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 
 Reviewing every EMS record over the interval containing the stop, the only other entries were **`secd.nfsAuth.noNameMap` from an unrelated workload, at roughly 5.5-minute intervals**. Nothing about auditing, staging, or the refusal.
 
-**That does not mean audit-related EMS events do not exist. They are defined, and the two that matter are not visible to customers.**
+**That does not mean audit-related EMS events do not exist. They are defined, and the two that matter are not exposed through the available interfaces.**
 
-| Event | Severity | Meaning | Visible to customers |
+| Event | Severity | Meaning | Exposed through the available interfaces |
 |---|---|---|---|
 | `adt.dest.directory.full` | `EMERGENCY` | The destination directory is full and audit logs cannot be written. **Can lead to denial of service on objects carrying a SACL** | **No** (absent from every EMS event in the outage window, measured 2026-09-03) |
 | `adt.stgvol.nospace` | `EMERGENCY` | The staging volume has no space and a file or directory for audit logs cannot be created | **No** (same) |
@@ -224,11 +224,11 @@ Reviewing every EMS record over the interval containing the stop, the only other
 |---|---|
 | Destination volume utilization (the 95% / 99% EMS events, CloudWatch volume metrics) | **The warning signal for an access outage — but the grace is 19 to 65 seconds** (below) |
 | The `wafl.vol.full` EMS event | The moment auditing failed to extend the EVTX |
-| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is visible to customers** (absent from every EMS event in the outage window). They cannot be monitored |
+| The `adt.dest.directory.full` / `adt.stgvol.nospace` EMS events | The events reporting the write failure directly. **Neither is exposed through the available interfaces** (absent from every EMS event in the outage window). They cannot be monitored |
 | The `monitor.volume.*` EMS events targeting `MDV_aud_*` | Staging pressure. **Expected to be visible but not confirmed here**, since there is no way to fill staging deliberately |
 | Aggregate free space | The headroom staging has to draw on |
 | `Auditing State` in `vserver audit show` | **`true` even while stopped.** Not usable as a health signal |
-| An EMS event for the client refusal | **Not visible to customers.** The event reporting the refusal is defined (`adt.dest.directory.full`) but has no path to reach it |
+| An EMS event for the client refusal | **Not exposed through the available interfaces.** The event reporting the refusal is defined (`adt.dest.directory.full`) but has no path to reach it |
 
 **There is no way to ask directly whether auditing is writing.** Destination volume utilization becomes the proxy for both audit health and access availability.
 

@@ -117,7 +117,7 @@ There are three exclusion paths.
 | `vscan-fileop-profile` | Scan trigger | Note |
 |---|---|---|
 | `no-scan` | none | Nothing on this share is scanned |
-| `standard` (default, NetApp best practice) | open / close / rename | |
+| `standard` (default, recommended by NetApp) | open / close / rename | |
 | `strict` | open / read / close / rename | For several clients holding the same file open at once. **More scan requests, so performance can be affected** |
 | `writes-only` | Only when a modified file is closed | Fewer requests and better performance, but **the scanner must be configured to delete or quarantine unrepairable files** |
 
