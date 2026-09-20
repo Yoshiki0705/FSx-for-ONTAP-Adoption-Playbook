@@ -19,23 +19,27 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 **"What to manage as IaC" is already settled by what the API reaches, before any policy decides it.**
 
-File systems, SVMs, volumes, backups, and tags can be created, updated, and deleted through the Amazon FSx API and templates.
+Amazon FSx for NetApp ONTAP file systems, SVMs, volumes, backups, and tags are reachable from CloudFormation only where both the Amazon FSx API and a CloudFormation resource property expose them. CloudFormation does not provide a broader configuration surface than the Amazon FSx API, so check the CloudFormation reference property by property.
 
-**ONTAP-level settings, on the other hand, are reachable only through ONTAP CLI or the ONTAP REST API.** Examples:
+| Setting | Amazon FSx API? | ONTAP layer only? | Source / operational consequence |
+|---|---|---|---|
+| Exposed file-system, SVM, and volume properties | Yes | No | [Amazon FSx API](https://docs.aws.amazon.com/fsx/latest/APIReference/Welcome.html) and [CloudFormation resources](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_FSx.html). A template calls the exposed API surface declaratively |
+| SVM AD configuration and root-volume security style | Yes | No | [`CreateStorageVirtualMachine`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateStorageVirtualMachine.html). CloudFormation also exposes them, but changing `RootVolumeSecurityStyle` requires replacement |
+| Volume tiering policy and cooling period | Yes | No | [`CreateVolume`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateVolume.html) / [`UpdateVolume`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_UpdateVolume.html). Re-read the applied value |
+| Required SMB encryption on an SVM or share | No | Yes | [SMB encryption procedure](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) specifies ONTAP CLI. Clients without encryption support cannot connect |
+| Volume inode ceiling | No | Yes | [Inode-ceiling procedure](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/increase-volume-max-files.html) specifies ONTAP CLI. Monitor inodes separately from capacity |
+| FlexVol-to-FlexGroup conversion | No | Yes | [Volume management](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) specifies ONTAP CLI. Delete backups first and validate data placement |
+| On-demand Snapshot creation for an ONTAP volume | No | Yes | Amazon FSx [`CreateSnapshot`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnapshot.html) is for OpenZFS. Use an ONTAP Snapshot policy or ONTAP CLI / REST API |
+| Clearing the SnapLock audit log volume designation | No | Yes | The [measured record](#boundaries-found-by-measurement) cleared it through ONTAP REST. **Clearing it does not make the retained volume, SVM, or file system deletable** |
+| Retrieving a failed volume-deletion reason | Yes | No | Read `LifecycleTransitionReason` from `DescribeVolumes`. Do not judge from the delete response alone ([measured record](../../../../ja/reference/limits/#ボリューム削除の失敗理由は-aws-api-内にあります--the-reason-for-a-failed-volume-deletion-is-in-the-aws-api)) (日本語) |
 
-| Setting | Route that reaches it |
-|---|---|
-| Requiring SMB encryption | **ONTAP CLI only** (`vserver cifs security modify`) |
-| A volume's inode ceiling | **ONTAP CLI only** (`volume modify -files`) |
-| Converting FlexVol to FlexGroup | **ONTAP CLI only** |
-| **Creating a Snapshot of an ONTAP volume** | **ONTAP CLI / REST only.** Confirmed by measurement (below) |
-| **Clearing the SnapLock audit log volume designation** | **ONTAP level only.** Confirmed by measurement (below). **Clearing it still does not allow deletion** |
-| **Obtaining the reason a volume deletion failed** | **ONTAP level only.** The AWS API does not return the reason (below) |
+Each `No` describes native reachability established by the source in that row. The SnapLock audit log designation is a `verified` exception, not an inference from the Amazon FSx API input shape. A CloudFormation custom resource, Lambda function, or Systems Manager workflow can invoke ONTAP CLI / REST API, but **that automation does not extend the native Amazon FSx API or CloudFormation resource surface.** The caller owns ONTAP credentials, network reachability to the management endpoint, idempotency, and failure recovery.
 
 So **a successful template does not mean a finished configuration.** A policy of "manage everything as IaC" cannot cross this boundary. What needs designing is not where the boundary sits, but **how to make the far side of it reproducible.**
 
-> **Evidence**: `documented` — the route for each operation and the template update behaviour rest on
-> AWS documentation and the CloudFormation reference.
+> **Evidence**: Rows linked to AWS documentation and the CloudFormation reference are `documented`.
+> Clearing the SnapLock audit log volume designation and the observed response path for a failed deletion
+> are `verified` measurements with their environment recorded in the next section.
 > **No particular tooling configuration is recommended.** Steps for your own environment are in
 > "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
 
@@ -119,8 +123,8 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 
 | Layer | What to verify | Route |
 |---|---|---|
-| AWS resource layer | That the file system, SVMs, and volumes exist with the intended settings | Amazon FSx API |
-| ONTAP settings layer | Required SMB encryption, inode ceilings, export policies, tiering policies | ONTAP CLI / REST API |
+| AWS resource layer | Whether file systems, SVMs, volumes, and tiering policies have the intended settings | Amazon FSx API |
+| ONTAP settings layer | Required SMB encryption, inode ceilings, export policies | ONTAP CLI / REST API |
 
 **The items to check hardest are the ones where leaving the default produces environment-to-environment differences.**
 

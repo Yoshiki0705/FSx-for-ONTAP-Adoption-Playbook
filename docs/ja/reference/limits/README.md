@@ -23,6 +23,33 @@ premise to design against.
 
 ---
 
+## クォータ調整可否 / Quota adjustability
+
+`Yes` は一次資料が増額可能または `Adjustable: Yes` と明記するものです。`Not established` は、一次資料が上限値を示しても調整可否を明記していないものです。**Service Quotas に無いことを `No` の根拠にはしません。** この表は Amazon FSx for NetApp ONTAP（以降、FSx for ONTAP）の既定値を複製せず、申請前に対象リージョンの現在値を Service Quotas とリンク先で確認するための索引です。
+
+`Yes` means that a primary source explicitly says the quota can be increased or marks it `Adjustable: Yes`. `Not established` means that the primary source gives a ceiling but does not establish adjustability. **Absence from Service Quotas is not evidence for `No`.** This table does not copy defaults; check the current value in the target Region in Service Quotas and at the linked source before planning a request.
+
+| 上限 / Limit | 調整可能 / Adjustable | 一次資料 / Primary source | 範囲・注意 / Scope and notes |
+|---|---|---|---|
+| ONTAP file systems | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | アカウント・リージョン単位 / Per account and Region |
+| ONTAP SSD storage capacity | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 GiB / Aggregate GiB across file systems |
+| ONTAP throughput capacity | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 MBps / Aggregate MBps across file systems |
+| ONTAP SSD IOPS | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 IOPS / Aggregate IOPS across file systems |
+| ONTAP backups | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | ユーザー開始バックアップ、アカウント・リージョン単位 / User-initiated backups per account and Region |
+| Amazon S3 access points | Yes | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#soft-limits) | アカウント・リージョン内の対応データソースで共有。同じ上限が 1 ファイルシステム / ボリュームへの添付にも適用 / Shared by supported data sources per account and Region; the same limit applies to attachments per file system or volume |
+| ファイルシステム単位の容量・IOPS・スループット上限 / Per-file-system capacity, IOPS, and throughput ceilings | Not established | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#limits-ontap-resources-file-system) | 構成上限は記載済み。調整可否は同ページで未確立 / Configuration ceilings documented; adjustability not established there |
+| リソース数の上限 / Resource-count ceilings | Not established | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#limits-ontap-resources-file-system) | ボリューム・SVM・ルートは FS 単位、Snapshot・バックアップはボリューム単位、接続数はファイルサーバー単位 / Volumes, SVMs, routes per FS; snapshots, backups per volume; connections per file server |
+
+選び方は、まずアカウント・リージョン合計とリソース単位の上限を分けることです。`Yes` の行は必要量と対象リージョンを決めてから現在値と申請経路を確認します。`Not established` の行は増額を前提に設計せず、現在の上限内で成立する構成または分割方法を用意します。一方、分割すると管理対象、障害範囲、コストが増えるため、増額可否が一次資料で確立した時点で再比較します。
+
+First separate account-and-Region aggregates from resource-local ceilings. For a `Yes` row, determine the required quantity and Region, then check the current value and request path. For a `Not established` row, do not design on the assumption that an increase will be granted; keep a configuration or partitioning option that works within the documented ceiling. Partitioning adds resources, failure domains, and cost, so compare again if a primary source later establishes adjustability.
+
+`No` の行はありません。今回確認した一次資料には、ここで扱う FSx for ONTAP 上限を明示的に調整不可とする記載がありませんでした。確認日 / Checked: 2026-09-20.
+
+There is no `No` row. The primary sources checked for this table did not explicitly mark any included FSx for ONTAP limit as non-adjustable. Checked: 2026-09-20.
+
+---
+
 ## 文書化されたスループット上限 / Documented throughput ceilings
 
 The following values are configuration ceilings documented by AWS, not measured throughput. The workload-visible
