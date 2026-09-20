@@ -7,13 +7,35 @@ source: https://aws.amazon.com/fsx/netapp-ontap/pricing/
 lang: ja
 ---
 
-# 課金は「確保した量」と「使った量」に分かれる
+# Amazon FSx for NetApp ONTAP の請求は確保量と消費量のどちらで決まるか？
+
+SSD 容量・IOPS・スループットは確保量、容量プールとバックアップは消費量で課金されます。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](provisioned-versus-consumed.md) | [English](../../../../en/domains/cost/notes/provisioned-versus-consumed.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- SSD 容量・IOPS・スループットと、容量プール・バックアップの課金基準の違い。
+- 階層化、重複排除・圧縮、Snapshot が請求と容量にどう現れるか。
+
+## このノートが答えないこと
+
+- 現在の単価や、自環境の月額・本番見積もり。
+- アクセス頻度や可用性・性能要件を測らずに決める一律のコスト削減策。
+
+## 前提レベル
+
+basic
+
+## 本文
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **課金対象は「確保した量」で決まるものと「使った量」で決まるものに分かれます。** 見積もりが外れる原因はほぼここにあります。
 
@@ -30,7 +52,7 @@ lang: ja
 
 ---
 
-## 課金対象
+### 課金対象
 
 | 課金対象 | 単位 | 確保 / 消費 |
 |---|---|---|
@@ -49,7 +71,7 @@ lang: ja
 
 ---
 
-## 階層化が常に安くなるとは限らない理由
+### 階層化が常に安くなるとは限らない理由
 
 容量プールは低頻度アクセスのデータ向けにコスト最適化されたストレージです。**ただし、そこに置いたデータを読み書きするたびに容量プールのリクエスト課金が発生します。**
 
@@ -67,7 +89,7 @@ lang: ja
 
 ---
 
-## 重複排除と圧縮が SSD の請求を下げない理由
+### 重複排除と圧縮が SSD の請求を下げない理由
 
 **重複排除と圧縮はデータサイズを縮めますが、SSD は「確保した量」で課金されます。**
 
@@ -77,7 +99,7 @@ lang: ja
 
 ---
 
-## 課金されないと誤解されがちなもの
+### 課金されないと誤解されがちなもの
 
 | 項目 | 実際 |
 |---|---|
@@ -90,7 +112,7 @@ lang: ja
 
 ---
 
-## 容量として現れる Snapshot
+### 容量として現れる Snapshot
 
 Snapshot は容量プールではなく**ボリュームの容量**を消費します。そして削除したデータを Snapshot が保持している場合、**データを削除しても空き容量は増えません。**
 
@@ -100,7 +122,7 @@ Snapshot は容量プールではなく**ボリュームの容量**を消費し�
 
 ---
 
-## 見積もりが外れる典型的な前提
+### 見積もりが外れる典型的な前提
 
 | 前提 | 何が起きるか |
 |---|---|
@@ -117,7 +139,7 @@ HA ペア追加が最低スループットを上げる点は [スループット
 
 ---
 
-## トレードオフの見比べかた
+### トレードオフの見比べかた
 
 コストの判断は、**削れる額と引き換えに何を受け入れるのかを対称に並べる**と決められます。片側だけを見ると決められません。
 
@@ -133,7 +155,7 @@ HA ペア追加が最低スループットを上げる点は [スループット
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -156,6 +178,53 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 使った分だけ払う | SSD・IOPS・スループットは**確保した量**で課金されます |
+| 容量プールはストレージ料金だけ | **読み取り・書き込みのリクエスト課金**があります |
+| コールドデータは全部落とせば得 | 定期的にスキャンされるならリクエスト課金が積み上がります |
+| 重複排除で請求が下がる | 確保容量を下げるまで変わりません |
+| バックアップは毎回全量を保存 | 直前のバックアップから変更されたブロックが次の復旧ポイントに保存されます |
+| Multi-AZ のサービス内部レプリケーションは AZ 間転送が別課金 | そのレプリケーション転送はスループット容量の料金に含まれます。クライアント通信、バックアップコピー、SnapMirror は別の経路です |
+| IOPS は上げれば必ず課金増 | 3 IOPS/GB までは含まれています |
+| Snapshot はストレージ課金に無関係 | ボリュームの容量と inode を消費します |
+| 階層化ポリシーを `All` にすれば SSD 課金はほぼゼロ | メタデータは常に SSD にあります |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| SSD IOPS が 3 IOPS/GB 超過分であること、容量プールに読み書きのリクエスト課金があること | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
+| SnapLock 使用量が SnapLock ボリュームの使用ストレージ容量を GB-月で記録すること、容量プールの読み書きが操作回数で記録されること | [AWS: AWS billing and usage reports for FSx for ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/FSxONTAP-Billing.html) |
+| 確保と消費の区分、Multi-AZ のサービス内部レプリケーション転送がスループット容量の料金に含まれること、バックアップが変更ブロックを保存すること、サービスの最低料金・セットアップ料金がないこと、FSx for ONTAP S3 Access Points 経由のリクエストとデータ転送 | [AWS: FSx for ONTAP 料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
+| 確保量に対する課金であること、容量プールとバックアップが消費量課金であること | [AWS: FSx for ONTAP の機能](https://aws.amazon.com/fsx/netapp-ontap/features/) |
+| 重複排除・圧縮はデータを縮めるが確保済みストレージに対して課金されること、階層化がコスト削減手段であること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
+| 全書き込みが SSD 経由であること、メタデータが常に SSD にあること、1 : 10 の目安 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 大量削除の直後は空き容量の反映に時間がかかること（ブロック所有権の計算処理）、性能には影響しないこと | [AWS re:Post: Why didn't the available space update after I deleted a large amount of data?](https://repost.aws/knowledge-center/fsx-ontap-space-available-from-deletions) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — コスト](../README.md) — このモジュールのハブ
+- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ とスケールアウトの制約
+- [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア追加が最低スループットを上げる
+- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 階層化と背景タスクの挙動
+- [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 保持設計と容量
+- [容量が余っていても書けなくなる](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — inode と Snapshot
+- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
+
+---
+
 ## 自環境での確認手順
 
 **測る対象は「確保量と消費量の差」と「容量プールへのアクセス頻度」です。** この 2 つで見積もりのずれの大半が説明できます。
@@ -172,53 +241,31 @@ graph TD
 
 手順 3 が最も見落とされます。**効率化の効果を「空き容量」で報告すると、請求が下がっていないことに気づけません。**
 
----
+次の読み取り専用コマンドは、手順 1 の SSD 確保容量に加え、確保したスループット容量を確認します。
 
-## よくある誤解
+```bash
+QUERY='FileSystems[0].{
+  SSDGiB:StorageCapacity,
+  ThroughputMBps:OntapConfiguration.ThroughputCapacity
+}'
+aws fsx describe-file-systems \
+  --file-system-ids <fs-id> \
+  --query "$QUERY"
+```
 
-| 誤解 | 実際 |
-|---|---|
-| 使った分だけ払う | SSD・IOPS・スループットは**確保した量**で課金されます |
-| 容量プールはストレージ料金だけ | **読み取り・書き込みのリクエスト課金**があります |
-| コールドデータは全部落とせば得 | 定期的にスキャンされるならリクエスト課金が積み上がります |
-| 重複排除で請求が下がる | 確保容量を下げるまで変わりません |
-| バックアップは毎回全量を保存 | 直前のバックアップから変更されたブロックが次の復旧ポイントに保存されます |
-| Multi-AZ のサービス内部レプリケーションは AZ 間転送が別課金 | そのレプリケーション転送はスループット容量の料金に含まれます。クライアント通信、バックアップコピー、SnapMirror は別の経路です |
-| IOPS は上げれば必ず課金増 | 3 IOPS/GB までは含まれています |
-| Snapshot はストレージ課金に無関係 | ボリュームの容量と inode を消費します |
-| 階層化ポリシーを `All` にすれば SSD 課金はほぼゼロ | メタデータは常に SSD にあります |
+### 期待結果
 
----
+```text
+{
+  "SSDGiB": <確保した SSD 容量>,
+  "ThroughputMBps": <確保したスループット容量>
+}
+```
 
-## 参照した一次情報
-
-| 論点 | 出典 |
-|---|---|
-| SSD IOPS が 3 IOPS/GB 超過分であること、容量プールに読み書きのリクエスト課金があること | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
-| SnapLock 使用量が SnapLock ボリュームの使用ストレージ容量を GB-月で記録すること、容量プールの読み書きが操作回数で記録されること | [AWS: AWS billing and usage reports for FSx for ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/FSxONTAP-Billing.html) |
-| 確保と消費の区分、Multi-AZ のサービス内部レプリケーション転送がスループット容量の料金に含まれること、バックアップが変更ブロックを保存すること、サービスの最低料金・セットアップ料金がないこと、FSx for ONTAP S3 Access Points 経由のリクエストとデータ転送 | [AWS: FSx for ONTAP 料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
-| 確保量に対する課金であること、容量プールとバックアップが消費量課金であること | [AWS: FSx for ONTAP の機能](https://aws.amazon.com/fsx/netapp-ontap/features/) |
-| 重複排除・圧縮はデータを縮めるが確保済みストレージに対して課金されること、階層化がコスト削減手段であること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
-| 全書き込みが SSD 経由であること、メタデータが常に SSD にあること、1 : 10 の目安 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| 大量削除の直後は空き容量の反映に時間がかかること（ブロック所有権の計算処理）、性能には影響しないこと | [AWS re:Post: Why didn't the available space update after I deleted a large amount of data?](https://repost.aws/knowledge-center/fsx-ontap-space-available-from-deletions) |
+この出力だけでは、実使用量、容量プールのリクエスト数、単価、請求額は確認できません。表の残りの手順と請求データを別に確認してください。
 
 ---
 
-## 関連ドキュメント
+## Read next
 
-- [Domain — コスト](../README.md) — このモジュールのハブ
-- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ とスケールアウトの制約
-- [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア追加が最低スループットを上げる
-- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 階層化と背景タスクの挙動
-- [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 保持設計と容量
-- [容量が余っていても書けなくなる](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — inode と Snapshot
-- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — コスト](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](provisioned-versus-consumed.md) | [English](../../../../en/domains/cost/notes/provisioned-versus-consumed.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[外部アーカイブと容量プール階層はどう組み合わせるか？](archiving-and-tiering-are-ordered-not-alternatives.md)

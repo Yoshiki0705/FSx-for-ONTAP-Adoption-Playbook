@@ -7,13 +7,35 @@ source: https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-am
 lang: en
 ---
 
-# Archiving with an external tool and the capacity pool tier are ordered, not alternatives
+# How should external archiving and Amazon FSx for NetApp ONTAP capacity-pool tiering be combined?
+
+In the case, external archiving acted first; capacity-pool tiering handled part of the remaining data.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) | [English](archiving-and-tiering-are-ordered-not-alternatives.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- How external archiving and capacity-pool tiering act sequentially on different billing dimensions.
+- How to check a published reduction's baseline, configuration, and arithmetic before using it.
+
+## What this note does not answer
+
+- Your environment's reduction rate or the optimal thresholds for archiving and tiering.
+- The unbaselined “up to 25x” migration claim or independently measured external-tool capabilities.
+
+## Prerequisite level
+
+intermediate
+
+## Body
 
 [🏠 Repository home](../../../README.md) | [Domain — Cost](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **List the mechanisms for spending less and archiving by an external data-management tool sits in the same column as the FSx for ONTAP capacity pool tier. They are not in the same place.**
 
@@ -28,7 +50,7 @@ In the case AWS published, **two stages act in order.** An external tool archive
 
 ---
 
-## The recorded ordering, and an arithmetic that does not add up
+### The recorded ordering, and an arithmetic that does not add up
 
 **The ordering recorded in the case is as follows.**
 
@@ -53,7 +75,7 @@ In the case AWS published, **two stages act in order.** An external tool archive
 
 ---
 
-## The basis for the reduction, and the configuration in the footnote
+### The basis for the reduction, and the configuration in the footnote
 
 **The rate is over 50% against a legacy environment that had reached $1/GB/year.** It is not a comparison with another AWS file storage service. **Cases that state the basis are not common, which is the part worth citing.**
 
@@ -88,7 +110,7 @@ The configuration recorded in the footnote:
 
 ---
 
-## Where the reason for the migration choice sits
+### Where the reason for the migration choice sits
 
 **This case used an external tool for the migration because of where the source was, not because of a feature comparison.** The article names AWS Snowball and AWS DataSync as candidates and then states that the external tool was used because **most of the data was already hosted by a cloud provider.**
 
@@ -100,7 +122,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 ---
 
-## Compared symmetrically with the AWS-native options
+### Compared symmetrically with the AWS-native options
 
 **Adding no external tool is placed with the same weight.**
 
@@ -121,24 +143,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 ---
 
-## Verify in your own environment
-
-| # | Step | What it establishes |
-|---|---|---|
-| 1 | Work out the annual cost per GB of the legacy environment | **The comparison basis.** Without it, a rate says nothing |
-| 2 | Check against audit requirements whether data may leave the file system | **If it may not, archiving with an external tool drops out** |
-| 3 | Measure the distribution of last-accessed dates | How much stage 1 moves. **The case's 70% belongs to the case's distribution** |
-| 4 | Measure how often what remains after stage 1 is read | **Whether stage 2 costs more rather than less** |
-| 5 | Estimate the capacity pool tier request count | The gap between the footnote's 6 million and your own |
-| 6 | Subtract third-party licensing from the saving | **The actual effect of adding the tool** |
-| 7 | Settle where the migration source is | **The mechanism is decided here.** Before any tool comparison |
-| 8 | If FlexCache is planned, confirm Direct Connect and its lead time | What the case names as the first thing to start on |
-
-**Skipping step 1 leaves the phrase "reduction rate" without meaning.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Actually |
 |---|---|
@@ -153,7 +158,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 ---
 
-## Primary sources consulted
+### Primary sources consulted
 
 | Point | Source | Retrieved |
 |---|---|---|
@@ -161,7 +166,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Cost](../README.md) — this module's hub
 - [ISV and SaaS solution map by problem](../../../reference/isv-solution-map.md#nas-migration-and-data-visibility) — the index for this problem area
@@ -177,6 +182,43 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 [🏠 Repository home](../../../README.md) | [Domain — Cost](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) | [English](archiving-and-tiering-are-ordered-not-alternatives.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+| # | Step | What it establishes |
+|---|---|---|
+| 1 | Work out the annual cost per GB of the legacy environment | **The comparison basis.** Without it, a rate says nothing |
+| 2 | Check against audit requirements whether data may leave the file system | **If it may not, archiving with an external tool drops out** |
+| 3 | Measure the distribution of last-accessed dates | How much stage 1 moves. **The case's 70% belongs to the case's distribution** |
+| 4 | Measure how often what remains after stage 1 is read | **Whether stage 2 costs more rather than less** |
+| 5 | Estimate the capacity pool tier request count | The gap between the footnote's 6 million and your own |
+| 6 | Subtract third-party licensing from the saving | **The actual effect of adding the tool** |
+| 7 | Settle where the migration source is | **The mechanism is decided here.** Before any tool comparison |
+| 8 | If FlexCache is planned, confirm Direct Connect and its lead time | What the case names as the first thing to start on |
+
+**Skipping step 1 leaves the phrase "reduction rate" without meaning.**
+
+The following local calculation derives only the comparison baseline in step 1. Replace `<annual-cost-usd>` and `<capacity-gb>` with values from your environment.
+
+```bash
+python3 -c \
+  'import sys; print(float(sys.argv[1]) / float(sys.argv[2]))' \
+  <annual-cost-usd> <capacity-gb>
+```
+
+### Expected output
+
+```text
+<legacy-environment USD/GB/year>
+```
+
+This calculation does not show the last-access distribution, capacity-pool request count, third-party licensing, or reduction rate. Complete the remaining table steps separately.
+
+---
+
+## Read next
+
+[Domain — Cost](../README.md)
