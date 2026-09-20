@@ -9,7 +9,31 @@ region: ap-northeast-1
 lang: en
 ---
 
-# SMB logon auditing — 4624 is recorded, but what it counts is sessions rather than login actions
+# Does SMB event 4624 count login actions?
+
+4624 is one record per SMB session, not a login count; name the category explicitly.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [English](smb-logon-audit-event-coverage.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That `cifs-logon-logoff` must be named explicitly, since `file-ops` alone retains no logon events
+- That 4624 counts session establishment and 4634 is emitted only when the session is destroyed
+
+## What this note does not answer
+
+- Recording differences between ONTAP versions or client implementations
+- The threshold at which an idle session finally ends
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="smb-logon-auditing--4624-is-recorded-but-what-it-counts-is-sessions-rather-than-login-actions"></a>
 
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
@@ -17,7 +41,7 @@ lang: en
 
 ---
 
-## Conclusion
+### Conclusion
 
 **With `cifs-logon-logoff` enabled, SMB logon success 4624 and logon failure 4625 are written to the EVTX file.** Both were recorded on an AD-joined SVM and for a local user on a workgroup SVM.
 
@@ -42,7 +66,7 @@ And **4624 is not a count of login actions.** It is one record per SMB session e
 
 ---
 
-## Where the documents disagree
+### Where the documents disagree
 
 | Source | Logon / logoff coverage |
 |---|---|
@@ -54,7 +78,7 @@ The measurement agrees with the NetApp material. **The AWS table is incomplete a
 
 ---
 
-## Events emitted per category
+### Events emitted per category
 
 The same sequence of operations — a successful logon, one wrong password, then creating and reading a file — was run with only the audit category changed. The SACL was identical in both measurements.
 
@@ -78,7 +102,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## What 4624 and 4625 contain
+### What 4624 and 4625 contain
 
 A 4624 recorded for a local user on the workgroup SVM:
 
@@ -116,7 +140,7 @@ A 4625 adds `Status`, `FailureReason`, and `FailureReasonString` (for example, w
 
 ---
 
-## When 4634 appears and when it does not
+### When 4634 appears and when it does not
 
 Seven ways of ending a session were measured, changing nothing else. **What decides it is not whether the share mapping was removed but whether the SMB session itself was destroyed.**
 
@@ -187,7 +211,7 @@ EventID=4634  SystemTime=… 05:58:10  IpPort=65155
 
 ---
 
-## What follows from it being per session
+### What follows from it being per session
 
 Repeating `net use` and `net use /delete` three times from Windows produced this:
 
@@ -210,7 +234,7 @@ That decision design is covered in
 
 ---
 
-## The SACL `file-ops` requires, and the DACL it replaces
+### The SACL `file-ops` requires, and the DACL it replaces
 
 **On an NTFS security style volume, no file access event is emitted without a SACL.** These are the results with the audit configuration held identical and only the SACL changed.
 
@@ -244,7 +268,7 @@ Reapplying with allow ACEs included in the descriptor restored it. **Adding audi
 
 ---
 
-## What the `file-share` category actually covers
+### What the `file-share` category actually covers
 
 **`file-share` records *changes to* share definitions, not access *to* a share.**
 
@@ -258,7 +282,34 @@ A 5142 carries `ShareName`, `SharePath`, `ShareProperties`, `SD` (the share ACL)
 
 ---
 
-## Confirming this in your own environment
+<a id="verify-in-your-own-environment"></a>
+
+### Not confirmed
+
+- **Differences between ONTAP versions.** Both file systems measured were on `9.18.1P3D1`. No comparison with another version or with on-premises ONTAP
+- **Differences between client implementations.** Windows (`net use` / `Remove-SmbMapping` / restarting `LanmanWorkstation` / process exit) and `smbclient` on Linux were measured. **macOS, NAS appliances, and the various SMB libraries were not.** The result depends on whether the client takes a path that destroys the session, so **confirm with the client you use**
+- **Whether an idle session eventually ends.** With `Client Session Timeout` at 60 seconds it survived 17 minutes 30 seconds with no 4634. **Whether it ends when left longer was not measured.** At minimum, neither the configured value nor the default acts as a reclamation threshold
+- **Variance in the time to reclamation.** The roughly 3 minutes is a single observation. It is neither a threshold nor a setting
+
+---
+
+### Primary sources
+
+- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) — for SACLs, [Configuring file and folder audit policies](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html#file-audit-policies)
+- NetApp: [SMB events that ONTAP can audit](https://docs.netapp.com/us-en/ontap/nas-audit/smb-events-audit-concept.html)
+- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — the mapping between `-events` categories and event IDs. **The AWS documentation has no such table, and AWS Support is considering adding a pointer to this PDF** (2026-09-02)
+
+---
+
+### Related
+
+- [Audit log capacity exhaustion stops client access](audit-log-space-and-client-access.md)
+- [The only information available for a local user inventory is in the audit log](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
+- [S3 Access Point authorization design — evaluation order and the two layers that narrow access](access-point-authorization-layers.md)
+
+---
+
+## Verify it in your environment
 
 | # | Step | What it establishes |
 |---|---|---|
@@ -271,31 +322,20 @@ A 5142 carries `ShareName`, `SharePath`, `ShareProperties`, `SD` (the share ACL)
 
 The rotated file name carries the **rotation time**, and its `modified_time` is earlier than that. Looking only at the newest file loses records that straddle the boundary. **Collect several files by period before counting.**
 
----
+The audit categories in effect can be read with this read-only command.
 
-## Not confirmed
+```bash
+ssh <svm-management-endpoint> vserver audit show -instance
+```
 
-- **Differences between ONTAP versions.** Both file systems measured were on `9.18.1P3D1`. No comparison with another version or with on-premises ONTAP
-- **Differences between client implementations.** Windows (`net use` / `Remove-SmbMapping` / restarting `LanmanWorkstation` / process exit) and `smbclient` on Linux were measured. **macOS, NAS appliances, and the various SMB libraries were not.** The result depends on whether the client takes a path that destroys the session, so **confirm with the client you use**
-- **Whether an idle session eventually ends.** With `Client Session Timeout` at 60 seconds it survived 17 minutes 30 seconds with no 4634. **Whether it ends when left longer was not measured.** At minimum, neither the configured value nor the default acts as a reclamation threshold
-- **Variance in the time to reclamation.** The roughly 3 minutes is a single observation. It is neither a threshold nor a setting
+### Expected output
 
----
+```text
+Whether Categories of Events to Audit includes cifs-logon-logoff
+```
 
-## Primary sources
+This shows only the enabled audit categories. It does not prove how many 4624 records are written or how sessions correlate.
 
-- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) — for SACLs, [Configuring file and folder audit policies](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html#file-audit-policies)
-- NetApp: [SMB events that ONTAP can audit](https://docs.netapp.com/us-en/ontap/nas-audit/smb-events-audit-concept.html)
-- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — the mapping between `-events` categories and event IDs. **The AWS documentation has no such table, and AWS Support is considering adding a pointer to this PDF** (2026-09-02)
+## Read next
 
----
-
-## Related
-
-- [Audit log capacity exhaustion stops client access](audit-log-space-and-client-access.md)
-- [The only information available for a local user inventory is in the audit log](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
-- [S3 Access Point authorization design — evaluation order and the two layers that narrow access](access-point-authorization-layers.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [English](smb-logon-audit-event-coverage.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Does an exhausted audit destination stop client access?](audit-log-space-and-client-access.md)

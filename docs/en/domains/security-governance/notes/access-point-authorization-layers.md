@@ -9,7 +9,31 @@ region: ap-northeast-1
 lang: en
 ---
 
-# S3 Access Point Authorization Design — Evaluation Order and the Two Layers That Narrow Access
+# Which of the two layers narrows an S3 Access Point?
+
+An access point policy does not narrow access. An explicit deny and file-system permissions do.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/security-governance/notes/access-point-authorization-layers.md) | [English](access-point-authorization-layers.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That writing a narrower `Allow` in an access point policy does not narrow access; an explicit deny does
+- That AWS-side authorization (Layer 1) and file-system permissions (Layer 2) are evaluated independently
+
+## What this note does not answer
+
+- The reproducibility of policy evaluation across accounts or on NTFS volumes
+- The lockout from writing `s3:*` in a `Deny` (not measured)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="s3-access-point-authorization-design--evaluation-order-and-the-two-layers-that-narrow-access"></a>
 
 [🏠 Repository Top](../../../README.md) | [Domain — Security & Governance](../README.md)
 
@@ -17,7 +41,7 @@ lang: en
 
 ---
 
-## Conclusion
+### Conclusion
 
 **There is no "bucket policy" for an Amazon FSx for NetApp ONTAP S3 Access Point.** No S3 bucket sits behind it, so there is nothing for `put-bucket-policy` to target. What you configure is an **access point policy** (an IAM resource policy).
 
@@ -65,7 +89,7 @@ So **to narrow within Layer 1 you write an explicit `Deny`. And the way you writ
 
 ---
 
-## What You Are Actually Configuring
+### What You Are Actually Configuring
 
 | Item | Detail |
 |---|---|
@@ -80,7 +104,7 @@ So **to narrow within Layer 1 you write an explicit `Deny`. And the way you writ
 
 ---
 
-## Layer 1 — What the Union Implies
+### Layer 1 — What the Union Implies
 
 **Designing on the assumption that "only what the access point policy lists gets through" leaves more open than intended.** All five rows below are predictable from step 4, the same-account union. **Read them as a record of the model holding, not as surprises.**
 
@@ -104,7 +128,7 @@ If the caller's identity-based policy permits the action, the request goes throu
 
 ---
 
-## Two Ways to Write an Explicit Deny in Layer 1 — Avoid `NotPrincipal`
+### Two Ways to Write an Explicit Deny in Layer 1 — Avoid `NotPrincipal`
 
 **`Deny` + `NotPrincipal` denied the principals named as exceptions.** The table shows what has to be listed before an exception actually holds.
 
@@ -140,11 +164,11 @@ Two things follow.
 
 ---
 
-## Configuration Examples — Six Patterns
+### Configuration Examples — Six Patterns
 
 **The account ID is `123456789012`; VPC, endpoint, and organization identifiers are placeholders.** The Region is left as `ap-northeast-1`, matching the verification environment.
 
-### 1. Allow reads for one role only
+#### 1. Allow reads for one role only
 
 ```json
 {
@@ -183,7 +207,7 @@ Two things follow.
 
 Measured: the named role succeeds; an IAM user with administrative permissions that is not named gets `AccessDenied`.
 
-### 2. Allow writes
+#### 2. Allow writes
 
 Add `s3:PutObject` to the `Allow` action list in example 1 and leave the `Deny` alone. **Do not remove `s3:PutObject` from the `Deny` action list.** Removing it lets principals other than the allowed one write.
 
@@ -195,7 +219,7 @@ Add `s3:PutObject` to the `Allow` action list in example 1 and leave the `Deny` 
 
 **The firmer way to stop writes is to bind the access point to a read-only file system identity.** Choose that when you do not want a state where one policy edit re-enables writing.
 
-### 3. Restrict to one VPC endpoint
+#### 3. Restrict to one VPC endpoint
 
 ```json
 {
@@ -254,7 +278,7 @@ The denial text contains `with an explicit deny in a resource-based policy`, whi
 
 **This is a different mechanism from `NetworkOrigin`.** `NetworkOrigin` cannot be changed after creation; this condition lives in the policy and can. **A VPC origin behaves as an explicit deny for requests whose `aws:SourceVpc` does not match the bound VPC** (documented by AWS). The same result can be written as a policy, but then maintaining the deny statement is the author's responsibility.
 
-### 4. Restrict to your organization
+#### 4. Restrict to your organization
 
 ```json
 {
@@ -290,7 +314,7 @@ The denial text contains `with an explicit deny in a resource-based policy`, whi
 
 Measured: a principal in another organization's account was denied. **On an access point carrying the same explicit cross-account allow but without the `Deny` statement, that same principal succeeds** — so the refusal comes from this condition. See [Cross-account data access does work](#cross-account-data-access-does-work).
 
-### 5. Refuse unencrypted transport
+#### 5. Refuse unencrypted transport
 
 ```json
 {
@@ -308,7 +332,7 @@ Measured: a principal in another organization's account was denied. **On an acce
 
 **This is the one statement whose effect could not be measured.** The reason is in the next section. Including it as defence in depth is harmless, but **it cannot be cited as the reason plaintext is blocked.**
 
-### 6. Restrict to a prefix
+#### 6. Restrict to a prefix
 
 ```json
 {
@@ -366,7 +390,7 @@ The last row is the point. **An explicit `Deny` written with `Principal: "*"` ap
 
 ---
 
-## Condition Keys as Measured
+### Condition Keys as Measured
 
 | Condition key | What it narrows | Measured |
 |---|---|---|
@@ -376,7 +400,7 @@ The last row is the point. **An explicit `Deny` written with `Principal: "*"` ap
 | `s3:prefix` | The scope of `ListBucket` | **both sides confirmed** |
 | `aws:SecureTransport` | Transport encryption | **the Deny branch was never reached** (below) |
 
-### A condition key can only be compared when it is present on the request
+#### A condition key can only be compared when it is present on the request
 
 **On a path where the key is absent, an `Allow` guarded by `StringEquals` does not hold, and a `Deny` guarded by `StringNotEquals` does.** The result flips with which side you write it on, so check availability first. **The table below is documented by AWS, not measured here** — only that `aws:SourceVpce` is populated via a VPC endpoint was measured.
 
@@ -393,7 +417,7 @@ The last row is the point. **An explicit `Deny` written with `Principal: "*"` ap
 > `aws:SourceIp` from the internet. This applies to access point policies, VPC endpoint policies and
 > identity-based policies alike.
 
-### `aws:SecureTransport` never reaches its Deny branch
+#### `aws:SecureTransport` never reaches its Deny branch
 
 | Path attempted | Result |
 |---|---|
@@ -404,7 +428,7 @@ The last row is the point. **An explicit `Deny` written with `Principal: "*"` ap
 
 **The redirect happens before authorization is evaluated.** AWS documents the behaviour: access points accept requests over HTTPS only, and S3 answers an HTTP request with a redirect that upgrades it. In other words, **no path exists on this access point where `aws:SecureTransport` is `false`.**
 
-### `aws:PrincipalOrgID` inside and outside the organization
+#### `aws:PrincipalOrgID` inside and outside the organization
 
 | Organization ID in the condition | Caller | Result |
 |---|---|---|
@@ -419,7 +443,7 @@ Row 3 exists as the control, and that matters. **Without it, the refusal in row 
 
 ---
 
-## Cross-Account Data Access Does Work
+### Cross-Account Data Access Does Work
 
 **This too follows from step 4.** Across accounts the rule is not a union but **both**: here the resource side (the access point policy) allowed it and the caller's own identity-based policy allowed it as an administrator, so both halves were present and the request went through.
 
@@ -436,7 +460,7 @@ Row 3 exists as the control, and that matters. **Without it, the refusal in row 
 
 ---
 
-## Access Point Parameters — Everything Except the Policy Is Fixed at Creation
+### Access Point Parameters — Everything Except the Policy Is Fixed at Creation
 
 Amazon FSx exposes exactly **three** operations for these attachments: `CreateAndAttachS3AccessPoint`, `DescribeS3AccessPointAttachments`, and `DetachAndDeleteS3AccessPoint`. **There is no update operation.**
 
@@ -455,7 +479,7 @@ Amazon FSx exposes exactly **three** operations for these attachments: `CreateAn
 
 **`FileSystemIdentity` being immutable shapes permission design.** You cannot "swap in a read-only identity later", so **separate access points per use** is what this turns into operationally. How that identity becomes the ceiling is covered in [S3 Access Point authorizes every request as one identity](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語).
 
-### CloudFormation
+#### CloudFormation
 
 ```yaml
 Resources:
@@ -504,7 +528,7 @@ Resources:
 
 **Because `Policy` can live in the template, the access point and its policy sit in one stack.** The two change paths noted earlier still apply: rewriting the policy through the S3 API produces drift.
 
-### AWS CLI
+#### AWS CLI
 
 ```bash
 # Create, attaching a policy at the same time
@@ -540,7 +564,7 @@ aws s3control delete-access-point-policy \
 
 **`put-access-point-policy` replaces the whole document.** Nothing is merged. Before touching an access point that already has a policy, save it with `get-access-point-policy`.
 
-### The policy size limit is checked after normalization
+#### The policy size limit is checked after normalization
 
 | Policy applied (compact JSON) | Result |
 |---|---|
@@ -554,7 +578,7 @@ The values are also recorded in [Limits and quotas](../../../../ja/reference/lim
 
 ---
 
-## Layer 2 Prerequisite — the Identity Bound to the Access Point Must Exist on the File System
+### Layer 2 Prerequisite — the Identity Bound to the Access Point Must Exist on the File System
 
 **The `FileSystemIdentity` given at creation has to be a user the ONTAP SVM can resolve.** It is not something you create on the AWS side.
 
@@ -580,7 +604,7 @@ Name resolution on the SVM was in this state during the measurement. **No extern
 
 ---
 
-## Layer 2 — File-System Permissions Are What Narrow Access
+### Layer 2 — File-System Permissions Are What Narrow Access
 
 **Allow and deny flip on Layer 2 alone, with the access point policy untouched.** Measured as a pair: same caller, same access point, no policy attached, changing only the owner and mode bits of the volume root.
 
@@ -598,7 +622,7 @@ Name resolution on the SVM was in this state during the measurement. **No extern
 > **A design that narrows in Layer 2 has to be settled before the access point is created**, which
 > in practice means one access point per use case.
 
-### Binding a non-root identity stops writes with no policy at all
+#### Binding a non-root identity stops writes with no policy at all
 
 **An access point becomes read-only through its identity alone, with no policy attached.** On a root-owned `755` volume (others get `r-x`), an access point was created with the non-root UNIX user `nobody` (uid 65535) and no policy, then measured from the same caller.
 
@@ -609,7 +633,7 @@ Name resolution on the SVM was in this state during the measurement. **No extern
 
 **Same volume, same caller, no policy on either — the only difference is the identity.** Read-only therefore holds in Layer 2 on its own.
 
-### `AccessDenied` tells you which layer refused
+#### `AccessDenied` tells you which layer refused
 
 **Three different denials are distinguishable from the message.** All three were measured in the same environment.
 
@@ -630,7 +654,7 @@ Name resolution on the SVM was in this state during the measurement. **No extern
 
 ---
 
-## Who Appears in the Audit Log
+### Who Appears in the Audit Log
 
 **Access through an S3 access point is recorded by ONTAP file access auditing.** The subject recorded is **the identity bound to the access point**, not the calling IAM principal. **The separation of subjects between Layer 1 and Layer 2 is exactly what limits the audit trail.**
 
@@ -658,7 +682,7 @@ These are the fields from `PutObject` and `GetObject` through a `WINDOWS`-type a
 > all as the same subject.** Where per-subject tracing of file operations is a requirement,
 > **the granularity of the audit trail is decided by how access points are split.**
 
-### FPolicy does not see this path at all
+#### FPolicy does not see this path at all
 
 **Auditing records the operation; FPolicy is not notified of it.** These are two separate
 mechanisms and they answer differently, so one cannot stand in for the other.
@@ -711,7 +735,7 @@ no audit record at all. **Those two are this repository's own observations and a
 cited above.** The ARP counts, by contrast, **are** in that record, so they are not held here. Two
 copies of a number end with the stale one still being read.
 
-### On a UNIX-security-style volume, enabling auditing records nothing
+#### On a UNIX-security-style volume, enabling auditing records nothing
 
 **Enabling auditing on the SVM is not sufficient.** UNIX mode bits carry no audit information, so **with no ACE designating what to record, not a single event is emitted.**
 
@@ -743,7 +767,7 @@ Measured on the same SVM with the same audit configuration (`file_operations` en
 
 ---
 
-## Decision Flow
+### Decision Flow
 
 ```mermaid
 graph TD
@@ -777,7 +801,9 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 ---
 
-## Verify It in Your Own Environment
+<a id="verify-it-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 | # | Step | What it establishes |
 |---|---|---|
@@ -792,9 +818,23 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 **Policy changes take seconds to take effect.** About 6 seconds after applying, the previous policy's verdict still came back; results were stable after 10–12 seconds. **Reading a single call made immediately after applying a policy produces the wrong conclusion.** This verification hit exactly that, and the re-run is what caught it.
 
+The current access point policy can be read with this read-only command.
+
+```bash
+aws s3control get-access-point-policy --account-id <account-id> --name <access-point-name> --query Policy --output text
+```
+
+### Expected output
+
+```text
+<access-point-policy-json-or-NoSuchAccessPointPolicy>
+```
+
+This reads only the current access point policy. It changes no policy and proves nothing about Layer 2 file permissions, the authorization verdict, or deletability.
+
 ---
 
-## Common Misconceptions
+### Common Misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -825,7 +865,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 ---
 
-## Limits of This Note
+### Limits of This Note
 
 - **The cross-account measurement covers one pair of accounts, once.** The other account belongs to a different AWS Organizations organization, and the caller was an administrative role via IAM Identity Center. **Other combinations of organization relationship and principal type were not tried.**
 - **Layer 1 behaviour does not depend on the ONTAP version**; access point policy evaluation happens on the S3 and IAM side. **Layer 2 and the audit behaviour do belong to ONTAP**, and reproducibility outside the recorded version (`9.18.1P3D1`) was not checked.
@@ -840,7 +880,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 ---
 
-## Primary Sources
+### Primary Sources
 
 | Topic | Source |
 |---|---|
@@ -861,7 +901,7 @@ The diagram carries the same content as the tables above: **pick a condition key
 
 ---
 
-## Related Documents
+### Related Documents
 
 - [How a request through an S3 access point is decided](../../../../ja/reference/decision-trees/access-point-authorization.md) (日本語) — **the evaluation order, and working back from a symptom to the layer that refused. Start here to read mechanism-first**
 - [Domain — Security & Governance](../README.md) — the hub for this module
@@ -872,10 +912,6 @@ The diagram carries the same content as the tables above: **pick a condition key
 - [Limits and quotas](../../../../ja/reference/limits/) (日本語) — the measured policy-size and object-size values
 - [Evidence policy](../../../evidence-policy.md)
 
----
+## Read next
 
-[🏠 Repository Top](../../../README.md) | [Domain — Security & Governance](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/access-point-authorization-layers.md) | [English](access-point-authorization-layers.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Does SMB event 4624 count login actions?](smb-logon-audit-event-coverage.md)

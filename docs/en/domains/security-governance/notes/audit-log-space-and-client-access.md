@@ -9,7 +9,31 @@ region: ap-northeast-1
 lang: en
 ---
 
-# An exhausted audit destination stops client access, but not at the moment it fills, and not one record is lost
+# Does an exhausted audit destination stop client access?
+
+A full audit destination stops client access after an unobservable buffer fills, losing no record.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) | [English](audit-log-space-and-client-access.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That an exhausted audit destination stops client access after an unobservable buffer is absorbed, not at the moment it fills
+- That the `-strict-guarantee` default and retention settings decide whether availability or completeness is sacrificed
+
+## What this note does not answer
+
+- A reproducible threshold for the grace period or the accumulated record count
+- How records are lost over NFS or with `-strict-guarantee false`
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="an-exhausted-audit-destination-stops-client-access-but-not-at-the-moment-it-fills-and-not-one-record-is-lost"></a>
 
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
@@ -17,7 +41,7 @@ lang: en
 
 ---
 
-## Conclusion
+### Conclusion
 
 **When the audit destination volume filled, SMB access to the audited volume eventually stopped.** It stops with `{Audit Failed} An attempt to generate a security audit failed.` (Windows system error 606), and **not only file writes fail — establishing a session with `net use` fails too.**
 
@@ -59,7 +83,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## Measured up to the stop — load is what decides it
+### Measured up to the stop — load is what decides it
 
 **With the destination in the same exhausted state, changing the load changes the outcome.** What decides whether access stops is not the free space at the destination but **the volume of operations that occur while it is exhausted.**
 
@@ -73,7 +97,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 **And the number that keeps succeeding does not reproduce.** The same configuration and workload gave 794 and 56. **The grace period before a stop cannot be estimated in operations or in time.** It depends on how much of the buffer prior audit activity had consumed, and that remainder cannot be observed.
 
-### The moment of the stop
+#### The moment of the stop
 
 Times from the 10,000-operation workload (all UTC, 2026-09-01).
 
@@ -96,7 +120,7 @@ The exact moment of recovery was not bracketed. **Consolidation resumed about 1 
 
 ---
 
-## The records that were not lost
+### The records that were not lost
 
 Every record accumulated up to the stop was written to the destination once space was restored.
 
@@ -124,7 +148,7 @@ gaps in range    : 0
 > it has a hole in it.** Before treating "there is no access record for this time" as a loss, check the
 > destination volume's free space history. Restoring space fills it in.
 
-### Blast radius — only the audited paths
+#### Blast radius — only the audited paths
 
 **What stopped was only operations that require an audit record. Volumes in the same SVM that are not audited were unaffected.**
 
@@ -154,7 +178,7 @@ Immediately after `work` was refused, `plain` was connected and 5,000 file creat
 
 **Conversely, once the buffer is completely full, establishing a new session also fails.** In the first run, `net use` failed with Windows system error 606 at `19:50:05`, because establishing a session requires writing a `4624`. **The reason the connection to `plain` went through in the second run is that the connection to `work` had already established an authenticated session, so no new `4624` was needed.**
 
-### The absorption ceiling, unestablished
+#### The absorption ceiling, unestablished
 
 The absorbed volume observed was **4,538 records**. The EVTX emitted on recovery was 5,246,976 bytes, **close to the 5 MB `-rotate-size`.**
 
@@ -167,7 +191,7 @@ The absorbed volume observed was **4,538 records**. The EVTX emitted on recovery
 
 An EMS event reporting this directly is also defined: `adt.dest.directory.full` (severity `EMERGENCY`), whose description states it **can lead to denial of service on objects carrying a SACL**. This measurement used a SACL on the SMB path, matching the observed symptom.
 
-### Not arguing from the absence of an unobservable event
+#### Not arguing from the absence of an unobservable event
 
 **This note originally made a bad inference here.** It offered the fact that `adt.stgvol.nospace` had zero hits across both runs as evidence that staging exhaustion was not the cause.
 
@@ -191,7 +215,7 @@ There are no entries matching your query.
 
 ---
 
-## The signals you can observe
+### The signals you can observe
 
 **Across both stops, what was recorded is the destination volume's capacity events. The event reporting the write failure itself is defined but not exposed through the available interfaces** (below).
 
@@ -243,7 +267,7 @@ In the second run `monitor.volume.nearlyFull` (95%), `wafl.vol.full`, and `monit
 
 ---
 
-## The invisibility of the staging volume
+### The invisibility of the staging volume
 
 ```text
 FsxIdEXAMPLE::> volume show -volume MDV_AUD* -fields vserver,volume,aggregate,size,state
@@ -262,7 +286,7 @@ Zero rows, with an SVM that has auditing enabled. It does not appear in a full `
 
 ---
 
-## Retention — the two methods are mutually exclusive
+### Retention — the two methods are mutually exclusive
 
 ```text
 FsxIdEXAMPLE::> vserver audit modify -vserver <svm> -rotate-limit 10 -retention-duration 90d
@@ -283,7 +307,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 > `PT0S` means no deletion by age. **Setting one disables the other.**
 > When switching methods, read both values with `vserver audit show -instance` afterwards.
 
-### The ceiling each method fixes, and how to detect the other
+#### The ceiling each method fixes, and how to detect the other
 
 **Whichever you choose, the side you did not choose has to be covered by monitoring.** This is the guidance AWS Support supplied.
 
@@ -304,7 +328,7 @@ Where a period is set by policy — a three-month inventory requirement, for ins
 
 ---
 
-## What to decide at design time
+### What to decide at design time
 
 | Item | Recommended | Reason |
 |---|---|---|
@@ -322,7 +346,7 @@ Setting `-strict-guarantee false` keeps access working when capacity runs out, b
 
 ---
 
-## Retrieving the audit log
+### Retrieving the audit log
 
 The EVTX files sit on the destination volume. **Syslog forwarding is not available** (per AWS). These routes were measured.
 
@@ -382,7 +406,7 @@ How the layers work is in
 
 ---
 
-## Recovery procedure
+### Recovery procedure
 
 Recovering from the stopped state took **nothing more than freeing space on the destination volume.** No audit configuration change and no SVM restart.
 
@@ -411,7 +435,9 @@ Recovering from the stopped state took **nothing more than freeing space on the 
 
 ---
 
-## Confirming this in your own environment
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 | # | Step | What it establishes |
 |---|---|---|
@@ -422,9 +448,23 @@ Recovering from the stopped state took **nothing more than freeing space on the 
 | 5 | Set the retention method explicitly and confirm it applied with `show` | That you have left the unlimited default |
 | 6 | On a disposable SVM, fill the destination and then apply load | **How long your own operation rate keeps succeeding with nothing recorded** |
 
+The current audit defaults can be read with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> vserver audit show -instance
+```
+
+### Expected output
+
+```text
+The current Auditing State / Strict Guarantee of Auditing / Log Files Rotation Limit / Log Retention Duration
+```
+
+This shows only the current audit settings. It does not prove the destination capacity trend, the grace before a stop, or whether records are lost.
+
 ---
 
-## Not confirmed
+### Not confirmed
 
 - **The internal threshold that leads to the stop.** AWS Support's confirmation established that the cause is destination volume exhaustion (2026-09-03, above). **What triggers the stop, however** — accumulated record count, elapsed time, `-rotate-size`, or another internal queue — **was not isolated.** The stop came after absorbing 4,538 records, but there is no evidence that figure is a threshold
 - **The absorption ceiling.** The 4,538 records absorbed here are an observation for this configuration at this point in time. **It cannot be generalized as a limit**
@@ -437,7 +477,7 @@ Recovering from the stopped state took **nothing more than freeing space on the 
 
 ---
 
-## Primary sources
+### Primary sources
 
 - AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html)
 - NetApp: [Troubleshoot ONTAP auditing and staging volume space issues](https://docs.netapp.com/us-en/ontap/nas-audit/troubleshoot-auditing-staging-volume-concept.html)
@@ -454,11 +494,11 @@ Recovering from the stopped state took **nothing more than freeing space on the 
 
 ---
 
-## Related
+### Related
 
 - [SMB logon auditing — 4624 is recorded](smb-logon-audit-event-coverage.md)
 - [The only information available for a local user inventory is in the audit log](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/audit-log-space-and-client-access.md) | [English](audit-log-space-and-client-access.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Read next
+
+[Is choosing the antivirus vendor the first decision?](vscan-scope-is-bounded-before-the-vendor.md)

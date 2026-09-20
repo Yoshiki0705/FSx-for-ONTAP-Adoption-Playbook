@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/data-protection.html
 lang: ja
 ---
 
-# 保存時の暗号化は自動、転送時は方式ごとに条件が異なる
+# 暗号化は「有効/無効」で語れるか？
+
+保存時は自動で有効、転送時は方式ごとに条件が異なります。まとめて有効とは言えません。
+
+## このノートで学べること
+
+- 保存時の暗号化・KMS キー選択・転送時の方式と経路を、分けて確認する必要があること
+- SMB のアクセス監査が 1 オブジェクトにつき最初の読み取りと書き込みしか記録しないこと
+
+## このノートが答えないこと
+
+- 規制・法令への適合性の判断
+- LDAP 参加時のプロトコル別の転送時暗号化の適用範囲
+
+## 前提レベル
+
+basic
+
+## 本文
+
+<a id="保存時の暗号化は自動転送時は方式ごとに条件が異なる"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ / ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **保存時の暗号化は無効化できません。** ファイルシステム作成時に自動で有効になり、データとメタデータの両方が AES-256 で暗号化されます。バックアップも同様です。一方、**使用する AWS KMS キーは設計項目です。** `KmsKeyId` を指定しなければアカウントの Amazon FSx 管理キーが使われ、カスタマーマネージド KMS キーを指定することもできます。CloudFormation では `KmsKeyId` の変更に置換が必要です。
 
@@ -32,7 +52,7 @@ lang: ja
 
 ---
 
-## プラットフォームが提供するものと、自分に残るもの
+### プラットフォームが提供するものと、自分に残るもの
 
 | 項目 | 誰の作業か | 状態 |
 |---|---|---|
@@ -52,7 +72,7 @@ lang: ja
 
 ---
 
-## 転送時の暗号化の前提条件
+### 転送時の暗号化の前提条件
 
 利用できる方式と条件は次のとおりです。
 
@@ -69,7 +89,7 @@ Nitro ベースの暗号化は、第 2 世代では第 2 世代ファイルシ�
 
 AD 参加そのものが権限評価に与える影響は [セキュリティスタイルが権限評価のモデルを決める](../../multiprotocol-identity/notes/security-style-and-permission-evaluation.md) にあります。
 
-### SMB 暗号化の強制による、クライアント接続の不可
+#### SMB 暗号化の強制による、クライアント接続の不可
 
 SMB 暗号化は SVM 作成時点で無効です。有効化は 2 段階で選べます。
 
@@ -82,7 +102,7 @@ SMB 暗号化は SVM 作成時点で無効です。有効化は 2 段階で選�
 
 ---
 
-## 監査の 2 つの面と、片方の穴の存在
+### 監査の 2 つの面と、片方の穴の存在
 
 「誰が何をしたか」は 1 つのログでは追えません。**面が 2 つあります。**
 
@@ -93,7 +113,7 @@ SMB 暗号化は SVM 作成時点で無効です。有効化は 2 段階で選�
 
 CloudTrail は FSx for ONTAP の**全 API 呼び出しを記録します。** ルートか IAM ユーザーか、ロールの一時的な認証情報か、他の AWS サービスからの呼び出しかまで識別できます。
 
-### 記録されない読み取りの存在
+#### 記録されない読み取りの存在
 
 SMB のアクセス監査のうち**ファイルアクセスのカテゴリ**で記録できるイベントには、オブジェクトの open、削除意図付きの open、削除、read / write / 属性取得 / 属性設定、ハードリンク作成、リネーム、アンリンクがあります。
 
@@ -107,7 +127,7 @@ SMB のアクセス監査のうち**ファイルアクセスのカテゴリ**で
 
 ---
 
-## 権限設計 — 管理者の分離
+### 権限設計 — 管理者の分離
 
 管理エンドポイントと管理者アカウントは階層が分かれています。
 
@@ -122,7 +142,7 @@ SMB のアクセス監査のうち**ファイルアクセスのカテゴリ**で
 
 ---
 
-## 分離された境界をまたぐときに使える仕組みと、その限界
+### 分離された境界をまたぐときに使える仕組みと、その限界
 
 **このセクションは OT セキュリティの指針ではありません。** ネットワークや管理主体が分離された環境をまたぐときに、**FSx for ONTAP 側で使える仕組みと、それぞれの限界**を整理します。境界の設計そのものは読者側の判断です。
 
@@ -142,7 +162,7 @@ SMB のアクセス監査のうち**ファイルアクセスのカテゴリ**で
 
 ---
 
-## 規制ワークロードで問われる論点
+### 規制ワークロードで問われる論点
 
 **以下は「何を聞かれるか」の整理です。適合の判断ではありません。**
 
@@ -161,7 +181,7 @@ SnapLock は**有効化が不可逆**です。「機能を有効にすること�
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -188,6 +208,49 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 暗号化はまとめて「有効」または「無効」と言える | 保存時の有効化、KMS キー、転送時の方式と経路を分けて確認します |
+| 保存時の暗号化は設計項目ではない | 暗号化自体は自動ですが、**Amazon FSx 管理キーかカスタマーマネージド KMS キーかは作成時の選択です** |
+| メタデータは暗号化されない | データとメタデータの両方が暗号化されます |
+| 転送時暗号化には 1 つの共通既定値がある | Nitro、NFS Kerberos、SMB 暗号化、IPsec で有効化条件が異なります |
+| SMB 暗号化は既定で有効 | SVM 作成時点では無効です |
+| SMB 暗号化を必須にしても影響はない | **非対応クライアントは接続できなくなります** |
+| 監査ログがあれば読み取り回数が分かる | **1 オブジェクトにつき最初の読み取りだけ**が記録されます |
+| CloudTrail でファイルアクセスも追える | CloudTrail は API 呼び出しです。ファイルアクセスは別の仕組みです |
+| 運用担当者には `fsxadmin` が必要 | SVM 単位の作業は `vsadmin` で足ります |
+| SnapLock を有効にすれば即座にロックされる | 有効化とロックは別です。ロックは保持期間の設定で発生します |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| 転送時暗号化の方式、ファイルアクセス監査、オンデマンドウイルススキャン、SnapLock の Compliance / Enterprise モード、責任共有モデル | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
+| 保存時暗号化が作成時に自動で有効になること、Kerberos ベースの転送時暗号化が AD または LDAP 参加を前提とすること | [AWS: Data protection in Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/data-protection.html) |
+| AES-256、データとメタデータの両方、バックアップの自動暗号化と復元時の復号、Amazon FSx 管理キーが既定でカスタマーマネージド KMS キーも選択できること、KMS 鍵管理インフラが FIPS 140-2 承認アルゴリズムを使用し NIST 800-57 と整合すること | [AWS: Encryption of data at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html) |
+| Nitro の自動適用条件、NFS Kerberos・SMB 暗号化・IPsec の対象プロトコルと設定条件 | [AWS: Encrypting data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html) |
+| SMB 暗号化が SVM 作成時に無効であること、共有単位 / SVM 単位で必須化できること、必須化すると非対応クライアントが接続できないこと、`vsadmin` と `fsxadmin` の使い分け | [AWS: Enabling SMB encryption of data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) |
+| `KmsKeyId` を省略すると Amazon FSx 管理キーが使われ、変更には置換が必要なこと | [AWS CloudFormation: AWS::FSx::FileSystem](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-filesystem.html) |
+| 監査可能な SMB イベントの一覧、4663 で最初の読み取りと最初の書き込みのみが記録されること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
+| 全 API 呼び出しが CloudTrail に記録されること、呼び出し元の識別情報 | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — セキュリティ / ガバナンス](../README.md) — このモジュールのハブ
+- [セキュリティスタイルが権限評価のモデルを決める](../../multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — AD 連携と権限評価
+- [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — SnapLock ほか不可逆項目
+- [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 復旧の守備範囲
+- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — ファイルシステム単位の不可逆項目
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
 ## 自環境での確認手順
 
 **転送時の暗号化と監査の範囲は、有効化しただけでは確認になりません。** 実際に確かめる手順です。
@@ -206,49 +269,20 @@ graph TD
 
 手順 2 は検証環境で行ってください。本番で必須化すると接続断が起きます。
 
----
+SMB 暗号化の現在値は次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+ssh <svm-management-endpoint> vserver cifs security show
+```
 
-| 誤解 | 実際 |
-|---|---|
-| 暗号化はまとめて「有効」または「無効」と言える | 保存時の有効化、KMS キー、転送時の方式と経路を分けて確認します |
-| 保存時の暗号化は設計項目ではない | 暗号化自体は自動ですが、**Amazon FSx 管理キーかカスタマーマネージド KMS キーかは作成時の選択です** |
-| メタデータは暗号化されない | データとメタデータの両方が暗号化されます |
-| 転送時暗号化には 1 つの共通既定値がある | Nitro、NFS Kerberos、SMB 暗号化、IPsec で有効化条件が異なります |
-| SMB 暗号化は既定で有効 | SVM 作成時点では無効です |
-| SMB 暗号化を必須にしても影響はない | **非対応クライアントは接続できなくなります** |
-| 監査ログがあれば読み取り回数が分かる | **1 オブジェクトにつき最初の読み取りだけ**が記録されます |
-| CloudTrail でファイルアクセスも追える | CloudTrail は API 呼び出しです。ファイルアクセスは別の仕組みです |
-| 運用担当者には `fsxadmin` が必要 | SVM 単位の作業は `vsadmin` で足ります |
-| SnapLock を有効にすれば即座にロックされる | 有効化とロックは別です。ロックは保持期間の設定で発生します |
+### 期待結果
 
----
+```text
+Is SMB Encryption Required の現在値（true / false）
+```
 
-## 参照した一次情報
+この確認で分かるのは SMB 暗号化の強制状態だけです。転送時暗号化の他方式、保存時のキー選択、監査の網羅性は証明しません。
 
-| 論点 | 出典 |
-|---|---|
-| 転送時暗号化の方式、ファイルアクセス監査、オンデマンドウイルススキャン、SnapLock の Compliance / Enterprise モード、責任共有モデル | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
-| 保存時暗号化が作成時に自動で有効になること、Kerberos ベースの転送時暗号化が AD または LDAP 参加を前提とすること | [AWS: Data protection in Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/data-protection.html) |
-| AES-256、データとメタデータの両方、バックアップの自動暗号化と復元時の復号、Amazon FSx 管理キーが既定でカスタマーマネージド KMS キーも選択できること、KMS 鍵管理インフラが FIPS 140-2 承認アルゴリズムを使用し NIST 800-57 と整合すること | [AWS: Encryption of data at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html) |
-| Nitro の自動適用条件、NFS Kerberos・SMB 暗号化・IPsec の対象プロトコルと設定条件 | [AWS: Encrypting data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html) |
-| SMB 暗号化が SVM 作成時に無効であること、共有単位 / SVM 単位で必須化できること、必須化すると非対応クライアントが接続できないこと、`vsadmin` と `fsxadmin` の使い分け | [AWS: Enabling SMB encryption of data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) |
-| `KmsKeyId` を省略すると Amazon FSx 管理キーが使われ、変更には置換が必要なこと | [AWS CloudFormation: AWS::FSx::FileSystem](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-filesystem.html) |
-| 監査可能な SMB イベントの一覧、4663 で最初の読み取りと最初の書き込みのみが記録されること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
-| 全 API 呼び出しが CloudTrail に記録されること、呼び出し元の識別情報 | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — セキュリティ / ガバナンス](../README.md) — このモジュールのハブ
-- [セキュリティスタイルが権限評価のモデルを決める](../../multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — AD 連携と権限評価
-- [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — SnapLock ほか不可逆項目
-- [Snapshot があることと復旧できることは別](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 復旧の守備範囲
-- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — ファイルシステム単位の不可逆項目
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ / ガバナンス](../README.md)
+[S3 Access Point の認可は 2 層のどちらで絞るか？](access-point-authorization-layers.md)

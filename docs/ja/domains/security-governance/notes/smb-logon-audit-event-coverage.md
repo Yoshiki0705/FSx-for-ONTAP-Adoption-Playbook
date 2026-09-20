@@ -9,13 +9,37 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# SMB ログオン監査 — 4624 は記録される。ただし数えられるのはセッションであってログイン操作ではない
+# SMB の 4624 はログイン回数を数えるか？
+
+4624 はセッション確立ごとに 1 件で、ログイン操作の回数ではありません。カテゴリの明示が要ります。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-logon-audit-event-coverage.md) | [English](../../../../en/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- `cifs-logon-logoff` を明示しないと 4624 / 4625 が記録されず、`file-ops` だけではログオンが残らないこと
+- 4624 がセッション確立単位で、4634 がセッション破棄時のみ記録されること
+
+## このノートが答えないこと
+
+- ONTAP バージョン間やクライアント実装ごとの記録差
+- アイドル放置でセッションが最終的に終了するかの閾値
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="smb-ログオン監査--4624-は記録されるただし数えられるのはセッションであってログイン操作ではない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **`cifs-logon-logoff` を有効にすると、SMB ログオン成功 4624 とログオン失敗 4625 が EVTX に記録されます。** AD 参加 SVM でも、ワークグループ SVM のローカルユーザーでも記録されました。
 
@@ -40,7 +64,7 @@ lang: ja
 
 ---
 
-## ドキュメント間の記載差
+### ドキュメント間の記載差
 
 | 出典 | Logon / Logoff の記載 |
 |---|---|
@@ -52,7 +76,7 @@ lang: ja
 
 ---
 
-## カテゴリ別の出力イベント
+### カテゴリ別の出力イベント
 
 同一の操作列（成功ログオン、誤パスワード 1 回、ファイル作成と読み出し）を、監査カテゴリだけ変えて実行しました。SACL は両方の測定で同一です。
 
@@ -76,7 +100,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## 4624 と 4625 の記録内容
+### 4624 と 4625 の記録内容
 
 ワークグループ SVM のローカルユーザーで記録された 4624 です。
 
@@ -114,7 +138,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## 4634 が出る条件と出ない条件
+### 4634 が出る条件と出ない条件
 
 セッションの終わらせ方だけを変えて 7 通り測りました。**決めているのは「共有のマッピングを外したか」ではなく「SMB セッションそのものが破棄されたか」です。**
 
@@ -183,7 +207,7 @@ EventID=4634  SystemTime=… 05:58:10  IpPort=65155
 
 ---
 
-## セッション単位であることの帰結
+### セッション単位であることの帰結
 
 Windows から `net use` と `net use /delete` を 3 回繰り返した結果です。
 
@@ -207,7 +231,7 @@ Windows から `net use` と `net use /delete` を 3 回繰り返した結果で
 
 ---
 
-## file-ops に必要な SACL と、適用時の DACL 置換
+### file-ops に必要な SACL と、適用時の DACL 置換
 
 **NTFS セキュリティスタイルのボリュームでは、SACL が無いとファイルアクセスイベントが 1 件も出ません。** 同一の監査設定で SACL の有無だけを変えた結果です。
 
@@ -242,7 +266,7 @@ NT_STATUS_ACCESS_DENIED listing \*
 
 ---
 
-## file-share カテゴリの実際の対象
+### file-share カテゴリの実際の対象
 
 **`file-share` は共有への「アクセス」ではなく、共有定義の「変更」を記録します。**
 
@@ -255,6 +279,29 @@ NT_STATUS_ACCESS_DENIED listing \*
 5142 は `ShareName`、`SharePath`、`ShareProperties`、`SD`（共有 ACL）と、変更した管理者の `SubjectUserName` / `SubjectIP` を持ちます。**共有定義の変更履歴には使えますが、利用者のアクセス記録には使えません。**
 
 ---
+
+### 未確認
+
+- **ONTAP バージョン間の差**。測定した 2 つのファイルシステムはいずれも `9.18.1P3D1` でした。別バージョンやオンプレミス ONTAP との比較はしていません
+- **クライアント実装ごとの差**。Windows（`net use` / `Remove-SmbMapping` / `LanmanWorkstation` 再起動 / プロセス終了）と Linux の `smbclient` を測りました。**macOS、NAS アプライアンス、各種 SMB ライブラリは測っていません。** セッションを破棄する経路を通るかどうかで結果が変わるため、**使うクライアントで確認してください**
+- **アイドル放置でセッションが最終的に終了するか**。`Client Session Timeout` を 60 秒にしても 17 分 30 秒は存続し、4634 も出ませんでした。**それより長く放置した場合に終了するかは測っていません。** 少なくとも設定値と既定値のどちらも回収の閾値として機能しません
+- **回収までの時間のばらつき**。約 3 分という値は 1 回の観測です。閾値でも設定値でもありません
+
+---
+
+### 参照した一次情報
+
+- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) — SACL については [Configuring file and folder audit policies](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html#file-audit-policies)
+- NetApp: [SMB events that ONTAP can audit](https://docs.netapp.com/us-en/ontap/nas-audit/smb-events-audit-concept.html)
+- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応。**AWS のドキュメントにはこの対応表が無く、AWS サポートはこの PDF への導線を追加する方向で検討中です**（2026-09-02）
+
+---
+
+### 関連
+
+- [監査ログの空き容量不足はクライアントアクセスを止める](audit-log-space-and-client-access.md)
+- [ローカルユーザーの棚卸しに使える情報は監査ログにしかない](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
+- [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](access-point-authorization-layers.md)
 
 ## 自環境での確認手順
 
@@ -269,31 +316,20 @@ NT_STATUS_ACCESS_DENIED listing \*
 
 ローテーション後のファイル名には**ローテーション時刻**が入り、`modified_time` はそれより前になります。最新の 1 ファイルだけを見ると、境界をまたいだレコードを取りこぼします。**期間で複数ファイルを回収してから数えてください。**
 
----
+監査カテゴリは次の読み取り専用コマンドで確認できます。
 
-## 未確認
+```bash
+ssh <svm-management-endpoint> vserver audit show -instance
+```
 
-- **ONTAP バージョン間の差**。測定した 2 つのファイルシステムはいずれも `9.18.1P3D1` でした。別バージョンやオンプレミス ONTAP との比較はしていません
-- **クライアント実装ごとの差**。Windows（`net use` / `Remove-SmbMapping` / `LanmanWorkstation` 再起動 / プロセス終了）と Linux の `smbclient` を測りました。**macOS、NAS アプライアンス、各種 SMB ライブラリは測っていません。** セッションを破棄する経路を通るかどうかで結果が変わるため、**使うクライアントで確認してください**
-- **アイドル放置でセッションが最終的に終了するか**。`Client Session Timeout` を 60 秒にしても 17 分 30 秒は存続し、4634 も出ませんでした。**それより長く放置した場合に終了するかは測っていません。** 少なくとも設定値と既定値のどちらも回収の閾値として機能しません
-- **回収までの時間のばらつき**。約 3 分という値は 1 回の観測です。閾値でも設定値でもありません
+### 期待結果
 
----
+```text
+Categories of Events to Audit に cifs-logon-logoff が含まれるかどうか
+```
 
-## 参照した一次情報
+この確認で分かるのは有効な監査カテゴリだけです。実際に 4624 が何件記録されるか、セッションの対応付けは証明しません。
 
-- AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) — SACL については [Configuring file and folder audit policies](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html#file-audit-policies)
-- NetApp: [SMB events that ONTAP can audit](https://docs.netapp.com/us-en/ontap/nas-audit/smb-events-audit-concept.html)
-- NetApp: [ONTAP Auditing Schema Reference (PDF)](https://docs.netapp.com/p/ontap/9x/Auditing-Schema-Reference.pdf) — `-events` のカテゴリとイベント ID の対応。**AWS のドキュメントにはこの対応表が無く、AWS サポートはこの PDF への導線を追加する方向で検討中です**（2026-09-02）
+## Read next
 
----
-
-## 関連
-
-- [監査ログの空き容量不足はクライアントアクセスを止める](audit-log-space-and-client-access.md)
-- [ローカルユーザーの棚卸しに使える情報は監査ログにしかない](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
-- [S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層](access-point-authorization-layers.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-logon-audit-event-coverage.md) | [English](../../../../en/domains/security-governance/notes/smb-logon-audit-event-coverage.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[監査宛先の枯渇はいつクライアントを止めるか？](audit-log-space-and-client-access.md)
