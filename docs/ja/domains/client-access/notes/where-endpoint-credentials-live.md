@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/what-is.html
 lang: ja
 ---
 
-# 端末側の資格情報の置き場所
+# 端末側に何の資格情報が残るか？
+
+VPN 鍵・SMB 資格情報・CHAP シークレット・AWS 資格情報の 4 種類。多くは回収も棚卸しもできません。
+
+## このノートで学べること
+
+- 端末を配ると VPN 証明書・SMB 資格情報・CHAP シークレット・AWS 資格情報の 4 種類が端末側に残ること
+- そのうち短期 AWS 資格情報だけが放置で失効し、残り 3 つは動かないと有効なままであること
+
+## このノートが答えないこと
+
+- 各保管場所が組織の監査・コンプライアンス要件に適合するかの判断
+- 端末が紛失・複製された後に秘密が悪用されたかの追跡
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="端末側の資格情報の置き場所"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **端末からアクセスさせると、秘密が端末側に残ります。** サーバー側の設定と違い、**回収も棚卸しも
 こちらからはできません。**
@@ -35,7 +55,7 @@ lang: ja
 
 ---
 
-## 相互認証の Client VPN で起きること
+### 相互認証の Client VPN で起きること
 
 **証明書認証には、ユーザーもグループもありません。** 認可の主体は証明書そのものです。
 
@@ -52,7 +72,7 @@ lang: ja
 
 ---
 
-## 端末ごとの保管場所
+### 端末ごとの保管場所
 
 | 端末 | SMB | iSCSI | AWS |
 |---|---|---|---|
@@ -65,7 +85,7 @@ lang: ja
 
 ---
 
-## 減らすための 3 つの手立て
+### 減らすための 3 つの手立て
 
 **「秘密を安全に置く」より「置かない」ほうが確実です。**
 
@@ -80,22 +100,7 @@ lang: ja
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | Windows: `cmdkey /list` | 資格情報マネージャーに残っている SMB の資格情報 |
-| 2 | macOS: `security find-internet-password -s <smb-host>` | キーチェーンに残っている資格情報 |
-| 3 | Linux / WSL2: `ls -l /etc/*cred* ~/.smbcredentials 2>/dev/null` と `stat -c '%a %n'` でモードを見る | `credentials=` ファイルの存在と、**600 になっているか** |
-| 4 | 各端末で `ls -l ~/.aws/credentials` と `aws sts get-caller-identity` | AWS の秘密の所在。**WSL2 と Windows で別々に実行してください** |
-| 5 | `aws ec2 describe-client-vpn-endpoints --query 'ClientVpnEndpoints[].[ClientVpnEndpointId,ClientConnectOptions,AuthenticationOptions]'` | 認証方式。証明書認証なら失効リストの運用が必要です |
-| 6 | 端末で VPN プロファイルのファイルを探し、`<key>` ブロックが含まれるか見る | **プロファイル 1 つが資格情報かどうか** |
-
-**手順 6 が最も効きます。** 鍵が埋め込まれたプロファイルは、コピーされた時点で複製された資格情報です。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -109,7 +114,7 @@ lang: ja
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -121,7 +126,7 @@ lang: ja
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — クライアントアクセス](../README.md) — このモジュールのハブ
 - [端末の到達経路の比較](../../../reference/comparison/endpoint-reachability-options.md) — 経路ごとに端末へ入るもの
@@ -134,3 +139,37 @@ lang: ja
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | Windows: `cmdkey /list` | 資格情報マネージャーに残っている SMB の資格情報 |
+| 2 | macOS: `security find-internet-password -s <smb-host>` | キーチェーンに残っている資格情報 |
+| 3 | Linux / WSL2: `ls -l /etc/*cred* ~/.smbcredentials 2>/dev/null` と `stat -c '%a %n'` でモードを見る | `credentials=` ファイルの存在と、**600 になっているか** |
+| 4 | 各端末で `ls -l ~/.aws/credentials` と `aws sts get-caller-identity` | AWS の秘密の所在。**WSL2 と Windows で別々に実行してください** |
+| 5 | Client VPN エンドポイントの認証方式を確認する | 証明書認証なら失効リストの運用が必要です |
+| 6 | 端末で VPN プロファイルのファイルを探し、`<key>` ブロックが含まれるか見る | **プロファイル 1 つが資格情報かどうか** |
+
+**手順 6 が最も効きます。** 鍵が埋め込まれたプロファイルは、コピーされた時点で複製された資格情報です。
+
+手順 5 の認証方式は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws ec2 describe-client-vpn-endpoints \
+  --query 'ClientVpnEndpoints[].[ClientVpnEndpointId,AuthenticationOptions]'
+```
+
+### 期待結果
+
+```text
+AuthenticationOptions の type が certificate-authentication なら、端末に秘密鍵が残り、
+個別に止めるには失効リストの運用が要る。directory-service / federated-authentication なら
+認可の主体は IdP 側になる
+```
+
+このコマンドはエンドポイントの設定を読むだけで、VPN 構成も証明書も変更しません。
+
+## Read next
+
+[SMB の失敗は端末ごとに違う症状で出るか？](how-smb-fails-per-endpoint.md)

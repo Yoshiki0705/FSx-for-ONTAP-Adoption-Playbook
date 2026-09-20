@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-
 lang: ja
 ---
 
-# 端末から S3 Access Points に届く条件
+# 端末から S3 Access Points に届くには何が要るか？
+
+上から狭まる 4 条件。私設経路に限定するならインターフェースエンドポイントが要ります。
+
+## このノートで学べること
+
+- 端末から S3 Access Points に届く 4 条件（ONTAP 9.17.1 以降・同一アカウント同一リージョン・エンドポイント・2 層の認可）
+- ゲートウェイエンドポイントが VPC 外から入る通信をルーティングしないこと（端末固有の条件）
+
+## このノートが答えないこと
+
+- AD 参加 SVM の全データ操作が常に DC 到達性を要するか、AD 到達不能時に `HeadBucket` だけ成功するか（`open`）
+- 端末からの到達の自環境での実測値
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="端末から-s3-access-points-に届く条件"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **端末の S3 トラフィックを VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入れ、私設経路に限定する場合は、VPC 内のインターフェースエンドポイントが要ります。** ゲートウェイエンドポイントは VPC 内で発生した通信には使えますが、VPC の外から入る通信をルーティングしません。Internet origin の Access Point は、ポリシーが許可すれば公開 S3 エンドポイントからも到達できます。
 
@@ -35,7 +55,7 @@ lang: ja
 
 ---
 
-## 3 番目の条件が端末固有である理由
+### 3 番目の条件が端末固有である理由
 
 **S3 のリクエストは、端末から見ると「インターネット上の API」です。** split-tunnel の VPN では、
 その通信は VPN に入らず端末のネットワークからそのまま出ていきます。`Internet` origin なら
@@ -58,7 +78,7 @@ S3 リクエストの名前解決が変わるため、**この検証のためだ
 
 ---
 
-## 端末に置く AWS 資格情報
+### 端末に置く AWS 資格情報
 
 **Access Point へのリクエストは SigV4 で署名されます。** 署名に使う資格情報が端末に必要です。
 
@@ -72,7 +92,7 @@ S3 リクエストの名前解決が変わるため、**この検証のためだ
 
 ---
 
-## AD 参加 SVM に関する未解決の範囲
+### AD 参加 SVM に関する未解決の範囲
 
 AWS は、Windows の `FileSystemIdentity` が参加済み Active Directory ドメインで解決できることと、ID を解決できない場合や名前サービスが到達不能な場合に Access Point が `MISCONFIGURED` になりうることを記載しています。
 
@@ -82,23 +102,7 @@ AWS は、Windows の `FileSystemIdentity` が参加済み Active Directory ド�
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `aws fsx describe-file-systems` の ONTAP バージョンを ONTAP REST の `GET /api/cluster?fields=version` で確認する | 条件 1。**AWS CLI はバージョンを `None` で返すことがあります** |
-| 2 | `aws ec2 describe-vpc-endpoints --query 'VpcEndpoints[].[ServiceName,VpcEndpointType,PrivateDnsEnabled]'` | 条件 3。VPC 外から入る端末通信を私設経路に限定するなら `Interface` が必要です。`Gateway` は VPC 内で発生した通信向けです |
-| 3 | 端末から `nslookup s3.<region>.amazonaws.com` と、エンドポイント固有の DNS 名の両方を引く | どちらに向かうか |
-| 4 | 端末から `aws s3api list-objects-v2 --bucket <access-point-alias> --max-items 1` | 条件 3 と 4 の両方。ファイル権限まで含むエンドツーエンド確認です |
-| 5 | 失敗した場合、エラー全文を残す | **エンドポイント・認可・名前解決のどれで落ちたかはエラーの種類で分かれます** |
-
-**手順 5 を省かないでください。** 3 つの原因がどれも「list が失敗した」に見えます。
-症状から層を逆引きする手順は
-[S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md) にあります。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -112,7 +116,7 @@ AWS は、Windows の `FileSystemIdentity` が参加済み Active Directory ド�
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -125,7 +129,7 @@ AWS は、Windows の `FileSystemIdentity` が参加済み Active Directory ド�
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — クライアントアクセス](../README.md) — このモジュールのハブ
 - [パブリックインターネットからの経路は存在しない](no-route-from-the-public-internet.md) — ファイル側と同じ前提
@@ -138,3 +142,35 @@ AWS は、Windows の `FileSystemIdentity` が参加済み Active Directory ド�
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | ONTAP バージョンを ONTAP REST の `GET /api/cluster?fields=version` で確認する | 条件 1。**AWS CLI はバージョンを `None` で返すことがあります** |
+| 2 | VPC エンドポイントの種別（`Interface` / `Gateway`）と Private DNS の有無を確認する | 条件 3。私設経路に限定するなら `Interface` が必要です |
+| 3 | 端末から `nslookup s3.<region>.amazonaws.com` と、エンドポイント固有の DNS 名の両方を引く | どちらに向かうか |
+| 4 | 端末から Access Point エイリアスに対して `list-objects-v2` を実行する | 条件 3 と 4 の両方。ファイル権限まで含むエンドツーエンド確認です |
+| 5 | 失敗した場合、エラー全文を残す | **エンドポイント・認可・名前解決のどれで落ちたかはエラーの種類で分かれます** |
+
+**手順 5 を省かないでください。** 3 つの原因がどれも「list が失敗した」に見えます。症状から層を逆引きする手順は [S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md) にあります。
+
+手順 2 の VPC エンドポイントの種別は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws ec2 describe-vpc-endpoints \
+  --query 'VpcEndpoints[].[ServiceName,VpcEndpointType,PrivateDnsEnabled]'
+```
+
+### 期待結果
+
+```text
+S3 のエンドポイントが Interface で PrivateDnsEnabled が true なら、私設経路に名前解決も向く。
+Gateway しか無い場合、VPC 外から VPN 等で入る端末通信はルーティングされない
+```
+
+このコマンドはエンドポイントの構成を読むだけで、ルーティングにも DNS にも変更を加えません。
+
+## Read next
+
+[端末を直接インターネット経由で繋げるか？](no-route-from-the-public-internet.md)
