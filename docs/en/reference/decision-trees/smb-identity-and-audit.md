@@ -39,9 +39,10 @@ lang: en
 graph TD
     START[Create an SVM that serves SMB] --> Q1{"Is Active Directory<br/>already operated<br/>and available"}
     Q1 -->|Not available| WG[Workgroup<br/>local users per SVM]
-    Q1 -->|Available| Q2{"Many accounts, with<br/>frequent churn from<br/>staff movement"}
-    Q2 -->|Few and stable| WG2["A workgroup still works<br/>on a maintained register"]
-    Q2 -->|Many / frequent| AD[AD membership]
+    Q1 -->|Available| Q2{"Account count and<br/>staff-movement churn"}
+    Q2 -->|Fewer than dozens and stable| WG2["A workgroup still works<br/>on a maintained register"]
+    Q2 -->|Dozens with frequent churn| AD[AD membership]
+    Q2 -->|Only one condition applies| COMPARE["Compare the operating cost<br/>of auditing and AD"]
     WG --> C1["Committed to<br/>no last-logon attribute"]
     WG2 --> C1
     AD --> C2["Committed to<br/>a lifelong AD dependency"]
@@ -58,7 +59,7 @@ The reasoning for each branch follows. **The recommended side's constraints are 
 | Responsibility for audit log capacity | **Taken on for the sake of the inventory** | Not needed for inventory purposes |
 | Scope of an authentication failure investigation | Contained within the SVM | Includes reachability to a domain controller |
 
-**How to choose**: account count and churn decide it. **Dozens of accounts with frequent movement point to AD membership**; **a small, stable set points to a workgroup with a maintained register.** Choosing a workgroup means weighing the cost of enabling auditing for the inventory against the cost of operating AD. **Both branches carry operational cost; they differ in where it sits.**
+**How to choose**: account count and churn decide it. **Dozens of accounts with frequent movement point to AD membership**; **a small, stable set points to a workgroup with a maintained register.** If only one condition applies, compare the operating cost of enabling auditing for the inventory with the cost of operating AD. The same comparison applies when choosing a workgroup. **Both branches carry operational cost; they differ in where it sits.**
 
 ---
 

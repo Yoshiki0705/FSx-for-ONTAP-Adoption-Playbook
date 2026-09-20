@@ -25,7 +25,7 @@ lang: ja
 |---|---|---|
 | 1 | 必要なプロトコルは何か | **7 つの選択肢が 1〜2 つになります。** 性能や費用ではなく、対応の有無で落ちます |
 | 2 | データの正本はどこか | S3 なのか、ファイルシステム側なのか、オンプレミスなのかで、残った候補が分かれます |
-| 3 | 読み書きの比率 | 読み取り中心なら S3 を正本にできる場合があります |
+| 3 | S3 を正本にしたまま利用側の書き込みを扱えるか | 読み取り中心で扱えるなら S3 を正本にできる場合があります |
 | 4 | 既存の ONTAP 資産の有無 | あるなら SnapMirror と運用手順がそのまま使えます |
 | 5 | 拠点の位置 | 遠隔拠点があると、キャッシュか複製かの判断が入ります |
 
@@ -43,21 +43,23 @@ graph TD
     START[ファイルストレージを選ぶ] --> P{必要なプロトコル}
 
     P -->|SMB と NFS を同じデータに| ONTAP1["FSx for ONTAP<br/>他に選択肢がありません"]
-    P -->|SMB のみ| W{Windows の ACL と<br/>AD 統合が中心か}
+    P -->|SMB のみ| W{将来 NFS も<br/>提供するか}
     P -->|NFSv3 が必要| V3["FSx for ONTAP<br/>または S3 File Gateway<br/>EFS と S3 Files は非対応"]
     P -->|NFSv4 系のみ| SRC{正本はどこか}
     P -->|POSIX 並列 FS| LUSTRE["FSx for Lustre<br/>Lustre クライアントが必要<br/>Windows は選択肢外"]
     P -->|ファイルの意味論は不要| S3ONLY["Amazon S3<br/>読み取り中心なら Mountpoint"]
 
-    W -->|はい| WIN["FSx for Windows File Server<br/>NFS は出せません"]
-    W -->|将来 NFS も出す| ONTAP2["FSx for ONTAP"]
+    W -->|提供する| ONTAP2["FSx for ONTAP"]
+    W -->|提供しない| WACL{Windows ACL / AD 統合が<br/>要件か}
+    WACL -->|要件| WIN["FSx for Windows File Server<br/>NFS は出せません"]
+    WACL -->|要件ではない| COMPARE["FSx for ONTAP と<br/>FSx for Windows File Server を比較"]
 
-    SRC -->|Amazon S3| RW{利用側は書き込むか}
+    SRC -->|Amazon S3| RW{S3 を正本にしたまま<br/>利用側の書き込みを<br/>扱えるか}
     SRC -->|ファイルシステム側| EFSQ{Windows・ACL・<br/>nconnect が要るか}
     SRC -->|オンプレミス| GW["S3 File Gateway<br/>NAS の完全な置き換えではありません"]
 
-    RW -->|読み取り中心| SITE{利用拠点は<br/>正本と同じリージョンか}
-    RW -->|大量に書く| ONTAP3["FSx for ONTAP を正本にする<br/>または SnapMirror"]
+    RW -->|扱える: 読み取り中心| SITE{利用拠点は<br/>正本と同じリージョンか}
+    RW -->|扱えない: 書き込み中心| ONTAP3["FSx for ONTAP を正本にする<br/>または SnapMirror"]
 
     SITE -->|同じ| S3F["Amazon S3 Files<br/>バケットにバージョニングが必須"]
     SITE -->|遠隔・別拠点| HANDOFF["S3 Access Point + FlexCache<br/>判断は sibling の決定木へ"]
@@ -79,13 +81,15 @@ graph TD
 | 1 | 同上 | NFSv4 系のみ | 3 へ |
 | 1 | 同上 | POSIX 並列ファイルシステム | **FSx for Lustre。** Lustre クライアントが必要で、Windows は選択肢に入りません |
 | 1 | 同上 | ファイルの意味論は不要 | **Amazon S3。** 読み取り中心なら Mountpoint for Amazon S3 |
-| 2 | Windows の ACL と AD 統合が中心か | はい | **FSx for Windows File Server。** NFS は出せません |
-| 2 | 同上 | 将来 NFS も出す可能性がある | **FSx for ONTAP** |
+| 2 | 将来 NFS も提供するか | 提供する | **FSx for ONTAP** |
+| 2 | 同上 | 提供しない | 2a へ |
+| 2a | Windows ACL / AD 統合が要件か | 要件 | **FSx for Windows File Server。** NFS は出せません |
+| 2a | 同上 | 要件ではない | **FSx for ONTAP と FSx for Windows File Server を比較** |
 | 3 | 正本はどこか | Amazon S3 | 4 へ |
 | 3 | 同上 | ファイルシステム側 | 6 へ |
 | 3 | 同上 | オンプレミス | **S3 File Gateway。** AWS が「エンタープライズ NAS の完全な置き換えを意図していない」と明記しています |
-| 4 | 利用側は書き込むか | 大量に書く | **FSx for ONTAP を正本にするか SnapMirror。** S3 を正本にしたまま大量に書く形は避けます |
-| 4 | 同上 | 読み取り中心 | 5 へ |
+| 4 | S3 を正本にしたまま利用側の書き込みを扱えるか | 扱えない: 書き込み中心 | **FSx for ONTAP を正本にするか SnapMirror。** S3 を正本にしたまま書き込み中心にする形は避けます |
+| 4 | 同上 | 扱える: 読み取り中心 | 5 へ |
 | 5 | 利用拠点は正本と同じリージョンか | 同じ | **Amazon S3 Files。** リンク先バケットに S3 バージョニングが必須です |
 | 5 | 同上 | 遠隔・別拠点 | **S3 Access Point + FlexCache。** ここから先は [sibling の決定木](#この決定木が送り出す先) が扱います |
 | 6 | Windows・ACL・`nconnect` のいずれかが要るか | 1 つでも必要 | **FSx for ONTAP** |
