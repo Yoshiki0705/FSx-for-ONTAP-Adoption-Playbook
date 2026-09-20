@@ -201,6 +201,26 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # Once the corpus is clean, leaving this category report-only restores the silent gap: the
+        # informational target stays green while the required unscoped audit accepts the same term.
+        "name": "sales vocabulary removed from the default audit",
+        "why": (
+            "Putting the cleared category back into the report-only set is a plausible rollback "
+            "during future editorial work. Explicit reports still behave correctly, so only the "
+            "default-gate fixture can distinguish the narrowed required scope."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "REPORT_ONLY_CATEGORIES = frozenset()",
+                'REPORT_ONLY_CATEGORIES = frozenset({"sales-vocabulary"})',
+            ),
+        ],
+        "must_fail": ["test_default_audit_rejects_sales_vocabulary"],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
         # The mirror-image mistake a sibling repository made first and reported. Testing for an
         # unchanged report finds only markers that suppress nothing, and misses one that makes the
         # checker report something that is not there.

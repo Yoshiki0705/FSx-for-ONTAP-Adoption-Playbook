@@ -207,7 +207,7 @@ graph TD
 | SnapCenter の構成（中央サーバーとアプリケーション別プラグイン）、VMware プラグインの整合性区分 | [NetApp: SnapCenter overview](https://docs.netapp.com/us-en/snapcenter/get-started/concept_snapcenter_overview.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | 複数ファイルシステムにまたがる Snapshot に調整スクリプトが必要で、アプリケーション整合にホスト側の関与が必要であること | [AWS Storage Blog: SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](https://aws.amazon.com/blogs/storage/san-a-million-iops-in-aws-from-amazon-fsx-netapp-ontap/) <!-- allow:naming - 記事タイトルの原文 --> |
-| snapshot 予約 0%、snapshot autodelete という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| snapshot 予約 0%、snapshot autodelete という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | ボリュームを LUN より 5% 以上大きくすること | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 
 ---

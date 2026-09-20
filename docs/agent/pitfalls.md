@@ -38,12 +38,12 @@
 | Form | Scope | When it is honest |
 |---|---|---|
 | an HTML comment containing `allow:<category>` | the line it appears on | The match is a false positive — a proper noun, or a verbatim external title that contains a forbidden form |
-| an HTML comment containing `audit-file-allow` plus a comma-separated category list | the whole file | The document *defines* the rules and therefore has to quote the patterns it forbids. `AGENTS.md` and `CONTRIBUTING.md` are the only files that qualify |
+| an HTML comment containing `audit-file-allow` plus a comma-separated category list | the whole file | A rule-definition document has to quote patterns it forbids. Content pages never qualify |
 
-Both markers are matched anywhere on a line, HTML comment or not — so writing either token in
-prose creates a real exemption. That is why the file-level one is spelled out in words here
-instead of shown literally: quoting it would silence this file. Valid categories are `naming`,
-`neutrality`, `pii`, `role-label`, and `all`.
+The line-level marker must use an HTML comment. A bare `allow:<category>` mention, an
+inline-code example, or a fenced example is documentation rather than a directive and suppresses
+nothing. Valid categories are `naming`, `neutrality`, `sales-vocabulary`, `pii`, `role-label`,
+`support-referral`, `support-attribution`, and `all`.
 
 Prefer the per-line form. A file-level allowance also exempts every mistake added to that
 file later, which is how an exemption granted for one good reason turns into an unmonitored

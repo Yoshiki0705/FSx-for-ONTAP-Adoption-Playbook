@@ -148,6 +148,40 @@ class VocabularySurface(TemporaryTree):
         self.assertEqual(result.returncode, 2)
         self.assertIn("frontmatter opens but never closes", result.stderr)
 
+    def test_default_audit_rejects_sales_vocabulary(self) -> None:
+        self.write("note.md", "best\n")
+        result = self.run_tool("audit_public_output.py")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("note.md:1: [sales-vocabulary]", result.stderr)
+
+    def test_full_clean_tree_passes_default_audit(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "audit_public_output.py")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=180,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(" clean", result.stdout)
+
+    def test_exact_title_allowance_suppresses_only_its_line(self) -> None:
+        self.write(
+            "note.md",
+            "| Source | Detail |\n"
+            "|---|---|\n"
+            "| [Best practices](https://example.com/source) | Exact title "
+            "<!-- allow:sales-vocabulary - exact external title --> |\n"
+            "| Local prose | best choice |\n",
+        )
+        result = self.run_tool(
+            "audit_public_output.py", "--only", "sales-vocabulary", "--report"
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("note.md:4: [sales-vocabulary]", result.stdout)
+        self.assertNotIn("note.md:3: [sales-vocabulary]", result.stdout)
+
     def test_report_succeeds_while_check_mode_fails(self) -> None:
         self.write("note.md", "best\n")
         reported = self.run_tool(

@@ -188,7 +188,7 @@ graph TD
 | 第 1 世代と第 2 世代 Multi-AZ が 1 組、第 2 世代 Single-AZ が最大 12 組であること。追加は無停止で数分、削除は不可。新ペアが同じスループットと SSD 容量を持つこと。移動と再マウントが必要なこと。追加中は容量変更ができないこと。iSCSI と NVMe/TCP の 6 組以下という条件。NVMe キャッシュの既定 | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | 4 つのデプロイタイプと世代の対応 | [AWS SDK reference: deploymentType](https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/fsx/aws.sdk.kotlin.services.fsx.model/-create-file-system-ontap-configuration/deployment-type.html) |
 | Multi-AZ の待機系が別 AZ にあり同期複製されること、Multi-AZ 1 が第 1 世代・Multi-AZ 2 が第 2 世代であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
-| Multi-AZ の書き込みスループット上限が Single-AZ より高いこと、書き込みが両方のファイルサーバーに書かれてから応答すること | [AWS Storage Blog: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
+| Multi-AZ の書き込みスループット上限が Single-AZ より高いこと、書き込みが両方のファイルサーバーに書かれてから応答すること | [AWS Storage Blog: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) <!-- allow:sales-vocabulary - exact external title --> |
 | 単一 HA ペアの 6 GB/s・200,000 IOPS、スケールアウトを選ぶ用途 | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
 
 ---

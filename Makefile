@@ -166,7 +166,7 @@ glossary-report: ## Report unlinked glossary first uses (not a gate)
 structure-report: ## Report future note/checklist structure findings (not a gate)
 	@$(PY) tools/check_document_structure.py
 
-vocabulary-report: ## Report staged sales-vocabulary findings (not a gate)
+vocabulary-report: ## Report sales-vocabulary findings (not a gate)
 	@$(PY) tools/audit_public_output.py --only sales-vocabulary --report
 
 mermaid-report: ## Parse/render every Mermaid block with mmdc (not a gate; run npm ci first)
@@ -213,7 +213,7 @@ switcher-write: ## Regenerate language switcher blocks from what exists on disk
 # hid that only one was running: in CI's docs-quality job gitleaks is not installed, so
 # `make audit` printed "skipping secret scan" and passed. Secret scanning there is covered
 # by .github/workflows/gitleaks.yml, which scans full history rather than the worktree.
-audit: ## Pre-publication audit (naming / neutrality / PII / internal IDs)
+audit: ## Pre-publication audit (naming / neutrality / sales vocabulary / PII / internal IDs)
 	@$(PY) tools/audit_public_output.py
 
 secrets: ## Secret scan of the worktree (fails when gitleaks is not installed)

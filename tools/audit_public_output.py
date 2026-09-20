@@ -12,8 +12,8 @@ Seven independent concerns, all of which have historically been caught late or n
                    publishing it before a case exists puts a dead end in a knowledge base.
   6. support-attribution - a vendor's support reply is the vendor's confidential information, so it
                    cannot be the published basis for a claim, however it is worded.
-  7. sales-vocabulary - promotional adjectives and unsupported outcomes belong in the staged
-                   migration report until the existing prose has been revised.
+  7. sales-vocabulary - promotional adjectives and unsupported outcomes are rejected from public
+                   prose unless a verbatim external title carries a line-level allowance.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -177,10 +177,10 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
     ),
 ]
 
-# New sales-language findings are migration debt until the corpus is rewritten. Keeping this
-# category out of the default preserves every existing audit rule without turning known debt into
-# a required gate. `--only sales-vocabulary --report` is the staged inventory.
-REPORT_ONLY_CATEGORIES = frozenset({"sales-vocabulary"})
+# Every registered category is required by the default audit. Keep the named empty set so a future
+# migration can stage a category without changing the selection mechanism; any non-empty value must
+# be temporary and is mutation-tested against the default gate.
+REPORT_ONLY_CATEGORIES = frozenset()
 
 SALES_VOCABULARY_RULES: list[tuple[re.Pattern[str], str]] = [
     (
@@ -801,11 +801,14 @@ def main() -> int:
     parser.add_argument(
         "--report",
         action="store_true",
-        help="print findings but return success (migration report; not a gate)",
+        help="print findings but return success (informational report; not a gate)",
     )
     args = parser.parse_args()
 
     only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
+    # A category may be staged here only while its corpus backlog is being removed. The empty set
+    # means every category is required by an unscoped run; a behavioral test and mutation pin that
+    # default so removing one cannot silently narrow `make audit`.
     active = only or (frozenset(CATEGORIES) - REPORT_ONLY_CATEGORIES)
     unknown = only - frozenset(CATEGORIES)
     if unknown:
@@ -887,7 +890,7 @@ def main() -> int:
         for finding in findings:
             print(f"  {finding}", file=destination)
         if args.report:
-            print("public-output report (not a gate): findings require migration")
+            print("public-output report (not a gate): findings require remediation")
             return 0
         return 1
 
