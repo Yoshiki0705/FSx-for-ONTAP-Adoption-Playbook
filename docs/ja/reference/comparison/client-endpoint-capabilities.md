@@ -112,7 +112,7 @@ Windows は AWS の手順が Server SKU 前提でそのまま動かず、ネイ�
 |---|---|---|
 | 1 | 端末の一覧を OS とバージョンで棚卸しする | この表のどの列に当たるか |
 | 2 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` と `Get-Service MSiSCSI` | MPIO の有効化手段と iSCSI サービスの状態 |
-| 3 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことは自環境で確認するのが最も確実です** |
+| 3 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**自環境でコマンドと実行ファイルの有無を確認します** |
 | 4 | WSL2: `wsl.exe --version`、`modprobe iscsi_tcp; echo $?`、`cat /etc/wsl.conf` | カーネルとネットワークモード |
 | 5 | 各端末で `aws sts get-caller-identity` | AWS の資格情報が端末にどう置かれているか |
 | 6 | 各端末で `mount` の出力を記録する | すでに何がマウントされているか |

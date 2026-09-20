@@ -75,7 +75,7 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 **既定は無効です。** REST API で作った LUN は `space_reserve=disabled` でした。有効にするのは明示的な選択です。
 
-**ここに落とし穴があります。** AWS の SQL Server ベストプラクティスは **「LUN reservation enabled」** を挙げています。一方 FSx for ONTAP の API で作ったボリュームは **`space-guarantee none`、`fractional-reserve 0`** でした。NetApp のドキュメントでは、`fractional-reserve` はボリュームの guarantee が `none` のとき既定で 0 になり、**書き込みの保証は best-effort にしかなりません。** つまり **予約を有効にしても、上書きのための領域が保証されるわけではありません。** 予約が保証するのは「LUN のサイズ分の容量が他に使われないこと」までです。
+**ここに落とし穴があります。** AWS の SQL Server 構成例は **「LUN reservation enabled」** を挙げています。一方 FSx for ONTAP の API で作ったボリュームは **`space-guarantee none`、`fractional-reserve 0`** でした。NetApp のドキュメントでは、`fractional-reserve` はボリュームの guarantee が `none` のとき既定で 0 になり、**書き込みの継続は利用可能な空き容量に依存します。** つまり **予約を有効にしても、上書きのための領域が保証されるわけではありません。** 予約が保証するのは「LUN のサイズ分の容量が他に使われないこと」までです。
 
 ---
 
@@ -179,7 +179,7 @@ graph TD
 | 4 | 予約を切り替え、**30 秒以上待ってから** ボリュームの使用量を読む | **計上の遅延。直後に読むと変更前の値が返ります** |
 | 5 | LUN 上でファイルを作って削除し、ボリュームの使用量を見る。次に `fstrim` を実行して再度見る | UNMAP が伝わるまで戻らないこと |
 | 6 | `volume snapshot show` で、解放したブロックが Snapshot に移っていないかを確認する | 2 つ目の「戻らない」理由 |
-| 7 | `volume show -fields space-guarantee,fractional-reserve` を確認する | **`none` / `0` なら、予約しても上書きの保証は best-effort です** |
+| 7 | `volume show -fields space-guarantee,fractional-reserve` を確認する | **`none` / `0` なら、予約しても上書きの継続は利用可能な空き容量に依存します** |
 | 8 | ホストの `df` とボリュームの空きを並べて記録する | 監視でどちらを見るべきか |
 
 手順 4 と 5 は**検証環境で行ってください。** 本番の LUN で予約を切り替えると、ボリュームの空き容量の計算が変わります。
@@ -193,7 +193,7 @@ graph TD
 | 確保した SSD 容量がそのままボリュームに使える | **1,024 GiB の確保で aggregate は 907.03 GiB でした**（検証環境の実測） |
 | 100 GiB のボリュームには 100 GiB 置ける | **既定の 5% snapshot 予約があり、active file system は 95 GiB でした** |
 | LUN を作っただけでは容量を消費しない | **予約を有効にすると、書き込み 0 でもサイズ分を消費します** |
-| 予約を有効にすれば上書きの領域が保証される | ボリュームの guarantee が `none`、`fractional-reserve` が 0 なので **best-effort です** |
+| 予約を有効にすれば上書きの領域が保証される | ボリュームの guarantee が `none`、`fractional-reserve` が 0 なので、**上書きの継続は利用可能な空き容量に依存します** |
 | 設定変更の効果は直後に確認できる | **30 秒程度の遅れがあります。** 直後の読み取りは変更前の値です |
 | LUN 上でファイルを消せば容量が戻る | **`fstrim` などで UNMAP を送るまで戻りません** |
 | `fstrim` すれば free space になる | **Snapshot が握っていればそちらに移るだけです** |
@@ -229,7 +229,7 @@ graph TD
 | ボリュームを LUN より 5% 以上大きくすること、`space-allocation` を有効にする理由、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | 満杯時に LUN が read-only に落ちること、復旧が拡張 → `lun resize` → fsck であること | [AWS re:Post: LUN in read-only mode](https://repost.aws/knowledge-center/fsx-ontap-lun-in-read-only-mode) |
 | `space-guarantee none` / `space-slo thick` / `semi-thick` の違い、空間予約された LUN が作成時に容量を確保すること | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
-| `fractional-reserve` が 0 か 100 しか取らず、guarantee が `none` のとき既定で 0 になること、0 では書き込み保証が best-effort であること | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
+| `fractional-reserve` が 0 か 100 しか取らず、guarantee が `none` のとき既定で 0 になること、0 では書き込みの継続が利用可能な空き容量に依存すること | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
 | snapshot 予約 0%、LUN 予約有効、autodelete oldest_first、autosize autogrow という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
 | SSD 容量の最小値と IOPS の既定（3 per GiB） | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 

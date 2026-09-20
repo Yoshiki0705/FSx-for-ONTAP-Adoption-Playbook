@@ -556,7 +556,7 @@ state is refused, **citing volumes that no longer exist.**
 | 残った Amazon FSx 側レコードへの `aws fsx delete-volume` | **成功し、約 1 分で解消** | 実測 | 2026-09-01 | 削除済みボリュームに対しても受理されます |
 
 > **自動化への含意**: **ONTAP CLI で作成し、その ID を Amazon FSx API から取得する処理には待機と
-> 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散に負けます。ボリューム ID を
+> 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散を吸収できません。ボリューム ID を
 > 直後に必要とする処理（S3 Access Point のアタッチなど）は、**Amazon FSx API 側でボリュームを作る**
 > ほうが確実です。
 >

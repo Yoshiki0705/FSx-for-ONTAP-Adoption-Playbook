@@ -117,7 +117,7 @@ SIOS LifeKeeper について、ベンダーは **2024-11-28 からサポート�
 
 **この記載が意味するのはサポートの所在で、当リポジトリでの検証結果ではありません。** 版の組み合わせと対応プロトコルは選定時点でベンダーの最新情報を確認してください。
 
-**他の候補について、こちらが到達できていない範囲があります。** 同じ課題領域で日本の環境から想起される製品のうち、**FSx for ONTAP を名指しした対応記述に到達できていないものがあります**（検索日 2026-09-15）。到達できていないことは非対応を意味しません。調査状態は [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#掲載基準を満たさないもの) に記録しています。
+**他の候補について、こちらが到達できていない範囲があります。** 同じ課題領域で日本の環境から想起される製品のうち、**FSx for ONTAP を名指しした対応記述に到達できていないものがあります**（検索日 2026-09-15）。到達できていないことは非対応を意味しません。調査状態は [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md#掲載基準を満たさないもの) に記録しています。
 
 ---
 
@@ -220,7 +220,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 - [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア単位の共有
 - [再現できるベンチマークの条件](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) — 測定の設計
 - [ブロックストレージ横断リソースマップ](../../../reference/block-storage-resource-map.md) — 一次情報の索引
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md) — 調停を担う製品の索引と、こちらが到達できていない範囲
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md) — 調停を担う製品の索引と、こちらが到達できていない範囲
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---

@@ -32,7 +32,7 @@ lang: ja
 > （`vsadmin` の範囲、ONTAP REST API の経路、QoS ポリシーグループ、ボリューム数の上限）、
 > **これらを組み合わせた自己サービスの窓口を実際に構築・運用した結果ではありません。**
 > とくに「ONTAP REST API 経由の操作が CloudTrail に現れるか」は**確認していません**（下記に明記しています）。
-> 責務分割の整理は参照記事に依拠していますが、**その記事も実装提案であり検証結果ではないと明記しています。**
+> 責務分割の整理は参照記事に依拠していますが、**その記事は実装案を示しており、検証結果を含まないと記載しています。**
 > 検証の出発点として使ってください。**設計の根拠にする前に、[自環境での確認手順](#自環境での確認手順) を通してください。**
 
 ---
@@ -65,7 +65,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 **利用者は「このデータセットの版から実験ブランチを作りたい」と要求し、プラットフォームが要求を検証して、絞られたサービス識別情報で承認済みの操作を実行します。**
 
-この整理は参照記事の提案と同じです。**このノートの追加分は、FSx for ONTAP でそれを実装しようとしたときに、権限以外に何を縛る必要があるかです。**
+この責務分割は参照記事にも記載されています。**FSx for ONTAP でこの構成を使うプラットフォーム管理者は、権限に加えて資源と寿命を制御する必要があります。**
 
 ---
 
@@ -247,7 +247,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 | ファイルアクセス監査で 4663 が 1 オブジェクトにつき最初の読み取りと最初の書き込みのみを記録すること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
 | SnapLock の保持モードと `PrivilegedDelete` の終端状態、監査ログボリュームの最小保持期間が 6 か月であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
 | SSD 縮小操作の開始後に作られたクローンが縮小を一時停止させ、削除で再開すること | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
-| 管理者と利用者の責務分割の整理、統制されたエージェントに与えるガードレールの構成、効果を測るための項目、業界水準の投資対効果をストレージに帰属させないこと | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) — **記事自身が実装提案であり検証結果ではないと明記しています** |
+| 管理者と利用者の責務分割の整理、統制されたエージェントに与えるガードレールの構成、効果を測るための項目、業界水準の投資対効果をストレージに帰属させないこと | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) — **記事自身が実装案であり、検証結果を含まないと明記しています** |
 
 ---
 

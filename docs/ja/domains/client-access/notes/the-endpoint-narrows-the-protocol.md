@@ -91,7 +91,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 | # | 手順 | 確認できること |
 |---|---|---|
 | 1 | 端末の一覧を OS とバージョンで棚卸しする | どの行に当たるか |
-| 2 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことは自環境で確認するのが最も確実です** |
+| 2 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**自環境でコマンドと実行ファイルの有無を確認します** |
 | 3 | WSL2: `modprobe iscsi_tcp; echo $?` と `lsmod \| grep iscsi` | ブロックが使えるかどうか |
 | 4 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` と `Get-Service MSiSCSI` | MPIO の有効化手段と iSCSI サービスの状態 |
 | 5 | `examples/client-access/probe-endpoint.sh` または `probe-endpoint.ps1` を各端末で実行する | 上記を同じ形の JSON で並べられます |

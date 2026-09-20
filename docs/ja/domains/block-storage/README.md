@@ -15,7 +15,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 手元にあるもの | 最初に読むもの | そこで分かること |
 |---|---|---|
 | **数字**（公開ベンチマークの値、自分で測った値） | [公開ベンチマークの読み方](notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) | その数字が**何台を束ねた合計なのか**。台数を伏せた値は 1 台の性能として読めません |
-| **既存の構成**（いま Amazon EBS で回している） | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) | 前提が崩れる条件。**GB 単価では負けます。** 境目は台数ではありません |
+| **既存の構成**（いま Amazon EBS で回している） | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) | 前提が崩れる条件。**GB 単価は Amazon EBS のほうが低いです。** 境目は台数ではありません |
 | **決めなければならない選択**（プロトコル、LUN の並べ方） | [ブロックプロトコルと配置の決定ツリー](../../reference/decision-trees/block-protocol-and-layout.md) | **先に狭まっている制約。** 世代と HA ペア数が選択肢を減らしたあとに残るものだけを比べます |
 | **ブロックのデータをファイルや S3 API で読みたい要件** | [LUN の中身はファイルプロトコルに現れない](notes/lun-contents-do-not-reach-file-protocols.md) | **境界を越えるにはホストを 1 台経由します。** FlexClone も `volume rehost` もこの境界を動かしません |
 

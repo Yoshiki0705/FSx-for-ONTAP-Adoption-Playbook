@@ -164,7 +164,7 @@ AWS Storage Blog が公開している事例では、**2 段が順序を持っ�
 ## 関連ドキュメント
 
 - [Domain — コスト](../README.md) — このモジュールのハブ
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#nas-移行とデータの可視化) — この課題領域の索引
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md#nas-移行とデータの可視化) — NAS 移行とデータ可視化に使える選択肢の索引
 - [課金は「確保した量」と「使った量」に分かれる](provisioned-versus-consumed.md) — 課金モデルそのもの
 - [階層化が常に安くなるとは限らない理由](provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由) — 段 2 のリクエスト課金
 - [請求が想定より高いとき](../../../reference/decision-trees/cost-higher-than-expected.md) — 確保と消費のどちらで課金されているか
