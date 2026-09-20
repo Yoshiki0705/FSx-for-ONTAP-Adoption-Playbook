@@ -574,6 +574,68 @@ MUTATIONS: list[dict] = [
         "must_pass": ["test_multiple_complete_blocks_and_non_mermaid_fence"],
     },
     {
+        "name": "Mermaid vague-label vocabulary is narrowed",
+        "why": (
+            "Removing one ordinary-looking token from the bounded set makes the report stay clean "
+            "for the exact vague node the rule claims to catch, while specific questions continue "
+            "to pass."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                '        "purpose",\n',
+                "",
+            ),
+        ],
+        "must_fail": ["test_vague_decision_label_is_reported"],
+        "must_pass": [
+            "test_clear_decision_input_and_labelled_branches_are_accepted",
+            "test_sequence_and_explanatory_diagrams_are_excluded",
+        ],
+    },
+    {
+        "name": "Mermaid unlabeled branches are skipped",
+        "why": (
+            "Skipping branch inspection is the shortest way to avoid false positives from "
+            "explanatory diagrams. It also accepts decision diamonds whose readers cannot map "
+            "outgoing edges to states."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                "        if len(branches) < 2:\n            continue",
+                "        if True:\n            continue",
+            ),
+        ],
+        "must_fail": ["test_each_unlabelled_outgoing_branch_is_reported"],
+        "must_pass": [
+            "test_vague_decision_label_is_reported",
+            "test_sequence_and_explanatory_diagrams_are_excluded",
+        ],
+    },
+    {
+        "name": "Mermaid text branch labels are omitted",
+        "why": (
+            "Keeping only the pipe-delimited label form looks sufficient on the current corpus, "
+            "but valid Mermaid also permits text between dashes. Dropping that form can exclude a "
+            "decision flow from the bounded rule or undercount its branches."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                'EDGE_TEXT_LABEL = r"--[ \\t]+(?P<text_label>.+?)[ \\t]+-->"',
+                'EDGE_TEXT_LABEL = r"(?!)"',
+            ),
+        ],
+        "must_fail": ["test_text_between_dashes_branch_labels_are_recognized"],
+        "must_pass": [
+            "test_clear_decision_input_and_labelled_branches_are_accepted",
+        ],
+    },
+    {
         "name": "verification command requirement is removed",
         "why": (
             "Expected-output prose alone must not make a note reproducible; removing the command "
@@ -699,6 +761,9 @@ EDITORIAL_MUTATION_NAMES = frozenset(
     {
         "bare URL consumes adjacent Japanese prose",
         "spaced Mermaid info string is omitted",
+        "Mermaid vague-label vocabulary is narrowed",
+        "Mermaid unlabeled branches are skipped",
+        "Mermaid text branch labels are omitted",
         "verification command requirement is removed",
         "Mermaid trailing info metadata is omitted",
         "one agreed glossary term is dropped",

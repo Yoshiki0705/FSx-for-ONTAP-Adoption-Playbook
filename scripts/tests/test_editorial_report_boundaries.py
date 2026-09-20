@@ -390,6 +390,23 @@ class CliModeSurface(TemporaryTree):
         self.assertEqual(len(blocks), 1)
         self.assertIsNone(mermaid.render(blocks[0], cli))
 
+    def test_mermaid_clarity_report_succeeds_while_check_fails(self) -> None:
+        self.write(
+            "docs/sample.md",
+            "```mermaid\n"
+            "flowchart TD\n"
+            "Q{Purpose} -- Archive --> A[Archive]\n"
+            "Q --> B[Availability]\n"
+            "```\n",
+        )
+        cli = self.write("mmdc", "#!/bin/sh\nexit 0\n", executable=True)
+        reported = self.run_tool("check_mermaid.py", "--cli", str(cli))
+        checked = self.run_tool("check_mermaid.py", "--cli", str(cli), "--check")
+        self.assertEqual(reported.returncode, 0, reported.stderr)
+        self.assertIn("business semantics are not evaluated", reported.stdout)
+        self.assertIn("2 decision-clarity finding(s)", reported.stdout)
+        self.assertEqual(checked.returncode, 1)
+
     def test_long_mermaid_fence_reaches_real_renderer(self) -> None:
         cli = ROOT / "node_modules/.bin/mmdc"
         if not cli.is_file():
