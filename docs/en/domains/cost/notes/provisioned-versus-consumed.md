@@ -7,7 +7,29 @@ source: https://aws.amazon.com/fsx/netapp-ontap/pricing/
 lang: en
 ---
 
-# Billing splits into "provisioned" and "consumed"
+# Does Amazon FSx for NetApp ONTAP billing depend on provisioned or consumed quantity?
+
+SSD, IOPS, and throughput are provisioned charges; capacity pool and backups are consumed charges.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/cost/notes/provisioned-versus-consumed.md) | [English](provisioned-versus-consumed.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- Which SSD, IOPS, throughput, capacity-pool, and backup charges are provisioned or consumed.
+- How tiering, storage efficiency, and Snapshots affect charges and capacity.
+
+## What this note does not answer
+
+- Current unit prices or a monthly production estimate for your environment.
+- A universal cost-cutting choice without measured access, availability, and performance requirements.
+
+## Prerequisite level
+
+basic
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
 
@@ -15,7 +37,7 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Billing items fall into two categories: those charged by provisioned capacity and those charged by actual consumption.** Most estimation errors trace back to this distinction.
 
@@ -32,7 +54,7 @@ This means "moving cold data to the capacity pool saves money" **can reverse dep
 
 ---
 
-## What is billed
+### What is billed
 
 | Billing item | Unit | Provisioned / Consumed |
 |---|---|---|
@@ -51,7 +73,7 @@ Backups are **incremental**. Blocks changed since the previous backup are stored
 
 ---
 
-## Tiering does not always save money
+### Tiering does not always save money
 
 Capacity pool is cost-optimized storage for infrequently accessed data. **However, reading or writing data stored there incurs capacity pool request charges.**
 
@@ -69,7 +91,7 @@ This means **SSD consumption never reaches zero even with `All` tiering policy.*
 
 ---
 
-## Deduplication and compression do not reduce the SSD bill
+### Deduplication and compression do not reduce the SSD bill
 
 **Deduplication and compression shrink data size, but SSD is billed by provisioned capacity.**
 
@@ -79,7 +101,7 @@ To lower the bill, you need to **reduce provisioned capacity** by the amount fre
 
 ---
 
-## Items commonly mistaken as not billed
+### Items commonly mistaken as not billed
 
 | Item | Reality |
 |---|---|
@@ -92,7 +114,7 @@ To lower the bill, you need to **reduce provisioned capacity** by the amount fre
 
 ---
 
-## Snapshots consume capacity
+### Snapshots consume capacity
 
 Snapshots consume **volume capacity**, not capacity pool. And when a Snapshot holds deleted data, **deleting that data does not free space.**
 
@@ -102,7 +124,7 @@ Retention policies directly affect capacity estimates. The relationship with lim
 
 ---
 
-## Typical estimation assumptions that break
+### Typical estimation assumptions that break
 
 | Assumption | What actually happens |
 |---|---|
@@ -119,7 +141,7 @@ The point about HA pair addition raising minimum throughput is in [Throughput is
 
 ---
 
-## How to weigh trade-offs
+### How to weigh trade-offs
 
 A cost decision becomes possible when **the amount saved and what is given up in exchange are set side by side symmetrically.** Looking at only one side leaves the decision undecidable.
 
@@ -135,7 +157,7 @@ A cost decision becomes possible when **the amount saved and what is given up in
 
 ---
 
-## Decision flow
+### Decision flow
 
 ```mermaid
 graph TD
@@ -158,25 +180,7 @@ graph TD
 
 ---
 
-## Verify in your own environment
-
-**The measurement targets are "the gap between provisioned and consumed capacity" and "access frequency to the capacity pool."** These two factors explain most estimation errors.
-
-| # | Step | What it confirms |
-|---|---|---|
-| 1 | Record SSD provisioned capacity alongside actual usage | **Amount provisioned but unused.** The magnitude of reduction opportunity |
-| 2 | Aggregate read/write request counts to the capacity pool over a period | Scale of request charges. Whether tiering is justified |
-| 3 | Record "actual usage" and "provisioned capacity" separately before and after deduplication/compression | **Confirming that efficiency gains are not reflected in the bill.** Provides the basis for reducing provisioned capacity |
-| 4 | Measure SSD consumption of a volume with `All` tiering | Whether the metadata portion matches the 1 : 10 rule of thumb |
-| 5 | Delete Snapshots and observe the change in free space | Capacity held by Snapshots. **Immediately after bulk deletion, reflection takes time** |
-| 6 | Check whether provisioned IOPS exceeds 3 IOPS/GB | Whether additional charges are being incurred |
-| 7 | Record region, generation, and deployment type at the time of measurement | Unit prices and limits vary — numbers without conditions cannot be compared |
-
-Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space" masks the fact that the bill has not changed.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -192,7 +196,7 @@ Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space"
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Topic | Source |
 |---|---|
@@ -206,7 +210,7 @@ Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space"
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Cost](../README.md) — This module's hub
 - [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
@@ -221,6 +225,51 @@ Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space"
 
 [🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/cost/notes/provisioned-versus-consumed.md) | [English](provisioned-versus-consumed.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**The measurement targets are "the gap between provisioned and consumed capacity" and "access frequency to the capacity pool."** These two factors explain most estimation errors.
+
+| # | Step | What it confirms |
+|---|---|---|
+| 1 | Record SSD provisioned capacity alongside actual usage | **Amount provisioned but unused.** The magnitude of reduction opportunity |
+| 2 | Aggregate read/write request counts to the capacity pool over a period | Scale of request charges. Whether tiering is justified |
+| 3 | Record "actual usage" and "provisioned capacity" separately before and after deduplication/compression | **Confirming that efficiency gains are not reflected in the bill.** Provides the basis for reducing provisioned capacity |
+| 4 | Measure SSD consumption of a volume with `All` tiering | Whether the metadata portion matches the 1 : 10 rule of thumb |
+| 5 | Delete Snapshots and observe the change in free space | Capacity held by Snapshots. **Immediately after bulk deletion, reflection takes time** |
+| 6 | Check whether provisioned IOPS exceeds 3 IOPS/GB | Whether additional charges are being incurred |
+| 7 | Record region, generation, and deployment type at the time of measurement | Unit prices and limits vary — numbers without conditions cannot be compared |
+
+Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space" masks the fact that the bill has not changed.**
+
+The following read-only command checks the provisioned SSD capacity from step 1 and also reports provisioned throughput capacity.
+
+```bash
+QUERY='FileSystems[0].{
+  SSDGiB:StorageCapacity,
+  ThroughputMBps:OntapConfiguration.ThroughputCapacity
+}'
+aws fsx describe-file-systems \
+  --file-system-ids <fs-id> \
+  --query "$QUERY"
+```
+
+### Expected output
+
+```text
+{
+  "SSDGiB": <provisioned SSD capacity>,
+  "ThroughputMBps": <provisioned throughput capacity>
+}
+```
+
+This output does not show actual usage, capacity-pool request counts, unit prices, or the bill. Check the remaining table steps and billing data separately.
+
+---
+
+## Read next
+
+[How should external archiving and capacity-pool tiering be combined?](archiving-and-tiering-are-ordered-not-alternatives.md)

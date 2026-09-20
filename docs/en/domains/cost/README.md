@@ -14,7 +14,7 @@ the table of contents; this is the entry point.
 | What you have | Read first | What it settles |
 |---|---|---|
 | **A bill** that came in higher than expected | [When the bill came in higher than expected](../../../ja/reference/decision-trees/cost-higher-than-expected.md) (日本語) | **provisioned or consumed is the first branch.** Reducing usage does not move a provisioned charge |
-| **An estimate** for something not built yet | [Assumptions that make an estimate wrong](notes/provisioned-versus-consumed.md#items-commonly-mistaken-as-not-billed) | **deduplication and compression do not reduce the SSD bill** |
+| **An estimate** for something not built yet | [Assumptions that make an estimate wrong](notes/provisioned-versus-consumed.md#typical-estimation-assumptions-that-break) | **deduplication and compression do not reduce the SSD bill** |
 | **A cut already chosen** | [What is billed](notes/provisioned-versus-consumed.md#what-is-billed) | what the cut trades away. **If a requirement fixed the provisioned amount, there is nothing to cut** |
 
 ---
