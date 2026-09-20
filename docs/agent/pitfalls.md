@@ -124,7 +124,7 @@ never called. The gate set lives once as the prerequisites of `make all` and onc
 them on every change. `ci.yml` never called either, and the comment kept looking true because no check
 read both files. They were added by hand later. **Four more were in the same state when that was
 found** — `headings`, `ja-markers`, `anchors`, `workflow-observability` — including the heading rule
-`AGENTS.md` documents as a convention, and the anchor contract whose entire premise is that the citing
+`AGENTS.md` documents as a convention, and the anchor compatibility snapshot whose premise is that the citing
 side cannot observe the break.
 
 **A gate that exists and does not run is worse than an absent one, because the checklist credits it.**
