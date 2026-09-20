@@ -169,10 +169,10 @@ When someone says it got slower after the migration, **there is nothing to verif
 ```mermaid
 graph TD
     A[Start the inventory] --> B[Count the bytes]
-    B --> C[Count files and average size]
-    C --> D{Below the dividing line}
-    D -->|Below| E[Raise inodes<br/>or split the volume]
-    D -->|Above| F[The default suffices]
+    B --> C[Count total files and average file size]
+    C --> D{Is average file size below<br/>the inode dividing line in the table above}
+    D -->|Below the dividing line| E[Raise inodes<br/>or split the volume]
+    D -->|At or above the dividing line| F[The default suffices]
 
     A --> G[Observe actual access]
     G --> H[Protocols actually used]

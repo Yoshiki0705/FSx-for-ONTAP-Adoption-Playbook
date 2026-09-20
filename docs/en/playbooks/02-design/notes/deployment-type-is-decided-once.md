@@ -136,13 +136,13 @@ graph TD
     CAP -->|Not enough| RETHINK[Multi-AZ cannot reach it<br/>revisit the requirement]
     CAP -->|Enough| OK1[Decided]
 
-    SAZ --> GEN{Second generation}
+    SAZ --> GEN{Is the selected deployment<br/>second generation}
     GEN -->|Second generation| SCALE["Can grow to 12 pairs"]
     GEN -->|First generation| FIXED[Fixed at 1]
 
-    SCALE --> BLOCK{Will iSCSI / NVMe-TCP<br/>be used}
-    BLOCK -->|Yes| SIX[Design with 6 pairs as the ceiling]
-    BLOCK -->|No| TWELVE[Up to 12 pairs is open]
+    SCALE --> BLOCK{Are iSCSI or NVMe-TCP<br/>planned}
+    BLOCK -->|Block protocol planned| SIX[Design with 6 pairs as the ceiling]
+    BLOCK -->|File protocols only| TWELVE[Up to 12 pairs is open]
 
     SIX --> GRAN[Split volumes at a granularity<br/>that can be moved]
     TWELVE --> GRAN

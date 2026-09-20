@@ -81,18 +81,18 @@ Do not skip step 3. **`Idle` means "not currently transferring" — it does not 
 ```mermaid
 graph TD
     A[Start baseline sync] --> B[Run incremental syncs]
-    B --> C{Before break}
+    B --> C[Before break]
     C --> C1["Destination is read-only<br/>Rolling back = keep using the source<br/>Nothing is lost"]
 
     B --> D[Execute break]
     D --> D1["Destination becomes read-write<br/>Source is intact<br/>Still recoverable"]
 
-    D1 --> E{Client writes<br/>to the destination}
+    D1 --> E[Clients write to the destination]
     E --> E1["Window closes here<br/>Subsequent writes do not exist on the source"]
 
-    E1 --> F{Want to roll back}
-    F --> F1[Discard writes and<br/>return to the source]
-    F --> F2["Reverse the replication direction<br/>resync is a separate operation"]
+    E1 --> F{Must destination writes<br/>be preserved during rollback}
+    F -->|Do not preserve| F1[Discard writes and<br/>return to the source]
+    F -->|Preserve| F2["Reverse the replication direction<br/>resync is a separate operation"]
 ```
 
 **There is no rollback path called "revert the cutover configuration."** Rolling back is a decision about what to do with the data written to the destination.

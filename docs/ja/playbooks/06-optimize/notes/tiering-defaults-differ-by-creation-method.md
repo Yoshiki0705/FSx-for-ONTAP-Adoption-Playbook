@@ -143,17 +143,17 @@ FlexVol / FlexGroup の差をそれぞれ確認する必要があります。
 
 ```mermaid
 graph TD
-    A[最適化を始める] --> M{変更前の値があるか}
-    M -->|ない| MEAS[まず測る<br/>最大値・ピーク時刻・<br/>実使用量と確保容量]
-    M -->|ある| POL
+    A[最適化を始める] --> M{比較対象の利用率メトリクスの Maximum・<br/>ピーク時刻・実使用量・確保容量を<br/>同じ比較期間で記録済みか}
+    M -->|未記録| MEAS[同じ比較期間で変更前の値を測る]
+    M -->|記録済み| POL
 
     MEAS --> POL[1. 階層化ポリシーと<br/>cooling period]
-    POL --> CHECK{既定に任せていないか}
-    CHECK -->|任せている| EXPLICIT[明示的に指定する<br/>作成経路で既定が違う]
-    CHECK -->|指定済み| ACC{読まれるデータか}
+    POL --> CHECK{階層化ポリシーと cooling period を<br/>明示的に指定しているか}
+    CHECK -->|既定値に依存| EXPLICIT[明示的に指定する<br/>作成経路で既定が違う]
+    CHECK -->|明示済み| ACC{対象データを測定期間中に<br/>繰り返し読むか}
 
-    ACC -->|繰り返し読まれる| NOTALL["ALL は避ける<br/>戻らないので請求が続く"]
-    ACC -->|ほぼ読まれない| OKALL[ALL / Auto を検討]
+    ACC -->|繰り返し読む| NOTALL["ALL は避ける<br/>戻らないので請求が続く"]
+    ACC -->|ほぼ読まない| OKALL[ALL / Auto を検討]
 
     EXPLICIT --> EFF[2. ストレージ効率]
     NOTALL --> EFF

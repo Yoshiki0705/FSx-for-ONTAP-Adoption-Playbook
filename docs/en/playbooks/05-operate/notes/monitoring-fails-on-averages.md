@@ -76,6 +76,19 @@ Sizing on the assumption that "`All` means no SSD is needed" runs short on the m
 | 3 | Disk IOPS utilisation | Has it reached 100%? Read it per aggregate |
 | 4 | Background task lag | Are tiering and backups keeping up? |
 
+```mermaid
+graph TD
+    START[Performance regression occurs] --> SSD{Did SSD utilization exceed<br/>90% or 98% during<br/>the incident window}
+    SSD -->|Exceeded either threshold| SSDHIT[SSD utilization is the cause]
+    SSD -->|Exceeded neither threshold| NET{Did network throughput utilization<br/>reach 100% during<br/>the same window}
+    NET -->|Reached 100%| NETHIT[Network throughput is saturated]
+    NET -->|Below 100%| IOPS{Did per-aggregate disk IOPS utilization<br/>reach 100% during<br/>the same window}
+    IOPS -->|Reached 100%| IOPSHIT[The affected aggregate reached its IOPS ceiling]
+    IOPS -->|Below 100%| BG{Did tiering and backups complete<br/>within their expected time}
+    BG -->|Incomplete or late| BGHIT[Background tasks are not keeping up]
+    BG -->|Completed on time| NONE[These four checks do not<br/>identify the cause]
+```
+
 Step 2 needs care. `NetworkThroughputUtilization` covers **all traffic, including background tasks** (SnapMirror, tiering, backups). If client load is low while utilisation is high, background tasks are running.
 
 ---
@@ -114,7 +127,7 @@ To build your own SSD capacity alarm, the configuration the documentation gives 
 
 ```mermaid
 graph TD
-    S[Decide what to monitor] --> STAT{Choose the statistic}
+    S[Choose a utilization metric to monitor] --> STAT{Which CloudWatch statistic<br/>will the utilization series use}
     STAT -->|Average| BAD[Diluted by standby nodes<br/>and unsaturated aggregates]
     STAT -->|Maximum| GOOD[The saturated party is visible]
 
@@ -124,8 +137,8 @@ graph TD
     T --> T98["98%: tiering stops"]
 
     T98 --> FIX[Add SSD, or delete data<br/>until below 90%]
-    FIX --> SNAP{Capacity does not drop}
-    SNAP -->|Held by a Snapshot| DEL[The Snapshot must be deleted]
+    FIX --> SNAP[SSD utilization remains high after deletion]
+    SNAP --> DEL[Check whether a retained Snapshot<br/>must be deleted]
 
     GOOD --> BG[Background task lag<br/>is not alerted]
     BG --> BGCHK[Confirm tiering and backup<br/>completion separately]

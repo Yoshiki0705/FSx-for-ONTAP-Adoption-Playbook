@@ -155,7 +155,7 @@ graph TD
     S1 --> A1
     S2 --> A1
     A1["ボリューム合計 x 1.114 = 必要な SSD 確保量<br/>aggregate への目減りを見込む"]
-    A1 --> M1{監視で見る層を決める}
+    A1 --> M1[監視対象の容量レイヤーを決める]
     M1 --> M2["ボリュームの空き<br/>ホストの df では見えない"]
     M2 --> M3["space-allocation を有効に<br/>ホストの解放を伝える"]
     M3 --> M4["autodelete と autogrow を設定<br/>read-only への転落を避ける"]

@@ -743,10 +743,10 @@ graph TD
     Q1 -->|どこから来たか| WHERE[Layer 1<br/>明示的な拒否 + Condition<br/>aws:SourceVpce]
     Q1 -->|どの組織か| ORG[Layer 1<br/>明示的な拒否 + Condition<br/>aws:PrincipalOrgID]
     Q1 -->|どのプレフィックスか| PFX[Layer 1<br/>明示的な拒否 + NotResource<br/>+ s3:prefix]
-    Q1 -->|何ができるか| WHAT{ポリシーで足りるか}
+    Q1 -->|何ができるか| WHAT{対象 Action の権限を<br/>AP に固定する ID からも除くか}
 
-    WHAT -->|足りる| ACT[Layer 1<br/>明示的な拒否に対象 Action を列挙]
-    WHAT -->|確実に止めたい| ID[Layer 2<br/>その権限を持たない ID を<br/>AP に固定する]
+    WHAT -->|除かない: Layer 1 で制御| ACT[Layer 1<br/>明示的な拒否に対象 Action を列挙]
+    WHAT -->|除く: Layer 2 でも制御| ID[Layer 2<br/>その権限を持たない ID を<br/>AP に固定する]
 
     WHO --> CHK[Allow を狭くするだけでは絞れない]
     WHERE --> CHK

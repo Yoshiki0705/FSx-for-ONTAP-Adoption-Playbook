@@ -139,15 +139,15 @@ HA ペアを追加した後は、**FlexGroup を新しいアグリゲートへ�
 
 ```mermaid
 graph TD
-    Q{必要な性能は<br/>1 HA ペアの上限内か} -->|はい| ONE[単一 HA ペア<br/>FlexVol で足りる]
-    Q -->|いいえ| MULTI{Single-AZ を選べるか}
+    Q{必要なピークスループットと IOPS は<br/>1 HA ペアのリージョン上限内か} -->|上限内| ONE[単一 HA ペア<br/>FlexVol で足りる]
+    Q -->|上限超過| MULTI{AZ 障害時に別の複製へ<br/>切り替える設計を許容できるか}
 
-    MULTI -->|はい| MP[複数 HA ペア<br/>Single-AZ]
-    MULTI -->|いいえ Multi-AZ が要件| CAP[Multi-AZ は 1 ペア上限<br/>要件と可用性を再調整]
+    MULTI -->|切り替えを許容できる| MP[複数 HA ペア<br/>Single-AZ]
+    MULTI -->|切り替えを許容できない| CAP[Multi-AZ は 1 ペア上限<br/>このファイルシステム自体が必要<br/>要件と可用性を再調整]
 
-    MP --> VOL{ボリューム設計}
-    VOL -->|FlexVol| WARN[1 aggregate に配置<br/>その aggregate は 1 ペアに属する]
-    VOL -->|FlexGroup| BAL[全アグリゲートにまたがり<br/>コンスティチュエントを均等配置]
+    MP --> VOL{単一データセットを<br/>複数アグリゲートにまたがせるか}
+    VOL -->|またがせない FlexVol| WARN[1 aggregate に配置<br/>その aggregate は 1 ペアに属する]
+    VOL -->|またがせる FlexGroup| BAL[全アグリゲートにまたがり<br/>コンスティチュエントを均等配置]
 
     ONE --> REG[リージョンの上限値を確認]
     BAL --> REG

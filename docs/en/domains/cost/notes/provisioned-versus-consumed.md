@@ -139,19 +139,19 @@ A cost decision becomes possible when **the amount saved and what is given up in
 
 ```mermaid
 graph TD
-    A[Estimate costs] --> B{Classify billing items}
-    B --> P[Billed by provisioned<br/>SSD capacity · SSD IOPS · Throughput]
-    B --> C[Billed by consumed<br/>Capacity pool · Backups]
+    A[Estimate costs] --> B{Does the charge depend on<br/>provisioned or consumed quantity}
+    B -->|Provisioned quantity| P[SSD capacity · SSD IOPS · Throughput]
+    B -->|Consumed quantity| C[Capacity pool · Backups]
 
     P --> P1[Unused space is still charged<br/>Bill does not drop without reducing provisioned amount]
     C --> C1[Capacity pool also incurs<br/>per-request charges]
 
-    C1 --> ACC{Is the data<br/>actually read?}
+    C1 --> ACC{How often was capacity-pool data<br/>read during the measurement period}
     ACC -->|Rarely read| TIER[Tiering is suitable]
     ACC -->|Periodically read| STAY[Keeping on SSD may be cheaper]
-    ACC -->|Unknown| MEASURE[Measure first]
+    ACC -->|Not measured| MEASURE[Measure access frequency]
 
-    P1 --> EFF{Apply deduplication / compression}
+    P1 --> EFF[Enable deduplication / compression]
     EFF --> EFF1[Free space increases<br/>but bill does not change]
     EFF1 --> SHRINK[Bill drops only after<br/>reducing provisioned capacity]
 ```

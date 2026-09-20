@@ -178,9 +178,9 @@ graph TD
     FCL --> LIM["ボリューム数 500 / HA ペア<br/>合計 1,000 を先に数える"]
     FCL --> SSD["SSD 縮小操作と同時に走らせない"]
 
-    A --> C{リポジトリの規模}
-    C -->|多数ファイル / 20 PiB 級| FG[FlexGroup]
-    FG --> EXP{コンスティチュエントを追加するか}
+    A --> C[多数ファイルまたは 20 PiB 級の<br/>リポジトリを FlexGroup に配置]
+    C --> FG[FlexGroup]
+    FG --> EXP{既存 FlexGroup に<br/>コンスティチュエントを追加するか}
     EXP -->|追加する| PART["追加前の Snapshot は partial になる<br/>増分が切れる<br/>削除できない"]
     PART --> BOUND["拡張を版の境界として扱い<br/>必要な版を先に外へ出す"]
 

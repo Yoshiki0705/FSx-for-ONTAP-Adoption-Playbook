@@ -145,15 +145,15 @@ After adding HA pairs, **you must expand the FlexGroup to the new aggregates —
 
 ```mermaid
 graph TD
-    Q{Is the required performance<br/>within 1 HA pair's ceiling?} -->|Yes| ONE[Single HA pair<br/>FlexVol is sufficient]
-    Q -->|No| MULTI{Can you choose Single-AZ?}
+    Q{Are required peak throughput and IOPS<br/>within one HA pair's regional ceilings} -->|Within ceilings| ONE[Single HA pair<br/>FlexVol is sufficient]
+    Q -->|Above a ceiling| MULTI{Can the design switch to another replica<br/>during an AZ failure}
 
-    MULTI -->|Yes| MP[Multiple HA pairs<br/>Single-AZ]
-    MULTI -->|No — Multi-AZ required| CAP[Multi-AZ is limited to 1 pair<br/>Reconcile requirements with availability]
+    MULTI -->|Can switch| MP[Multiple HA pairs<br/>Single-AZ]
+    MULTI -->|Cannot switch| CAP[Multi-AZ is limited to 1 pair<br/>This file system itself is required<br/>Reconcile requirements with availability]
 
-    MP --> VOL{Volume design}
-    VOL -->|FlexVol| WARN[Placed on one aggregate<br/>That aggregate belongs to one pair]
-    VOL -->|FlexGroup| BAL[Span all aggregates<br/>Distribute constituents evenly]
+    MP --> VOL{Must one data set<br/>span multiple aggregates}
+    VOL -->|No: FlexVol| WARN[Placed on one aggregate<br/>That aggregate belongs to one pair]
+    VOL -->|Yes: FlexGroup| BAL[Span all aggregates<br/>Distribute constituents evenly]
 
     ONE --> REG[Confirm region ceiling values]
     BAL --> REG
