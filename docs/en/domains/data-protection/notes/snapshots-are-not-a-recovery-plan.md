@@ -7,7 +7,31 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html
 lang: en
 ---
 
-# Having Snapshots and Being Able to Recover Are Different Things
+# Can Amazon FSx for NetApp ONTAP Snapshots Alone Ensure Recovery?
+
+Snapshots speed local recovery but do not protect against volume or file-system loss.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [English](snapshots-are-not-a-recovery-plan.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- How Snapshots, backups, and SnapMirror protect against different failure scopes.
+- Which restore blockers, retention limits, and restore-drill checks affect recovery.
+
+## What this note does not answer
+
+- Measured RTO or RPO values for your environment.
+- Instructions for enabling snapshot locking or SnapLock.
+
+## Prerequisite level
+
+basic
+
+## Body
+
+<a id="having-snapshots-and-being-able-to-recover-are-different-things"></a>
 
 [🏠 Repository Top](../../../README.md) | [Domain — Data Protection](../README.md)
 
@@ -15,7 +39,7 @@ lang: en
 
 ---
 
-## Conclusion
+### Conclusion
 
 Snapshots, backups, and SnapMirror **protect against different scopes of failure.** No single mechanism is sufficient on its own.
 
@@ -28,7 +52,7 @@ Snapshots, backups, and SnapMirror **protect against different scopes of failure
 
 ---
 
-## What Each Mechanism Protects Against
+### What Each Mechanism Protects Against
 
 The canonical `Protected` / `Not protected` / `Conditional` assessment by failure scenario is in [Data protection methods comparison](../../../../ja/reference/comparison/data-protection-methods.md#障害シナリオ別の保護範囲) (日本語).
 It covers accidental file deletion, volume and file-system loss, AZ and Region disruption, administrative credential compromise, application consistency, and source-side logical corruption under one set of definitions.
@@ -38,7 +62,7 @@ For backup-copy paths, see [AWS: Copying backups](https://docs.aws.amazon.com/fs
 
 ---
 
-## Some Volumes Cannot Be Backed Up
+### Some Volumes Cannot Be Backed Up
 
 **Volumes other than read-write (RW) are not eligible for backup.**
 
@@ -59,7 +83,7 @@ For backup-copy paths, see [AWS: Copying backups](https://docs.aws.amazon.com/fs
 
 ---
 
-## Conditions That Block Restore
+### Conditions That Block Restore
 
 Restore does not always succeed simply by executing it. **There are conditions that must be cleared first.**
 
@@ -74,7 +98,7 @@ The first row is the most troublesome. **When backups are used alongside Snapsho
 
 ---
 
-## Limits and Retention Periods
+### Limits and Retention Periods
 
 | Item | Value |
 |---|---|
@@ -85,7 +109,7 @@ The first row is the most troublesome. **When backups are used alongside Snapsho
 
 **Design your retention policy by working backwards from the limits.** "Hourly Snapshots with no expiry" stops at 1,023.
 
-### 1,023 Is the Ceiling *Given Enough Space*
+#### 1,023 Is the Ceiling *Given Enough Space*
 
 **Reproduced by measurement.** A two-size control revealed that **on a small volume the space limit binds before the count limit.**
 
@@ -100,7 +124,7 @@ The first row is the most troublesome. **When backups are used alongside Snapsho
 
 > **Evidence for this section**: `verified` (2026-08-06). `ap-northeast-1`, `SINGLE_AZ_1` (first generation), ONTAP `9.17.1P7D1`. **The Amazon FSx `CreateSnapshot` action is specific to FSx for OpenZFS**, so these were created through the ONTAP REST API. The record is in [Limits and quotas](../../../../ja/reference/limits/README.md).
 
-### Locking Snapshots Disables the Keep-Count Limit
+#### Locking Snapshots Disables the Keep-Count Limit
 
 **With snapshot locking (Tamperproof Snapshot), the retention period takes precedence over the policy's `count`.** Snapshots therefore **accumulate past the keep count.**
 
@@ -118,7 +142,7 @@ Combined with the 1,023 ceiling above, this can reach a state with no recovery p
 
 ---
 
-## Restore Speed Depends on Generation
+### Restore Speed Depends on Generation
 
 With second-generation file systems, **read access to the volume becomes available within minutes of starting a restore.** You do not need to wait for the entire dataset to be restored. Compared to first-generation, backup data can reportedly be read up to 17 times faster.
 
@@ -128,7 +152,7 @@ With first-generation systems you must wait for the full restore to complete, so
 
 ---
 
-## Design Flow
+### Design Flow
 
 ```mermaid
 graph TD
@@ -150,7 +174,52 @@ graph TD
 
 ---
 
-## Verify in Your Own Environment
+### Common Misconceptions
+
+| Misconception | Reality |
+|---|---|
+| Taking Snapshots means we can recover | Snapshots exist within the same file system. **If the volume or file system is lost, they are lost too** |
+| Backups alone cannot protect against a Region failure | **They can be copied to another Region** (since August 2026). The restore target is still the same Region as the backup, so **creating a file system there counts against your RTO** |
+| We can just back up the SnapMirror destination | **Destination (DP) volumes are not eligible for backup.** Take backups at the source |
+| Restore can be executed at any time | If a newer Snapshot is associated with a backup, restore is rejected. Cleanup is needed first |
+| Snapshots can grow indefinitely | The limit is 1,023 per volume. Once reached, deletions are required |
+| Automatic backups alone handle long-term retention | Automatic backup retention is capped at 90 days. Long-term retention belongs to user-initiated backups |
+| Monitoring backup success means we can recover | Taking and restoring are different things. **If you have not tested a restore, your RTO is a guess** |
+| Restore is fast so generation does not matter | Second-generation becomes readable within minutes of starting. First-generation requires waiting for full completion |
+
+---
+
+### Primary Sources Referenced
+
+| Topic | Source |
+|---|---|
+| Eligible volume types for backup, restore target limited to same region, DP / LSM / FlexCache / SnapMirror destinations ineligible | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| Backups can be copied to another Region and another account (August 2026) | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
+| Conditions for deleting the most recent backup, offline volumes, cancellation on deletion during restore | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
+| AWS Backup backups are retained after volume / file system deletion | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
+| Snapshots exist within the same file system and involve no data movement | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
+| Restore rejected when a newer Snapshot is associated with a backup | [AWS: Restore SQL Server databases using T-SQL and Snapshots](https://aws.amazon.com/blogs/modernizing-with-aws/restore-sql-server-databases-using-t-sql-and-amazon-fsx-for-netapp-ontap-snapshots/) |
+| Restore-to-readable improvement in second-generation file systems | [AWS Storage Blog: Second-generation file systems](https://aws.amazon.com/blogs/storage/accelerate-file-workload-performance-with-second-generation-amazon-fsx-for-netapp-ontap-file-systems/) |
+| Snapshot / backup limits, automatic backup retention | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+
+---
+
+### Related Documents
+
+- [Domain — Data Protection](../README.md) — Hub for this module
+- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — The same procedure can be used for ACL comparison after restore
+- [Playbook 05 — Operate](../../../playbooks/05-operate/) — Restore drills are an operational item
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — Includes items for actually testing restores
+- [Limits and Quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
+- [Evidence classification policy](../../../evidence-policy.md)
+
+---
+
+[🏠 Repository Top](../../../README.md) | [Domain — Data Protection](../README.md)
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **Having a backup and being able to restore are separate verification items.** A configuration that only monitors backup success is not confirming recoverability.
 
@@ -167,51 +236,20 @@ Whether you exercise step 5 during normal operations significantly changes the t
 
 Step 4 is frequently overlooked. **The same ACL comparison procedure described in [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) can be used.**
 
----
+The following local calculation multiplies retention hours by Snapshots per hour. Replace `<retention-hours>` and `<snapshots-per-hour>` with integers.
 
-## Common Misconceptions
+```bash
+python3 -c 'import sys; print(int(sys.argv[1]) * int(sys.argv[2]))' "<retention-hours>" "<snapshots-per-hour>"
+```
 
-| Misconception | Reality |
-|---|---|
-| Taking Snapshots means we can recover | Snapshots exist within the same file system. **If the volume or file system is lost, they are lost too** |
-| Backups alone cannot protect against a Region failure | **They can be copied to another Region** (since August 2026). The restore target is still the same Region as the backup, so **creating a file system there counts against your RTO** |
-| We can just back up the SnapMirror destination | **Destination (DP) volumes are not eligible for backup.** Take backups at the source |
-| Restore can be executed at any time | If a newer Snapshot is associated with a backup, restore is rejected. Cleanup is needed first |
-| Snapshots can grow indefinitely | The limit is 1,023 per volume. Once reached, deletions are required |
-| Automatic backups alone handle long-term retention | Automatic backup retention is capped at 90 days. Long-term retention belongs to user-initiated backups |
-| Monitoring backup success means we can recover | Taking and restoring are different things. **If you have not tested a restore, your RTO is a guess** |
-| Restore is fast so generation does not matter | Second-generation becomes readable within minutes of starting. First-generation requires waiting for full completion |
+### Expected output
 
----
+```text
+<projected-snapshot-count>
+```
 
-## Primary Sources Referenced
+This proves only the arithmetic. It does not inspect the environment, create a Snapshot, or enable snapshot locking or SnapLock.
 
-| Topic | Source |
-|---|---|
-| Eligible volume types for backup, restore target limited to same region, DP / LSM / FlexCache / SnapMirror destinations ineligible | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
-| Backups can be copied to another Region and another account (August 2026) | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
-| Conditions for deleting the most recent backup, offline volumes, cancellation on deletion during restore | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
-| AWS Backup backups are retained after volume / file system deletion | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
-| Snapshots exist within the same file system and involve no data movement | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
-| Restore rejected when a newer Snapshot is associated with a backup | [AWS: Restore SQL Server databases using T-SQL and Snapshots](https://aws.amazon.com/blogs/modernizing-with-aws/restore-sql-server-databases-using-t-sql-and-amazon-fsx-for-netapp-ontap-snapshots/) |
-| Restore-to-readable improvement in second-generation file systems | [AWS Storage Blog: Second-generation file systems](https://aws.amazon.com/blogs/storage/accelerate-file-workload-performance-with-second-generation-amazon-fsx-for-netapp-ontap-file-systems/) |
-| Snapshot / backup limits, automatic backup retention | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+## Read next
 
----
-
-## Related Documents
-
-- [Domain — Data Protection](../README.md) — Hub for this module
-- [ACL preservation is a permissions problem, not a tooling problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — The same procedure can be used for ACL comparison after restore
-- [Playbook 05 — Operate](../../../playbooks/05-operate/) — Restore drills are an operational item
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — Includes items for actually testing restores
-- [Limits and Quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
-- [Evidence classification policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository Top](../../../README.md) | [Domain — Data Protection](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [English](snapshots-are-not-a-recovery-plan.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[A backup copy holds no file system until it is restored](../../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語)

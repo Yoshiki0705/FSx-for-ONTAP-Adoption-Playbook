@@ -7,13 +7,37 @@ source: https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html
 lang: en
 ---
 
-# A third-party backup product reaches it by a route that is not the AWS API
+# How Does a Third-Party Backup Product Reach Amazon FSx for NetApp ONTAP?
+
+Check whether a product reaches it through AWS, ONTAP, or a file share.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [English](third-party-backup-reaches-it-by-another-route.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- The AWS API route covers AWS Backup, the ONTAP route covers management access, and the file-share route covers NFS or SMB visibility
+- Explicit non-support and absence from a supported-systems list justify different conclusions
+
+## What this note does not answer
+
+- Whether the third-party product actually completes a backup and restore
+- Whether an unlisted ONTAP route is usable in practice
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="a-third-party-backup-product-reaches-it-by-a-route-that-is-not-the-aws-api"></a>
 
 [🏠 Repository home](../../../README.md) | [Domain — Data protection](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **"We already use this backup product, so FSx for ONTAP comes in on the same operation" is something you can say only after checking the route.**
 
@@ -31,7 +55,7 @@ Two questions to settle.
 
 ---
 
-## Three routes, and the difference in how the material is written
+### Three routes, and the difference in how the material is written
 
 | Route | What it goes through | FSx for ONTAP | How the material is written |
 |---|---|---|---|
@@ -45,7 +69,7 @@ Two questions to settle.
 
 ---
 
-## Telling a stated exclusion from an absence
+### Telling a stated exclusion from an absence
 
 **Routes 1 and 2 support conclusions of different strength.**
 
@@ -64,7 +88,7 @@ Two questions to settle.
 
 ---
 
-## Compared symmetrically with the AWS-native options
+### Compared symmetrically with the AWS-native options
 
 **Adding no third-party product is placed with the same weight.** Each commits you to something.
 
@@ -85,7 +109,46 @@ Two questions to settle.
 
 ---
 
-## Verify in your own environment
+### Common misconceptions
+
+| Misconception | Actually |
+|---|---|
+| We already use this backup product, so the same operation carries over | **The route can differ.** Identify it in the material |
+| Supporting Amazon FSx means supporting FSx for ONTAP | **It is not per family.** There is an example of it being excluded by name from the cloud-native route |
+| It is absent from the supported-systems list, so it is not supported | **That does not follow.** Non-support, not-yet-evaluated and omission are all possible |
+| Through a file share, all the data inside is in scope | **What NFS and SMB expose is in scope.** LUN contents do not reach the file protocols |
+| A third-party product makes the AWS-native side unnecessary | They serve different purposes. **With no consolidation requirement, adding no product is lightest** |
+| An irreversible retention setting only strengthens backups | **There is an example of it removing a tool's destination.** Confirm before setting it |
+| This account is a verification of product behaviour | **It is a reading of what the material states.** No behaviour was verified in this repository |
+
+---
+
+### Primary sources consulted
+
+| Point | Source | Retrieved |
+|---|---|---|
+| That the AWS plug-in does not support cloud-native backups for FSx for ONTAP and points at the Backup & Replication console; that the route uses the AWS Backup service and requires the Amazon FSx resource type to be opted in; that cloud-native backups are limited to the same AWS account; that they cannot be stored in a logically air-gapped vault or one with AWS Backup Vault Lock enabled | [Vendor documentation: Before You Begin (backing up Amazon FSx)](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) | 2026-09-15 |
+| That the ONTAP plug-in's supported systems are FAS / AFF / ASA / ASA r2 (ONTAP 9.10.1 or later); that the plug-in does not support NAS integration (unstructured data backup) and the built-in integration is needed for it; the FlexClone licence requirement; that Tamperproof Snapshots require the whole cluster to be registered and are not supported for individual SVMs | [Vendor documentation: NetApp ONTAP plug-in release information](https://www.veeam.com/kb4904) | 2026-09-15 |
+
+---
+
+### Related documents
+
+- [Domain — Data protection](../README.md) — this module's hub
+- [ISV and SaaS solution map by problem](../../../reference/isv-solution-map.md#integrating-an-existing-backup-product) — the index for this problem area
+- [A backup copy holds no file system until it is restored](../../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) — the AWS-native route and its boundaries
+- [Having snapshots is not the same as being able to recover](snapshots-are-not-a-recovery-plan.md) — verification once the route is settled
+- [Data protection methods compared](../../../../ja/reference/comparison/data-protection-methods.md) (日本語) — the comparison table
+- [LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) — route 3's scope
+- [Approval for an irreversible operation is separate from approval for the task](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) — approval before enabling Vault Lock
+- [Fit conditions — what must not be used as grounds](../../../../ja/reference/fsx-ontap-fit-conditions.md) (日本語) — how an absence from an enumeration is treated
+- [Evidence Policy](../../../evidence-policy.md)
+
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **Written as questions that hold whatever the product.**
 
@@ -101,47 +164,27 @@ Two questions to settle.
 
 **Leaving step 5 until later means the backup route closes as a result of satisfying the compliance requirement.**
 
----
+### Read-only file-share visibility check
 
-## Common misconceptions
+For a mounted NFS or SMB path, list entries visible to the current identity without modifying them.
 
-| Misconception | Actually |
-|---|---|
-| We already use this backup product, so the same operation carries over | **The route can differ.** Identify it in the material |
-| Supporting Amazon FSx means supporting FSx for ONTAP | **It is not per family.** There is an example of it being excluded by name from the cloud-native route |
-| It is absent from the supported-systems list, so it is not supported | **That does not follow.** Non-support, not-yet-evaluated and omission are all possible |
-| Through a file share, all the data inside is in scope | **What NFS and SMB expose is in scope.** LUN contents do not reach the file protocols |
-| A third-party product makes the AWS-native side unnecessary | They serve different purposes. **With no consolidation requirement, adding no product is lightest** |
-| An irreversible retention setting only strengthens backups | **There is an example of it removing a tool's destination.** Confirm before setting it |
-| This account is a verification of product behaviour | **It is a reading of what the material states.** No behaviour was verified in this repository |
+```bash
+ls -la -- <mounted-nfs-or-smb-path>
+```
 
----
+### Expected output
 
-## Primary sources consulted
+The output has this general shape. Owner, group, timestamp, and names vary by environment.
 
-| Point | Source | Retrieved |
-|---|---|---|
-| That the AWS plug-in does not support cloud-native backups for FSx for ONTAP and points at the Backup & Replication console; that the route uses the AWS Backup service and requires the Amazon FSx resource type to be opted in; that cloud-native backups are limited to the same AWS account; that they cannot be stored in a logically air-gapped vault or one with AWS Backup Vault Lock enabled | [Vendor documentation: Before You Begin (backing up Amazon FSx)](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) | 2026-09-15 |
-| That the ONTAP plug-in's supported systems are FAS / AFF / ASA / ASA r2 (ONTAP 9.10.1 or later); that the plug-in does not support NAS integration (unstructured data backup) and the built-in integration is needed for it; the FlexClone licence requirement; that Tamperproof Snapshots require the whole cluster to be registered and are not supported for individual SVMs | [Vendor documentation: NetApp ONTAP plug-in release information](https://www.veeam.com/kb4904) | 2026-09-15 |
+```text
+drwxr-x---  2 <owner> <group> 4096 <timestamp> <entry>
+-rw-r-----  1 <owner> <group> <size> <timestamp> <file>
+```
+
+This check proves **only current file-share visibility for the identity running the command**. It does not prove product support, backup success, restore success, ONTAP management-route usability, LUN contents, metadata protection, or vendor compatibility.
 
 ---
 
-## Related documents
+## Read next
 
-- [Domain — Data protection](../README.md) — this module's hub
-- [ISV and SaaS solution map by problem](../../../reference/isv-solution-map.md#integrating-an-existing-backup-product) — the index for this problem area
-- [A backup copy holds no file system until it is restored](../../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) — the AWS-native route and its boundaries
-- [Having snapshots is not the same as being able to recover](snapshots-are-not-a-recovery-plan.md) — verification once the route is settled
-- [Data protection methods compared](../../../../ja/reference/comparison/data-protection-methods.md) (日本語) — the comparison table
-- [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — route 3's scope
-- [Approval for an irreversible operation is separate from approval for the task](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) — approval before enabling Vault Lock
-- [Fit conditions — what must not be used as grounds](../../../../ja/reference/fsx-ontap-fit-conditions.md) (日本語) — how an absence from an enumeration is treated
-- [Evidence Policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository home](../../../README.md) | [Domain — Data protection](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [English](third-party-backup-reaches-it-by-another-route.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+Use the [Data Protection domain README](../README.md) to choose the next note for the protection scope and recovery requirement.

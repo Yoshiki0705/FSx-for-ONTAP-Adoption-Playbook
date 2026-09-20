@@ -7,13 +7,37 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html
 lang: ja
 ---
 
-# Snapshot があることと復旧できることは別
+# Amazon FSx for NetApp ONTAP の Snapshot だけで復旧できるか？
+
+Snapshot は局所復旧を速めますが、ボリュームやファイルシステムの喪失までは守りません。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](snapshots-are-not-a-recovery-plan.md) | [English](../../../../en/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- Snapshot、バックアップ、SnapMirror で異なる、保護できる障害範囲。
+- 復元を妨げる条件、保持期間と個数の上限、復元訓練で確認する項目。
+
+## このノートが答えないこと
+
+- 自環境で測定していない RTO / RPO の値。
+- Snapshot locking や SnapLock を有効化する手順。
+
+## 前提レベル
+
+basic
+
+## 本文
+
+<a id="snapshot-があることと復旧できることは別"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違います。** どれか 1 つで足りることはありません。
 
@@ -27,7 +51,7 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 
 ---
 
-## 守れる対象
+### 守れる対象
 
 障害シナリオごとの `Protected` / `Not protected` / `Conditional` の判定は、[データ保護方式の比較](../../../reference/comparison/data-protection-methods.md#障害シナリオ別の保護範囲) に集約しました。
 ファイル誤削除、ボリューム・ファイルシステム喪失、AZ・リージョン障害、管理資格情報侵害、アプリケーション整合性、論理破損を同じ基準で確認できます。
@@ -37,7 +61,7 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 
 ---
 
-## バックアップできないボリュームの存在
+### バックアップできないボリュームの存在
 
 **読み書き（RW）以外のボリュームはバックアップの対象外です。**
 
@@ -58,7 +82,7 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 
 ---
 
-## 復元を妨げる条件
+### 復元を妨げる条件
 
 復元は「実行すれば通る」ものではありません。**先に片付けないと止まる条件があります。**
 
@@ -73,7 +97,7 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 
 ---
 
-## 上限と保持期間
+### 上限と保持期間
 
 | 項目 | 値 |
 |---|---|
@@ -84,7 +108,7 @@ Snapshot、バックアップ、SnapMirror は**守れる障害の範囲が違�
 
 **保持ポリシーは上限から逆算してください。** 「毎時 Snapshot を無期限に」は 1,023 で止まります。
 
-### 1,023 という「容量が足りていれば」の上限
+#### 1,023 という「容量が足りていれば」の上限
 
 **実測で確認しました。** ただし対照実験で、**小さいボリュームでは個数より先に容量で止まる**ことが分かりました。
 
@@ -104,7 +128,7 @@ Snapshot 予約の既定は 5% です。
 > ONTAP `9.17.1P7D1`。**Amazon FSx の `CreateSnapshot` は FSx for OpenZFS 専用**のため、
 > ONTAP REST API で作成しました。記録は [上限値・クォータ](../../../reference/limits/) にあります。
 
-### Snapshot のロックによる世代数上限の無効化
+#### Snapshot のロックによる世代数上限の無効化
 
 **Snapshot locking（Tamperproof Snapshot）を使うと、保持期間がポリシーの `count` より優先されます。**
 つまり**世代数を超えて Snapshot が蓄積します。**
@@ -127,7 +151,7 @@ Snapshot 予約の既定は 5% です。
 
 ---
 
-## 世代で変わる復元の速さ
+### 世代で変わる復元の速さ
 
 第 2 世代ファイルシステムでは、**復元を開始してから数分でボリュームへの読み取りアクセスが可能**になります。データセット全体の復元完了を待つ必要がありません。第 1 世代と比べて最大 17 倍速くバックアップデータを読めるとされています。
 
@@ -137,7 +161,7 @@ Snapshot 予約の既定は 5% です。
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -159,6 +183,50 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| Snapshot を取っていれば復旧できる | Snapshot は同一ファイルシステム内にあります。**ボリュームやファイルシステムが失われると一緒に失われます** |
+| バックアップだけではリージョン障害に備えられない | **別リージョンへコピーできます**（2026 年 8 月以降）。ただし復元先はバックアップと同一リージョンのままなので、**そのリージョンにファイルシステムを作る時間が RTO に乗ります** |
+| SnapMirror の複製先をバックアップすればよい | **複製先（DP ボリューム）はバックアップ対象外です。** バックアップは複製元で取ります |
+| 復元はいつでも実行できる | 新しい Snapshot がバックアップに紐づいていると拒否されます。先に整理が必要です |
+| Snapshot は無期限に増やせる | 1 ボリュームあたり 1,023 が上限です。到達したら削除が必要になります |
+| 自動バックアップだけで長期保持できる | 自動バックアップの保持期間は最大 90 日です。長期保持はユーザー起動バックアップの領域です |
+| バックアップの成功監視ができていれば復旧できる | 取得と復元は別です。**復元を試していないなら RTO は推測値です** |
+| 復元は速いので世代は関係ない | 第 2 世代は復元開始から数分で読めます。第 1 世代は全体完了待ちです |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| バックアップの対象ボリューム種別、復元先が同一リージョンであること、DP / LSM / FlexCache / SnapMirror 宛先が対象外 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| バックアップを別リージョン・別アカウントへコピーできること（2026 年 8 月） | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
+| 最新バックアップの削除条件、オフラインボリューム、復元中の削除でキャンセル | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
+| AWS Backup のバックアップはボリューム / ファイルシステム削除後も保持される | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
+| Snapshot が同一ファイルシステム内にあり、データ移動を伴わないこと | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
+| 新しい Snapshot がバックアップに紐づく場合に復元が拒否されること | [AWS: Restore SQL Server databases using T-SQL and Snapshots](https://aws.amazon.com/blogs/modernizing-with-aws/restore-sql-server-databases-using-t-sql-and-amazon-fsx-for-netapp-ontap-snapshots/) |
+| 第 2 世代での復元開始から読み取り可能までの改善 | [AWS Storage Blog: Second-generation file systems](https://aws.amazon.com/blogs/storage/accelerate-file-workload-performance-with-second-generation-amazon-fsx-for-netapp-ontap-file-systems/) |
+| Snapshot / バックアップの上限、自動バックアップの保持期間 | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — データ保護](../README.md) — このモジュールのハブ
+- [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — 別リージョン・別アカウントへの経路と実測
+- [ACL 保持は権限の問題であってツールの問題ではない](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) — 復元後の ACL 比較に同じ手順が使えます
+- [Playbook 05 — 運用](../../../playbooks/05-operate/) — 復元訓練は運用に組み込む項目です
+- [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md) — 復元を実際に試す項目を含めています
+- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
+
 ## 自環境での確認手順
 
 **バックアップが取れていることと復元できることは別の確認項目です。** 取得の成功だけを監視している構成は、復旧できるかを確認していません。
@@ -176,52 +244,20 @@ graph TD
 
 手順 4 は見落とされがちです。**ACL の比較手順は [ACL 保持は権限の問題であってツールの問題ではない](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) と同じ方法が使えます。**
 
----
+次のローカル計算では、保持時間と 1 時間あたりの Snapshot 数から予定数だけを算出します。`<retention-hours>` と `<snapshots-per-hour>` を整数に置き換えてください。
 
-## よくある誤解
+```bash
+python3 -c 'import sys; print(int(sys.argv[1]) * int(sys.argv[2]))' "<retention-hours>" "<snapshots-per-hour>"
+```
 
-| 誤解 | 実際 |
-|---|---|
-| Snapshot を取っていれば復旧できる | Snapshot は同一ファイルシステム内にあります。**ボリュームやファイルシステムが失われると一緒に失われます** |
-| バックアップだけではリージョン障害に備えられない | **別リージョンへコピーできます**（2026 年 8 月以降）。ただし復元先はバックアップと同一リージョンのままなので、**そのリージョンにファイルシステムを作る時間が RTO に乗ります** |
-| SnapMirror の複製先をバックアップすればよい | **複製先（DP ボリューム）はバックアップ対象外です。** バックアップは複製元で取ります |
-| 復元はいつでも実行できる | 新しい Snapshot がバックアップに紐づいていると拒否されます。先に整理が必要です |
-| Snapshot は無期限に増やせる | 1 ボリュームあたり 1,023 が上限です。到達したら削除が必要になります |
-| 自動バックアップだけで長期保持できる | 自動バックアップの保持期間は最大 90 日です。長期保持はユーザー起動バックアップの領域です |
-| バックアップの成功監視ができていれば復旧できる | 取得と復元は別です。**復元を試していないなら RTO は推測値です** |
-| 復元は速いので世代は関係ない | 第 2 世代は復元開始から数分で読めます。第 1 世代は全体完了待ちです |
+### 期待結果
 
----
+```text
+<projected-snapshot-count>
+```
 
-## 参照した一次情報
+この計算が確認するのは乗算結果だけです。環境を検査せず、Snapshot を作成せず、Snapshot locking や SnapLock を有効化しません。
 
-| 論点 | 出典 |
-|---|---|
-| バックアップの対象ボリューム種別、復元先が同一リージョンであること、DP / LSM / FlexCache / SnapMirror 宛先が対象外 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
-| バックアップを別リージョン・別アカウントへコピーできること（2026 年 8 月） | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
-| 最新バックアップの削除条件、オフラインボリューム、復元中の削除でキャンセル | [AWS: Deleting backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-to-delete-backups.html) |
-| AWS Backup のバックアップはボリューム / ファイルシステム削除後も保持される | [AWS re:Post: How can I recover a deleted FSx for ONTAP volume?](https://repost.aws/knowledge-center/fsx-ontap-recover-deleted-volume) |
-| Snapshot が同一ファイルシステム内にあり、データ移動を伴わないこと | [AWS Storage Blog: Protecting data against ransomware](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
-| 新しい Snapshot がバックアップに紐づく場合に復元が拒否されること | [AWS: Restore SQL Server databases using T-SQL and Snapshots](https://aws.amazon.com/blogs/modernizing-with-aws/restore-sql-server-databases-using-t-sql-and-amazon-fsx-for-netapp-ontap-snapshots/) |
-| 第 2 世代での復元開始から読み取り可能までの改善 | [AWS Storage Blog: Second-generation file systems](https://aws.amazon.com/blogs/storage/accelerate-file-workload-performance-with-second-generation-amazon-fsx-for-netapp-ontap-file-systems/) |
-| Snapshot / バックアップの上限、自動バックアップの保持期間 | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — データ保護](../README.md) — このモジュールのハブ
-- [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — 別リージョン・別アカウントへの経路と実測
-- [ACL 保持は権限の問題であってツールの問題ではない](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) — 復元後の ACL 比較に同じ手順が使えます
-- [Playbook 05 — 運用](../../../playbooks/05-operate/) — 復元訓練は運用に組み込む項目です
-- [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md) — 復元を実際に試す項目を含めています
-- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](snapshots-are-not-a-recovery-plan.md) | [English](../../../../en/domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[バックアップコピーはリストアするまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md)
