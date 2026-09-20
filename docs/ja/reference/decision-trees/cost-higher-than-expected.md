@@ -39,9 +39,9 @@ lang: ja
 |---|---|---|---|
 | 1 | **請求の内訳のうち、伸びている項目はどれか** | SSD 容量 / SSD IOPS / スループット容量 → **確保で課金**。容量プール / バックアップ → **消費で課金** | [何が課金対象か](../../domains/cost/notes/provisioned-versus-consumed.md#課金対象) |
 | 2 | **確保で課金**の場合、確保量を下げられるか | 下げられる → 下げる。下げられない → 3 へ | [階層化が常に安くなるとは限らない理由](../../domains/cost/notes/provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由) |
-| 3 | そのデータは読まれるか | ほぼ読まれない → 階層化が向く。定期的に読まれる → **SSD に置くほうが安い場合があります**。不明 → **まず測る** | [階層化ポリシーの比較](../comparison/tiering-policies.md#判断の分かれ目--読んだときに戻るか) |
+| 3 | 合意した評価期間で、階層化後のデータを再び読む見込みがあるか | 見込まない → 階層化が向く。見込む → **SSD に置くほうが安い場合があります**。未確認 → **まず測る** | [階層化ポリシーの比較](../comparison/tiering-policies.md#判断の分かれ目--読んだときに戻るか) |
 | 4 | **消費で課金**の場合、容量プールの読み取り・書き込みリクエストを織り込んだか | 織り込んでいない → 3 の分岐をやり直す | [階層化ポリシーの比較](../comparison/tiering-policies.md#比較) |
-| 5 | **最小構成そのものが高い**のではないか | 小容量・低スループットで使っている → 構成の下限が効いています | [最小構成の床](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) |
+| 5 | **容量・スループット要件より最小構成の床が費用を決めているか** | 床が支配している → 構成の下限が効いています | [最小構成の床](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) |
 | 6 | 同じデータの**複製が 1 つだけ**ではないか | 1 つだけ → 別のサービスが素直な場合があります | [台数の問いから複製の問いへの置き換え](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#台数の問いから複製の問いへの置き換え) |
 | 7 | Snapshot が容量として乗っていないか | 乗っている → 保持世代とポリシーを確認 | [Snapshot は容量として現れます](../../domains/cost/notes/provisioned-versus-consumed.md#容量として現れる-snapshot) |
 
@@ -62,13 +62,13 @@ graph TD
     P1 -->|下げられる| DOWN[下げる。これ以外では減りません]
     P1 -->|下げられない| ACC
     C --> REQ[容量プールの読み書き<br/>リクエスト課金を織り込む]
-    REQ --> ACC{そのデータは<br/>読まれるか}
-    ACC -->|ほぼ読まれない| TIER[階層化が向く]
-    ACC -->|定期的に読まれる| STAY[SSD のほうが安い場合がある]
-    ACC -->|不明| MEASURE[まず測る]
-    DOWN --> FLOOR{小容量・低スループットで<br/>使っているか}
-    FLOOR -->|はい| MIN[最小構成の床が効いている]
-    FLOOR -->|いいえ| COPIES{同じデータの複製は<br/>1 つだけか}
+    REQ --> ACC{合意した評価期間で<br/>階層化後のデータを<br/>再び読む見込みがあるか}
+    ACC -->|見込まない| TIER[階層化が向く]
+    ACC -->|見込む| STAY[SSD のほうが安い場合がある]
+    ACC -->|未確認| MEASURE[まず測る]
+    DOWN --> FLOOR{容量・スループット要件より<br/>最小構成の床が<br/>費用を決めているか}
+    FLOOR -->|床が支配している| MIN[最小構成の床が効いている]
+    FLOOR -->|要件が支配している| COPIES{同じデータの複製は<br/>1 つだけか}
     COPIES -->|はい| OTHER[別のサービスが素直な場合がある]
     COPIES -->|いいえ| SNAP[Snapshot の保持を確認]
 ```

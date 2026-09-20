@@ -35,13 +35,14 @@ lang: ja
 
 ```mermaid
 graph TD
-    START[ブロックで提供すると決めた] --> DT{デプロイタイプは決まっているか}
+    START[ブロックで提供すると決めた] --> DT{現在のデプロイ世代}
 
     DT -->|未決定| GEN{NVMe-TCP を使いたいか}
     GEN -->|使いたい| G2["第 2 世代を選ぶ<br/>SINGLE_AZ_2 または MULTI_AZ_2"]
     GEN -->|iSCSI で足りる| GANY["第 1 世代でも可"]
 
     DT -->|既存の第 1 世代| ONLY["iSCSI のみ<br/>NVMe-TCP は作り直しが必要"]
+    DT -->|既存の第 2 世代| HA
 
     G2 --> HA{HA ペアを 7 組以上に<br/>増やす計画があるか}
     GANY --> HA
@@ -50,10 +51,10 @@ graph TD
     HA -->|ある| STOP["ブロックは使えません<br/>6 組を上限に設計し直す"]
     HA -->|ない| OS{ホスト OS}
 
-    OS -->|Linux| PROTO{プロトコルの選択}
+    OS -->|Linux| PROTO{プロトコル選択で<br/>優先する条件}
     OS -->|Windows| WIN["iSCSI を選ぶ<br/>NVMe/TCP は ONTAP 側で非対応"]
 
-    PROTO -->|レイテンシ重視・MPIO を単純にしたい| KERNEL{"カーネルに<br/>CONFIG_NVME_MULTIPATH があるか"}
+    PROTO -->|低レイテンシと MPIO 構成の単純さ| KERNEL{"カーネルに<br/>CONFIG_NVME_MULTIPATH があるか"}
     PROTO -->|実績と手順の豊富さ| ISCSI["iSCSI<br/>ポート 3260 を開ける"]
 
     KERNEL -->|ある| NVME["NVMe-TCP<br/>ポート 4420 と 8009 を開ける"]
@@ -71,7 +72,7 @@ graph TD
     SPLIT --> CAP
     TOGETHER --> CAP
 
-    CAP{容量設計}
+    CAP[容量設計の必須手順]
     CAP --> CAP1["ボリュームを LUN より 5% 以上大きく"]
     CAP1 --> CAP2["space-allocation を有効化"]
     CAP2 --> CAP3{Snapshot を<br/>このボリュームで取るか}
@@ -88,7 +89,7 @@ graph TD
     SC --> AUTO
     CC --> AUTO
 
-    AUTO{自動化の範囲}
+    AUTO[自動化対象の切り分け]
     AUTO --> A1["ファイルシステム・SVM・ボリューム<br/>= AWS の API / CloudFormation"]
     A1 --> A2{LUN より下も IaC にするか}
     A2 -->|する| A3["NetApp Terraform provider または<br/>Ansible netapp.ontap または ONTAP REST"]

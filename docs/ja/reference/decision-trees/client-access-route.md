@@ -37,7 +37,7 @@ lang: ja
 graph TD
     START["端末から FSx for ONTAP のデータを使いたい"] --> PUB["パブリックインターネット経由は不可<br/>Elastic IP は自動的に外される"]
 
-    PUB --> ROUTE{到達経路はどれか}
+    PUB --> ROUTE{端末側で許容する<br/>運用形態}
 
     ROUTE -->|端末に何もインストールしたくない| BROWSER["ブラウザ経路<br/>ファイル / ブロックのマウントは選べない"]
     ROUTE -->|端末は VDI 専用| VDI["WorkSpaces / AppStream<br/>端末の種類はここで無関係になる"]
@@ -92,7 +92,7 @@ graph TD
     MNONE --> CRED
     WS3 --> CRED
 
-    CRED{"端末に残る資格情報を決める"}
+    CRED["ストレージ形態ごとの<br/>端末側の資格情報"]
     CRED --> C1["SMB: Credential Manager / キーチェーン / credentials ファイル"]
     CRED --> C2["iSCSI: CHAP シークレットはホスト側に平文で残る"]
     CRED --> C3["S3: 長期アクセスキーではなく短期資格情報にする"]
@@ -112,6 +112,12 @@ graph TD
 | Windows | SMB（標準機能） | iSCSI イニシエータ + MPIO。**MPIO の有効化が SKU で違う** | AWS CLI / SDK |
 | WSL2 の Linux | NFS または `cifs-utils`。**ネットワーク境界が先に来る** | **既定カーネルに依存** | AWS CLI / SDK |
 | Mac | SMB（AWS の推奨）。NFS も可 | **同梱されていません** | AWS CLI / SDK |
+
+| ストレージ形態 | 端末側に残る資格情報 |
+|---|---|
+| SMB | Credential Manager、キーチェーン、または credentials ファイル |
+| iSCSI | ホスト側に平文で残る CHAP シークレット |
+| S3 | 長期アクセスキーを避け、短期資格情報を使用 |
 
 ---
 
