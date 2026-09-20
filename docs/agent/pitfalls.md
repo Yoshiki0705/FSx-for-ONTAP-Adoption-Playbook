@@ -221,7 +221,7 @@ wrong repair** — the next person hits the same wall with no reason to suspect 
 `make sweep-probes` runs **first** in `make all` and at import time in both gate test modules, so a
 poisoned tree heals instead of blocking. It reports what it removed rather than doing it silently.
 
-**The name is the contract.** Anything matching `zz-gate-probe*` under `docs/` or `examples/` is a
+**The name is the invariant.** Anything matching `zz-gate-probe*` under `docs/` or `examples/` is a
 test artifact, the sweep deletes it unasked, and a test holds that no real content is called that.
 The search is bounded to those two directories: **an unbounded delete keyed on a name pattern is a
 worse failure than the one being fixed.**
