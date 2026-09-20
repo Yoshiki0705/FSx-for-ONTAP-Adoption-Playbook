@@ -356,6 +356,71 @@ printf 'verify'
             self.run_tool("check_document_structure.py", "--check").returncode, 1
         )
 
+    def test_repeatable_include_filters_use_repository_relative_or_semantics(
+        self,
+    ) -> None:
+        self.write("docs/ja/domains/cost/notes/valid.md", self.NOTE)
+        self.write("docs/ja/domains/performance/notes/broken.md", "# Statement\n")
+
+        selected = self.run_tool(
+            "check_document_structure.py",
+            "--include",
+            "docs/ja/domains/cost/notes/*.md",
+            "--check",
+        )
+        self.assertEqual(selected.returncode, 0, selected.stderr)
+        self.assertIn("0 finding(s) across 1 document(s)", selected.stdout)
+
+        combined = self.run_tool(
+            "check_document_structure.py",
+            "--include",
+            "docs/ja/domains/cost/notes/*.md",
+            "--include",
+            "docs/ja/domains/performance/notes/*.md",
+            "--check",
+        )
+        self.assertEqual(combined.returncode, 1)
+        self.assertIn("broken.md: note H1 is not a question", combined.stdout)
+        self.assertIn("across 2 document(s)", combined.stdout)
+
+        recursive = self.run_tool(
+            "check_document_structure.py",
+            "--include",
+            "docs/**/notes/*.md",
+            "--check",
+        )
+        self.assertEqual(recursive.returncode, 1)
+        self.assertIn("across 2 document(s)", recursive.stdout)
+
+        basename_only = self.run_tool(
+            "check_document_structure.py", "--include", "*.md"
+        )
+        self.assertEqual(basename_only.returncode, 2)
+        self.assertIn("matched no eligible documents", basename_only.stderr)
+
+    def test_explicit_include_matching_no_eligible_document_fails(self) -> None:
+        self.write("docs/ja/domains/cost/README.md", "# Cost\n")
+        for mode in ((), ("--check",)):
+            with self.subTest(mode=mode):
+                result = self.run_tool(
+                    "check_document_structure.py",
+                    "--include",
+                    "docs/ja/domains/cost/notes/*.md",
+                    *mode,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("matched no eligible documents", result.stderr)
+
+    def test_invalid_include_is_rejected_as_a_cli_specification_error(self) -> None:
+        self.write("docs/ja/domains/cost/notes/valid.md", self.NOTE)
+        for pattern in ("", "/docs/**/*.md", "docs/../*.md"):
+            with self.subTest(pattern=pattern):
+                result = self.run_tool(
+                    "check_document_structure.py", "--include", pattern
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("repository-relative glob", result.stderr)
+
 
 class CliModeSurface(TemporaryTree):
     def test_sentence_and_glossary_report_check_modes(self) -> None:

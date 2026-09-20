@@ -636,6 +636,81 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        "name": "structure include filter is ignored",
+        "why": (
+            "Accepting --include while scanning every eligible document preserves the CLI shape "
+            "but makes a scoped migration fail on unrelated legacy notes."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "        if not args.include\n",
+                "        if True\n",
+            ),
+        ],
+        "must_fail": [
+            "test_repeatable_include_filters_use_repository_relative_or_semantics"
+        ],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
+        "name": "structure glob falls back to Path match",
+        "why": (
+            "Path.match reads patterns from the right and does not provide the documented "
+            "repository-anchored recursive semantics, so common ** scopes select nothing while "
+            "basename patterns reach too far."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "            _matches_repo_glob(path.relative_to(root), pattern)\n",
+                "            path.relative_to(root).match(pattern)\n",
+            ),
+        ],
+        "must_fail": [
+            "test_repeatable_include_filters_use_repository_relative_or_semantics"
+        ],
+        "must_pass": ["test_explicit_include_matching_no_eligible_document_fails"],
+    },
+    {
+        "name": "structure empty include scope succeeds",
+        "why": (
+            "Returning a clean report for an explicit pattern that selected nothing recreates the "
+            "false success that motivated scoped checking."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "    if args.include and not selected:\n",
+                "    if False:\n",
+            ),
+        ],
+        "must_fail": ["test_explicit_include_matching_no_eligible_document_fails"],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
+        "name": "language switcher is counted as summary prose",
+        "why": (
+            "Reading the raw pre-section region instead of removing the generated switcher makes "
+            "every localized note fail the one-line summary rule."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                '            for line in LANG_SWITCHER.sub("", summary_region).strip().splitlines()\n',
+                "            for line in summary_region.strip().splitlines()\n",
+            ),
+        ],
+        "must_fail": [
+            "test_generated_switcher_between_summary_and_sections_is_ignored"
+        ],
+        "must_pass": ["test_extra_prose_beside_the_summary_is_still_rejected"],
+    },
+    {
         "name": "verification command requirement is removed",
         "why": (
             "Expected-output prose alone must not make a note reproducible; removing the command "
@@ -787,6 +862,10 @@ EDITORIAL_MUTATION_NAMES = frozenset(
         "Mermaid vague-label vocabulary is narrowed",
         "Mermaid unlabeled branches are skipped",
         "Mermaid text branch labels are omitted",
+        "structure include filter is ignored",
+        "structure glob falls back to Path match",
+        "structure empty include scope succeeds",
+        "language switcher is counted as summary prose",
         "verification command requirement is removed",
         "Mermaid trailing info metadata is omitted",
         "one agreed glossary term is dropped",

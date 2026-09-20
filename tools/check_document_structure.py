@@ -7,9 +7,11 @@ Use --check only for fixtures or after a future migration is complete.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import re
 import sys
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 from editorial_markdown import normalized_visible_text, strip_fenced_blocks
@@ -46,6 +48,9 @@ CHECKLIST_HEADINGS = {
 EXPECTED_OUTPUT = ("期待結果", "Expected output")
 PREREQUISITE_LEVELS = {"basic", "intermediate", "advanced"}
 JAPANESE = re.compile(r"[ぁ-んァ-ヶ一-龠]")
+LANG_SWITCHER = re.compile(
+    r"<!-- lang-switcher:start -->.*?<!-- lang-switcher:end -->", re.DOTALL
+)
 
 
 @dataclass(frozen=True)
@@ -143,13 +148,12 @@ def inspect(path: Path, kind: str) -> list[Finding]:
     headings, sections = _sections(body, raw_body)
     first_h2 = H2.search(body)
     if kind == "note":
+        summary_region = body[
+            h1.end() if h1 else 0 : first_h2.start() if first_h2 else len(body)
+        ]
         summary_lines = [
             line
-            for line in body[
-                h1.end() if h1 else 0 : first_h2.start() if first_h2 else len(body)
-            ]
-            .strip()
-            .splitlines()
+            for line in LANG_SWITCHER.sub("", summary_region).strip().splitlines()
             if line.strip()
         ]
         if len(summary_lines) != 1:
@@ -227,22 +231,87 @@ def inspect(path: Path, kind: str) -> list[Finding]:
     return [Finding(path, error) for error in errors]
 
 
+def _matches_repo_glob(path: Path, pattern: str) -> bool:
+    """Match an anchored repository-relative glob.
+
+    ``*`` matches within one path segment. ``**`` matches zero or more complete
+    segments. This deliberately differs from ``Path.match()``, which matches some
+    patterns from the right and does not give ``**`` these recursive semantics.
+    """
+    path_parts = path.parts
+    pattern_parts = tuple(pattern.split("/"))
+
+    @cache
+    def match(path_index: int, pattern_index: int) -> bool:
+        if pattern_index == len(pattern_parts):
+            return path_index == len(path_parts)
+        part = pattern_parts[pattern_index]
+        if part == "**":
+            return match(path_index, pattern_index + 1) or (
+                path_index < len(path_parts) and match(path_index + 1, pattern_index)
+            )
+        return (
+            path_index < len(path_parts)
+            and fnmatch.fnmatchcase(path_parts[path_index], part)
+            and match(path_index + 1, pattern_index + 1)
+        )
+
+    return match(0, 0)
+
+
+def _valid_repo_glob(pattern: str) -> bool:
+    parts = pattern.split("/")
+    return bool(pattern) and not pattern.startswith("/") and ".." not in parts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=str(ROOT))
+    parser.add_argument(
+        "--include",
+        action="append",
+        default=[],
+        metavar="REPO_RELATIVE_GLOB",
+        help=(
+            "check only eligible documents matching this repository-relative glob; "
+            "repeat for OR semantics"
+        ),
+    )
     parser.add_argument(
         "--check",
         action="store_true",
         help="fail when documents do not match the future template",
     )
     args = parser.parse_args()
+    invalid = [pattern for pattern in args.include if not _valid_repo_glob(pattern)]
+    if invalid:
+        parser.error(
+            "--include requires a non-empty repository-relative glob without '..': "
+            + ", ".join(invalid)
+        )
     root = Path(args.path).resolve()
-    findings = [
-        finding for path, kind in documents(root) for finding in inspect(path, kind)
+    selected = [
+        (path, kind)
+        for path, kind in documents(root)
+        if not args.include
+        or any(
+            _matches_repo_glob(path.relative_to(root), pattern)
+            for pattern in args.include
+        )
     ]
+    if args.include and not selected:
+        print(
+            "structure report unavailable: --include matched no eligible documents",
+            file=sys.stderr,
+        )
+        return 2
+    findings = [finding for path, kind in selected for finding in inspect(path, kind)]
     for finding in findings:
         print(f"{finding.path.relative_to(root)}: {finding.message}")
-    print(f"structure report (not a gate): {len(findings)} finding(s)")
+    print(
+        "structure report (not a gate): "
+        f"{len(findings)} finding(s) across {len(selected)} document(s)"
+    )
     return 1 if args.check and findings else 0
 
 

@@ -67,8 +67,28 @@ END = "<!-- lang-switcher:end -->"
 
 LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 FENCE = re.compile(r"^\s*(?:```|~~~)")
+FENCE_OPEN = re.compile(r"^[ \t]{0,3}(?P<marker>`{3,}|~{3,})(?P<info>.*)$")
+FENCE_CLOSE = re.compile(r"^[ \t]{0,3}(?P<marker>`{3,}|~{3,})[ \t]*$")
 SKIP_SCHEMES = ("http://", "https://", "mailto:", "tel:", "data:")
 HUB = "README.md"
+STRUCTURED_NOTE_HEADINGS = {
+    "ja": (
+        "このノートで学べること",
+        "このノートが答えないこと",
+        "前提レベル",
+        "本文",
+        "自環境での確認手順",
+        "Read next",
+    ),
+    "en": (
+        "What you will learn",
+        "What this note does not answer",
+        "Prerequisite level",
+        "Body",
+        "Verify it in your environment",
+        "Read next",
+    ),
+}
 
 
 # --- path model ---------------------------------------------------------------------------------
@@ -187,6 +207,92 @@ def find_blocks(lines: list[str]) -> list[tuple[int, int]]:
     return blocks
 
 
+def lines_outside_fences(lines: list[str]) -> list[int]:
+    """Return line indexes outside marker-length-aware fenced blocks."""
+    outside: list[int] = []
+    marker: str | None = None
+    for index, line in enumerate(lines):
+        if marker is None:
+            opening = FENCE_OPEN.match(line)
+            if opening:
+                candidate = opening.group("marker")
+                info = opening.group("info")
+                if candidate[0] == "`" and "`" in info:
+                    outside.append(index)
+                else:
+                    marker = candidate
+            else:
+                outside.append(index)
+            continue
+        closing = FENCE_CLOSE.match(line)
+        if (
+            closing
+            and closing.group("marker")[0] == marker[0]
+            and len(closing.group("marker")) >= len(marker)
+        ):
+            marker = None
+    return outside
+
+
+def frontmatter_body_start(lines: list[str]) -> int | None:
+    """Return the first body line, or None for malformed frontmatter."""
+    if not lines or lines[0].strip() != "---":
+        return None
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return index + 1
+    return None
+
+
+def structured_note_header(
+    rel: str, lines: list[str], blocks: list[tuple[int, int]]
+) -> tuple[int, int] | None:
+    """Return (summary line, first H2) for a migrated note, otherwise None."""
+    split = split_rel(rel)
+    if split is None or "notes" not in PurePosixPath(rel).parts:
+        return None
+    expected = STRUCTURED_NOTE_HEADINGS.get(split[0])
+    if expected is None:
+        return None
+    outside = lines_outside_fences(lines)
+    headings = tuple(
+        lines[index].removeprefix("## ").strip()
+        for index in outside
+        if lines[index].startswith("## ")
+    )
+    if headings != expected:
+        return None
+    first_h2 = next(index for index in outside if lines[index].startswith("## "))
+    body_start = frontmatter_body_start(lines)
+    if body_start is None:
+        return None
+    switcher_lines = {index for start, end in blocks for index in range(start, end + 1)}
+    content = [
+        (index, line.strip())
+        for index, line in enumerate(lines[body_start:first_h2], start=body_start)
+        if line.strip() and index not in switcher_lines
+    ]
+    if (
+        len(content) != 2
+        or not re.fullmatch(r"#\s+\S.*", content[0][1])
+        or content[1][1].startswith("#")
+    ):
+        return None
+    return content[1][0], first_h2
+
+
+def switcher_is_at_structured_header(
+    lines: list[str], block: tuple[int, int], header: tuple[int, int]
+) -> bool:
+    start, end = block
+    summary, first_h2 = header
+    return (
+        summary < start <= end < first_h2
+        and all(not line.strip() for line in lines[summary + 1 : start])
+        and all(not line.strip() for line in lines[end + 1 : first_h2])
+    )
+
+
 def sync_file(rel: str, write: bool) -> list[str]:
     expected, error = build_block(rel)
     if error:
@@ -221,23 +327,33 @@ def sync_file(rel: str, write: bool) -> list[str]:
         return []
 
     if not blocks:
-        return [
-            (
-                f"{rel}: missing switcher markers; add {START} / {END} "
-                "at the end of the file"
-            )
-        ]
+        header = structured_note_header(rel, lines, [])
+        position = (
+            "immediately after the one-line summary"
+            if header is not None
+            else "at the end of the file"
+        )
+        return [(f"{rel}: missing switcher markers; add {START} / {END} {position}")]
 
     changed = False
+    header = structured_note_header(rel, lines, blocks)
     if len(blocks) != 1:
         if not write:
             problems.append(
-                f"{rel}: found {len(blocks)} switcher block(s), expected exactly 1 at the footer"
+                f"{rel}: found {len(blocks)} switcher block(s), expected exactly 1"
             )
         else:
-            # The former contract generated the same block after the H1 and at the footer. Keep the
-            # footer copy and remove every earlier copy so --write can migrate the existing corpus.
-            for start, end in reversed(blocks[:-1]):
+            preferred = next(
+                (
+                    block
+                    for block in blocks
+                    if header is not None
+                    and switcher_is_at_structured_header(lines, block, header)
+                ),
+                blocks[-1],
+            )
+            block_lines = lines[preferred[0] : preferred[1] + 1]
+            for start, end in reversed(blocks):
                 del lines[start : end + 1]
                 if (
                     0 < start < len(lines)
@@ -245,26 +361,52 @@ def sync_file(rel: str, write: bool) -> list[str]:
                     and lines[start].strip() == ""
                 ):
                     del lines[start]
+            if header is not None:
+                refreshed = structured_note_header(rel, lines, [])
+                assert refreshed is not None
+                lines[refreshed[1] : refreshed[1]] = [*block_lines, ""]
+            else:
+                while lines and not lines[-1].strip():
+                    lines.pop()
+                lines.extend(["", *block_lines])
             changed = True
             blocks = find_blocks(lines)
 
     if len(blocks) == 1:
         start, end = blocks[0]
+        header = structured_note_header(rel, lines, blocks)
         last_content = max(
             (index for index, line in enumerate(lines) if line.strip()),
             default=-1,
         )
-        if end != last_content:
+        valid_position = (
+            switcher_is_at_structured_header(lines, blocks[0], header)
+            if header is not None
+            else end == last_content
+        )
+        if not valid_position:
             if not write:
-                problems.append(
-                    f"{rel}:{start + 1}: switcher block must be the final content in the file"
-                )
+                if header is not None:
+                    problems.append(
+                        f"{rel}:{start + 1}: structured-note switcher must follow "
+                        "the one-line summary"
+                    )
+                else:
+                    problems.append(
+                        f"{rel}:{start + 1}: switcher block must be the final "
+                        "content in the file"
+                    )
             else:
                 block = lines[start : end + 1]
                 del lines[start : end + 1]
-                while lines and not lines[-1].strip():
-                    lines.pop()
-                lines.extend(["", *block])
+                if header is not None:
+                    refreshed = structured_note_header(rel, lines, [])
+                    assert refreshed is not None
+                    lines[refreshed[1] : refreshed[1]] = [*block, ""]
+                else:
+                    while lines and not lines[-1].strip():
+                        lines.pop()
+                    lines.extend(["", *block])
                 changed = True
                 start, end = find_blocks(lines)[0]
 

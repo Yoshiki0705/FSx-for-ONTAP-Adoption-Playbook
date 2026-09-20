@@ -425,8 +425,190 @@ class GateStillDetects(unittest.TestCase):
         """The narrowing above must not start failing on intentional placeholders."""
         self.assertEqual(run_gate("validate_frontmatter.py").returncode, 0)
 
+    def structured_note(self, lang: str, placement: str) -> str:
+        if lang == "ja":
+            h1 = "# 何を確認しますか？"
+            summary = "一行の要約です。"
+            headings = (
+                "## このノートで学べること",
+                "## このノートが答えないこと",
+                "## 前提レベル",
+                "## 本文",
+                "## 自環境での確認手順",
+                "## Read next",
+            )
+        else:
+            h1 = "# What should you verify?"
+            summary = "One-line summary."
+            headings = (
+                "## What you will learn",
+                "## What this note does not answer",
+                "## Prerequisite level",
+                "## Body",
+                "## Verify it in your environment",
+                "## Read next",
+            )
+        block = "<!-- lang-switcher:start -->\n<!-- lang-switcher:end -->"
+        parts = [NOTE_HEADER.format(evidence="hypothesis", lang=lang), h1, summary]
+        if placement == "header":
+            parts.append(block)
+        parts.append(headings[0])
+        if placement == "middle":
+            parts.append(block)
+        parts.extend(headings[1:])
+        if placement == "footer":
+            parts.append(block)
+        return "\n\n".join(parts) + "\n"
+
+    def test_structured_note_header_switcher_is_accepted(self) -> None:
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "header"
+            )
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            written = run_gate("sync_lang_switcher.py", "--write")
+            self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+            checked = run_gate("sync_lang_switcher.py")
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+            for path in probe:
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertLess(
+                    text.index("<!-- lang-switcher:start -->"), text.index("## ")
+                )
+
+    def test_structured_note_footer_is_moved_to_the_header(self) -> None:
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "footer"
+            )
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"), "must follow the one-line summary"
+            )
+            written = run_gate("sync_lang_switcher.py", "--write")
+            self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+            for path in probe:
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertLess(
+                    text.index("<!-- lang-switcher:start -->"), text.index("## ")
+                )
+                self.assertEqual(text.count("<!-- lang-switcher:start -->"), 1)
+
+    def test_structured_note_intermediate_switcher_is_rejected(self) -> None:
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "middle"
+            )
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"), "must follow the one-line summary"
+            )
+
+    def test_structured_note_fenced_h2_does_not_change_placement(self) -> None:
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "header"
+            ).replace(
+                "## Read next",
+                "~~~~markdown with `inline code`\n"
+                "## Fenced example one\n"
+                "~~~\n"
+                "## Fenced example two\n"
+                "~~~~not-a-close\n"
+                "## Fenced example three\n"
+                "~~~~\n\n"
+                "## Read next",
+            )
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            written = run_gate("sync_lang_switcher.py", "--write")
+            self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+            checked = run_gate("sync_lang_switcher.py")
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+            for path in probe:
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertLess(
+                    text.index("<!-- lang-switcher:start -->"), text.index("## ")
+                )
+
+    def test_structured_note_header_shape_rejects_extra_or_heading_summary(
+        self,
+    ) -> None:
+        base_ja = self.structured_note("ja", "header")
+        cases = {
+            "missing-frontmatter": base_ja.removeprefix(
+                NOTE_HEADER.format(evidence="hypothesis", lang="ja") + "\n"
+            ),
+            "unterminated-frontmatter": base_ja.replace(
+                NOTE_HEADER.format(evidence="hypothesis", lang="ja"),
+                "---\ntitle: open",
+                1,
+            ),
+            "preamble": base_ja.replace(
+                "# 何を確認しますか？", "前置きです。\n\n# 何を確認しますか？"
+            ),
+            "duplicate-h1": base_ja.replace(
+                "# 何を確認しますか？", "# 何を確認しますか？\n\n# 重複見出し"
+            ),
+            "heading-summary": base_ja.replace(
+                "一行の要約です。", "# 要約ではない見出し"
+            ),
+        }
+        for name, ja in cases.items():
+            with self.subTest(name=name):
+                probe = {
+                    f"docs/ja/domains/cost/notes/{PROBE}.md": ja,
+                    f"docs/en/domains/cost/notes/{PROBE}.md": self.structured_note(
+                        "en", "header"
+                    ),
+                }
+                with temp_files(probe):
+                    self.assert_rejected(
+                        run_gate("sync_lang_switcher.py"), "final content"
+                    )
+
+    def test_structured_note_duplicate_write_keeps_one_header_block(self) -> None:
+        footer = "\n<!-- lang-switcher:start -->\nstale\n<!-- lang-switcher:end -->\n"
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "header"
+            )
+            + footer
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            written = run_gate("sync_lang_switcher.py", "--write")
+            self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+            for path in probe:
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertEqual(text.count("<!-- lang-switcher:start -->"), 1)
+                self.assertLess(
+                    text.index("<!-- lang-switcher:start -->"), text.index("## ")
+                )
+                self.assertIn("## Read next", text)
+
+    def test_structured_note_missing_switcher_names_header_position(self) -> None:
+        probe = {
+            f"docs/{lang}/domains/cost/notes/{PROBE}.md": self.structured_note(
+                lang, "none"
+            )
+            for lang in ("ja", "en")
+        }
+        with temp_files(probe):
+            self.assert_rejected(
+                run_gate("sync_lang_switcher.py"),
+                "immediately after the one-line summary",
+            )
+
     def test_missing_language_switcher_is_rejected(self) -> None:
-        """Every localized pair needs one generated footer block."""
+        """Every localized pair needs one generated switcher block."""
         ja = NOTE_HEADER.format(evidence="hypothesis", lang="ja") + "\n# gate probe\n"
         en = NOTE_HEADER.format(evidence="hypothesis", lang="en") + "\n# gate probe\n"
         probe = {
