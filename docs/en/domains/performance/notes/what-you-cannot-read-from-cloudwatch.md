@@ -7,13 +7,35 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html
 lang: en
 ---
 
-# p99 is not available from volume operation-time metric pairs
+# Can Amazon CloudWatch metrics for Amazon FSx for NetApp ONTAP show p99?
+
+Volume operation-time and count pairs yield averages; p99 requires separate request-level distribution telemetry.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [English](what-you-cannot-read-from-cloudwatch.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- Why operation-time Sum divided by operation-count Sum yields a period average, not p99.
+- Why credits, cache, shared bandwidth, statistics, and dimensions belong in benchmark conditions.
+
+## What this note does not answer
+
+- Whether CloudWatch generally supports percentile statistics.
+- Your environment's measured p99 or sustained-throughput result.
+
+## Prerequisite level
+
+intermediate
+
+## Body
 
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **For FSx for ONTAP volume-operation latency, CloudWatch operation-time/count metric pairs yield only an average. This does not mean that CloudWatch generally lacks percentile support.**
 
@@ -30,7 +52,7 @@ And one more thing. **A benchmark is affected by the burst credit balance.** A f
 
 ---
 
-## The three things that determine performance
+### The three things that determine performance
 
 A client reaches the file server through an ENI. **Each file server has a fast in-memory cache and an NVMe cache.** Behind them are the SSD disks.
 
@@ -46,7 +68,7 @@ That the ceiling itself varies by generation, configuration and Region is in [Th
 
 ---
 
-## When the cache helps
+### When the cache helps
 
 **What lands in the cache is the active working set.** So the condition reduces to one thing.
 
@@ -64,7 +86,7 @@ Note also that **adding an HA pair enables the NVMe cache by default on the new 
 
 ---
 
-## How bandwidth is shared between protocols
+### How bandwidth is shared between protocols
 
 **There is no per-protocol allocation.**
 
@@ -80,7 +102,7 @@ Network I/O performance is defined as the **total** between clients and the file
 
 ---
 
-## The burst and credit mechanism that breaks a benchmark
+### The burst and credit mechanism that breaks a benchmark
 
 **File-based workloads are spiky.** Short periods of high I/O with idle time between them.
 
@@ -88,7 +110,7 @@ To match that, FSx for ONTAP provides **a baseline speed sustainable around the 
 
 **Bursting is managed by a network I/O credit mechanism.** Credits are allocated on average utilisation, and **a file system accumulates them while its throughput and IOPS run below the baseline.**
 
-### The effect on a benchmark
+#### The effect on a benchmark
 
 | Situation | What is measured |
 |---|---|
@@ -98,7 +120,7 @@ To match that, FSx for ONTAP provides **a baseline speed sustainable around the 
 
 **The balance is visible in `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance`.** Unlike the other metrics, these two are emitted at **five-minute intervals**. The granularity list is in [Monitoring granularity and retention](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#monitoring-granularity-and-retention).
 
-### How large the step is, and how long until it falls
+#### How large the step is, and how long until it falls
 
 **The table above is the mechanism; it never carried the size.** The measurement is in the
 [cited record](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md)
@@ -133,7 +155,7 @@ the shape of the workload.
 > over four or more points, but **the duration itself was not measured twice.** Reproducibility is
 > a statement about the slopes, not about the duration.
 
-### The absent balance metric on a configuration with no burst
+#### The absent balance metric on a configuration with no burst
 
 **Raising the provisioned value removes the burst allowance itself.** The published disk-burst
 column reads "—" from 3,072 upward, and the cited record measures **no decay over 30 minutes** at
@@ -156,7 +178,7 @@ the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
 
 ---
 
-## What a reproducible benchmark requires
+### What a reproducible benchmark requires
 
 **"The same procedure" is not enough. It has to start from the same state.**
 
@@ -176,7 +198,7 @@ the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
 
 ---
 
-## Measurement flow
+### Measurement flow
 
 ```mermaid
 graph TD
@@ -201,28 +223,7 @@ graph TD
 
 ---
 
-## Verify in your own environment
-
-**The first thing to establish is whether the figure in front of you is an average or a tail.**
-
-| # | Step | What it establishes |
-|---|---|---|
-| 1 | Derive average latency as `DataReadOperationTime` ÷ `DataReadOperations` | **That this is an average.** The tail is not in it |
-| 2 | Measure the latency distribution with client instrumentation or other request-level telemetry and derive p99 | **The gap against the volume operation-time/count pair's average.** The tail, measured |
-| 3 | Record `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` before the test | Whether you are measuring burst or sustained |
-| 4 | Re-run the same test with the balance depleted and compare | **How much the credits contribute.** The basis for reproducibility |
-| 5 | Lengthen the test in stages and find where the figure drops | How long until it falls to the baseline |
-| 6 | Estimate the working set size and compare across throughput capacities | Whether it fits in the cache |
-| 7 | Load one protocol and observe the other's latency | **Interference between protocols, measured.** Whether separation is needed |
-| 8 | Compare periods with background tasks running against periods without | How much the background tasks contribute |
-
-A benchmark that skips steps 3 and 4 **does not reproduce even when the procedure is repeated exactly.** This is the most overlooked point.
-
-Step 2 also separates "the storage is slow" from "the path or the client is slow".
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Actually |
 |---|---|
@@ -241,7 +242,7 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -257,7 +258,7 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Performance](../README.md) — this module's hub
 - [Throughput is not set by one value](where-throughput-is-determined-and-shared.md) — how the ceiling is decided, and sharing per HA pair
@@ -271,6 +272,47 @@ Step 2 also separates "the storage is slow" from "the path or the client is slow
 
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [English](what-you-cannot-read-from-cloudwatch.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**The first thing to establish is whether the figure in front of you is an average or a tail.**
+
+| # | Step | What it establishes |
+|---|---|---|
+| 1 | Derive average latency as `DataReadOperationTime` ÷ `DataReadOperations` | **That this is an average.** The tail is not in it |
+| 2 | Measure the latency distribution with client instrumentation or other request-level telemetry and derive p99 | **The gap against the volume operation-time/count pair's average.** The tail, measured |
+| 3 | Record `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` before the test | Whether you are measuring burst or sustained |
+| 4 | Re-run the same test with the balance depleted and compare | **How much the credits contribute.** The basis for reproducibility |
+| 5 | Lengthen the test in stages and find where the figure drops | How long until it falls to the baseline |
+| 6 | Estimate the working set size and compare across throughput capacities | Whether it fits in the cache |
+| 7 | Load one protocol and observe the other's latency | **Interference between protocols, measured.** Whether separation is needed |
+| 8 | Compare periods with background tasks running against periods without | How much the background tasks contribute |
+
+A benchmark that skips steps 3 and 4 **does not reproduce even when the procedure is repeated exactly.** This is the most overlooked point.
+
+Step 2 also separates "the storage is slow" from "the path or the client is slow".
+
+The following local calculation derives only the period average from operation-time Sum and operation-count Sum for the same volume and period.
+
+```bash
+python3 -c \
+  'import sys; print(float(sys.argv[1]) / float(sys.argv[2]))' \
+  <operation-time-sum> <operation-count-sum>
+```
+
+### Expected output
+
+```text
+<period average in the source metric's time unit>
+```
+
+This calculation does not validate the input metrics, request distribution, p99, credit balance, or sustained performance. Complete the remaining table steps separately.
+
+---
+
+## Read next
+
+[Domain — Performance](../README.md)

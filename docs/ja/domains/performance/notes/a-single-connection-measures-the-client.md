@@ -7,13 +7,35 @@ source: https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja
 lang: ja
 ---
 
-# 単一接続で測った値はストレージの性能ではない
+# Amazon FSx for NetApp ONTAP の単一接続値は何を測っているか？
+
+単一接続値はクライアント側かサービス側の上限であり、ストレージ全体の性能値ではありません。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](a-single-connection-measures-the-client.md) | [English](../../../../en/domains/performance/notes/a-single-connection-measures-the-client.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- 単一接続で近い値が出ても、クライアント側とサービス側で当たる上限が異なること。
+- 接続数、データ共有の有無、キャッシュ状態を測定条件として記録する理由。
+
+## このノートが答えないこと
+
+- 単一接続値から導くファイルシステム全体の最大性能。
+- 引用元が未測定とした世代差、S3 API と NFS の比較、キャッシュ状態をそろえた再測定値。
+
+## 前提レベル
+
+intermediate
+
+## 本文
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **マウントを 1 つ張って測った値は、ストレージの性能ではありません。** 当たっているのはクライアント側かサービス側の別の上限で、**どの上限かは製品ごとに違います。**
 
@@ -40,7 +62,7 @@ sibling プロジェクトの実測で、**製品もプロトコルも違う 3 �
 
 ---
 
-## 測定条件
+### 測定条件
 
 **条件を外した数値は使えません。** 以下は引用元が記録しているものをそのまま並べます。
 
@@ -61,7 +83,7 @@ sibling プロジェクトの実測で、**製品もプロトコルも違う 3 �
 
 ---
 
-## 単一接続で揃ってしまう値
+### 単一接続で揃ってしまう値
 
 1 MiB 逐次読みです。
 
@@ -87,7 +109,7 @@ Amazon EFS の `nconnect=16` が測定不能だったことについては、**�
 
 ---
 
-## 2 段の上限
+### 2 段の上限
 
 **接続を増やしたあとに当たる上限は 2 つあり、公表値と突き合わせるとどちらも説明できます。**
 
@@ -113,7 +135,7 @@ Amazon EFS の `nconnect=16` が測定不能だったことについては、**�
 
 ---
 
-## 45% の幅の正体
+### 45% の幅の正体
 
 **同一設定・同一パラメータファイル・同一測定器で 2 回測って 3,551.18 と 5,148.56 MB/s でした。** 違いはキャッシュに何が残っていたかだけです。
 
@@ -133,7 +155,7 @@ Amazon EFS の `nconnect=16` が測定不能だったことについては、**�
 
 ---
 
-## 性能要件の書き方
+### 性能要件の書き方
 
 **「MB/s」だけの要件は、この実測を見たあとでは決まりません。** 決めるべき項目です。
 
@@ -150,7 +172,7 @@ Amazon EFS の `nconnect=16` が測定不能だったことについては、**�
 
 ---
 
-## 引用元が未測定としている範囲
+### 引用元が未測定としている範囲
 
 **引用は都合のよい部分だけを取り出せます。** 引用元が未測定として挙げているものを、そのまま持ってきます。
 
@@ -167,7 +189,7 @@ Amazon EFS の `nconnect=16` が測定不能だったことについては、**�
 
 ---
 
-## ブロックの値をこの表に並べる条件
+### ブロックの値をこの表に並べる条件
 
 **ブロックプロトコル（iSCSI / NVMe/TCP）の値は測られました。** 多重度 1 で iSCSI 1,135.19 MB/s、
 NVMe/TCP 1,135.88 MB/s です（[パスはフェイルオーバーの仕組みそのもの](../../block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと)）。
@@ -199,6 +221,49 @@ NVMe/TCP 1,135.88 MB/s です（[パスはフェイルオーバーの仕組み�
 > （[結論](#結論)）。ブロックの値が同じ範囲に入った場合も、原因が EC2 の 1 フロー上限かどうかを
 > 別に確かめる必要があります。
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| マウントを 1 つ張って測ればストレージの性能が分かる | **クライアント側かサービス側の別の上限を測っています。** どの上限かは製品ごとに違います |
+| 近い値が出たなら同じ理由 | **3 構成が 499.79〜591.62 MB/s に収まりましたが、FSx for ONTAP の 2 つは EC2 の 1 フロー上限、EFS は 500 MiBps のクライアント単位クォータでした。** 引用元はここを誤って束ね、あとで訂正しています |
+| プロトコルの選択が性能を決める | **接続数のほうが大きく動きました**（591.62 → 3,551〜5,149 MB/s） |
+| 製品間の 1.18 倍は製品の差 | **別々の上限を測った値の比です** |
+| スループット容量の設定値が到達できる上限 | **この構成では 6,144 MBps 設定でネットワークのベースラインが 12,500 MBps でした。** 別の数字です |
+| ベンチマークが 45% 振れたのは測定ミス | **キャッシュに何が残っていたかの差です。** このストレージの性質です |
+| 台数を増やせば線形に伸びる | **データを共有しているかで 5.5 倍変わります** |
+| 1 つの数字で性能を書ける | **書けません。** 接続数・共有の有無・キャッシュの状態を併記します |
+| 引用元と同じ構成なら同じ数字が出る | **キャッシュの温まり方までそろえないと出ません** |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| 単一接続の 3 構成で当たっていた上限が別物だったこと（FSx for ONTAP は EC2 の 1 フロー上限、EFS は 500 MiBps のクライアント単位クォータ）、2 段の上限、45% の幅、8 台での 0.18 倍、測定条件の全項目 | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
+| 測定に使った器具（`auto_vdbench`）と、パラメータをコマンドラインから渡せない制約 | [S3-Burst-on-ONTAP-Files: プロトコル別スループットの測定計画](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-protocol-matrix-plan.md) |
+| EC2 の 1 ネットワークフローあたり全二重 5 Gbps の上限と、`nconnect` / SMB Multichannel で複数フローにすれば超えられること。SSD の IOPS が使われるのはキャッシュに無いデータへアクセスするときだけであること | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
+| 世代・構成ごとのスループット容量とネットワークのベースライン | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+| `tcp-max-xfer-size` の既定値と、`rsize` / `wsize` への効き方 | [NetApp: nfs modify](https://docs.netapp.com/us-en/ontap-cli/vserver-nfs-modify.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — 性能](../README.md) — このモジュールのハブ
+- [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — スループット容量が決めているもの、HA ペア単位の共有
+- [ボリュームの操作時間メトリクスから p99 は出せない](what-you-cannot-read-from-cloudwatch.md) — 測る側の道具の制約とバーストクレジット
+- [プロジェクト間の引用索引](../../../reference/cross-repo-index.md) — この数値をどこから引いているか、分担の原則
+- [公開ベンチマークの読み方](../../block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) — 公開値を読むときの条件の確認
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
+
+---
+
 ## 自環境での確認手順
 
 **引用元と同じ数字を目標にしないでください。** 構成が違えば当たる上限が違います。
@@ -215,49 +280,22 @@ NVMe/TCP 1,135.88 MB/s です（[パスはフェイルオーバーの仕組み�
 
 手順 5 は引用元がそうしています。**クライアント側の集計だけでは、詰まっている場所を分離できません。**
 
----
+次の読み取り専用コマンドは、SVM に設定された最大転送サイズを確認します。
 
-## よくある誤解
+```console
+nfs show -vserver <svm> -fields tcp-max-xfer-size
+```
 
-| 誤解 | 実際 |
-|---|---|
-| マウントを 1 つ張って測ればストレージの性能が分かる | **クライアント側かサービス側の別の上限を測っています。** どの上限かは製品ごとに違います |
-| 近い値が出たなら同じ理由 | **3 構成が 499.79〜591.62 MB/s に収まりましたが、FSx for ONTAP の 2 つは EC2 の 1 フロー上限、EFS は 500 MiBps のクライアント単位クォータでした。** 引用元はここを誤って束ね、あとで訂正しています |
-| プロトコルの選択が性能を決める | **接続数のほうが大きく動きました**（591.62 → 3,551〜5,149 MB/s） |
-| 製品間の 1.18 倍は製品の差 | **別々の上限を測った値の比です** |
-| スループット容量の設定値が到達できる上限 | **この構成では 6,144 MBps 設定でネットワークのベースラインが 12,500 MBps でした。** 別の数字です |
-| ベンチマークが 45% 振れたのは測定ミス | **キャッシュに何が残っていたかの差です。** このストレージの性質です |
-| 台数を増やせば線形に伸びる | **データを共有しているかで 5.5 倍変わります** |
-| 1 つの数字で性能を書ける | **書けません。** 接続数・共有の有無・キャッシュの状態を併記します |
-| 引用元と同じ構成なら同じ数字が出る | **キャッシュの温まり方までそろえないと出ません** |
+### 期待結果
+
+```text
+<svm>  <tcp-max-xfer-size>
+```
+
+この出力だけでは、クライアントが実際にネゴシエートした `rsize`、接続数、単一フロー上限、ファイルシステム全体のスループットは確認できません。表の残りの手順を別に実施してください。
 
 ---
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| 単一接続の 3 構成で当たっていた上限が別物だったこと（FSx for ONTAP は EC2 の 1 フロー上限、EFS は 500 MiBps のクライアント単位クォータ）、2 段の上限、45% の幅、8 台での 0.18 倍、測定条件の全項目 | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
-| 測定に使った器具（`auto_vdbench`）と、パラメータをコマンドラインから渡せない制約 | [S3-Burst-on-ONTAP-Files: プロトコル別スループットの測定計画](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-protocol-matrix-plan.md) |
-| EC2 の 1 ネットワークフローあたり全二重 5 Gbps の上限と、`nconnect` / SMB Multichannel で複数フローにすれば超えられること。SSD の IOPS が使われるのはキャッシュに無いデータへアクセスするときだけであること | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
-| 世代・構成ごとのスループット容量とネットワークのベースライン | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
-| `tcp-max-xfer-size` の既定値と、`rsize` / `wsize` への効き方 | [NetApp: nfs modify](https://docs.netapp.com/us-en/ontap-cli/vserver-nfs-modify.html) |
-
----
-
-## 関連ドキュメント
-
-- [Domain — 性能](../README.md) — このモジュールのハブ
-- [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — スループット容量が決めているもの、HA ペア単位の共有
-- [ボリュームの操作時間メトリクスから p99 は出せない](what-you-cannot-read-from-cloudwatch.md) — 測る側の道具の制約とバーストクレジット
-- [プロジェクト間の引用索引](../../../reference/cross-repo-index.md) — この数値をどこから引いているか、分担の原則
-- [公開ベンチマークの読み方](../../block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) — 公開値を読むときの条件の確認
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](a-single-connection-measures-the-client.md) | [English](../../../../en/domains/performance/notes/a-single-connection-measures-the-client.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[Amazon FSx for NetApp ONTAP の CloudWatch メトリクスから p99 を読めるか？](what-you-cannot-read-from-cloudwatch.md)

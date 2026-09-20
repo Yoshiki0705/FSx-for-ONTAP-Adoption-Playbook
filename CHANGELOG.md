@@ -9,6 +9,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Performance notes now use the fixed question-to-verification reading structure without changing their benchmark evidence.**
+  - Existing substantive heading text remains unchanged at a lower heading level, so its generated fragments stay stable.
+  - The CloudWatch note keeps the former H1 fragments as explicit aliases. The external-anchor snapshot adds the new structural headings; it removes no existing fragment.
+  - The three verification commands expose only configuration, one ONTAP setting, or arithmetic over supplied sums. They do not create a new benchmark result.
+
 - **S3 Access Points access and CloudWatch metric claims were narrowed to the scopes established by current AWS pages and controlled measurements.**
   - An Internet-origin access point is reachable through an S3 gateway endpoint from an in-VPC subnet whose route table selects the S3 prefix-list route. Gateway endpoints do not route traffic entering over VPN, Direct Connect, Transit Gateway, or peering; those callers use an Interface endpoint for a private path.
   - Same-account ownership constrains access point creation, not every later data request. Cross-account use requires both the access point policy and the caller's identity-based policy to allow it.

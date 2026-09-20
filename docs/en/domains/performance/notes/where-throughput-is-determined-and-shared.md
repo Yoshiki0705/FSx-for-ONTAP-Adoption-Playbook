@@ -7,7 +7,29 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/HA-pairs.html
 lang: en
 ---
 
-# Throughput is not determined by a single setting
+# Where is Amazon FSx for NetApp ONTAP throughput determined and shared?
+
+Ceilings vary by generation, configuration, and Region; capacity is shared per HA pair.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | [English](where-throughput-is-determined-and-shared.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- How generation, configuration, Region, SSD capacity, and IOPS determine throughput ceilings.
+- How HA-pair sharing and FlexVol or FlexGroup placement bound the available performance path.
+
+## What this note does not answer
+
+- The throughput, IOPS, or latency that your workload will actually achieve.
+- A universal answer to the conflicting write specifications or unmeasured Multi-AZ and multi-pair results.
+
+## Prerequisite level
+
+basic
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Domain — Performance](../README.md)
 
@@ -17,7 +39,7 @@ lang: en
 
 ---
 
-## Conclusion
+### Conclusion
 
 "Raising the throughput setting makes things faster" is an insufficient mental model for design. **There are 3 places where throughput is determined and 1 unit where it is shared.**
 
@@ -35,7 +57,7 @@ And the most overlooked point: **The Amazon FSx API specifies that each HA pair 
 
 ---
 
-## The ceiling varies by generation, configuration, and region
+### The ceiling varies by generation, configuration, and region
 
 | Configuration | HA pairs | Throughput ceiling | SSD IOPS ceiling |
 |---|---|---|---|
@@ -51,7 +73,7 @@ Minimum values also require attention. With 2nd generation and 2 or more HA pair
 
 ---
 
-## What the throughput setting actually determines
+### What the throughput setting actually determines
 
 The throughput setting is not just a bandwidth knob. **It simultaneously determines network, disk read IOPS, and file server cache capacity.**
 
@@ -63,7 +85,7 @@ And **raising the setting alone does not reach the ceiling.** A corresponding co
 | Random reads are slow | Workload does not fit in cache. Raising the throughput setting also increases cache capacity |
 | Only writes are slow | Writes are mirrored between HA pair nodes. The path differs from reads |
 
-### Two published statements for second-generation writes, and where they disagree (cited)
+#### Two published statements for second-generation writes, and where they disagree (cited)
 
 **A write estimate changes depending on which published statement you apply.** The performance page
 gives a general rule for second generation — reads get the full throughput setting, writes one third
@@ -91,7 +113,7 @@ four independent measurements fall within 1,270–1,350 MB/s, so this is not run
 > **Do not cite this as "twice the published figure"** — the multiple depends on which statement you
 > put in the denominator. **Multi-AZ and two or more HA pairs are unmeasured.**
 
-### Changing the setting triggers a non-disruptive failover
+#### Changing the setting triggers a non-disruptive failover
 
 Changing the throughput setting causes the **file server to switch over.** Both Single-AZ and Multi-AZ experience automatic failover and failback, typically completing within minutes. For NFS / SMB / iSCSI clients this is transparent, requiring no workload interruption or manual intervention.
 
@@ -99,7 +121,7 @@ However, **changes may be delayed or queued during a maintenance window.** Do no
 
 ---
 
-## The unit of sharing is the HA pair
+### The unit of sharing is the HA pair
 
 Each file system consists of one or more HA pairs in an **active-standby configuration**. The preferred file server handles traffic; the other takes over only when the active side becomes unavailable.
 
@@ -120,7 +142,7 @@ After adding HA pairs, **you must expand the FlexGroup to the new aggregates —
 
 ---
 
-## How it scales when you add readers
+### How it scales when you add readers
 
 **A purchased ceiling and an elastic one behave in opposite directions as clients are added.** A sibling repository ran the same configuration from one host, then from two simultaneously.
 
@@ -141,7 +163,7 @@ After adding HA pairs, **you must expand the FlexGroup to the new aggregates —
 
 ---
 
-## Decision flow
+### Decision flow
 
 ```mermaid
 graph TD
@@ -161,25 +183,7 @@ graph TD
 
 ---
 
-## Verify in your own environment
-
-**Ceiling values represent "the achievable maximum" — not what your environment delivers.**
-
-| # | Step | What it verifies |
-|---|---|---|
-| 1 | Confirm the ceiling values for your region | The design ceiling. 1st generation halves by region |
-| 2 | Check the target volume's type and aggregate placement | Whether a FlexVol is placed on one HA pair's aggregate |
-| 3 | Measure throughput, IOPS, and latency with Amazon CloudWatch | If pinned to provisioned values, you are being throttled |
-| 4 | Measure with a read/write ratio and file sizes close to your workload | Results change significantly depending on whether data fits in cache |
-| 5 | Record measurement conditions (generation / region / throughput setting / SSD capacity / volume type) | Provides a comparison baseline for next time |
-
-Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amazon FSx API `AggregateConfiguration`.
-
-**When performance is not meeting expectations, start by comparing against provisioned values.** If measured values are close to provisioned values, the configuration is not the bottleneck — the setting is the ceiling.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -196,7 +200,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Topic | Source |
 |---|---|
@@ -209,7 +213,7 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Performance](../README.md) — This module's hub
 - [Domain — Cost](../../cost/) — Adding HA pairs also raises minimum throughput
@@ -222,6 +226,48 @@ Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amaz
 
 [🏠 Repository Top](../../../README.md) | [Domain — Performance](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | [English](where-throughput-is-determined-and-shared.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**Ceiling values represent "the achievable maximum" — not what your environment delivers.**
+
+| # | Step | What it verifies |
+|---|---|---|
+| 1 | Confirm the ceiling values for your region | The design ceiling. 1st generation halves by region |
+| 2 | Check the target volume's type and aggregate placement | Whether a FlexVol is placed on one HA pair's aggregate |
+| 3 | Measure throughput, IOPS, and latency with Amazon CloudWatch | If pinned to provisioned values, you are being throttled |
+| 4 | Measure with a read/write ratio and file sizes close to your workload | Results change significantly depending on whether data fits in cache |
+| 5 | Record measurement conditions (generation / region / throughput setting / SSD capacity / volume type) | Provides a comparison baseline for next time |
+
+Volume aggregate placement can be confirmed via ONTAP CLI, REST API, or the Amazon FSx API `AggregateConfiguration`.
+
+**When performance is not meeting expectations, start by comparing against provisioned values.** If measured values are close to provisioned values, the configuration is not the bottleneck — the setting is the ceiling.
+
+The following read-only command checks the file system's deployment type and HA pair count.
+
+```bash
+aws fsx describe-file-systems \
+  --file-system-ids <file-system-id> \
+  --query \
+  'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]' \
+  --output json
+```
+
+### Expected output
+
+```text
+[
+  ["<deployment-type>", <HA-pair-count>]
+]
+```
+
+This output does not show regional ceilings, SSD capacity and IOPS conditions, FlexVol aggregate placement, or measured throughput. Complete the remaining table steps separately.
+
+---
+
+## Read next
+
+[What does a single Amazon FSx for NetApp ONTAP connection measure?](a-single-connection-measures-the-client.md)

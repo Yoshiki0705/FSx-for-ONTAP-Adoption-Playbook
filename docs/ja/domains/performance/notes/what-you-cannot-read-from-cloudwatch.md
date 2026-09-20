@@ -7,13 +7,38 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html
 lang: ja
 ---
 
-# ボリュームの操作時間メトリクスから p99 は出せない
+# Amazon FSx for NetApp ONTAP の CloudWatch メトリクスから p99 を読めるか？
+
+ボリュームの操作時間と回数から得られるのは平均で、p99 は別の分布計測が必要です。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](what-you-cannot-read-from-cloudwatch.md) | [English](../../../../en/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- operation-time と operation-count の Sum から得られるのが期間平均であり、p99 ではないこと。
+- クレジット残高、キャッシュ、共有帯域、統計と次元をベンチマーク条件に含める理由。
+
+## このノートが答えないこと
+
+- CloudWatch 全体でパーセンタイル統計を利用できるかどうか。
+- 自環境の p99 または持続スループットの実測値。
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ボリュームの操作時間メトリクスから-p99-は出せない"></a>
+<a id="p99-は-cloudwatch-のメトリクスからは出せない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **FSx for ONTAP のボリューム操作レイテンシは、CloudWatch の operation-time/count メトリクスペアからは平均しか得られません。CloudWatch 全体にパーセンタイルがないという意味ではありません。**
 
@@ -30,7 +55,7 @@ lang: ja
 
 ---
 
-## 性能を決めている 3 つの要素
+### 性能を決めている 3 つの要素
 
 クライアントは ENI 経由でファイルサーバーにアクセスします。**各ファイルサーバーには高速なインメモリキャッシュと NVMe キャッシュがあります。** その背後に SSD ディスクがあります。
 
@@ -46,7 +71,7 @@ lang: ja
 
 ---
 
-## キャッシュが効く条件
+### キャッシュが効く条件
 
 **キャッシュに載るのはアクティブなワーキングセットです。** したがって条件は 1 つに集約されます。
 
@@ -64,7 +89,7 @@ lang: ja
 
 ---
 
-## プロトコル間での帯域の分け合い方
+### プロトコル間での帯域の分け合い方
 
 **プロトコルごとの割り当てはありません。**
 
@@ -80,7 +105,7 @@ lang: ja
 
 ---
 
-## ベンチマークを壊すバーストとクレジット
+### ベンチマークを壊すバーストとクレジット
 
 **ファイルベースのワークロードはスパイク型です。** 短時間の高い I/O と、その間の待機で構成されます。
 
@@ -88,7 +113,7 @@ lang: ja
 
 **バーストはネットワーク I/O クレジット機構で管理されます。** 平均利用率に基づいて配分され、**ファイルシステムはスループットと IOPS がベースラインを下回っているときにクレジットを蓄積します。**
 
-### ベンチマークへの影響
+#### ベンチマークへの影響
 
 | 状況 | 測れる数値 |
 |---|---|
@@ -98,7 +123,7 @@ lang: ja
 
 **残高は `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` で見られます。** この 2 つは他のメトリクスと違い **5 分間隔**で送信されます。粒度の一覧は [監視の粒度と保持](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#監視の粒度と保持) にあります。
 
-### 段差の大きさと、落ちるまでの時間
+#### 段差の大きさと、落ちるまでの時間
 
 **上の表は機構で、大きさは書いていませんでした。** 実測が [引用元](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) にあります（第二世代 `SINGLE_AZ_2`、指定値 1,536 MBps、1 MiB 逐次読み、1,800 GiB のファイル）。
 
@@ -123,7 +148,7 @@ lang: ja
 
 > **持続時間の 27 分は 1 回の観測です。** 消費と回復の傾きはそれぞれ 4 点以上で線形ですが、**持続時間そのものは 2 回測られていません。** 再現性は傾きについて言えることで、持続時間については言えません。
 
-### 枠が無い構成における残枠メトリクスの不在
+#### 枠が無い構成における残枠メトリクスの不在
 
 **指定値を上げるとバースト枠そのものが無くなります。** 公開仕様のディスクバースト列は 3,072 以上で「—」になり、引用元は 6,144 で**30 分間減衰しないこと**を実測しています（1,536 で見えた段差が無い）。
 
@@ -140,7 +165,7 @@ lang: ja
 
 ---
 
-## 再現できるベンチマークの条件
+### 再現できるベンチマークの条件
 
 **「同じ手順」では足りません。同じ状態から始める必要があります。**
 
@@ -160,7 +185,7 @@ lang: ja
 
 ---
 
-## 測定フロー
+### 測定フロー
 
 ```mermaid
 graph TD
@@ -185,6 +210,57 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| CloudWatch で FSx for ONTAP の p99 が一切見られない | **ボリュームの read/write/metadata operation-time/count ペアからは平均だけを算出できます。** CloudWatch 全体や他のメトリクスの統計まで否定するものではありません |
+| レイテンシのメトリクスがある | 時間の**合計**と回数の**合計**があり、割って平均を出します |
+| ベンチマークは手順が同じなら再現する | **クレジット残高が違えば数値が変わります** |
+| 短時間の試験で持続性能が分かる | 短い試験はバーストを測ります。**実測では 2.0 倍ずれ、ずれる向きは常に過大評価です** |
+| 指定したスループット容量が読み取りの上限になる | **なりません。** 1,536 の指定で 2,882 も 1,439 も観測されています。**どちらも指定値ではありません** |
+| 残枠のメトリクスが 0 なら枯渇している | **枠が無い構成ではレコードが 1 件も出ません。** 0 と不在を読み分けてください |
+| キャッシュサイズを設定できる | **スループット容量で決まります。** 直接指定はできません |
+| キャッシュはどのワークロードでも効く | ワーキングセットが収まる場合に効きます |
+| プロトコルごとに帯域を割り当てられる | **割り当ては存在しません。** HA ペア単位で共有します |
+| SMB と NFS は互いに影響しない | 同じ予算を使います。干渉は起こりえます |
+| 背景タスクは別の帯域を使う | 同じ帯域です。ただしクライアントトラフィックが優先されます |
+| ディスク性能は SSD IOPS だけで決まる | **スループット容量と SSD IOPS の組み合わせ**です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| `DataReadOperationTime` / `DataReadOperations`、`DataWriteOperationTime` / `DataWriteOperations`、`MetadataOperationTime` / `MetadataOperations` が合計値で、有効統計が `Sum` であること | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
+| ファイルシステムメトリクスの統計とデータポイントの集約方法 | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
+| 第 2 世代メトリクスの有効統計と `FileServer` / `Aggregate` 次元 | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
+| 各ファイルサーバーにインメモリキャッシュと NVMe キャッシュがあること、3 つの性能特性、ネットワーク I/O とキャッシュサイズがスループット容量のみで決まりディスク I/O はスループット容量と SSD IOPS の組み合わせで決まること、ファイルベースのワークロードがスパイク型であること、バーストとネットワーク I/O クレジット機構、ベースラインを下回るとクレジットが蓄積されること | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
+| `NetworkThroughputUtilization` が HA ペア 1 組分に対する比率で、背景タスクを含む全トラフィックを対象にすること | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
+| `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` が 5 分間隔で送信されること | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
+| クライアントトラフィックが背景タスクより優先されること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| HA ペア追加時に NVMe キャッシュが既定で有効になり、スループット重視では無効化が推奨されること | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| **段差の大きさ（2.0 倍）、落ちるまでの約 27 分、回復の傾き、階段状の低下、6,144 で残枠メトリクスが不在になること**（**実測 / ドキュメント外**。測定条件と未測定の範囲は引用先） | [S3-Burst-on-ONTAP-Files: 指定値・バースト・ベースラインの実測](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — 性能](../README.md) — このモジュールのハブ
+- [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — 上限の決まり方と HA ペア単位の共有
+- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 統計値の選択と粒度
+- [FlexCache が効く条件](../../data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) — 別ファイルシステム・リモート拠点への読み取り加速
+- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — HA ペアと NVMe キャッシュの既定
+- [階層化の既定値は作成方法で違う](../../../playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) — 読み取り元が変わる条件
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
+
+---
+
 ## 自環境での確認手順
 
 **最初に確かめるのは、いま見ている数値が平均なのかテールなのかです。**
@@ -204,57 +280,24 @@ graph TD
 
 手順 2 は「ストレージが遅いのか、経路やクライアントが遅いのか」の切り分けにもなります。
 
----
+次のローカル計算は、同一期間・同一ボリュームの operation-time Sum と operation-count Sum から期間平均だけを算出します。
 
-## よくある誤解
+```bash
+python3 -c \
+  'import sys; print(float(sys.argv[1]) / float(sys.argv[2]))' \
+  <operation-time-sum> <operation-count-sum>
+```
 
-| 誤解 | 実際 |
-|---|---|
-| CloudWatch で FSx for ONTAP の p99 が一切見られない | **ボリュームの read/write/metadata operation-time/count ペアからは平均だけを算出できます。** CloudWatch 全体や他のメトリクスの統計まで否定するものではありません |
-| レイテンシのメトリクスがある | 時間の**合計**と回数の**合計**があり、割って平均を出します |
-| ベンチマークは手順が同じなら再現する | **クレジット残高が違えば数値が変わります** |
-| 短時間の試験で持続性能が分かる | 短い試験はバーストを測ります。**実測では 2.0 倍ずれ、ずれる向きは常に過大評価です** |
-| 指定したスループット容量が読み取りの上限になる | **なりません。** 1,536 の指定で 2,882 も 1,439 も観測されています。**どちらも指定値ではありません** |
-| 残枠のメトリクスが 0 なら枯渇している | **枠が無い構成ではレコードが 1 件も出ません。** 0 と不在を読み分けてください |
-| キャッシュサイズを設定できる | **スループット容量で決まります。** 直接指定はできません |
-| キャッシュはどのワークロードでも効く | ワーキングセットが収まる場合に効きます |
-| プロトコルごとに帯域を割り当てられる | **割り当ては存在しません。** HA ペア単位で共有します |
-| SMB と NFS は互いに影響しない | 同じ予算を使います。干渉は起こりえます |
-| 背景タスクは別の帯域を使う | 同じ帯域です。ただしクライアントトラフィックが優先されます |
-| ディスク性能は SSD IOPS だけで決まる | **スループット容量と SSD IOPS の組み合わせ**です |
+### 期待結果
+
+```text
+<入力メトリクスと同じ時間単位の期間平均>
+```
+
+この計算だけでは、入力メトリクスの正しさ、リクエスト分布、p99、クレジット残高、持続性能は確認できません。表の残りの手順を別に実施してください。
 
 ---
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| `DataReadOperationTime` / `DataReadOperations`、`DataWriteOperationTime` / `DataWriteOperations`、`MetadataOperationTime` / `MetadataOperations` が合計値で、有効統計が `Sum` であること | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
-| ファイルシステムメトリクスの統計とデータポイントの集約方法 | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
-| 第 2 世代メトリクスの有効統計と `FileServer` / `Aggregate` 次元 | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
-| 各ファイルサーバーにインメモリキャッシュと NVMe キャッシュがあること、3 つの性能特性、ネットワーク I/O とキャッシュサイズがスループット容量のみで決まりディスク I/O はスループット容量と SSD IOPS の組み合わせで決まること、ファイルベースのワークロードがスパイク型であること、バーストとネットワーク I/O クレジット機構、ベースラインを下回るとクレジットが蓄積されること | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
-| `NetworkThroughputUtilization` が HA ペア 1 組分に対する比率で、背景タスクを含む全トラフィックを対象にすること | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
-| `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` が 5 分間隔で送信されること | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
-| クライアントトラフィックが背景タスクより優先されること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| HA ペア追加時に NVMe キャッシュが既定で有効になり、スループット重視では無効化が推奨されること | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
-| **段差の大きさ（2.0 倍）、落ちるまでの約 27 分、回復の傾き、階段状の低下、6,144 で残枠メトリクスが不在になること**（**実測 / ドキュメント外**。測定条件と未測定の範囲は引用先） | [S3-Burst-on-ONTAP-Files: 指定値・バースト・ベースラインの実測](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) |
-
----
-
-## 関連ドキュメント
-
-- [Domain — 性能](../README.md) — このモジュールのハブ
-- [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — 上限の決まり方と HA ペア単位の共有
-- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 統計値の選択と粒度
-- [FlexCache が効く条件](../../data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) — 別ファイルシステム・リモート拠点への読み取り加速
-- [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — HA ペアと NVMe キャッシュの既定
-- [階層化の既定値は作成方法で違う](../../../playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) — 読み取り元が変わる条件
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](what-you-cannot-read-from-cloudwatch.md) | [English](../../../../en/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[Domain — 性能](../README.md)
