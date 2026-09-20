@@ -342,7 +342,8 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 | `make lint` | frontmatter スキーマ + Markdown + 見出し + Python + シェル + CloudFormation |
 | `make i18n-check` | Tier 1 の言語間パリティ |
 | `make switcher-check` | 言語スイッチャーの整合 + 誤った言語へのリンク |
-| `make audit` | 命名 / 中立性 / 個人情報 / 内部 ID / シークレット |
+| `make audit` | 命名 / 中立性 / セールス語彙 / 個人情報 / 内部 ID |
+| `make vocabulary-report` | セールス語彙の現在値（情報表示。違反があっても終了コード 0） |
 | `make links` | 内部リンクの解決（`llms.txt` を含む） |
 | `make links-external` | 外部 URL も含む（ネットワーク必要） |
 | `make secrets` | gitleaks によるワークツリーの秘密スキャン（未インストール時は失敗します） |
@@ -355,6 +356,7 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 `make audit` の誤検知は行末のコメントで抑止できます。使う場合は理由が一目で分かる箇所に限定してください。
 
 ```markdown
+外部記事の正確なタイトルに検出語が含まれる場合   <!-- allow:sales-vocabulary - exact external title -->
 外部記事タイトルに FSxN が含まれる場合   <!-- allow:naming -->
 | `name@example.com` | 「(internal reviewer)」 |   <!-- allow:pii -->
 ```
