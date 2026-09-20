@@ -23,6 +23,45 @@ premise to design against.
 
 ---
 
+## 文書化されたスループット上限 / Documented throughput ceilings
+
+The following values are configuration ceilings documented by AWS, not measured throughput. The workload-visible
+rate can bind earlier on SSD capacity and IOPS, cache state, client networking, protocol, and I/O pattern. Region
+availability is intentionally linked rather than copied into this table.
+
+次の値は AWS が記載する**設定上の上限**であり、実測スループットではありません。SSD 容量と IOPS、
+キャッシュ状態、クライアントネットワーク、プロトコル、I/O パターンのいずれかが先に上限となります。
+リージョン別の提供状況は表へ複製せず、現行ページを参照します。
+
+| 世代 / Generation | デプロイタイプ / Deployment | AWS のリージョングループ / AWS Region group | 上限 / Ceiling |
+|---|---|---|---|
+| 第 1 世代 / First | `SINGLE_AZ_1` | [4,096 MBps グループ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) | 4,096 MBps |
+| 第 1 世代 / First | `MULTI_AZ_1` | [4,096 MBps グループ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) | 4,096 MBps |
+| 第 1 世代 / First | `SINGLE_AZ_1` | その他の提供リージョン / Other available Regions | 2,048 MBps |
+| 第 1 世代 / First | `MULTI_AZ_1` | その他の提供リージョン / Other available Regions | 2,048 MBps |
+| 第 2 世代 / Second | `SINGLE_AZ_2` | [当該タイプの提供リージョン](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/available-aws-regions.html) | 73,728 MBps¹ |
+| 第 2 世代 / Second | `MULTI_AZ_2` | [当該タイプの提供リージョン](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/available-aws-regions.html) | 6,144 MBps |
+
+¹ 12 HA ペア × 6,144 MBps。第 2 世代 Single-AZ の 1 HA ペアあたりの上限は 6,144 MBps です。
+
+選び方は可用性要件から Single-AZ / Multi-AZ を決め、次に対象リージョンで使える世代を確認し、必要な
+スループット容量を選ぶ順です。Single-AZ は AZ 障害をまたぐデータ冗長性を持たず、Multi-AZ は 1 HA ペアに
+限られるため、第 2 世代でもファイルシステム上限は 6,144 MBps です。第 1 世代で 4,096 MBps を設定するには、
+AWS が示すリージョングループに加え、SSD 5,120 GiB 以上と 160,000 SSD IOPS が必要です。
+
+Choose Single-AZ or Multi-AZ from the availability requirement first, confirm which generation the target Region
+supports, and then select throughput capacity. Single-AZ does not provide cross-AZ data redundancy. Multi-AZ is
+limited to one HA pair, so its second-generation file-system ceiling is 6,144 MBps. First-generation 4,096 MBps
+also requires the AWS-defined Region group, at least 5,120 GiB of SSD, and 160,000 SSD IOPS.
+
+Primary sources: [performance and throughput](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html),
+[quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html), and
+[deployment types](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html). Values checked
+against those pages on 2026-09-20. Existing measurements remain under measured sections below and do not validate
+these service-wide ceilings.
+
+---
+
 ## ONTAP バージョンの取得経路 / Where the ONTAP version comes from
 
 **AWS CLI では取得できず、ONTAP REST API では取得できました。** バージョン依存の挙動を記録するには
