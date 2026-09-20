@@ -179,8 +179,8 @@ graph TD
     B -->|AWS resource layer| T[Manage in the template]
     B -->|ONTAP settings layer| O["ONTAP CLI / REST API<br/>templates do not reach"]
 
-    T --> REPL{Is it Replacement}
-    REPL -->|Yes| CARE["Changing it recreates the resource<br/>e.g. an SVM's RootVolumeSecurityStyle"]
+    T --> REPL{Is the CloudFormation update requirement<br/>Replacement}
+    REPL -->|Replacement| CARE["Changing it recreates the resource<br/>e.g. an SVM's RootVolumeSecurityStyle"]
     REPL -->|No interruption| OK[Updatable]
 
     O --> REPRO[Decide how to make it reproducible<br/>a runbook or automation]

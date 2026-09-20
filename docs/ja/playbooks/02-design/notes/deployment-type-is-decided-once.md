@@ -138,13 +138,13 @@ graph TD
     CAP -->|足りない| RETHINK[Multi-AZ では届かない<br/>要件を再検討する]
     CAP -->|足りる| OK1[確定]
 
-    SAZ --> GEN{第 2 世代か}
+    SAZ --> GEN{選択対象は第 2 世代か}
     GEN -->|第 2 世代| SCALE["最大 12 組まで追加可能"]
     GEN -->|第 1 世代| FIXED[1 組で固定]
 
-    SCALE --> BLOCK{iSCSI / NVMe-TCP<br/>を使うか}
-    BLOCK -->|使う| SIX[6 組を上限に設計する]
-    BLOCK -->|使わない| TWELVE[12 組まで検討可]
+    SCALE --> BLOCK{iSCSI / NVMe-TCP<br/>を使う予定があるか}
+    BLOCK -->|使う予定あり| SIX[6 組を上限に設計する]
+    BLOCK -->|ファイルプロトコルのみ| TWELVE[12 組まで検討可]
 
     SIX --> GRAN[移動できる粒度で<br/>ボリュームを分割しておく]
     TWELVE --> GRAN

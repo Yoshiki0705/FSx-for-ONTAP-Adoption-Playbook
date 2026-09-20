@@ -753,10 +753,10 @@ graph TD
     Q1 -->|where it came from| WHERE[Layer 1<br/>explicit Deny + Condition<br/>aws:SourceVpce]
     Q1 -->|which organization| ORG[Layer 1<br/>explicit Deny + Condition<br/>aws:PrincipalOrgID]
     Q1 -->|which prefix| PFX[Layer 1<br/>explicit Deny + NotResource<br/>+ s3:prefix]
-    Q1 -->|what may be done| WHAT{Is a policy enough}
+    Q1 -->|what may be done| WHAT{Should the target action permission<br/>also be absent from the identity<br/>bound to the access point}
 
-    WHAT -->|it is| ACT[Layer 1<br/>list the actions in the explicit Deny]
-    WHAT -->|must be firmly blocked| ID[Layer 2<br/>bind an identity that lacks<br/>the permission]
+    WHAT -->|No: control at Layer 1| ACT[Layer 1<br/>list the actions in the explicit Deny]
+    WHAT -->|Yes: also control at Layer 2| ID[Layer 2<br/>bind an identity that lacks<br/>the permission]
 
     WHO --> CHK[A narrower Allow does not narrow]
     WHERE --> CHK

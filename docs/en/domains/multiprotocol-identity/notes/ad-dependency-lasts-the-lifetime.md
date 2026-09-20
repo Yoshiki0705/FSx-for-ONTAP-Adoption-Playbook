@@ -134,7 +134,7 @@ graph TD
     PORT -->|Open| JOIN[The join succeeds]
 
     JOIN --> LIFE["A valid credential is needed<br/>for the whole lifetime"]
-    LIFE --> WHEN{When it is needed}
+    LIFE --> WHEN[Times when the credential is reused]
     WHEN --> W1[SVM replacement during a failure]
     WHEN --> W2["If no window occurs within 14 days<br/>after an ONTAP patch release,<br/>maintenance proceeds"]
 

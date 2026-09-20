@@ -132,10 +132,10 @@ With first-generation systems you must wait for the full restore to complete, so
 
 ```mermaid
 graph TD
-    Q{Failure to protect against} --> F[File-level mistakes]
-    Q --> V[Volume deletion]
-    Q --> FS[File system deletion]
-    Q --> R[Region-level failure]
+    Q{Which failure must the design protect against} -->|File-level mistake| F[File-level mistakes]
+    Q -->|Volume deletion| V[Volume deletion]
+    Q -->|File system deletion| FS[File system deletion]
+    Q -->|Region-level failure| R[Region-level failure]
 
     F --> F1[Snapshot<br/>Fastest — within the same file system]
     V --> V1[Backup<br/>or AWS Backup]

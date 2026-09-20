@@ -140,18 +140,18 @@ FSx for ONTAP は Multi-AZ の route table を**タグベースの認証**で管
 ```mermaid
 graph TD
     A[運用を設計する] --> W[メンテナンスウィンドウを置く]
-    W --> UTC{UTC で業務時間を<br/>外しているか}
+    W --> UTC{メンテナンスウィンドウを<br/>UTC で指定したか}
     UTC -->|未指定| AUTO["自動割り当て<br/>業務時間に当たっていないか確認"]
-    UTC -->|指定済み| OK[確定]
+    UTC -->|UTC で指定済み| OK[確定]
 
     A --> PRE[悪化条件を平時に潰す]
-    PRE --> SSD{SSD 利用率が<br/>90% 未満か}
-    SSD -->|超えている| FIX1["容量追加 / データ削除 /<br/>Snapshot 削除<br/>放置するとパッチ中に絞られる"]
-    SSD -->|未満| GOOD1[良好]
+    PRE --> SSD{障害時間帯の Maximum で<br/>SSD 利用率は 90% 以上か}
+    SSD -->|90% 以上| FIX1["容量追加 / データ削除 /<br/>Snapshot 削除<br/>放置するとパッチ中に絞られる"]
+    SSD -->|90% 未満| GOOD1[良好]
 
-    PRE --> RT{Multi-AZ の route table<br/>に空きがあるか}
-    RT -->|欠けている| FIX2["route を追加する<br/>放置するとパッチ中に切断"]
-    RT -->|ある| GOOD2[良好]
+    PRE --> RT{Multi-AZ の route table に<br/>必要な route 枠が残っているか}
+    RT -->|枠なし| FIX2["route 枠を確保する<br/>放置するとパッチ中に切断"]
+    RT -->|必要な枠あり| GOOD2[良好]
 
     A --> INC[インシデント時]
     INC --> S1[1 状態と MISCONFIGURED の理由を読む]

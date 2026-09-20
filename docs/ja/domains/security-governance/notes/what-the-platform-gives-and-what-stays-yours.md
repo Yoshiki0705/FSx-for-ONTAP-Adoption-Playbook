@@ -171,12 +171,12 @@ graph TD
     KMS -->|指定しない| AK[AWS 管理キー]
     KMS -->|指定する| CK[カスタマーマネージド KMS キー]
 
-    A --> T{転送時の暗号化方式}
-    T --> NITRO{Nitro のクライアントと<br/>経路条件を満たすか}
-    NITRO -->|満たす| AUTO[自動で有効]
-    T --> KRB[NFS Kerberos<br/>AD と Kerberos を設定]
-    T --> SMBE[SMB 暗号化<br/>SVM または共有で必須化]
-    T --> IPSEC[IPsec<br/>SVM とクライアントで設定]
+    A --> T{転送中のデータを暗号化する<br/>方式と経路はどれか}
+    T -->|Nitro 対応クライアントと経路| NITRO{Nitro のクライアントと<br/>経路条件を満たすか}
+    NITRO -->|全条件を満たす| AUTO[自動で有効]
+    T -->|NFS Kerberos| KRB[NFS Kerberos<br/>AD と Kerberos を設定]
+    T -->|SMB 暗号化| SMBE[SMB 暗号化<br/>SVM または共有で必須化]
+    T -->|IPsec| IPSEC[IPsec<br/>SVM とクライアントで設定]
 
     SMBE --> CLIENT[非対応クライアントは<br/>接続できなくなる<br/>対応状況を先に確認]
 

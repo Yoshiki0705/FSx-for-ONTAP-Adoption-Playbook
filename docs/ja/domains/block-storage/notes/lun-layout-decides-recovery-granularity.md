@@ -211,17 +211,17 @@ graph TD
     R -->|LUN ごとに独立して| MANY["LUN ごとにボリューム<br/>個別に戻せる"]
     R -->|役割ごと| ROLE["data 用と log 用に分ける"]
 
-    ONE --> V{ボリューム数の見込み}
+    ONE --> V{見込みボリューム数は<br/>ファイルシステムの上限に近いか}
     MANY --> V
     ROLE --> V
     V -->|上限に近い| VLIM["ボリューム数の上限を確認<br/>500 または合計 1,000"]
-    V -->|余裕がある| CAP
+    V -->|上限まで余裕あり| CAP
 
     VLIM --> CAP
     CAP["ボリュームは LUN 合計より 5% 以上大きく"]
-    CAP --> SNAP{Snapshot を<br/>このボリュームで取るか}
-    SNAP -->|取る| S1["snapshot 予約を見積もる"]
-    SNAP -->|静止が必要| S2["snapshot policy を none にし<br/>静止の仕組みに任せる"]
+    CAP --> SNAP{Snapshot の作成方法はどれか}
+    SNAP -->|ONTAP の Snapshot ポリシー| S1["snapshot 予約を見積もる"]
+    SNAP -->|アプリ静止または SnapCenter| S2["snapshot policy を none にし<br/>静止の仕組みに任せる"]
 
     S1 --> CLONE
     S2 --> CLONE

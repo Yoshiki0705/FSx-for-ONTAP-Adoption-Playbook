@@ -177,9 +177,9 @@ graph TD
     B -->|AWS リソース層| T[テンプレートで管理]
     B -->|ONTAP 設定層| O["ONTAP CLI / REST API<br/>テンプレートでは届かない"]
 
-    T --> REPL{Replacement か}
-    REPL -->|そう| CARE["変更すると作り直し<br/>SVM の RootVolumeSecurityStyle など"]
-    REPL -->|中断なし| OK[更新可]
+    T --> REPL{CloudFormation の更新要件は<br/>Replacement か}
+    REPL -->|Replacement| CARE["変更すると作り直し<br/>SVM の RootVolumeSecurityStyle など"]
+    REPL -->|No interruption| OK[更新可]
 
     O --> REPRO[再現可能にする手段を決める<br/>手順書か自動化か]
 
