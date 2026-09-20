@@ -17,22 +17,27 @@ lang: ja
 
 **「何を IaC で管理するか」は方針で決める前に、API で届くかどうかで決まっています。**
 
-ファイルシステム、SVM、ボリューム、バックアップ、タグは Amazon FSx の API とテンプレートで作成・更新・削除できます。
+Amazon FSx for NetApp ONTAP のファイルシステム、SVM、ボリューム、バックアップ、タグを CloudFormation から扱えるのは、Amazon FSx API の公開面のうち CloudFormation リソースとプロパティにも公開された範囲です。CloudFormation は Amazon FSx API より広い設定面を持たないため、プロパティ単位で CloudFormation リファレンスを確認します。
 
-**一方で ONTAP レベルの設定は ONTAP CLI または ONTAP REST API でしか届きません。** 例を挙げます。
+| 設定 | Amazon FSx API? | ONTAP 層のみ? | 出典 / 運用上の帰結 |
+|---|---|---|---|
+| ファイルシステム、SVM、ボリュームの公開プロパティ | Yes | No | [Amazon FSx API](https://docs.aws.amazon.com/fsx/latest/APIReference/Welcome.html) と [CloudFormation リソース](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_FSx.html)。テンプレートは API の公開面を宣言的に呼び出します |
+| SVM の AD 構成とルートボリュームのセキュリティスタイル | Yes | No | [`CreateStorageVirtualMachine`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateStorageVirtualMachine.html)。CloudFormation でも指定できますが、`RootVolumeSecurityStyle` の変更は Replacement です |
+| ボリュームの階層化ポリシーと cooling period | Yes | No | [`CreateVolume`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateVolume.html) / [`UpdateVolume`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_UpdateVolume.html)。反映後の値を読み直します |
+| SVM / 共有の SMB 暗号化強制 | No | Yes | [SMB 暗号化手順](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) は ONTAP CLI を指定。非対応クライアントは接続できません |
+| ボリュームの inode 上限 | No | Yes | [inode 上限の更新手順](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/increase-volume-max-files.html) は ONTAP CLI を指定。容量監視とは別に inode を監視します |
+| FlexVol から FlexGroup への変換 | No | Yes | [ボリューム管理](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) は ONTAP CLI を指定。変換前のバックアップ削除とデータ配置の確認が必要です |
+| ONTAP ボリュームのオンデマンド Snapshot 作成 | No | Yes | Amazon FSx の [`CreateSnapshot`](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateSnapshot.html) は OpenZFS 用です。ONTAP の Snapshot ポリシーまたは ONTAP CLI / REST API を使います |
+| SnapLock 監査ログボリュームの指定解除 | No | Yes | [実測記録](#実測で見つかった境界)では ONTAP REST で解除。**解除しても保持中のボリューム、SVM、ファイルシステムは削除できません** |
+| ボリューム削除失敗理由の取得 | Yes | No | `DescribeVolumes` の `LifecycleTransitionReason` から取得します。削除応答だけでは判定しません（[実測記録](../../../reference/limits/#ボリューム削除の失敗理由は-aws-api-内にあります--the-reason-for-a-failed-volume-deletion-is-in-the-aws-api)） |
 
-| 設定 | 届く経路 |
-|---|---|
-| SMB 暗号化の強制 | **ONTAP CLI のみ**（`vserver cifs security modify`） |
-| ボリュームの inode 上限 | **ONTAP CLI のみ**（`volume modify -files`） |
-| FlexVol から FlexGroup への変換 | **ONTAP CLI のみ** |
-| **ONTAP ボリュームの Snapshot 作成** | **ONTAP CLI / REST のみ。** 実測で確認しました（下記） |
-| **SnapLock 監査ログボリュームの指定解除** | **ONTAP レベルのみ。** 実測で確認しました（下記）。**解除できても削除はできません** |
-| **ボリューム削除が失敗した理由の取得** | **ONTAP レベルのみ。** AWS API は理由を返しません（下記） |
+各 `No` は行内の一次資料に基づくネイティブ到達性です。ただし SnapLock 監査ログボリュームの指定解除は `verified` であり、Amazon FSx API の入力形から推論したものではありません。CloudFormation のカスタムリソース、Lambda、Systems Manager などから ONTAP CLI / REST API を呼べば自動化できますが、**それは Amazon FSx API または CloudFormation リソースのネイティブ到達性が増えたことを意味しません。** ONTAP の資格情報、管理エンドポイントへのネットワーク到達性、冪等性、失敗時の復旧を呼び出し側が引き受けます。
 
 したがって **テンプレートが成功しても構成は完成していません。** 「IaC で全部管理する」という方針は、この境界を越えられません。設計すべきは境界の位置ではなく、**境界の向こう側をどう再現可能にするか**です。
 
-> **Evidence**: `documented` — 各操作の経路とテンプレートの更新挙動は AWS 公式ドキュメントと CloudFormation リファレンスの記載に基づきます。
+> **Evidence**: AWS 文書と CloudFormation リファレンスへリンクした行は `documented` です。
+> SnapLock 監査ログボリュームの指定解除と、削除失敗時の実際の応答経路は、下節に環境を示した
+> `verified` の観測です。
 > **特定のツール構成の推奨はしません。** 自環境での確認手順は
 > 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
 
@@ -116,8 +121,8 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 | 層 | 検証すること | 経路 |
 |---|---|---|
-| AWS リソース層 | ファイルシステム・SVM・ボリュームが意図した設定で存在するか | Amazon FSx API |
-| ONTAP 設定層 | SMB 暗号化の強制、inode 上限、export policy、階層化ポリシー | ONTAP CLI / REST API |
+| AWS リソース層 | ファイルシステム・SVM・ボリューム、階層化ポリシーが意図した設定か | Amazon FSx API |
+| ONTAP 設定層 | SMB 暗号化の強制、inode 上限、export policy | ONTAP CLI / REST API |
 
 **特に確認すべきは、既定値に任せると環境差が出る項目です。**
 

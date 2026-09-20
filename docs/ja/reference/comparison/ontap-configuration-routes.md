@@ -33,20 +33,40 @@ lang: ja
 
 ## 比較
 
-| 経路 | 資格情報 | 失敗の見え方 | 再実行 | 引き受ける制約 |
-|---|---|---|---|---|
-| **ONTAP REST API** | `vsadmin`（SVM 単位）または `fsxadmin` | 呼び出し元のログに出ます | 呼び出し側の実装次第 | **到達性が前提です。** 管理エンドポイントに届くネットワークが必要で、実行主体をどこに置くかが設計になります |
-| **ONTAP CLI（SSH）** | 同上 | 対話的だと**記録が残りません** | 手順書に依存 | **自動化には向きません。** 逆に、REST に無い操作や調査には使えます |
-| **CloudFormation のカスタムリソース / Lambda** | Lambda から Secrets Manager 経由 | **スタックの失敗として出ます。** これが他経路との最大の差です | スタック更新として再実行 | **ロールバックが難しい**操作を抱えます。ONTAP 側は作成前の状態に戻りません |
-| **AWS Systems Manager の Automation / Association** | インスタンスプロファイルまたは Secrets Manager | 実行履歴に残ります | ドキュメント単位で再実行 | **対象がインスタンスであることが前提**の仕組みで、ファイルシステム自体には直接効きません（EC2 のドメイン参加などは適します） |
-| **手作業** | 人 | **残りません** | 人 | **環境差の主要因です。** 既定値に任せた項目が経路ごとに違うため、複製した環境が一致しません |
+この表は**経路そのもの**を比較します。設定ごとのネイティブ到達性は次の表で確認します。
+
+| 経路 | 資格情報 | 実行と再実行 | 引き受ける制約 |
+|---|---|---|---|
+| **ONTAP REST API** | `vsadmin`（SVM 単位）または `fsxadmin` | 呼び出し元で記録。冪等性は実装次第 | 管理エンドポイントへの到達性と実行主体が必要です |
+| **ONTAP CLI（SSH）** | 同上 | 対話操作は別途記録。再実行は手順書次第 | REST にない操作や調査に使えますが、自動化と証跡を別に設計します |
+| **CloudFormation カスタムリソース / Lambda** | Secrets Manager などから取得 | スタックの成否に統合。スタック更新で再実行 | ONTAP 側は自動でロールバックされません |
+| **Systems Manager Automation** | Automation 実行ロールと実行手段側の資格情報 | Runbook の実行履歴を記録。ドキュメント単位で再実行 | 実行ステップに管理エンドポイントへの VPC 到達性が必要です。Lambda または管理対象ノードを介す構成を選びます |
+| **Systems Manager Association** | 管理対象ノードのインスタンスプロファイルなど | Association の実行履歴を記録。ドキュメント単位で再実行 | EC2 などの管理対象ノードに適用します。ファイルシステムへ直接設定する仕組みではありません |
+| **手作業** | 操作者が使用 | 記録と再実行を手順書で補完 | 環境差と操作漏れを受け入れる必要があります |
+
+### 設定ごとのネイティブ到達性
+
+| 設定 | Amazon FSx API? | ONTAP 層のみ? | 運用上の帰結 |
+|---|---|---|---|
+| SVM の AD 構成 / ルートセキュリティスタイル | Yes | No | CloudFormation も API 公開面を利用。スタイル変更は Replacement |
+| 階層化ポリシー / cooling period | Yes | No | `CreateVolume` / `UpdateVolume` 後に値を読み直します |
+| SMB 暗号化強制 | No | Yes | ONTAP の管理資格情報と到達性が必要です |
+| inode 上限 | No | Yes | 容量とは別の構成・監視対象です |
+| FlexVol から FlexGroup への変換 | No | Yes | 変換前のバックアップ削除と配置確認が必要です |
+| ONTAP のオンデマンド Snapshot 作成 | No | Yes | ONTAP の Snapshot ポリシーまたは CLI / REST API を使います |
+| SnapLock 監査ログボリュームの指定解除 | No | Yes | ONTAP REST で解除しても、保持中のリソースは削除できません |
+| ボリューム削除失敗理由の取得 | Yes | No | `DescribeVolumes.LifecycleTransitionReason` を読みます |
+
+> **Evidence**: AWS 文書へリンクした行は `documented` です。SnapLock 監査ログボリュームの
+> 指定解除と、削除失敗時の実際の応答経路は、[IaC の境界](../../playbooks/04-build/notes/what-iac-cannot-reach.md#実測で見つかった境界)に
+> 環境を示した `verified` の観測です。このファイルの `verified` frontmatter は、文書化された行を
+> 実測へ格上げするものではありません。
+
+**カスタムリソースや自動化は ONTAP 層への呼び出し経路です。** CloudFormation リソースまたは Amazon FSx API のネイティブ到達性を増やしません。実装側が資格情報、到達性、冪等性、失敗時の復旧を引き受けます。
 
 **`vsadmin` を使えるようにするかは、作成時に決まります。** `SvmAdminPassword` を指定しないと、その SVM の管理は `fsxadmin` になります。**`fsxadmin` はファイルシステム全体の管理者**なので、SVM 1 つの運用担当者に全体の権限を渡すことになります（[シークレットの扱い](../../playbooks/04-build/notes/what-iac-cannot-reach.md#シークレットの扱い)）。
 
-**どの経路を選んでも実行できない操作があります。** 委任された管理者アカウントの権限には上限があり、
-**その先は AWS サポートリクエストになります。** 現時点の一覧は
-[fsxadmin の権限と制約](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/fsxadmin-limitations.md)
-にあります。**こちらには転記しません** — 不可能なことの古い一覧は、一覧が無いより悪いためです。読者が今は可能な手段を探すのをやめます。
+**委任された管理者アカウントで実行できない ONTAP 操作もあります。** 許可範囲を確認するときは [fsxadmin の権限と制約](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/fsxadmin-limitations.md) を参照し、実行前に現在の ONTAP CLI / REST API リファレンスと突き合わせます。できない操作の一覧はこちらへ複製しません。
 
 **`FsxAdminPassword` には 8〜50 文字という制約があり、改行や特定の制御文字を含められません。** 自動生成のポリシーがこの範囲を外れていると作成時に失敗します。
 
@@ -61,7 +81,7 @@ lang: ja
 | 構築の一部として毎回必ず入れる設定 | **カスタムリソース / Lambda** | **失敗時の扱い。** ONTAP 側はロールバックされません |
 | 構築後に 1 回だけ入れる設定 | **ONTAP REST**（実行主体を決める） | 到達性と、再実行したときの冪等性 |
 | 調査・一度きりの確認 | **ONTAP CLI** | **記録。** 対話的な操作は残りません |
-| EC2 側の設定（ドメイン参加など） | **SSM** | ファイルシステム側には効かないという前提 |
+| EC2 側の設定（ドメイン参加など） | **Systems Manager Association** | ファイルシステム側には効かないという前提 |
 | どれも当てはまらない | **手作業を選ぶ前に、環境差を許容できるかを決める** | 複製した環境が一致しない前提での運用 |
 
 **どの経路でも、判定は「読み直して意図した値になっているか」です。** AWS API 側は成功応答が反映を意味しません（[成功応答を成功と読めない 3 つの操作](../decision-trees/where-a-setting-is-created.md#成功応答を成功と読めない-3-つの操作)）。
