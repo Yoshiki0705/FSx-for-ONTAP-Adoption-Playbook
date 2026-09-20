@@ -311,6 +311,24 @@ Success.
         self.assertEqual(structure.inspect(self.write(self.NOTE), "note"), [])
         self.assertEqual(structure.inspect(self.write(self.CHECKLIST), "checklist"), [])
 
+    def test_generated_switcher_between_summary_and_sections_is_ignored(self) -> None:
+        with_switcher = self.NOTE.replace(
+            "一行の要約です。\n\n## このノートで学べること",
+            "一行の要約です。\n\n"
+            "<!-- lang-switcher:start -->\n"
+            "🌐 [日本語](sample.md) | [English](sample-en.md)\n"
+            "<!-- lang-switcher:end -->\n\n"
+            "## このノートで学べること",
+        )
+        self.assertEqual(structure.inspect(self.write(with_switcher), "note"), [])
+
+    def test_extra_prose_beside_the_summary_is_still_rejected(self) -> None:
+        extra = self.NOTE.replace("一行の要約です。", "一行の要約です。\n追加です。")
+        messages = {
+            finding.message for finding in structure.inspect(self.write(extra), "note")
+        }
+        self.assertIn("summary must be one non-empty line", messages)
+
     def test_english_summary_limit_is_enforced(self) -> None:
         messages = {
             finding.message
