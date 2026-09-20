@@ -165,7 +165,7 @@ make all | tail -4 && git commit ...            # これは駄目
 ## 執筆ルール
 
 新規作成または更新する文書は、[日本語スタイルガイド](docs/style-guide.ja.md)または
-[English style guide](docs/style-guide.en.md)に従ってください。両ガイドは同じ契約を扱い、
+[English style guide](docs/style-guide.en.md)に従ってください。両ガイドは同じ執筆規約を扱い、
 言語固有の文体と文長だけを分けています。証跡区分の定義は重複させず、
 [知見の分類ポリシー](docs/ja/evidence-policy.md)を正本とします。
 
@@ -350,7 +350,7 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 | `make shell` | `SH_PATHS` 配下のシェルスクリプト（`shellcheck --severity=style`。未インストール時は失敗します） |
 | `make cfn` | `CFN_PATHS` 配下の CloudFormation テンプレート（`cfn-lint`。同上） |
 | `make drift` | AGENTS.md のサイズ予算 / steering ローダーの薄さ / 索引の到達性と追跡状態 |
-| `make test` | ガードレールのテスト（block/ask/allow 契約、.PHONY、各ゲートの壊し検出） |
+| `make test` | ガードレールのテスト（block/ask/allow の入出力仕様、.PHONY、各ゲートの壊し検出） |
 | `make all` | 上記すべて。**コミット前の必須ゲート** |
 
 `make audit` の誤検知は行末のコメントで抑止できます。使う場合は理由が一目で分かる箇所に限定してください。

@@ -2,7 +2,7 @@
 
 [日本語](style-guide.ja.md)
 
-This guide is the contributor contract for creating or updating technical documents in this repository.
+This guide defines the contributor rules for creating or updating technical documents in this repository.
 Dedicated sections define the structures for notes and checklists.
 The repository applies it to existing documents in stages.
 
@@ -72,7 +72,7 @@ The structure report treats the headings above as fixed labels.
 
 ## Future checklist order
 
-Operational checklists use a separate contract and the following order.
+Operational checklists use a separate structure in the following order.
 
 1. `## Purpose`.
 2. `## Applicability`.
