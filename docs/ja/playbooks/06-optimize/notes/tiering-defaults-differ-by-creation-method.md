@@ -15,14 +15,24 @@ lang: ja
 
 ## 結論
 
-**階層化ポリシーの既定値は、ボリュームをどう作ったかで変わります。**
+**階層化ポリシーを省略したときの結果は、ボリュームの作成経路と、その経路が既定値を設定するかで変わります。**
 
-| 作成方法 | 既定のポリシー | 既定の cooling period |
-|---|---|---|
-| Amazon FSx コンソール | **`Auto`** | **31 日** |
-| AWS CLI / Amazon FSx API / ONTAP CLI | **`Snapshot Only`** | **2 日** |
+| 作成方法 | 経路が定める既定値 | 根拠の範囲 | 変更可否 |
+|---|---|---|---|
+| Amazon FSx コンソール | `AUTO` / 31 日 | [コンソール](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) | 変更可 |
+| AWS CLI / Amazon FSx API | CLI: `Not established`<br>API: `SNAPSHOT_ONLY` / 2 日 | [Amazon FSx API](https://docs.aws.amazon.com/fsx/latest/APIReference/API_TieringPolicy.html) | 変更可 |
+| CloudFormation / CDK | CFN: `SNAPSHOT_ONLY` / 2 日<br>CDK: `Not established` | [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) / [CDK L1](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_fsx.CfnVolume.TieringPolicyProperty.html) | 中断なし |
+| Terraform AWS Provider | `Not established` | [provider schema](https://github.com/hashicorp/terraform-provider-aws/blob/941220630893c456f38d54e804e3201c90d4e654/internal/service/fsx/ontap_volume.go) | 変更可 |
+| ONTAP CLI | FlexVol: `snapshot-only` / 2 日<br>FlexGroup: `none` | [ONTAP CLI](https://docs.netapp.com/us-en/ontap-cli/volume-create.html) | 変更可 |
 
-**同じ「既定のまま」で作ったボリュームが、作成経路によって別の挙動になります。** コンソールで作った検証環境と、CloudFormation で作った本番環境で階層化の挙動が違う、という状態が既定で起こります。
+`Not established` は、ツール自身が既定値を設定する根拠を確認できないことを示します。AWS CLI の
+公開リファレンスでは CLI 固有の既定値を確認できません。Terraform AWS Provider は `tiering_policy` の
+省略時に値を設定せず、CDK の L1 は CloudFormation のプロパティを写像します。下流の既定値が適用されても、
+ラッパー固有の既定値とは扱いません。
+
+**ポリシーと cooling period をすべての経路で明示すると、作成手段を変えても同じ意図を再現できます。**
+ただし CloudFormation / CDK は CloudFormation の更新動作、Terraform は provider schema、ONTAP CLI は
+FlexVol / FlexGroup の差をそれぞれ確認する必要があります。
 
 > **CLI 側は実測で確認しました。** AWS CLI で `TieringPolicy` を指定せずにボリュームを作成すると
 > **`SNAPSHOT_ONLY` / cooling `2`** になります。作成経路を制御した**因果の確認**です。
@@ -65,8 +75,8 @@ lang: ja
 
 | 場面 | 起きること |
 |---|---|
-| 検証はコンソール、本番は IaC | 検証で観測した容量とコストの推移が本番で再現しません |
-| 移行ツールや自動化がボリュームを作る | 自動化経路は `Snapshot Only` になるため、想定していた階層化が起きません |
+| 検証はコンソール、本番は IaC | 値を明示しなければ、検証時と本番時の設定が一致する保証がありません |
+| 移行ツールや自動化がボリュームを作る | 経路ごとの既定値に依存すると、想定した階層化にならない場合があります |
 
 **対策は 1 つです。ポリシーと cooling period を明示的に指定してください。** 既定に任せると、作成経路が変わったときに挙動が変わります。再現可能な構築を扱う [Playbook 04 — 構築](../../04-build/) の観点でも、ここは明示すべき項目です。
 
@@ -179,7 +189,7 @@ graph TD
 
 | 誤解 | 実際 |
 |---|---|
-| 既定の階層化ポリシーは 1 つ | **作成方法で違います。** コンソールは `Auto`（31 日）、CLI / API / ONTAP CLI は `Snapshot Only`（2 日） |
+| 既定の階層化ポリシーは 1 つ | 作成経路とボリューム形式で異なります。`Not established` の経路では下流の既定値と区別します |
 | コンソールで検証した結果が IaC の本番でも再現する | 既定に任せている場合、階層化の対象そのものが違います |
 | `Snapshot Only` でもユーザーデータは移る | 移りません。Snapshot のデータのみです |
 | cooling period は固定 | 2〜183 日で設定できます |
@@ -199,7 +209,10 @@ graph TD
 |---|---|
 | 4 つのポリシーの動作、cooling period の既定値（`Auto` 31 日 / `Snapshot Only` 2 日）、コンソールの既定が `Auto`・CLI / API / ONTAP CLI の既定が `Snapshot Only` であること、ランダム読み取りで hot になり書き戻される一方でシーケンシャル読み取りはコールドのまま残ること、`ALL` では読んでも書き戻されないこと、メタデータが常に SSD に残ること、ポリシーは随時変更できること | [AWS: Volume storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) |
 | cooling period の範囲が 2〜183 日であること、既定ポリシーが `SNAPSHOT_ONLY` であること、各ポリシーの定義 | [AWS API Reference: TieringPolicy](https://docs.aws.amazon.com/fsx/latest/APIReference/API_TieringPolicy.html) |
-| CloudFormation でのポリシー指定と、変更が中断を伴わないこと | [AWS CloudFormation: AWS::FSx::Volume TieringPolicy](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) |
+| CloudFormation での既定値と中断を伴わない変更 | [AWS CloudFormation: AWS::FSx::Volume TieringPolicy](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) |
+| CDK L1 が CloudFormation プロパティを写像し、コンストラクタ引数を省略可能にしていること | [AWS CDK: `CfnVolume.TieringPolicyProperty`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_fsx.CfnVolume.TieringPolicyProperty.html) |
+| Terraform AWS Provider が `tiering_policy` の省略時に値を設定せず、Amazon FSx API に送信しないこと | [Terraform AWS Provider: `ontap_volume.go`](https://github.com/hashicorp/terraform-provider-aws/blob/941220630893c456f38d54e804e3201c90d4e654/internal/service/fsx/ontap_volume.go) |
+| ONTAP CLI の既定値が FlexVol では `snapshot-only`、FlexGroup では `none` であること | [NetApp: `volume create`](https://docs.netapp.com/us-en/ontap-cli/volume-create.html) |
 | 重複排除・圧縮がデータを縮めるが確保済みストレージに対して課金されること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
 | クライアントトラフィックが背景タスクより優先されること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 | 追加した HA ペアを削除できないこと | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
