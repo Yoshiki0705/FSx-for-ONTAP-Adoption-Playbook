@@ -1,8 +1,10 @@
-"""Render every Mermaid fence with the exact-pinned CLI using temporary files.
+"""Render Mermaid fences and report bounded decision-flow clarity patterns.
 
-Report mode inventories existing syntax failures without changing tracked content. --check
-returns nonzero for malformed or unterminated Mermaid blocks. A missing CLI always fails because
-reporting zero findings without running the parser would be a false success.
+Report mode inventories parser failures, vague decision labels, and unlabeled outgoing
+branches without changing tracked content. ``--check`` returns nonzero for those findings.
+The clarity checks are syntactic and pattern-based; they do not judge business semantics.
+A missing CLI always fails because reporting zero findings without running the parser would
+be a false success.
 """
 
 from __future__ import annotations
@@ -22,6 +24,42 @@ OPEN = re.compile(
     r"^\s*(`{3,}|~{3,})[ \t]*mermaid(?:[ \t]+[^\r\n]*)?\s*$", re.IGNORECASE
 )
 CLOSE = re.compile(r"^\s*(`{3,}|~{3,})\s*$")
+FLOWCHART = re.compile(r"^\s*(?:graph|flowchart)\b", re.IGNORECASE | re.MULTILINE)
+DECISION = re.compile(
+    r"(?<![\w-])(?P<id>[A-Za-z_][\w-]*)\s*\{\s*"
+    r'(?P<label>"(?:[^"\\]|\\.)*"|[^{}]*)\s*\}'
+)
+EDGE_TEXT_LABEL = r"--[ \t]+(?P<text_label>.+?)[ \t]+-->"
+EDGE = re.compile(
+    r"(?<![\w-])(?P<source>[A-Za-z_][\w-]*)"
+    r"(?:\s*(?:\{[^{}]*\}|\[[^\[\]]*\]|\([^()]*\)))?\s*"
+    rf"(?:-->\s*(?:\|(?P<pipe_label>[^|]*)\|)?|{EDGE_TEXT_LABEL})"
+)
+HTML_TAG = re.compile(r"<[^>]+>")
+NON_WORD = re.compile(r"[^0-9A-Za-z一-龠ぁ-んァ-ヶー]+")
+
+# Exact normalized labels only. This bounded vocabulary intentionally avoids substring
+# matching: a node such as "What must be retained" names an input, while "What" does not.
+VAGUE_DECISION_LABELS = frozenset(
+    {
+        "choice",
+        "condition",
+        "decision",
+        "purpose",
+        "select",
+        "what",
+        "which",
+        "why",
+        "どれ",
+        "どちら",
+        "何",
+        "何を",
+        "判断",
+        "条件",
+        "選択",
+        "目的",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +68,13 @@ class Block:
     line: int
     source: str
     error: str | None = None
+
+
+@dataclass(frozen=True)
+class Finding:
+    path: Path
+    line: int
+    message: str
 
 
 def extract(path: Path) -> list[Block]:
@@ -70,6 +115,68 @@ def markdown_files(root: Path):
             yield path
 
 
+def _normalized_label(label: str) -> str:
+    unquoted = label.strip().strip("\"'`")
+    visible = HTML_TAG.sub(" ", unquoted)
+    return NON_WORD.sub("", visible).casefold()
+
+
+def decision_clarity(block: Block) -> list[Finding]:
+    """Return bounded syntactic findings for Mermaid flowchart decision nodes.
+
+    The function deliberately does not infer whether a label is technically correct or
+    whether two branches are exhaustive. Sequence diagrams, flowcharts without decision
+    diamonds, and maps with no explicit branch-state labels are outside this rule.
+    """
+    if block.error or not FLOWCHART.search(block.source):
+        return []
+
+    lines = block.source.splitlines()
+    decisions: dict[str, tuple[int, str]] = {}
+    outgoing: dict[str, list[tuple[int, str | None]]] = {}
+
+    for offset, line in enumerate(lines, start=1):
+        for match in DECISION.finditer(line):
+            decisions[match.group("id")] = (offset, match.group("label"))
+        for match in EDGE.finditer(line):
+            label = match.group("pipe_label")
+            if label is None:
+                label = match.group("text_label")
+            outgoing.setdefault(match.group("source"), []).append((offset, label))
+
+    if not any(
+        label is not None and label.strip()
+        for node in decisions
+        for _, label in outgoing.get(node, [])
+    ):
+        return []
+
+    findings: list[Finding] = []
+    for node, (offset, label) in decisions.items():
+        if _normalized_label(label) in VAGUE_DECISION_LABELS:
+            findings.append(
+                Finding(
+                    block.path,
+                    block.line + offset,
+                    f'decision node {node} has vague label "{label.strip()}"',
+                )
+            )
+
+        branches = outgoing.get(node, [])
+        if len(branches) < 2:
+            continue
+        for edge_offset, edge_label in branches:
+            if edge_label is None or not edge_label.strip():
+                findings.append(
+                    Finding(
+                        block.path,
+                        block.line + edge_offset,
+                        f"decision node {node} has an unlabeled outgoing branch",
+                    )
+                )
+    return findings
+
+
 def render(block: Block, cli: Path) -> str | None:
     if block.error:
         return block.error
@@ -97,7 +204,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=str(ROOT))
     parser.add_argument(
-        "--check", action="store_true", help="fail when Mermaid parsing/rendering fails"
+        "--check",
+        action="store_true",
+        help="fail on Mermaid parse/render or bounded decision-clarity findings",
     )
     parser.add_argument("--cli", default="node_modules/.bin/mmdc")
     args = parser.parse_args()
@@ -113,17 +222,27 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+
     blocks = [block for path in markdown_files(root) for block in extract(path)]
-    findings = [(block, render(block, cli)) for block in blocks]
-    failures = [(block, error) for block, error in findings if error]
+    rendered = [(block, render(block, cli)) for block in blocks]
+    failures = [(block, error) for block, error in rendered if error]
+    clarity = [finding for block in blocks for finding in decision_clarity(block)]
+
     for block, error in failures:
         print(
             f"{block.path.relative_to(root)}:{block.line}: Mermaid parse/render failed: {error}"
         )
+    for finding in clarity:
+        print(
+            f"{finding.path.relative_to(root)}:{finding.line}: "
+            f"Mermaid decision clarity: {finding.message}"
+        )
     print(
-        f"mermaid report (not a gate): {len(blocks)} block(s), {len(failures)} failure(s)"
+        "mermaid report (pattern-based; business semantics are not evaluated): "
+        f"{len(blocks)} block(s), {len(failures)} parse/render failure(s), "
+        f"{len(clarity)} decision-clarity finding(s)"
     )
-    return 1 if args.check and failures else 0
+    return 1 if args.check and (failures or clarity) else 0
 
 
 if __name__ == "__main__":

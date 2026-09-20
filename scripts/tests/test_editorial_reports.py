@@ -565,10 +565,90 @@ sequenceDiagram
             0
         ]
         self.assertIsNone(mermaid.render(spaced, cli))
+        text_label = mermaid.Block(
+            source,
+            1,
+            "flowchart TD\nQ{Purpose} -- Archive --> A[Backup]\n",
+        )
+        self.assertIsNone(mermaid.render(text_label, cli))
         self.assertIsNotNone(
             mermaid.render(
                 mermaid.Block(source, 1, "flowchart LR\nA -- definitely broken\n"), cli
             )
+        )
+
+    def clarity_messages(self, source: str) -> list[str]:
+        block = mermaid.Block(self.write(""), 10, source)
+        return [finding.message for finding in mermaid.decision_clarity(block)]
+
+    def test_clear_decision_input_and_labelled_branches_are_accepted(self) -> None:
+        self.assertEqual(
+            self.clarity_messages(
+                "flowchart TD\n"
+                "Q{Is SSD utilization above 90%} -->|Above 90%| A[Act]\n"
+                "Q -->|At or below 90%| B[Continue]\n"
+            ),
+            [],
+        )
+        self.assertEqual(
+            self.clarity_messages(
+                "flowchart TD\n"
+                "Q{What must be retained} -->|Data| A[Copy]\n"
+                "Q -->|Nothing| B[Stop]\n"
+            ),
+            [],
+            "bounded vocabulary must not reject a specific question containing 'What'",
+        )
+
+    def test_vague_decision_label_is_reported(self) -> None:
+        messages = self.clarity_messages(
+            "flowchart TD\n"
+            "Q{Purpose} -->|Archive| A[Backup]\n"
+            "Q -->|Availability| B[Replica]\n"
+        )
+        self.assertEqual(messages, ['decision node Q has vague label "Purpose"'])
+
+    def test_each_unlabelled_outgoing_branch_is_reported(self) -> None:
+        messages = self.clarity_messages(
+            "flowchart TD\n"
+            "Q{Which failure must be covered} -->|File failure| A[File]\n"
+            "Q --> B[Volume]\n"
+        )
+        self.assertEqual(messages, ["decision node Q has an unlabeled outgoing branch"])
+
+    def test_text_between_dashes_branch_labels_are_recognized(self) -> None:
+        self.assertEqual(
+            self.clarity_messages(
+                "flowchart TD\n"
+                "Q{Is isolation required} -- Required --> A[Separate]\n"
+                "Q -- Not required --> B[Shared]\n"
+            ),
+            [],
+        )
+        self.assertEqual(
+            self.clarity_messages(
+                "flowchart TD\nQ{Purpose} -- Archive --> A[Backup]\nQ --> B[Replica]\n"
+            ),
+            [
+                'decision node Q has vague label "Purpose"',
+                "decision node Q has an unlabeled outgoing branch",
+            ],
+        )
+
+    def test_sequence_and_explanatory_diagrams_are_excluded(self) -> None:
+        self.assertEqual(
+            self.clarity_messages(
+                "sequenceDiagram\nA->>B: Purpose\nB-->>A: response\n"
+            ),
+            [],
+        )
+        self.assertEqual(
+            self.clarity_messages("flowchart LR\nA[Input] --> B[Output]\n"), []
+        )
+        self.assertEqual(
+            self.clarity_messages("flowchart TD\nQ{Topics} --> A[One]\nQ --> B[Two]\n"),
+            [],
+            "a map with no explicit branch-state labels is outside the bounded rule",
         )
 
 
