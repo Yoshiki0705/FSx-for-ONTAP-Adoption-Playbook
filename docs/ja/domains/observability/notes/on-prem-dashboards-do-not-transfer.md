@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-gra
 lang: ja
 ---
 
-# オンプレのダッシュボードはそのまま移らない
+# オンプレの Grafana ダッシュボードはそのまま移るか？
+
+移りません。公開メトリクスセットが違い、10 種が非サポート、8 種が既定で無効です。
+
+## このノートで学べること
+
+- FSx for ONTAP の公開メトリクスがオンプレ ONTAP と異なり、Harvest ダッシュボードが 3 分類になること
+- Health と Headroom の不在が運用設計とベンチマーク設計を変えること
+
+## このノートが答えないこと
+
+- 導入する Harvest の版ごとの正確なダッシュボード構成（版で変わる）
+- 自分で publish して補ったメトリクスの効果や負荷の実測値
+
+## 前提レベル
+
+basic
+
+## 本文
+
+<a id="オンプレのダッシュボードはそのまま移らない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **Amazon FSx for NetApp ONTAP は、オンプレミスの NetApp ONTAP とは異なるメトリクスセットを公開します。**
 
@@ -31,9 +51,9 @@ lang: ja
 
 ---
 
-## サポート状況の 3 分類
+### サポート状況の 3 分類
 
-### 非サポート（10 種）
+#### 非サポート（10 種）
 
 ```text
 ONTAP: Disk
@@ -48,7 +68,7 @@ ONTAP: Shelf
 ONTAP: S3 Object Stores
 ```
 
-### サポート対象だが既定で無効（8 種）
+#### サポート対象だが既定で無効（8 種）
 
 ```text
 ONTAP: FlexCache
@@ -63,13 +83,13 @@ ONTAP: Workload
 
 **この 8 種は「無い」のではなく「有効化していないだけ」です。** SMB と NFS のトラブルシューティング、FlexCache、ワークロード別の可視化はここに含まれます。**移行計画でこれらを前提にしているなら、有効化が必要だと認識しておく必要があります。**
 
-### サポート対象（19 種）
+#### サポート対象（19 種）
 
 Aggregate / cDOT / Cluster / Compliance / Datacenter / Data Protection / LUN / Network / Node / Qtree / Security / SnapMirror（+ Destinations / Sources）/ SVM / Volume（+ by SVM / Deep Dive）、および Harvest: Metadata。
 
 ---
 
-## 運用設計に影響する不在 — Health と Headroom
+### 運用設計に影響する不在 — Health と Headroom
 
 非サポート 10 種のうち、**運用設計を変えるのは Health と Headroom の 2 つ**です。
 
@@ -84,7 +104,7 @@ Headroom の代替として何を見るかは [監視は平均値で失敗する
 
 ---
 
-## マネージドサービスとして筋が通る不在
+### マネージドサービスとして筋が通る不在
 
 残る 8 種の不在は、責任分界点の結果です。**これらを探す必要はありません。**
 
@@ -100,7 +120,7 @@ Headroom の代替として何を見るかは [監視は平均値で失敗する
 
 ---
 
-## 主張の範囲 — 自分で足したメトリクスは別
+### 主張の範囲 — 自分で足したメトリクスは別
 
 **この主張は 2026-09-05 に sibling プロジェクトが独立に検証し、成立しました**（19 / 8 / 10、
 ONTAP の Disk は非対応）。**あちらの README が Disk のダッシュボード 4 件を対応として挙げていたのは
@@ -115,6 +135,42 @@ ONTAP の Disk は非対応）。**あちらの README が Disk のダッシュ�
 **AWS の一覧は `ONTAP: Qtree` を対応 19 件に含めています。** sibling が独自に publish しているのは
 **CloudWatch のメトリクス集合の穴**を埋めるもので、**Harvest 経路の話ではありません。**
 **経路を取り違えると、正しい結論に間違った理由が付きます。**
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| Harvest を入れればオンプレと同じ画面になる | **10 種が非サポート、8 種が既定で無効です** |
+| サポート対象なら全パネルが埋まる | **一部のパネルは情報が欠けることがある**と明記されています |
+| 既定で無効な 8 種は使えない | 使えます。有効化が必要なだけです |
+| 非サポートはすべて同じ扱いでよい | **Health と Headroom の不在は運用設計を変えます。** Disk / Shelf / Power とは影響の質が違います |
+| Power が無いのは制限である | 物理層は AWS の管理範囲です。責任分界点の結果です |
+| `ONTAP: S3 Object Stores` が FSx for ONTAP S3 AP の監視に使える | ONTAP の S3 オブジェクトストア機能向けで、別物です |
+| ダッシュボードの一覧は固定である | Harvest の版で変わります。自分の版で確認してください |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 | 取得日 |
+|---|---|---|
+| FSx for ONTAP がオンプレミスの ONTAP と異なるメトリクスセットを公開すること、`fsx` タグ付きの 19 種のみがサポート対象であること、一部パネルの情報が欠けうること、既定で無効な 8 種、非サポートの 10 種 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — 可観測性](../README.md) — このモジュールのハブ
+- [監視経路の選択 決定木](../../../reference/decision-trees/observability-route.md) — どの経路を選ぶか
+- [監視経路の比較](../../../reference/comparison/observability-routes.md) — 経路別のトレードオフ
+- [Harvest は remote_write を持たない](harvest-has-no-remote-write.md) — Harvest を選んだ後に来る運用
+- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 何を監視し閾値をどこに置くか
+- [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) — Headroom の代替に使う指標
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
 
 ## 自環境での確認手順
 
@@ -131,40 +187,22 @@ ONTAP の Disk は非対応）。**あちらの README が Disk のダッシュ�
 
 **手順 4 と 6 が最も見落とされます。** 手順 4 を飛ばすと移行後に「見ていた画面が無い」と気づき、手順 6 を飛ばすと「ダッシュボードはあるのに数値が出ない」に当たります。
 
----
+手順 2 のダッシュボード一覧は、読み取り専用の Grafana HTTP API でも確認できます。
 
-## よくある誤解
+```bash
+curl -s -H "Authorization: Bearer <viewer-token>" \
+  "http://<grafana-host>:3000/api/search?tag=fsx"
+```
 
-| 誤解 | 実際 |
-|---|---|
-| Harvest を入れればオンプレと同じ画面になる | **10 種が非サポート、8 種が既定で無効です** |
-| サポート対象なら全パネルが埋まる | **一部のパネルは情報が欠けることがある**と明記されています |
-| 既定で無効な 8 種は使えない | 使えます。有効化が必要なだけです |
-| 非サポートはすべて同じ扱いでよい | **Health と Headroom の不在は運用設計を変えます。** Disk / Shelf / Power とは影響の質が違います |
-| Power が無いのは制限である | 物理層は AWS の管理範囲です。責任分界点の結果です |
-| `ONTAP: S3 Object Stores` が FSx for ONTAP S3 AP の監視に使える | ONTAP の S3 オブジェクトストア機能向けで、別物です |
-| ダッシュボードの一覧は固定である | Harvest の版で変わります。自分の版で確認してください |
+### 期待結果
 
----
+```text
+fsx タグの付いたダッシュボードの一覧（サポート対象として認識されているもの）が返る。
+オンプレで見ていた一覧との差分が、移行後に失うダッシュボードの実数になる
+```
 
-## 参照した一次情報
+この API は既存のダッシュボード定義を読むだけで、何も変更しません。パネル単位の欠損は一覧では分からないため、手順 6 で個別に開いて確認してください。
 
-| 論点 | 出典 | 取得日 |
-|---|---|---|
-| FSx for ONTAP がオンプレミスの ONTAP と異なるメトリクスセットを公開すること、`fsx` タグ付きの 19 種のみがサポート対象であること、一部パネルの情報が欠けうること、既定で無効な 8 種、非サポートの 10 種 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — 可観測性](../README.md) — このモジュールのハブ
-- [監視経路の選択 決定木](../../../reference/decision-trees/observability-route.md) — どの経路を選ぶか
-- [監視経路の比較](../../../reference/comparison/observability-routes.md) — 経路別のトレードオフ
-- [Harvest は remote_write を持たない](harvest-has-no-remote-write.md) — Harvest を選んだ後に来る運用
-- [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 何を監視し閾値をどこに置くか
-- [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md) — Headroom の代替に使う指標
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
+[Harvest は Amazon Managed Service for Prometheus に直接送れるか？](harvest-has-no-remote-write.md)
