@@ -25,7 +25,7 @@ API tagging and from AWS Backup.
 | `verify-block.sh` | Reports state from both sides. Creates nothing | ONTAP REST API, host |
 
 The file-system resource intentionally omits `KmsKeyId`. At-rest encryption remains automatic, and
-CloudFormation then uses the Amazon FSx-managed KMS key for the account. A customer-managed key can
+CloudFormation then uses the Amazon FSx-managed KMS key for the account. A KMS key that you manage can
 be selected by adding `KmsKeyId` before creation; changing it replaces the file system.
 
 ## Template parameters

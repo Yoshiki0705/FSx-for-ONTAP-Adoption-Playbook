@@ -19,9 +19,9 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 **A volume's security style decides which permission model is used for evaluation.** It does not restrict which protocols can store files.
 
-That distinction matters in one situation in particular. **On a volume with NTFS security style, making UNIX-side ID mapping fail does not stop SMB access.** NTFS style evaluates permissions from the Windows ACL directly, so it never consults the result of win→unix mapping.
+That distinction matters in one situation in particular. **On a volume with NTFS security style, making UNIX-side ID mapping fail does not stop SMB access.** NTFS style evaluates permissions from the Windows ACL directly, so it never consults the result of Windows-to-UNIX mapping.
 
-On UNIX or MIXED style, win→unix mapping does take part in evaluating SMB access, so refusing the mapping works. **The same operation therefore works or does not work depending on the volume's security style.**
+On UNIX or MIXED style, Windows-to-UNIX mapping does take part in evaluating SMB access, so refusing the mapping works. **The same operation therefore works or does not work depending on the volume's security style.**
 
 > **Evidence**: `documented` — the behaviour rests on vendor documentation. No measured figures or
 > durations are included. Steps for confirming it in your own environment are in the
@@ -34,7 +34,7 @@ On UNIX or MIXED style, win→unix mapping does take part in evaluating SMB acce
 Amazon FSx for NetApp ONTAP can serve NFS and SMB from the same volume. Which user can reach which file is then decided by the combination of two things:
 
 1. The volume's security style (UNIX / MIXED / NTFS)
-2. ID mapping (win→unix / unix→win)
+2. ID mapping (Windows-to-UNIX / UNIX-to-Windows)
 
 Reading security style as "which protocols may store data here" leads to a wrong permission design. What it actually decides is **which kind of permission is used for evaluation**.
 

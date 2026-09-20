@@ -78,7 +78,7 @@ the wrong shape and the Active Directory one is the right one.
 | `teardown.sh` | Ordered removal, billing first. Reports only unless `--apply` | AWS API, ONTAP REST API |
 
 The file-system resource intentionally omits `KmsKeyId`. At-rest encryption remains automatic, and
-CloudFormation then uses the Amazon FSx-managed KMS key for the account. A customer-managed key can
+CloudFormation then uses the Amazon FSx-managed KMS key for the account. A KMS key that you manage can
 be selected by adding `KmsKeyId` before creation; changing it replaces the file system.
 
 ## Cost

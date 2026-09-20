@@ -104,7 +104,7 @@ that control-plane boundary, the same one that puts LUNs and igroups outside the
 | `teardown.sh` | Removes everything in the order measured to work, refuses to start when something would strand the stack, and proves afterwards that each resource is gone. Reports only, unless `--apply` | AWS API, ONTAP REST API |
 
 The file-system resource intentionally omits `KmsKeyId`. At-rest encryption remains automatic, and
-CloudFormation then uses the Amazon FSx-managed KMS key for the account. A customer-managed key can
+CloudFormation then uses the Amazon FSx-managed KMS key for the account. A KMS key that you manage can
 be selected by adding `KmsKeyId` before creation; changing it replaces the file system.
 
 ## What a finished run looks like

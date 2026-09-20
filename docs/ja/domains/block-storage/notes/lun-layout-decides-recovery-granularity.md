@@ -297,7 +297,7 @@ graph TD
 | 論点 | 出典 |
 |---|---|
 | 1:1 が一律の指針ではないこと、関連する LUN を同居させる理由が Snapshot と SnapMirror の原子性であること、コンテナ化では 1:1 が理にかなうこと | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
-| 1 ボリューム 1 LUN（.MDF 用と .LDF 用）という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| 1 ボリューム 1 LUN（.MDF 用と .LDF 用）という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
 | 1 ボリュームに quorum / data / logs の 3 LUN という構成例、両ノードの IQN を 1 つの igroup に入れること | [AWS: SQL Server high availability with FSx for ONTAP](https://aws.amazon.com/jp/blogs/modernizing-with-aws/sql-server-high-availability-amazon-fsx-for-netapp-ontap/) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること、別の HA ペアへ移す前に reporting-nodes へ宛先ノードと HA パートナーを追加すること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |

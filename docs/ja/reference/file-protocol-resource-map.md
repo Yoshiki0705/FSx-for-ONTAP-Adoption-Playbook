@@ -88,7 +88,7 @@ graph TD
 | 手順 | [AWS: Mounting S3 file systems on Amazon EC2](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-mounting.html) | マウント手順 |
 | 上限 | [AWS: Performance specifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-performance.html) | 同期の方向ごとの所要時間と上限 |
 | 課金 | [AWS: Metering](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-metering.html) | **バケットから直接ストリームされる分にはファイルシステム側のデータ課金が発生しません。** 課金の境目がここにあります |
-| 運用 | [AWS: Best practices](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-best-practices.html) | `PendingExports` の増加が滞留の合図 |
+| 運用 | [AWS: S3 Files best practices](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-best-practices.html) | `PendingExports` の増加が滞留の合図 |
 
 ### Amazon EFS
 
@@ -171,7 +171,7 @@ graph TD
 |----------|------|
 | [AWS: Enabling multiprotocol workloads with Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/enabling-multiprotocol-workloads-with-amazon-fsx-for-netapp-ontap/) | NFS と SMB を同じデータに出す構成の公式な説明 |
 | [AWS: How to size an Amazon FSx for NetApp ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) | **コスト構成要素の粒度がユーザーガイドと違います。** SnapLock の扱いを含め、どちらを引いたかを書く必要があります |
-| [AWS: How a customer reduced storage TCO by 28%](https://aws.amazon.com/blogs/storage/how-a-customer-reduced-storage-tco-by-28-with-amazon-fsx-for-netapp-ontap/) | **FlexCache の Origin 側に 128 GB RAM と 20 CPU 以上が強く推奨されること。** Cache 側だけを見た設計が失敗する理由 |
+| [AWS: How a customer reduced storage TCO by 28% with Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/how-a-customer-reduced-storage-tco-by-28-with-amazon-fsx-for-netapp-ontap/) | **FlexCache の Origin 側に 128 GB RAM と 20 CPU 以上が強く推奨されること。** Cache 側だけを見た設計が失敗する理由 |
 | [AWS: Accelerating HiL testing for AV/ADAS with a hybrid cloud approach](https://aws.amazon.com/blogs/industries/accelerating-hil-testing-for-av-adas-with-a-hybrid-cloud-approach-aws-and-netapp/) | 走行ログを S3 に集約し、HiL テストベンチで NFS 再生する構成 |
 | [AWS: EDA scale with FSx for NetApp ONTAP and IBM LSF](https://aws.amazon.com/cn/blogs/industries/eda-scale-with-fsx-for-netapp-ontap-and-ibm-lsf/) | 設計ジョブの入出力を S3 でステージし、NFS 上のツールチェーンで処理する構成 |
 

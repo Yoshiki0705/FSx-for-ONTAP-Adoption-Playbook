@@ -230,7 +230,7 @@ graph TD
 | 満杯時に LUN が read-only に落ちること、復旧が拡張 → `lun resize` → fsck であること | [AWS re:Post: LUN in read-only mode](https://repost.aws/knowledge-center/fsx-ontap-lun-in-read-only-mode) |
 | `space-guarantee none` / `space-slo thick` / `semi-thick` の違い、空間予約された LUN が作成時に容量を確保すること | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
 | `fractional-reserve` が 0 か 100 しか取らず、guarantee が `none` のとき既定で 0 になること、0 では書き込みの継続が利用可能な空き容量に依存すること | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
-| snapshot 予約 0%、LUN 予約有効、autodelete oldest_first、autosize autogrow という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| snapshot 予約 0%、LUN 予約有効、autodelete oldest_first、autosize autogrow という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
 | SSD 容量の最小値と IOPS の既定（3 per GiB） | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 
 ---

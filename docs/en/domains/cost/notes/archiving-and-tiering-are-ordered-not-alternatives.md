@@ -1,5 +1,5 @@
 ---
-title: Archiving with an external tool and the capacity pool tier are ordered, not alternatives — and the published reduction is measured against the customer's own legacy environment
+title: Archiving with an external tool and the capacity pool tier are ordered, not alternatives — and the published reduction is measured against the adopting organization's legacy environment
 lifecycle: [assess, migrate, optimize]
 domains: [cost, data-utilization]
 evidence: documented
@@ -19,7 +19,7 @@ lang: en
 
 In the case AWS published, **two stages act in order.** An external tool archives to S3 Glacier by last-accessed date first, and **what remains then falls to the capacity pool tier.** Neither is placed instead of the other.
 
-**And the published reduction is measured against the customer's own legacy environment, not against another AWS option.** This case is unusual in **footnoting the configuration**, so it is possible to read which configuration the rate belongs to. **A different configuration does not carry the rate.**
+**And the published reduction is measured against the adopting organization's legacy environment, not against another AWS option.** This case is unusual in **footnoting the configuration**, so it is possible to read which configuration the rate belongs to. **A different configuration does not carry the rate.**
 
 **What to take is the ordering, and the conditions attached to the rate — not the rate.**
 
@@ -112,7 +112,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 
 **How to choose comes down to whether data may leave the file system.**
 
-| What you have | The straightforward choice |
+| What you have | Applicable option |
 |---|---|
 | Data must not leave the file system | **The capacity pool tier alone.** Archiving with an external tool drops out |
 | Reads are frequent | **Moving data down can cost more.** Read [Tiering does not always save money](provisioned-versus-consumed.md#tiering-does-not-always-save-money) first |
@@ -143,7 +143,7 @@ The tool-side reasons the article gives are resilience, that users could find th
 | Misconception | Actually |
 |---|---|
 | Archiving and the capacity pool tier are a choice between two | **They are ordered.** In the case, external archiving acted first and the remainder fell to the capacity pool tier |
-| The 50% reduction comes from moving to FSx for ONTAP | **The basis is the customer's own legacy environment at $1/GB/year.** A cheaper legacy environment gives a smaller rate |
+| The 50% reduction comes from moving to FSx for ONTAP | **The basis is the adopting organization's legacy environment at $1/GB/year.** A lower-cost legacy environment gives a smaller rate |
 | The case's over-90% total can be quoted | **The stated parts add to 88.** The counting is not stated, so it cannot be quoted |
 | The reduction excludes the tool's cost | **It includes it.** The footnote states third-party licensing is included |
 | Tiering always costs less | **Requests are charged.** A read-heavy estate costs more |
