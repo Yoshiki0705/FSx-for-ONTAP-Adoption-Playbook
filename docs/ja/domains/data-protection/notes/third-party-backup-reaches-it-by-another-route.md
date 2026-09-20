@@ -129,7 +129,7 @@ lang: ja
 ## 関連ドキュメント
 
 - [Domain — データ保護](../README.md) — このモジュールのハブ
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#既存バックアップ基盤への統合) — この課題領域の索引
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md#既存バックアップ基盤への統合) — 既存バックアップ基盤への統合に使える選択肢の索引
 - [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — AWS ネイティブ側の経路と境界
 - [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 経路を決めたあとの検証
 - [データ保護手段の比較](../../../reference/comparison/data-protection-methods.md) — 手段の比較表

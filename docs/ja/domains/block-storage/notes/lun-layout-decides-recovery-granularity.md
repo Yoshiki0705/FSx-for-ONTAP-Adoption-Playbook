@@ -31,7 +31,7 @@ lang: ja
 |---|---|
 | AWS: SQL Server ベストプラクティス | **1 ボリューム 1 LUN**（.MDF 用と .LDF 用に分ける） |
 | AWS: SQL Server の高可用性 | **1 ボリュームに 3 LUN**（quorum / data / logs） |
-| NetApp: LUN placement | **1:1 は formal best practice ではない。** 関連する LUN は同居させるのが通常 |
+| NetApp: LUN placement | **1:1 を一律の指針とはしていない。** 関連する LUN は同居させるのが通常 |
 | AWS Transform | 移行元 1 サーバーの複数 LUN を **1 ボリュームに配置**し、後から `lun move` で分ける想定 |
 
 **どれかが誤りというより、想定している復旧単位が違います。** 自分の復旧単位を決めてから読んでください。
@@ -54,7 +54,7 @@ lang: ja
 | LUN ごとに独立して | **LUN ごとにボリュームを分ける** | 個別に戻せる | **相互の整合が保証されません。** スケジュールがボリューム数だけ増え、ボリューム数の上限に早く当たります |
 | data と log は別、その中では一緒 | **役割ごとに分ける** | 実務でよく使われる中間 | 上の両方を部分的に引き受けます |
 
-**NetApp の記載が「1:1 は best practice ではない」なのは、この整合性の側面が理由です。** 10 個の LUN を持つデータベースは通常 1 つのボリュームに置く、と書かれています。**理由は Snapshot と SnapMirror のポリシーがボリュームに掛かるので、まとめておけば原子的で相互整合した複製になるからです。**
+**NetApp が 1:1 を一律の指針としていないのは、この整合性の側面が理由です。** 10 個の LUN を持つデータベースは通常 1 つのボリュームに置く、と書かれています。**理由は Snapshot と SnapMirror のポリシーがボリュームに掛かるので、まとめておけば原子的で相互整合した複製になるからです。**
 
 **逆に 1:1 が理にかなう場面としてコンテナ化が挙げられています。** Kubernetes の PV は独立して作られ消されるので、1 PV = 1 ボリューム + 1 LUN という Trident の `ontap-san` の形が素直です。**ただしそれはボリューム数の上限に当たります。** 詳細は [Kubernetes のブロック PV はボリューム数の上限に当たる](kubernetes-block-volumes-and-the-volume-limit.md) にあります。
 
@@ -261,7 +261,7 @@ graph TD
 
 | 誤解 | 実際 |
 |---|---|
-| 1 LUN 1 ボリュームが best practice | **NetApp は formal best practice ではないと明記しています。** AWS の 2 つの記事も一致していません |
+| 1 LUN 1 ボリュームが常に推奨される | **NetApp は 1:1 を一律の指針とはしていません。** AWS の 2 つの記事も一致していません |
 | LUN をまとめると性能が落ちる | **決めているのは復旧の粒度です。** 性能の判断ではありません |
 | 分けておけば後で困らない | **ボリューム数の上限に当たります。** LUN 数の上限は文書化されていません |
 | レイアウトは後から変えられない | **`lun move` で無停止に変えられ、WWID も変わりませんでした** |
@@ -296,7 +296,7 @@ graph TD
 
 | 論点 | 出典 |
 |---|---|
-| 1:1 が formal best practice ではないこと、関連する LUN を同居させる理由が Snapshot と SnapMirror の原子性であること、コンテナ化では 1:1 が理にかなうこと | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
+| 1:1 が一律の指針ではないこと、関連する LUN を同居させる理由が Snapshot と SnapMirror の原子性であること、コンテナ化では 1:1 が理にかなうこと | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
 | 1 ボリューム 1 LUN（.MDF 用と .LDF 用）という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
 | 1 ボリュームに quorum / data / logs の 3 LUN という構成例、両ノードの IQN を 1 つの igroup に入れること | [AWS: SQL Server high availability with FSx for ONTAP](https://aws.amazon.com/jp/blogs/modernizing-with-aws/sql-server-high-availability-amazon-fsx-for-netapp-ontap/) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること、別の HA ペアへ移す前に reporting-nodes へ宛先ノードと HA パートナーを追加すること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |

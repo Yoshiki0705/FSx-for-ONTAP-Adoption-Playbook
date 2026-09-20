@@ -155,7 +155,7 @@ graph TD
 ## 関連ドキュメント
 
 - [ウイルス対策の選択はベンダーより前に決まる](../../domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) — この決定木の根拠となるノート
-- [課題別 ISV / SaaS ソリューションマップ](../isv-solution-map.md) — 他の課題領域の選択肢
+- [課題別 ISV / SaaS 選択肢マップ](../isv-solution-map.md) — 他の課題領域の選択肢
 - [Domain — セキュリティ・ガバナンス](../../domains/security-governance/README.md) — このモジュールのハブ
 - [アクセスを絞る手立ての比較](../comparison/access-restriction-options.md) — 終端 A の次
 - [監査宛先が枯渇するとクライアントアクセスは止まる](../../domains/security-governance/notes/audit-log-space-and-client-access.md) — 終端 C の次

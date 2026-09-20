@@ -254,7 +254,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 - [Domain — セキュリティ・ガバナンス](../README.md) — このモジュールのハブ
 - [ウイルス対策の適用範囲をどこまでにするか](../../../reference/decision-trees/vscan-antivirus-scope.md) — この判断の決定木版
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md) — 他の課題領域で組み合わせられる選択肢の索引
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md) — ウイルス対策と組み合わせられる他の選択肢の索引
 - [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](../../data-utilization/notes/fpolicy-fits-by-how-writes-land.md) — 代替として検討する場合の適合条件
 - [S3 Access Point 経由のアクセスを見ない FPolicy](access-point-authorization-layers.md#この経路を見ない-fpolicy) — 着地経路の表の測定元
 - [監査宛先が枯渇するとクライアントアクセスは止まる](audit-log-space-and-client-access.md) — 同じ「設定でアクセスと結合する」構造
