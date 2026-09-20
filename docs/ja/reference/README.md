@@ -17,7 +17,7 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | ディレクトリ / Directory | 内容 / Contents |
 |---|---|
 | [`decision-trees/`](decision-trees/) | 選択フローチャート。複数の選択肢からどれを選ぶか / Selection flowcharts |
-| [`comparison/`](comparison/) | 比較マトリクス。トレードオフを対称に記載 / Comparison matrices with symmetric trade-offs |
+| [`comparison/`](comparison/) | 比較マトリクス。トレードオフを対称に記載。[オンプレミスの NAS / SAN 運用概念と ONTAP の対応](comparison/on-prem-concept-mapping.md)を含む / Comparison matrices with symmetric trade-offs, including the on-premises NAS/SAN concept mapping |
 | [`limits/`](limits/) | 上限値・クォータ。出典と検証日付き / Limits and quotas, with source and verification date |
 | [`glossary/`](glossary/) | ONTAP / AWS 用語集 / Terminology |
 | [`industry-resource-map.md`](industry-resource-map.md) | 業種別リソースマップ。業種から入ったときにどのモジュールを読むかの対応と、公開事例・実装パターン・設計ノートの横断索引 / Industry resource map: which modules to read when entering from an industry, plus a cross-index of case studies, implementation patterns, and design notes |

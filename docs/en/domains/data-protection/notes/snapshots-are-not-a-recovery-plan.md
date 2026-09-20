@@ -30,17 +30,11 @@ Snapshots, backups, and SnapMirror **protect against different scopes of failure
 
 ## What Each Mechanism Protects Against
 
-| Failure | Snapshot | Backup | AWS Backup | SnapMirror |
-|---|:---:|:---:|:---:|:---:|
-| Accidental file deletion or modification | ○ | ○ | ○ | △ (retrieve from replica) |
-| Ransomware encryption | ○ | ○ | ○ | △ (may propagate if already replicated) |
-| **Volume deletion** | **✕** | ○ | ○ | ○ |
-| **File system deletion** | **✕** | △ | **○** | ○ |
-| Region-level failure | ✕ | △ (**possible once copied to another Region**) | Depends on configuration | ○ (when replicating to another region) |
+The canonical `Protected` / `Not protected` / `Conditional` assessment by failure scenario is in [Data protection methods comparison](../../../../ja/reference/comparison/data-protection-methods.md#障害シナリオ別の保護範囲) (日本語).
+It covers accidental file deletion, volume and file-system loss, AZ and Region disruption, administrative credential compromise, application consistency, and source-side logical corruption under one set of definitions.
 
-**User-initiated backups created through AWS Backup are retained even after the source volume or file system is deleted.** This is the decisive difference from Snapshots.
-
-**A backup can only be restored to a file system in the same Region where the backup is stored.** That constraint still holds. **What changed is where a backup can be stored.** Since August 2026, backups can be copied to another Region and to another account, so "backups cannot protect against a Region-level failure" no longer holds. Recovering there still requires a file system and an SVM in the destination Region, and the time to create them counts against your RTO. See [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html).
+This note focuses on restore blockers and drill procedures.
+For backup-copy paths, see [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html).
 
 ---
 
