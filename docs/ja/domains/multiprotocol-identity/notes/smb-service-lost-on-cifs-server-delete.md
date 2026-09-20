@@ -9,13 +9,37 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# SMB を提供できない SVM がある。原因は作成時期ではなく CIFS サーバーの削除で、ONTAP REST で作り直せば戻る
+# SMB が出ない原因は作成時期か？
+
+作成時期ではありません。原因は CIFS サーバーの削除で、data-cifs が失われます。REST で作り直せば戻ります。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](smb-service-lost-on-cifs-server-delete.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- SMB を提供できない原因が SVM の作成時期ではなく、CIFS サーバーの削除による data-cifs の喪失であること
+- 判定はデータ LIF のサービスに data-cifs が含まれるかで行い、Endpoints.Smb は判定に使えないこと
+
+## このノートが答えないこと
+
+- CIFS サーバー削除が data-cifs 喪失を引き起こす因果（当方で再現しておらず open）
+- FSx for ONTAP 以外の ONTAP で同じ挙動になるか
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="smb-を提供できない-svm-がある原因は作成時期ではなく-cifs-サーバーの削除でontap-rest-で作り直せば戻る"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **データ LIF のサービスポリシーに `data-cifs` が含まれていない SVM があります。** この状態では、SVM の許可プロトコルに `cifs` が入っていて、CIFS サーバーを作成できて、`Authentication Style` まで正常に見えても、**445 番ポートが開きません。**
 
@@ -47,7 +71,7 @@ services: data-core,data-nfs,management-ssh,management-https,data-s3-server,data
 
 ---
 
-## 取り下げた主張
+### 取り下げた主張
 
 「2026-06-09 以前に作成された非 AD SVM は `data-cifs` を持たず、2026-06-24 以降は AD の有無に関わらず持つ」と書いていました。**同一ファイルシステム上の現在の状態が、これを否定します。**
 
@@ -70,7 +94,7 @@ services: data-core,data-nfs,management-ssh,management-https,data-s3-server,data
 
 ---
 
-## 原因 — CIFS サーバーの削除と CLI での再作成
+### 原因 — CIFS サーバーの削除と CLI での再作成
 
 **以下の機構は当方では再現していません。** 観測している状態は `verified` ですが、それを作った因果は `open` です。表の後の Evidence の注記を参照してください。
 
@@ -99,7 +123,7 @@ data_core,data_nfs,management_ssh,management_https,data_s3_server,data_dns_serve
 
 ---
 
-## 復旧手順
+### 復旧手順
 
 **ONTAP REST API のリファレンスから組んだ手順で、当方では実行していません。** 実施前に検証用 SVM で確認してください。
 
@@ -129,7 +153,7 @@ FsxIdEXAMPLE::> network interface show -vserver <svm> -lif nfs_smb_management_1 
 
 ---
 
-## 自環境での判定
+### 自環境での判定
 
 ```text
 # 全 SVM のデータ LIF のサービス一覧
@@ -154,7 +178,7 @@ AWS サポートは、**`data-cifs` が付与され CIFS サーバーも稼働�
 
 ---
 
-## fsxadmin では追加できないこと
+### fsxadmin では追加できないこと
 
 `data-cifs` が失われた状態を、サービスポリシーを直接編集して直すことはできません。
 
@@ -192,7 +216,7 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 ---
 
-## 影響と回避
+### 影響と回避
 
 | 状況 | 影響 |
 |---|---|
@@ -207,7 +231,7 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 ---
 
-## 併せて当たる上限
+### 併せて当たる上限
 
 **SVM を作り直す方針は不要になりましたが**、他の理由で SVM を増やす場合はスループット容量あたりの上限に当たります。
 
@@ -220,7 +244,7 @@ for an ONTAP file system with 128 MBps of throughput capacity.
 
 ---
 
-## 未確認
+### 未確認
 
 - **CIFS サーバーの削除が `data-cifs` の消失を引き起こすという因果、および復旧手順**。**当方では実行していません。** 共有ファイルシステム上で CIFS サーバーを削除する必要があるため、使い捨ての SVM を用意していません
 - **当方の該当 SVM で過去に CIFS サーバーの削除が行われたか**。現在の状態は機構と整合しますが、**削除の履歴を確認する手段がありません。** 検証中に 1 件の SVM でワークグループ CIFS サーバーを作成・削除した記録はありますが、`data-cifs` が失われたのがその前か後かを特定できていません
@@ -230,7 +254,7 @@ for an ONTAP file system with 128 MBps of throughput capacity.
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 - AWS: [NetApp アプリケーションを使用した FSx for ONTAP リソースの管理](https://docs.aws.amazon.com/ja_jp/fsx/latest/ONTAPGuide/managing-resources-ontap-apps.html) — `fsxadmin` での ONTAP REST 利用
 - AWS re:Post: [FSx for ONTAP REST API を使用するにはどうすればよいですか?](https://repost.aws/ja/knowledge-center/fsx-ontap-rest-apis)
@@ -240,13 +264,37 @@ for an ONTAP file system with 128 MBps of throughput capacity.
 
 ---
 
-## 関連
+### 関連
 
 - [SMB ローカルユーザーに最終ログオン属性は無い](local-user-inventory-without-last-logon.md)
 - [AD への依存は参加時ではなく生涯続く](ad-dependency-lasts-the-lifetime.md)
 - [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md)
 - [上限値・クォータ](../../../reference/limits/README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](smb-service-lost-on-cifs-server-delete.md) | [English](../../../../en/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+**マウントを試す前に、data-cifs の有無を読んでください。** これが 445 の開閉を決めます。
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 全 SVM のデータ LIF の services を読む | data-cifs を持つ SVM と持たない SVM |
+| 2 | 該当 SVM の allowed-protocols に cifs があるかも見る | cifs があっても data-cifs が無ければ 445 は開かないこと |
+| 3 | data-cifs が無い SVM は、復旧手順（本文）を検証用 SVM で試す | REST での作り直しで data-cifs が戻ること |
+
+データ LIF のサービスは、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> network interface show -vserver <svm> -fields services -role data
+```
+
+### 期待結果
+
+```text
+services に data-cifs が含まれるかどうか（含まれなければ 445 が開かない）
+```
+
+この確認で分かるのはサービスポリシーに data-cifs があるかだけです。本文の復旧手順は CIFS サーバーの削除と再作成を伴うため、使い捨ての検証 SVM で試してください。この読み取り自体は何も変更しません。
+
+## Read next
+
+[SMB のエラー文字列は原因を名指すか？](smb-errors-do-not-name-their-cause.md)

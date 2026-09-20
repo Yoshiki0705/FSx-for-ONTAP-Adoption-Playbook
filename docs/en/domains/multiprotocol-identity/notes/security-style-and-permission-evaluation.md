@@ -7,7 +7,31 @@ source: https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effe
 lang: en
 ---
 
-# A volume's security style determines the permission model
+# Does a volume's security style determine which protocols can store files?
+
+No. It sets the permission model; on NTFS style, refusing ID mapping cannot stop SMB.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [English](security-style-and-permission-evaluation.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That the security style sets the permission-evaluation model, not which protocols can store files
+- That on an NTFS-style volume, refusing the ID mapping does not stop SMB access
+
+## What this note does not answer
+
+- Measured numbers or elapsed times
+- Blocking a member of the administrators group (unaffected)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="a-volumes-security-style-determines-the-permission-model"></a>
 
 [🏠 Repository Top](../../../README.md) | [Domain — Multiprotocol & Identity](../README.md)
 
@@ -15,7 +39,7 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 ---
 
-## Conclusion
+### Conclusion
 
 **A volume's security style decides which permission model is used for evaluation.** It does not restrict which protocols can store files.
 
@@ -29,7 +53,7 @@ On UNIX or MIXED style, Windows-to-UNIX mapping does take part in evaluating SMB
 
 ---
 
-## Where the problem sits
+### Where the problem sits
 
 Amazon FSx for NetApp ONTAP can serve NFS and SMB from the same volume. Which user can reach which file is then decided by the combination of two things:
 
@@ -42,7 +66,7 @@ The dangerous case is choosing mapping refusal as a means of cutting off access.
 
 ---
 
-## Security style and permission evaluation
+### Security style and permission evaluation
 
 | Security style | Used for evaluation | Can refusing ID mapping stop SMB? |
 |---|:---|:---:|
@@ -52,7 +76,7 @@ The dangerous case is choosing mapping refusal as a means of cutting off access.
 
 MIXED does not mean "both apply". It means **evaluation follows the model of whichever side set permissions most recently**. The evaluation model can therefore change during operation, which makes an intended state hard to hold.
 
-### One further exception
+#### One further exception
 
 Members of the group named in `FileSystemAdministratorsGroup` (usually `Domain Admins`) are unaffected by this class of blocking. They are evaluated with storage-administrator-equivalent privileges.
 
@@ -60,7 +84,7 @@ Members of the group named in `FileSystemAdministratorsGroup` (usually `Domain A
 
 ---
 
-## Decision flow
+### Decision flow
 
 ```mermaid
 graph TD
@@ -81,7 +105,54 @@ graph TD
 
 ---
 
-## Confirming this in your own environment
+### What can and cannot be stopped
+
+A table for choosing a means of blocking. Constraints on the recommended options are stated alongside.
+
+| Means | Where it is effective | Constraints / considerations |
+|---|---|---|
+| deny rule in an NFS export policy | NFS. Independent of the volume's security style | NFS only. No effect on SMB |
+| Refusing ID mapping | SMB. UNIX / MIXED style only | No effect on NTFS style. No effect on members of the administrators group |
+| Changing the NTFS ACL | SMB, including NTFS style | ACL ownership moves to the Windows side. Change history is tracked in a separate system |
+| Disabling the account in Active Directory | Stops at authentication, so it is broadly effective | The blast radius is not confined to this system. Knock-on effects elsewhere must be checked |
+
+---
+
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| Security style decides which protocols can store data | It decides the model used for permission evaluation, not protocol availability |
+| Breaking ID mapping blocks SMB on any volume | Not on NTFS style, because evaluation uses the NTFS ACL |
+| MIXED evaluates against both UNIX and NTFS permissions | It evaluates against whichever side set permissions last, and that can change during operation |
+| Verifying the block with an administrator account is enough | Members of `FileSystemAdministratorsGroup` are unaffected. Verify with an ordinary user |
+| Whether the block worked can be judged from the client display | Client-side caching and reconnection behaviour affect it. Check against the server-side configuration as well |
+
+---
+
+### Primary sources
+
+| Point | Source |
+|---|---|
+| Security style decides the kind of permission | [NetApp Docs: Security styles and their effects](https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effects-concept.html) |
+| NTFS style evaluates with Windows credentials | [NetApp KB: CIFS clients accessing NTFS security style resources](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/How_does_name-mapping_work_when_CIFS_clients_access_NTFS_security_style_resources) |
+| UNIX style evaluates with the mapped UID / GID | [NetApp KB: name-mapping in a multiprotocol environment](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/Understanding_name-mapping_in_a_multiprotocol_environment) |
+| Explicitly refusing a mapping | [NetApp Docs: Create name mappings](https://docs.netapp.com/us-en/ontap/nfs-admin/create-name-mapping-task.html) |
+
+---
+
+### Related documents
+
+- [Domain — Multiprotocol & Identity](../README.md) — this module's hub
+- [Domain — Security & Governance](../../security-governance/) — the whole picture of permission design
+- [Playbook 02 — Design](../../../playbooks/02-design/) — security style is decided at design time
+- [Choosing a migration method](../../../../ja/reference/decision-trees/migration-method.md) — ACL preservation requirements affect the choice
+- [Glossary](../../../../ja/reference/glossary/) — definitions of SVM / LIF / name-mapping
+- [Evidence classification policy](../../../evidence-policy.md) — how `documented` is treated
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **This note is `documented`, based on vendor documentation. Confirm the behaviour in your own environment with the steps below.**
 
@@ -117,57 +188,20 @@ Once you reproduce it in your own environment, this repository's convention allo
 
 See [Evidence classification policy](../../../evidence-policy.md) for details.
 
----
+The target volume's security style can be read with this read-only command.
 
-## What can and cannot be stopped
+```bash
+ssh <svm-management-endpoint> volume show -vserver <svm> -fields volume,security-style
+```
 
-A table for choosing a means of blocking. Constraints on the recommended options are stated alongside.
+### Expected output
 
-| Means | Where it is effective | Constraints / considerations |
-|---|---|---|
-| deny rule in an NFS export policy | NFS. Independent of the volume's security style | NFS only. No effect on SMB |
-| Refusing ID mapping | SMB. UNIX / MIXED style only | No effect on NTFS style. No effect on members of the administrators group |
-| Changing the NTFS ACL | SMB, including NTFS style | ACL ownership moves to the Windows side. Change history is tracked in a separate system |
-| Disabling the account in Active Directory | Stops at authentication, so it is broadly effective | The blast radius is not confined to this system. Knock-on effects elsewhere must be checked |
+```text
+Each volume's security-style (unix / ntfs / mixed)
+```
 
----
+This shows only the security style. Whether blocking actually holds is confirmed by a real attempt as a non-administrator user. It changes nothing.
 
-## Common misconceptions
+## Read next
 
-| Misconception | Reality |
-|---|---|
-| Security style decides which protocols can store data | It decides the model used for permission evaluation, not protocol availability |
-| Breaking ID mapping blocks SMB on any volume | Not on NTFS style, because evaluation uses the NTFS ACL |
-| MIXED evaluates against both UNIX and NTFS permissions | It evaluates against whichever side set permissions last, and that can change during operation |
-| Verifying the block with an administrator account is enough | Members of `FileSystemAdministratorsGroup` are unaffected. Verify with an ordinary user |
-| Whether the block worked can be judged from the client display | Client-side caching and reconnection behaviour affect it. Check against the server-side configuration as well |
-
----
-
-## Primary sources
-
-| Point | Source |
-|---|---|
-| Security style decides the kind of permission | [NetApp Docs: Security styles and their effects](https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effects-concept.html) |
-| NTFS style evaluates with Windows credentials | [NetApp KB: CIFS clients accessing NTFS security style resources](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/How_does_name-mapping_work_when_CIFS_clients_access_NTFS_security_style_resources) |
-| UNIX style evaluates with the mapped UID / GID | [NetApp KB: name-mapping in a multiprotocol environment](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/Understanding_name-mapping_in_a_multiprotocol_environment) |
-| Explicitly refusing a mapping | [NetApp Docs: Create name mappings](https://docs.netapp.com/us-en/ontap/nfs-admin/create-name-mapping-task.html) |
-
----
-
-## Related documents
-
-- [Domain — Multiprotocol & Identity](../README.md) — this module's hub
-- [Domain — Security & Governance](../../security-governance/) — the whole picture of permission design
-- [Playbook 02 — Design](../../../playbooks/02-design/) — security style is decided at design time
-- [Choosing a migration method](../../../../ja/reference/decision-trees/migration-method.md) — ACL preservation requirements affect the choice
-- [Glossary](../../../../ja/reference/glossary/) — definitions of SVM / LIF / name-mapping
-- [Evidence classification policy](../../../evidence-policy.md) — how `documented` is treated
-
----
-
-[🏠 Repository Top](../../../README.md) | [Domain — Multiprotocol & Identity](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [English](security-style-and-permission-evaluation.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Does the permission view from NFS match the enforced outcome on an NTFS-style volume?](nfs-side-view-does-not-explain-ntfs-denials.md)

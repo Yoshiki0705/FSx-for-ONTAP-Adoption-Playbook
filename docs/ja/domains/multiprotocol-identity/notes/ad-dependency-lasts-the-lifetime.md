@@ -7,13 +7,37 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/self-manage-prereqs.ht
 lang: ja
 ---
 
-# AD への依存は参加時ではなく生涯続く
+# AD 依存は参加が終われば切れるか？
+
+切れません。サービスアカウントはファイルシステムの生涯にわたって必要で、失効は次のメンテナンスで顕在化します。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](ad-dependency-lasts-the-lifetime.md) | [English](../../../../en/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- サービスアカウントが参加後も生涯必要で、資格情報の失効が次のメンテナンスや障害時に顕在化すること
+- 同一データを NFS と SMB で共有する条件が SVM・バージョン・セキュリティスタイルの 3 層あること
+
+## このノートが答えないこと
+
+- 到達不能時のすべての挙動の網羅
+- LDAP を使う場合のプロトコル別の転送時暗号化の適用範囲
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ad-への依存は参加時ではなく生涯続く"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **Amazon FSx はファイルシステムの生涯にわたって有効なサービスアカウントを必要とします。** 参加が終われば不要になるものではありません。
 
@@ -32,7 +56,7 @@ lang: ja
 
 ---
 
-## サービスアカウントに必要な委任権限
+### サービスアカウントに必要な委任権限
 
 **参加先の OU に対して、最低限これらの権限が委任されている必要があります。**
 
@@ -52,7 +76,7 @@ lang: ja
 
 ---
 
-## やってはいけない 2 つの操作
+### やってはいけない 2 つの操作
 
 **どちらも SVM を `misconfigured` にします。**
 
@@ -65,7 +89,7 @@ lang: ja
 
 ---
 
-## 参加が失敗する 2 つの原因
+### 参加が失敗する 2 つの原因
 
 参加に失敗すると、ドキュメントに記載された次のエラーが返ります。原因として名指しされているのは 2 つです。
 
@@ -80,7 +104,7 @@ lang: ja
 
 ---
 
-## 同一データを NFS と SMB で共有する条件
+### 同一データを NFS と SMB で共有する条件
 
 **「両方のプロトコルが有効」だけでは足りません。** 条件は 3 層あります。
 
@@ -94,7 +118,7 @@ lang: ja
 
 有効なバージョンは `vserver nfs show` で確認できます。特定のバージョンを有効化するには `vserver nfs modify` を使います。**これは ONTAP CLI の操作です。**
 
-### バージョンで違う必要ポート
+#### バージョンで違う必要ポート
 
 | バージョン | 必要なポート |
 |---|---|
@@ -105,7 +129,7 @@ lang: ja
 
 ---
 
-## AD 到達不能時の挙動
+### AD 到達不能時の挙動
 
 **平常時のデータアクセスと、管理作業とで影響が違います。**
 
@@ -120,7 +144,7 @@ lang: ja
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -149,6 +173,44 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| サービスアカウントは参加時だけ必要 | **ファイルシステムの生涯にわたって必要です** |
+| AD 連携が動いていれば問題ない | 平常時は無症状です。**パッチ適用や障害時の交換で顕在化します** |
+| ドメイン参加権限があれば足りる | 委任が必要な権限は 7 項目あります |
+| 資格情報は AD 側で変えれば済む | **Amazon FSx 側の構成も更新する必要があります** |
+| FSx for ONTAP が作った計算機オブジェクトは移動できる | 移動すると **SVM が misconfigured になります** |
+| SVM を消してから AD を消せばよい | 参加中に AD を削除すると misconfigured になります |
+| 参加失敗のエラーで原因が分かる | **ポート不足と権限不足が同じ文面**です。両方確認します |
+| SVM で NFS が有効ならどのバージョンでもマウントできる | バージョンごとに有効・無効があります。v3 が無効なことがあります |
+| NFS のポートはバージョンによらず同じ | **v3 は 6 ポート、v4 は TCP 2049 のみ**です |
+| 両プロトコルを有効にすれば同じデータを共有できる | セキュリティスタイルが権限評価のモデルを決めます |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| サービスアカウントに必要な 7 項目の委任権限、生涯にわたって有効な資格情報が必要であること、unjoin と rejoin を伴う作業（障害時の交換とパッチ適用）、Secrets Manager の推奨、計算機オブジェクトの移動と AD 削除が misconfigured を招くこと | [AWS: Prerequisites for joining an SVM to a self-managed Microsoft AD](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/self-manage-prereqs.html) |
+| 参加失敗時のエラー文面と、原因がポート要件と権限のどちらかであること、修正後に構成を更新して再試行する手順 | [AWS: You can't join a storage virtual machine (SVM) to Active Directory](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/cannot-join-svm-to-ad.html) |
+| AD 構成情報を最新に保つ要件 | [AWS: Keeping your Active Directory configuration updated](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/keep-ad-updated.html) |
+| `vserver show-protocols` と `vserver nfs show` によるプロトコルとバージョンの確認、v3 が無効な場合のエラー、`vserver nfs modify` での有効化 | [AWS re:Post: Why can't I mount my FSx for ONTAP file system on my EC2 Linux instance?](https://repost.aws/knowledge-center/fsx-ontap-mount-errors-on-linux) |
+| NFS v3 と v4 で必要なポートが異なること | [AWS re:Post: How do I use NFS to mount an FSx for ONTAP volume?](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nfs) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
+- [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md) — ボリューム層の条件
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — Kerberos 転送時暗号化の前提
+- [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) — 顕在化のタイミング
+- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — シークレットと AD 自動化
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
 ## 自環境での確認手順
 
 **確かめるべきは「いま動いているか」ではなく「メンテナンス時に動くか」です。**
@@ -166,50 +228,20 @@ graph TD
 
 手順 2 と 8 が最も価値があります。**失効は平常時に症状を出さないので、定期的に確認する以外に見つける方法がありません。**
 
----
+有効なプロトコルは、次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+ssh <svm-management-endpoint> vserver show-protocols -vserver <svm>
+```
 
-| 誤解 | 実際 |
-|---|---|
-| サービスアカウントは参加時だけ必要 | **ファイルシステムの生涯にわたって必要です** |
-| AD 連携が動いていれば問題ない | 平常時は無症状です。**パッチ適用や障害時の交換で顕在化します** |
-| ドメイン参加権限があれば足りる | 委任が必要な権限は 7 項目あります |
-| 資格情報は AD 側で変えれば済む | **Amazon FSx 側の構成も更新する必要があります** |
-| FSx for ONTAP が作った計算機オブジェクトは移動できる | 移動すると **SVM が misconfigured になります** |
-| SVM を消してから AD を消せばよい | 参加中に AD を削除すると misconfigured になります |
-| 参加失敗のエラーで原因が分かる | **ポート不足と権限不足が同じ文面**です。両方確認します |
-| SVM で NFS が有効ならどのバージョンでもマウントできる | バージョンごとに有効・無効があります。v3 が無効なことがあります |
-| NFS のポートはバージョンによらず同じ | **v3 は 6 ポート、v4 は TCP 2049 のみ**です |
-| 両プロトコルを有効にすれば同じデータを共有できる | セキュリティスタイルが権限評価のモデルを決めます |
+### 期待結果
 
----
+```text
+その SVM で有効・無効なプロトコルの一覧
+```
 
-## 参照した一次情報
+この確認で分かるのは有効なプロトコルだけです。サービスアカウントの委任権限、資格情報の有効期限、メンテナンス時の挙動は別に確認します。何も変更しません。
 
-| 論点 | 出典 |
-|---|---|
-| サービスアカウントに必要な 7 項目の委任権限、生涯にわたって有効な資格情報が必要であること、unjoin と rejoin を伴う作業（障害時の交換とパッチ適用）、Secrets Manager の推奨、計算機オブジェクトの移動と AD 削除が misconfigured を招くこと | [AWS: Prerequisites for joining an SVM to a self-managed Microsoft AD](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/self-manage-prereqs.html) |
-| 参加失敗時のエラー文面と、原因がポート要件と権限のどちらかであること、修正後に構成を更新して再試行する手順 | [AWS: You can't join a storage virtual machine (SVM) to Active Directory](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/cannot-join-svm-to-ad.html) |
-| AD 構成情報を最新に保つ要件 | [AWS: Keeping your Active Directory configuration updated](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/keep-ad-updated.html) |
-| `vserver show-protocols` と `vserver nfs show` によるプロトコルとバージョンの確認、v3 が無効な場合のエラー、`vserver nfs modify` での有効化 | [AWS re:Post: Why can't I mount my FSx for ONTAP file system on my EC2 Linux instance?](https://repost.aws/knowledge-center/fsx-ontap-mount-errors-on-linux) |
-| NFS v3 と v4 で必要なポートが異なること | [AWS re:Post: How do I use NFS to mount an FSx for ONTAP volume?](https://repost.aws/knowledge-center/ec2-mount-fsx-ontap-nfs) |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
-- [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md) — ボリューム層の条件
-- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — Kerberos 転送時暗号化の前提
-- [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../../../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) — 顕在化のタイミング
-- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — シークレットと AD 自動化
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](ad-dependency-lasts-the-lifetime.md) | [English](../../../../en/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[SMB ローカルユーザーに最終ログオン属性は無い](local-user-inventory-without-last-logon.md)

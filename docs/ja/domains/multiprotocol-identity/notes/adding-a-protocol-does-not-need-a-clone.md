@@ -7,13 +7,37 @@ source: https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effe
 lang: ja
 ---
 
-# SMB で運用中のボリュームに NFS を足すのに複製は要らない
+# NFS を足すのに複製は要るか？
+
+複製は要りません。届かない原因はセキュリティスタイルの外側にある 4 つで、どれも複製せず直せます。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](adding-a-protocol-does-not-need-a-clone.md) | [English](../../../../en/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- SMB で運用中のボリュームに NFS を足すのに複製も rehost も要らないこと
+- 届かない原因はセキュリティスタイルの外側にある 4 つ（プロトコル有効化・junction path・export policy・name-mapping）であること
+
+## このノートが答えないこと
+
+- 数値・所要時間・自環境での再現結果
+- mixed スタイルを推奨する判断（AWS は上級者向けとする）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="smb-で運用中のボリュームに-nfs-を足すのに複製は要らない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **ONTAP に「SMB のみ対応のボリューム」という状態はありません。** したがって NFS を足すために、FlexClone でボリュームを複製する必要も、`volume rehost` で別の SVM へ移す必要もありません。
 
@@ -26,7 +50,7 @@ lang: ja
 
 ---
 
-## 前提の取り違えが生む遠回り
+### 前提の取り違えが生む遠回り
 
 この取り違えは、次の形で現れます。
 
@@ -40,7 +64,7 @@ lang: ja
 
 ---
 
-## NFS から届かない 4 つの原因
+### NFS から届かない 4 つの原因
 
 **順に確認します。上から下に向かって、確認のコストが上がります。**
 
@@ -55,7 +79,7 @@ lang: ja
 
 ---
 
-## セキュリティスタイルの変更経路
+### セキュリティスタイルの変更経路
 
 **変えたい場合も、既存のボリュームに対して直接変更できます。**
 
@@ -71,13 +95,13 @@ lang: ja
 
 **mixed は選ばないでください。** AWS のドキュメントは mixed が**マルチプロトコルアクセスに必須ではなく、上級者にのみ推奨される**と述べています。挙動は「最後に権限を設定したプロトコル側のモデルで評価する」もので、運用中に評価モデルが切り替わります。
 
-### SVM のルートボリュームは例外
+#### SVM のルートボリュームは例外
 
 **SVM のルートボリュームのセキュリティスタイルは、CloudFormation では更新に置き換えを伴います。** テンプレートで管理している場合、後から変えるとリソースが作り直されます（[設定がどちらの面にあるかの決定木](../../../reference/decision-trees/where-a-setting-is-created.md)）。**先に決める項目です。**
 
 ---
 
-## FlexClone が解決するものとしないもの
+### FlexClone が解決するものとしないもの
 
 **FlexClone は不要という結論は、FlexClone が無用という意味ではありません。** 用途が違います。
 
@@ -93,6 +117,44 @@ lang: ja
 **2 行目がこのノートと組み合わせて効きます。** スタイルの変更が本番の遮断手段を壊すかを、本番で試さずに確かめられます。手順は次節に置いてあります。
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| SMB 用に作ったボリュームは NFS から使えない | **そういう状態はありません。** セキュリティスタイルはアクセス可否を決めません |
+| NFS を足すには FlexClone で複製する | 不要です。届かない原因は 4 つのいずれかで、どれも複製せずに直せます |
+| クローンを NAS 有効な SVM へ `volume rehost` すればよい | **クローンは rehost できません。** split が必要で、split すると容量共有が終わります |
+| セキュリティスタイルは作成時にしか決められない | `volume modify -security-style` で変更できます。**ただし SVM のルートボリュームは CloudFormation では置き換えです** |
+| mixed にすれば NFS と SMB の両方で権限を管理できる | AWS は mixed を**マルチプロトコルアクセスに必須ではなく上級者向け**と記載しています。評価モデルが運用中に切り替わります |
+| export policy が割り当てられていれば許可されている | **ルールが 0 件のポリシーはすべて拒否します** |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| セキュリティスタイルはクライアント種別のアクセス可否を決めないこと、UNIX / NTFS / mixed のいずれでも NFS と SMB がアクセスできること | [NetApp: Learn about ONTAP NAS security styles](https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effects-concept.html) |
+| 既存ボリュームのスタイルを `volume modify -security-style` で変更できること、指定できる値が `unix` / `ntfs` / `mixed` であること、未指定時はルートボリュームを継承すること | [NetApp: Configure security styles on ONTAP NFS FlexVol volumes](https://docs.netapp.com/us-en/ontap/nfs-admin/configure-security-styles-task.html) |
+| mixed がマルチプロトコルアクセスに必須ではなく、上級者にのみ推奨されること | [AWS: Updating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-volumes.html) |
+| FlexClone が書き込み可能な point-in-time コピーであり、変更を書くまでストレージを消費しないこと | [NetApp: Learn about ONTAP FlexClone volumes, files, and LUNs](https://docs.netapp.com/us-en/ontap/concepts/flexclone-volumes-files-luns-concept.html) |
+| クライアントが NFS と SMB の両方で同じファイルにアクセスできること | [NetApp: Learn about ONTAP client protocols](https://docs.netapp.com/us-en/ontap/concepts/client-protocols-concept.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
+- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **この 4 つを自分の環境で確かめる最小構成**。CloudFormation 1 本と ONTAP REST のスクリプト
+- [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md) — スタイルが決めている中身
+- [`volume rehost` が変えるものと変えないもの](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — クローンとの排他、split の代償
+- [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — プロトコルの追加で越えられない境界
+- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — 境界を越える必要がある場合
+- [設定がどちらの面にあるかの決定木](../../../reference/decision-trees/where-a-setting-is-created.md) — ルートボリュームのスタイルが置き換えである理由
+- [移行時の ACL 保持](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) — 権限を保ったまま運ぶ場合
+- [用語集](../../../reference/glossary/) — セキュリティスタイル / `volume rehost` / FlexClone の定義
+- [知見の分類ポリシー](../../../evidence-policy.md) — `documented` の扱い
 
 ## 自環境での確認手順
 
@@ -144,50 +206,20 @@ export-policy rule show -vserver <svm> -policyname <policy>
 
 **手順 5 の後に親を削除しようとすると、削除できないことがあります。** 削除したボリュームは recovery queue に既定で 12 時間以上留まり、その間 FlexClone の関係が残るためです（[用語集の Volume recovery queue の項](../../../reference/glossary/README.md)）。
 
----
+既存ボリュームの状態は、次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+ssh <svm-management-endpoint> vserver show -vserver <svm> -fields allowed-protocols
+```
 
-| 誤解 | 実際 |
-|---|---|
-| SMB 用に作ったボリュームは NFS から使えない | **そういう状態はありません。** セキュリティスタイルはアクセス可否を決めません |
-| NFS を足すには FlexClone で複製する | 不要です。届かない原因は 4 つのいずれかで、どれも複製せずに直せます |
-| クローンを NAS 有効な SVM へ `volume rehost` すればよい | **クローンは rehost できません。** split が必要で、split すると容量共有が終わります |
-| セキュリティスタイルは作成時にしか決められない | `volume modify -security-style` で変更できます。**ただし SVM のルートボリュームは CloudFormation では置き換えです** |
-| mixed にすれば NFS と SMB の両方で権限を管理できる | AWS は mixed を**マルチプロトコルアクセスに必須ではなく上級者向け**と記載しています。評価モデルが運用中に切り替わります |
-| export policy が割り当てられていれば許可されている | **ルールが 0 件のポリシーはすべて拒否します** |
+### 期待結果
 
----
+```text
+allowed-protocols に nfs と cifs が含まれるかどうか
+```
 
-## 参照した一次情報
+この確認で分かるのは SVM で有効なプロトコルだけです。junction path、export policy、name-mapping の成否は別に確認します。何も作成・変更しません。
 
-| 論点 | 出典 |
-|---|---|
-| セキュリティスタイルはクライアント種別のアクセス可否を決めないこと、UNIX / NTFS / mixed のいずれでも NFS と SMB がアクセスできること | [NetApp: Learn about ONTAP NAS security styles](https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effects-concept.html) |
-| 既存ボリュームのスタイルを `volume modify -security-style` で変更できること、指定できる値が `unix` / `ntfs` / `mixed` であること、未指定時はルートボリュームを継承すること | [NetApp: Configure security styles on ONTAP NFS FlexVol volumes](https://docs.netapp.com/us-en/ontap/nfs-admin/configure-security-styles-task.html) |
-| mixed がマルチプロトコルアクセスに必須ではなく、上級者にのみ推奨されること | [AWS: Updating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-volumes.html) |
-| FlexClone が書き込み可能な point-in-time コピーであり、変更を書くまでストレージを消費しないこと | [NetApp: Learn about ONTAP FlexClone volumes, files, and LUNs](https://docs.netapp.com/us-en/ontap/concepts/flexclone-volumes-files-luns-concept.html) |
-| クライアントが NFS と SMB の両方で同じファイルにアクセスできること | [NetApp: Learn about ONTAP client protocols](https://docs.netapp.com/us-en/ontap/concepts/client-protocols-concept.html) |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
-- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **この 4 つを自分の環境で確かめる最小構成**。CloudFormation 1 本と ONTAP REST のスクリプト
-- [セキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md) — スタイルが決めている中身
-- [`volume rehost` が変えるものと変えないもの](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — クローンとの排他、split の代償
-- [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — プロトコルの追加で越えられない境界
-- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — 境界を越える必要がある場合
-- [設定がどちらの面にあるかの決定木](../../../reference/decision-trees/where-a-setting-is-created.md) — ルートボリュームのスタイルが置き換えである理由
-- [移行時の ACL 保持](../../../playbooks/03-migrate/notes/preserving-acls-during-migration.md) — 権限を保ったまま運ぶ場合
-- [用語集](../../../reference/glossary/) — セキュリティスタイル / `volume rehost` / FlexClone の定義
-- [知見の分類ポリシー](../../../evidence-policy.md) — `documented` の扱い
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](adding-a-protocol-does-not-need-a-clone.md) | [English](../../../../en/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[ボリュームのセキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md)

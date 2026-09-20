@@ -9,13 +9,37 @@ ontap_version: 9.18.1P6
 deployment_type: SINGLE_AZ_1
 lang: en
 ---
-# On an NTFS-style volume the permission view available from NFS does not match the enforced outcome
+# Does the permission view from NFS match the enforced outcome on an NTFS-style volume?
+
+No. On NTFS style, the NFS view omits the Deny and principal; check ONTAP-side.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [English](nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That on an NTFS-style volume the permission view from NFS (mode bits / nfs4_getfacl) does not match the enforced outcome
+- That the usable answer is ONTAP's effective-permissions, and that path needs ONTAP credentials
+
+## What this note does not answer
+
+- Behaviour for group ACEs, service accounts, or migrated volumes (unconfirmed)
+- The performance impact of enabling NFSv4 ACLs
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="on-an-ntfs-style-volume-the-permission-view-available-from-nfs-does-not-match-the-enforced-outcome"></a>
 
 [🏠 Repository Top](../../../README.md) | [Domain — Multiprotocol & Identity](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Reaching the same data over NFS and being able to explain its permissions from NFS are two
 different things.** On a volume with the NTFS security style, `nfs4_getfacl` returns three
@@ -30,7 +54,7 @@ Worse, **the NTFS-style directory that refused the write and the UNIX-style dire
 had identical mode bits and identical NFSv4 ACLs.** From the NFS side alone the two cannot be told
 apart.
 
-### Where the usable answer is
+#### Where the usable answer is
 
 **ONTAP's `effective-permissions` agreed with the enforced outcome in every case measured.** On the
 refused directory, `write` / `append` / `write_ea` / `write_attributes` were absent from the list it
@@ -45,7 +69,7 @@ after.**
 The order of the decision is in
 [Where to verify who can access a file after a protocol change](../../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語).
 
-### What to change tomorrow
+#### What to change tomorrow
 
 | # | Target | Reason |
 |---|---|---|
@@ -62,7 +86,7 @@ The order of the decision is in
 > workload, what is recorded here is technical behaviour and **it does not replace a legal,
 > compliance or privacy assessment.**
 
-## Background
+### Background
 
 After a modernization changes the protocol from SMB to NFS, operations reach for the Linux side to
 check permissions. Given that `ls -l` and `nfs4_getfacl` are available, expecting them to explain the
@@ -72,9 +96,9 @@ That assumption does not hold. On an NTFS-style volume the permission evaluation
 ACL, and the mode bits and NFSv4 ACL visible to an NFS client are **a projection ONTAP synthesises**.
 A projection cannot express a Deny and does not carry principals by name.
 
-## Detail
+### Detail
 
-### The record has three parts
+#### The record has three parts
 
 A permission result is usable only when all three are present: the ACE that was set, the
 representation on the NFS side, and whether the access actually succeeded.
@@ -110,7 +134,7 @@ UNIX style, `/unixvol` (the control volume; no Windows ACE was set on it at all)
 | `deny/` | 755 | as above | ok | **ok** |
 | `inherited/child` | 755 | as above | ok | ok |
 
-### Three ways the representation fails to explain the outcome
+#### Three ways the representation fails to explain the outcome
 
 1. **The Deny does not appear.** The NFSv4 ACL carries three `A:` (allow) entries and not one `D:`
    (deny) entry. What stops the write is the Windows Deny ACE.
@@ -122,7 +146,7 @@ UNIX style, `/unixvol` (the control volume; no Windows ACE was set on it at all)
    into refused and succeeded. **Identical representation with different outcomes means the
    representation is not evidence.**
 
-### A separate trap: the owner displayed as `nobody`
+#### A separate trap: the owner displayed as `nobody`
 
 The client displayed the owner as `nobody(65534)`. ONTAP reports the owner as the test user. The
 cause is an NFSv4 ID domain mismatch: the SVM's `v4_id_domain` defaults to
@@ -133,7 +157,7 @@ That breaks the reading of `755`. It can be read as "the owner may write", but t
 resolved who the owner is. **Mode bits whose owner cannot be resolved are not usable as an
 explanation of the outcome.**
 
-### The backslash disappearing from a name-mapping replacement
+#### The backslash disappearing from a name-mapping replacement
 
 **Before the measurement could start, this one character refused every access.** On an NTFS-style
 volume the UNIX UID has to be mapped to a Windows account, and storing `DOMAIN\user` as that rule's
@@ -173,7 +197,7 @@ looks correct even for a wrong value. Two routes can decide it:
 The second is the same call the measurement uses, so **verifying the mapping needs no separate
 step.** Making it once up front detects this section's failure before the measurement begins.
 
-### NFSv4 ACLs are disabled by default
+#### NFSv4 ACLs are disabled by default
 
 `nfs4_getfacl` initially returned "Operation to request attribute not supported" at all, because the
 SVM's NFS configuration had `v40_features.acl_enabled` and `v41_features.acl_enabled` **both false by
@@ -185,7 +209,7 @@ negotiated.** The attribute stays `not supported` on that mount until it is remo
 Note also that `nfs4_getfacl` prints "not supported" while **exiting with status 0**. A record that
 consults only `$?` will record a representation it never read as having been read.
 
-## Test environment
+### Test environment
 
 | Item | Value |
 |---|---|
@@ -201,7 +225,7 @@ consults only `$?` will record a representation it never read as having been rea
 > **Note**: the above is a measurement in this environment. It does not guarantee a general service
 > limit, nor reproduction in a production environment.
 
-### Limits of the result, against the criteria fixed before measuring
+#### Limits of the result, against the criteria fixed before measuring
 
 - `allow/` has no discriminating power. The `Everyone` full control inherited from the volume root
   already permits the write, so success cannot be attributed to the ACE.
@@ -212,7 +236,7 @@ consults only `$?` will record a representation it never read as having been rea
 - The conclusion of this note therefore rests on the comparison between `deny/` and the control
   volume, and not on `allow/`.
 
-## Open questions
+### Open questions
 
 **What was not measured, listed.** The conclusion rests on a measurement of ACEs for a single user;
 each of the following can only be expected to behave the same way, and was not confirmed.
@@ -225,7 +249,27 @@ each of the following can only be expected to behave the same way, and was not c
 | 4 | The performance effect of enabling NFSv4 ACLs | Enabling it was required for this measurement, but **the effect on performance was not measured.** Do not assume it is free |
 | 5 | Removing the inherited `Everyone` from the volume root | It is what removed the discriminating power of `allow/`. A re-measurement without it has not been done |
 
-## Verifying in your own environment
+### Common misconceptions
+
+| Misconception | Actually |
+|---|---|
+| If it is not visible from NFS, the permission has been lost | It has not. Evaluation happens against the Windows ACL and the refusal is in force. Only the representation is missing |
+| An empty `nfs4_getfacl` means there is no ACL | The ACL attribute itself is disabled by default. It cannot be read until it is enabled and the client remounted |
+| `nfs4_getfacl` exiting 0 means the ACL was read | It returns 0 while printing "not supported". Decide on whether the output begins with `# file:` |
+| Mode bits of 755 mean the owner may write | Not when the owner cannot be resolved (displayed as `nobody`). Measured, the owner's own write was refused |
+| Aligning the security style aligns the representation | The mode bits and NFSv4 ACL were identical between an NTFS refusal and a UNIX permit. What matches is the representation, not the behaviour |
+
+### Related documents
+
+- [Where to verify who can access a file after a protocol change](../../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語) — **mapping from the configuration you are moving from.** Decides whether your current verification mechanism still works after the move
+- [A volume's security style determines the permission model](security-style-and-permission-evaluation.md)
+- [Adding NFS to a volume already serving SMB needs no clone](adding-a-protocol-does-not-need-a-clone.md)
+- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) — the reproduction environment
+- [Evidence classification policy](../../../evidence-policy.md)
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 | # | Step | What it establishes |
 |---|---|---|
@@ -240,24 +284,20 @@ For the full procedure see [Before adopting into production](../../../evidence-p
 The smallest environment that reproduces this, with scripts, is
 [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md).
 
-## Common misconceptions
+Whether the NFS-side view is even readable can be checked with this read-only command.
 
-| Misconception | Actually |
-|---|---|
-| If it is not visible from NFS, the permission has been lost | It has not. Evaluation happens against the Windows ACL and the refusal is in force. Only the representation is missing |
-| An empty `nfs4_getfacl` means there is no ACL | The ACL attribute itself is disabled by default. It cannot be read until it is enabled and the client remounted |
-| `nfs4_getfacl` exiting 0 means the ACL was read | It returns 0 while printing "not supported". Decide on whether the output begins with `# file:` |
-| Mode bits of 755 mean the owner may write | Not when the owner cannot be resolved (displayed as `nobody`). Measured, the owner's own write was refused |
-| Aligning the security style aligns the representation | The mode bits and NFSv4 ACL were identical between an NTFS refusal and a UNIX permit. What matches is the representation, not the behaviour |
+```bash
+curl -X GET -u fsxadmin -k "https://<management-endpoint>/api/protocols/nfs/services/<svm-uuid>?fields=v41_features.acl_enabled,v4_id_domain"
+```
 
-## Related documents
+### Expected output
 
-- [Where to verify who can access a file after a protocol change](../../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語) — **mapping from the configuration you are moving from.** Decides whether your current verification mechanism still works after the move
-- [A volume's security style determines the permission model](security-style-and-permission-evaluation.md)
-- [Adding NFS to a volume already serving SMB needs no clone](adding-a-protocol-does-not-need-a-clone.md)
-- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) — the reproduction environment
-- [Evidence classification policy](../../../evidence-policy.md)
+```text
+Whether acl_enabled is true, and whether v4_id_domain matches the AD domain
+```
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [English](nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+This shows only whether the preconditions for reading the NFS-side view are in place. The actual outcome is confirmed with effective-permissions and a real write. It changes nothing.
+
+## Read next
+
+[Does an SMB error string name its cause?](smb-errors-do-not-name-their-cause.md)
