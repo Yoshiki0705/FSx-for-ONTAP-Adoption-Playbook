@@ -28,6 +28,9 @@ lang: ja
 つまり「まず Multi-AZ で作って、後で性能が足りなくなったら HA ペアを足す」という進め方は**成立しません。** その時点で作り直しになります。
 
 > **Evidence**: `documented` — 変更可否・上限・プロトコル制約は AWS 公式ドキュメントの記載に基づきます。
+> **デプロイタイプの既定選択に関する記述のみ `field-observation`** — 東京リージョンでコンソールを
+> 実機確認した結果（2026-09-21）で、他リージョンでは未確認です。UI は変更される可能性があるため、
+> 作成前に自分のリージョンで必ず確認してください。
 > **価格の比率は含めません。** 世代別の料金差は改定されるため、現行の料金ページを参照してください。
 > 自環境での確認手順は「[自分の環境で確かめる](#自環境での確認手順)」にあります。
 
@@ -45,6 +48,8 @@ lang: ja
 **`SINGLE_AZ_1` から `SINGLE_AZ_2` への変更も作り直しです。** 同じ Single-AZ でも世代が違えば別のデプロイタイプであり、変更操作は存在しません。
 
 移行手段は、バックアップからの復元、SnapMirror、AWS DataSync、サードパーティのコピーツールです。方式の選び方は [移行方式の決定木](../../../reference/decision-trees/migration-method.md) にあります。
+
+**コンソールでの既定選択に注意してください。** クイック作成では世代の選択肢自体が画面に出ず、リージョンで利用可能な最新世代が自動的に選ばれます。スタンダード作成では、東京リージョンで確認した時点（2026-09-21）で「マルチ AZ 2」がデプロイタイプの初期選択（ラジオボタンの `checked` 状態）になっていました。**「第 2 世代 = Single-AZ」ではありません。** Multi-AZ 2（1 HA ペア）と Single-AZ 2（最大 12 HA ペア）はどちらも第 2 世代のデプロイタイプで、世代と AZ トポロジーは独立した軸です。作成前に選択画面で実際にどのデプロイタイプが選ばれているかを必ず確認してください。
 
 ---
 
@@ -194,6 +199,8 @@ graph TD
 | Multi-AZ の待機系が別 AZ にあり同期複製されること、Multi-AZ 1 が第 1 世代・Multi-AZ 2 が第 2 世代であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | Multi-AZ の書き込みスループット上限が Single-AZ より高いこと、書き込みが両方のファイルサーバーに書かれてから応答すること | [AWS Storage Blog: Best practice configuration for SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
 | 単一 HA ペアの 6 GB/s・200,000 IOPS、スケールアウトを選ぶ用途 | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+| クイック作成でリージョンの最新世代が既定で選ばれること | [AWS: Getting started with Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/getting-started.html) |
+| スタンダード作成のデプロイタイプ初期選択（東京リージョン、コンソール実機確認、2026-09-21） | 自環境での確認。本ノート執筆時点のスクリーンショットは非公開の検証記録として保管 |
 
 ---
 

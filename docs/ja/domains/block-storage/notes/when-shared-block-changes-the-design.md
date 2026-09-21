@@ -17,14 +17,15 @@ lang: ja
 
 **FSx for ONTAP をブロックストレージとして選ぶ理由は、速さではなく構造です。** そして構造が効かない要件では、Amazon EBS のほうが素直です。
 
-**単一の EC2 インスタンスだけが使うディスクに FSx for ONTAP を充てる理由はありません。** 最小構成でも SSD 1,024 GiB とスループット容量 384 MBps が立ち、東京リージョンの On-Demand で月あたり約 $927 になります。数十 GiB のデータ領域に対してこれは釣り合いません。
+**単一の EC2 インスタンスだけが使うディスクに FSx for ONTAP を充てる理由はありません。** 最小構成でも SSD 1,024 GiB とスループット容量 384 MBps が立ち、東京リージョンの On-Demand で月あたり約 $927 になります。数十 GiB のデータ領域に対してこれは釣り合いません。**これはストレージ単価としての判断であり、データ量が数十 GiB から数 TiB の帯に限った結論です。** 必要スループット容量が増えるほど Amazon EBS 側の複製・待機系のコストが積み上がるため、より大きな容量帯では単価の順位が入れ替わり得ます（[別プロジェクトでの容量帯別の再計算手順](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/tco-comparison.md)を参照）。
 
-**構造が効くのは次の 4 つが要件に含まれるときです。**
+**構造が効くのは次の 5 つが要件に含まれるときです。**
 
 1. 同じデータを**ファイル共有としても**出す
 2. Snapshot を**世代数を気にせず**持ちたい
 3. LUN を含むデータを**別リージョンへ複製**したい
 4. 本番の複製を**実データのコピーなしで**作りたい
+5. **AZ 障害をまたいでデータを残す必要があり、複製と切り替えの仕組みを自前で持ちたくない**
 
 そして FSx for ONTAP 側のトレードオフも対称に置きます。**HA ペア 6 組の天井があり、ホスト側の multipath と書き込み整合性は利用者の責任として残り、制御面が AWS と ONTAP の 2 つになります。**
 
@@ -44,6 +45,9 @@ lang: ja
 | 1 インスタンス専用のデータ領域 | Amazon EBS | 共有の調停もファイル共有も不要で、制御面が EC2 だけで済みます |
 | 一時的な作業領域 | インスタンスストア | 永続性が不要なら最も速く、追加コストがありません |
 | 同一 AZ・2 ノードのクラスタで、Snapshot はホスト側でよい | Amazon EBS Multi-Attach | EC2 の制御面だけで済みます。`io2` なら NVMe reservation による I/O fencing に対応します |
+| 単一 EC2 だが、AZ 障害をまたいでデータを残す必要がある | 容量帯と、下記 4 項目を自前で持つかどうかで決まる | **Amazon EBS には AZ をまたぐネイティブなブロック複製がありません。** EBS 側でこの要件を満たすには、2 つ以上の AZ にアタッチしたボリューム、複製ソフトウェア、フェイルオーバーの仕組みをすべて自前で用意する構成になります。**FSx for ONTAP Multi-AZ は、書き込みを AZ 間で同期複製し、片方の AZ が使えないときに自動フェイルオーバーする、という 2 点を AWS のマネージドサービスとして提供します。** 複製はリアルタイム（同期）で、EBS 側で自前の複製に必要な AZ 間データ転送料も発生しません（スループット容量の料金に含まれます）。**AZ 障害は Multi-AZ の自動フェイルオーバーの発動条件の 1 つとして明記されており、フェイルオーバーは検知から通常 60 秒未満、フェイルバックも通常 60 秒未満で完了します。** どちらが単価で有利かは必要スループット容量に依存し、定数では決まりません |
+
+自前で持つ側に乗る 4 項目は、待機側 EC2 インスタンスの稼働費用、複製ソフトウェアのライセンスと構築・運用、フェイルオーバーの仕組み（Amazon EBS の SLA には recovery volume への切り替えを行わなかった場合の除外条項があります）、複製が非同期なら生じる RPO です。これらは容量に比例しないため、小さいデータ量ほど「ストレージ単価は EBS 側が有利」という判断とは別に、機構を自前で持つコストが効いてきます。
 
 **AWS Transform でブロックストレージを移行する場合も、起動ボリュームは EBS のまま残り、データボリュームが iSCSI で接続されます。** この分担は移行後もそのままです。詳細は [直近のアップデートと設計への影響](../../../reference/recent-updates.md) にあります。
 
@@ -90,6 +94,7 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 | **既定の Snapshot は crash-consistent** | アプリケーションを静止させる仕組みは別に必要です | [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) |
 | **最小構成のコスト** | SSD 1,024 GiB + スループット 384 MBps が下限です | 小さい要件には Amazon EBS を使う |
 | **NVMe/TCP は第 2 世代のみ** | 第 1 世代では作り直し以外に道がありません。**Windows Server との NVMe/TCP は ONTAP 側で非対応です** | [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) |
+| **デプロイタイプは作成後に変更できない** | クイック作成・スタンダード作成のいずれも、東京リージョンでは既定でマルチ AZ 2（第 2 世代）が選ばれます。世代と AZ トポロジーは別軸で、シングル AZ 2 も第 2 世代です | [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
 | **スループットは HA ペア単位で共有** | NFS・SMB・S3 Access Point と同じ帯域を分け合います | [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) |
 
 ---
@@ -199,6 +204,9 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 | 1 TB のデータベースの iSCSI LUN クローンが通常 5 分以内であること | [AWS: Using SnapCenter to protect SQL Server workloads](https://aws.amazon.com/blogs/storage/using-netapp-snapcenter-with-amazon-fsx-for-netapp-ontap-to-protect-your-sql-server-workloads) |
 | iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
 | 第三者のクラスタソフトウェアとの組み合わせのサポートが公表されていること（2024-11-28 開始、Linux 版は iSCSI と NFS、Windows 版は iSCSI） | [ベンダー告知](https://sios.jp/news/info/2024/20241128_lk-fsx.html) · [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/)（いずれも 2026-09-15 に確認） |
+| AZ 障害をまたぐ要件での EBS 2 AZ 構成と FSx for ONTAP Multi-AZ の単価比較、逆転点が必要スループット容量に依存し定数化できないこと | [別プロジェクトでの容量帯別の再計算手順](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/tco-comparison.md) — 数値はそちらのサンプル構成の定価計算であり、本番の見積りではありません |
+| Multi-AZ の standby が active と別 AZ に配置され書き込みが AZ 間で同期複製されること、AZ 障害が自動フェイルオーバーの発動条件に含まれること、フェイルオーバー・フェイルバックが通常 60 秒未満であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
+| Multi-AZ ファイルシステムの AZ 間複製転送料がスループット容量の価格に含まれること | [AWS: Amazon FSx for NetApp ONTAP Pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
 
 ---
 
