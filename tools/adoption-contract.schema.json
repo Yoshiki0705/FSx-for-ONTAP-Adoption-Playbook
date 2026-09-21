@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "knowledge-quality/adoption-contract/v1",
+  "title": "Cross-repository adoption contract (shape documentation)",
+  "description": "The machine-readable connection an adopting repository keeps to the Hub rule source: an immutable Hub commit SHA, a profile, the validator artifacts and their digests, the rule index, and a path to the adopter's own repository_overrides. It carries no rule body. The authoritative validator is tools/check_cross_repo.py:validate_adoption_contract; this schema documents the same shape so drift between the two is caught by scripts/tests/test_knowledge_quality_contract.py rather than discovered later. Procedural checks the validator performs and JSON Schema cannot express (validator_artifacts must equal exactly the profile's required set; a repository-rule override must not copy a line of the Hub rule index) are guarded by that test's negative and mutation controls, not here.",
+  "type": "object",
+  "required": [
+    "contract_schema",
+    "hub_repository",
+    "hub_revision",
+    "profile",
+    "validator_artifacts",
+    "rule_index",
+    "repository_overrides"
+  ],
+  "properties": {
+    "contract_schema": {"const": "knowledge-quality/adoption-contract/v1"},
+    "hub_repository": {"const": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook"},
+    "hub_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Full lowercase 40-character commit SHA. A branch name or a mutable tag is rejected: an adopter must pin to an immutable Hub revision so every adopter fetches the same rule content."
+    },
+    "profile": {
+      "enum": ["cross-repository-quality-v1"],
+      "description": "Selects the required validator artifact set. Each profile fixes exactly which artifacts the contract must list."
+    },
+    "validator_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/validatorArtifact"},
+      "description": "The Hub validator files this profile depends on, each pinned by SHA-256. The set must equal exactly the profile's required artifacts; JSON Schema cannot express that equality, so the validator enforces it."
+    },
+    "rule_index": {
+      "const": "docs/ja/reference/cross-repo-index.md#引用表",
+      "description": "Repository-relative path and heading anchor of the authoritative Hub rule index. The adopter references it; it never transcribes the rules."
+    },
+    "repository_overrides": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "description": "Repository-relative path (no leading slash, no .. segment) to the adopter's repository-overrides document. Only repository-specific configuration lives there — never rule body."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "validatorArtifact": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+          "description": "Repository-relative path (no leading slash, no .. segment) to a Hub validator file."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Lowercase 64-character SHA-256 digest of the Hub file at path. The validator recomputes it against the Hub tree and rejects a mismatch."
+        }
+      },
+      "additionalProperties": false
+    },
+    "repositoryOverridesDocument": {
+      "type": "object",
+      "required": ["schema", "overrides"],
+      "description": "The document repository_overrides points at. Kept in $defs because it is a separate file from the contract; the validator reads it from the adopter tree.",
+      "properties": {
+        "schema": {"const": "knowledge-quality/repository-overrides/v1"},
+        "overrides": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/override"},
+          "description": "At most 16 overrides in total (MAX_OVERRIDES). Per-category limits and the no-copied-rule-body rule are enforced by the validator."
+        }
+      },
+      "additionalProperties": false
+    },
+    "override": {
+      "type": "object",
+      "required": ["category", "value", "reason"],
+      "properties": {
+        "category": {
+          "enum": ["scan-root", "exclusion", "localization-tier", "repository-rule"],
+          "description": "Per-category caps (OVERRIDE_LIMITS): scan-root 8, exclusion 8, localization-tier 1, repository-rule 8. The caps are counted by the validator, not by this schema."
+        },
+        "value": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  }
+}

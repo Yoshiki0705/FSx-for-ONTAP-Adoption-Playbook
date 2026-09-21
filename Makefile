@@ -8,7 +8,8 @@ PY ?= python3
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
-        inbound-probes inbound-probes-refresh gate
+        inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
+        knowledge-quality-status-ci
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -188,6 +189,15 @@ ja-markers: ## Check that English links into Japanese-only pages are labelled
 switcher-write: ## Regenerate language switcher blocks from what exists on disk
 	@$(PY) tools/sync_lang_switcher.py --write
 
+knowledge-quality-status: ## Check the public knowledge-quality aggregate matches the private ledger
+	@$(PY) tools/project_public_aggregate.py
+
+knowledge-quality-status-write: ## Regenerate the public knowledge-quality aggregate from the ledger
+	@$(PY) tools/project_public_aggregate.py --write
+
+knowledge-quality-status-ci: ## Same check for CI, where the private ledger is absent (INCONCLUSIVE, not a failure)
+	@$(PY) tools/project_public_aggregate.py --allow-missing-ledger
+
 # Split from `audit` deliberately. The two answer different questions, and bundling them
 # hid that only one was running: in CI's docs-quality job gitleaks is not installed, so
 # `make audit` printed "skipping secret scan" and passed. Secret scanning there is covered
@@ -259,7 +269,7 @@ links-external: ## Check internal + external links (network required)
 gate: ## Run `all` and assert it did not change the git index (what the hooks run)
 	@scripts/run_gate.sh /tmp/gate.log
 
-all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo inbound-probes anchors diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

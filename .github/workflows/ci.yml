@@ -131,6 +131,15 @@ jobs:
       - name: Check externally cited anchors are unchanged
         run: make anchors
 
+      # The public knowledge-quality aggregate is generated from the private Issue Ledger. A stale
+      # copy on disk would publish a count that no longer matches the ledger it claims to summarize.
+      # The ledger lives under .private/, which is gitignored and never present here, so this uses
+      # the -ci target: it reports INCONCLUSIVE rather than failing when the ledger is absent, after
+      # confirming the committed file exists and is well-formed. Locally and in pre-commit, `make
+      # all` runs the plain target, where a missing ledger is an error rather than a free pass.
+      - name: Check the public knowledge-quality aggregate is well-formed (ledger absent in CI)
+        run: make knowledge-quality-status-ci
+
       # .kiro/ is gitignored, so the steering-loader half of this check cannot run here.
       # The target reports that on stdout rather than skipping silently and printing
       # "healthy", which is what it used to do.

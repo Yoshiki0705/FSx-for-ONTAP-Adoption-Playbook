@@ -28,8 +28,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import re
 import sys
-from pathlib import Path
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -46,6 +52,35 @@ from audit_public_output import (
 )
 
 BUDGET = ROOT / "docs" / "agent" / "allow-marker-budget.txt"
+TARGET_FIXED_SCHEMA = "knowledge-quality/target-fixed-baseline/v1"
+TARGET_FIXED_ENTRY_FIELDS = (
+    "target_kind",
+    "target_authority_id",
+    "target_path",
+    "rule_id",
+    "category",
+    "target_fingerprint",
+    "reason",
+    "approved_revision",
+    "removal_condition",
+)
+TARGET_KINDS = frozenset({"public-github", "local-kiro"})
+_SHA256 = re.compile(r"sha256:[0-9a-f]{64}")
+_REVISION = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+_BROAD_SCOPE = re.compile(r"[*?\[\]{}]")
+
+
+@dataclass(frozen=True)
+class TargetFixedResult:
+    """Decision for one approved/observed/proposed target-fixed baseline."""
+
+    verdict: str
+    problems: tuple[str, ...] = ()
+
+    @property
+    def accepted(self) -> bool:
+        return self.verdict in {"ok", "reduced"}
+
 
 HEADER = """\
 # Audit allow markers, counted per file and category. Generated - do not hand-edit.
@@ -196,6 +231,266 @@ def stored() -> dict[tuple[str, str], int] | None:
     return counts
 
 
+def _non_empty_string(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def target_entry_key(entry: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return a hashable complete key for an approved or observed JSON entry."""
+    return tuple(
+        json.dumps(entry.get(field), sort_keys=True, separators=(",", ":"))
+        for field in TARGET_FIXED_ENTRY_FIELDS
+    )
+
+
+def target_entry_errors(entry: Mapping[str, Any]) -> list[str]:
+    """Reject incomplete entries and any path/rule/category scope broadening."""
+    errors: list[str] = []
+    unknown = set(entry) - set(TARGET_FIXED_ENTRY_FIELDS)
+    missing = set(TARGET_FIXED_ENTRY_FIELDS) - set(entry)
+    if unknown:
+        errors.append(f"unsupported entry fields: {sorted(unknown)}")
+    if missing:
+        errors.append(f"missing entry fields: {sorted(missing)}")
+
+    for field in TARGET_FIXED_ENTRY_FIELDS:
+        if field == "target_authority_id" or field not in entry:
+            continue
+        if not _non_empty_string(entry[field]):
+            errors.append(f"empty entry field: {field}")
+
+    kind = entry.get("target_kind")
+    authority = entry.get("target_authority_id")
+    if kind not in TARGET_KINDS:
+        errors.append(f"invalid target_kind: {kind!r}")
+    elif kind == "public-github" and (
+        not isinstance(authority, int) or isinstance(authority, bool) or authority <= 0
+    ):
+        errors.append(
+            "public-github target_authority_id must be a positive repository ID"
+        )
+    elif kind == "local-kiro" and not _non_empty_string(authority):
+        errors.append("local-kiro target_authority_id must be a private opaque key")
+
+    path_value = entry.get("target_path")
+    if isinstance(path_value, str):
+        path = PurePosixPath(path_value)
+        if (
+            path.is_absolute()
+            or path_value.endswith("/")
+            or "\\" in path_value
+            or any(part in {"", ".", ".."} for part in path_value.split("/"))
+            or _BROAD_SCOPE.search(path_value)
+        ):
+            errors.append("target_path must name one exact repository-relative target")
+
+    for field in ("rule_id", "category"):
+        value = entry.get(field)
+        if isinstance(value, str) and (
+            _BROAD_SCOPE.search(value) or value in {"all", "file:all"}
+        ):
+            errors.append(f"{field} must not broaden scope")
+
+    fingerprint = entry.get("target_fingerprint")
+    if isinstance(fingerprint, str) and not _SHA256.fullmatch(fingerprint):
+        errors.append("target_fingerprint must be sha256:<64 lowercase hex characters>")
+    revision = entry.get("approved_revision")
+    if isinstance(revision, str) and not _REVISION.fullmatch(revision):
+        errors.append("approved_revision must be an immutable 40- or 64-hex revision")
+    return errors
+
+
+def entries_digest(entries: Sequence[Mapping[str, Any]]) -> str:
+    """Bind a decision record to the exact sorted set it reviewed."""
+    canonical = sorted(
+        (
+            {field: entry.get(field) for field in TARGET_FIXED_ENTRY_FIELDS}
+            for entry in entries
+        ),
+        key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")),
+    )
+    payload = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+_DECISION_FIELDS = {
+    "decision",
+    "decision_source",
+    "reason",
+    "decision_revision",
+    "decided_at",
+    "baseline_before_sha256",
+    "baseline_after_sha256",
+}
+
+
+def _decision_shape_errors(decision: Mapping[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if set(decision) != _DECISION_FIELDS:
+        errors.append("human decision record fields do not match the required schema")
+    if decision.get("decision") != "APPROVED":
+        errors.append("baseline reduction requires an APPROVED decision")
+    if decision.get("decision_source") != "human-user":
+        errors.append("baseline reduction decision_source must be human-user")
+    for field in ("reason", "decision_revision", "decided_at"):
+        if not _non_empty_string(decision.get(field)):
+            errors.append(f"human decision record has empty {field}")
+    revision = decision.get("decision_revision")
+    if isinstance(revision, str) and not _REVISION.fullmatch(revision):
+        errors.append("decision_revision must be an immutable 40- or 64-hex revision")
+    for field in ("baseline_before_sha256", "baseline_after_sha256"):
+        digest = decision.get(field)
+        if not isinstance(digest, str) or not _SHA256.fullmatch(digest):
+            errors.append(f"{field} must be sha256:<64 lowercase hex characters>")
+    return errors
+
+
+def _decision_errors(
+    decision: Mapping[str, Any] | None,
+    approved: Sequence[Mapping[str, Any]],
+    proposed: Sequence[Mapping[str, Any]],
+) -> list[str]:
+    if not isinstance(decision, Mapping):
+        return ["baseline reduction requires a human decision record"]
+    errors = _decision_shape_errors(decision)
+    if decision.get("baseline_before_sha256") != entries_digest(approved):
+        errors.append("human decision record does not bind the approved baseline")
+    if decision.get("baseline_after_sha256") != entries_digest(proposed):
+        errors.append("human decision record does not bind the proposed baseline")
+    return errors
+
+
+def target_fixed_verdict(
+    *,
+    approved: Sequence[Mapping[str, Any]],
+    actual: Sequence[Mapping[str, Any]],
+    proposed: Sequence[Mapping[str, Any]] | None = None,
+    human_decision_record: Mapping[str, Any] | None = None,
+) -> TargetFixedResult:
+    """Accept equality or a human-reviewed true subset; reject every other change.
+
+    `approved` is the last reviewed baseline, `actual` is the detector result, and `proposed` is an
+    optional replacement baseline. A reduction passes only when the detector result equals the
+    proposed true subset and the decision record binds both exact sets. This lets remediation and
+    baseline removal land together without leaving stale surplus.
+    """
+    candidate = approved if proposed is None else proposed
+    problems: list[str] = []
+    for label, entries in (
+        ("approved", approved),
+        ("actual", actual),
+        ("proposed", candidate),
+    ):
+        for index, entry in enumerate(entries):
+            problems.extend(
+                f"{label}[{index}]: {error}" for error in target_entry_errors(entry)
+            )
+        keys = [target_entry_key(entry) for entry in entries]
+        if len(keys) != len(set(keys)):
+            problems.append(f"{label}: duplicate target-fixed entry")
+
+    approved_keys = {target_entry_key(entry) for entry in approved}
+    candidate_keys = {target_entry_key(entry) for entry in candidate}
+    if candidate_keys == approved_keys:
+        change = "ok"
+    elif candidate_keys < approved_keys:
+        change = "reduced"
+        problems.extend(_decision_errors(human_decision_record, approved, candidate))
+    else:
+        added = candidate_keys - approved_keys
+        removed = approved_keys - candidate_keys
+        problems.append(
+            "substitution is forbidden"
+            if added and removed
+            else "baseline addition is forbidden"
+        )
+        change = "rejected"
+
+    effective_keys = {target_entry_key(entry) for entry in candidate}
+    actual_keys = {target_entry_key(entry) for entry in actual}
+    if actual_keys - effective_keys:
+        problems.append("actual target addition or substitution is not approved")
+    if effective_keys - actual_keys:
+        problems.append("stale baseline surplus is forbidden")
+
+    if problems:
+        return TargetFixedResult("rejected", tuple(problems))
+    return TargetFixedResult(change)
+
+
+def validate_target_fixed_document(document: Mapping[str, Any]) -> list[str]:
+    """Validate a private target-fixed baseline document without changing it."""
+    errors: list[str] = []
+    allowed = {"schema", "entries", "human_decision_record"}
+    missing = allowed - set(document)
+    if missing:
+        errors.append(f"missing document fields: {sorted(missing)}")
+    if set(document) - allowed:
+        errors.append(f"unsupported document fields: {sorted(set(document) - allowed)}")
+    if document.get("schema") != TARGET_FIXED_SCHEMA:
+        errors.append(f"schema must be {TARGET_FIXED_SCHEMA}")
+    entries = document.get("entries")
+    if not isinstance(entries, list):
+        return errors + ["entries must be an array"]
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, Mapping):
+            errors.append(f"entries[{index}] must be an object")
+            continue
+        errors.extend(
+            f"entries[{index}]: {error}" for error in target_entry_errors(entry)
+        )
+    keys = [target_entry_key(entry) for entry in entries if isinstance(entry, Mapping)]
+    if len(keys) != len(set(keys)):
+        errors.append("entries must be unique")
+    decision = document.get("human_decision_record")
+    if decision is not None and not isinstance(decision, Mapping):
+        errors.append("human_decision_record must be an object or null")
+    elif isinstance(decision, Mapping):
+        errors.extend(_decision_shape_errors(decision))
+    return errors
+
+
+def load_target_fixed_document(path: Path) -> dict[str, Any]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise TypeError("target-fixed baseline must be a JSON object")
+    errors = validate_target_fixed_document(document)
+    if errors:
+        raise ValueError("; ".join(errors))
+    return document
+
+
+def _run_target_fixed_check(
+    baseline_path: Path, actual_path: Path, candidate_path: Path | None
+) -> int:
+    try:
+        baseline = load_target_fixed_document(baseline_path)
+        actual = load_target_fixed_document(actual_path)
+        candidate = (
+            load_target_fixed_document(candidate_path)
+            if candidate_path is not None
+            else None
+        )
+    except (OSError, json.JSONDecodeError, TypeError, ValueError) as error:
+        print(f"target-fixed baseline failed: {error}", file=sys.stderr)
+        return 1
+    result = target_fixed_verdict(
+        approved=baseline["entries"],
+        actual=actual["entries"],
+        proposed=candidate["entries"] if candidate else None,
+        human_decision_record=(candidate or {}).get("human_decision_record"),
+    )
+    if not result.accepted:
+        print("target-fixed baseline failed:", file=sys.stderr)
+        for problem in result.problems:
+            print(f"  {problem}", file=sys.stderr)
+        return 1
+    print(
+        f"target-fixed baseline: {len(actual['entries'])} entr(ies), {result.verdict}"
+    )
+    return 0
+
+
 def selftest() -> int:
     suppression_cases = [
         ({"findings_with": 0, "findings_without": 1}, "justified"),
@@ -242,9 +537,31 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--selftest", action="store_true")
+    parser.add_argument("--target-fixed-baseline", type=Path)
+    parser.add_argument("--target-fixed-actual", type=Path)
+    parser.add_argument("--target-fixed-candidate", type=Path)
     args = parser.parse_args()
     if args.selftest:
         return selftest()
+    target_fixed_requested = any(
+        (
+            args.target_fixed_baseline,
+            args.target_fixed_actual,
+            args.target_fixed_candidate,
+        )
+    )
+    if target_fixed_requested:
+        if args.write:
+            parser.error("--write cannot update a target-fixed baseline")
+        if not args.target_fixed_baseline or not args.target_fixed_actual:
+            parser.error(
+                "--target-fixed-baseline and --target-fixed-actual are required together"
+            )
+        return _run_target_fixed_check(
+            args.target_fixed_baseline,
+            args.target_fixed_actual,
+            args.target_fixed_candidate,
+        )
 
     counts = snapshot()
     if args.write:

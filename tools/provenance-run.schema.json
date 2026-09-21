@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "knowledge-quality/provenance-run/v1",
+  "title": "Audit-provenance run record (shape documentation)",
+  "description": "One verification run tied to the inputs that produced it, so a passing gate is reproducible and auditable rather than a bare assertion. The authoritative validator is tools/provenance.py:validate_run_record; this schema documents the same shape so drift between the two is caught by scripts/tests/test_knowledge_quality_provenance.py. Phase 1 (Task 5.3) defines the form only; real run records are written by the Phase 2 pilot wiring (Task 7.3) into .private/knowledge-quality/runs/, none here. external_result keeps the three-state cross-repository vocabulary (a server that did not answer is INCONCLUSIVE, never a silent pass or defect). recovery_class records whether a failure of this run is undone by an ordinary revert (reversible) or published something a revert does not erase and needs a human-led incident response (incident).",
+  "type": "object",
+  "required": [
+    "run_id",
+    "public_repository_id",
+    "input_sha",
+    "local_head",
+    "local_dirty",
+    "hub_revision",
+    "validator_artifact_digests",
+    "exact_command",
+    "scan_roots",
+    "excluded_roots",
+    "tool_versions",
+    "action_shas",
+    "runner_image",
+    "deterministic_result",
+    "external_result",
+    "baseline_before",
+    "baseline_after",
+    "aggregate_digest",
+    "human_phase_decision",
+    "recovery_class"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "public_repository_id": {"type": "integer", "minimum": 1},
+    "input_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "local_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "local_dirty": {"type": "boolean"},
+    "hub_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "validator_artifact_digests": {
+      "type": "object",
+      "description": "Map of Hub validator path to its SHA-256 digest at the recorded revision.",
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "exact_command": {"type": "string", "minLength": 1},
+    "scan_roots": {"type": "array", "items": {"type": "string"}},
+    "excluded_roots": {"type": "array", "items": {"type": "string"}},
+    "tool_versions": {
+      "type": "object",
+      "description": "Map of tool name to executed version, or 'not-run' with a reason for a tool not used.",
+      "additionalProperties": {"type": "string"}
+    },
+    "action_shas": {
+      "type": "array",
+      "description": "Full 40-character commit SHAs of the GitHub Actions used.",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+    },
+    "runner_image": {"type": "string", "minLength": 1},
+    "deterministic_result": {"type": "string", "minLength": 1},
+    "external_result": {"enum": ["PASS", "DEFECT", "INCONCLUSIVE"]},
+    "baseline_before": {"type": "string"},
+    "baseline_after": {"type": "string"},
+    "aggregate_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "human_phase_decision": {
+      "type": "string",
+      "description": "Reference to the private human phase-decision record; the decision itself is private."
+    },
+    "recovery_class": {"enum": ["reversible", "incident"]}
+  },
+  "additionalProperties": false
+}

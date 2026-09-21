@@ -43,14 +43,20 @@ direction.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, replace
+from collections import Counter
+from collections.abc import Callable, Mapping
+from dataclasses import asdict, dataclass, replace
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from probe_strength import strip_code, verdict
 
@@ -131,6 +137,385 @@ REPO_REF = re.compile(rf"https://github\.com/{OWNER}/(?P<repo>[A-Za-z0-9._-]+)")
 PROSE_GLOBS = ("docs/**/*.md", "*.md", "llms.txt")
 SKIP_PARTS = {".private", ".kiro", ".venv", "node_modules", "_template"}
 
+ADOPTION_CONTRACT_SCHEMA = "knowledge-quality/adoption-contract/v1"
+OVERRIDE_SCHEMA = "knowledge-quality/repository-overrides/v1"
+HUB_REPOSITORY = f"{OWNER}/{THIS_REPO}"
+PROFILE_ARTIFACTS = {
+    "cross-repository-quality-v1": frozenset(
+        {"tools/check_cross_repo.py", "tools/check_inbound_probes.py"}
+    )
+}
+RULE_INDEX = "docs/ja/reference/cross-repo-index.md#引用表"
+OVERRIDE_LIMITS = {
+    "scan-root": 8,
+    "exclusion": 8,
+    "localization-tier": 1,
+    "repository-rule": 8,
+}
+MAX_OVERRIDES = 16
+_CONTRACT_FIELDS = frozenset(
+    {
+        "contract_schema",
+        "hub_repository",
+        "hub_revision",
+        "profile",
+        "validator_artifacts",
+        "rule_index",
+        "repository_overrides",
+    }
+)
+_OVERRIDE_FIELDS = frozenset({"category", "value", "reason"})
+
+
+@dataclass(frozen=True)
+class AdoptionContractProblem:
+    category: str
+    message: str
+
+    def render(self) -> str:
+        return f"[adoption-contract:{self.category}] {self.message}"
+
+
+def _problem(category: str, message: str) -> AdoptionContractProblem:
+    return AdoptionContractProblem(category, message)
+
+
+def _safe_relative_path(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    candidate = Path(value)
+    if (
+        candidate.is_absolute()
+        or ".." in candidate.parts
+        or candidate.as_posix() != value
+    ):
+        return None
+    return value
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _heading_anchor_exists(path: Path, anchor: str) -> bool:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = re.match(r"^#{1,6}\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        heading = re.sub(r"[*_`]", "", match.group(1)).strip()
+        slug = re.sub(r"[\s]+", "-", heading.lower())
+        slug = re.sub(r"[^\w\-\u3040-\u30ff\u3400-\u9fff]", "", slug)
+        if slug == anchor:
+            return True
+    return False
+
+
+def _copied_rule_body(value: str, rule_index_body: str) -> bool:
+    normalized_value = " ".join(value.split())
+    if len(normalized_value) < 32:
+        return False
+    for raw in rule_index_body.splitlines():
+        line = " ".join(raw.strip().lstrip("#").strip().split())
+        if len(line) >= 32 and (line in normalized_value or normalized_value in line):
+            return True
+    return False
+
+
+def _override_problems(
+    document: object, *, rule_index_body: str
+) -> list[AdoptionContractProblem]:
+    problems: list[AdoptionContractProblem] = []
+    if not isinstance(document, Mapping):
+        return [_problem("override-schema", "override document must be an object")]
+    if set(document) != {"schema", "overrides"}:
+        problems.append(
+            _problem(
+                "override-schema",
+                "override document must contain only schema and overrides",
+            )
+        )
+    if document.get("schema") != OVERRIDE_SCHEMA:
+        problems.append(
+            _problem("override-schema", f"override schema must be {OVERRIDE_SCHEMA}")
+        )
+    overrides = document.get("overrides")
+    if not isinstance(overrides, list):
+        return problems + [_problem("override-schema", "overrides must be an array")]
+    if len(overrides) > MAX_OVERRIDES:
+        problems.append(
+            _problem(
+                "override-limit",
+                f"override total {len(overrides)} exceeds limit {MAX_OVERRIDES}",
+            )
+        )
+
+    categories: Counter[str] = Counter()
+    seen: set[tuple[str, str]] = set()
+    for index, override in enumerate(overrides):
+        if not isinstance(override, Mapping):
+            problems.append(
+                _problem("override-schema", f"override {index} must be an object")
+            )
+            continue
+        if set(override) != _OVERRIDE_FIELDS:
+            problems.append(
+                _problem(
+                    "override-schema",
+                    f"override {index} must contain only category, value, and reason",
+                )
+            )
+        category = override.get("category")
+        value = override.get("value")
+        reason = override.get("reason")
+        if category not in OVERRIDE_LIMITS:
+            problems.append(
+                _problem(
+                    "override-category",
+                    f"override {index} has unsupported category {category!r}",
+                )
+            )
+            continue
+        categories[category] += 1
+        if not isinstance(value, str) or not value.strip():
+            problems.append(
+                _problem("override-schema", f"override {index} value must be non-empty")
+            )
+            continue
+        if not isinstance(reason, str) or not reason.strip():
+            problems.append(
+                _problem(
+                    "override-schema", f"override {index} reason must be non-empty"
+                )
+            )
+        key = (category, value)
+        if key in seen:
+            problems.append(
+                _problem(
+                    "override-duplicate",
+                    f"override {index} duplicates category {category!r} value {value!r}",
+                )
+            )
+        seen.add(key)
+        if (
+            category in {"scan-root", "exclusion"}
+            and _safe_relative_path(value) is None
+        ):
+            problems.append(
+                _problem(
+                    "override-path",
+                    f"override {index} {category} must be a repository-relative path",
+                )
+            )
+        if category == "repository-rule" and _copied_rule_body(value, rule_index_body):
+            problems.append(
+                _problem(
+                    "copied-rule-body",
+                    f"override {index} copies text from the Hub rule index",
+                )
+            )
+
+    for category, count in categories.items():
+        limit = OVERRIDE_LIMITS[category]
+        if count > limit:
+            problems.append(
+                _problem(
+                    "override-limit",
+                    f"override category {category!r} has {count} entries; limit is {limit}",
+                )
+            )
+    return problems
+
+
+def validate_adoption_contract(
+    contract: object,
+    *,
+    hub_root: Path = ROOT,
+    adopter_root: Path,
+) -> list[AdoptionContractProblem]:
+    """Validate one adopter's immutable connection to the Hub rule source."""
+    problems: list[AdoptionContractProblem] = []
+    if not isinstance(contract, Mapping):
+        return [_problem("schema", "contract must be a JSON object")]
+    unknown = set(contract) - _CONTRACT_FIELDS
+    missing = _CONTRACT_FIELDS - set(contract)
+    if unknown:
+        problems.append(_problem("schema", f"unsupported fields: {sorted(unknown)}"))
+    if missing:
+        problems.append(_problem("schema", f"missing fields: {sorted(missing)}"))
+    if contract.get("contract_schema") != ADOPTION_CONTRACT_SCHEMA:
+        problems.append(
+            _problem(
+                "schema-mismatch", f"contract_schema must be {ADOPTION_CONTRACT_SCHEMA}"
+            )
+        )
+    if contract.get("hub_repository") != HUB_REPOSITORY:
+        problems.append(
+            _problem("hub-repository", f"hub_repository must be {HUB_REPOSITORY}")
+        )
+    revision = contract.get("hub_revision")
+    if not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+        problems.append(
+            _problem(
+                "mutable-revision",
+                "hub_revision must be a full lowercase 40-character commit SHA",
+            )
+        )
+
+    profile = contract.get("profile")
+    required_artifacts = (
+        PROFILE_ARTIFACTS.get(profile) if isinstance(profile, str) else None
+    )
+    if required_artifacts is None:
+        problems.append(
+            _problem("profile-mismatch", f"unsupported profile {profile!r}")
+        )
+        required_artifacts = frozenset()
+
+    artifacts = contract.get("validator_artifacts")
+    observed_paths: set[str] = set()
+    if not isinstance(artifacts, list) or not artifacts:
+        problems.append(
+            _problem("artifact-schema", "validator_artifacts must be a non-empty array")
+        )
+    else:
+        for index, artifact in enumerate(artifacts):
+            if not isinstance(artifact, Mapping) or set(artifact) != {"path", "sha256"}:
+                problems.append(
+                    _problem(
+                        "artifact-schema",
+                        f"validator artifact {index} must contain only path and sha256",
+                    )
+                )
+                continue
+            path_value = _safe_relative_path(artifact.get("path"))
+            digest = artifact.get("sha256")
+            if path_value is None:
+                problems.append(
+                    _problem(
+                        "artifact-path", f"validator artifact {index} path is unsafe"
+                    )
+                )
+                continue
+            observed_paths.add(path_value)
+            if (
+                not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            ):
+                problems.append(
+                    _problem(
+                        "artifact-digest",
+                        f"validator artifact {path_value} has an invalid SHA-256 digest",
+                    )
+                )
+                continue
+            target = hub_root / path_value
+            if not target.is_file():
+                problems.append(
+                    _problem(
+                        "artifact-path", f"validator artifact {path_value} is missing"
+                    )
+                )
+            elif _sha256(target) != digest:
+                problems.append(
+                    _problem(
+                        "artifact-digest-mismatch",
+                        f"validator artifact {path_value} does not match its SHA-256 digest",
+                    )
+                )
+    if required_artifacts and observed_paths != set(required_artifacts):
+        problems.append(
+            _problem(
+                "profile-artifacts",
+                f"profile {profile} requires exactly {sorted(required_artifacts)}",
+            )
+        )
+
+    rule_index = contract.get("rule_index")
+    rule_index_body = ""
+    if rule_index != RULE_INDEX:
+        problems.append(_problem("rule-index", f"rule_index must be {RULE_INDEX}"))
+    if isinstance(rule_index, str) and "#" in rule_index:
+        rule_path_value, anchor = rule_index.split("#", 1)
+        safe_rule_path = _safe_relative_path(rule_path_value)
+        if safe_rule_path is None or not anchor:
+            problems.append(
+                _problem("rule-index", "rule_index path or anchor is invalid")
+            )
+        else:
+            rule_path = hub_root / safe_rule_path
+            if not rule_path.is_file():
+                problems.append(_problem("rule-index", "rule_index file is missing"))
+            else:
+                rule_index_body = rule_path.read_text(encoding="utf-8")
+                if not _heading_anchor_exists(rule_path, anchor):
+                    problems.append(
+                        _problem(
+                            "rule-index", f"rule_index anchor {anchor!r} is missing"
+                        )
+                    )
+    else:
+        problems.append(
+            _problem("rule-index", "rule_index must contain a path and anchor")
+        )
+
+    override_path_value = _safe_relative_path(contract.get("repository_overrides"))
+    if override_path_value is None:
+        problems.append(
+            _problem(
+                "override-path",
+                "repository_overrides must be a repository-relative path",
+            )
+        )
+    else:
+        override_path = adopter_root / override_path_value
+        if not override_path.is_file():
+            problems.append(
+                _problem(
+                    "override-path", f"override file {override_path_value} is missing"
+                )
+            )
+        else:
+            try:
+                override_document = json.loads(
+                    override_path.read_text(encoding="utf-8")
+                )
+            except json.JSONDecodeError as exc:
+                problems.append(
+                    _problem(
+                        "override-schema", f"override file is invalid JSON: {exc.msg}"
+                    )
+                )
+            else:
+                problems.extend(
+                    _override_problems(
+                        override_document, rule_index_body=rule_index_body
+                    )
+                )
+    return problems
+
+
+def check_adoption_contract_file(
+    contract_path: Path, *, hub_root: Path = ROOT, adopter_root: Path | None = None
+) -> list[str]:
+    """Load and validate a contract for either cross-repository CLI direction."""
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return [
+            _problem("schema", f"contract file {contract_path} is missing").render()
+        ]
+    except json.JSONDecodeError as exc:
+        return [
+            _problem("schema", f"contract file is invalid JSON: {exc.msg}").render()
+        ]
+    root = adopter_root if adopter_root is not None else contract_path.parent
+    return [
+        problem.render()
+        for problem in validate_adoption_contract(
+            contract, hub_root=hub_root, adopter_root=root
+        )
+    ]
+
 
 @dataclass(frozen=True)
 class Row:
@@ -142,6 +527,440 @@ class Row:
     what: str
     line: int
     ref: str = "main"
+
+
+PUBLIC_AUTHORITY_SCHEMA = "knowledge-quality/public-authority/v1"
+LOCAL_CHECKOUT_SCHEMA = "knowledge-quality/local-checkout/v1"
+LOCAL_ONLY_SCHEMA = "knowledge-quality/local-only-kiro/v1"
+AUTHORITY_MAP_SCHEMA = "knowledge-quality/authority-map/v1"
+
+
+@dataclass(frozen=True)
+class PublicAuthorityRecord:
+    repository_id: int
+    canonical_full_name: str
+    default_branch: str
+    default_branch_head_sha: str
+    visibility: str
+    archived: bool
+
+
+@dataclass(frozen=True)
+class LocalCheckoutRecord:
+    path: str
+    included: bool
+    reason: str
+    repository_id: int | None = None
+    authority_state: str = "NOT_APPLICABLE"
+    authority_reason: str = "not evaluated"
+    remote: str | None = None
+    head_sha: str | None = None
+    branch: str | None = None
+    detached: bool = False
+    dirty: bool = False
+    ahead: int | None = None
+    behind: int | None = None
+    worktree_git_dir: str | None = None
+    duplicate: bool = False
+    stale: bool = False
+
+
+@dataclass(frozen=True)
+class LocalOnlyKiroRecord:
+    project_key: str
+    checkout_path: str
+    head_sha: str
+    branch: str | None
+    detached: bool
+    dirty: bool
+    reason: str
+
+
+@dataclass(frozen=True)
+class AuthorityResolution:
+    state: str
+    record: PublicAuthorityRecord | None
+    reason: str
+
+
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _github_coordinates(remote: str | None) -> tuple[str, str] | None:
+    """Return owner/repository for a GitHub origin without changing local Git state."""
+    if not remote:
+        return None
+    value = remote.strip().removesuffix(".git")
+    match = re.match(
+        r"^(?:https?://github\.com/|ssh://git@github\.com/|git@github\.com:)([^/]+)/([^/]+)$",
+        value,
+    )
+    if not match:
+        return None
+    return match.group(1), match.group(2)
+
+
+def _github_headers() -> dict[str, str]:
+    headers = {
+        "User-Agent": "cross-repo-check",
+        "Accept": "application/vnd.github+json",
+    }
+    # Authentication raises the request budget but does not widen the inventory: a response whose
+    # visibility is not public is rejected before it can become a PublicAuthorityRecord.
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def resolve_public_authority(
+    owner: str,
+    repo: str,
+    *,
+    opener: Callable[..., Any] = urllib.request.urlopen,
+) -> AuthorityResolution:
+    """Resolve immutable public identity and its current default-branch head.
+
+    A missing public repository is a definite non-match. Authentication, throttling, server,
+    DNS, and timeout failures remain inconclusive and never fabricate a local-only identity.
+    """
+    metadata_url = f"https://api.github.com/repos/{owner}/{repo}"
+    try:
+        request = urllib.request.Request(metadata_url, headers=_github_headers())
+        with opener(request, timeout=30) as response:
+            metadata = json.loads(response.read().decode("utf-8", "replace"))
+        if not isinstance(metadata, dict):
+            return AuthorityResolution(
+                "INCONCLUSIVE", None, "public metadata response is not an object"
+            )
+        repository_id = metadata.get("id")
+        full_name = metadata.get("full_name")
+        default_branch = metadata.get("default_branch")
+        visibility = metadata.get("visibility")
+        archived = metadata.get("archived")
+        if (
+            not isinstance(repository_id, int)
+            or not isinstance(full_name, str)
+            or not isinstance(default_branch, str)
+            or not isinstance(visibility, str)
+            or not isinstance(archived, bool)
+        ):
+            return AuthorityResolution(
+                "INCONCLUSIVE", None, "public metadata response is incomplete"
+            )
+        if visibility != "public":
+            return AuthorityResolution(
+                "DEFECT",
+                None,
+                "repository is not public and cannot be public authority",
+            )
+        head_url = f"{metadata_url}/commits/{default_branch}"
+        request = urllib.request.Request(head_url, headers=_github_headers())
+        with opener(request, timeout=30) as response:
+            head = json.loads(response.read().decode("utf-8", "replace"))
+        if not isinstance(head, dict):
+            return AuthorityResolution(
+                "INCONCLUSIVE",
+                None,
+                "default-branch response is not an object",
+            )
+        head_sha = head.get("sha")
+        if not isinstance(head_sha, str) or not re.fullmatch(
+            r"[0-9a-fA-F]{40}", head_sha
+        ):
+            return AuthorityResolution(
+                "INCONCLUSIVE",
+                None,
+                "default-branch response carries no full commit SHA",
+            )
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return AuthorityResolution(
+                "DEFECT", None, "public repository not found (404)"
+            )
+        return AuthorityResolution(
+            "INCONCLUSIVE", None, f"GitHub returned HTTP {exc.code}"
+        )
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        return AuthorityResolution(
+            "INCONCLUSIVE", None, f"GitHub request failed: {exc}"
+        )
+    return AuthorityResolution(
+        "PASS",
+        PublicAuthorityRecord(
+            repository_id=repository_id,
+            canonical_full_name=full_name,
+            default_branch=default_branch,
+            default_branch_head_sha=head_sha.lower(),
+            visibility=visibility,
+            archived=archived,
+        ),
+        "resolved from GitHub public metadata and default-branch head",
+    )
+
+
+def _candidate_directories(root: Path, max_depth: int) -> list[Path]:
+    """Find bounded project roots that expose Git or Kiro markers.
+
+    Descendants of a project root are not scanned as independent projects. This prevents a
+    checkout's internal directories from inflating the candidate set while still retaining
+    non-Git Kiro directories and Git checkouts without Kiro as reasoned exclusions.
+    """
+    if max_depth < 0:
+        raise ValueError("max_depth must be zero or greater")
+    if not root.is_dir():
+        raise ValueError(f"inventory root is not a directory: {root}")
+    candidates: list[Path] = []
+    pending = [(root, 0)]
+    while pending:
+        current, depth = pending.pop(0)
+        has_marker = (current / ".git").exists() or (current / ".kiro").exists()
+        if has_marker:
+            candidates.append(current)
+            continue
+        if depth >= max_depth:
+            continue
+        try:
+            children = sorted(path for path in current.iterdir() if path.is_dir())
+        except OSError:
+            continue
+        pending.extend((child, depth + 1) for child in children)
+    return candidates
+
+
+def _git(
+    checkout: Path,
+    args: list[str],
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> subprocess.CompletedProcess[str]:
+    return runner(
+        ["git", "-C", str(checkout), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith("GIT_")
+        },
+    )
+
+
+def _git_value(
+    checkout: Path,
+    args: list[str],
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]],
+) -> str | None:
+    result = _git(checkout, args, runner=runner)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def build_read_only_inventory(
+    projects_root: Path,
+    max_depth: int,
+    *,
+    resolver: Callable[[str, str], AuthorityResolution] = resolve_public_authority,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> dict[str, Any]:
+    """Build separate public, local-checkout, and local-only records.
+
+    Every subprocess command is a Git read. Public authority is keyed only by GitHub repository
+    ID. Local paths and local-only keys remain in private inventory records and are absent from
+    the public-safe aggregate returned by :func:`public_inventory_aggregate`.
+    """
+    authorities: dict[int, PublicAuthorityRecord] = {}
+    local_records: list[LocalCheckoutRecord] = []
+    local_only: list[LocalOnlyKiroRecord] = []
+    eligible_indexes: list[int] = []
+    candidates = _candidate_directories(projects_root, max_depth)
+    if not candidates:
+        raise ValueError("inventory scan found no Git/Kiro candidates")
+
+    for candidate in candidates:
+        inside = _git_value(
+            candidate, ["rev-parse", "--is-inside-work-tree"], runner=runner
+        )
+        if inside != "true":
+            local_records.append(
+                LocalCheckoutRecord(
+                    path=str(candidate),
+                    included=False,
+                    reason="excluded: not a Git repository",
+                )
+            )
+            continue
+        if not (candidate / ".kiro").is_dir():
+            local_records.append(
+                LocalCheckoutRecord(
+                    path=str(candidate),
+                    included=False,
+                    reason="excluded: Kiro configuration is absent",
+                )
+            )
+            continue
+
+        head = _git_value(candidate, ["rev-parse", "HEAD"], runner=runner)
+        if not head:
+            local_records.append(
+                LocalCheckoutRecord(
+                    path=str(candidate),
+                    included=False,
+                    reason="excluded: Git HEAD cannot be read",
+                )
+            )
+            continue
+        branch = _git_value(
+            candidate, ["symbolic-ref", "--quiet", "--short", "HEAD"], runner=runner
+        )
+        status = _git_value(candidate, ["status", "--porcelain"], runner=runner)
+        remote = _git_value(candidate, ["remote", "get-url", "origin"], runner=runner)
+        counts = _git_value(
+            candidate,
+            ["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
+            runner=runner,
+        )
+        behind = ahead = None
+        if counts and re.fullmatch(r"\d+\s+\d+", counts):
+            behind, ahead = (int(value) for value in counts.split())
+        git_dir = _git_value(
+            candidate, ["rev-parse", "--absolute-git-dir"], runner=runner
+        )
+        coordinates = _github_coordinates(remote)
+        resolution = (
+            resolver(*coordinates)
+            if coordinates
+            else AuthorityResolution(
+                "DEFECT", None, "origin is absent or is not a GitHub repository"
+            )
+        )
+        repository_id = (
+            resolution.record.repository_id if resolution.record is not None else None
+        )
+        if resolution.record is not None:
+            existing = authorities.get(repository_id)
+            if existing is not None and existing != resolution.record:
+                raise ValueError(
+                    "conflicting public authority records for repository ID "
+                    f"{repository_id}"
+                )
+            authorities[repository_id] = resolution.record
+        record = LocalCheckoutRecord(
+            path=str(candidate),
+            included=True,
+            reason="included: Git repository with Kiro configuration",
+            repository_id=repository_id,
+            authority_state=resolution.state,
+            authority_reason=resolution.reason,
+            remote=remote,
+            head_sha=head,
+            branch=branch,
+            detached=branch is None,
+            dirty=bool(status),
+            ahead=ahead,
+            behind=behind,
+            worktree_git_dir=git_dir,
+            stale=(
+                resolution.record is not None
+                and head.lower() != resolution.record.default_branch_head_sha
+            ),
+        )
+        local_records.append(record)
+        eligible_indexes.append(len(local_records) - 1)
+        if resolution.state == "DEFECT" and resolution.record is None:
+            local_only.append(
+                LocalOnlyKiroRecord(
+                    project_key=f"local-{len(local_only) + 1:04d}",
+                    checkout_path=str(candidate),
+                    head_sha=head,
+                    branch=branch,
+                    detached=branch is None,
+                    dirty=bool(status),
+                    reason=resolution.reason,
+                )
+            )
+
+    counts_by_id: dict[int, int] = {}
+    for index in eligible_indexes:
+        repository_id = local_records[index].repository_id
+        if repository_id is not None:
+            counts_by_id[repository_id] = counts_by_id.get(repository_id, 0) + 1
+    for index in eligible_indexes:
+        record = local_records[index]
+        if record.repository_id is not None and counts_by_id[record.repository_id] > 1:
+            local_records[index] = replace(record, duplicate=True)
+
+    public_records = [asdict(authorities[key]) for key in sorted(authorities)]
+    checkout_records = [asdict(record) for record in local_records]
+    local_only_records = [asdict(record) for record in local_only]
+    joined = [
+        {
+            "repository_id": repository_id,
+            "checkout_indexes": [
+                index
+                for index, record in enumerate(local_records)
+                if record.repository_id == repository_id
+            ],
+        }
+        for repository_id in sorted(authorities)
+    ]
+    return {
+        "public_authority": {
+            "schema": PUBLIC_AUTHORITY_SCHEMA,
+            "generated_at": _timestamp(),
+            "records": public_records,
+        },
+        "local_checkouts": {
+            "schema": LOCAL_CHECKOUT_SCHEMA,
+            "generated_at": _timestamp(),
+            "scan_root": str(projects_root),
+            "max_depth": max_depth,
+            "records": checkout_records,
+        },
+        "local_only_kiro": {
+            "schema": LOCAL_ONLY_SCHEMA,
+            "generated_at": _timestamp(),
+            "records": local_only_records,
+        },
+        "authority_map": {
+            "schema": AUTHORITY_MAP_SCHEMA,
+            "generated_at": _timestamp(),
+            "authoritative_repository_count": len(public_records),
+            "joins": joined,
+            "inconclusive_checkout_indexes": [
+                index
+                for index, record in enumerate(local_records)
+                if record.included and record.authority_state == "INCONCLUSIVE"
+            ],
+        },
+    }
+
+
+def public_inventory_aggregate(inventory: dict[str, Any]) -> dict[str, int]:
+    """Project only public-authority facts; local state is private inventory data."""
+    return {
+        "authoritative_repository_count": inventory["authority_map"][
+            "authoritative_repository_count"
+        ]
+    }
+
+
+def write_inventory_snapshots(inventory: dict[str, Any], output_dir: Path) -> None:
+    """Write four private snapshots; callers choose the ignored destination."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    names = {
+        "public_authority": "public-authority.json",
+        "local_checkouts": "local-checkouts.json",
+        "local_only_kiro": "local-only-kiro.json",
+        "authority_map": "authority-map.json",
+    }
+    for key, name in names.items():
+        (output_dir / name).write_text(
+            json.dumps(inventory[key], indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
 
 def prose_files() -> list[Path]:
@@ -606,9 +1425,71 @@ def main() -> int:
         action="store_true",
         help="Regenerate docs/agent/cross-repo-probe-contract.txt from the table.",
     )
+    parser.add_argument(
+        "--inventory-root",
+        type=Path,
+        help="Read Git/Kiro candidates below this directory and write private snapshots.",
+    )
+    parser.add_argument(
+        "--inventory-depth",
+        type=int,
+        default=2,
+        help="Maximum directory depth for the bounded inventory scan (default: 2).",
+    )
+    parser.add_argument(
+        "--inventory-output",
+        type=Path,
+        default=ROOT / ".private" / "knowledge-quality",
+        help="Ignored directory for the four inventory snapshots.",
+    )
+    parser.add_argument(
+        "--adoption-contract",
+        type=Path,
+        help="Validate an adopter contract while preserving the normal offline checks.",
+    )
+    parser.add_argument(
+        "--adopter-root",
+        type=Path,
+        help="Repository root used to resolve repository_overrides.",
+    )
     args = parser.parse_args()
 
+    if args.inventory_root is not None:
+        try:
+            inventory = build_read_only_inventory(
+                args.inventory_root.expanduser().resolve(), args.inventory_depth
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+        write_inventory_snapshots(inventory, args.inventory_output)
+        public_summary = public_inventory_aggregate(inventory)
+        local_records = inventory["local_checkouts"]["records"]
+        eligible_count = sum(record["included"] for record in local_records)
+        excluded_count = sum(not record["included"] for record in local_records)
+        local_only_count = len(inventory["local_only_kiro"]["records"])
+        inconclusive_count = len(
+            inventory["authority_map"]["inconclusive_checkout_indexes"]
+        )
+        print(
+            "inventory: "
+            f"{public_summary['authoritative_repository_count']} public authority record(s), "
+            f"{eligible_count} eligible checkout(s), "
+            f"{local_only_count} local-only Kiro project(s), "
+            f"{excluded_count} excluded candidate(s), "
+            f"{inconclusive_count} inconclusive resolution(s)"
+        )
+        return 0
+
     rows, problems = parse_table()
+    if args.adoption_contract is not None:
+        problems += check_adoption_contract_file(
+            args.adoption_contract,
+            adopter_root=(
+                args.adopter_root.expanduser().resolve()
+                if args.adopter_root is not None
+                else None
+            ),
+        )
 
     if args.write_contract:
         if problems:
