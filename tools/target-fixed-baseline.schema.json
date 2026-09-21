@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "knowledge-quality/target-fixed-baseline/v1",
+  "title": "Private target-fixed allowance baseline",
+  "type": "object",
+  "required": ["schema", "entries", "human_decision_record"],
+  "properties": {
+    "schema": {"const": "knowledge-quality/target-fixed-baseline/v1"},
+    "entries": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "human_decision_record": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/humanDecisionRecord"}
+      ]
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": [
+        "target_kind", "target_authority_id", "target_path", "rule_id",
+        "category", "target_fingerprint", "reason", "approved_revision",
+        "removal_condition"
+      ],
+      "properties": {
+        "target_kind": {"enum": ["public-github", "local-kiro"]},
+        "target_authority_id": {},
+        "target_path": {"type": "string", "minLength": 1},
+        "rule_id": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "minLength": 1},
+        "target_fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "reason": {"type": "string", "minLength": 1},
+        "approved_revision": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "removal_condition": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"target_kind": {"const": "public-github"}}, "required": ["target_kind"]},
+          "then": {"properties": {"target_authority_id": {"type": "integer", "minimum": 1}}}
+        },
+        {
+          "if": {"properties": {"target_kind": {"const": "local-kiro"}}, "required": ["target_kind"]},
+          "then": {"properties": {"target_authority_id": {"type": "string", "minLength": 1}}}
+        }
+      ],
+      "additionalProperties": false
+    },
+    "humanDecisionRecord": {
+      "type": "object",
+      "required": [
+        "decision", "decision_source", "reason", "decision_revision",
+        "decided_at", "baseline_before_sha256", "baseline_after_sha256"
+      ],
+      "properties": {
+        "decision": {"const": "APPROVED"},
+        "decision_source": {"const": "human-user"},
+        "reason": {"type": "string", "minLength": 1},
+        "decision_revision": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "decided_at": {"type": "string", "minLength": 1},
+        "baseline_before_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "baseline_after_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

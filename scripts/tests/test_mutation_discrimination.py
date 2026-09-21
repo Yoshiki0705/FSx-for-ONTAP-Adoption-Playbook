@@ -540,6 +540,29 @@ MUTATIONS: list[dict] = [
             "test_renaming_the_one_cited_heading_of_a_subset_file_is_rejected"
         ],
     },
+    {
+        # The region requirement on the verified tier was added late and enforced nothing before
+        # that — the validator's own comment records a note with measured timings and no region
+        # sitting in the tree. Emptying the guard is the shortest way to make a region-less
+        # verified note pass, and it reads as a simplification. The evidence family had no
+        # discriminating mutation until this one, so a lazy fix here was invisible.
+        "name": "region requirement removed from the verified tier",
+        "why": (
+            "Replacing the region check with a dead branch is the plausible edit: every note that "
+            "already names its region still validates, so the positive control stays green while a "
+            "verified note with no environment named silently passes."
+        ),
+        "module": "scripts.tests.test_knowledge_quality_properties",
+        "edits": [
+            (
+                "tools/validate_frontmatter.py",
+                '        if not meta.get("region"):',
+                "        if False:  # mutation: region requirement removed",
+            ),
+        ],
+        "must_fail": ["test_evidence_metadata_negative_fires"],
+        "must_pass": ["test_evidence_metadata_valid_control_passes"],
+    },
 ]
 
 

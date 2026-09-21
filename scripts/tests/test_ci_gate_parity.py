@@ -49,6 +49,12 @@ YAML_COMMENT_RE = re.compile(r"^\s*#")
 COVERED_ANOTHER_WAY = {
     "markdown": "the markdown-lint job runs markdownlint-cli2-action directly",
     "secrets": "gitleaks.yml scans the full history, which `make secrets` (worktree only) cannot",
+    "knowledge-quality-status": (
+        "ci.yml calls make knowledge-quality-status-ci, which adds --allow-missing-ledger "
+        "because .private/ is gitignored and the ledger is never present in CI. The concern "
+        "(a stale public aggregate) is the same; the CI variant reports INCONCLUSIVE rather "
+        "than failing when the ledger is absent, while verifying the committed file is well-formed"
+    ),
 }
 
 

@@ -42,7 +42,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from check_cross_repo import OWNER, REPO_REF, THIS_REPO, prose_files
+from check_cross_repo import (
+    OWNER,
+    REPO_REF,
+    THIS_REPO,
+    check_adoption_contract_file,
+    prose_files,
+)
 from probe_strength import strip_code, verdict
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -237,6 +243,16 @@ def main() -> int:
         action="store_true",
         help="re-read each sibling's published contract and rewrite the artifact (network)",
     )
+    parser.add_argument(
+        "--adoption-contract",
+        type=Path,
+        help="validate an adopter contract with the same shared cross-repository rules",
+    )
+    parser.add_argument(
+        "--adopter-root",
+        type=Path,
+        help="repository root used to resolve repository_overrides",
+    )
     args = parser.parse_args()
 
     if args.refresh:
@@ -244,6 +260,15 @@ def main() -> int:
 
     rows, unknown, problems = parse_contract()
     problems += check(rows)
+    if args.adoption_contract is not None:
+        problems += check_adoption_contract_file(
+            args.adoption_contract,
+            adopter_root=(
+                args.adopter_root.expanduser().resolve()
+                if args.adopter_root is not None
+                else None
+            ),
+        )
 
     if problems:
         print(f"inbound probes failed ({len(problems)} issue(s)):", file=sys.stderr)

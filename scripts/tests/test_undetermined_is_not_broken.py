@@ -21,7 +21,9 @@ import check_links
 
 def _raise(code: int):
     def fake(request, timeout=0):
-        raise urllib.error.HTTPError(request.full_url, code, "", {}, None)
+        error = urllib.error.HTTPError(request.full_url, code, "", {}, None)
+        error.close()
+        raise error
 
     return fake
 
