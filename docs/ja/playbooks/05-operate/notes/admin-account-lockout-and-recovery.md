@@ -9,13 +9,39 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# fsxadmin はロックされる。REST では原因が判別できず、復旧はパスワード再設定に限られる
+# fsxadmin がロックされたら REST で原因は分かるか？
+
+分かりません。ロックもパスワード誤りも REST では同じ 401 で、復旧はパスワード再設定に限られます。
+
+## このノートで学べること
+
+- `fsxadmin` が失敗ログインの蓄積でロックされること、REST ではロックとパスワード誤りが区別できないこと
+- 復旧が Amazon FSx API のパスワード再設定に限られ、その順序と反映完了の待ち方
+
+## このノートが答えないこと
+
+- `vsadmin` が `fsxadmin` と同じロック挙動をするか（未確認）
+- ロック解除がパスワード再設定の仕様上保証された副作用か（ドキュメント未記載、2 回の観測のみ）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="fsxadmin-はロックされるrest-では原因が判別できず復旧はパスワード再設定に限られる"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
+> **Evidence**: `verified`（2026-09-01、`ap-northeast-1`、ONTAP `9.18.1P3D1`）。
+> ロック状態の 1 ファイルシステムで、SSH と REST の両方の応答を確認し、`UpdateFileSystem` による
+> パスワード再設定の前後で SSH ログインの成否を測りました。**閾値と自動解除の有無は、ロールの
+> 設定値を読み取って確認しています**（[後述](#閾値と自動解除の設定値)）— 意図的にロックさせた
+> わけではありません。
+
 ---
 
-## 結論
+### 結論
 
 **`fsxadmin` は失敗ログインの蓄積でロックされます。** そして **ロックとパスワード誤りは、REST から見ると同じ `401` です。**
 
@@ -33,15 +59,9 @@ GET /api/cluster
 
 **復旧は Amazon FSx API のパスワード再設定だけです。** ONTAP の `security login unlock` は管理者ログインを要するため循環します。そして **再設定はロックも解除しました**（実測）。
 
-> **Evidence**: `verified`（2026-09-01、`ap-northeast-1`、ONTAP `9.18.1P3D1`）。
-> ロック状態の 1 ファイルシステムで、SSH と REST の両方の応答を確認し、`UpdateFileSystem` による
-> パスワード再設定の前後で SSH ログインの成否を測りました。**閾値と自動解除の有無は、ロールの
-> 設定値を読み取って確認しています**（[後述](#閾値と自動解除の設定値)）— 意図的にロックさせた
-> わけではありません。
-
 ---
 
-## ロックに至る経路と、複数ファイルシステム運用の危険
+### ロックに至る経路と、複数ファイルシステム運用の危険
 
 **`fsxadmin` はファイルシステムごとに独立したアカウントですが、ユーザー名は共通です。** 複数のファイルシステムを 1 つのアカウントで運用している場合、**認証情報を取り違えると、別のファイルシステムの実アカウントに失敗ログインが記録されます。**
 
@@ -64,7 +84,7 @@ NetApp Release 9.18.1P3D1: ...
 > **運用に関する補足**: 認証情報が分からない状態で試行を重ねるのは、**調査ではなく障害の作成**です。
 > 1 回失敗したら、次の 1 回を投げる前に「どのファイルシステム用の値か」を確定させてください。
 
-### 正しいパスワードでもロックさせられること
+#### 正しいパスワードでもロックさせられること
 
 **上の経路は「値を取り違えた場合」ですが、正しい値を使っていてもロックできます。** 2026-09-02 に実際にやりました。
 
@@ -88,7 +108,7 @@ NetApp Release 9.18.1P3D1: ...
 > 投げます。失敗したら原因が経路か資格情報かを切り分けるまで次を投げないでください。
 > 経路が疑わしいときは、SSH より **REST の 1 リクエスト**のほうが試行回数を制御しやすいです。
 
-### 誰がシークレットを読んでいるかの特定
+#### 誰がシークレットを読んでいるかの特定
 
 **`LastAccessedDate` は日単位なので、5 分間隔の自動化を追うには粗すぎます。** CloudTrail の `GetSecretValue` を引くと、時刻・呼び出し元・対象シークレットが揃います。
 
@@ -102,7 +122,7 @@ aws cloudtrail lookup-events --region <region> \
 
 ---
 
-## 復旧手順
+### 復旧手順
 
 ```bash
 # 1. 新しいパスワードを再設定する（ロック解除も兼ねる）
@@ -138,7 +158,7 @@ curl -sk --user fsxadmin:<new-password> \
 
 ---
 
-## 事前に決めておくこと
+### 事前に決めておくこと
 
 | 項目 | 理由 |
 |---|---|
@@ -149,7 +169,7 @@ curl -sk --user fsxadmin:<new-password> \
 
 ---
 
-## 閾値と自動解除の設定値
+### 閾値と自動解除の設定値
 
 **アカウントをロックさせずに、ロール設定から読み取れます。** advanced 特権の `-instance` 表示に含まれます。
 
@@ -181,7 +201,7 @@ Account Lockout Duration (ISO 8601 Duration Format): -
 
 ---
 
-## 未確認
+### 未確認
 
 - **ロックまでの回数が実際に 5 回であること。** 設定値を読み取っただけで、意図的に 5 回失敗させて確認したわけではありません（共有ファイルシステムのため実施していません）
 - **`vsadmin` が同じ挙動をするか。** 測っていません。`vsadmin` のパスワード再設定は `UpdateStorageVirtualMachine` で可能ですが、ロック解除を兼ねるかは未確認です
@@ -191,15 +211,32 @@ Account Lockout Duration (ISO 8601 Duration Format): -
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 - AWS: [Updating the fsxadmin account password](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-admin-password.html)
 
 ---
 
-## 関連
+### 関連
 
 - [権限設計 — 管理者の分離](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離)
 - [IaC の境界は API の表面で決まる](../../04-build/notes/what-iac-cannot-reach.md)
 - [不可逆な操作の承認は作業の承認とは別に取る](../../../domains/security-governance/notes/irreversible-operations-need-separate-approval.md)
 - [ロック時の影響範囲を決める収集対象数](../../../domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) — 監視の収集が同じ資格情報を使うとき
+
+## 自環境での確認手順
+
+**先に SSH を 1 回だけ試してメッセージを読むのが、ロックとパスワード誤りの最短の切り分けです。** REST の `401` だけでは区別できません。次の読み取り専用コマンドで、アカウントの `locked` 状態を直接確認できます（正しいパスワードが手元にある場合）。
+
+```bash
+curl -sk --user fsxadmin:<password> \
+  'https://<mgmt-lif>/api/security/accounts?name=fsxadmin&fields=locked'
+```
+
+### 期待結果
+
+`"locked": false` が返れば、アカウントはロックされていません。`401` が返る場合は、パスワードが誤っているかロック中かのどちらかで、REST だけでは区別できません。SSH のメッセージ（`Account currently locked.`）で確定させます。
+
+## Read next
+
+[メンテナンスは先送りできるか？](maintenance-cannot-be-deferred.md)

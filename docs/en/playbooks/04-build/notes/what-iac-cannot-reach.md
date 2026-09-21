@@ -7,15 +7,43 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-sys
 lang: en
 ---
 
-# The IaC boundary is set by the API surface, not by preference
+# Where is the IaC boundary set?
+
+By the API surface, not by preference — a successful template is not a finished configuration.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) | [English](what-iac-cannot-reach.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- That "what to manage as IaC" is settled by API reachability, not policy, and that template success is not configuration completion.
+- The ONTAP-layer settings outside the template (required SMB encryption, inode ceiling, FlexGroup conversion) and the need for two-layer verification.
+
+## What this note does not answer
+
+- A recommendation for any particular IaC tooling or custom-resource implementation (only native reachability).
+- The concrete idempotency and recovery implementation for automation that calls ONTAP CLI / REST API.
+
+## Prerequisite level
+
+advanced
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Playbook 04 — Build](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.
 
+> **Evidence**: Rows linked to AWS documentation and the CloudFormation reference are `documented`.
+> Clearing the SnapLock audit log volume designation and the observed response path for a failed deletion
+> are `verified` measurements with their environment recorded in the next section.
+> **No particular tooling configuration is recommended.** Steps for your own environment are in
+> "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
-## Conclusion
+### Conclusion
 
 **"What to manage as IaC" is already settled by what the API reaches, before any policy decides it.**
 
@@ -37,15 +65,9 @@ Each `No` describes native reachability established by the source in that row. T
 
 So **a successful template does not mean a finished configuration.** A policy of "manage everything as IaC" cannot cross this boundary. What needs designing is not where the boundary sits, but **how to make the far side of it reproducible.**
 
-> **Evidence**: Rows linked to AWS documentation and the CloudFormation reference are `documented`.
-> Clearing the SnapLock audit log volume designation and the observed response path for a failed deletion
-> are `verified` measurements with their environment recorded in the next section.
-> **No particular tooling configuration is recommended.** Steps for your own environment are in
-> "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
-
 ---
 
-## Boundaries found by measurement
+### Boundaries found by measurement
 
 **Each of these was confirmed by actually trying it and finding that templates and the AWS CLI do not reach.**
 
@@ -65,7 +87,7 @@ So **a successful template does not mean a finished configuration.** A policy of
 
 ---
 
-## What templates cover, and how updates behave
+### What templates cover, and how updates behave
 
 Update behaviour feeds straight into design. **Changing a property marked `Replacement` recreates the resource.**
 
@@ -79,7 +101,7 @@ An SVM's root volume security style is chosen from `UNIX` / `NTFS` / `MIXED`. **
 
 ---
 
-## Handling secrets
+### Handling secrets
 
 `FsxAdminPassword` and `SvmAdminPassword` are template properties. **Which means they can be written into the template in plain text.**
 
@@ -91,7 +113,7 @@ An SVM's root volume security style is chosen from `UNIX` / `NTFS` / `MIXED`. **
 
 `FsxAdminPassword` has constraints. **It is 8 to 50 characters and cannot contain newlines or certain control characters.** An automatic generation policy outside that range fails at creation.
 
-### How omitting `SvmAdminPassword` breaks least privilege
+#### How omitting `SvmAdminPassword` breaks least privilege
 
 **Without `SvmAdminPassword`, that SVM has to be administered with `fsxadmin`.**
 
@@ -101,7 +123,7 @@ An SVM's root volume security style is chosen from `UNIX` / `NTFS` / `MIXED`. **
 
 ---
 
-## Automating Active Directory integration
+### Automating Active Directory integration
 
 An SVM's AD join can be specified in a template, but **the join itself depends on the state of AD.** What automation has to cover:
 
@@ -117,7 +139,7 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 
 ---
 
-## Automating post-build verification
+### Automating post-build verification
 
 **IaC success does not mean the configuration is complete.** As shown above, ONTAP-level settings sit outside the template. Verification therefore needs two layers.
 
@@ -139,7 +161,7 @@ The items to clear before going to production are collected in [Pre-production r
 
 ---
 
-## Cloning development and test environments
+### Cloning development and test environments
 
 | Method | Characteristics |
 |---|---|
@@ -147,7 +169,7 @@ The items to clear before going to production are collected in [Pre-production r
 | Restore from backup into a new volume | Can be run through the Amazon FSx API. Scoped to the same region |
 | SnapMirror | Can replicate to another file system or another region |
 
-### An operational interaction with FlexClone
+#### An operational interaction with FlexClone
 
 **Creating a FlexClone after an SSD capacity decrease operation has started pauses that decrease.** ONTAP splits clone relationships when moving a volume, and this avoids storage being duplicated on the new disks.
 
@@ -157,7 +179,7 @@ If "provide test environments as clones" and "shrink SSD to cut cost" run at the
 
 **Where users create their own clones, QoS non-inheritance and the volume count ceiling apply on top of this interaction.** The summary is in [Putting training dataset versions on a scheduled Snapshot loses them](../../../../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md#実験ブランチ--flexclone-の効果と-3-つの制約) (日本語).
 
-### Converting between FlexVol and FlexGroup
+#### Converting between FlexVol and FlexGroup
 
 | Item | Detail |
 |---|---|
@@ -171,7 +193,7 @@ If "provide test environments as clones" and "shrink SSD to cut cost" run at the
 
 ---
 
-## Build flow
+### Build flow
 
 ```mermaid
 graph TD
@@ -198,7 +220,54 @@ graph TD
 
 ---
 
-## Confirming this in your own environment
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| Everything can be managed as IaC | **ONTAP-level settings are not reachable from a template.** Required SMB encryption, inode ceilings, FlexGroup conversion, and so on |
+| A successful template means a finished configuration | The ONTAP settings layer remains. Verification needs two layers |
+| Security style can be changed at any time | An SVM's `RootVolumeSecurityStyle` is **Replacement**. Changing it recreates the SVM |
+| `SvmAdminPassword` is optional, so it can be omitted | Omitting it makes `fsxadmin` necessary for SVM administration, which **breaks least privilege** |
+| Passwords can be left to automatic generation | `FsxAdminPassword` is 8 to 50 characters and cannot contain newlines. A policy outside that fails at creation |
+| An AD join can be judged by template success | It depends on the state of AD. Check the SVM's lifecycle state |
+| A FlexClone is an independent copy | It references the original data, and it has an interaction that **stops an SSD decrease** |
+| A FlexVol can become a FlexGroup at any time | ONTAP CLI only, and **the recommendation is moving data with DataSync**. Backups must be deleted before converting |
+| Cloning an environment means restoring a backup | FlexClone and SnapMirror are also options. Restore is scoped to the same region |
+
+---
+
+### Primary sources
+
+| Point | Source |
+|---|---|
+| The scope of management operations available from the console, AWS CLI, and ONTAP CLI / API (creating and updating file systems, SVMs, volumes, backups, and tags; administrative accounts and passwords; SMB and iSCSI; network reachability) | [AWS: Administering FSx for ONTAP resources](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-systems.html) |
+| That omitting `SvmAdminPassword` means administering the SVM with `fsxadmin`, that specifying it allows ONTAP CLI / REST API administration, and the values and Replacement-on-update behaviour of `RootVolumeSecurityStyle` | [AWS CloudFormation: AWS::FSx::StorageVirtualMachine](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-storagevirtualmachine.html) |
+| That `FsxAdminPassword` is the administrative password for ONTAP CLI and the REST API, the 8 to 50 character constraint, and that updating it causes no interruption | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
+| Dynamic references, which resolve secrets without putting them in plain text in a template | [AWS CloudFormation: Dynamic references](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html) |
+| The default conditions and size ranges for FlexVol and FlexGroup, that conversion is ONTAP CLI only, that moving data with DataSync is recommended, that backups must be deleted before converting, and that no automatic rebalance occurs | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
+| That creating a FlexClone after an SSD decrease starts pauses the decrease, and that deleting the clone resumes it automatically | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
+| How to administer an SVM from ONTAP CLI | [AWS: Managing FSx for ONTAP storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-svms.html) |
+
+---
+
+### Related documents
+
+- [Playbook 04 — Build](../README.md) — this module's hub
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — items to clear after building
+- [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) — the representative case of defaults varying by creation route
+- [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — the inode ceiling is set from ONTAP CLI
+- [The deployment type is decided once](../../02-design/notes/deployment-type-is-decided-once.md) — the premise behind choosing FlexGroup
+- [At-rest encryption is automatic; in-transit conditions differ by method](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — SMB encryption and separating administrators
+- [A volume's security style determines the permission model](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — the premise behind a choice that carries Replacement
+- [Evidence classification policy](../../../evidence-policy.md)
+
+[🏠 Repository Top](../../../README.md) | [Playbook 04 — Build](../README.md)
+
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **The first thing to establish is how many settings sit outside the template.**
 
@@ -215,53 +284,17 @@ graph TD
 
 Step 1 is the most valuable. **"The list of settings not in the template" is exactly the scope for a runbook or automation.**
 
----
+The following read-only command reads the tiering policy of volumes built from a template. Re-read the items left at their defaults to confirm they are as intended.
 
-## Common misconceptions
+```bash
+aws fsx describe-volumes --filters Name=file-system-id,Values=<fs-id> \
+  --query 'Volumes[].OntapConfiguration.[Name,TieringPolicy.Name,TieringPolicy.CoolingPeriod]'
+```
 
-| Misconception | Reality |
-|---|---|
-| Everything can be managed as IaC | **ONTAP-level settings are not reachable from a template.** Required SMB encryption, inode ceilings, FlexGroup conversion, and so on |
-| A successful template means a finished configuration | The ONTAP settings layer remains. Verification needs two layers |
-| Security style can be changed at any time | An SVM's `RootVolumeSecurityStyle` is **Replacement**. Changing it recreates the SVM |
-| `SvmAdminPassword` is optional, so it can be omitted | Omitting it makes `fsxadmin` necessary for SVM administration, which **breaks least privilege** |
-| Passwords can be left to automatic generation | `FsxAdminPassword` is 8 to 50 characters and cannot contain newlines. A policy outside that fails at creation |
-| An AD join can be judged by template success | It depends on the state of AD. Check the SVM's lifecycle state |
-| A FlexClone is an independent copy | It references the original data, and it has an interaction that **stops an SSD decrease** |
-| A FlexVol can become a FlexGroup at any time | ONTAP CLI only, and **the recommendation is moving data with DataSync**. Backups must be deleted before converting |
-| Cloning an environment means restoring a backup | FlexClone and SnapMirror are also options. Restore is scoped to the same region |
+### Expected output
 
----
+Each volume's name, tiering policy name, and cooling period are returned. Because these defaults vary by creation route, confirm the template intent matches the response. Required SMB encryption and the inode ceiling do not appear in the Amazon FSx API, so check them separately through ONTAP CLI / REST API.
 
-## Primary sources
+## Read next
 
-| Point | Source |
-|---|---|
-| The scope of management operations available from the console, AWS CLI, and ONTAP CLI / API (creating and updating file systems, SVMs, volumes, backups, and tags; administrative accounts and passwords; SMB and iSCSI; network reachability) | [AWS: Administering FSx for ONTAP resources](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-systems.html) |
-| That omitting `SvmAdminPassword` means administering the SVM with `fsxadmin`, that specifying it allows ONTAP CLI / REST API administration, and the values and Replacement-on-update behaviour of `RootVolumeSecurityStyle` | [AWS CloudFormation: AWS::FSx::StorageVirtualMachine](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-storagevirtualmachine.html) |
-| That `FsxAdminPassword` is the administrative password for ONTAP CLI and the REST API, the 8 to 50 character constraint, and that updating it causes no interruption | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
-| Dynamic references, which resolve secrets without putting them in plain text in a template | [AWS CloudFormation: Dynamic references](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html) |
-| The default conditions and size ranges for FlexVol and FlexGroup, that conversion is ONTAP CLI only, that moving data with DataSync is recommended, that backups must be deleted before converting, and that no automatic rebalance occurs | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
-| That creating a FlexClone after an SSD decrease starts pauses the decrease, and that deleting the clone resumes it automatically | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
-| How to administer an SVM from ONTAP CLI | [AWS: Managing FSx for ONTAP storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-svms.html) |
-
----
-
-## Related documents
-
-- [Playbook 04 — Build](../README.md) — this module's hub
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — items to clear after building
-- [Tiering defaults differ by creation method](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) — the representative case of defaults varying by creation route
-- [You can run out of writes with capacity to spare](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — the inode ceiling is set from ONTAP CLI
-- [The deployment type is decided once](../../02-design/notes/deployment-type-is-decided-once.md) — the premise behind choosing FlexGroup
-- [At-rest encryption is automatic; in-transit conditions differ by method](../../../../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — SMB encryption and separating administrators
-- [A volume's security style determines the permission model](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — the premise behind a choice that carries Replacement
-- [Evidence classification policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository Top](../../../README.md) | [Playbook 04 — Build](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/04-build/notes/what-iac-cannot-reach.md) | [English](what-iac-cannot-reach.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Why does monitoring fail on averages?](../../05-operate/notes/monitoring-fails-on-averages.md)

@@ -7,13 +7,43 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-sys
 lang: ja
 ---
 
-# IaC の境界は好みではなく API の表面で決まる
+# IaC が届く境界はどこで決まるか？
+
+好みではなく API の表面で決まります。テンプレートが成功しても ONTAP 層の設定は残ります。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](what-iac-cannot-reach.md) | [English](../../../../en/playbooks/04-build/notes/what-iac-cannot-reach.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- 「何を IaC で管理するか」が方針ではなく API の到達性で決まること、テンプレート成功が構成完成ではないこと
+- テンプレートの外にある ONTAP 層設定（SMB 暗号化強制・inode 上限・FlexGroup 変換など）と、その 2 層検証の必要性
+
+## このノートが答えないこと
+
+- 特定の IaC ツール構成やカスタムリソース実装の推奨（ネイティブ到達性の有無のみ）
+- ONTAP CLI / REST API を呼ぶ自動化の具体的な冪等性・復旧の実装
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="iac-の境界は好みではなく-api-の表面で決まる"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
 
+> **Evidence**: AWS 文書と CloudFormation リファレンスへリンクした行は `documented` です。
+> SnapLock 監査ログボリュームの指定解除と、削除失敗時の実際の応答経路は、下節に環境を示した
+> `verified` の観測です。
+> **特定のツール構成の推奨はしません。** 自環境での確認手順は
+> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
+
 ---
 
-## 結論
+### 結論
 
 **「何を IaC で管理するか」は方針で決める前に、API で届くかどうかで決まっています。**
 
@@ -35,15 +65,9 @@ Amazon FSx for NetApp ONTAP のファイルシステム、SVM、ボリューム�
 
 したがって **テンプレートが成功しても構成は完成していません。** 「IaC で全部管理する」という方針は、この境界を越えられません。設計すべきは境界の位置ではなく、**境界の向こう側をどう再現可能にするか**です。
 
-> **Evidence**: AWS 文書と CloudFormation リファレンスへリンクした行は `documented` です。
-> SnapLock 監査ログボリュームの指定解除と、削除失敗時の実際の応答経路は、下節に環境を示した
-> `verified` の観測です。
-> **特定のツール構成の推奨はしません。** 自環境での確認手順は
-> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
-
 ---
 
-## 実測で見つかった境界
+### 実測で見つかった境界
 
 **いずれも「テンプレートや AWS CLI から届かない」ことを実際に試して確認しました。**
 
@@ -63,7 +87,7 @@ Amazon FSx for NetApp ONTAP のファイルシステム、SVM、ボリューム�
 
 ---
 
-## テンプレートで扱えるものと、その更新挙動
+### テンプレートで扱えるものと、その更新挙動
 
 更新挙動は設計に直結します。**`Replacement` と書かれているプロパティを変更すると、リソースが作り直されます。**
 
@@ -77,7 +101,7 @@ SVM のルートボリュームのセキュリティスタイルは `UNIX` / `NT
 
 ---
 
-## シークレットの扱い
+### シークレットの扱い
 
 `FsxAdminPassword` と `SvmAdminPassword` はテンプレートのプロパティです。**つまりテンプレートに平文で書けてしまいます。**
 
@@ -89,7 +113,7 @@ SVM のルートボリュームのセキュリティスタイルは `UNIX` / `NT
 
 `FsxAdminPassword` には制約があります。**8〜50 文字で、改行や特定の制御文字を含められません。** 自動生成のパスワードポリシーがこの範囲を外れていると、作成時に失敗します。
 
-### `SvmAdminPassword` の省略による最小権限の崩れ
+#### `SvmAdminPassword` の省略による最小権限の崩れ
 
 **`SvmAdminPassword` を指定しないと、その SVM の管理は `fsxadmin` で行うことになります。**
 
@@ -99,7 +123,7 @@ SVM のルートボリュームのセキュリティスタイルは `UNIX` / `NT
 
 ---
 
-## Active Directory 連携の自動化
+### Active Directory 連携の自動化
 
 SVM の AD 参加はテンプレートで指定できますが、**参加そのものは AD 側の状態に依存します。** 自動化で扱うべき対象は次のとおりです。
 
@@ -115,7 +139,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 ---
 
-## 構築後検証の自動化
+### 構築後検証の自動化
 
 **IaC の成功は構成の完成を意味しません。** 上で見たとおり、ONTAP レベルの設定はテンプレートの外にあります。したがって検証は 2 層必要です。
 
@@ -137,7 +161,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 ---
 
-## 開発・検証環境の複製
+### 開発・検証環境の複製
 
 | 方法 | 特徴 |
 |---|---|
@@ -145,7 +169,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 | バックアップから新しいボリュームへ復元 | Amazon FSx の API で実行できます。同一リージョン内が対象です |
 | SnapMirror | 別ファイルシステム・別リージョンへ複製できます |
 
-### FlexClone の運用上の相互作用
+#### FlexClone の運用上の相互作用
 
 **SSD 容量の縮小操作を開始した後に FlexClone を作成すると、縮小操作が一時停止します。** ONTAP がボリューム移動時にクローン関係を分割するため、新しいディスク上でストレージが二重になるのを避けるためです。
 
@@ -155,7 +179,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 **クローンを利用者に作らせる場合は、この相互作用に加えて QoS の非継承とボリューム数の上限も効きます。** まとめは [学習データセットの版をスケジュール Snapshot に載せると消える](../../../domains/data-utilization/notes/dataset-versions-and-experiment-branches.md#実験ブランチ--flexclone-の効果と-3-つの制約) にあります。
 
-### FlexVol と FlexGroup の変換
+#### FlexVol と FlexGroup の変換
 
 | 項目 | 内容 |
 |---|---|
@@ -169,7 +193,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 
 ---
 
-## 構築フロー
+### 構築フロー
 
 ```mermaid
 graph TD
@@ -196,6 +220,49 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| IaC で全部管理できる | **ONTAP レベルの設定はテンプレートで届きません。** SMB 暗号化の強制、inode 上限、FlexGroup 変換などです |
+| テンプレートが成功すれば構成は完成 | ONTAP 設定層が残っています。検証は 2 層必要です |
+| セキュリティスタイルはいつでも変えられる | SVM の `RootVolumeSecurityStyle` は **Replacement** です。変更すると SVM が作り直されます |
+| `SvmAdminPassword` は任意なので省略してよい | 省略すると SVM 管理に `fsxadmin` が必要になり、**最小権限が崩れます** |
+| パスワードは自動生成に任せればよい | `FsxAdminPassword` は 8〜50 文字で改行を含められません。ポリシーが外れると作成に失敗します |
+| AD 参加はテンプレートの成功で判定できる | AD 側の状態に依存します。SVM のライフサイクル状態で確認します |
+| FlexClone は独立したコピー | 元データを参照します。**SSD 縮小操作を止める**相互作用があります |
+| FlexVol はいつでも FlexGroup にできる | ONTAP CLI のみで、**推奨は DataSync でのデータ移動**です。変換前にバックアップの削除が必要です |
+| 環境の複製はバックアップ復元だけ | FlexClone と SnapMirror も選択肢です。復元は同一リージョン内が対象です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| コンソール・AWS CLI・ONTAP CLI / API で行える管理操作の範囲（ファイルシステム・SVM・ボリューム・バックアップ・タグの作成と更新、管理アカウントとパスワード、SMB と iSCSI、ネットワーク到達性） | [AWS: Administering FSx for ONTAP resources](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-systems.html) |
+| `SvmAdminPassword` 未指定時に `fsxadmin` で SVM を管理することになること、指定すると ONTAP CLI / REST API で管理できること、`RootVolumeSecurityStyle` の値と更新時の Replacement 挙動 | [AWS CloudFormation: AWS::FSx::StorageVirtualMachine](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-storagevirtualmachine.html) |
+| `FsxAdminPassword` が ONTAP CLI と REST API 用の管理パスワードであること、8〜50 文字の制約、更新が中断を伴わないこと | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
+| テンプレート内でシークレットを平文にせず解決する動的参照 | [AWS CloudFormation: Dynamic references](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html) |
+| FlexVol と FlexGroup の既定条件とサイズ範囲、変換が ONTAP CLI のみであること、DataSync でのデータ移動が推奨されること、変換前にバックアップを削除する必要があること、自動リバランスされないこと | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
+| SSD 縮小操作開始後の FlexClone 作成で縮小が一時停止すること、クローン削除で自動再開すること | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
+| ONTAP CLI で SVM を管理する方法 | [AWS: Managing FSx for ONTAP storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-svms.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 04 — 構築](../README.md) — このモジュールのハブ
+- [本番投入前レビュー](../checklists/pre-production-review.md) — 構築後に通す項目
+- [階層化の既定値は作成方法で違う](../../06-optimize/notes/tiering-defaults-differ-by-creation-method.md) — 作成経路で既定が変わる代表例
+- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — inode 上限は ONTAP CLI で設定します
+- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — FlexGroup を選ぶ判断の前提
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — SMB 暗号化と管理者の分離
+- [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — Replacement を伴う選択の前提
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
+
 ## 自環境での確認手順
 
 **最初に確かめるのは、テンプレートの外にある設定がいくつあるかです。**
@@ -213,53 +280,17 @@ graph TD
 
 手順 1 が最も価値があります。**「テンプレートに書いていない設定の一覧」がそのまま、手順書または自動化の対象です。**
 
----
+テンプレートで作ったボリュームの階層化ポリシーは、次の読み取り専用コマンドで確認できます。既定値に任せた項目が意図どおりかを読み直します。
 
-## よくある誤解
+```bash
+aws fsx describe-volumes --filters Name=file-system-id,Values=<fs-id> \
+  --query 'Volumes[].OntapConfiguration.[Name,TieringPolicy.Name,TieringPolicy.CoolingPeriod]'
+```
 
-| 誤解 | 実際 |
-|---|---|
-| IaC で全部管理できる | **ONTAP レベルの設定はテンプレートで届きません。** SMB 暗号化の強制、inode 上限、FlexGroup 変換などです |
-| テンプレートが成功すれば構成は完成 | ONTAP 設定層が残っています。検証は 2 層必要です |
-| セキュリティスタイルはいつでも変えられる | SVM の `RootVolumeSecurityStyle` は **Replacement** です。変更すると SVM が作り直されます |
-| `SvmAdminPassword` は任意なので省略してよい | 省略すると SVM 管理に `fsxadmin` が必要になり、**最小権限が崩れます** |
-| パスワードは自動生成に任せればよい | `FsxAdminPassword` は 8〜50 文字で改行を含められません。ポリシーが外れると作成に失敗します |
-| AD 参加はテンプレートの成功で判定できる | AD 側の状態に依存します。SVM のライフサイクル状態で確認します |
-| FlexClone は独立したコピー | 元データを参照します。**SSD 縮小操作を止める**相互作用があります |
-| FlexVol はいつでも FlexGroup にできる | ONTAP CLI のみで、**推奨は DataSync でのデータ移動**です。変換前にバックアップの削除が必要です |
-| 環境の複製はバックアップ復元だけ | FlexClone と SnapMirror も選択肢です。復元は同一リージョン内が対象です |
+### 期待結果
 
----
+各ボリュームの名前・階層化ポリシー名・cooling period が返ります。作成経路によって既定が変わる項目なので、テンプレートの意図とレスポンスの値が一致しているかを確認します。SMB 暗号化強制や inode 上限は Amazon FSx API に現れないため、ONTAP CLI / REST API で別途確認します。
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| コンソール・AWS CLI・ONTAP CLI / API で行える管理操作の範囲（ファイルシステム・SVM・ボリューム・バックアップ・タグの作成と更新、管理アカウントとパスワード、SMB と iSCSI、ネットワーク到達性） | [AWS: Administering FSx for ONTAP resources](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/administering-file-systems.html) |
-| `SvmAdminPassword` 未指定時に `fsxadmin` で SVM を管理することになること、指定すると ONTAP CLI / REST API で管理できること、`RootVolumeSecurityStyle` の値と更新時の Replacement 挙動 | [AWS CloudFormation: AWS::FSx::StorageVirtualMachine](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-storagevirtualmachine.html) |
-| `FsxAdminPassword` が ONTAP CLI と REST API 用の管理パスワードであること、8〜50 文字の制約、更新が中断を伴わないこと | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
-| テンプレート内でシークレットを平文にせず解決する動的参照 | [AWS CloudFormation: Dynamic references](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html) |
-| FlexVol と FlexGroup の既定条件とサイズ範囲、変換が ONTAP CLI のみであること、DataSync でのデータ移動が推奨されること、変換前にバックアップを削除する必要があること、自動リバランスされないこと | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
-| SSD 縮小操作開始後の FlexClone 作成で縮小が一時停止すること、クローン削除で自動再開すること | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
-| ONTAP CLI で SVM を管理する方法 | [AWS: Managing FSx for ONTAP storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-svms.html) |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 04 — 構築](../README.md) — このモジュールのハブ
-- [本番投入前レビュー](../checklists/pre-production-review.md) — 構築後に通す項目
-- [階層化の既定値は作成方法で違う](../../06-optimize/notes/tiering-defaults-differ-by-creation-method.md) — 作成経路で既定が変わる代表例
-- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — inode 上限は ONTAP CLI で設定します
-- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — FlexGroup を選ぶ判断の前提
-- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — SMB 暗号化と管理者の分離
-- [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — Replacement を伴う選択の前提
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 04 — 構築](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](what-iac-cannot-reach.md) | [English](../../../../en/playbooks/04-build/notes/what-iac-cannot-reach.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[監視はなぜ平均値で失敗するか？](../../05-operate/notes/monitoring-fails-on-averages.md)

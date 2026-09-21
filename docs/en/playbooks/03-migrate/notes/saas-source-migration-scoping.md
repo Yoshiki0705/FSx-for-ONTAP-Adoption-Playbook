@@ -7,15 +7,40 @@ source: https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-P
 lang: en
 ---
 
-# Migrating From SaaS Starts With Classifying the Source
+# Where does migrating from SaaS start?
+
+Not with a transfer method — first classify the source, map permissions, and check file size.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md) | [English](saas-source-migration-scoping.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- The three things to settle before evaluating transfer methods: source classification, permission mapping, and largest file size.
+- Where the work turns from a migration into a permission redesign, or into integration-only.
+
+## What this note does not answer
+
+- The technical mechanisms (DataSync location types, per-SaaS admin APIs, S3 Access Points size limits live in the primary source).
+- Product evaluation of commercial migration services or individual connectors (structural feasibility only).
+
+## Prerequisite level
+
+intermediate
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.
 
+> **Evidence**: `documented` — the factual claims (which sources can be handled, which services offer tenant-wide admin authorization, how a primary-storage configuration behaves) rest on the AWS and vendor documentation cited by the primary source.
+> **The order of the checks and the Go/No-Go thresholds are practical judgment, not verification results.** Unconfirmed items are listed under "[What has not been confirmed](#what-has-not-been-confirmed)".
+
 ---
 
-## Scope of this note
+### Scope of this note
 
 **The technical mechanisms are not here.** AWS DataSync location types, how each SaaS admin API is called, and the FSx for ONTAP S3 AP size limits all live in the primary source.
 
@@ -25,7 +50,7 @@ What belongs here is **where in the plan each thing has to be settled**: what to
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Settle three things before evaluating transfer methods.**
 
@@ -35,12 +60,9 @@ What belongs here is **where in the plan each thing has to be settled**: what to
 
 **And do not fix a downtime figure until API rate limits have been measured.** When migrating from collaboration SaaS, rate limits govern how long an incremental sync takes. A published catalog value does not let you estimate it.
 
-> **Evidence**: `documented` — the factual claims (which sources can be handled, which services offer tenant-wide admin authorization, how a primary-storage configuration behaves) rest on the AWS and vendor documentation cited by the primary source.
-> **The order of the checks and the Go/No-Go thresholds are practical judgment, not verification results.** Unconfirmed items are listed under "[What has not been confirmed](#what-has-not-been-confirmed)".
-
 ---
 
-## 1. Classify the source
+### 1. Classify the source
 
 **These three points largely determine the path.** The order matters; each narrows the candidates.
 
@@ -50,7 +72,7 @@ What belongs here is **where in the plan each thing has to be settled**: what to
 | 2 | **Is it self-hosted open source (Nextcloud / ownCloud / Seafile)?** | Yes → go to 3. No (collaboration SaaS) → group B. DataSync cannot handle it; the path is an admin API plus a purpose-built worker |
 | 3 | **Is the object storage the primary storage, or an external storage mount?** | External storage → treat as group A. **Primary storage → the path changes** (below) |
 
-### Point 3 matters most
+#### Point 3 matters most
 
 **With primary storage, copying the bucket directly does not restore anything.** File names and directory structure live only in the database; the bucket holds bodies keyed by an identifier (`urn:oid:<id>` form).
 
@@ -58,7 +80,7 @@ What belongs here is **where in the plan each thing has to be settled**: what to
 
 This is the class of problem discovered after the migration has been judged complete, so **settle the classification during Assess.** The method for checking it is in the primary source.
 
-### Do not decide point 1 from a service name
+#### Do not decide point 1 from a service name
 
 Judge by whether an S3-compatible API exists, **not by the service name.** Similar names can belong to different services — Google Cloud Storage is among the DataSync sources; Google Drive is not.
 
@@ -66,7 +88,7 @@ DataSync source coverage and Bedrock connector coverage **move in the direction 
 
 ---
 
-## 2. For group B: can tenant admin authorization be provisioned for the migration window?
+### 2. For group B: can tenant admin authorization be provisioned for the migration window?
 
 **This is the precondition for central execution.**
 
@@ -85,7 +107,7 @@ What has to be established is not technical feasibility but **whether the organi
 
 ---
 
-## 3. Numbers to collect during Assess
+### 3. Numbers to collect during Assess
 
 **The decisions in 03-migrate cannot start without these.** Add them to the 01-assess inventory.
 
@@ -104,11 +126,11 @@ The pitfalls of counting itself — counting bytes is not counting files — are
 
 ---
 
-## 4. Go/No-Go material
+### 4. Go/No-Go material
 
 **The question is not "can this be migrated" but "does this hold together as a migration".**
 
-### Stop condition 1 — many sharing forms have no counterpart
+#### Stop condition 1 — many sharing forms have no counterpart
 
 External link sharing, anonymous links, and time-limited shares have no mapping into NFS / SMB ACLs. The alternatives (expiring URLs, distribution through Transfer Family, a sharing feature implemented in a portal) become **separate design work.**
 
@@ -119,7 +141,7 @@ External link sharing, anonymous links, and time-limited shares have no mapping 
 
 **The threshold cannot be expressed as a number.** What decides it is whether that sharing form is a primary way the business works or an exception. **Fix the permission mapping in a pilot (one department is enough) before the main migration.** Moving data first leaves every file accessible only to administrators immediately after cutover.
 
-### Stop condition 2 — rate limits have not been measured
+#### Stop condition 2 — rate limits have not been measured
 
 **Do not fix a downtime figure until they have.** In group B, API rate limits determine how long an incremental sync takes. It cannot be calculated from bandwidth.
 
@@ -130,13 +152,13 @@ External link sharing, anonymous links, and time-limited shares have no mapping 
 
 A pilot of one department and a few hundred GB is enough. Its purpose is not to complete a transfer but to **measure rate limits and throughput.**
 
-### Stop condition 3 — the system of record is undecided
+#### Stop condition 3 — the system of record is undecided
 
 Converting SaaS-native formats loses collaborative editing, comments, and revision history. **Conversion is irreversible.** Until one of "convert and move", "leave native content in place and move the rest", or "move nothing and provide cross-source search only" has been chosen, transfer must not begin.
 
 ---
 
-## 5. Confirm that migration is the requirement at all
+### 5. Confirm that migration is the requirement at all
 
 **There is an option that provides cross-source search without moving any bytes.**
 
@@ -158,7 +180,7 @@ If the objective is only search, confirm this before evaluating a migration.
 
 ---
 
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -175,7 +197,7 @@ If the objective is only search, confirm this before evaluating a migration.
 
 ---
 
-## What has not been confirmed
+### What has not been confirmed
 
 **Items the primary source marks as unconfirmed are treated as unconfirmed here too.**
 
@@ -190,7 +212,7 @@ If the objective is only search, confirm this before evaluating a migration.
 
 ---
 
-## Related Documents
+### Related Documents
 
 - [Migration and data integration from SaaS / cloud storage to FSx for ONTAP](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/en/saas-to-fsx-ontap-migration.md) — **Primary source.** Source classification flow, DataSync location types, admin APIs, S3 AP size limits
 - [Playbook 03 — Migration](../README.md) — Module hub
@@ -201,10 +223,33 @@ If the objective is only search, confirm this before evaluating a migration.
 - [FSx for ONTAP S3 access points are not "S3 you can use as S3"](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) — Constraints when choosing it as the write path
 - [Evidence Classification Policy](../../../evidence-policy.md)
 
----
-
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/saas-source-migration-scoping.md) | [English](saas-source-migration-scoping.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**What this section checks is whether the source is a group A that DataSync can treat as a location.** Group B (collaboration SaaS) does not appear here; it goes to the admin-API design instead.
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Check whether the source exposes an S3-compatible API / Blob / NFS / SMB | Group A or group B |
+| 2 | For self-hosted open source, check whether objects are "primary storage" or "external storage" | Whether a direct bucket copy restores |
+| 3 | Measure the largest file size | Above 50 GiB it cannot be written through an S3 Access Point |
+| 4 | Count external shares, anonymous links, and time-limited shares | The size of the un-mappable part. Go/No-Go material |
+
+Existing DataSync locations can be listed with the following read-only command.
+
+```bash
+aws datasync list-locations
+```
+
+### Expected output
+
+The ARN and type (`smb://` / `nfs://` / `s3://` and so on) of each registered location are returned. If the source registers as one of those types it is group A; a collaboration SaaS that cannot register is group B, and the design branches from there.
+
+## Read next
+
+[When does the rollback window close?](where-the-rollback-window-closes.md)

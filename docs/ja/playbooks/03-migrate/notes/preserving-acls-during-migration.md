@@ -7,13 +7,37 @@ source: https://docs.aws.amazon.com/datasync/latest/userguide/metadata-copied.ht
 lang: ja
 ---
 
-# ACL 保持は権限の問題であってツールの問題ではない
+# SMB 移行で ACL が落ちるのはツールのせいか？
+
+ツールのせいではありません。既定値が ACL を含まず、実行アカウントに特権がないと黙って落ちます。
+
+## このノートで学べること
+
+- SMB 移行で ACL が失われる原因が、ツールの能力ではなく既定値と実行アカウントの特権にあること
+- robocopy と AWS DataSync それぞれで、所有者・DACL・SACL を保持するために上書きすべき設定と付与すべき特権
+
+## このノートが答えないこと
+
+- 個別ツールの完全な操作手順（コピーコマンド全体の書き方は各公式ドキュメントを参照）
+- ID そのものの移行設計（別ドメインの SID 解決や信頼関係の構築手順）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="acl-保持は権限の問題であってツールの問題ではない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
 
+> **Evidence**: `documented` — 各ツールの仕様は Microsoft / AWS の公式ドキュメントに基づきます。
+> **自環境での検証結果は含みません。** 実際に保持されたかは移行後にサンプル比較で確認してください。
+> 手順は「[自分の環境で確かめる](#自環境での確認手順)」にあります。
+
 ---
 
-## 結論
+### 結論
 
 SMB 移行で ACL が失われる原因は、**ツールの能力不足ではなく次の 2 つ**です。
 
@@ -22,13 +46,9 @@ SMB 移行で ACL が失われる原因は、**ツールの能力不足ではな
 
 **「ACL 対応のツールを選ぶ」では不足です。** 既定値を上書きし、実行アカウントに特権を付与し、移行後にサンプル検証する — この 3 点が揃って初めて保持されます。
 
-> **Evidence**: `documented` — 各ツールの仕様は Microsoft / AWS の公式ドキュメントに基づきます。
-> **自環境での検証結果は含みません。** 実際に保持されたかは移行後にサンプル比較で確認してください。
-> 手順は「[自分の環境で確かめる](#自環境での確認手順)」にあります。
-
 ---
 
-## 落ちるもの
+### 落ちるもの
 
 | コピー対象 | robocopy の既定 `/COPY:DAT` | robocopy `/COPYALL` | DataSync 既定 | DataSync `OWNER_DACL_SACL` |
 |---|:---:|:---:|:---:|:---:|
@@ -43,15 +63,15 @@ SMB 移行で ACL が失われる原因は、**ツールの能力不足ではな
 
 ---
 
-## 必要な特権
+### 必要な特権
 
-### robocopy
+#### robocopy
 
 `/B`（バックアップモード）は**ファイルとフォルダの権限設定を上書きして読み取ります**。コピー実行アカウントに ACL 上のアクセス権がないファイルを扱えるのはこのモードだけです。
 
 バックアップモードは Windows の特権に依存します。通常は **Backup Operators** または **Domain Admins** のメンバーである必要があります。
 
-### AWS DataSync
+#### AWS DataSync
 
 SMB ロケーションに使う ID に、コピーしたいメタデータに応じた**ユーザー権利**が必要です。
 
@@ -66,7 +86,7 @@ SMB ロケーションに使う ID に、コピーしたいメタデータに応
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -88,6 +108,42 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| ACL 対応のツールを使えば ACL は保たれる | 既定値では落ちます。robocopy の既定は `/COPY:DAT` で ACL を含みません |
+| `/SEC` を付ければ全部保持される | `/SEC` は `/COPY:DATS` 相当で、**所有者と監査設定は含みません** |
+| DataSync なら設定不要で ACL が移る | DACL は移りますが SACL は既定では移りません。加えて実行 ID に特権が必要です |
+| 管理者で実行すれば特権の問題はない | 必要なのは「管理者であること」ではなく特定のユーザー権利です。**SACL には別の権利が必要**です |
+| エラーが出なければ保持できている | 読めない ACL は黙ってスキップされ、正常終了します。**サンプル比較が唯一の確認手段です** |
+| 別ドメインからでも ACL はそのまま移る | SID が解決できません。同一ドメインか信頼関係が前提で、無い場合は ID 移行の設計が先に必要です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| `/B` はバックアップモードで ACL による読み取り制限を上書きする | [Microsoft Learn: robocopy](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy) |
+| `/COPY` のフラグ（D/A/T/S/O/U）と既定値 | 同上 |
+| DataSync が SMB で複製するメタデータの一覧、SMB 1.0 での SACL 非対応 | [AWS: Understanding how DataSync handles file and object metadata](https://docs.aws.amazon.com/datasync/latest/userguide/metadata-copied.html) |
+| DataSync に必要なユーザー権利、同一 AD ドメイン要件 | [AWS: Configuring AWS DataSync transfers with an SMB file server](https://docs.aws.amazon.com/datasync/latest/userguide/create-smb-location.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 03 — 移行](../README.md) — このモジュールのハブ
+- [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択を左右します
+- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — 移行元がブロックの場合。**どの経路でも ACL 保持はこのノートが前提になります**
+- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md#後で戻せない判断から逆算する棚卸し項目) — ACL が読めるかの確認は棚卸しの項目です
+- [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — 移行先での権限評価の前提
+- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md) — 移行後の ACL サンプル検証を項目に含めています
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
+
 ## 自環境での確認手順
 
 **「エラーが出なかった」は保持できた証拠になりません。** 読めない ACL はスキップされ、正常終了します。
@@ -101,7 +157,7 @@ graph TD
 代表的なディレクトリとファイルを選び、両側で ACL を出力して差分を取ります。
 
 ```powershell
-# 移行元と移行先の双方で実行し、出力を比較する
+# 移行元と移行先の双方で実行し、出力を比較する（読み取りのみ）
 Get-Acl -Path <path> | Format-List
 ```
 
@@ -117,42 +173,10 @@ Get-Acl -Path <path> | Format-List
 
 サンプルは**浅い階層のファイルを選ばないでください。** 継承の破れ、明示的な拒否エントリ、長いパス、実行アカウントが所有していないファイルを選びます。問題はそこに出ます。
 
----
+### 期待結果
 
-## よくある誤解
+移行元と移行先で `Get-Acl` の出力が、DACL エントリ・所有者・（監査要件があれば）SACL のいずれも一致します。差分があれば、既定値の上書き漏れか実行アカウントの特権不足を示します。
 
-| 誤解 | 実際 |
-|---|---|
-| ACL 対応のツールを使えば ACL は保たれる | 既定値では落ちます。robocopy の既定は `/COPY:DAT` で ACL を含みません |
-| `/SEC` を付ければ全部保持される | `/SEC` は `/COPY:DATS` 相当で、**所有者と監査設定は含みません** |
-| DataSync なら設定不要で ACL が移る | DACL は移りますが SACL は既定では移りません。加えて実行 ID に特権が必要です |
-| 管理者で実行すれば特権の問題はない | 必要なのは「管理者であること」ではなく特定のユーザー権利です。**SACL には別の権利が必要**です |
-| エラーが出なければ保持できている | 読めない ACL は黙ってスキップされ、正常終了します。**サンプル比較が唯一の確認手段です** |
-| 別ドメインからでも ACL はそのまま移る | SID が解決できません。同一ドメインか信頼関係が前提で、無い場合は ID 移行の設計が先に必要です |
+## Read next
 
----
-
-## 参照した一次情報
-
-| 論点 | 出典 |
-|---|---|
-| `/B` はバックアップモードで ACL による読み取り制限を上書きする | [Microsoft Learn: robocopy](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy) |
-| `/COPY` のフラグ（D/A/T/S/O/U）と既定値 | 同上 |
-| DataSync が SMB で複製するメタデータの一覧、SMB 1.0 での SACL 非対応 | [AWS: Understanding how DataSync handles file and object metadata](https://docs.aws.amazon.com/datasync/latest/userguide/metadata-copied.html) |
-| DataSync に必要なユーザー権利、同一 AD ドメイン要件 | [AWS: Configuring AWS DataSync transfers with an SMB file server](https://docs.aws.amazon.com/datasync/latest/userguide/create-smb-location.html) |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 03 — 移行](../README.md) — このモジュールのハブ
-- [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択を左右します
-- [ブロックからファイルへ運ぶ経路の比較](../../../reference/comparison/block-to-file-routes.md) — 移行元がブロックの場合。**どの経路でも ACL 保持はこのノートが前提になります**
-- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md#後で戻せない判断から逆算する棚卸し項目) — ACL が読めるかの確認は棚卸しの項目です
-- [セキュリティスタイルが権限評価のモデルを決める](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) — 移行先での権限評価の前提
-- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md) — 移行後の ACL サンプル検証を項目に含めています
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
+[切り戻せる時点はいつ閉じるか？](where-the-rollback-window-closes.md)

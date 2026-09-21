@@ -7,15 +7,42 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics
 lang: en
 ---
 
-# Monitoring fails on averages
+# Why does monitoring fail on averages?
+
+Averages are diluted by standby nodes and unsaturated aggregates, so saturation looks healthy.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [English](monitoring-fails-on-averages.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
+
+## What you will learn
+
+- Why to decide the statistic (Average / Maximum) before the threshold, and the two structures by which averages hide saturation.
+- That SSD utilisation changes behaviour in stages at 80 / 90 / 98%, and that background-task lag is not alerted.
+
+## What this note does not answer
+
+- Measured figures for how much slower it gets at a given threshold (environment-dependent).
+- Using "maximum" as a benchmark headline (opposite in purpose to the monitoring Maximum).
+
+## Prerequisite level
+
+intermediate
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.
 
+> **Evidence**: `documented` — the thresholds and behaviour rest on AWS documentation.
+> **No measured figures for how much slower it gets at a given threshold are included.** Steps for
+> confirming this in your own environment are in
+> "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
-## Conclusion
+### Conclusion
 
 **Decide which statistic (Average / Maximum) you read before you decide the threshold.** Monitored on averages, a saturated file system looks healthy.
 
@@ -26,14 +53,9 @@ There are two reasons, and both are structural.
 
 A third problem is worse, and choosing the statistic does not prevent it. **FSx for ONTAP prioritises client traffic over background tasks** — tiering, storage efficiency, and backups. During periods of high load these **fall behind without raising an alert.**
 
-> **Evidence**: `documented` — the thresholds and behaviour rest on AWS documentation.
-> **No measured figures for how much slower it gets at a given threshold are included.** Steps for
-> confirming this in your own environment are in
-> "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
-
 ---
 
-## The SSD utilisation bands, and what changes at each point
+### The SSD utilisation bands, and what changes at each point
 
 80% is a recommendation, but **there are two points beyond it where behaviour changes.** A threshold placed only at 80% cannot explain what happens after it is crossed.
 
@@ -47,7 +69,7 @@ A third problem is worse, and choosing the statistic does not prevent it. **FSx 
 
 ---
 
-## Why capacity does not drop — deleted data held by Snapshots
+### Why capacity does not drop — deleted data held by Snapshots
 
 If SSD utilisation does not change after deleting data, **a Snapshot containing the deleted data still exists.** Freeing space requires deleting the Snapshot.
 
@@ -55,7 +77,7 @@ This means capacity monitoring and retention policy are the same problem. **Snap
 
 ---
 
-## SSD used even with tiering policy `All`
+### SSD used even with tiering policy `All`
 
 **Every write lands on SSD first, regardless of the tiering policy.** It moves to the capacity pool afterwards.
 
@@ -65,7 +87,7 @@ Sizing on the assumption that "`All` means no SSD is needed" runs short on the m
 
 ---
 
-## Order for isolating a performance regression
+### Order for isolating a performance regression
 
 **Look at whether the network or the disk saturates first.** The order matters — it runs from the widest blast radius downward.
 
@@ -93,7 +115,7 @@ Step 2 needs care. `NetworkThroughputUtilization` covers **all traffic, includin
 
 ---
 
-## Warnings FSx for ONTAP raises, and alarms you build yourself
+### Warnings FSx for ONTAP raises, and alarms you build yourself
 
 FSx for ONTAP displays a warning when a metric approaches or crosses a predefined threshold **across multiple consecutive data points.** **A single spike does not raise one.**
 
@@ -110,7 +132,7 @@ To build your own SSD capacity alarm, the configuration the documentation gives 
 
 ---
 
-## Monitoring granularity and retention
+### Monitoring granularity and retention
 
 | Item | Value |
 |---|---|
@@ -123,7 +145,7 @@ To build your own SSD capacity alarm, the configuration the documentation gives 
 
 ---
 
-## Monitoring design flow
+### Monitoring design flow
 
 ```mermaid
 graph TD
@@ -146,26 +168,7 @@ graph TD
 
 ---
 
-## Confirming this in your own environment
-
-**Measure how far apart the average and the maximum are in your own environment.** On some configurations the gap is small enough that the average would still show it — but that is only sayable after checking.
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Plot `DiskIopsUtilization` for the same period as Average and as Maximum | **How much dilution there is.** This is the basis for rebuilding the monitoring |
-| 2 | Break utilisation down per file server and compare odd- against even-numbered | How much the standby node pulls the average down |
-| 3 | Watch tiering progress during a load test | How far background tasks fall behind under client priority |
-| 4 | Delete data and watch SSD utilisation change | Whether a Snapshot is holding the capacity |
-| 5 | Measure SSD consumption on a volume with `All` tiering | Whether the metadata share matches the 1 : 10 guide |
-| 6 | Record the generation (first / second) and the region | The limits themselves differ |
-
-Step 1 comes first because **it is the cheapest and the most effective.** It only requires redrawing existing metrics with a different statistic.
-
-The premise behind step 6 is in [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md).
-
----
-
-## Three distinct meanings of "maximum"
+### Three distinct meanings of "maximum"
 
 **"Use Maximum" above is about monitoring, not about the headline number of a benchmark.** One word covers three different things, and **carrying the monitoring conclusion into a measurement plan produces confidently wrong answers.**
 
@@ -183,7 +186,7 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 
 ---
 
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -199,7 +202,7 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 
 ---
 
-## Primary sources
+### Primary sources
 
 | Point | Source |
 |---|---|
@@ -214,7 +217,7 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 
 ---
 
-## Related documents
+### Related documents
 
 - [Playbook 05 — Operate](../README.md) — this module's hub
 - [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — how the limits themselves are set. The FlexVol-to-aggregate relationship is there
@@ -223,10 +226,40 @@ The premise behind step 6 is in [Throughput is not determined by a single value]
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 
----
-
 [🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [English](monitoring-fails-on-averages.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**Measure how far apart the average and the maximum are in your own environment.** On some configurations the gap is small enough that the average would still show it — but that is only sayable after checking.
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Plot `DiskIopsUtilization` for the same period as Average and as Maximum | **How much dilution there is.** This is the basis for rebuilding the monitoring |
+| 2 | Break utilisation down per file server and compare odd- against even-numbered | How much the standby node pulls the average down |
+| 3 | Watch tiering progress during a load test | How far background tasks fall behind under client priority |
+| 4 | Delete data and watch SSD utilisation change | Whether a Snapshot is holding the capacity |
+| 5 | Measure SSD consumption on a volume with `All` tiering | Whether the metadata share matches the 1 : 10 guide |
+| 6 | Record the generation (first / second) and the region | The limits themselves differ |
+
+Step 1 comes first because **it is the cheapest and the most effective.** It only requires redrawing existing metrics with a different statistic.
+
+The premise behind step 6 is in [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md).
+
+The generation and deployment type can be read with the following read-only command. Because the limits themselves differ by generation, record them before reading any statistic.
+
+```bash
+aws fsx describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[0].[FileSystemTypeVersion,OntapConfiguration.DeploymentType]'
+```
+
+### Expected output
+
+The ONTAP version and deployment type (such as `SINGLE_AZ_2`) are returned. Because the metric series published (per-`FileServer` / per-`Aggregate`) differ between first and second generation, confirm which generation's series you are reading before comparing utilisation as Average against Maximum.
+
+## Read next
+
+[Can a volume run out of writes with capacity to spare?](../../01-assess/notes/counting-bytes-is-not-counting-files.md)
