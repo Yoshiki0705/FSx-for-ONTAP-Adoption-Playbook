@@ -137,3 +137,4 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retr
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない
 VMware-Migration-EC2-ONTAP	docs/ja/atx-fsxn-ga-verification.md	retraction	約 3 分後に開始し 60 秒未満で完了
+VMware-Migration-EC2-ONTAP	docs/ja/tco-comparison.md	retraction	逆転点はスループット容量に比例します。
