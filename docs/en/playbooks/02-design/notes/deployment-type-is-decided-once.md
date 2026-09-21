@@ -30,7 +30,10 @@ What matters is that **this single choice fixes both availability and the scale-
 So the approach of "start on Multi-AZ and add HA pairs later if performance runs short" **does not work.** At that point it becomes a rebuild.
 
 > **Evidence**: `documented` — mutability, ceilings, and protocol constraints rest on AWS
-> documentation. **Price ratios are not included.** Generation-based pricing differences are revised,
+> documentation. **The statement about the default deployment-type selection is
+> `field-observation`** — confirmed on the console in the Tokyo region (2026-09-21); other regions
+> are unverified. The UI can change, so verify it in your own region before creating a file system.
+> **Price ratios are not included.** Generation-based pricing differences are revised,
 > so refer to the current pricing page. Steps for your own environment are in
 > "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
 
@@ -48,6 +51,8 @@ So the approach of "start on Multi-AZ and add HA pairs later if performance runs
 **Going from `SINGLE_AZ_1` to `SINGLE_AZ_2` is also a rebuild.** Same Single-AZ or not, a different generation is a different deployment type, and no change operation exists.
 
 The migration routes are restore from backup, SnapMirror, AWS DataSync, and third-party copy tools. Choosing among them is in [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md).
+
+**Watch what the console pre-selects.** Quick create does not even show a generation choice — the latest generation available in the region is chosen automatically. On Standard create, as observed in the Tokyo region (2026-09-21), "Multi-AZ 2" is the initial selection (the radio button's `checked` state) for deployment type. **"Second generation" does not mean "Single-AZ."** Multi-AZ 2 (1 HA pair) and Single-AZ 2 (up to 12 HA pairs) are both second-generation deployment types — generation and AZ topology are independent axes. Confirm which deployment type is actually selected on the creation screen before creating the file system.
 
 ---
 
@@ -197,6 +202,8 @@ Step 5 **belongs in a test environment.** An added HA pair cannot be removed.
 | That the Multi-AZ standby sits in another AZ and is replicated synchronously, and that Multi-AZ 1 is first generation while Multi-AZ 2 is second | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | That the Multi-AZ write throughput ceiling is higher than Single-AZ, and that a write reaches both file servers before responding | [AWS Storage Blog: Best practice configuration for SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
 | The 6 GB/s and 200,000 IOPS of a single HA pair, and the workloads that justify scale-out | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+| That Quick create chooses the region's latest generation automatically | [AWS: Getting started with Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/getting-started.html) |
+| The Standard create default deployment-type selection (Tokyo region, console observation, 2026-09-21) | Own-environment confirmation. The screenshot from this note is kept as a private verification record |
 
 ---
 
