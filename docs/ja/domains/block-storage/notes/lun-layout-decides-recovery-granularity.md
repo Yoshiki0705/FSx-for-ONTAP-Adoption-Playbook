@@ -10,13 +10,33 @@ deployment_type: SINGLE_AZ_2
 lang: ja
 ---
 
-# LUN の並べ方が決めているのは復旧の粒度
+# LUN の並べ方が決めているのは何か？
+
+復旧の粒度です。1 LUN 1 ボリュームは一律の推奨ではなく、後から並べ替えられます。
+
+## このノートで学べること
+
+- Snapshot / SnapMirror がボリューム単位で動くため、LUN のレイアウトが復旧の粒度（相互整合か個別復旧か）を決めること
+- `lun move` が無停止で WWID を保ったまま並べ替えられること、クローン削除後に recovery queue が親削除を止めること
+
+## このノートが答えないこと
+
+- LUN 数の上限（AWS ドキュメント未記載、先に当たるのはボリューム数の上限）
+- 複数 HA ペアにまたがる `lun move` と reporting-nodes の準備（1 HA ペアのため未検証）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="lun-の並べ方が決めているのは復旧の粒度"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **LUN を 1 ボリューム 1 個にするか、まとめて置くかは、性能の判断ではありません。復旧の粒度の判断です。**
 
@@ -44,7 +64,7 @@ lang: ja
 
 ---
 
-## 復旧の粒度からの決め方
+### 復旧の粒度からの決め方
 
 **問いは「LUN をいくつのボリュームに分けるか」ではなく「どの単位で時刻を戻したいか」です。**
 
@@ -60,7 +80,7 @@ lang: ja
 
 ---
 
-## ボリューム数の上限という現実的な天井
+### ボリューム数の上限という現実的な天井
 
 **LUN ごとにボリュームを分ける設計は、ボリューム数の上限に当たります。**
 
@@ -76,7 +96,7 @@ lang: ja
 
 ---
 
-## 並べ替えが後からできること
+### 並べ替えが後からできること
 
 **`lun move` はマウント済み・書き込み中の LUN を別のボリュームへ移せました。**
 
@@ -100,7 +120,7 @@ lang: ja
 
 ---
 
-## Selective LUN Map が絞っている範囲
+### Selective LUN Map が絞っている範囲
 
 **新しい LUN マップでは Selective LUN Map が既定で有効でした。**
 
@@ -112,7 +132,7 @@ lang: ja
 
 ---
 
-## クローンと複製で「持ち込まれないもの」
+### クローンと複製で「持ち込まれないもの」
 
 **ボリュームを複製すると LUN は付いてきますが、マッピングは付いてきません。**
 
@@ -130,7 +150,7 @@ lang: ja
 
 ---
 
-## クローンを消しても親が消せない期間
+### クローンを消しても親が消せない期間
 
 **`volume delete` は即座に消しません。ボリュームは recovery queue に入り、既定で 12 時間以上そこに留まります。** その間、FlexClone の関係は生きたままなので、**親ボリュームを削除できません。**
 
@@ -146,7 +166,7 @@ lang: ja
 
 **依存が連鎖します。** ファイルシステムは SVM があると削除できず、SVM はボリュームがあると削除できず、ボリュームはクローンの関係があると削除できません。**削除できない間、課金は続きます。**
 
-### 誤解を招くエラーメッセージ
+#### 誤解を招くエラーメッセージ
 
 **ONTAP が返す指示は、この状況では機能しません。**
 
@@ -157,7 +177,7 @@ Use "volume delete -vserver <svm name> -volume <clone name>" to delete clones.
 
 **その `volume delete` は `entry doesn't exist` を返します。** recovery queue にあるボリュームは通常のボリュームではないため、`volume delete` の対象になりません。**メッセージは存在しないコマンドの実行を指示しています。**
 
-### 解決手順
+#### 解決手順
 
 **`volume recovery-queue` を使います。advanced 権限が必要です。**
 
@@ -175,13 +195,13 @@ Use "volume delete -vserver <svm name> -volume <clone name>" to delete clones.
 
 **そして recovery queue には削除に成功したボリュームも入っています。** 検証環境では、CloudFormation が正常に削除した `blockverify_move_vol` も `blockverify_move_vol_1028` として残っていました。**「削除が成功した」と「容量が戻った」は別です。**
 
-### Amazon FSx の API からは見えないこと
+#### Amazon FSx の API からは見えないこと
 
 **FlexClone は一度も `describe-volumes` に現れませんでした。** recovery queue の中身も現れません。**AWS 側の一覧に出ないオブジェクトが、AWS 側の削除を止めます。**
 
 CloudFormation が返すのは ONTAP のメッセージをそのまま包んだものなので、**原因の特定には ONTAP 側を見る必要があります。**
 
-### 設計上の教訓
+#### 設計上の教訓
 
 | 教訓 | 内容 |
 |---|---|
@@ -192,7 +212,7 @@ CloudFormation が返すのは ONTAP のメッセージをそのまま包んだ�
 
 ---
 
-## 移行で入ってくるレイアウト
+### 移行で入ってくるレイアウト
 
 **AWS Transform でブロックストレージを移行すると、ONTAP の推奨とは違うレイアウトになります。**
 
@@ -202,7 +222,7 @@ CloudFormation が返すのは ONTAP のメッセージをそのまま包んだ�
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -238,26 +258,7 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | 復旧したい単位を関係者と合意し、文書化する | **レイアウトの根拠。これがないと後で議論が戻ります** |
-| 2 | `volume show -vserver <svm>` でボリューム数を数え、上限と比べる | 分ける設計が上限に当たらないか |
-| 3 | `lun mapping show -fields reporting-nodes` を記録する | Selective LUN Map が絞っている範囲 |
-| 4 | 検証環境で LUN をマウントし書き込みながら `lun move start` を実行し、所要時間・WWID・マウントの継続を記録する | **無停止性と WWID の保持を自環境で確認する** |
-| 5 | 複数 HA ペアの環境なら、移動前に reporting-nodes へ宛先ノードと HA パートナーを追加する | **このノートで未検証の条件** |
-| 6 | 検証環境で FlexClone を作り、クローン内の LUN が `mapped=unmapped` であることを確認する | 複製にマッピングが付いてこないこと |
-| 7 | クローンをマウントする際に `-o nouuid` が必要かを確認する | 同一ホストで元とクローンを併用するときの前提 |
-| 8 | クローンを削除し、`volume recovery-queue show` に残っていないか、`volume clone show` が空かを確認してから親ボリュームの削除に進む | **削除順序。`volume delete` の成功応答は削除完了の証拠になりません** |
-| 9 | 検証環境でクローンを削除した直後に `volume recovery-queue show` を実行する | **削除したボリュームが 12 時間残ることの確認** |
-| 10 | `volume recovery-queue purge -vserver <svm> -volume <名前>_<データセット ID>` を実行し、`volume clone show` が空になることを確認する | 撤去手順に入れるべきコマンド |
-
-手順 4・6・7・8 は**検証環境で行ってください。** 特に手順 8 の順序を守らないと、親ボリュームが削除できない状態になり得ます。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -276,7 +277,7 @@ graph TD
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -292,7 +293,7 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -312,7 +313,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) — まとめて取った Snapshot が何を保証するか
@@ -327,3 +328,39 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 復旧したい単位を関係者と合意し、文書化する | **レイアウトの根拠。これがないと後で議論が戻ります** |
+| 2 | `volume show -vserver <svm>` でボリューム数を数え、上限と比べる | 分ける設計が上限に当たらないか |
+| 3 | `lun mapping show -fields reporting-nodes` を記録する | Selective LUN Map が絞っている範囲 |
+| 4 | 検証環境で LUN をマウントし書き込みながら `lun move start` を実行し、所要時間・WWID・マウントの継続を記録する | **無停止性と WWID の保持を自環境で確認する** |
+| 5 | 複数 HA ペアの環境なら、移動前に reporting-nodes へ宛先ノードと HA パートナーを追加する | **このノートで未検証の条件** |
+| 6 | 検証環境で FlexClone を作り、クローン内の LUN が `mapped=unmapped` であることを確認する | 複製にマッピングが付いてこないこと |
+| 7 | クローンをマウントする際に `-o nouuid` が必要かを確認する | 同一ホストで元とクローンを併用するときの前提 |
+| 8 | クローンを削除し、`volume recovery-queue show` に残っていないか、`volume clone show` が空かを確認してから親ボリュームの削除に進む | **削除順序。`volume delete` の成功応答は削除完了の証拠になりません** |
+| 9 | 検証環境でクローンを削除した直後に `volume recovery-queue show` を実行する | **削除したボリュームが 12 時間残ることの確認** |
+| 10 | 撤去手順に recovery-queue の purge を入れ、`volume clone show` が空になることを確認する | 撤去手順に入れるべき操作 |
+
+手順 4・6・7・8 は**検証環境で行ってください。** 特に手順 8 の順序を守らないと、親ボリュームが削除できない状態になり得ます。
+
+手順 3 の reporting node は、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> lun mapping show -vserver <svm> -fields reporting-nodes
+```
+
+### 期待結果
+
+```text
+所有ノードと HA パートナーの 2 ノードが reporting-nodes に並ぶ（Selective LUN Map が既定で有効）。
+別 HA ペアへ lun move する前は、宛先ノードとその HA パートナーをここに追加する必要がある
+```
+
+このコマンドは LUN マッピングを読むだけで、LUN にもボリュームにも変更を加えません。クローン削除後の親ボリューム削除は、recovery queue が空になったことを `volume clone show` で確認してから進めてください。
+
+## Read next
+
+[LUN と igroup は AWS の API で操作できるか？](block-objects-are-outside-the-aws-api.md)

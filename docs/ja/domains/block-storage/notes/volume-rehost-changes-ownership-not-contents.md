@@ -11,7 +11,27 @@ source: https://docs.netapp.com/us-en/ontap/volumes/rehost-volume-another-svm-ta
 lang: ja
 ---
 
-# `volume rehost` が変えるのは所有 SVM だけで、中身は変わらない
+# `volume rehost` が変えるのは所有 SVM だけか？
+
+中身は変わりません。ただし失われる設定が 7 種あり、Snapshot ポリシーは `default` に戻ります。
+
+## このノートで学べること
+
+- `volume rehost` が所有 SVM だけを変え、LUN と中身は保持され unmapped で残ること
+- rehost 後に失われる設定 7 種と、Snapshot ポリシーが `default` に戻る挙動・AWS 制御面の追随に十数分かかること
+
+## このノートが答えないこと
+
+- 失われる 7 種のうち未観測の 5 種、および FSx for ONTAP でサポートされた操作である根拠（AWS ドキュメント未記載）
+- 制御面が食い違う十数分の窓に削除した場合の挙動、split の所要時間と容量ピーク（いずれも未測定）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="volume-rehost-が変えるのは所有-svm-だけで中身は変わらない"></a>
 
 <!-- lang-switcher:start -->
 🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
@@ -21,7 +41,7 @@ lang: ja
 
 ---
 
-## 結論
+### 結論
 
 **`volume rehost` は SnapMirror のコピーなしに、ボリュームを 1 つの SVM から別の SVM へ再割り当てします。** 変わるのは所有 SVM で、**ボリュームの中身は変わりません。** LUN は保持され、unmapped の状態で残ります。
 
@@ -40,7 +60,7 @@ lang: ja
 
 ---
 
-## rehost の前提条件
+### rehost の前提条件
 
 **満たしていないと実行できません。上から順に確認するのが安いです。**
 
@@ -57,7 +77,7 @@ lang: ja
 
 **SnapLock ボリュームが非対応であることは、別の理由でも重要です。** SnapLock は有効化が不可逆で、[人間の明示的な指示なしに有効化してはいけない機能](../../../../../AGENTS.md)です。rehost の検証で SnapLock ボリュームを作る必要はありません。
 
-### SAN ボリュームの追加条件
+#### SAN ボリュームの追加条件
 
 | 条件 | 補足 |
 |---|---|
@@ -68,7 +88,7 @@ lang: ja
 
 ---
 
-## rehost で失われる設定
+### rehost で失われる設定
 
 **ドキュメントは、rehost 後に送信元ボリュームから失われ、rehost 後のボリュームで手動で再設定する必要があるものを 7 種挙げています。**
 
@@ -90,7 +110,7 @@ lang: ja
 
 ---
 
-## FlexClone との排他と split の代償
+### FlexClone との排他と split の代償
 
 **split は FlexClone の利点を半分だけ失わせます。この非対称が判断を決めます。**
 
@@ -105,7 +125,7 @@ lang: ja
 
 ---
 
-## rehost が変えないもの
+### rehost が変えないもの
 
 **ここを取り違えると、成立しない設計になります。**
 
@@ -117,13 +137,13 @@ lang: ja
 
 ---
 
-## 実測で確定した 4 点
+### 実測で確定した 4 点
 
 **ここはドキュメントの記載ではなく当方の実測です。** ノートの `documented` 区分の外にあります。
 
 検証環境 / Environment: `ap-northeast-1`、ONTAP 9.18.1P3D1、`SINGLE_AZ_1`（第 1 世代）、SSD 1,024 GiB、スループット 128 MBps、2026-09-11。送信元 `subtype: default` / NFS 有効・CIFS 無効・ルートボリューム UNIX、宛先も同じ。**対象ボリュームは 1 GiB、セキュリティスタイルを明示的に `NTFS` で作成**（つまり宛先 SVM のルートのスタイルとは異なる状態で移した）。
 
-### 1. REST の経路は private CLI パススルー
+#### 1. REST の経路は private CLI パススルー
 
 **ボリュームの `svm` を書き換える形は拒否されます。**
 
@@ -148,11 +168,11 @@ POST /api/private/cli/volume/rehost
 > `Invalid string: control characters from U+0000 through U+001F must be escaped` で失敗します。
 > スクリプトを書くなら `tr -d '\000-\010\013\014\016-\037'` を挟んでください。
 
-### 2. セキュリティスタイルの保持
+#### 2. セキュリティスタイルの保持
 
 **`ntfs` のまま移りました。** 宛先 SVM のルートボリュームは UNIX なので、**スタイルはボリュームの属性で、宛先のルートに引きずられません。** 失われる 7 種にセキュリティスタイルが含まれていないという記述の沈黙は、この環境では保持を意味していました。
 
-### 3. Snapshot ポリシーの `default` への復帰 — 喪失ではないこと
+#### 3. Snapshot ポリシーの `default` への復帰 — 喪失ではないこと
 
 **これが 7 種の記述より鋭い所見です。**
 
@@ -168,7 +188,7 @@ POST /api/private/cli/volume/rehost
 export policy を割り当てておいたためです。**1 回目で「差が出なかった」のは、失われなかったからでは
 なく、失われても見えない状態で測ったからです。** 残り 5 種は未観測で、ドキュメントの記述のままです。
 
-### 4. AWS 制御面の追随と、それに要する時間
+#### 4. AWS 制御面の追随と、それに要する時間
 
 | 時刻（UTC） | ONTAP | AWS API |
 |---|---|---|
@@ -182,7 +202,7 @@ export policy を割り当てておいたためです。**1 回目で「差が�
 
 **両制御面が一致した状態では、撤去は `aws fsx delete-volume` で通りました。** S3 Access Points を付けたボリュームで観測された非対称（[撤去時の停滞](../../data-utilization/notes/s3-access-point-constraints.md#撤去時の停滞--aws-側からしか消せなくなるボリューム)）は、この経路では再現していません。**ただし追随前の 14 分間に削除を試した場合の挙動は測っていません。**
 
-## 2 回目の実測 — 追随時間は 13 分 42 秒より延び、export policy の喪失も観測
+### 2 回目の実測 — 追随時間は 13 分 42 秒より延び、export policy の喪失も観測
 
 別のファイルシステムで、より新しい ONTAP で再測しました。**セキュリティスタイルの保持と Snapshot
 ポリシーの `default` 復帰は再現しました。** 一方で 2 点が 1 回目と違いました。
@@ -200,7 +220,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 | Snapshot ポリシー | `none` | `default` | **変化**（1 回目と同じ。既定の獲得） |
 | **export policy** | `mpad_clients` | `default` | **喪失を初観測。** 再設定が必要 |
 
-### Snapshot ポリシーの変化はデータ保護の設計変更として扱うこと
+#### Snapshot ポリシーの変化はデータ保護の設計変更として扱うこと
 
 `none` から `default` への変化を「既定を獲得した」と書くと軽く見えますが、**データ保護の観点では
 どちらの方向も設計変更です。**
@@ -214,7 +234,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 場合、Snapshot ポリシーの再設定を手順の一部にしてください。export policy と同じ扱いです。
 | AWS の `JunctionPath` | `/rehostvol` | `null` | 名前空間から外れた |
 
-### 追随時間は環境ごとに変わる — 13 分 42 秒を規則として扱わないこと
+#### 追随時間は環境ごとに変わる — 13 分 42 秒を規則として扱わないこと
 
 2 回目の追随は **19 分 01 秒以上、24 分 05 秒以下**でした。上下限で書くのは、ONTAP ジョブの完了時刻を
 記録していなかったためです。観測できたのは「01:40:47 の時点で ONTAP はすでに宛先を示していた」と
@@ -229,7 +249,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 
 ---
 
-## 残っている未確定
+### 残っている未確定
 
 | # | 未確定 | なぜ未確定か | 影響 |
 |---|---|---|---|
@@ -242,35 +262,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 
 ---
 
-## 自環境での確認手順
-
-**rehost は disruptive です。本番相当のデータを置いたボリュームでは試さないでください。**
-
-### 実行前
-
-| # | 手順 | 理由 |
-|---|---|---|
-| 1 | `lun mapping show -volume <volume> -vserver <source_svm>` の出力を保存する | **失敗時にマップ情報を失わないための保険。** ドキュメントが手順として挙げています |
-| 2 | `volume show -volume <volume> -instance` の出力を保存する | **セキュリティスタイルを含む現状の記録。** 未確定 1 の判定に使います |
-| 3 | `aws fsx describe-volumes` の出力を保存する | **AWS 側から見た所有 SVM の記録。** 未確定 2 の判定に使います |
-| 4 | export ポリシーと Snapshot ポリシーの現状を保存する | 失われる 7 種のうち再設定が必要なもの |
-
-### 実行後に判定する項目
-
-| # | 確認 | 何が分かるか |
-|---|---|---|
-| 1 | `volume show -volume <volume> -instance` でセキュリティスタイルを比較する | 当環境では**保持**されました。宛先のルートと異なるスタイルで試すこと |
-| 2 | `aws fsx describe-volumes` の `StorageVirtualMachineId` を比較する。**15 分以上待つこと** | 当環境では**ジョブ完了から 13 分 42 秒後**に追随しました。10 分で打ち切ると逆の結論が出ます |
-| 3 | 失われる 7 種を 1 つずつ確認する。**Snapshot ポリシーは `none` にしてから移すこと** | 再設定リストの網羅性。`default` に戻る挙動は、移動前が `default` だと観測できません |
-| 4 | LUN が unmapped であることを確認し、宛先 SVM の igroup にマップする | ドキュメントどおりの挙動か |
-| 5 | **管理者グループに属さない**一般ユーザーで NFS から読み書きする | UID / GID の欠落が実際に権限へ効くか |
-| 6 | **撤去を試す。** `aws fsx delete-volume` と ONTAP の `volume delete` の両方 | **未確定 2 の帰結。** 片方でしか消せないなら手順書に書く必要があります |
-
-**手順 6 を省かないでください。** 撤去が片方の経路でしか通らないことは、導入時ではなく撤去時に分かります。**検証環境を作り直す場面ほど当たりやすい経路です。**
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -288,7 +280,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -300,7 +292,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **未確定 4 点のうち 2 点を測るための最小構成**。`rehost-probe.sh` は既定では記録のみで、`--apply` を二重に指定しない限り何も変更しません
@@ -318,6 +310,38 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+**rehost は disruptive です。本番相当のデータを置いたボリュームでは試さないでください。**
+
+実行前に、`lun mapping show` の出力、`volume show -instance`（セキュリティスタイルを含む）、`aws fsx describe-volumes` の所有 SVM、export ポリシーと Snapshot ポリシーの現状を保存します。実行後は次を判定します。
+
+| # | 確認 | 何が分かるか |
+|---|---|---|
+| 1 | `volume show -volume <volume> -instance` でセキュリティスタイルを比較する | 当環境では**保持**されました。宛先のルートと異なるスタイルで試すこと |
+| 2 | `aws fsx describe-volumes` の `StorageVirtualMachineId` を比較する。**十数分以上待つこと** | 当環境では**ジョブ完了から 13 分 42 秒後（1 回目）／さらに長い（2 回目）**に追随しました。数分で打ち切ると逆の結論が出ます |
+| 3 | 失われる 7 種を 1 つずつ確認する。**Snapshot ポリシーは `none` にしてから移すこと** | 再設定リストの網羅性。`default` に戻る挙動は、移動前が `default` だと観測できません |
+| 4 | LUN が unmapped であることを確認し、宛先 SVM の igroup にマップする | ドキュメントどおりの挙動か |
+| 5 | **管理者グループに属さない**一般ユーザーで NFS から読み書きする | UID / GID の欠落が実際に権限へ効くか |
+| 6 | **撤去を試す。** `aws fsx delete-volume` と ONTAP の `volume delete` の両方 | **片方でしか消せないなら手順書に書く必要があります** |
+
+**手順 6 を省かないでください。** 撤去が片方の経路でしか通らないことは、導入時ではなく撤去時に分かります。**検証環境を作り直す場面ほど当たりやすい経路です。**
+
+実行前の記録は、次の読み取り専用コマンドで取ります。
+
+```bash
+ssh <svm-management-endpoint> volume show -volume <volume> -instance
+```
+
+### 期待結果
+
+```text
+セキュリティスタイル・snapshot-policy・所有 SVM を含む現状が返る。これを rehost 後の値と比べる。
+Snapshot ポリシーは default に戻り、AWS 制御面の追随には十数分かかる（数分で打ち切らない）
+```
+
+このコマンドはボリュームの属性を読むだけで、ボリュームにも SVM にも変更を加えません。rehost 自体は disruptive なので、検証用の使い捨てボリュームで試してください。
+
+## Read next
+
+[共有ブロックはどんな条件で設計を変えるか？](when-shared-block-changes-the-design.md)

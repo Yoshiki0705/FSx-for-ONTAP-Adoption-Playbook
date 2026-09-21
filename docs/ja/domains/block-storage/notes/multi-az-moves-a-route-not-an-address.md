@@ -10,7 +10,27 @@ deployment_type: MULTI_AZ_2
 lang: ja
 ---
 
-# Multi-AZ が動かすのはアドレスではなくルート
+# Multi-AZ が動かすのはアドレスか？
+
+アドレスではなくルートです。ブロックのアドレスは動かないので Transit Gateway も不要です。
+
+## このノートで学べること
+
+- Multi-AZ のフェイルオーバーが動かすのは VPC ルートテーブルの `/32` ターゲットで、iSCSI / NVMe/TCP のアドレスは動かないこと
+- ブロックのアドレスが VPC CIDR 内なので Transit Gateway 不要で、可用性はホスト側 multipath が担うこと
+
+## このノートが答えないこと
+
+- ブロックの性能値（測ったのはアドレス配置・ルート書き換え・ALUA の向きのみ）
+- 使える容量の目減り比率の一般値（Single-AZ と Multi-AZ で異なる、自環境で数える）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="multi-az-が動かすのはアドレスではなくルート"></a>
 
 <!-- lang-switcher:start -->
 🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
@@ -20,7 +40,7 @@ lang: ja
 
 ---
 
-## 結論
+### 結論
 
 **Multi-AZ の FSx for ONTAP には、動くアドレスと動かないアドレスがあります。ブロックのアドレスは動かない側です。**
 
@@ -41,7 +61,7 @@ NFS・SMB・管理のアドレスは VPC の CIDR の外にある floating ア�
 
 ---
 
-## アドレスの配置
+### アドレスの配置
 
 エンドポイント IP アドレス範囲は **`198.19.174.0/24`** が自動で割り当てられました。VPC の CIDR は `10.0.x.x` の /16 なので、**この範囲は VPC の外側です。**
 
@@ -72,7 +92,7 @@ ENI は AZ ごとに 1 本、**それぞれプライベートアドレスを 2 �
 
 ---
 
-## フェイルオーバーで書き換わるもの
+### フェイルオーバーで書き換わるもの
 
 スループット容量を 384 → 768 MBps に変更してフェイルオーバーを誘発し、5 秒間隔でルートテーブルを見た結果です。
 
@@ -90,7 +110,7 @@ ENI は AZ ごとに 1 本、**それぞれプライベートアドレスを 2 �
 
 ---
 
-## Transit Gateway が要る条件と、ブロックが当たらない理由
+### Transit Gateway が要る条件と、ブロックが当たらない理由
 
 AWS は Transit Gateway の追加設定が必要な条件を、**「エンドポイント IP アドレス範囲が VPC の CIDR の外側にある Multi-AZ ファイルシステム」**と書いています。VPC CIDR 内なら追加設定は不要です。
 
@@ -109,7 +129,7 @@ AWS のクライアント要件の表も、Transit Gateway が必要かという
 
 ---
 
-## 最適パスの向き
+### 最適パスの向き
 
 **1 HA ペアの構成では aggregate が 1 つしかありません。** 検証環境の `aggr1` はノード -01（1a 側）が所有し、**すべてのボリュームがそこにありました。** ノード -02 はフェイルオーバーまで何も所有しません。
 
@@ -137,7 +157,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## Multi-AZ で使える容量
+### Multi-AZ で使える容量
 
 `set -unit B` での実測です。
 
@@ -153,22 +173,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `aws fsx describe-file-systems --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'` | **その範囲が VPC CIDR の内か外か。Transit Gateway の要否がここで決まります** |
-| 2 | `aws fsx describe-storage-virtual-machines --query 'StorageVirtualMachines[].Endpoints'` | iSCSI のアドレスが VPC CIDR 内にあること。**`Nvme` は `null` で返ります**（後述） |
-| 3 | `aws ec2 describe-network-interfaces --network-interface-ids <fs の ENI>` | ENI に載っているアドレスと、載っていないアドレスの区別 |
-| 4 | 関連付けたルートテーブルで `/32` のエントリとそのターゲット ENI を確認する | **floating アドレスの実装** |
-| 5 | `network interface show -fields address,home-node,failover-policy` | **iSCSI が `disabled` であること** |
-| 6 | 2 つの AZ からそれぞれ接続し、`multipath -ll` の prio を比べる | **optimized がどちらの AZ を向いているか** |
-| 7 | `storage aggregate show -fields aggregate,node` | 1 HA ペアなら aggregate は 1 つで、片方のノードが所有します |
-| 8 | `nvme ana-log /dev/nvmeN` をコントローラごとに実行する | **ネイティブ multipath が無いカーネルでの optimized の判別** |
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -184,7 +189,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -204,7 +209,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -218,7 +223,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) — この配置の上で実際に測ったフェイルオーバー
@@ -232,6 +237,35 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `aws fsx describe-file-systems --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'` | **その範囲が VPC CIDR の内か外か。Transit Gateway の要否がここで決まります** |
+| 2 | `aws fsx describe-storage-virtual-machines --query 'StorageVirtualMachines[].Endpoints'` | iSCSI のアドレスが VPC CIDR 内にあること。**`Nvme` は `null` で返ります** |
+| 3 | `aws ec2 describe-network-interfaces --network-interface-ids <fs の ENI>` | ENI に載っているアドレスと、載っていないアドレスの区別 |
+| 4 | 関連付けたルートテーブルで `/32` のエントリとそのターゲット ENI を確認する | **floating アドレスの実装** |
+| 5 | `network interface show -fields address,home-node,failover-policy` | **iSCSI が `disabled` であること** |
+| 6 | 2 つの AZ からそれぞれ接続し、`multipath -ll` の prio を比べる | **optimized がどちらの AZ を向いているか** |
+| 7 | `storage aggregate show -fields aggregate,node` | 1 HA ペアなら aggregate は 1 つで、片方のノードが所有します |
+| 8 | `nvme ana-log /dev/nvmeN` をコントローラごとに実行する | **ネイティブ multipath が無いカーネルでの optimized の判別** |
+
+手順 1 のエンドポイント範囲は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws fsx describe-file-systems \
+  --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'
+```
+
+### 期待結果
+
+```text
+エンドポイント範囲が返る。VPC CIDR の外なら NFS / SMB / 管理には Transit Gateway が要る。
+iSCSI / NVMe-TCP のアドレスは VPC CIDR 内なので、ブロックだけならピアリングで届く
+```
+
+このコマンドはファイルシステムの構成を読むだけで、ルートにもアドレスにも変更を加えません。ブロックのアドレスはフェイルオーバーでも動かないため、切り替えるのはホスト側の multipath です。
+
+## Read next
+
+[igroup の外側にある制御は何か？](igroups-are-not-the-only-access-control.md)

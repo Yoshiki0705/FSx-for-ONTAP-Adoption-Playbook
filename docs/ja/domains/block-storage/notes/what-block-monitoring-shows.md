@@ -10,13 +10,33 @@ deployment_type: MULTI_AZ_2
 lang: ja
 ---
 
-# ブロックの監視には LUN の次元もプロトコルの次元もない
+# ブロックの監視には何が見えないか？
+
+LUN の次元もプロトコルの次元もありません。だから 1 ボリューム 1 LUN が監視の設計判断になります。
+
+## このノートで学べること
+
+- CloudWatch の `AWS/FSx` に LUN 次元もプロトコル次元もなく、1 ボリューム 1 LUN でボリューム次元が LUN 次元の代わりになること
+- ONTAP 側で作ったボリュームは CloudWatch にも AWS Backup にも現れないこと
+
+## このノートが答えないこと
+
+- フェイルオーバー中に `FileServer` 次元がどう動くか（測っていない）
+- ボリューム操作時間メトリクスからテール（p99）を出せるか（平均のみ、別ノート参照）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ブロックの監視には-lun-の次元もプロトコルの次元もない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **CloudWatch の `AWS/FSx` 名前空間には、LUN を指す次元がありません。プロトコルを分ける次元もありません。** iSCSI の I/O と NVMe/TCP の I/O と NFS の I/O は、同じメトリクスの中で混ざります。
 
@@ -33,7 +53,7 @@ lang: ja
 
 ---
 
-## 実測した次元とメトリクス
+### 実測した次元とメトリクス
 
 `aws cloudwatch list-metrics --namespace AWS/FSx --dimensions Name=FileSystemId,Value=<fs-id>` は **129 件**を返しました。次元の組み合わせで整理します。
 
@@ -49,7 +69,7 @@ lang: ja
 
 ---
 
-## `FileServer` 次元がノードを指すこと
+### `FileServer` 次元がノードを指すこと
 
 `FileServer` 次元の値は **ノード名そのもの**でした。
 
@@ -64,7 +84,7 @@ FileServer = FsxIdEXAMPLE-02
 
 ---
 
-## LUN 単位が要るときの数え方
+### LUN 単位が要るときの数え方
 
 **ボリューム単位の I/O メトリクスが存在するので、1 ボリューム 1 LUN なら CloudWatch で LUN ごとの I/O が見えます。**
 
@@ -89,7 +109,7 @@ FileServer = FsxIdEXAMPLE-02
 
 ---
 
-## NVMe/TCP の経路別バイト数を持つテーブルが 1 つだけであること（引用）
+### NVMe/TCP の経路別バイト数を持つテーブルが 1 つだけであること（引用）
 
 **当方の検証ではありません。** 以下は sibling repo の実測の転記です。
 
@@ -119,7 +139,7 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 
 ---
 
-## ONTAP 側で作ったボリュームは監視に現れないこと
+### ONTAP 側で作ったボリュームは監視に現れないこと
 
 検証環境で、AWS の API で 2 ボリューム、ONTAP の CLI で 2 ボリュームを作りました。
 
@@ -144,20 +164,7 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `aws cloudwatch list-metrics --namespace AWS/FSx --dimensions Name=FileSystemId,Value=<fs-id>` | **その時点で存在する次元とメトリクスの全量。増えていることがあります** |
-| 2 | 上の結果を次元の組み合わせで集約する | **LUN やプロトコルの次元が増えていないか** |
-| 3 | `list-metrics --metric-name CPUUtilization` で `FileServer` の値を見る | ノード名。**フェイルオーバーを見る足場** |
-| 4 | `aws fsx describe-volumes` の件数と ONTAP の `volume show` の件数を比べる | **AWS から見えていないボリュームの有無** |
-| 5 | `statistics lun show -vserver <svm>` | ONTAP 側の LUN ごとのカウンタ |
-| 6 | 1 ボリュームに複数 LUN がある場合、`VolumeId` 次元の `DataWriteBytes` と各 LUN の書き込みを突き合わせる | **合計しか見えないことの確認** |
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -173,7 +180,7 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -189,7 +196,7 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -201,7 +208,7 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) — 制御面の境界の全体像
@@ -213,3 +220,33 @@ optimized 側に約 1,012 GiB の読みと 730 GiB の書き、**non-optimized �
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `list-metrics` で `AWS/FSx` の次元とメトリクスの全量を取る | **その時点で存在する次元とメトリクスの全量。増えていることがあります** |
+| 2 | 上の結果を次元の組み合わせで集約する | **LUN やプロトコルの次元が増えていないか** |
+| 3 | `CPUUtilization` の `FileServer` の値を見る | ノード名。**フェイルオーバーを見る足場** |
+| 4 | `aws fsx describe-volumes` の件数と ONTAP の `volume show` の件数を比べる | **AWS から見えていないボリュームの有無** |
+| 5 | `statistics lun show -vserver <svm>` | ONTAP 側の LUN ごとのカウンタ |
+| 6 | 1 ボリュームに複数 LUN がある場合、`VolumeId` 次元の `DataWriteBytes` と各 LUN の書き込みを突き合わせる | **合計しか見えないことの確認** |
+
+手順 4 の「AWS から見えないボリューム」は、次の読み取り専用コマンドの件数を ONTAP の `volume show` と比べて確認します。
+
+```bash
+aws fsx describe-volumes --query 'length(Volumes)'
+```
+
+### 期待結果
+
+```text
+aws fsx describe-volumes の件数が ONTAP の volume show より少ないことがある。
+ONTAP 側で作ったボリュームは fsvol- の ID を持たず、CloudWatch にも AWS Backup にも現れない
+```
+
+このコマンドはボリュームを数えるだけで、ボリュームにもメトリクスにも変更を加えません。LUN やプロトコルの次元は現時点では存在しないため、LUN ごとの数字は ONTAP 側で取ります。
+
+## Read next
+
+[NVMe/TCP は AWS 側の面から抜けているか？](nvme-tcp-is-thin-on-the-aws-side.md)

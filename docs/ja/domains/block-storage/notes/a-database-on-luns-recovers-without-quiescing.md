@@ -10,7 +10,27 @@ deployment_type: MULTI_AZ_2
 lang: ja
 ---
 
-# LUN に載せた DB は静止させずに復旧した
+# LUN に載せた DB は静止させずに復旧できるか？
+
+できました。write fence 付き Snapshot が 0.52 秒で、復旧は DB 自身が WAL 再生で行いました。
+
+## このノートで学べること
+
+- データと WAL を別 LUN に分けた PostgreSQL を、書き込みを止めず consistency group の write fence 付き Snapshot で 1 時点として取れること
+- crash-consistent なクローンから DB が自分で redo して起動し、コミット済みの行が失われないこと
+
+## このノートが答えないこと
+
+- 他の DB エンジンや他の設定での挙動（PostgreSQL 16 で 1 回の観測）
+- write fence が失敗する条件・症状・上限時間（観測しておらず、上限値の出典も未確認）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="lun-に載せた-db-は静止させずに復旧した"></a>
 
 <!-- lang-switcher:start -->
 🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
@@ -20,7 +40,7 @@ lang: ja
 
 ---
 
-## 結論
+### 結論
 
 **データと WAL を別の LUN に分けた PostgreSQL に対して、書き込みを止めずに consistency group の Snapshot を取り、そのクローンから起動したところ、DB は自分で WAL を再生して整合した状態になりました。**
 
@@ -36,7 +56,7 @@ lang: ja
 
 ---
 
-## 構成
+### 構成
 
 | 要素 | 配置 |
 |---|---|
@@ -49,7 +69,7 @@ lang: ja
 
 ---
 
-## write fence が必要な理由と、その所要時間
+### write fence が必要な理由と、その所要時間
 
 **2 つの LUN を別々に Snapshot すると、2 つの時点が混ざります。** データが新しくて WAL が古い、あるいはその逆になり得ます。**DB の復旧が前提にしている「WAL がデータより進んでいる」という関係が壊れます。**
 
@@ -80,7 +100,7 @@ vserver consistency-group snapshot create -vserver <svm> -consistency-group cg_p
 
 ---
 
-## クローンの受け渡し
+### クローンの受け渡し
 
 Snapshot からボリュームをクローンし、**別ホストの igroup に割り当てました。**
 
@@ -110,7 +130,7 @@ lun map -vserver <svm> -path /vol/clone_pgdata/pgdata -igroup <他ホストの i
 
 ---
 
-## 復旧の中身
+### 復旧の中身
 
 **クローン側の PostgreSQL は、事前準備なしで起動しました。** `postmaster.pid` を消しただけです。
 
@@ -145,7 +165,7 @@ LOG:  checkpoint complete: ...
 
 ---
 
-## 言えることと言えないこと
+### 言えることと言えないこと
 
 **言えること**（この環境での実測）。
 
@@ -166,25 +186,7 @@ LOG:  checkpoint complete: ...
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | データと WAL / redo を別ボリュームの LUN に分ける | fence が要る構成になっていること |
-| 2 | `vserver consistency-group create` が通るか確認する | **`fsxadmin` で使えること** |
-| 3 | 負荷を掛けた状態で `snapshot create … -write-fence true` を実行し、**返るまでの時間を測る** | 自環境での fence の所要時間。**上限との差は、上限の値を確認できるまで分かりません** |
-| 4 | `volume snapshot show -snapshot <名前> -fields volume,create-time` | **全ボリュームの時刻が一致していること** |
-| 5 | 直前と直後にコミット済みの最大キーを記録する | 後で失われた範囲を判定する足場 |
-| 6 | クローンを**別ホストの igroup** に割り当て、起動する | **`lun map` が別途必要なこと** |
-| 7 | 起動後のログで `redo starts` / `redo done` を確認する | **DB が実際に再生したこと。** これが無ければ検証になっていません |
-| 8 | 記録した最大キー以下の行がすべてあるかを数える | **失われたコミットが無いこと** |
-| 9 | `-write-fence false` でも同じことを行い、結果を比べる | **fence の効果**（本番では行わないこと） |
-
-**手順 9 は検証環境で行ってください。** fence 無しで壊れた状態を作る手順です。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -201,7 +203,7 @@ LOG:  checkpoint complete: ...
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -219,7 +221,7 @@ LOG:  checkpoint complete: ...
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -233,7 +235,7 @@ LOG:  checkpoint complete: ...
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) — 整合性の定義と、要件の側の判断
@@ -246,6 +248,37 @@ LOG:  checkpoint complete: ...
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | データと WAL / redo を別ボリュームの LUN に分ける | fence が要る構成になっていること |
+| 2 | `vserver consistency-group create` が通るか確認する | **`fsxadmin` で使えること** |
+| 3 | 負荷を掛けた状態で `snapshot create … -write-fence true` を実行し、**返るまでの時間を測る** | 自環境での fence の所要時間。**上限との差は、上限の値を確認できるまで分かりません** |
+| 4 | `volume snapshot show -snapshot <名前> -fields volume,create-time` | **全ボリュームの時刻が一致していること** |
+| 5 | 直前と直後にコミット済みの最大キーを記録する | 後で失われた範囲を判定する足場 |
+| 6 | クローンを**別ホストの igroup** に割り当て、起動する | **`lun map` が別途必要なこと** |
+| 7 | 起動後のログで `redo starts` / `redo done` を確認する | **DB が実際に再生したこと。** これが無ければ検証になっていません |
+| 8 | 記録した最大キー以下の行がすべてあるかを数える | **失われたコミットが無いこと** |
+| 9 | `-write-fence false` でも同じことを行い、結果を比べる | **fence の効果**（本番では行わないこと） |
+
+**手順 9 は検証環境で行ってください。** fence 無しで壊れた状態を作る手順です。
+
+手順 4 の Snapshot 時刻の一致は、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> volume snapshot show -snapshot <名前> -fields volume,create-time
+```
+
+### 期待結果
+
+```text
+consistency group に含まれる全ボリュームの create-time が一致する（write fence が同一時点を確定）。
+時刻が混ざっていれば依存関係のある書き込み順序が壊れ、DB の復旧が前提を失う
+```
+
+このコマンドは Snapshot の作成時刻を読むだけで、Snapshot にも DB にも変更を加えません。fence の所要時間はボリューム数と負荷で変わるため、本番の構成で測ってください。
+
+## Read next
+
+[ブロックの監視には何が見えないか？](what-block-monitoring-shows.md)

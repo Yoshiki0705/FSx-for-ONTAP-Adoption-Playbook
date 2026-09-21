@@ -7,13 +7,33 @@ source: https://docs.netapp.com/us-en/trident/trident-use/ontap-san.html
 lang: ja
 ---
 
-# Kubernetes のブロック PV はボリューム数の上限に当たる
+# Kubernetes のブロック PV は何の上限に当たるか？
+
+容量ではなくボリューム数です。Trident のドライバ選択がその天井を決めます。
+
+## このノートで学べること
+
+- `ontap-san` は PV 1 つが FlexVol 1 つを消費し、詰まるのが容量ではなくボリューム数（500 / 1,000）であること
+- 天井を外す `ontap-san-economy` は PV 単位の Snapshot / SnapMirror / QoS を成立させないこと
+
+## このノートが答えないこと
+
+- PV 数を上限まで到達させた実測（未検証）
+- ブロックの RWX で複数 Pod の書き込み調停をどう担うか（クラスタファイルシステム側の責任）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="kubernetes-のブロック-pv-はボリューム数の上限に当たる"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **FSx for ONTAP をブロックの永続ボリュームとして使うと、詰まるのは容量ではなくボリューム数です。**
 
@@ -29,7 +49,7 @@ Trident の `ontap-san` ドライバは **PV 1 つごとに FlexVol を 1 つ作
 
 ---
 
-## 2 つのドライバの違い
+### 2 つのドライバの違い
 
 | 観点 | `ontap-san` | `ontap-san-economy` |
 |---|---|---|
@@ -45,7 +65,7 @@ Trident の `ontap-san` ドライバは **PV 1 つごとに FlexVol を 1 つ作
 
 ---
 
-## ボリューム数の上限が効いてくる位置
+### ボリューム数の上限が効いてくる位置
 
 | 構成 | ボリューム数の上限 | `ontap-san` での PV 数の目安 |
 |---|---|---|
@@ -59,7 +79,7 @@ Trident の `ontap-san` ドライバは **PV 1 つごとに FlexVol を 1 つ作
 
 ---
 
-## アクセスモードの読み方
+### アクセスモードの読み方
 
 Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応しています。**ただし RWX をブロックで使う意味は、ファイル共有の RWX とは違います。**
 
@@ -74,7 +94,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 
 ---
 
-## iSCSI の LIF を指定しないこと
+### iSCSI の LIF を指定しないこと
 
 **`ontap-san` では `dataLIF` を指定しません。** Trident は **Selective LUN Map を使って multipath セッションに必要な iSCSI LIF を自分で見つけます。** 明示的に `dataLIF` を書くと警告が出ます。
 
@@ -82,23 +102,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | 想定する PV の最大数を見積もる | `ontap-san` で足りるか、`ontap-san-economy` が必要か |
-| 2 | `volume show -vserver <svm>` でボリューム数を数え、ファイル用途で使っている数を差し引く | ブロック PV に使える実際の枠 |
-| 3 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'` | ボリューム上限が 500 か 1,000 か |
-| 4 | Snapshot や SnapMirror を PV 単位で運用する要件があるかを確認する | **要件があるなら `ontap-san-economy` は選べません** |
-| 5 | StorageClass を 2 つ作り、片方を `ontap-san`、片方を `ontap-san-economy` にして PVC を 1 つずつ作る | ボリュームが増えるかどうかを `volume show` の差分で確認する |
-| 6 | NVMe/TCP を使う場合、backend の設定が REST 経由になっているかを確認する | **ONTAPI / ZAPI では NVMe/TCP が使えません** |
-| 7 | HA ペアを 7 組以上に増やす計画があるかを確認する | **計画があるならブロック PV は使えません** |
-
-手順 5 は**検証環境で行ってください。** 作成した PV を消し忘れると、ボリューム数の枠を消費し続けます。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -112,7 +116,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -126,7 +130,7 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [コンテナから FSx for ONTAP をデータストアにできるか](../../../reference/decision-trees/container-datastore-selection.md) — このノートのドライバ選択を含む上位の判断フロー。実行環境（Fargate / EC2）から入ります
@@ -142,3 +146,36 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 想定する PV の最大数を見積もる | `ontap-san` で足りるか、`ontap-san-economy` が必要か |
+| 2 | `volume show -vserver <svm>` でボリューム数を数え、ファイル用途で使っている数を差し引く | ブロック PV に使える実際の枠 |
+| 3 | ファイルシステムの世代と HA ペア数を確認する | ボリューム上限が 500 か 1,000 か |
+| 4 | Snapshot や SnapMirror を PV 単位で運用する要件があるかを確認する | **要件があるなら `ontap-san-economy` は選べません** |
+| 5 | StorageClass を 2 つ作り、片方を `ontap-san`、片方を `ontap-san-economy` にして PVC を 1 つずつ作る | ボリュームが増えるかどうかを `volume show` の差分で確認する |
+| 6 | NVMe/TCP を使う場合、backend の設定が REST 経由になっているかを確認する | **ONTAPI / ZAPI では NVMe/TCP が使えません** |
+| 7 | HA ペアを 7 組以上に増やす計画があるかを確認する | **計画があるならブロック PV は使えません** |
+
+手順 5 は**検証環境で行ってください。** 作成した PV を消し忘れると、ボリューム数の枠を消費し続けます。
+
+手順 2 のボリューム数は、次の読み取り専用コマンドで数えられます。
+
+```bash
+ssh <svm-management-endpoint> volume show -vserver <svm> -fields volume
+```
+
+### 期待結果
+
+```text
+現在のボリューム数が返る。上限（500 または合計 1,000）からファイル用途の数を引いた残りが、
+ontap-san で作れる PV の実際の枠になる（PV 1 つが FlexVol 1 つを消費するため）
+```
+
+このコマンドはボリュームを一覧するだけで、ボリュームにも PV にも変更を加えません。ドライバは StorageClass に紐づくため、選択は運用に入る前に決めてください。
+
+## Read next
+
+[Multi-AZ が動かすのはアドレスか？](multi-az-moves-a-route-not-an-address.md)
