@@ -19,11 +19,8 @@ signature each real function expects.
 
 Coverage is partial, and that partiality is recorded rather than hidden
 --------------------------------------------------------------------------
-Three families remain unrouted on purpose, each for a different, stated reason:
+Two families remain unrouted on purpose, each for a different, stated reason:
 
-- ``major_detector_miss_advanced``: the rollout stop/resume state machine belongs to task 11.3
-  (Phase 4), which has not been implemented. Routing it here would be scope creep past what a
-  Phase 2 checkpoint task authorizes.
 - ``evidence_metadata_missing``: `validate_frontmatter.collect()` intentionally excludes public
   prose with no frontmatter block at all (its own docstring states the two rules this follows).
   Widening that scope is a validator design change, not a routing decision, and is out of scope
@@ -33,13 +30,20 @@ Three families remain unrouted on purpose, each for a different, stated reason:
   localization design change, not something this router should decide unilaterally.
 
 ``UNROUTED_FAMILIES`` names them so a reader (and a future test) does not have to infer which
-three are missing by elimination.
+two are missing by elimination.
+
+The ``major_detector_miss_advanced`` family is now routed (task 11.3). Its rollout stop/resume
+state machine lives in this module because the family is a decision over metadata, not a scan
+over a real tree: the first major detector miss stops the current batch, and resuming requires
+all five prerequisites from the design's Error Budget. The state machine encodes that transition
+so a payload with an unmet prerequisite cannot leave ``ROLLOUT_STOPPED``.
 """
 
 from __future__ import annotations
 
 import hashlib
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -49,10 +53,20 @@ from check_allow_budget import target_fixed_verdict
 
 UNROUTED_FAMILIES = frozenset(
     {
-        "major_detector_miss_advanced",
         "evidence_metadata_missing",
         "localization_structure_drift",
     }
+)
+
+# The five prerequisites the design's Error Budget requires before a stopped rollout may resume.
+# Order is the documented order; every one must be satisfied, so no single field can be dropped
+# without a resume-blocking test firing.
+RESUME_PREREQUISITES = (
+    "scan_scope_fixed",
+    "family_negative_fixtures_added",
+    "valid_control_added",
+    "family_wide_rescan_complete",
+    "human_resume_approved",
 )
 
 _PRIVATE_ONLY_KEYS = frozenset({"owner", "path", "issue_id", "repository_summary"})
@@ -138,6 +152,71 @@ def _route_external_timeout(payload: dict[str, Any]) -> str:
     return payload.get("classified_as", "INCONCLUSIVE")
 
 
+@dataclass(frozen=True)
+class RolloutDecision:
+    """The externally observable outcome of one major-miss evaluation.
+
+    ``decision`` is ``ROLLOUT_STOPPED`` whenever ``miss_count >= 1``. ``family_rescan_required``
+    restates the design contract that a stop always demands a family-wide rescan before any
+    resume; it is ``True`` for exactly the stopped case. ``resume_allowed`` is ``True`` only when
+    the rollout is stopped and every one of ``RESUME_PREREQUISITES`` is satisfied -- a stopped
+    rollout with any prerequisite unmet stays stopped, and an un-stopped rollout has nothing to
+    resume.
+    """
+
+    decision: str
+    miss_count: int
+    family_rescan_required: bool
+    resume_allowed: bool
+    unmet_prerequisites: tuple[str, ...]
+
+
+def rollout_decision(
+    *, miss_count: int, prerequisites: dict[str, bool] | None = None
+) -> RolloutDecision:
+    """Evaluate the rollout stop/resume state machine for a major-detector-miss batch.
+
+    The first major miss (``miss_count >= 1``) stops the current batch. A stopped batch may only
+    leave ``ROLLOUT_STOPPED`` when all five design prerequisites are present and true; a missing
+    key counts as unmet, so an incomplete record can never resume. When ``miss_count`` is zero
+    there is no stop and no rescan obligation, matching the ``continue`` branch of the phase-entry
+    evaluation.
+    """
+    prerequisites = prerequisites or {}
+    if miss_count < 0:
+        raise ValueError(f"miss_count must not be negative; got {miss_count}")
+    if miss_count == 0:
+        return RolloutDecision(
+            decision="CONTINUE",
+            miss_count=0,
+            family_rescan_required=False,
+            resume_allowed=False,
+            unmet_prerequisites=(),
+        )
+    unmet = tuple(
+        name for name in RESUME_PREREQUISITES if prerequisites.get(name) is not True
+    )
+    return RolloutDecision(
+        decision="ROLLOUT_STOPPED",
+        miss_count=miss_count,
+        family_rescan_required=True,
+        resume_allowed=not unmet,
+        unmet_prerequisites=unmet,
+    )
+
+
+def _route_major_detector_miss(payload: dict[str, Any]) -> str:
+    """Restate the design's ``detector_miss_major`` contract on the exploration fixture payload.
+
+    The fixture carries ``major_miss_count`` and ``family_rescan_complete``. The exploration
+    property only observes the top-level decision, which is ``ROLLOUT_STOPPED`` for any
+    ``major_miss_count >= 1``. The richer resume state machine (``rollout_decision``) is exercised
+    directly by ``scripts/tests/test_knowledge_quality_rollout.py``; here the router only needs
+    the decision the exploration fixture expects.
+    """
+    return rollout_decision(miss_count=int(payload["major_miss_count"])).decision
+
+
 _ROUTES = {
     "baseline_target_added": _route_baseline,
     "baseline_target_substituted": _route_baseline,
@@ -147,6 +226,7 @@ _ROUTES = {
     "private_field_published": _route_private_field_published,
     "empty_scan_accepted": _route_empty_scan,
     "external_timeout_collapsed": _route_external_timeout,
+    "major_detector_miss_advanced": _route_major_detector_miss,
 }
 
 
