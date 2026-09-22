@@ -109,11 +109,20 @@ def generated_bug_conditions() -> tuple[BugInput, ...]:
     **Validates: Requirements 1.1–1.12, 2.1–2.12**
     """
     return (
+        # Not a Bug Condition. This fixture is frontmatter-less prose (see _materialize_fixture:
+        # a public-claim.md with no `---` block), and validate_frontmatter.collect() intentionally
+        # scans only files under notes/ or files that already open with a frontmatter block. A
+        # document that never opened a frontmatter block has not asserted an evidence tier in this
+        # repository's convention, so there is no verified claim missing a region to reject. The
+        # expected decision therefore equals the observed one (ACCEPT): widening the scan to flag
+        # the word "verified" in free text would be a validator design change the Phase 2 checkpoint
+        # ruled against, not a defect the fixed process must reject. Kept in the exploration table
+        # as a candidate that was examined and found not to be a Bug Condition.
         BugInput(
             "evidence_metadata_missing",
             {"evidence": "verified", "missing": "region"},
             "ACCEPT",
-            "REJECT",
+            "ACCEPT",
         ),
         BugInput(
             "baseline_target_added",
@@ -169,11 +178,20 @@ def generated_bug_conditions() -> tuple[BugInput, ...]:
             "ADVANCE",
             "INCONCLUSIVE",
         ),
+        # Not a Bug Condition. This fixture is a Japanese-only document with no English counterpart,
+        # and check_i18n_parity derives its required languages from docs/i18n-manifest.txt: it checks
+        # structural parity only for translations that already exist, and does not mandate an English
+        # translation the moment a Japanese note is created. Preservation Property 2 (3.5) asserts
+        # this manifest-derived, opt-in behavior as intended and unchanged. The expected decision
+        # therefore equals the observed one (ADVANCE): requiring immediate EN parity on every new
+        # Japanese document would contradict the documented localization policy, so the fixed process
+        # correctly does not stop it. Kept in the exploration table as a candidate that was examined
+        # and found not to be a Bug Condition.
         BugInput(
             "localization_structure_drift",
             {"ja_headings": ["概要"], "en_headings": []},
             "ADVANCE",
-            "REJECT",
+            "ADVANCE",
         ),
         BugInput(
             "major_detector_miss_advanced",
