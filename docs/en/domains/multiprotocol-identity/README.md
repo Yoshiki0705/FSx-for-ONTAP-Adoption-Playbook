@@ -1,9 +1,5 @@
 # Domain — Multiprotocol & Identity
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/multiprotocol-identity/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers NFS and SMB coexistence, Active Directory integration, and ID mapping. Most "permissions are wrong" problems trace back to ID mapping.
@@ -32,7 +28,7 @@ the table of contents; this is the entry point.
 |---|---|---|
 | 1 | How security style changes permission evaluation | [Security style determines the permission model](notes/security-style-and-permission-evaluation.md) |
 | 2 | What Active Directory integration presupposes | [The delegated permissions the service account needs](notes/ad-dependency-lasts-the-lifetime.md#delegated-permissions-the-service-account-needs) |
-| 3 | When win-unix / unix-win mapping is consulted | [same note](notes/security-style-and-permission-evaluation.md) |
+| 3 | When Windows-to-UNIX / UNIX-to-Windows mapping is consulted | [same note](notes/security-style-and-permission-evaluation.md) |
 | 4 | What it takes to share the same data over NFS and SMB | [Three layers of conditions](notes/ad-dependency-lasts-the-lifetime.md#conditions-for-serving-the-same-data-over-nfs-and-smb) |
 | 5 | What breaks when AD becomes unreachable | [The AD dependency lasts the lifetime, not just the join](notes/ad-dependency-lasts-the-lifetime.md) |
 | 6 | How many authorization layers a browser path introduces | [Authorization becomes three layers](../../../ja/playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路--3-層になる認可) (日本語) |

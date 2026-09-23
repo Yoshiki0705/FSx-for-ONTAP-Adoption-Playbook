@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: SINGLE_AZ_2
 lang: en
 ---
 
-# The block protocol choice is narrowed first by generation and HA pair count
+# Is the block protocol choice narrowed first by generation?
+
+Yes. Three conditions — generation, HA pair count, and host OS — decide iSCSI or NVMe/TCP before you choose.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [English](protocol-choice-is-bounded-before-you-choose.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That the choice between iSCSI and NVMe/TCP is narrowed first by generation (NVMe/TCP is second generation only), HA pair count (6 pairs or fewer), and host OS
+- That both use the same LIF, and that NVMe/TCP's ports 4420 / 8009 are not on AWS's security-group requirements table
+
+## What this note does not answer
+
+- A performance comparison between iSCSI and NVMe/TCP (not included)
+- What happens to existing LUNs and connections when a 7th HA pair is added (undocumented by AWS)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="is-the-block-protocol-choice-narrowed-first-by-generation"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Whether to use iSCSI or NVMe/TCP is narrowed by three conditions before you choose.**
 
@@ -37,11 +58,11 @@ And **even after choosing a protocol, the LIF used is the same.** The verificati
 
 > **Tier**: `verified` (verified 2026-09-05, `ap-northeast-1`, `SINGLE_AZ_2` second generation, 1 HA pair, ONTAP 9.18.1P5) — the LIF sharing, the default state of the services, the accepted range of `os_type`, and the namespace attributes.
 > The generation and HA pair constraints, the contents of the port requirements table, and the absence of the Windows procedure are `documented` based on AWS documentation.
-> **A performance comparison is not included.** The steps to confirm in your own environment are in [How to confirm in your own environment](#how-to-confirm-in-your-own-environment).
+> **A performance comparison is not included.** The steps to confirm in your own environment are in [Verify it in your environment](#verify-it-in-your-environment).
 
 ---
 
-## The protocol that does not appear in the enumeration
+### The protocol that does not appear in the enumeration
 
 **The block protocols AWS's documentation enumerates are two: iSCSI and NVMe/TCP.**
 Both [Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) and
@@ -55,7 +76,7 @@ Being absent from multiple enumerations and being explicitly denied are differen
 
 ---
 
-## Generation and HA pair count
+### Generation and HA pair count
 
 | Condition | iSCSI | NVMe/TCP |
 |---|---|---|
@@ -72,7 +93,7 @@ Being absent from multiple enumerations and being explicitly denied are differen
 
 ---
 
-## LIF sharing and the port difference
+### LIF sharing and the port difference
 
 The LIFs in the verification environment were as follows.
 
@@ -98,7 +119,7 @@ The LIFs in the verification environment were as follows.
 
 ---
 
-## The services are enabled by default
+### The services are enabled by default
 
 **On a newly created SVM, both the iSCSI service and the NVMe service were already enabled.**
 
@@ -111,7 +132,7 @@ The LIFs in the verification environment were as follows.
 
 ---
 
-## The correspondence of iSCSI and NVMe/TCP objects
+### The correspondence of iSCSI and NVMe/TCP objects
 
 **The structure is the same, the names differ.**
 
@@ -137,7 +158,7 @@ The LIFs in the verification environment were as follows.
 
 ---
 
-## The absence of a newer Windows `os_type`
+### The absence of a newer Windows `os_type`
 
 **AWS instructs "use `windows_2008` for all Windows versions."** This was not a convention.
 
@@ -153,7 +174,7 @@ The Linux side is `linux`. The igroup's `os_type` is specified separately from t
 
 ---
 
-## NVMe/TCP on Windows
+### NVMe/TCP on Windows
 
 **The conclusion first: ONTAP does not support NVMe/TCP with Windows Server.** A NetApp KB states it explicitly, and the Windows support scope is said to be limited to native NVMe disks (JBOD). NVMe/FC is named as a workaround, but **FSx for ONTAP does not offer FC, so this workaround is unusable.** There is a preview on Windows Server Insider Builds, but with the constraints of command-line only and no multipath ([NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server), confirmed 2026-09-05).
 
@@ -171,7 +192,7 @@ The Linux side is `linux`. The igroup's `os_type` is specified separately from t
 
 ---
 
-## The Linux-side kernel configuration as a premise
+### The Linux-side kernel configuration as a premise
 
 **On Amazon Linux 2023, native NVMe/TCP multipath was not enabled.** Kernel `6.18.44-99.149.amzn2023.x86_64` is `CONFIG_NVME_MULTIPATH is not set`, and **the same namespace appeared as two block devices.**
 
@@ -181,7 +202,7 @@ The Linux side is `linux`. The igroup's `os_type` is specified separately from t
 
 ---
 
-## The decision flow
+### The decision flow
 
 ```mermaid
 graph TD
@@ -212,24 +233,7 @@ graph TD
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'` | The generation and HA pair count. **Whether NVMe/TCP can be chosen** |
-| 2 | Confirm with stakeholders whether there is a plan to grow to 7+ HA pairs | **If there is, block is not usable** |
-| 3 | Make a list of host OSes and confirm whether Windows is included | The range where NVMe/TCP can be chosen |
-| 4 | On a Linux host, `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **Whether multipath holds for NVMe/TCP** |
-| 5 | Check the LIFs and services with `network interface show -vserver <svm> -fields service-policy,address` | **That iSCSI and NVMe/TCP use the same LIF** |
-| 6 | Confirm the security group's inbound rules have 3260 and, if using NVMe/TCP, 4420 | **Because 4420 is not on the requirements table, an iSCSI rule does not let it through** |
-| 7 | Check the service state with `vserver iscsi show` and `vserver nvme show` | **They are already enabled, so there is no need to create them** |
-| 8 | In a test environment, try creating a LUN specifying a newer Windows value for `os_type` | **Confirmation that it is rejected. The basis for using `windows_2008`** |
-
-Do step 8 **in a test environment.** It is an operation to try a failing API call in production.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -246,7 +250,7 @@ Do step 8 **in a test environment.** It is an operation to try a failing API cal
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -262,7 +266,7 @@ Do step 8 **in a test environment.** It is an operation to try a failing API cal
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -278,7 +282,7 @@ Do step 8 **in a test environment.** It is an operation to try a failing API cal
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [Choosing a block protocol and layout (日本語)](../../../../ja/reference/decision-trees/block-protocol-and-layout.md) — this judgment on a single page
@@ -289,6 +293,38 @@ Do step 8 **in a test environment.** It is an operation to try a failing API cal
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of primary sources
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [English](protocol-choice-is-bounded-before-you-choose.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'` | The generation and HA pair count. **Whether NVMe/TCP can be chosen** |
+| 2 | Confirm with stakeholders whether there is a plan to grow to 7+ HA pairs | **If there is, block is not usable** |
+| 3 | Make a list of host OSes and confirm whether Windows is included | The range where NVMe/TCP can be chosen |
+| 4 | On a Linux host, `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **Whether multipath holds for NVMe/TCP** |
+| 5 | Check the LIFs and services with `network interface show -vserver <svm> -fields service-policy,address` | **That iSCSI and NVMe/TCP use the same LIF** |
+| 6 | Confirm the security group's inbound rules have 3260 and, if using NVMe/TCP, 4420 | **Because 4420 is not on the requirements table, an iSCSI rule does not let it through** |
+| 7 | Check the service state with `vserver iscsi show` and `vserver nvme show` | **They are already enabled, so there is no need to create them** |
+| 8 | In a test environment, try creating a LUN specifying a newer Windows value for `os_type` | **Confirmation that it is rejected. The basis for using `windows_2008`** |
+
+Do step 8 **in a test environment.** It is an operation to try a failing API call in production.
+
+The generation and HA pair count in step 1 can be confirmed with this read-only command.
+
+```bash
+aws fsx describe-file-systems \
+  --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'
+```
+
+### Expected output
+
+```text
+If DeploymentType is SINGLE_AZ_2 / MULTI_AZ_2, it is second generation and NVMe/TCP can be chosen.
+If there is a plan for HAPairs to exceed 6, block is not usable (generation and HA pair count
+cannot be changed after creation).
+```
+
+This command only reads the file system's configuration; it changes nothing on the generation or the HA pairs.
+
+## Read next
+
+[What does the LUN layout decide? (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md)

@@ -44,9 +44,10 @@ def _parse_value(raw: str) -> str | list[str]:
         inner = raw[1:-1].strip()
         if not inner:
             return []
-        return [
-            _strip_quotes(item.strip()) for item in inner.split(",") if item.strip()
-        ]
+        parts = [item.strip() for item in inner.split(",")]
+        if any(not item for item in parts):
+            raise FrontmatterError("inline lists cannot contain empty values")
+        return [_strip_quotes(item) for item in parts]
     return _strip_quotes(raw)
 
 

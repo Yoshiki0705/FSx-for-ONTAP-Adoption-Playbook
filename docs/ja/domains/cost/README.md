@@ -1,9 +1,5 @@
 # Domain — コスト (Cost)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/cost/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 容量、ティアリング、そして見積もりと実測の差分を扱います。見積もりが外れる原因は多くの場合、単価ではなく前提条件です。

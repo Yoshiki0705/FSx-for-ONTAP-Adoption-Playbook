@@ -9,10 +9,6 @@ lang: en
 
 # Whether a container can use FSx for ONTAP as a datastore
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/reference/decision-trees/container-datastore-selection.md) | [English](container-datastore-selection.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../README.md) | [Reference](../../../ja/reference/README.md) | [Decision trees index](../../../ja/reference/decision-trees/README.md) | [Domain — Block storage](../../domains/block-storage/README.md)
 
 ---

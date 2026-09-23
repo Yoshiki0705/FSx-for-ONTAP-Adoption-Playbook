@@ -7,19 +7,42 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacit
 lang: en
 ---
 
-# You can run out of writes with capacity to spare
+# Can a volume run out of writes with capacity to spare?
+
+Yes — exhausting inodes stops file creation even when free capacity remains.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | [English](counting-bytes-is-not-counting-files.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- Why exhausting inodes stops file creation while free capacity remains, and why the symptom is misleading.
+- Why the default inode ratio must be read in your own environment rather than assumed.
+
+## What this note does not answer
+
+- The result of a destructive test that actually exhausts inodes (read-only observation only).
+- An inode ratio that extrapolates to the minimum volume size (it does not hold at 20 MiB).
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
 [🏠 Repository Top](../../../README.md) | [Playbook 01 — Assess](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.
 
+> **Evidence**: `documented` — the inode default, limits, and behaviour rest on AWS documentation.
+> The average file sizes below are **arithmetic from published defaults**, not measured values.
+> Steps for measuring your own environment are in
+> "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
-## Conclusion
+### Conclusion
 
 **An inventory that counts only bytes leads to a volume that cannot be written to while capacity remains.**
 
@@ -31,14 +54,9 @@ The default is **one per 32 KiB**. And **how it grows is where the documentation
 
 **The conclusion is the same under either premise: do not assume a number, read `FilesCapacity` in your own environment.** Where many files are small, inodes can run out before capacity does.
 
-> **Evidence**: `documented` — the inode default, limits, and behaviour rest on AWS documentation.
-> The average file sizes below are **arithmetic from published defaults**, not measured values.
-> Steps for measuring your own environment are in
-> "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
-
 ---
 
-## The average file size where it starts to bind
+### The average file size where it starts to bind
 
 **This is where the documentation and measurement disagree. Both are given.**
 
@@ -68,7 +86,7 @@ The values match `size × 0.95 ÷ 32 KiB` almost exactly (off by 1 to 24). **One
 
 **The design conclusion does not change.** Under either premise, **inodes are finite, and exhausting them stops writes even with free capacity.** Only "how soon" differs.
 
-**So do not assume a number — read `FilesCapacity` in your own environment.** The procedure is in [Confirming this in your own environment](#confirming-this-in-your-own-environment). Designing for the capping behaviour leads to splitting volumes unnecessarily; designing for the proportional behaviour runs short where many files are small. **Either way, measuring settles it.**
+**So do not assume a number — read `FilesCapacity` in your own environment.** The procedure is in [Verify in your own environment](#verify-in-your-own-environment). Designing for the capping behaviour leads to splitting volumes unnecessarily; designing for the proportional behaviour runs short where many files are small. **Either way, measuring settles it.**
 
 Inodes can be raised manually, but there is a ceiling.
 
@@ -84,7 +102,7 @@ Raising it is done with ONTAP CLI `volume modify`. The setting that always uses 
 
 ---
 
-## What happens when they run out
+### What happens when they run out
 
 **This was measured.** A 20 MiB volume (the FlexVol minimum) was mounted over NFSv3 and files were created until it stopped.
 
@@ -113,7 +131,7 @@ Raising it is done with ONTAP CLI `volume modify`. The setting that always uses 
 
 ---
 
-## Snapshots that consume inodes
+### Snapshots that consume inodes
 
 What inodes count is **files, directories, and Snapshot copies**. Raising Snapshot retention consumes inodes too.
 
@@ -123,7 +141,7 @@ A retention design decided on capacity alone misses this share. The relationship
 
 ---
 
-## Working back from decisions you cannot undo
+### Working back from decisions you cannot undo
 
 **An inventory is not about adding items.** Only the things that change a later decision are worth measuring.
 
@@ -144,7 +162,7 @@ Put the other way round, **the items you did not measure show up as settings you
 
 ---
 
-## The difference between "configured" and "in use"
+### The difference between "configured" and "in use"
 
 **A protocol inventory built from configuration data will be wrong.** It produces both shares that are enabled but nobody uses, and paths that are not in the configuration register at all.
 
@@ -152,13 +170,13 @@ The choice of security style follows the access paths that actually exist. **Whe
 
 ---
 
-## Capturing a performance baseline in comparable form
+### Capturing a performance baseline in comparable form
 
 When someone says it got slower after the migration, **there is nothing to verify against without a comparison point.** Record the baseline in this shape.
 
 | What to record | Why |
 |---|---|
-| Maximum, not average | Averages hide saturation. The reason is in [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) |
+| Maximum and average, plus each published dimensional series | Averages hide saturation, while Maximum alone does not show persistence. The reason is in [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) |
 | The peak-period value and the time it occurred | An average alone does not describe the conditions to reproduce |
 | A breakdown per share and per volume | A whole-system figure cannot identify the volume responsible |
 | The region and generation at measurement time | The ceilings themselves differ, so a figure without its conditions cannot be compared |
@@ -168,15 +186,15 @@ When someone says it got slower after the migration, **there is nothing to verif
 
 ---
 
-## Inventory flow
+### Inventory flow
 
 ```mermaid
 graph TD
     A[Start the inventory] --> B[Count the bytes]
-    B --> C[Count files and average size]
-    C --> D{Below the dividing line}
-    D -->|Below| E[Raise inodes<br/>or split the volume]
-    D -->|Above| F[The default suffices]
+    B --> C[Count total files and average file size]
+    C --> D{Is average file size below<br/>the inode dividing line in the table above}
+    D -->|Below the dividing line| E[Raise inodes<br/>or split the volume]
+    D -->|At or above the dividing line| F[The default suffices]
 
     A --> G[Observe actual access]
     G --> H[Protocols actually used]
@@ -193,25 +211,7 @@ graph TD
 
 ---
 
-## Confirming this in your own environment
-
-**Average file size is what to measure first.** Comparing it against the dividing line alone decides whether the volume design changes.
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Count total bytes and total files at the source, and divide | Average file size. **Comparing against the table above is enough to decide** |
-| 2 | Identify the single directory with the most files | Whether it is near the per-directory ceiling |
-| 3 | Look at `FilesCapacity` and `FilesUsed` on the destination | Actual inode consumption. Also visible as "Available files (inodes)" in the console |
-| 4 | Observe access over a period and aggregate by protocol | **Actual use, not configuration.** Input for the security style decision |
-| 5 | Try reading ACLs with the migration account | Prevents ACLs going missing under a "no errors" result |
-| 6 | Record peak-period throughput and IOPS as maximums | The comparison baseline after migration |
-| 7 | Record the region and generation | The ceilings themselves differ |
-
-Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP exists. **Those two alone close off the design decisions that are most expensive to reverse.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -230,7 +230,7 @@ Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP 
 
 ---
 
-## Primary sources
+### Primary sources
 
 | Point | Source |
 |---|---|
@@ -244,7 +244,7 @@ Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP 
 
 ---
 
-## Related documents
+### Related documents
 
 - [Playbook 01 — Assess](../README.md) — this module's hub
 - [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md) — choosing a method from the inventory results
@@ -255,10 +255,39 @@ Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP 
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
 - [Evidence classification policy](../../../evidence-policy.md)
 
----
-
 [🏠 Repository Top](../../../README.md) | [Playbook 01 — Assess](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | [English](counting-bytes-is-not-counting-files.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**Average file size is what to measure first.** Comparing it against the dividing line alone decides whether the volume design changes.
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Count total bytes and total files at the source, and divide | Average file size. **Comparing against the table above is enough to decide** |
+| 2 | Identify the single directory with the most files | Whether it is near the per-directory ceiling |
+| 3 | Look at `FilesCapacity` and `FilesUsed` on the destination | Actual inode consumption. Also visible as "Available files (inodes)" in the console |
+| 4 | Observe access over a period and aggregate by protocol | **Actual use, not configuration.** Input for the security style decision |
+| 5 | Try reading ACLs with the migration account | Prevents ACLs going missing under a "no errors" result |
+| 6 | Record peak-period throughput and IOPS as maximums | The comparison baseline after migration |
+| 7 | Record the region and generation | The ceilings themselves differ |
+
+Steps 1 and 2 are self-contained at the source and can run before FSx for ONTAP exists. **Those two alone close off the design decisions that are most expensive to reverse.**
+
+The following read-only command reads each volume's inode maximum and used count (ONTAP REST API). The same values are available as CloudWatch `FilesCapacity` / `FilesUsed`.
+
+```bash
+curl -sk -u fsxadmin \
+  "https://<management-endpoint>/api/storage/volumes?fields=files.maximum,files.used"
+```
+
+### Expected output
+
+Each volume's `files.maximum` (total inodes) and `files.used` are returned. Check whether `files.used / files.maximum` is approaching 100% ahead of the capacity utilization; if it is, inodes run out before capacity.
+
+## Read next
+
+[Can the deployment type be changed later?](../../02-design/notes/deployment-type-is-decided-once.md)

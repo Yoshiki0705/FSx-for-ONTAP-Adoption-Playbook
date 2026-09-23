@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/APIReference/API_S3AccessPointOnt
 lang: ja
 ---
 
-# S3 Access Point は全リクエストを 1 つの ID で認可する
+# コピーを増やさずにデータへ届けるにはどうするか？
+
+S3 Access Point・FlexClone・FlexCache の 3 手段。AP は元の ACL を引き継ぎません。
+
+## このノートで学べること
+
+- コピーを作らずデータへ届く 3 手段（S3 Access Point / FlexClone / FlexCache）の権限と管理経路の違い
+- S3 Access Point が全リクエストを 1 つの ID で認可し、AI / RAG では権限を別に設計する必要があること
+
+## このノートが答えないこと
+
+- FlexCache のヒット率・warm-up 時間や write-back の性能の実測値
+- AD 参加済み SVM の全データ操作が常に DC 到達性を要するか（`open`）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="s3-access-point-は全リクエストを-1-つの-id-で認可する"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ活用](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **S3 Access Point 経由のファイルアクセス要求は、すべて設定した 1 つのファイルシステム ID で認可されます。** ID は UNIX ユーザーまたは Windows ユーザーのどちらかを 1 つ指定します。
 
@@ -29,7 +49,7 @@ lang: ja
 
 ---
 
-## コピーを増やさない 3 つの手段
+### コピーを増やさない 3 つの手段
 
 | 手段 | 何をするか | コピーの有無 | 管理経路 |
 |---|---|---|---|
@@ -45,7 +65,7 @@ FlexCache と FlexClone は **ONTAP CLI で作成・管理します。** テン�
 
 ---
 
-## 分析基盤への接続
+### 分析基盤への接続
 
 | 接続方法 | 向いている場面 |
 |---|---|
@@ -58,7 +78,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 ---
 
-## 権限が平坦化されることの意味
+### 権限が平坦化されることの意味
 
 **S3 Access Point の `FileSystemIdentity` は、その Access Point 経由の全リクエストを認可する ID です。**
 
@@ -69,9 +89,9 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 2 つの層がどの順序で評価され、症状からどちらの層で落ちたかを逆引きする手順は [S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md) にあります。
 
-だから **「誰が読んだか」は IAM と CloudTrail で追えますが、「そのユーザーが元のファイルの ACL で読めたか」は評価されていません。**
+だから **「誰が読んだか」は、Access Point に CloudTrail の S3 データイベントを構成すると IAM プリンシパルとして追えますが、「そのユーザーが元のファイルの ACL で読めたか」は評価されていません。**
 
-### AI / RAG で設計する対象
+#### AI / RAG で設計する対象
 
 **索引を作る時点で、元の ACL は失われています。** したがって、要求元のユーザーで絞り込む仕組みを別に用意する必要があります。**置ける場所は 3 つあり、境界の位置が違います。**
 
@@ -97,11 +117,11 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 そして **Access Point に与える ID の権限が、そのパイプラインの上限になります。** 広い権限の ID を指定すると、パイプライン全体がその範囲を見ます。最小権限の考え方は [管理者を分ける](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) と同じです。
 
-なお AD 参加済み SVM では、S3 Access Point のデータ操作にドメインコントローラーへの到達性が必要になる場合があります。前提は [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) にあります。
+Windows の `FileSystemIdentity` は参加済み Active Directory ドメインで解決できる必要があり、名前サービスへ到達できない場合は Access Point が `MISCONFIGURED` になりえます。**AD 参加済み SVM の全データ操作が常にドメインコントローラー到達性を必要とするかは、公開一次情報と完全な再現記録を確認できていないため `open` です。** 前提と未解決範囲は [エンドポイントから S3 Access Points に届くための条件](../../client-access/notes/what-an-endpoint-needs-to-reach-s3-access-points.md#AD-参加-SVM-に関する未解決の範囲) にあります。
 
 ---
 
-## FlexCache が効く条件
+### FlexCache が効く条件
 
 **FlexCache は疎なキャッシュです。** 元ボリュームの全データをコピーせず、必要になった分だけ取得します。キャッシュは別のファイルシステム（任意でリモート）に置けます。
 
@@ -128,7 +148,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 **リモートのデータを S3 API で読ませる要件なら、FlexCache ではなく SnapMirror の宛先を提供してください。** 手順と制約は [SnapMirror の宛先は break せずに S3 API で読める](serving-a-replication-destination-over-s3.md) にあります。
 
-### 計画と監視で見るもの
+#### 計画と監視で見るもの
 
 **キャッシュボリュームは元ボリュームより小さくできます。** だから「どのくらいのサイズが必要か」は測って決める項目です。
 
@@ -145,13 +165,13 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 ---
 
-## write-back を選ぶと入れ替わる制約
+### write-back を選ぶと入れ替わる制約
 
 **書き込みの待ち時間を縮める手段が用意されています。** write-back モード（ONTAP 9.15.1 で導入）では書き込みが Cache 側で確定して即座に応答され、Origin へは非同期に書かれます。**待ち時間はほぼローカル並みになります。**
 
 **代わりに、単独のページを読んでいると気づかない制約が付きます。** 以下はベンダーのガイドラインと AWS のドキュメントの記載で、**このリポジトリでは実測していません**（`documented`。2026-09-14 に両方の全文を確認）。
 
-### 無言で write-around に戻ること
+#### 無言で write-around に戻ること
 
 **最も設計に効くのがこれです。** write-back の Cache は、**Origin ボリュームの空き容量が 20% 以下になると自動的に write-around へ切り替わります。** Origin で容量を使い切ってダーティデータが Cache に取り残される事態を防ぐための仕組みです。
 
@@ -159,13 +179,13 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 **切り替わってもエラーは出ません。** 気づくのは書き込み遅延が増えたときです。**容量を詰めた設計をしているなら、write-back に依存した性能前提を置かないでください。**
 
-### スナップショットの間隔と衝突すること
+#### スナップショットの間隔と衝突すること
 
 **Origin でスナップショットを取ると、その Origin ボリュームに紐づくすべての write-back Cache から、未処理のダーティデータを回収します。** 書き込みが多い時間帯では、ダーティファイルの退避に時間がかかるため**この操作に複数回の再試行が必要になることがあります。**
 
 **保護のためにスナップショットを短い間隔で取る運用と、write-back は相性が悪いです。** 両方が要るなら、間隔と書き込みのピークをずらすか、配布側の書き込みを Origin に寄せてください。
 
-### ファイルが Cache から追い出される 3 つの操作
+#### ファイルが Cache から追い出される 3 つの操作
 
 **いずれも「その後ダーティデータを Origin へ流し切るまで、そのファイルに対する他の操作ができない」という形で効きます。**
 
@@ -179,7 +199,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 **SMB の書き込み Opportunistic Lock（oplock）は write-back では非対応です。** SMB クライアントの性能前提が oplock に依存しているなら、write-back と併用できません。
 
-### 版数を層ごとに決めると足りなくなること
+#### 版数を層ごとに決めると足りなくなること
 
 **収集層の要件だけを見て版を決めると、配布側で write-back を使う段階で足りません。**
 
@@ -190,15 +210,15 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 **両側の要件を先に足し合わせてから版を決めてください。** そしてガイドライン自体が、作成時点の最新メジャー版（9.17.1）を基準に書かれていると明記しています。
 
-### 満たすと 1 つの形に収束する 2 つの要求
+#### 満たすと 1 つの形に収束する 2 つの要求
 
 **AWS は FlexCache ボリュームが FlexGroup であることを求め、write-back のガイドラインは Cache ボリューム全体を単一コンスティチュエントで構成することを推奨しています**（複数コンスティチュエントは意図しない退避を招くため）。**両方を満たすと「コンスティチュエントが 1 つの FlexGroup」になります。**
 
-### ファンアウト数が write-back の可否に効くこと
+#### ファンアウト数が write-back の可否に効くこと
 
 **AWS は write-around を選ぶ条件として、読み取り主体で遅延に敏感でない場合、あるいは Origin ファイルシステムの FlexCache Origin ボリュームが 10 を超える場合を挙げています。** 拠点数を増やす設計では、この本数が先に効きます。
 
-### 検証されている範囲
+#### 検証されている範囲
 
 | 項目 | 範囲 |
 |---|---|
@@ -210,7 +230,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 **範囲外のワークロードは「動かない」ではなく「予期しない挙動が起きうる」と書かれています。** ガイドラインは、範囲の外で実装する場合は特に、非本番環境で本番ワークロードを試すことを推奨しています。
 
-### 作成経路で成否が変わること
+#### 作成経路で成否が変わること
 
 **上の「コンスティチュエントが 1 つの FlexGroup」を実際に作るとき、経路が結果を変えました。** 隣のリポジトリの実測では、**FlexGroup を ONTAP CLI で作ろうとすると FabricPool アグリゲートとの互換性エラーになり、Amazon FSx の API で作成する必要がありました。**
 
@@ -220,7 +240,7 @@ S3 Access Point には**前提条件と S3 との差分**があります。同�
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -246,6 +266,58 @@ graph TD
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| S3 Access Point 経由でもファイルの ACL が効く | **全リクエストが設定した 1 つの ID で認可されます** |
+| ACL が引き継がれないなら、ユーザーごとの絞り込みはできない | **できます。** ただし ACL とは別の仕組みが必要で、**その仕組みの正しさが境界になります。** 判定を置ける位置は 3 つあります |
+| 誰が読んだかが分かれば権限は追跡できている | CloudTrail の S3 データイベントを Access Point に構成すると呼び出し元は分かりますが、**元の ACL は評価されていません** |
+| RAG の権限は元のファイル権限に任せられる | 索引を作る時点で失われています。**索引側で設計します** |
+| Access Point の ID は広めにしておくと便利 | その ID の権限が**パイプラインの上限**になります |
+| FlexCache は全データをコピーする | **疎なキャッシュ**です。必要な分だけ取得します |
+| FlexCache はどのワークロードでも速くなる | **元データの変更が多いと更新が頻発し、向きません** |
+| キャッシュを置けば元との経路は関係ない | キャッシュミスと書き込みは元に依存し、帯域と遅延に律速されます |
+| 書き込みは必ず元で確認される | **既定（write-around）の挙動です。** write-back では Cache 側で確定して即応答されます |
+| write-back を有効にすれば書き込みは常に速い | **Origin の空き容量が 20% 以下になると無言で write-around に戻ります。** エラーは出ず、遅延で気づきます |
+| 容量はアグリゲートに余裕があれば足りる | **20% の閾値はボリュームの報告値と**アグリゲートの物理空き容量の**両方で評価されます** |
+| リネームはメタデータ操作なので安い | **write-back では Cache から退避され、ダーティデータを流し切るまで他の操作ができません** |
+| 収集層の ONTAP 版だけ決めれば足りる | **write-back は 9.17.1P1 以降を両側で強く推奨されています。** 層ごとに決めると足りません |
+| キャッシュサイズは元ボリュームと同じにする | 小さくできます。**ヒット率を見て決めます** |
+| FlexCache と FlexClone はテンプレートで作れる | **ONTAP CLI で作成・管理します** |
+| コピーを作れば管理は単純になる | コピーの権限・保持・削除を別に管理することになります |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| `FileSystemIdentity` が S3 Access Point 経由の**すべての**ファイルアクセス要求を認可する ID であること、UNIX または Windows ユーザーを指定すること | [AWS API Reference: S3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_S3AccessPointOntapConfiguration.html) / [OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
+| S3 Access Point の位置づけ | [AWS: S3 access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-access-points.html) |
+| FlexCache が疎なキャッシュであること、必要な分だけコピーすること、読み取り主体で変更が少ないワークフローに適すること、元データの変更でキャッシュ更新が必要になること、対応する 3 つの構成 | [AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html) |
+| FlexCache の作成と管理が ONTAP CLI であること（`volume flexcache create`、`cluster peer`） | [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
+| キャッシュミスが元からのブロック取得を伴い書き込みが元で確認されること、帯域と遅延に律速されること、warm-up 時間の見積もり、キャッシュボリュームが元より小さくできること、ヒット率が下がったらサイズを増やすこと、監視すべき 3 領域 | [AWS Storage Blog: Caching data using Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/caching-data-using-amazon-fsx-for-netapp-ontap/) |
+| write-around が既定であること、write-back が 9.15.1 で導入されたこと、write-around を選ぶ条件に「Origin ファイルシステムの FlexCache Origin ボリュームが 10 を超える場合」が含まれること | [AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html)（2026-09-14 に確認） |
+| 20% での write-around への自動切り替えと、閾値がボリュームの報告値とアグリゲートの物理容量の両方で評価されること、オーバープロビジョニングで早く切り替わること、Origin でのスナップショットが全 write-back Cache からダーティデータを回収すること、リネームと SMB 代替データストリームへの書き込みがファイルを退避させること、設定できる属性が 6 つに限られること、書き込みの SMB oplock が非対応であること、9.17.1P1 以降を両側で強く推奨し 9.15.1 が本番向けでないこと、単一コンスティチュエントの推奨、検証範囲が 100 GB 未満と WAN 往復 200 ms 以内であること | [NetApp: FlexCache write-back guidelines](https://docs.netapp.com/us-en/ontap/flexcache-writeback/flexcache-write-back-guidelines.html)（2026-09-14 に全文確認） |
+| FlexCache ボリュームが FlexGroup であることの要求 | [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — データ活用](../README.md) — このモジュールのハブ
+- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](s3-access-point-constraints.md) — 前提条件とボリューム数上限
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — 監査と最小権限
+- [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) — AD 参加済み SVM の前提
+- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — FlexCache / FlexClone が届かない理由
+- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — コピーを作らない設計のコスト面
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ活用](../README.md)
+
 ## 自環境での確認手順
 
 **最初に確かめるのは、パイプラインが実際に何を見えているかです。** 権限が平坦化される前提を、実際のアクセスで確認します。
@@ -263,56 +335,21 @@ graph TD
 
 手順 1 と 2 を最初に置いています。**権限の平坦化は設計の前提なので、設計してから気づくと索引を作り直すことになります。**
 
----
+手順 1 の一覧は、S3 Access Point エイリアスに対して次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+aws s3api list-objects-v2 --bucket <access-point-alias> --max-items 10
+```
 
-| 誤解 | 実際 |
-|---|---|
-| S3 Access Point 経由でもファイルの ACL が効く | **全リクエストが設定した 1 つの ID で認可されます** |
-| ACL が引き継がれないなら、ユーザーごとの絞り込みはできない | **できます。** ただし ACL とは別の仕組みが必要で、**その仕組みの正しさが境界になります。** 判定を置ける位置は 3 つあります |
-| 誰が読んだかが分かれば権限は追跡できている | IAM と CloudTrail で呼び出し元は分かりますが、**元の ACL は評価されていません** |
-| RAG の権限は元のファイル権限に任せられる | 索引を作る時点で失われています。**索引側で設計します** |
-| Access Point の ID は広めにしておくと便利 | その ID の権限が**パイプラインの上限**になります |
-| FlexCache は全データをコピーする | **疎なキャッシュ**です。必要な分だけ取得します |
-| FlexCache はどのワークロードでも速くなる | **元データの変更が多いと更新が頻発し、向きません** |
-| キャッシュを置けば元との経路は関係ない | キャッシュミスと書き込みは元に依存し、帯域と遅延に律速されます |
-| 書き込みは必ず元で確認される | **既定（write-around）の挙動です。** write-back では Cache 側で確定して即応答されます |
-| write-back を有効にすれば書き込みは常に速い | **Origin の空き容量が 20% 以下になると無言で write-around に戻ります。** エラーは出ず、遅延で気づきます |
-| 容量はアグリゲートに余裕があれば足りる | **20% の閾値はボリュームの報告値と**アグリゲートの物理空き容量の**両方で評価されます** |
-| リネームはメタデータ操作なので安い | **write-back では Cache から退避され、ダーティデータを流し切るまで他の操作ができません** |
-| 収集層の ONTAP 版だけ決めれば足りる | **write-back は 9.17.1P1 以降を両側で強く推奨されています。** 層ごとに決めると足りません |
-| キャッシュサイズは元ボリュームと同じにする | 小さくできます。**ヒット率を見て決めます** |
-| FlexCache と FlexClone はテンプレートで作れる | **ONTAP CLI で作成・管理します** |
-| コピーを作れば管理は単純になる | コピーの権限・保持・削除を別に管理することになります |
+### 期待結果
 
----
+```text
+権限の異なる 2 ユーザーのファイルが両方とも一覧に現れる（Access Point の単一 ID で認可されるため、
+元のファイル ACL は引き継がれていない）。要求元のユーザーでの絞り込みは別の仕組みで設計する
+```
 
-## 参照した一次情報
+このコマンドは Access Point 経由でオブジェクトを一覧するだけで、データにも権限設定にも変更を加えません。
 
-| 論点 | 出典 |
-|---|---|
-| `FileSystemIdentity` が S3 Access Point 経由の**すべての**ファイルアクセス要求を認可する ID であること、UNIX または Windows ユーザーを指定すること | [AWS API Reference: S3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_S3AccessPointOntapConfiguration.html) / [OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
-| S3 Access Point の位置づけ | [AWS: S3 access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-access-points.html) |
-| FlexCache が疎なキャッシュであること、必要な分だけコピーすること、読み取り主体で変更が少ないワークフローに適すること、元データの変更でキャッシュ更新が必要になること、対応する 3 つの構成 | [AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html) |
-| FlexCache の作成と管理が ONTAP CLI であること（`volume flexcache create`、`cluster peer`） | [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
-| キャッシュミスが元からのブロック取得を伴い書き込みが元で確認されること、帯域と遅延に律速されること、warm-up 時間の見積もり、キャッシュボリュームが元より小さくできること、ヒット率が下がったらサイズを増やすこと、監視すべき 3 領域 | [AWS Storage Blog: Caching data using Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/caching-data-using-amazon-fsx-for-netapp-ontap/) |
-| write-around が既定であること、write-back が 9.15.1 で導入されたこと、write-around を選ぶ条件に「Origin ファイルシステムの FlexCache Origin ボリュームが 10 を超える場合」が含まれること | [AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html)（2026-09-14 に確認） |
-| 20% での write-around への自動切り替えと、閾値がボリュームの報告値とアグリゲートの物理容量の両方で評価されること、オーバープロビジョニングで早く切り替わること、Origin でのスナップショットが全 write-back Cache からダーティデータを回収すること、リネームと SMB 代替データストリームへの書き込みがファイルを退避させること、設定できる属性が 6 つに限られること、書き込みの SMB oplock が非対応であること、9.17.1P1 以降を両側で強く推奨し 9.15.1 が本番向けでないこと、単一コンスティチュエントの推奨、検証範囲が 100 GB 未満と WAN 往復 200 ms 以内であること | [NetApp: FlexCache write-back guidelines](https://docs.netapp.com/us-en/ontap/flexcache-writeback/flexcache-write-back-guidelines.html)（2026-09-14 に全文確認） |
-| FlexCache ボリュームが FlexGroup であることの要求 | [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — データ活用](../README.md) — このモジュールのハブ
-- [FSx for ONTAP S3 AP は「S3 として使える」わけではない](s3-access-point-constraints.md) — 前提条件とボリューム数上限
-- [保存時の暗号化は自動、転送時は既定で無効](../../security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) — 監査と最小権限
-- [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) — AD 参加済み SVM の前提
-- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — FlexCache / FlexClone が届かない理由
-- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — コピーを作らない設計のコスト面
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ活用](../README.md)
+[学習データセットの版はスケジュール Snapshot に載せてよいか？](dataset-versions-and-experiment-branches.md)

@@ -7,17 +7,35 @@ source: https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja
 lang: en
 ---
 
-# A figure measured over a single connection is not the storage's performance
+# What does a single Amazon FSx for NetApp ONTAP connection measure?
+
+A single connection can hit a client or service ceiling, not storage performance.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md) | [English](a-single-connection-measures-the-client.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- Why similar single-connection figures can come from different client-side or service-side ceilings.
+- Why connection count, data sharing, and cache state must accompany a throughput figure.
+
+## What this note does not answer
+
+- The file system's maximum performance inferred from one connection.
+- Unmeasured generation differences, S3 API versus NFS results, or cache-equalized remeasurements.
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **A figure measured over one mount is not the storage's performance.** What it hits is some other ceiling, on the client or on the service, and **which ceiling differs per product.**
 
@@ -44,7 +62,7 @@ In a sibling project's measurements, **three configurations across different pro
 
 ---
 
-## Measurement conditions
+### Measurement conditions
 
 **A figure without its conditions is unusable.** The following is what the cited source records, transcribed.
 
@@ -65,7 +83,7 @@ In a sibling project's measurements, **three configurations across different pro
 
 ---
 
-## The numbers that converge over a single connection
+### The numbers that converge over a single connection
 
 1 MiB sequential reads.
 
@@ -91,7 +109,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ---
 
-## The two-stage ceiling
+### The two-stage ceiling
 
 **After connections are added there are two ceilings, and both are explained when checked against the published figures.**
 
@@ -117,7 +135,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ---
 
-## What the 45% range actually is
+### What the 45% range actually is
 
 **The same settings, the same parameter file and the same tool, measured twice: 3,551.18 and 5,148.56 MB/s.** The only difference was what remained in cache.
 
@@ -137,7 +155,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ---
 
-## How to write a performance requirement
+### How to write a performance requirement
 
 **A requirement stating only MB/s cannot be settled once these measurements are in view.** These are the items to decide.
 
@@ -154,7 +172,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ---
 
-## What the cited source records as unmeasured
+### What the cited source records as unmeasured
 
 **A citation can take only the convenient part.** What the cited source lists as unmeasured, transcribed.
 
@@ -171,7 +189,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ---
 
-## What a block figure would need before it joins this table
+### What a block figure would need before it joins this table
 
 **The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, iSCSI reached 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s ([Paths are the failover mechanism](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと) (日本語)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
 
@@ -190,25 +208,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 > **Do not treat landing in the same range as evidence of the same cause.** The point of the table above is not the range but that similar values arise from different ceilings. **The cited source got this wrong once, for EFS, and corrected it** ([Conclusion](#conclusion)). If a block figure lands in the same range, whether the EC2 single-flow ceiling is the cause has to be confirmed separately.
 
-## Verify in your own environment
-
-**Do not target the cited source's numbers.** A different configuration hits a different ceiling.
-
-| # | Step | What it establishes |
-|---|---|---|
-| 1 | Count the mount's connections (the `nconnect` value; for SMB, `Get-SmbMultichannelConnection`) | **On FSx for ONTAP a single connection stops at around 5 Gbps.** On other services a service-side quota can bind first |
-| 2 | `nfs show -vserver <svm> -fields tcp-max-xfer-size` | **At the default 65,536, `rsize` is cut back** |
-| 3 | Compare the working set size against the file server's cache | Which ceiling binds |
-| 4 | Run the same measurement twice back to back and look at the difference | **The range from cache warmth. One run does not show it** |
-| 5 | Measure with one client and with several, and reconcile against ONTAP's physical port counters | **A client-side total is not evidence** |
-| 6 | Measure the case where every client reads the same data separately from the case where they read non-overlapping regions | Which side of the 5.5x you are on |
-| 7 | Check whether the client's network figure is guaranteed or burstable | **On a burstable type, what is being measured is the client** |
-
-Step 5 is what the cited source does. **A client-side total alone cannot isolate where the constraint is.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Actually |
 |---|---|
@@ -224,7 +224,7 @@ Step 5 is what the cited source does. **A client-side total alone cannot isolate
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -236,11 +236,11 @@ Step 5 is what the cited source does. **A client-side total alone cannot isolate
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Performance](../README.md) — this module's hub
 - [Throughput is not set by one value](where-throughput-is-determined-and-shared.md) — what the throughput capacity setting determines, and sharing per HA pair
-- [p99 cannot be read from the CloudWatch metrics](what-you-cannot-read-from-cloudwatch.md) — the measuring instrument's limits, and burst credits
+- [p99 is not available from volume operation-time metric pairs](what-you-cannot-read-from-cloudwatch.md) — the measuring instrument's limits, and burst credits
 - [Cross-repository citation index](../../../../ja/reference/cross-repo-index.md) (日本語) — where these figures are cited from, and the division of labour
 - [Reading a published benchmark](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) — checking the conditions behind a published figure
 - [Evidence Policy](../../../evidence-policy.md)
@@ -249,6 +249,42 @@ Step 5 is what the cited source does. **A client-side total alone cannot isolate
 
 [🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/performance/notes/a-single-connection-measures-the-client.md) | [English](a-single-connection-measures-the-client.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**Do not target the cited source's numbers.** A different configuration hits a different ceiling.
+
+| # | Step | What it establishes |
+|---|---|---|
+| 1 | Count the mount's connections (the `nconnect` value; for SMB, `Get-SmbMultichannelConnection`) | **On FSx for ONTAP a single connection stops at around 5 Gbps.** On other services a service-side quota can bind first |
+| 2 | `nfs show -vserver <svm> -fields tcp-max-xfer-size` | **At the default 65,536, `rsize` is cut back** |
+| 3 | Compare the working set size against the file server's cache | Which ceiling binds |
+| 4 | Run the same measurement twice back to back and look at the difference | **The range from cache warmth. One run does not show it** |
+| 5 | Measure with one client and with several, and reconcile against ONTAP's physical port counters | **A client-side total is not evidence** |
+| 6 | Measure the case where every client reads the same data separately from the case where they read non-overlapping regions | Which side of the 5.5x you are on |
+| 7 | Check whether the client's network figure is guaranteed or burstable | **On a burstable type, what is being measured is the client** |
+
+Step 5 is what the cited source does. **A client-side total alone cannot isolate where the constraint is.**
+
+The following read-only command checks the maximum transfer size configured on the SVM.
+
+```console
+nfs show -vserver <svm> -fields tcp-max-xfer-size
+```
+
+### Expected output
+
+```text
+<svm>  <tcp-max-xfer-size>
+```
+
+This output does not show the `rsize` negotiated by the client, connection count, single-flow ceiling, or file-system throughput. Complete the remaining table steps separately.
+
+---
+
+## Read next
+
+[Can Amazon CloudWatch metrics for Amazon FSx for NetApp ONTAP show p99?](what-you-cannot-read-from-cloudwatch.md)

@@ -38,9 +38,9 @@ lang: ja
 
 ```mermaid
 graph TD
-    START[スループットが想定に届かない] --> CONN{接続数を数えたか}
+    START[スループットが想定に届かない] --> CONN{測定時の接続数}
 
-    CONN -->|数えていない| COUNT["まず数える<br/>NFS: nconnect の値<br/>SMB: Get-SmbMultichannelConnection"]
+    CONN -->|未計測| COUNT["まず数える<br/>NFS: nconnect の値<br/>SMB: Get-SmbMultichannelConnection"]
     COUNT --> CONN
 
     CONN -->|1 接続| WHICH{どのサービスを測っているか}
@@ -49,10 +49,11 @@ graph TD
     FLOW --> RAISE["nconnect / SMB Multichannel で<br/>接続数を増やしてから測り直す"]
 
     CONN -->|複数接続| PROTO{プロトコル}
-    PROTO -->|NFS| XFER{"tcp-max-xfer-size を<br/>確認したか"}
+    PROTO -->|NFS| XFER{"tcp-max-xfer-size の<br/>現在値"}
     PROTO -->|SMB / ブロック| CLIENT
-    XFER -->|既定 65536| DEFAULT["rsize が 64 KiB に切り下がります<br/>引き上げてから測り直す"]
-    XFER -->|引き上げ済み| CLIENT{"クライアントの<br/>ネットワーク値は保証値か"}
+    XFER -->|65536: 既定値| DEFAULT["rsize が 64 KiB に切り下がります<br/>引き上げてから測り直す"]
+    XFER -->|65536 未満| BELOW["既定値未満<br/>設定意図を確認して測り直す"]
+    XFER -->|65536 より大きい| CLIENT{"クライアントの<br/>ネットワーク値は保証値か"}
 
     CLIENT -->|バースト型| BURST["上限 2: クライアントの実効帯域<br/>測定対象がクライアントです<br/>保証値の型で測り直す"]
     CLIENT -->|保証値| HOSTS{台数を増やすと合計が伸びるか}
@@ -68,14 +69,15 @@ graph TD
 
     RAISE --> TWICE
     DEFAULT --> TWICE
+    BELOW --> TWICE
     NETCHK --> TWICE
     DISKCHK --> TWICE
     MORE --> TWICE
 
-    TWICE{"同じ測定を 2 回続けて回し<br/>差を見たか"}
-    TWICE -->|見ていない| RUN["回す<br/>同一構成で 45% 振れた実測があります"]
-    TWICE -->|差が大きい| CACHE["キャッシュの状態差です<br/>測定ミスではありません<br/>幅で報告する"]
-    TWICE -->|差が小さい| DONE["この構成の値として記録する<br/>接続数・共有の有無・キャッシュ状態を併記する"]
+    TWICE{"同一条件の連続 2 回が<br/>測定前に定めた<br/>許容差内か"}
+    TWICE -->|未測定| RUN["回す<br/>同一構成で 45% 振れた実測があります"]
+    TWICE -->|許容差外| CACHE["キャッシュの状態差です<br/>測定ミスではありません<br/>幅で報告する"]
+    TWICE -->|許容差内| DONE["この構成の値として記録する<br/>接続数・共有の有無・キャッシュ状態を併記する"]
 
     RUN --> TWICE
 ```
@@ -88,11 +90,13 @@ graph TD
 |---|---|
 | FSx for ONTAP の単一接続で約 5 Gbps | AWS は 1 ネットワークフローあたり全二重 5 Gbps の上限を明記しています。実測では NFS 591.62 MB/s（4.7 Gbps）、SMB 574.24 MB/s（4.6 Gbps） |
 | 他サービスは別の上限に当たりうること | 同じ測定で Amazon EFS の素マウントは 499.79 MB/s でした。**これは 5 Gbps ではなく EFS のクライアント単位クォータ 500 MiBps に一致します。** 引用元は当初この 3 行を同じ上限として説明し、あとで訂正しています |
-| `tcp-max-xfer-size` の既定値 | 既定 65,536 のままだとクライアントの `rsize` が 64 KiB に切り下がります |
+| `tcp-max-xfer-size` の既定値 | 既定 65,536 のままだとクライアントの `rsize` が 64 KiB に切り下がります。65,536 未満は既定値未満の設定として意図を確認します |
 | クライアントの保証値とバーストの違い | インスタンス型によってネットワーク性能が保証値かバーストかが違います。バースト型では測定対象がクライアントになります |
 | 同じデータか重ならない領域か | 8 台・128 接続の実測で、同一ファイル共有 11,916.29 MB/s に対し重ならない領域が 2,173.37 MB/s（0.18 倍）でした |
 | スループット容量とベースライン帯域が別 | 実測構成はスループット容量 6,144 MBps で、ネットワークのベースラインは 12,500 MBps でした |
 | 45% の幅 | 同一設定・同一パラメータ・同一測定器で 2 回測って 3,551.18 と 5,148.56 MB/s。差はキャッシュの状態だけです |
+
+許容差は測定目的ごとに測定前に定めます。**45% はこの実測環境で観測した幅であり、一般的な合否閾値ではありません。**
 
 数値の測定条件は [単一接続で測った値はストレージの性能ではない](../../domains/performance/notes/a-single-connection-measures-the-client.md#測定条件) に全項目あります。
 
@@ -104,7 +108,7 @@ graph TD
 |---|---|
 | 接続数を増やす手段の選び方 | [スループットを上げる手段の比較](../comparison/throughput-levers.md) |
 | スループット容量の設定値が何を決めているか | [スループットは 1 つの設定値では決まらない](../../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
-| p99 レイテンシをどう見るか | [p99 は CloudWatch のメトリクスからは出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) |
+| p99 レイテンシをどう見るか | [ボリュームの操作時間メトリクスから p99 は出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) |
 | 世代差・S3 API との比較 | **未測定です。** 引用元が未測定として挙げている範囲は [引用元が未測定としている範囲](../../domains/performance/notes/a-single-connection-measures-the-client.md#引用元が未測定としている範囲) にあります |
 | コストとの兼ね合い | [EBS が安くなくなる境目](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) |
 

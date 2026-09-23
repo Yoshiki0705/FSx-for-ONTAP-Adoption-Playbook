@@ -37,7 +37,7 @@ lang: ja
 graph TD
     START["端末から FSx for ONTAP のデータを使いたい"] --> PUB["パブリックインターネット経由は不可<br/>Elastic IP は自動的に外される"]
 
-    PUB --> ROUTE{到達経路はどれか}
+    PUB --> ROUTE{端末側で許容する<br/>運用形態}
 
     ROUTE -->|端末に何もインストールしたくない| BROWSER["ブラウザ経路<br/>ファイル / ブロックのマウントは選べない"]
     ROUTE -->|端末は VDI 専用| VDI["WorkSpaces / AppStream<br/>端末の種類はここで無関係になる"]
@@ -70,7 +70,7 @@ graph TD
 
     W -->|ファイル| WSMB["SMB を選ぶ<br/>AD 参加か workgroup かを決める"]
     W -->|ブロック| WISCSI["iSCSI イニシエータ + MPIO<br/>MPIO の有効化コマンドが<br/>Server と client SKU で違う"]
-    W -->|オブジェクト| WS3["AWS CLI / SDK<br/>インターフェースエンドポイントが必要"]
+    W -->|オブジェクト| WS3["AWS CLI / SDK<br/>origin と呼び出し元で経路を選択"]
 
     L -->|ファイル| LSMB["NFS または cifs-utils"]
     L -->|ブロック| LISCSI{"カーネルに iscsi_tcp があるか"}
@@ -92,7 +92,7 @@ graph TD
     MNONE --> CRED
     WS3 --> CRED
 
-    CRED{"端末に残る資格情報を決める"}
+    CRED["ストレージ形態ごとの<br/>端末側の資格情報"]
     CRED --> C1["SMB: Credential Manager / キーチェーン / credentials ファイル"]
     CRED --> C2["iSCSI: CHAP シークレットはホスト側に平文で残る"]
     CRED --> C3["S3: 長期アクセスキーではなく短期資格情報にする"]
@@ -112,6 +112,12 @@ graph TD
 | Windows | SMB（標準機能） | iSCSI イニシエータ + MPIO。**MPIO の有効化が SKU で違う** | AWS CLI / SDK |
 | WSL2 の Linux | NFS または `cifs-utils`。**ネットワーク境界が先に来る** | **既定カーネルに依存** | AWS CLI / SDK |
 | Mac | SMB（AWS の推奨）。NFS も可 | **同梱されていません** | AWS CLI / SDK |
+
+| ストレージ形態 | 端末側に残る資格情報 |
+|---|---|
+| SMB | Credential Manager、キーチェーン、または credentials ファイル |
+| iSCSI | ホスト側に平文で残る CHAP シークレット |
+| S3 | 長期アクセスキーを避け、短期資格情報を使用 |
 
 ---
 
@@ -136,8 +142,8 @@ graph TD
 | WSL2 のネットワークは既定でホストと同一ではない | WSL2 は仮想化されたネットワークインターフェースと NAT を持ちます。mirrored モードでは Windows ホストと WSL2 が `localhost` で相互に到達できます | [Microsoft: Accessing network applications with WSL](https://learn.microsoft.com/en-us/windows/wsl/networking) |
 | **mirrored モードで NFS マウントが壊れる報告がある** | Microsoft の WSL リポジトリに `WSL 2 mirrored networking breaks NFS mounts ("Connection timed out")` として Issue が立っています。**未解決の報告であり、当方でも未確認です** | [microsoft/WSL Issue #12508](https://github.com/microsoft/WSL/issues/12508) |
 | SMB の同時利用に Multichannel を使う場合、ONTAP 側は既定無効 | このリポジトリの比較表に記録があります | [ファイルストレージの選択肢の比較](../comparison/file-storage-options.md#すべての-smb-数値の前提) |
-| **端末から S3 Access Points に届くにはインターフェースエンドポイントが要る** | ゲートウェイエンドポイントは VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入るトラフィックをルーティングしません | [S3 Access Point の権限設計](../../domains/security-governance/notes/access-point-authorization-layers.md) |
-| AD 参加 SVM では S3 Access Points の全データ操作に DC 到達性が必要 | `HeadBucket` は AD が到達不能でも成功するため疎通確認に使うと偽陽性になります | [AD への依存は参加時ではなく生涯続く](../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) |
+| **VPN / Direct Connect / Transit Gateway / ピアリング経由で VPC に入る端末通信を私設経路に限定するにはインターフェースエンドポイントが要る** | ゲートウェイエンドポイントは VPC 内で発生した通信には使えますが、VPC 外から入るトラフィックをルーティングしません | [S3 Access Point の権限設計](../../domains/security-governance/notes/access-point-authorization-layers.md) |
+| AD 参加 SVM の全データ操作における DC 依存と `HeadBucket` の挙動は未解決 | AWS は Windows ID の解決と名前サービス到達性を要件にしますが、既存の universal claim を支える完全な公開記録はありません | [端末から S3 Access Points に届く条件](../../domains/client-access/notes/what-an-endpoint-needs-to-reach-s3-access-points.md#AD-参加-SVM-に関する未解決の範囲) |
 
 ### 出典の性質が違う 2 行
 
@@ -177,7 +183,7 @@ graph TD
 | 5 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` | クライアント SKU で MPIO をどう有効化するか。**`Install-WindowsFeature` が使えるかはここで分かります** |
 | 6 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことの確認は自環境で取るのがいちばん確実です** |
 | 7 | WSL2: `wsl.exe --version` と `cat /etc/wsl.conf` でネットワークモードを確認し、`ip route` を Windows 側の `route print` と比べる | WSL2 がホストの VPN 経路を共有しているか |
-| 8 | 端末から `aws s3api list-objects-v2 --bucket <access-point-alias>` を試す | S3 Access Points への到達。**ゲートウェイエンドポイントしか無い場合はここで落ちます** |
+| 8 | 端末から `aws s3api list-objects-v2 --bucket <access-point-alias>` を試す | S3 Access Points への到達。VPC 外から入る端末通信を私設経路に限定する場合は、インターフェースエンドポイントと名前解決を確認します |
 
 手順 4 から 8 は**検証用のファイルシステムで行ってください。** 本番の SVM に対して端末から試すと、
 失敗した認証が監査ログに残り、ロックアウトの閾値に近づきます（[fsxadmin はロックされる](../../playbooks/05-operate/notes/admin-account-lockout-and-recovery.md)）。

@@ -7,17 +7,37 @@ source: https://aws.amazon.com/fsx/netapp-ontap/pricing/
 lang: en
 ---
 
-# The point where EBS stops being the cheaper answer is the number of copies, not the instance count
+# Is the point where EBS stops being cheaper the instance count?
+
+No, it is the number of copies of the same data. The floor of the minimum configuration is 80% throughput capacity.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [English](when-ebs-stops-being-the-cheaper-answer.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That FSx for ONTAP is not cheaper than EBS on a per-GB rate, and that what decides the crossover is the number of copies of the same data
+- That 83% of the minimum monthly cost is throughput capacity, and that the total flips once the copy count exceeds a point that depends on dataset size
+
+## What this note does not answer
+
+- Current rates or the monthly cost in your own region (prices are revised; re-fetch before designing)
+- The deduplication / compression reduction rate (data-dependent and not guaranteed), or a monetary conversion of the differences not in the rate table
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="is-the-point-where-ebs-stops-being-cheaper-the-instance-count"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **FSx for ONTAP is not cheaper than Amazon EBS on a per-GB basis.** At the Tokyo region's public rates, SSD is $0.150/GB-month against `gp3`'s $0.096/GB-month. And FSx for ONTAP adds a separate monthly charge for throughput capacity. **There is no reason to bring it in as "storage cheaper than EBS."**
 
@@ -28,11 +48,11 @@ lang: en
 At the Tokyo region's minimum configuration, **around the point where the copies of a 1 TB dataset exceed about 9** is the rough crossover. The larger the dataset, the smaller this number.
 
 > **Tier**: `documented` — the rates are public values obtained from the AWS Price List API (Tokyo region; FSx for ONTAP effective 2026-07-01 / obtained 2026-09-05, EBS effective 2026-09-01 / obtained 2026-09-05). **The calculation below is arithmetic using public rates, not a measurement.**
-> **Prices are revised.** Re-fetch the current rates for your own region before deciding. The steps are in [How to confirm in your own environment](#how-to-confirm-in-your-own-environment).
+> **Prices are revised.** Re-fetch the current rates for your own region before deciding. The steps are in [Verify it in your environment](#verify-it-in-your-environment).
 
 ---
 
-## The rates obtained
+### The rates obtained
 
 Tokyo region (`ap-northeast-1`). **They differ in other regions.**
 
@@ -59,7 +79,7 @@ Tokyo region (`ap-northeast-1`). **They differ in other regions.**
 
 ---
 
-## The floor of the minimum configuration
+### The floor of the minimum configuration
 
 **FSx for ONTAP has a lower bound.** For a 2nd-generation 1 HA pair it is SSD 1,024 GiB and throughput capacity 384 MBps. You pay for it even unused.
 
@@ -75,7 +95,7 @@ The same configuration on Multi-AZ 2nd generation is $1,516.03/month (1,024 × $
 
 ---
 
-## The crossover calculation
+### The crossover calculation
 
 **There is one model.** Holding a D GB dataset as C copies.
 
@@ -102,7 +122,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 
 ---
 
-## Replacing the instance-count question with the copy question
+### Replacing the instance-count question with the copy question
 
 **"Launch N EC2 instances" alone decides nothing.** What decides is the following branch.
 
@@ -118,7 +138,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 
 ---
 
-## The differences that do not appear in the rate
+### The differences that do not appear in the rate
 
 **The crossover calculation looks only at the storage bill.** The following are not converted into money. **The reason they are not is that the amount depends on the environment, not that they can be ignored.**
 
@@ -127,7 +147,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 | The time to make a copy | FlexClone does not copy actual data. Creating a volume from an EBS Snapshot involves a copy |
 | Deduplication / compression | FSx for ONTAP can enable it per volume and reduce the GB provisioned. **The reduction rate depends on the data and is not guaranteed** |
 | Building and operating host-side multipath | **A burden on the FSx for ONTAP side.** Unnecessary for a single EBS attachment |
-| Two control planes | LUNs and igroups are outside the AWS API ([the note (日本語)](block-objects-are-outside-the-aws-api.md)) |
+| Two control planes | LUNs and igroups are outside the AWS API ([the note](block-objects-are-outside-the-aws-api.md)) |
 | Boot disk | **An FSx for ONTAP LUN cannot boot.** EBS is required |
 | Inter-AZ data transfer | There are Multi-AZ configurations where the optimal path faces another AZ ([the note](multi-az-moves-a-route-not-an-address.md)) |
 | The ceiling of 6 HA pairs | Block goes up to 6 pairs |
@@ -135,23 +155,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 
 ---
 
-## How to confirm in your own environment
-
-**Rates are revised. Do not bring the numbers in this table into a design.**
-
-| # | Step | What you get |
-|---|---|---|
-| 1 | Fetch the SSD and throughput-capacity rates for your region with `aws pricing get-products --service-code AmazonFSx --region us-east-1 --filters ...` | The two rates needed for the floor calculation. **The Price List API endpoints are only `us-east-1` and `ap-south-1`** |
-| 2 | Fetch `AmazonEC2` Storage for `volumeApiName=gp3` the same way | The rate to compare against |
-| 3 | Check whether the units of `unit` and `description` match | **There are items that are off by 1,024× if you look at `pricePerUnit` alone** |
-| 4 | Count your dataset size D and copy count C | The two values to put in the formula above |
-| 5 | Add the GB of Snapshots held on the EBS side | The actual EBS-side monthly cost |
-| 6 | If you count on deduplication / compression, **also state the amount without it** | The upper bound when no reduction materializes |
-| 7 | If there is one copy, stop there | **In that configuration the rate does not flip** |
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -167,7 +171,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -181,7 +185,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [Comparison of block storage options (日本語)](../../../../ja/reference/comparison/block-storage-options.md) — the symmetric trade-offs on the feature side
@@ -191,6 +195,37 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 - [Capacity is counted in three places](capacity-is-counted-in-three-places.md) — how much of the provisioned GB can be placed
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [English](when-ebs-stops-being-the-cheaper-answer.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+**Rates are revised. Do not bring the numbers in this table into a design.**
+
+| # | Step | What you get |
+|---|---|---|
+| 1 | Fetch the SSD and throughput-capacity rates for your region with `aws pricing get-products --service-code AmazonFSx --region us-east-1 --filters ...` | The two rates needed for the floor calculation. **The Price List API endpoints are only `us-east-1` and `ap-south-1`** |
+| 2 | Fetch `AmazonEC2` Storage for `volumeApiName=gp3` the same way | The rate to compare against |
+| 3 | Check whether the units of `unit` and `description` match | **There are items that are off by 1,024× if you look at `pricePerUnit` alone** |
+| 4 | Count your dataset size D and copy count C | The two values to put in the formula above |
+| 5 | Add the GB of Snapshots held on the EBS side | The actual EBS-side monthly cost |
+| 6 | If you count on deduplication / compression, **also state the amount without it** | The upper bound when no reduction materializes |
+| 7 | If there is one copy, stop there | **In that configuration the rate does not flip** |
+
+The rate in step 1 is re-fetched with this read-only command (the Price List API endpoints are `us-east-1` / `ap-south-1` only).
+
+```bash
+aws pricing get-products --region us-east-1 --service-code AmazonFSx \
+  --filters "Type=TERM_MATCH,Field=regionCode,Value=<your-region>" --max-results 20
+```
+
+### Expected output
+
+```text
+The SSD and throughput-capacity rates are returned. Reconcile the unit (e.g. MiBps-Mo) with the
+description before calculating (there are items off by 1,024x if you read pricePerUnit alone).
+83% of the floor is throughput capacity.
+```
+
+This command only reads a public rate; it changes nothing on billing or resources. Because the numbers are revised, re-fetch them at every decision point.
+
+## Read next
+
+[Do the contents of a LUN surface to file protocols?](lun-contents-do-not-reach-file-protocols.md)

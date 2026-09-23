@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-publication audit for a public repository.
 
-Six independent concerns, all of which have historically been caught late or not at all:
+Seven independent concerns, all of which have historically been caught late or not at all:
 
   1. naming      - "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" are the only accepted forms,
                    and three products must never be proposed.
@@ -12,6 +12,8 @@ Six independent concerns, all of which have historically been caught late or not
                    publishing it before a case exists puts a dead end in a knowledge base.
   6. support-attribution - a vendor's support reply is the vendor's confidential information, so it
                    cannot be the published basis for a claim, however it is worded.
+  7. sales-vocabulary - promotional adjectives and unsupported outcomes are rejected from public
+                   prose unless a verbatim external title carries a line-level allowance.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -59,6 +61,7 @@ CATEGORIES = (
     "role-label",
     "support-referral",
     "support-attribution",
+    "sales-vocabulary",
 )
 # The HTML comment wrapper is required, not decoration. Without it, **a line that merely mentions
 # `allow:naming` in prose suppresses the detector on that line** - inside backticks too, so every
@@ -68,7 +71,7 @@ CATEGORIES = (
 # half of the same defect.
 ALLOW = re.compile(
     r"<!--[^>]*?allow:"
-    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|all)"
+    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|sales-vocabulary|all)"
     r"[^>]*?-->"
 )
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
@@ -171,6 +174,34 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
         # it -- paraphrase.
         re.compile(r"顧客"),
         "the reader is a practitioner, not a customer; use 自組織 / 利用者側 / 移行元",
+    ),
+]
+
+# Every registered category is required by the default audit. Keep the named empty set so a future
+# migration can stage a category without changing the selection mechanism; any non-empty value must
+# be temporary and is mutation-tested against the default gate.
+REPORT_ONLY_CATEGORIES = frozenset()
+
+SALES_VOCABULARY_RULES: list[tuple[re.Pattern[str], str]] = [
+    (
+        re.compile(
+            r"顧客|お客様|差別化|訴求|決め手|勝ち|負け|テイクアウト|競合奪還|ソリューション|提案|商談|"
+            r"最も確実|業界をリードする|劇的に速|大幅に改善|堅牢(?:な|で|性)|強固(?:な|で|性)|"
+            r"シームレス|スムーズ|圧倒的|究極|最強|革命的|非常に|極めて|かなり"
+        ),
+        "replace sales vocabulary with reader roles, applicable conditions, and measured behavior",
+    ),
+    (
+        re.compile(
+            r"\b(?:customer|customers|competitive|differentiator|win|wins|winning)\b|"
+            r"\bvalue\s+proposition\b|\bbest[- ]in[- ]class\b|\bindustry[- ]leading\b|"
+            r"\b(?:best|seamless|revolutionary|ultimate|unmatched|unrivaled|effortless)\b|"
+            r"\b(?:dramatically|significantly)\s+(?:faster|improves?|improved)\b|"
+            r"\b(?:guarantees?|eliminates?)\s+(?:all|every)\b|"
+            r"\bcompeting\s+(?:tools?|products?)\b",
+            re.IGNORECASE,
+        ),
+        "replace sales vocabulary with reader roles, applicable conditions, and measured behavior",
     ),
 ]
 
@@ -584,7 +615,7 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 # A fenced block and a code span are two forms of one rule - **this is code, not prose** - and only
 # one of them was implemented. A sibling repository named the shape after finding the same split in
 # its own detector: the recorded rule was not missing, its scope was one step too narrow.
-FENCE = re.compile(r"^\s*(```|~~~)")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 
 
 def _outside_code_spans(line: str):
@@ -638,6 +669,7 @@ def audit_line(
     line: str,
     file_allowed: frozenset[str] = frozenset(),
     in_fence: bool = False,
+    scan_sales: bool = True,
 ) -> list[tuple[str, str]]:
     """Return (category, message) findings for one line, honouring allow markers.
 
@@ -654,6 +686,11 @@ def audit_line(
     original line, so a forbidden term inside a code span is still reported.
     """
     allowed = marker_categories(line, in_fence) | set(file_allowed)
+    # Sales vocabulary is a staged subset of the existing neutrality policy. Existing scoped
+    # neutrality allowances on rule-definition files and verbatim citation titles therefore
+    # continue to cover it; requiring a second marker would invalidate reviewed allowances.
+    if "neutrality" in allowed:
+        allowed.add("sales-vocabulary")
     if "all" in allowed:
         return []
 
@@ -674,6 +711,12 @@ def audit_line(
         for pattern, message in NEUTRALITY_RULES:
             if pattern.search(line):
                 findings.append(("neutrality", message))
+
+    if "sales-vocabulary" not in allowed and not in_fence and scan_sales:
+        prose = NON_PROSE.sub(lambda match: " " * len(match.group()), line)
+        for pattern, message in SALES_VOCABULARY_RULES:
+            if pattern.search(prose):
+                findings.append(("sales-vocabulary", message))
 
     if "pii" not in allowed:
         for pattern, message in PII_RULES:
@@ -750,11 +793,23 @@ def main() -> int:
     parser.add_argument(
         "--only",
         default="",
-        help=f"comma-separated categories to report ({', '.join(CATEGORIES)}); default is all",
+        help=(
+            f"comma-separated categories to report ({', '.join(CATEGORIES)}); "
+            "default is required categories only"
+        ),
+    )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="print findings but return success (informational report; not a gate)",
     )
     args = parser.parse_args()
 
     only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
+    # A category may be staged here only while its corpus backlog is being removed. The empty set
+    # means every category is required by an unscoped run; a behavioral test and mutation pin that
+    # default so removing one cannot silently narrow `make audit`.
+    active = only or (frozenset(CATEGORIES) - REPORT_ONLY_CATEGORIES)
     unknown = only - frozenset(CATEGORIES)
     if unknown:
         # Raising beats reporting nothing: a typo in --only would otherwise make the gate
@@ -766,6 +821,7 @@ def main() -> int:
 
     root = Path(args.path).resolve()
     findings: list[str] = []
+    fatal_errors: list[str] = []
     scanned = 0
 
     for path in iter_files(root):
@@ -777,20 +833,65 @@ def main() -> int:
             findings.append(f"{rel}: not valid UTF-8")
             continue
         file_allowed = frozenset(file_allowances(lines))
-        in_fence = False
-        for lineno, line in enumerate(lines, start=1):
-            if FENCE.match(line):
-                in_fence = not in_fence
+        frontmatter_end = 0
+        if path.suffix.lower() == ".md" and lines and lines[0].strip() == "---":
+            closing = next(
+                (
+                    index
+                    for index, value in enumerate(lines[1:], start=2)
+                    if value.strip() == "---"
+                ),
+                None,
+            )
+            if closing is None:
+                fatal_errors.append(f"{rel}: frontmatter opens but never closes")
                 continue
-            for category, message in audit_line(line, file_allowed, in_fence):
-                if only and category not in only:
+            frontmatter_end = closing
+        prose_file = path.suffix.lower() in {".md", ".txt"}
+        fence_marker: str | None = None
+        for lineno, line in enumerate(lines, start=1):
+            fence = FENCE.match(line)
+            if fence_marker is None and fence:
+                fence_marker = fence.group(1)
+                continue
+            if fence_marker is not None and fence:
+                candidate = fence.group(1)
+                stripped = line.strip()
+                if (
+                    candidate[0] == fence_marker[0]
+                    and len(candidate) >= len(fence_marker)
+                    and set(stripped) == {fence_marker[0]}
+                ):
+                    fence_marker = None
+                continue
+            scan_sales = prose_file and not (
+                frontmatter_end and lineno <= frontmatter_end
+            )
+            for category, message in audit_line(
+                line,
+                file_allowed,
+                fence_marker is not None,
+                scan_sales=scan_sales,
+            ):
+                if category not in active:
                     continue
                 findings.append(f"{rel}:{lineno}: [{category}] {message}")
 
+    if fatal_errors:
+        print(f"Audit could not inspect {len(fatal_errors)} file(s):", file=sys.stderr)
+        for error in fatal_errors:
+            print(f"  {error}", file=sys.stderr)
+        return 2
+
     if findings:
-        print(f"Audit failed ({len(findings)} finding(s)):", file=sys.stderr)
+        label = "Audit report" if args.report else "Audit failed"
+        destination = sys.stdout if args.report else sys.stderr
+        print(f"{label} ({len(findings)} finding(s)):", file=destination)
         for finding in findings:
-            print(f"  {finding}", file=sys.stderr)
+            print(f"  {finding}", file=destination)
+        if args.report:
+            print("public-output report (not a gate): findings require remediation")
+            return 0
         return 1
 
     scope = f" for {', '.join(sorted(only))}" if only else ""

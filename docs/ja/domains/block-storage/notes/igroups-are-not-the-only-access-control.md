@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: ja
 ---
 
-# igroup の外側にある 2 つの制御
+# igroup の外側にある制御は何か？
+
+CHAP と portset です。どちらも `fsxadmin` で使え、igroup だけでは IQN の詐称を防げません。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- ブロックのアクセス制御が igroup だけでなく CHAP（IQN 認証）と portset（LIF 制限）を含み、いずれも `fsxadmin` で操作できること
+- CHAP の既定が認証なしで、portset がパス数を絞る一方でホスト側に残骸を残すこと
+
+## このノートが答えないこと
+
+- CHAP / portset が FSx for ONTAP 公式ドキュメントに記載されているか（見つけられず、使えることは実測）
+- portset が非推奨かどうか（非推奨の記載も、非推奨でないことの確認もない）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="igroup-の外側にある-2-つの制御"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **FSx for ONTAP のブロックアクセス制御は igroup だけではありません。** ONTAP には **CHAP**（イニシエータの認証）と **portset**（LUN を見せる LIF の制限）があり、**どちらも `fsxadmin` で操作できました。**
 
@@ -37,7 +58,7 @@ lang: ja
 
 ---
 
-## `fsxadmin` で使えたコマンド
+### `fsxadmin` で使えたコマンド
 
 **FSx for ONTAP の `fsxadmin` は権限が絞られています。** ブロックの制御に関わるものを実際に叩いた結果です。
 
@@ -53,7 +74,7 @@ lang: ja
 
 ---
 
-## CHAP の既定と、掛け方
+### CHAP の既定と、掛け方
 
 **既定は認証なしです。**
 
@@ -95,7 +116,7 @@ CHAP のユーザー名は 1〜128 バイトです。**イニシエータのア�
 
 ---
 
-## 認証に失敗したときの症状
+### 認証に失敗したときの症状
 
 **CHAP をターゲット側に掛け、イニシエータ側に何も設定していない状態でログインしました。**
 
@@ -132,7 +153,7 @@ iscsiadm -m node -L all      # 終了コード 0、セッションが復帰
 
 ---
 
-## portset がパス数を実際に減らすこと、そして残骸
+### portset がパス数を実際に減らすこと、そして残骸
 
 **portset は「この igroup には、この LIF 経由でしか見せない」という制限です。** Selective LUN Map の上に載る追加の絞り込みです。
 
@@ -181,7 +202,7 @@ multipath -r
 
 ---
 
-## どれを使うかの判断
+### どれを使うかの判断
 
 **3 つは重ねて使えます。目的が別です。**
 
@@ -198,23 +219,7 @@ multipath -r
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `vserver iscsi security show -vserver <svm>` | **`default` が `none` かどうか。認証なしで運用しているかがここで分かります** |
-| 2 | `vserver iscsi security create` か REST の `credentials` が通るか | **`fsxadmin` で CHAP が設定できること** |
-| 3 | イニシエータ側を未設定のままログインし、終了コードと `journalctl -u iscsid` を記録する | **認証失敗の症状**（切り分けの足場） |
-| 4 | `lun portset create` と `lun igroup bind` が通るか | **`fsxadmin` で portset が使えること** |
-| 5 | bind 後に `multipath -ll` でパス数と `faulty` の有無を確認する | **絞り込みが効いたこと、そして残骸** |
-| 6 | 残骸を `echo 1 > /sys/block/<dev>/device/delete` で消し、`hwhandler` が戻るか確認する | **片付けの手順** |
-| 7 | `storage failover show` を叩く | **空テーブルなら HA 状態は見えません** |
-
-**手順 3 と 5 は検証環境で行ってください。** どちらも一時的にアクセスを失わせます。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -232,7 +237,7 @@ multipath -r
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -248,7 +253,7 @@ multipath -r
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -263,7 +268,7 @@ multipath -r
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) — portset で絞る対象になるパス
@@ -275,6 +280,35 @@ multipath -r
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `vserver iscsi security show -vserver <svm>` | **`default` が `none` かどうか。認証なしで運用しているかがここで分かります** |
+| 2 | `vserver iscsi security create` か REST の `credentials` が通るか | **`fsxadmin` で CHAP が設定できること** |
+| 3 | イニシエータ側を未設定のままログインし、終了コードと `journalctl -u iscsid` を記録する | **認証失敗の症状**（切り分けの足場） |
+| 4 | `lun portset create` と `lun igroup bind` が通るか | **`fsxadmin` で portset が使えること** |
+| 5 | bind 後に `multipath -ll` でパス数と `faulty` の有無を確認する | **絞り込みが効いたこと、そして残骸** |
+| 6 | 残骸を `echo 1 > /sys/block/<dev>/device/delete` で消し、`hwhandler` が戻るか確認する | **片付けの手順** |
+| 7 | `storage failover show` を叩く | **空テーブルなら HA 状態は見えません** |
+
+**手順 3 と 5 は検証環境で行ってください。** どちらも一時的にアクセスを失わせます。
+
+手順 1 の CHAP の既定は、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> vserver iscsi security show -vserver <svm>
+```
+
+### 期待結果
+
+```text
+default の行の Auth Type が none なら認証なし。igroup に載った IQN を名乗れば誰でもログインできる。
+CHAP を掛けるかは、そのサブネットに誰が届くか（セキュリティグループの範囲）で判断する
+```
+
+このコマンドは iSCSI セキュリティ設定を読むだけで、認証にも LUN にも変更を加えません。portset を運用に入れるなら、除外パスのホスト側デバイス削除まで手順に含めてください。
+
+## Read next
+
+[LUN に載せた DB は静止させずに復旧できるか？](a-database-on-luns-recovers-without-quiescing.md)

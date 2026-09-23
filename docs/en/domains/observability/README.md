@@ -1,9 +1,5 @@
 # Domain — Observability
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/observability/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers **how to choose a collection route** when monitoring Amazon FSx for NetApp ONTAP. What to monitor and where to set thresholds belongs to [Operate](../../playbooks/05-operate/); how throughput and latency are determined belongs to [Performance](../performance/). This module only covers which route the values come through.
@@ -36,6 +32,7 @@ the table of contents; this is the entry point.
 | 5 | What changes when spanning accounts or sites | [Cross-account is a network problem, not an IAM one](../../../ja/domains/observability/notes/cross-account-is-a-network-problem.md) (日本語) |
 | 6 | Which conditions narrow the choice before you make it | [Route choice is bounded by access and authentication](../../../ja/domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md) (日本語) |
 | 7 | What operational risk monitoring itself introduces | [The number of monitored targets sets the blast radius of a lockout](../../../ja/domains/observability/notes/harvest-has-no-remote-write.md#ロック時の影響範囲を決める収集対象数) (日本語) |
+| 8 | Whether request count, HTTP error rate, or request latency is available per S3 Access Point | Amazon S3 documents request metrics filtered by Access Point, but applicability to an Access Point attached to an FSx for ONTAP volume remains **open**. Keep aggregate storage telemetry and [CloudTrail S3 data events](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) as separate signals. |
 
 ---
 

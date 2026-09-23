@@ -53,7 +53,7 @@ lang: ja
 | 金融 | [ブロックストレージ](../domains/block-storage/) | [データ保護](../domains/data-protection/) | **不可逆な保持設定と、戻したあとにアプリが起動するか**（[本番投入前レビュー](../playbooks/04-build/checklists/pre-production-review.md)） |
 | 保険 | [移行](../playbooks/03-migrate/) | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | 権限が移行先に持ち越されるか |
 | ヘルスケア / 医療 | [データ保護](../domains/data-protection/) | [セキュリティ・ガバナンス](../domains/security-governance/) | **Snapshot があることと復旧できることが別だという点** |
-| 通信 | [運用](../playbooks/05-operate/) | [性能](../domains/performance/) | **監視が平均値で失敗すること。p99 は CloudWatch から出せません** |
+| 通信 | [運用](../playbooks/05-operate/) | [性能](../domains/performance/) | **監視が平均値で失敗すること。ボリュームの read/write/metadata operation-time/count ペアから p99 は出ません** |
 | 防衛 / 公共 | [セキュリティ・ガバナンス](../domains/security-governance/) | [データ保護](../domains/data-protection/) | 責任境界と、不可逆な設定の承認手順 |
 | メディア / エンタメ | [設計](../playbooks/02-design/) | [性能](../domains/performance/) | **デプロイタイプは一度しか決められません。** 同時台数はデータを共有するかで 5.5 倍変わります |
 | 教育 | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | [コスト](../domains/cost/) | 利用者が多いときの ID の置き方と、確保した量への課金 |
@@ -170,7 +170,7 @@ lang: ja
 | 認証 | [FedRAMP / DoD SRG IL2-IL5 対応](https://www.netapp.com/blog/fsx-ontap-fedramp-and-dod-authorized/) | GovCloud (US) リージョン |
 | パターン | [UC15: defense-satellite](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/defense-satellite/) | 衛星画像解析 |
 | パターン | [UC16: government-archives](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/government-archives/) | 公文書・FOIA |
-| ノート | [保存時の暗号化は自動、転送時は既定で無効](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | セキュリティの責任境界 |
+| ノート | [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | セキュリティの責任境界 |
 
 ### メディア / エンタメ
 
@@ -196,7 +196,7 @@ lang: ja
 |------|----------|------|
 | 事例 | [Allcargo](https://aws.amazon.com/blogs/storage/how-allcargo-migrated-vdi-workload-to-amazon-fsx-using-aws-datasync/) | 3,500 VDI ユーザーの移行。ログインストーム・Outlook キャッシュ書き込みストーム対策。DataSync + SnapMirror |
 | パターン | [UC12: logistics-ocr](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/logistics-ocr/) | 配送伝票 OCR |
-| ノート | [メンテナンスは 14 日を超えて延期できない](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
+| ノート | [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
 
 ### スポーツ / 小売
 
@@ -243,7 +243,7 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | パターン | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Datadog / Splunk / New Relic 等への監査ログ転送 |
-| ノート | [p99 は CloudWatch のメトリクスからは出せない](../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | レイテンシは平均しか得られない |
+| ノート | [ボリュームの操作時間メトリクスから p99 は出せない](../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | read/write/metadata の時間合計と回数合計から得られるのは平均。ほかのメトリクスは統計と次元を個別に選ぶ |
 
 ### データレイク / Lakehouse（業種横断）
 

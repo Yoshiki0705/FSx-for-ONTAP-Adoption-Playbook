@@ -201,6 +201,26 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # Once the corpus is clean, leaving this category report-only restores the silent gap: the
+        # informational target stays green while the required unscoped audit accepts the same term.
+        "name": "sales vocabulary removed from the default audit",
+        "why": (
+            "Putting the cleared category back into the report-only set is a plausible rollback "
+            "during future editorial work. Explicit reports still behave correctly, so only the "
+            "default-gate fixture can distinguish the narrowed required scope."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "REPORT_ONLY_CATEGORIES = frozenset()",
+                'REPORT_ONLY_CATEGORIES = frozenset({"sales-vocabulary"})',
+            ),
+        ],
+        "must_fail": ["test_default_audit_rejects_sales_vocabulary"],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
         # The mirror-image mistake a sibling repository made first and reported. Testing for an
         # unchanged report finds only markers that suppress nothing, and misses one that makes the
         # checker report something that is not there.
@@ -517,6 +537,233 @@ MUTATIONS: list[dict] = [
         "must_pass": ["test_labels_naming_a_person_are_reported"],
     },
     {
+        "name": "bare URL consumes adjacent Japanese prose",
+        "why": (
+            "The broad non-whitespace URL pattern swallows Japanese punctuation and prose that "
+            "follow without an ASCII space, hiding both length and glossary findings."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/editorial_markdown.py",
+                'URL = re.compile(r"https?://[^\\s。！？、，；]+")',
+                'URL = re.compile(r"https?://\\S+")',
+            ),
+        ],
+        "must_fail": [
+            "test_bare_url_stops_before_japanese_punctuation_and_prose",
+            "test_bare_url_does_not_hide_adjacent_glossary_term",
+        ],
+        "must_pass": ["test_link_label_remains_visible_but_url_and_markup_do_not"],
+    },
+    {
+        "name": "spaced Mermaid info string is omitted",
+        "why": (
+            "Removing optional spacing restores the narrower opener and silently excludes valid "
+            "Markdown fences from the real Mermaid parser."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                'OPEN = re.compile(\n    r"^\\s*(`{3,}|~{3,})[ \\t]*mermaid(?:[ \\t]+[^\\r\\n]*)?\\s*$", re.IGNORECASE\n)',
+                'OPEN = re.compile(\n    r"^\\s*(`{3,}|~{3,})mermaid(?:[ \\t]+[^\\r\\n]*)?\\s*$", re.IGNORECASE\n)',
+            ),
+        ],
+        "must_fail": ["test_spaced_mermaid_info_string_is_extracted"],
+        "must_pass": ["test_multiple_complete_blocks_and_non_mermaid_fence"],
+    },
+    {
+        "name": "Mermaid vague-label vocabulary is narrowed",
+        "why": (
+            "Removing one ordinary-looking token from the bounded set makes the report stay clean "
+            "for the exact vague node the rule claims to catch, while specific questions continue "
+            "to pass."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                '        "purpose",\n',
+                "",
+            ),
+        ],
+        "must_fail": ["test_vague_decision_label_is_reported"],
+        "must_pass": [
+            "test_clear_decision_input_and_labelled_branches_are_accepted",
+            "test_sequence_and_explanatory_diagrams_are_excluded",
+        ],
+    },
+    {
+        "name": "Mermaid unlabeled branches are skipped",
+        "why": (
+            "Skipping branch inspection is the shortest way to avoid false positives from "
+            "explanatory diagrams. It also accepts decision diamonds whose readers cannot map "
+            "outgoing edges to states."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                "        if len(branches) < 2:\n            continue",
+                "        if True:\n            continue",
+            ),
+        ],
+        "must_fail": ["test_each_unlabelled_outgoing_branch_is_reported"],
+        "must_pass": [
+            "test_vague_decision_label_is_reported",
+            "test_sequence_and_explanatory_diagrams_are_excluded",
+        ],
+    },
+    {
+        "name": "Mermaid text branch labels are omitted",
+        "why": (
+            "Keeping only the pipe-delimited label form looks sufficient on the current corpus, "
+            "but valid Mermaid also permits text between dashes. Dropping that form can exclude a "
+            "decision flow from the bounded rule or undercount its branches."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                'EDGE_TEXT_LABEL = r"--[ \\t]+(?P<text_label>.+?)[ \\t]+-->"',
+                'EDGE_TEXT_LABEL = r"(?!)"',
+            ),
+        ],
+        "must_fail": ["test_text_between_dashes_branch_labels_are_recognized"],
+        "must_pass": [
+            "test_clear_decision_input_and_labelled_branches_are_accepted",
+        ],
+    },
+    {
+        "name": "structure include filter is ignored",
+        "why": (
+            "Accepting --include while scanning every eligible document preserves the CLI shape "
+            "but makes a scoped migration fail on unrelated legacy notes."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "        if not args.include\n",
+                "        if True\n",
+            ),
+        ],
+        "must_fail": [
+            "test_repeatable_include_filters_use_repository_relative_or_semantics"
+        ],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
+        "name": "structure glob falls back to Path match",
+        "why": (
+            "Path.match reads patterns from the right and does not provide the documented "
+            "repository-anchored recursive semantics, so common ** scopes select nothing while "
+            "basename patterns reach too far."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "            _matches_repo_glob(path.relative_to(root), pattern)\n",
+                "            path.relative_to(root).match(pattern)\n",
+            ),
+        ],
+        "must_fail": [
+            "test_repeatable_include_filters_use_repository_relative_or_semantics"
+        ],
+        "must_pass": ["test_explicit_include_matching_no_eligible_document_fails"],
+    },
+    {
+        "name": "structure empty include scope succeeds",
+        "why": (
+            "Returning a clean report for an explicit pattern that selected nothing recreates the "
+            "false success that motivated scoped checking."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "    if args.include and not selected:\n",
+                "    if False:\n",
+            ),
+        ],
+        "must_fail": ["test_explicit_include_matching_no_eligible_document_fails"],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
+        "name": "language switcher is counted as summary prose",
+        "why": (
+            "Reading the raw pre-section region instead of removing the generated switcher makes "
+            "every localized note fail the one-line summary rule."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                '            for line in LANG_SWITCHER.sub("", summary_region).strip().splitlines()\n',
+                "            for line in summary_region.strip().splitlines()\n",
+            ),
+        ],
+        "must_fail": [
+            "test_generated_switcher_between_summary_and_sections_is_ignored"
+        ],
+        "must_pass": ["test_extra_prose_beside_the_summary_is_still_rejected"],
+    },
+    {
+        "name": "verification command requirement is removed",
+        "why": (
+            "Expected-output prose alone must not make a note reproducible; removing the command "
+            "branch recreates that false success."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_document_structure.py",
+                "            if not _has_nonempty_command_fence(verification):",
+                "            if False:",
+            ),
+        ],
+        "must_fail": [
+            "test_verification_requires_command_and_expected_output_independently"
+        ],
+        "must_pass": ["test_valid_note_and_checklist"],
+    },
+    {
+        "name": "Mermaid trailing info metadata is omitted",
+        "why": (
+            "Matching only an exact language token silently excludes valid fenced blocks before "
+            "the real renderer can inspect them."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_mermaid.py",
+                '    r"^\\s*(`{3,}|~{3,})[ \\t]*mermaid(?:[ \\t]+[^\\r\\n]*)?\\s*$", re.IGNORECASE',
+                '    r"^\\s*(`{3,}|~{3,})[ \\t]*mermaid\\s*$", re.IGNORECASE',
+            ),
+        ],
+        "must_fail": ["test_spaced_mermaid_info_string_is_extracted"],
+        "must_pass": ["test_multiple_complete_blocks_and_non_mermaid_fence"],
+    },
+    {
+        "name": "one agreed glossary term is dropped",
+        "why": (
+            "A self-derived expected set shrinks with the implementation. Removing FlexVol must "
+            "fail an independently pinned contract test."
+        ),
+        "module": "scripts.tests.test_editorial_reports",
+        "edits": [
+            (
+                "tools/check_glossary_first_use.py",
+                '    "FlexVol": ("FlexVol",),\n',
+                "",
+            ),
+        ],
+        "must_fail": ["test_agreed_terms_and_aliases_are_pinned_independently"],
+        "must_pass": ["test_linked_first_use_allows_later_plain_use"],
+    },
+    {
         "name": "cited-anchor subset collapsed into every anchor",
         "why": (
             "The simplifying fix: drop the subset and record all of a file's anchors. It still "
@@ -608,7 +855,52 @@ def run_tests(work: Path, module: str, names: list[str]) -> dict[str, str]:
     return outcomes
 
 
+EDITORIAL_MUTATION_NAMES = frozenset(
+    {
+        "bare URL consumes adjacent Japanese prose",
+        "spaced Mermaid info string is omitted",
+        "Mermaid vague-label vocabulary is narrowed",
+        "Mermaid unlabeled branches are skipped",
+        "Mermaid text branch labels are omitted",
+        "structure include filter is ignored",
+        "structure glob falls back to Path match",
+        "structure empty include scope succeeds",
+        "language switcher is counted as summary prose",
+        "verification command requirement is removed",
+        "Mermaid trailing info metadata is omitted",
+        "one agreed glossary term is dropped",
+    }
+)
+
+
 class MutationsAreCaughtByTheRightTest(unittest.TestCase):
+    def test_local_editorial_mutations_run_without_network(self) -> None:
+        """Exercise local editorial mutations independently of earlier network skips."""
+        selected = [
+            mutation
+            for mutation in MUTATIONS
+            if mutation["name"] in EDITORIAL_MUTATION_NAMES
+        ]
+        self.assertEqual(
+            {mutation["name"] for mutation in selected}, EDITORIAL_MUTATION_NAMES
+        )
+        for mutation in selected:
+            names = mutation["must_fail"] + mutation["must_pass"]
+            with self.subTest(mutation=mutation["name"]), self._tree() as work:
+                clean = run_tests(work, mutation["module"], names)
+                for name in names:
+                    self.assertEqual(clean.get(name), "ok", clean)
+                for relative, old, new in mutation["edits"]:
+                    target = work / relative
+                    body = target.read_text(encoding="utf-8")
+                    self.assertEqual(body.count(old), 1)
+                    target.write_text(body.replace(old, new, 1), encoding="utf-8")
+                outcomes = run_tests(work, mutation["module"], names)
+                for name in mutation["must_fail"]:
+                    self.assertEqual(outcomes.get(name), "FAIL", outcomes)
+                for name in mutation["must_pass"]:
+                    self.assertEqual(outcomes.get(name), "ok", outcomes)
+
     def test_each_mutation_is_caught_and_only_by_the_right_test(self) -> None:
         """Control and mutation on the same copy, in that order.
 

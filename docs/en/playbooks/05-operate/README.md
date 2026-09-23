@@ -1,9 +1,5 @@
 # Playbook 05 — Operate
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/05-operate/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers monitoring, capacity management, incident response, and change management. You need both confirmation that things work and a plan for when they break.
@@ -30,7 +26,7 @@ the table of contents; this is the entry point.
 | 1 | What to monitor and where to set thresholds | [Monitoring fails on averages](notes/monitoring-fails-on-averages.md) |
 | 2 | How to detect impending capacity exhaustion | [The SSD utilization bands and what changes at each](notes/monitoring-fails-on-averages.md#the-ssd-utilisation-bands-and-what-changes-at-each-point) |
 | 3 | How to triage performance degradation | [Triage order](notes/monitoring-fails-on-averages.md#order-for-isolating-a-performance-regression) |
-| 4 | How to handle ONTAP version updates | [Maintenance cannot be deferred past 14 days](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) |
+| 4 | How to handle ONTAP version updates | [Maintenance proceeds if no window occurs within 14 days after a patch release](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) |
 | 5 | How to define first-response actions during an incident | [First response during an incident](../../../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md#インシデント時の初動) (日本語) |
 | 6 | What to suspect when the admin account can no longer authenticate | [fsxadmin gets locked, and REST cannot tell you why](../../../ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) (日本語) |
 | 7 | What to look at when a running SVM stops serving SMB | [An SVM that cannot serve SMB](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |

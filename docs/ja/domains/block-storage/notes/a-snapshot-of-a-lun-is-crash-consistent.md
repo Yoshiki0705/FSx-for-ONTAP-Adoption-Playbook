@@ -7,17 +7,37 @@ source: https://docs.netapp.com/us-en/ontap-restapi/application_applications_app
 lang: ja
 ---
 
-# LUN の Snapshot は既定で crash-consistent
+# LUN の Snapshot は既定で何を保証するか？
+
+crash-consistent です。戻せることとアプリが一貫した状態から起動することは別です。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- LUN を含むボリュームの Snapshot が既定で crash-consistent で、`application_consistent` フラグは記録用にすぎないこと
+- 静止はストレージの外側（SnapCenter やアプリ側）で起き、複数 LUN は consistency group の write fence でまとめられること
+
+## このノートが答えないこと
+
+- データベースが crash-consistent な状態から起動するか（このノートでは未検証）
+- application-consistent が必要かの判断（監査・復旧要件に依存）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="lun-の-snapshot-は既定で-crash-consistent"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **LUN を含むボリュームの Snapshot は、既定で crash-consistent です。** 電源を抜いた瞬間のディスクと同じ状態が保存されます。
 
@@ -36,7 +56,7 @@ lang: ja
 
 ---
 
-## 3 つの整合性の言い分け
+### 3 つの整合性の言い分け
 
 | 区分 | 保証されること | 保証されないこと |
 |---|---|---|
@@ -50,7 +70,7 @@ lang: ja
 
 ---
 
-## crash-consistent で足りるかの判断
+### crash-consistent で足りるかの判断
 
 **足りる場合と足りない場合があります。** 「常に application-consistent にすべき」ではありません。
 
@@ -67,7 +87,7 @@ lang: ja
 
 ---
 
-## 検証環境で確認できたこと
+### 検証環境で確認できたこと
 
 **Snapshot からクローンした LUN は、Snapshot 取得前の内容を保持していました。**
 
@@ -85,7 +105,7 @@ lang: ja
 
 ---
 
-## Snapshot が容量を握ること
+### Snapshot が容量を握ること
 
 **Snapshot は削除したデータを保持します。** これは整合性とは別の問題ですが、同じボリュームで同時に起きます。
 
@@ -97,7 +117,7 @@ lang: ja
 
 ---
 
-## 静止させる仕組みの位置
+### 静止させる仕組みの位置
 
 **SnapCenter は、ホスト側にアプリケーション別のプラグインを置き、Snapshot の前に I/O を静止させます。**
 
@@ -117,7 +137,7 @@ lang: ja
 
 ---
 
-## 複製先で必要になる手順
+### 複製先で必要になる手順
 
 **SnapMirror でボリュームを複製しても、宛先で LUN がすぐ使えるわけではありません。**
 
@@ -127,7 +147,7 @@ lang: ja
 
 ---
 
-## 復旧フロー
+### 復旧フロー
 
 ```mermaid
 graph TD
@@ -151,24 +171,7 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `volume show -fields snapshot-policy` で対象ボリュームのポリシーを確認する | スケジュール Snapshot が動いているか |
-| 2 | `volume snapshot show` で既存の Snapshot と使用量を確認する | Snapshot が容量を握っていないか |
-| 3 | 検証環境で LUN にマーカーを書き `sync` し、Snapshot を取ってから FlexClone 経由でマウントし、マーカーを確認する | **戻せることの確認** |
-| 4 | 手順 3 のマウント時に `dmesg` でログリカバリが走ったかを確認する | **crash-consistent の実像** |
-| 5 | `sync` せずに同じことを行い、結果を比べる | 静止の有無で何が変わるか |
-| 6 | 実際のアプリケーション（データベースなど）を載せて手順 3 を行い、**起動するかどうか**を確認する | **このノートで未検証の部分。ここが本番の判断材料です** |
-| 7 | 静止の仕組みを使う場合、Snapshot の前後でアプリケーションのログを確認する | 静止が実際に行われているか |
-| 8 | 復旧手順書に、宛先での LUN マップと再スキャンが書かれているかを確認する | マッピングが複製されないこと |
-
-手順 3・4・5・6 は**検証環境で行ってください。** 手順 6 は本番相当のデータで行う価値がありますが、本番のボリュームに対しては行わないでください。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -186,7 +189,7 @@ graph TD
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -202,7 +205,7 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -211,12 +214,12 @@ graph TD
 | SnapCenter の構成（中央サーバーとアプリケーション別プラグイン）、VMware プラグインの整合性区分 | [NetApp: SnapCenter overview](https://docs.netapp.com/us-en/snapcenter/get-started/concept_snapcenter_overview.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | 複数ファイルシステムにまたがる Snapshot に調整スクリプトが必要で、アプリケーション整合にホスト側の関与が必要であること | [AWS Storage Blog: SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](https://aws.amazon.com/blogs/storage/san-a-million-iops-in-aws-from-amazon-fsx-netapp-ontap/) <!-- allow:naming - 記事タイトルの原文 --> |
-| snapshot 予約 0%、snapshot autodelete という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| snapshot 予約 0%、snapshot autodelete という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | ボリュームを LUN より 5% 以上大きくすること | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) — 相互整合とレイアウトの関係
@@ -231,6 +234,36 @@ graph TD
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `volume show -fields snapshot-policy` で対象ボリュームのポリシーを確認する | スケジュール Snapshot が動いているか |
+| 2 | `volume snapshot show` で既存の Snapshot と使用量を確認する | Snapshot が容量を握っていないか |
+| 3 | 検証環境で LUN にマーカーを書き `sync` し、Snapshot を取ってから FlexClone 経由でマウントし、マーカーを確認する | **戻せることの確認** |
+| 4 | 手順 3 のマウント時に `dmesg` でログリカバリが走ったかを確認する | **crash-consistent の実像** |
+| 5 | `sync` せずに同じことを行い、結果を比べる | 静止の有無で何が変わるか |
+| 6 | 実際のアプリケーション（データベースなど）を載せて手順 3 を行い、**起動するかどうか**を確認する | **このノートで未検証の部分。ここが本番の判断材料です** |
+| 7 | 静止の仕組みを使う場合、Snapshot の前後でアプリケーションのログを確認する | 静止が実際に行われているか |
+| 8 | 復旧手順書に、宛先での LUN マップと再スキャンが書かれているかを確認する | マッピングが複製されないこと |
+
+手順 3・4・5・6 は**検証環境で行ってください。** 手順 6 は本番相当のデータで行う価値がありますが、本番のボリュームに対しては行わないでください。
+
+手順 1 のスナップショットポリシーは、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> volume show -vserver <svm> -fields snapshot-policy
+```
+
+### 期待結果
+
+```text
+snapshot-policy が返る（default ならスケジュール Snapshot が動くが、それは crash-consistent）。
+application-consistent が要るなら、静止を SnapCenter かアプリ側で行う設計になる
+```
+
+このコマンドはボリュームの設定を読むだけで、Snapshot にもボリュームにも変更を加えません。データベースが crash-consistent な状態から起動するかは、本番相当データを載せて検証環境で確認してください。
+
+## Read next
+
+[Kubernetes のブロック PV は何の上限に当たるか？](kubernetes-block-volumes-and-the-volume-limit.md)

@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/grafana/latest/userguide/authentication-in-A
 lang: ja
 ---
 
-# 経路は認証とアクセス経路で先に狭まる
+# 監視経路は認証とアクセス経路でどこまで狭まるか？
+
+見たいものより前に、認証・API・サイジング・データ所在・メトリクス粒度の 5 条件が経路を狭めます。
+
+## このノートで学べること
+
+- 「何を見たいか」より前に経路を狭める 5 条件（Grafana 認証・ZAPI/REST・サイジング・SaaS のデータ所在・S3 Access Points 粒度）
+- ZAPI 提供終了が無期限延期であり、「廃止済み」と書くこと自体が誤情報になること
+
+## このノートが答えないこと
+
+- SaaS 経路の越境移転や保管先が自組織の要件を満たすかの法務・コンプライアンス判断
+- 収集基盤のサイジングの自環境での実測値（出典はいずれもベンダー推奨）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="経路は認証とアクセス経路で先に狭まる"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **「何を見たいか」より前に決まっている条件が 4 つあります。** どれも経路の選択肢を先に狭めます。
 
@@ -23,13 +43,13 @@ lang: ja
 | 2 | ONTAP の API をどちらで叩くか | **ZAPI の提供終了は無期限に延期されています。** 「廃止済みだから移行必須」と書くと、それ自体が誤情報になります |
 | 3 | 収集基盤をどう見積もるか | **サイジング指針が出典間で食い違います。** どちらか一方だけを引くと外れます |
 | 4 | データをどこに置くか | SaaS 経路は **AWS の VPC の外**にデータが出ます。所在の確認が要ります |
-| 5 | 見たいアクセス経路にメトリクスがあるか | **S3 Access Points 経由のアクセスは、どの経路を選んでも見えません。** メトリクスが提供されていないため、経路の選択では解決しません |
+| 5 | 見たいアクセス経路に必要な粒度のメトリクスがあるか | **確認した AWS ページには S3 Access Points 単位のリクエスト数・HTTP エラー率・リクエストレイテンシが列挙されていません。** 基盤の負荷を示す集約ストレージメトリクスとは区別します |
 
 > **Evidence**: `documented` — 5 条件すべて公式ドキュメントの記載に基づきます（**条件 1〜4 の取得日 2026-09-05、条件 5 は 2026-09-12**）。**著者による実測は含みません。** 提供リージョンと製品名は変動するため、[自環境での確認手順](#自環境での確認手順) で最新を確認してください。
 
 ---
 
-## Amazon Managed Grafana の認証方式
+### Amazon Managed Grafana の認証方式
 
 Amazon Managed Grafana の認証方式は、公式ドキュメントで**閉じた列挙**として示されています。ワークスペースごとに、次のいずれかまたは両方です。
 
@@ -40,7 +60,7 @@ Amazon Managed Grafana の認証方式は、公式ドキュメントで**閉じ�
 
 **匿名アクセスはこの列挙に含まれません。** 加えて、利用者はワークスペースにアクセスする前に**権限の付与が必要**であり、**IdP 起点のログインは現時点で未サポート**と明記されています。
 
-### 埋め込みを前提にした計画が崩れる箇所
+#### 埋め込みを前提にした計画が崩れる箇所
 
 | 計画 | 崩れる理由 |
 |---|---|
@@ -54,13 +74,13 @@ Amazon Managed Grafana の認証方式は、公式ドキュメントで**閉じ�
 
 ---
 
-## ZAPI の提供終了の無期限延期
+### ZAPI の提供終了の無期限延期
 
 NetApp は製品通知 CPC-00410（2024 年 6 月）で、**以前に計画されていた ZAPI の提供終了（EOA）を無期限に延期した**と告知しています。
 
 **したがって「ZAPI は廃止済みなので REST に移行せよ」と書くと、その記述自体が誤情報になります。** Harvest の古い版のドキュメントには「ONTAP 9.13.1 で EOA」という記載が残っています。
 
-### REST を選ぶ理由の置き方
+#### REST を選ぶ理由の置き方
 
 廃止ではなく、次の 2 点に置きます。
 
@@ -69,7 +89,7 @@ NetApp は製品通知 CPC-00410（2024 年 6 月）で、**以前に計画さ�
 | 機能セットが REST 側で広い | クラウド関連機能、イベント対応、ネームサービス、クラスタピアなど REST のみの機能があります。ONTAP CLI へのパススルーも REST 側です |
 | 性能メトリクスの整合が取れる版がある | REST の性能メトリクスは **ONTAP 9.11.1 から**。**9.12.1 で Harvest 22.11 が収集する ZAPI 性能メトリクスと同等**になります。性能メトリクスについては **9.12.1 以降での切り替えが推奨**されています |
 
-### あわせて運用に効く記載
+#### あわせて運用に効く記載
 
 **アップグレード後 30 日間は ZAPI が有効なまま残り、その期間に使われなければ自動的に無効化されます**（CLI で再有効化は可能）。**ZAPI を使う収集を止めたままアップグレードを挟むと、再開時に無効化されている可能性があります。**
 
@@ -77,7 +97,7 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 ---
 
-## サイジング指針の食い違い
+### サイジング指針の食い違い
 
 **出典が 2 つあり、桁が違います。どちらか一方だけを引くと外れます。**
 
@@ -90,7 +110,7 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 > **注意**: 「2 コア / 500 MB」とだけ引くと**メモリとディスクを混同します**。500 MB はディスク（主にログファイル）で、メモリは 1 GB です。
 
-### どちらも実測ではないこと
+#### どちらも実測ではないこと
 
 **上の 2 つはいずれもベンダーの推奨値で、当リポジトリの実測ではありません。** 自分の要件を決めるために測る対象:
 
@@ -102,11 +122,11 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 | 収集中の CPU 使用率とメモリ常駐量 | 表の値との差 |
 | ログの増加量 | ディスクの見積もり |
 
-`t3` 系はバースト可能なインスタンスファミリーです。**平常時に収まっていても、収集が重なる時間帯にクレジットを使い切る可能性があります。** クレジット機構がベンチマークを壊す構図は [p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#ベンチマークを壊すバーストとクレジット) と同じです。
+`t3` 系はバースト可能なインスタンスファミリーです。**平常時に収まっていても、収集が重なる時間帯にクレジットを使い切る可能性があります。** クレジット機構がベンチマークを壊す構図は [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#ベンチマークを壊すバーストとクレジット) と同じです。
 
 ---
 
-## SaaS 経路のデータの所在
+### SaaS 経路のデータの所在
 
 **経路 3（SaaS オブザーバビリティ）に共通する性質です。** 特定のベンダーの問題ではありません。
 
@@ -118,7 +138,7 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 > **鮮度に関する補足**: **提供リージョンは変動します。** Datadog や New Relic のように東京リージョンを提供しているベンダーもあります。**このノートの記載は 2026-09-05 時点の調査であり、選定時には各ベンダーの最新のドキュメントで確認してください。** 過去に確認した内容をそのまま前提にすると、選択肢を実際より狭く見積もることがあります。
 
-### 確認すべき問い
+#### 確認すべき問い
 
 **遵守できるかどうかの判断は、このドキュメントの領域ではありません。** 確認すべき問いを並べます。**回答は読者と法務・コンプライアンスの領域です。**
 
@@ -136,37 +156,34 @@ Harvest 自身の挙動は、指定したコレクタを使い、**クラスタ�
 
 ---
 
-## S3 Access Points 経由のアクセスにおけるメトリクスの不在
+### S3 Access Points 経由のリクエスト単位メトリクスで確認できない範囲
 
-**条件 1〜4 は「どの経路を選ぶか」を狭めます。この条件だけは、どの経路を選んでも満たせません。**
-
-FSx for ONTAP のボリュームに接続した S3 Access Points 経由のアクセスについて、**リクエスト数・エラー率・レイテンシを取得する手段を、公開ドキュメントに見つけられませんでした**（2026-09-12 に下記を通読）。
+FSx for ONTAP のボリュームに接続した S3 Access Points について、Amazon FSx の CloudWatch ページには Access Point 単位のリクエスト数・HTTP エラー率・リクエストレイテンシが列挙されていません。一方、[Amazon S3 の Access Point 監視ページ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)は、Access Point をフィルターにした opt-in の request metrics を説明しています。**その構成が FSx for ONTAP のボリュームに接続した Access Point にも適用できるかは、ページから確定できないため `open` です。**
 
 | 確認した範囲 | 結果 |
 |---|---|
-| [Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) のメトリクスのカテゴリ | **ファイルシステム / ファイルサーバー / アグリゲート / ボリュームの 4 系統**。S3 Access Points に対応するカテゴリとディメンションは列挙に現れません |
-| 同ページの名前空間 | メトリクスはすべて `AWS/FSx` に発行されます。S3 側の名前空間へ発行される記述はありません |
+| [Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) のメトリクスのカテゴリ | ファイルシステム / ファイルサーバー / アグリゲート / ボリュームの系列。S3 Access Points 単位のカテゴリとディメンションは列挙に現れません |
+| [Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html)、[File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html)、[Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) | ボリューム・ファイルシステム・`FileServer`・`Aggregate` 単位の系列があります。基盤の I/O と利用率は見えますが、S3 Access Points のリクエストとして分離されません |
 | [Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) の監視手段の列挙 | CloudWatch / EMS イベント / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つ。**いずれも S3 Access Points 経由のデータ操作の記録を挙げていません** |
 
-**CloudTrail は代わりになりません。** CloudTrail が記録するのは Amazon FSx の API 呼び出しで、アクセスポイントを**作成した**操作は残りますが、そのアクセスポイントを**通ったデータ操作**は残りません。
+[Amazon S3 の Access Point 監視ページ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)は、Access Point 経由のリクエストを CloudTrail に記録できることと、Amazon FSx ボリュームに接続した Access Point では `AWS::FSx::Volume` がリソースとして記録されることを明記しています。**記録には S3 データイベントの構成が必要です。** Access Point の作成などの管理イベントとは別に設定します。
 
-### 運用に与える帰結
+#### 運用に与える帰結
 
-**S3 Access Points 経由のアクセスが失敗していることに、運用者が気づく手段がありません。** 監視画面に出せないため、利用者からの申告が最初の検知になります。
-
-経路の選択で埋められないので、**要件がある場合は監視の外側で担保します。**
+**CloudWatch の集約ストレージメトリクスでは、基盤の I/O や利用率を監視できます。** Amazon S3 は Access Point フィルター付き request metrics を提供しますが、FSx for ONTAP 接続型への適用可否は `open` です。確認できるまでは、呼び出し側の結果記録、CloudTrail の S3 データイベント、ONTAP 監査、合成監視を用途別に組み合わせます。
 
 | 埋め方 | 見えるもの | 見えないもの |
 |---|---|---|
 | 呼び出し側（アプリケーション、Lambda など）で結果を記録する | 自分が発行したリクエストの成否とレイテンシ | 他の呼び出し元。呼び出し側を通らないアクセス |
-| ONTAP 側のファイルアクセス監査（`vserver audit`）を有効にする | ボリューム上のファイル操作 | **リクエスト単位の HTTP ステータスとレイテンシ。** S3 API の層は監査の対象ではありません |
+| ONTAP 側のファイルアクセス監査（`vserver audit`）を有効にする | Access Point 経由のファイル操作（実測ではオブジェクト操作が `Source=HTTP`、LIST が `Source=S3`） | **リクエスト単位の HTTP ステータスとレイテンシ、および呼び出し元 IAM プリンシパル。** Access Point に固定したファイルシステム ID として記録されます |
+| CloudTrail の S3 データイベントを Access Point に構成する | IAM プリンシパル、S3 API 操作、Access Point に接続した `AWS::FSx::Volume` | CloudWatch のリクエスト数・HTTP エラー率・レイテンシ系列ではありません。データイベントの記録には追加設定が必要です |
 | 合成監視（既知のオブジェクトへ定期的にアクセスして結果を記録する） | 経路が生きているかどうか | **実利用のリクエスト数とエラー率。** 生死確認であって計測ではありません |
 
-**いずれも代替であって、同等ではありません。** 要件が「実利用のリクエスト数とエラー率」である場合、現時点では満たせないという結論を設計に持ち込む必要があります。
+**これらは Access Point 単位の CloudWatch リクエスト数・HTTP エラー率・リクエストレイテンシと同じものではありません。** CloudTrail はデータイベントを構成した後の API 操作と主体を記録し、呼び出し側記録と合成監視は成否を補います。必要な粒度に応じて組み合わせます。
 
 ---
 
-## NetApp Data Infrastructure Insights の扱い
+### NetApp Data Infrastructure Insights の扱い
 
 **このリポジトリでは経路として扱いません。** ただし AWS の公式ドキュメント（FAQ、Harvest のページ、ブログ）が監視手段として挙げているため、黙って落とすと選定の材料が欠けます。事実を置きます。
 
@@ -184,28 +201,7 @@ FSx for ONTAP のボリュームに接続した S3 Access Points 経由のアク
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | Amazon Managed Grafana のワークスペースで選べる認証方式を確認する | **匿名アクセスが選択肢に無いこと** |
-| 2 | 閲覧者に想定している人が ID プロバイダ側に存在するか確認する | 認証の前提を満たせるか |
-| 3 | ポータル埋め込みの要件があるなら、IdP 起点ログインの現状を最新ドキュメントで確認する | **未サポートのままか。ここは変わりえます** |
-| 4 | 自分の ONTAP の版で ZAPI が有効か確認する | アップグレード後 30 日の自動無効化に当たっていないか |
-| 5 | 性能メトリクスを使う場合、版が 9.12.1 以降か確認する | REST 側で同等が取れるか |
-| 6 | 監視対象数と有効化するテンプレート数を数え、既定構成からの増分を出す | サイジングのどの行に当たるか |
-| 7 | 収集中の CPU・メモリ・ログ増加量を実測し、推奨値との差を記録する | **自分の環境での実数。** 出典の値は推奨です |
-| 8 | `t3` 系を使う場合、収集が重なる時間帯のクレジット残高を確認する | バーストを使い切っていないか |
-| 9 | SaaS を検討する場合、選定時点のリージョン一覧をベンダーの最新ドキュメントで確認する | **選択肢の実際の広さ。** 過去の情報は狭く見積もります |
-| 10 | 選んだ SaaS で、リージョン外に置かれる情報の有無を確認する | 前節の問い 7 |
-| 11 | 収集されるメトリクスのラベルに含まれる名前を実物で確認する | 前節の問い 1 |
-| 12 | `aws cloudwatch list-metrics --namespace AWS/FSx` を実行し、返るディメンションに S3 Access Points に対応するものがあるか確認する | **条件 5 が自環境でも成り立つか。** 提供が始まればここに現れます |
-
-**手順 11 が最も飛ばされます。** ラベルにボリューム名や共有名が入るかは、設定ではなく実物を見ないと分かりません。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -221,35 +217,74 @@ FSx for ONTAP のボリュームに接続した S3 Access Points 経由のアク
 | SaaS はリージョンを選べば所在が決まる | **選んだリージョン以外に置かれる情報がある場合があります** |
 | SaaS の提供リージョンは変わらない | 変動します。選定時に最新を確認してください |
 | NetApp Cloud Insights が現行の名称である | **NetApp Data Infrastructure Insights に改称されています** |
-| S3 Access Points 経由のアクセスも `AWS/FSx` のメトリクスに出る | メトリクスのカテゴリは**ファイルシステム / ファイルサーバー / アグリゲート / ボリュームの 4 系統**で、S3 Access Points は列挙にありません（2026-09-12 確認） |
-| CloudTrail を有効にすれば S3 Access Points 経由の操作を追える | CloudTrail が残すのは **Amazon FSx の API 呼び出し**です。アクセスポイントの作成は残り、**通ったデータ操作は残りません** |
-| 監視経路を変えれば S3 Access Points も見えるようになる | **経路の問題ではありません。** メトリクス自体が提供されていないため、どの経路でも同じです |
+| S3 Access Points 経由のアクセスは `AWS/FSx` では何も見えない | ファイルシステム・ファイルサーバー・アグリゲート・ボリュームの集約系列はあります。Access Point 単位のリクエスト数・HTTP エラー率・リクエストレイテンシが列挙されていないこととは別です |
+| CloudTrail を有効にすれば S3 Access Points 経由の操作を追える | S3 データイベントを Access Point に構成すると、IAM プリンシパルと API 操作を記録できます。管理イベントだけの既定構成では足りません |
+| 監視経路を変えれば Access Point 単位の実利用メトリクスが得られる | 呼び出し側記録と合成監視は成否を検知できますが、すべての呼び出し元の実利用リクエスト数・HTTP エラー率・レイテンシを同じ粒度で置き換えるものではありません |
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 | 取得日 |
 |---|---|---|
 | Amazon Managed Grafana の認証方式が SAML 2.0 と IAM Identity Center の列挙であること、利用者への権限付与が必要であること、IdP 起点ログインが未サポートであること、IAM Identity Center 利用時に AWS Organizations が必要であること | [AWS: Authenticate users in Amazon Managed Grafana workspaces](https://docs.aws.amazon.com/grafana/latest/userguide/authentication-in-AMG.html) / [Learn how to create and use Amazon Managed Grafana resources](https://docs.aws.amazon.com/grafana/latest/userguide/getting-started-with-AMG.html) | 2026-09-05 |
 | CPC-00410（2024 年 6 月）で ZAPI の EOA が無期限に延期されたこと、REST 性能メトリクスが 9.11.1 から、9.12.1 で Harvest 22.11 の ZAPI 性能メトリクスと同等になること、9.12.1 以降での切り替え推奨、REST のみの機能と CLI パススルー、アップグレード後 30 日の自動無効化と CLI での再有効化 | [Harvest: REST strategy](https://github.com/NetApp/harvest/blob/main/docs/architecture/rest-strategy.md) | 2026-09-05 |
 | サイジングが監視対象数と収集メトリクス数に依存すること、10 台あたり 2 コア / メモリ 1 GB / ディスク 500 MB、`t3.micro` / `t3.xlarge` / `t3.2xlarge` のサンプル表 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
-| CloudWatch メトリクスのカテゴリが 4 系統であること、すべて `AWS/FSx` に発行されること（S3 Access Points に対応するカテゴリが列挙に無いこと） | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) | 2026-09-12 |
+| CloudWatch のカテゴリ、ボリューム・ファイルシステム・第 2 世代メトリクスの統計と次元、S3 Access Points 単位の系列が列挙されていないこと | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) / [Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) / [File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) / [Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) | 2026-09-12 |
 | 監視手段の列挙が CloudWatch / EMS / Data Infrastructure Insights / Harvest + Grafana / CloudTrail の 5 つであること、CloudTrail の対象が Amazon FSx の API 呼び出しであること | [AWS: Monitoring Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring_overview.html) | 2026-09-12 |
+| Access Point 経由のリクエストを CloudTrail の S3 データイベントとして記録できること、Amazon FSx ボリュームでは `AWS::FSx::Volume` がリソースとして記録されること | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) | 2026-09-20 |
 | Data Infrastructure Insights の旧称、ホストリージョン 3 つ、ホストリージョンに関わらず米国に置かれる情報、Workload Security と User Directory コレクタの収集対象、秘密鍵が Acquisition Unit に留まること | [NetApp: Information and Region](https://docs.netapp.com/us-en/data-infrastructure-insights/security_information_and_region.html) | 2026-09-05 |
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — 可観測性](../README.md) — このモジュールのハブ
 - [監視経路の比較](../../../reference/comparison/observability-routes.md) — データの所在を含む経路別の比較
 - [監視経路の選択 決定木](../../../reference/decision-trees/observability-route.md) — どの経路を選ぶか
 - [Harvest は remote_write を持たない](harvest-has-no-remote-write.md) — 収集基盤の運用
 - [オンプレのダッシュボードはそのまま移らない](on-prem-dashboards-do-not-transfer.md) — 公開メトリクスの差
-- [p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#ベンチマークを壊すバーストとクレジット) — クレジット機構
+- [ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#ベンチマークを壊すバーストとクレジット) — クレジット機構
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | Amazon Managed Grafana のワークスペースで選べる認証方式を確認する | **匿名アクセスが選択肢に無いこと** |
+| 2 | 閲覧者に想定している人が ID プロバイダ側に存在するか確認する | 認証の前提を満たせるか |
+| 3 | ポータル埋め込みの要件があるなら、IdP 起点ログインの現状を最新ドキュメントで確認する | **未サポートのままか。ここは変わりえます** |
+| 4 | 自分の ONTAP の版で ZAPI が有効か確認する | アップグレード後 30 日の自動無効化に当たっていないか |
+| 5 | 性能メトリクスを使う場合、版が 9.12.1 以降か確認する | REST 側で同等が取れるか |
+| 6 | 監視対象数と有効化するテンプレート数を数え、既定構成からの増分を出す | サイジングのどの行に当たるか |
+| 7 | 収集中の CPU・メモリ・ログ増加量を実測し、推奨値との差を記録する | **自分の環境での実数。** 出典の値は推奨です |
+| 8 | `t3` 系を使う場合、収集が重なる時間帯のクレジット残高を確認する | バーストを使い切っていないか |
+| 9 | SaaS を検討する場合、選定時点のリージョン一覧をベンダーの最新ドキュメントで確認する | **選択肢の実際の広さ。** 過去の情報は狭く見積もります |
+| 10 | 選んだ SaaS で、リージョン外に置かれる情報の有無を確認する | 前節の問い 7 |
+| 11 | 収集されるメトリクスのラベルに含まれる名前を実物で確認する | 前節の問い 1 |
+| 12 | 返るディメンションに S3 Access Points に対応するものがあるか確認する | **条件 5 が自環境でも成り立つか。** 提供が始まればここに現れます |
+
+**手順 11 が最も飛ばされます。** ラベルにボリューム名や共有名が入るかは、設定ではなく実物を見ないと分かりません。
+
+手順 1 の認証方式は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws grafana describe-workspace --workspace-id <workspace-id> \
+  --query "workspace.authentication.providers"
+```
+
+### 期待結果
+
+```text
+["AWS_SSO"] または ["SAML"]（あるいは両方）が返る。匿名アクセスはこの列挙に現れない
+```
+
+このコマンドはワークスペースの設定を読むだけで、認証方式もメトリクス発行も変更しません。手順 12 のディメンションは、読み取り専用の `aws cloudwatch list-metrics --namespace AWS/FSx --query "Metrics[].Dimensions[].Name"` で確認でき、S3 Access Points 単位の次元が現れるかは提供状況で変わります。
+
+## Read next
+
+[オンプレの Grafana ダッシュボードはそのまま移るか？](on-prem-dashboards-do-not-transfer.md)

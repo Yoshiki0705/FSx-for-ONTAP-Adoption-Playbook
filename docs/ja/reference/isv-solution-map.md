@@ -1,5 +1,5 @@
 ---
-title: 課題別 ISV / SaaS ソリューションマップ — 組み合わせが公表されている選択肢と、まだ確認できていないもの
+title: 課題別 ISV / SaaS 選択肢マップ — 組み合わせが公表されている選択肢と、まだ確認できていないもの
 lifecycle: [assess, design, build]
 domains: [security-governance, data-protection, data-utilization, observability, block-storage]
 evidence: documented
@@ -7,11 +7,7 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-vscan.html
 lang: ja
 ---
 
-# 課題別 ISV / SaaS ソリューションマップ
-
-<!-- lang-switcher:start -->
-🌐 [日本語](isv-solution-map.md) | [English](../../en/reference/isv-solution-map.md) | [🏠 リポジトリトップ](../../../README.md)
-<!-- lang-switcher:end -->
+# 課題別 ISV / SaaS 選択肢マップ
 
 [🏠 リポジトリトップ](../../../README.md) | [Reference](README.md)
 

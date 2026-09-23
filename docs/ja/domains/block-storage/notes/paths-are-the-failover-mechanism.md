@@ -6,16 +6,37 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: [SINGLE_AZ_2, MULTI_AZ_2]
 lang: ja
 ---
 
-# パスはフェイルオーバーの仕組みそのもの
+# パスはフェイルオーバーの仕組みそのものか？
+
+そのものです。I/O の継続はホスト側の multipath が担い、セッション数は既定ではなく実測で決めます。
+
+## このノートで学べること
+
+- ブロックのフェイルオーバーはホスト側 multipath が担い、パス数は LIF 本数 × セッション数で 2〜24 本に変わること
+- iSCSI は無停止（1,161 サンプル中失敗 0）、NVMe/TCP は AL2023 の既定カーネルで 423.8 秒断という実測
+
+## このノートが答えないこと
+
+- ネイティブ multipath が有効なカーネルでの NVMe/TCP フェイルオーバー時の断（未測定）
+- ブロックの性能値（測ったのはフェイルオーバー時の I/O 継続とパス数の数え方のみ）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="パスはフェイルオーバーの仕組みそのもの"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **ブロックストレージでは、ファイルサーバーが切り替わったときに I/O を継続させる仕組みはホスト側の multipath です。** ストレージ側は複数のパスを見せるところまでで、どれを使うかを決めるのはホストです。**この分界線がファイル共有との一番大きな違いです。**
 
@@ -37,7 +58,7 @@ lang: ja
 
 ---
 
-## パス数が決まる仕組み
+### パス数が決まる仕組み
 
 **FSx for ONTAP の 1 つの SVM には iSCSI の LIF が 2 本あります。** 検証環境では `iscsi_1`（ノード -01）と `iscsi_2`（ノード -02）で、**どちらも `data_iscsi` と `data_nvme_tcp` の両方を持っていました。** NFS と SMB は別の LIF です。
 
@@ -67,7 +88,7 @@ lang: ja
 
 ---
 
-## ALUA の優先度と、それが意味すること
+### ALUA の優先度と、それが意味すること
 
 検証環境の `multipath -ll` は次の形でした。
 
@@ -94,7 +115,7 @@ Windows では同じものが `TPG_State` として現れました。**Active/Op
 
 ---
 
-## ホスト側で変える必要がある既定値
+### ホスト側で変える必要がある既定値
 
 **既定のままでは AWS の想定と違う挙動になります。** 検証環境で確認した既定値です。
 
@@ -114,7 +135,7 @@ Windows では同じものが `TPG_State` として現れました。**Active/Op
 
 ---
 
-## multipath.conf の置き方
+### multipath.conf の置き方
 
 **AWS は `mpathconf --enable --with_multipathd y` を指示します。** 検証環境ではこれが **334 バイトの `/etc/multipath.conf`** を作りました。
 
@@ -133,7 +154,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 ---
 
-## パス数の設計
+### パス数の設計
 
 **「多いほうが安全」ではありません。** 2 つの公式記載を並べます。
 
@@ -165,7 +186,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 単一クライアントで容量を使い切ることも前提にできません。この関係は [単一接続で測った値はストレージの性能ではない](../../performance/notes/a-single-connection-measures-the-client.md) にあります。
 
-### 除数の出どころと、実測との関係
+#### 除数の出どころと、実測との関係
 
 **625 MBps という除数そのものには出典があります。** iSCSI と NVMe/TCP のブロック手順が、セッションを
 増やす節の前置きとして同じ値を書いています——[iSCSI](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/mount-iscsi-luns-linux.html) と [NVMe/TCP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) の両方に
@@ -183,7 +204,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 **「AWS が 625 MBps と書いている」と「625 MBps で測れた」は別の主張です。** 前者は `documented`、
 **後者は偽です。**
 
-### 除数と実測の差（ファイルプロトコルとブロック）
+#### 除数と実測の差（ファイルプロトコルとブロック）
 
 **同一ファイルシステム・同一クライアント型・同一測定器で測ったファイルプロトコルの単一接続は、
 625 MBps に届いていません。**
@@ -193,7 +214,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 | NFSv4.1 単一接続 591.62 MB/s | **94.7%** |
 | SMB 3.1.1 単一チャネル 574.24 MB/s | **91.9%** |
 
-#### ブロックが同じ位置に来なかったこと
+##### ブロックが同じ位置に来なかったこと
 
 **このノートは以前、「ブロックが同じ位置に来るなら 625 で割る形は必要セッション数を約 5% 少なく出す」
 と書き、割って出た数の `nr_sessions` に 1 を足すよう指示していました。**
@@ -222,7 +243,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 インスタンスの 1 フロー上限と、5 Gbps という記述の適用条件です。**どれが当たっているかは検証されて
 いないので、原因を前提にした設計をしないでください。**
 
-#### 同じ構成の多重度 1 が、測り直しで 1.92 倍動いたこと
+##### 同じ構成の多重度 1 が、測り直しで 1.92 倍動いたこと
 
 **上の表の 2 行目は、以前の測定では 591.64 MB/s でした。** 4.73 Gbps で、documented な 5 Gbps の
 位置にあり、**同環境の NFS 単一接続（591.62）とも一致していました。** 1 MiB / 64 KiB の読み書き
@@ -272,7 +293,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 ---
 
-## 冪等でない接続手順
+### 冪等でない接続手順
 
 **Windows で 8 接続のループを 1 つのポータルに対してもう一度実行すると、セッションが 16 から 24 に増えました。** パス数も 24 になり、Active/Optimized 8 本と Active/Unoptimized 16 本という非対称な形になりました。
 
@@ -289,7 +310,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 ---
 
-## NVMe/TCP のパスがカーネル構成に依存すること
+### NVMe/TCP のパスがカーネル構成に依存すること
 
 **Amazon Linux 2023 では NVMe/TCP のネイティブ multipath が有効になっていませんでした。**
 
@@ -306,7 +327,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 
 **これは「NVMe/TCP が使えない」ではありません。** 接続は成立しています。**multipath が成立していないだけです。** 自環境のカーネルで `CONFIG_NVME_MULTIPATH` を確認してください。
 
-### 未設定がこの 1 カーネルに限らないこと
+#### 未設定がこの 1 カーネルに限らないこと
 
 **当方が測ったのは 1 系統ですが、sibling repo が 3 系統で同じ結果を確認しています。**
 `al2023-ami-kernel-default-x86_64` が返すカーネルの config を `amazonlinux` リポジトリのパッケージから
@@ -317,7 +338,7 @@ NetApp が挙げている推奨値のうち、確認できたものと確認し�
 [自環境での確認手順](#自環境での確認手順)の手順 9 を構築前に実行してください。**3 系統で同じだった
 ことは、確認を省ける根拠ではなく、確認が空振りしにくいという意味です。**
 
-### ネイティブ multipath が有効なカーネルでの挙動（引用）
+#### ネイティブ multipath が有効なカーネルでの挙動（引用）
 
 **当方はこの構成を持っていません。** 以下は sibling repo の実測の転記で、**このリポジトリの
 検証ではありません。** 同一ファイルシステム・同一 namespace・同一充填データに対し、
@@ -348,7 +369,7 @@ udev 規則 `71-nvmf-netapp.rules`** です（カーネルの既定は `numa`）
 
 ---
 
-## 実測したフェイルオーバー
+### 実測したフェイルオーバー
 
 **ホスト側から誘発する試みは 2 回失敗しました。**
 
@@ -392,7 +413,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 
 **同じ AWS のページは、この処理に伴うフェイルオーバーとフェイルバックを「通常は数分」と書いています。** 実測は 22 分でした。
 
-### iSCSI と NVMe/TCP で結果が分かれた理由
+#### iSCSI と NVMe/TCP で結果が分かれた理由
 
 **iSCSI は透過的でした。** `dm-multipath` が 2 本目のパスに切り替え、**エラーは 1 度も出ず、コストは約 2.1 秒の停止だけ**でした。AWS がスループット容量のページで iSCSI を透過的と書いている内容と一致します。
 
@@ -419,29 +440,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `network interface show -vserver <svm> -data-protocol iscsi` で LIF の本数を確認する（**SVM を指定すること**） | パス数の計算の片方 |
-| 2 | `iscsiadm --mode session \| wc -l` と `multipath -ll` を並べて記録する | セッション数とパス数の関係 |
-| 3 | `multipath -ll` の prio 値でグループが 2 つに分かれているかを確認する | ALUA が効いているか |
-| 4 | `grep replacement_timeout /etc/iscsi/iscsid.conf` | **既定は 120。5 にするかを判断する** |
-| 5 | `wc -c /etc/multipath.conf` | **0 バイトか、`mpathconf` が作った内容か。どちらに従ったかを記録する** |
-| 6 | Windows で `Get-MSDSMGlobalDefaultLoadBalancePolicy` と `(Get-MPIOSetting).PathVerificationState` | **既定は None と Disabled** |
-| 7 | Windows で `mpclaim -s -d 0` を実行し、パス総数と Active/Optimized の内訳を記録する | パス数と ALUA |
-| 8 | 接続スクリプトを**2 回**流し、セッション数が増えるかを確認する | **冪等でないこと** |
-| 9 | `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **NVMe/TCP で multipath が成立するか** |
-| 10 | NVMe/TCP 接続後、`nvme list` で同じ `wwid` のデバイスが複数出ていないかを確認する | multipath が効いていない兆候 |
-| 11 | `lun mapping show -fields reporting-nodes` | Selective LUN Map が絞っている範囲 |
-| 12 | 検証環境でスループット容量を変更し、**両プロトコルに負荷を掛けた状態で** 1 秒間隔の direct write の成否と所要時間を記録する | **フェイルオーバー時に I/O が継続するか。第 2 世代は変更間に 6 時間空ける必要があるので、やり直しはその後になります** |
-| 13 | 同時に `nvme ana-log` とコントローラの `state` を 2 秒間隔で記録する | **ANA が反転した時点** |
-
-手順 8 と 12 は**検証環境で行ってください。** 手順 8 は本番でパス数を倍にします。**手順 12 はプローブを先に動かし、記録先を確認してから変更を要求してください。** やり直しは 6 時間後です。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -466,7 +465,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -483,7 +482,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -500,7 +499,7 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [Multi-AZ が動かすのはアドレスではなくルート](multi-az-moves-a-route-not-an-address.md) — フェイルオーバーで書き換わるものと、動かないアドレス
@@ -515,3 +514,42 @@ Multi-AZ の環境で 384 → 768 MBps に変更し、**iSCSI と NVMe/TCP の�
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `network interface show -vserver <svm> -data-protocol iscsi` で LIF の本数を確認する（**SVM を指定すること**） | パス数の計算の片方 |
+| 2 | `iscsiadm --mode session \| wc -l` と `multipath -ll` を並べて記録する | セッション数とパス数の関係 |
+| 3 | `multipath -ll` の prio 値でグループが 2 つに分かれているかを確認する | ALUA が効いているか |
+| 4 | `grep replacement_timeout /etc/iscsi/iscsid.conf` | **既定は 120。5 にするかを判断する** |
+| 5 | `wc -c /etc/multipath.conf` | **0 バイトか、`mpathconf` が作った内容か。どちらに従ったかを記録する** |
+| 6 | Windows で `Get-MSDSMGlobalDefaultLoadBalancePolicy` と `(Get-MPIOSetting).PathVerificationState` | **既定は None と Disabled** |
+| 7 | Windows で `mpclaim -s -d 0` を実行し、パス総数と Active/Optimized の内訳を記録する | パス数と ALUA |
+| 8 | 接続スクリプトを**2 回**流し、セッション数が増えるかを確認する | **冪等でないこと** |
+| 9 | `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **NVMe/TCP で multipath が成立するか** |
+| 10 | NVMe/TCP 接続後、`nvme list` で同じ `wwid` のデバイスが複数出ていないかを確認する | multipath が効いていない兆候 |
+| 11 | `lun mapping show -fields reporting-nodes` | Selective LUN Map が絞っている範囲 |
+| 12 | 検証環境でスループット容量を変更し、**両プロトコルに負荷を掛けた状態で** 1 秒間隔の direct write の成否と所要時間を記録する | **フェイルオーバー時に I/O が継続するか。第 2 世代は変更間に 6 時間空ける必要があるので、やり直しはその後になります** |
+| 13 | 同時に `nvme ana-log` とコントローラの `state` を 2 秒間隔で記録する | **ANA が反転した時点** |
+
+手順 8 と 12 は**検証環境で行ってください。** 手順 8 は本番でパス数を倍にします。**手順 12 はプローブを先に動かし、記録先を確認してから変更を要求してください。** やり直しは 6 時間後です。
+
+手順 1 の LIF 本数は、次の読み取り専用コマンドで確認できます（SVM を指定する）。
+
+```bash
+ssh <svm-management-endpoint> network interface show -vserver <svm> -data-protocol iscsi
+```
+
+### 期待結果
+
+```text
+ノードごとに 1 本ずつ、SVM あたり 2 本の iSCSI LIF が返る。パス数 = LIF 本数 × セッション数。
+nr_sessions を 1 動かすとパスは 2 本動く（SVM は両ノードに LIF を持つため）
+```
+
+このコマンドは LIF を読むだけで、LIF にもセッションにも変更を加えません。フェイルオーバーの実測（手順 12）は、第 2 世代ではスループット容量の変更間に 6 時間空ける必要があります。
+
+## Read next
+
+[LUN の Snapshot は既定で何を保証するか？](a-snapshot-of-a-lun-is-crash-consistent.md)

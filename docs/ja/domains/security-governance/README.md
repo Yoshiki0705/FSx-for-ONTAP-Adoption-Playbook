@@ -1,9 +1,5 @@
 # Domain — セキュリティ・ガバナンス (Security & Governance)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/security-governance/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 暗号化、監査、権限設計、規制ワークロードでの考慮事項を扱います。ここに書かれているのは設計上の考慮事項であり、法務・コンプライアンス上の判断ではありません。
@@ -27,7 +23,7 @@
 
 | # | 問い | ノート |
 |---|---|---|
-| 1 | 暗号化の選択肢とその境界はどこか | [保存時は自動、転送時は既定で無効](notes/what-the-platform-gives-and-what-stays-yours.md#プラットフォームが提供するものと自分に残るもの) |
+| 1 | 暗号化の選択肢とその境界はどこか | [保存時は自動、転送時は方式ごとに条件が異なる](notes/what-the-platform-gives-and-what-stays-yours.md#プラットフォームが提供するものと自分に残るもの) |
 | 2 | 誰が何をしたかをどう記録するか | [監査は 2 つの面に分かれ、片方に穴があります](notes/what-the-platform-gives-and-what-stays-yours.md#監査の-2-つの面と片方の穴の存在) |
 | 3 | 権限設計をどう最小権限に寄せるか | [管理者を分ける](notes/what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) |
 | 4 | 規制ワークロードで問われる論点は何か | [問われる論点の整理](notes/what-the-platform-gives-and-what-stays-yours.md#規制ワークロードで問われる論点) |

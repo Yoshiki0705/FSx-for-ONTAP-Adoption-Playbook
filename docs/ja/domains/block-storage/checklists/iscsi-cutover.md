@@ -6,6 +6,7 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.17.1P7D1
+deployment_type: SINGLE_AZ_2
 lang: ja
 ---
 
@@ -79,7 +80,7 @@ lang: ja
 
 - [ ] **AWS API で作るもの（ファイルシステム・SVM・ボリューム）と ONTAP で作るもの（LUN・igroup・マップ）を、手順書の中で分けて書いた**
 - [ ] **ボリューム作成時のパラメータをハンドラの実際の挙動で確認した。** ドキュメントが省略可としているものが必須になっている箇所があります（この検証では `JunctionPath` がそうでした）
-- [ ] **クライアントから FSx for ONTAP の AWS API に到達できることを確認した。** 管理エンドポイントの解決にはパブリックな名前解決が必要です。**VPC エンドポイントだけの私設サブネットからは届きません。** 到達できない環境では管理 IP とパスワードを直接渡す経路が必要です
+- [ ] **クライアントから FSx for ONTAP の AWS API に到達できることを確認した。** NAT などの外向き経路、またはリージョンの Amazon FSx インターフェイス VPC エンドポイントが必要です。ONTAP 管理エンドポイントは別のプライベート経路です。Amazon FSx API に到達できない場合だけ、管理 IP とパスワードを直接渡す経路を使います
 
 境界の引き方は [LUN と igroup は AWS の API の外側にある](../notes/block-objects-are-outside-the-aws-api.md) にあります。
 

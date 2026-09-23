@@ -9,16 +9,37 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# S3 Access Point の権限設計 — 評価順序と、絞り込みを担う 2 つの層
+# S3 Access Point の認可は 2 層のどちらで絞るか？
+
+アクセスポイントポリシーは絞り込みになりません。明示的な拒否とファイルシステム権限の 2 層で絞ります。
+
 <!-- lang-switcher:start -->
 🌐 [日本語](access-point-authorization-layers.md) | [English](../../../../en/domains/security-governance/notes/access-point-authorization-layers.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- アクセスポイントポリシーの `Allow` を狭くしても絞り込みにならず、明示的な拒否が絞り込みを担うこと
+- AWS 側の認可（Layer 1）とファイルシステム側の権限（Layer 2）が独立して評価されること
+
+## このノートが答えないこと
+
+- クロスアカウントや NTFS ボリュームでのポリシー評価の再現性
+- `Deny` に `s3:*` を書いたときのロックアウトの実測
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="s3-access-point-の権限設計--評価順序と絞り込みを担う-2-つの層"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **Amazon FSx for NetApp ONTAP の S3 Access Point に「バケットポリシー」はありません。** 裏に S3 バケットが無いため、`put-bucket-policy` の対象が存在しません。設定するのは **アクセスポイントポリシー**（IAM リソースポリシー）です。
 
@@ -66,7 +87,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## 設定する対象
+### 設定する対象
 
 | 論点 | 内容 |
 |---|---|
@@ -81,7 +102,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## Layer 1 — 結合で評価されることの帰結
+### Layer 1 — 結合で評価されることの帰結
 
 **「AP ポリシーに書いた範囲しか通らない」という前提で設計すると、実際には広く通ります。** 次の 5 行はすべて、評価ステップ 4 の「同一アカウントは結合」から予測できる結果です。**予測どおりになることを確認した記録として読んでください。**
 
@@ -105,7 +126,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## Layer 1 で絞る — 明示的な拒否の 2 つの書き方（`NotPrincipal` は避ける）
+### Layer 1 で絞る — 明示的な拒否の 2 つの書き方（`NotPrincipal` は避ける）
 
 **`Deny` + `NotPrincipal` は、例外に指定した主体まで拒否しました。** 何を列挙すれば例外が成立するかを測った結果が次の表です。
 
@@ -141,11 +162,11 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## 設定例 — 6 パターン
+### 設定例 — 6 パターン
 
 **アカウント ID は `123456789012`、VPC / エンドポイント ID と組織 ID はプレースホルダです。** リージョンは検証環境と同じ `ap-northeast-1` のままにしています。
 
-### ① 特定のロールだけへの読み取り許可
+#### ① 特定のロールだけへの読み取り許可
 
 ```json
 {
@@ -184,7 +205,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 実測: 指定ロールは成功、指定していない IAM ユーザー（管理者権限）は `AccessDenied`。
 
-### ② 書き込みの許可
+#### ② 書き込みの許可
 
 ①の `Allow` の `Action` に `s3:PutObject` を足し、`Deny` 側はそのままにします。**`Deny` の `Action` から `s3:PutObject` を外さないでください。** 外すと、許可した主体以外も書けます。
 
@@ -196,7 +217,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 **書き込みを止める硬い方法は、AP に紐づくファイルシステム ID を読み取り専用にすることです。** ポリシー 1 行の変更で書けるようになる状態を避けたい場合はそちらを使います。
 
-### ③ 特定の VPC エンドポイント経由への限定
+#### ③ 特定の VPC エンドポイント経由への限定
 
 ```json
 {
@@ -247,13 +268,13 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 > 明記しています（[出典](#参照した一次情報)）。
 >
 > **ゲートウェイエンドポイントは、VPC の外から入ってくるトラフィックを経路制御しません。** VPN /
-> Direct Connect / Transit Gateway / ピア接続で入る呼び出し元には**インターフェイスエンドポイントが
-> 必要**です。オンプレミスからのアクセスだけが `AccessDenied` になる場合、原因はここである可能性が
-> 高いです。これは AWS のドキュメント記載です。
+> Direct Connect / Transit Gateway / ピア接続で入る呼び出し元を**私設経路に限定する場合**は、
+> インターフェイスエンドポイントが必要です。オンプレミスからのアクセスだけが `AccessDenied` になる場合、
+> 原因はここである可能性が高いです。これは AWS のドキュメント記載です。
 
 **`NetworkOrigin` による制限とは別の仕組みです。** `NetworkOrigin` は作成後に変更できませんが、この条件はポリシーなので後から変えられます。**VPC origin は、`aws:SourceVpc` が束縛先 VPC と一致しないリクエストを拒否する明示的な拒否と同等に振る舞います**（AWS のドキュメント記載）。同じ結果をポリシーで書くこともできますが、その場合は書き手が拒否文を維持する責任を持ちます。
 
-### ④ 組織内への限定
+#### ④ 組織内への限定
 
 ```json
 {
@@ -289,7 +310,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 実測: 別組織のアカウントのプリンシパルは拒否されました。**同じ明示的クロスアカウント許可を与えて `Deny` 文だけを外した AP では、同じプリンシパルが成功します。** つまり拒否はこの条件文によるものです。詳細は [クロスアカウントのデータアクセスは成立する](#クロスアカウントデータアクセスの成立) を参照してください。
 
-### ⑤ 平文通信の拒否
+#### ⑤ 平文通信の拒否
 
 ```json
 {
@@ -307,7 +328,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 **この 1 文だけは、効いていることを実測できませんでした。** 理由は次節にあります。多層防御として書く分には無害ですが、**「これがあるから平文は止まっている」という説明の根拠にはできません。**
 
-### ⑥ プレフィックスへの限定
+#### ⑥ プレフィックスへの限定
 
 ```json
 {
@@ -365,7 +386,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## 条件キーの実測結果
+### 条件キーの実測結果
 
 | 条件キー | 何を絞れるか | 実測 |
 |---|---|---|
@@ -375,7 +396,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 | `s3:prefix` | `ListBucket` の対象範囲 | **Allow / Deny 両側を確認** |
 | `aws:SecureTransport` | 通信の暗号化 | **Deny 分岐に到達しませんでした**（後述） |
 
-### 「リクエストに載っているとき」に限られる条件キーの比較
+#### 「リクエストに載っているとき」に限られる条件キーの比較
 
 **条件キーが載らない経路では、`StringEquals` 側の許可は成立せず、`StringNotEquals` 側の拒否は成立します。** どちらに書くかで結果が反転するため、可用性を先に確認してください。**次の表は AWS のドキュメント記載で、本ノートの実測ではありません**（`aws:SourceVpce` が VPC エンドポイント経由で載ることだけは実測済み）。
 
@@ -391,7 +412,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 > エンドポイント経由なら `aws:VpcSourceIp`、インターネット経由なら `aws:SourceIp` です。これは
 > アクセスポイントポリシー、VPC エンドポイントポリシー、identity-based ポリシーのすべてに効きます。
 
-### Deny 分岐に到達しない `aws:SecureTransport`
+#### Deny 分岐に到達しない `aws:SecureTransport`
 
 | 試した経路 | 結果 |
 |---|---|
@@ -402,7 +423,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 **認可の評価に到達する前にリダイレクトされます。** AWS のドキュメントも、アクセスポイントは HTTPS のみを受け付け、HTTP リクエストには HTTPS へ上げるためのリダイレクトを返すと明記しています。つまり **`aws:SecureTransport` が `false` になる経路が、この AP には存在しません。**
 
-### `aws:PrincipalOrgID` 組織の内外
+#### `aws:PrincipalOrgID` 組織の内外
 
 | 条件に書いた組織 ID | 呼び出し元 | 結果 |
 |---|---|---|
@@ -417,7 +438,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## クロスアカウントデータアクセスの成立
+### クロスアカウントデータアクセスの成立
 
 **これも評価ステップ 4 から予測できます。** クロスアカウントは結合ではなく**両方**が必要な分岐です。今回はリソース側（AP ポリシー）が許可し、相手側の identity-based ポリシーも管理者権限で許可していたため、両方が揃って通りました。
 
@@ -434,7 +455,7 @@ Layer 1 で絞りたいなら**明示的な拒否を書く**ことになりま�
 
 ---
 
-## AP 側のパラメータ — Policy 以外は作成時に確定
+### AP 側のパラメータ — Policy 以外は作成時に確定
 
 Amazon FSx がこのアタッチメントに対して公開している操作は **3 つだけ**です。`CreateAndAttachS3AccessPoint`、`DescribeS3AccessPointAttachments`、`DetachAndDeleteS3AccessPoint`。**更新の操作がありません。**
 
@@ -453,7 +474,7 @@ Amazon FSx がこのアタッチメントに対して公開している操作は
 
 **`FileSystemIdentity` が変更できないことは、権限設計に効きます。** 「あとで読み取り専用の ID に差し替える」ができないため、**用途ごとに AP を分ける**のが実際の運用になります。この ID が Layer 2 の権限を決める仕組みは [S3 Access Point は全リクエストを 1 つの ID で認可する](../../data-utilization/notes/reaching-data-without-copies.md) にあります。
 
-### CloudFormation
+#### CloudFormation
 
 ```yaml
 Resources:
@@ -502,7 +523,7 @@ Resources:
 
 **`Policy` をテンプレートに書けるので、AP とポリシーを 1 つのスタックで管理できます。** ただし変更経路が 2 つある点は前述のとおりです。S3 側の API で書き換えるとドリフトします。
 
-### AWS CLI
+#### AWS CLI
 
 ```bash
 # 作成（ポリシーも同時に付ける）
@@ -538,7 +559,7 @@ aws s3control delete-access-point-policy \
 
 **`put-access-point-policy` は全置換です。** マージされません。既存のポリシーがある AP を触るときは、先に `get-access-point-policy` で退避してください。
 
-### 正規化後で判定されるポリシーサイズの上限
+#### 正規化後で判定されるポリシーサイズの上限
 
 | 適用したポリシー（整形なし JSON） | 結果 |
 |---|---|
@@ -552,7 +573,7 @@ aws s3control delete-access-point-policy \
 
 ---
 
-## Layer 2 の前提 — ファイルシステム側に実在している必要のある固定 ID
+### Layer 2 の前提 — ファイルシステム側に実在している必要のある固定 ID
 
 **AP を作るときに指定する `FileSystemIdentity` は、ONTAP の SVM が名前解決できるユーザーである必要があります。** AWS 側に作るものではありません。
 
@@ -578,7 +599,7 @@ aws s3control delete-access-point-policy \
 
 ---
 
-## Layer 2 — 絞り込みを担うファイルシステム側の権限
+### Layer 2 — 絞り込みを担うファイルシステム側の権限
 
 **AP ポリシーを一切変えずに、Layer 2 だけで許可と拒否が切り替わります。** 同一の呼び出し元、同一の AP、ポリシー無しの状態で、ボリュームルートの所有者と mode bits だけを変えて対で測りました。
 
@@ -595,7 +616,7 @@ aws s3control delete-access-point-policy \
 > **Layer 2 で絞る設計は、AP を作る前に決めておく必要があります。** 用途ごとに AP を分けるのが実際の
 > 運用になります。
 
-### 非 root の ID 固定による、ポリシー無しでの書き込み停止
+#### 非 root の ID 固定による、ポリシー無しでの書き込み停止
 
 **AP ポリシーを付けずに、ID だけで読み取り専用になります。** root 所有・`755` のボリューム（others は `r-x`）に、非 root の UNIX ユーザー `nobody`（uid 65535）を固定した AP をポリシー無しで作り、同一の呼び出し元で測りました。
 
@@ -606,7 +627,7 @@ aws s3control delete-access-point-policy \
 
 **同一ボリューム・同一呼び出し元・どちらもポリシー無しで、違いは ID だけです。** つまり読み取り専用は Layer 2 だけで成立します。
 
-### `AccessDenied` のメッセージによる層の切り分け
+#### `AccessDenied` のメッセージによる層の切り分け
 
 **3 通りの拒否が、本文で区別できます。** 同一環境で 3 つとも実測しました。
 
@@ -627,7 +648,7 @@ aws s3control delete-access-point-policy \
 
 ---
 
-## 監査ログに記録される主体
+### 監査ログに記録される主体
 
 **S3 AP 経由のアクセスは ONTAP のファイルアクセス監査に記録されます。** 記録される主体は **AP に固定した ID** であり、呼び出し元の IAM プリンシパルではありません。**Layer 1 と Layer 2 で主体が分離していることが、そのまま監査の限界になります。**
 
@@ -647,14 +668,14 @@ aws s3control delete-access-point-policy \
 
 **運用に効く点が 2 つあります。**
 
-1. **「誰が」を監査ログだけで特定できません。** 残るのは AP に固定した ID の SID です。**呼び出し元の IAM プリンシパルを知るには AWS CloudTrail 側と突き合わせる必要があります。** AP を用途ごとに分けておくと、この突き合わせの手間が減ります。
+1. **「誰が」を ONTAP 監査ログだけで特定できません。** 残るのは AP に固定した ID の SID です。**[CloudTrail の S3 データイベント](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)を Access Point に構成すると、呼び出し元の IAM プリンシパルと API 操作を記録できます。** AP を用途ごとに分けておくと、この突き合わせの手間が減ります。
 2. **送信元アドレスによる追跡はできません。** `SubjectIP` は AWS のサービス側アドレスで、同一セッション内でも変わります。**呼び出し元 IP で絞り込む監査要件は、この経路では満たせません。**
 
 > **ガバナンスに関する補足**: 「S3 AP を用途別ではなく共用で 1 つ作る」設計は、AP ポリシーで
 > 呼び出し元を分けられても、**ファイルアクセス監査では全員が同じ主体として記録されます。**
 > ファイル単位の操作を主体別に追跡する要件がある場合は、**AP の分割が監査の粒度を決めます。**
 
-### この経路を見ない FPolicy
+#### この経路を見ない FPolicy
 
 **監査は操作を記録するが、FPolicy には通知されない。** 別の機構なので答えが違い、一方が他方の
 代わりにはならない。
@@ -704,7 +725,7 @@ IAM の側で表現する必要がある。
 **ARP の件数は検証記録の側にあるので、こちらでは持たない。** 数字を 2 か所に置くと、片方が改訂された
 ときに古い側が参照され続ける。
 
-### UNIX セキュリティスタイルのボリュームでの監査記録の不在
+#### UNIX セキュリティスタイルのボリュームでの監査記録の不在
 
 **SVM で監査を有効化するだけでは足りません。** UNIX の mode bits は監査の情報を持たないため、**記録の対象を指定する ACE が無い状態では 1 件も出ません。**
 
@@ -736,7 +757,7 @@ IAM の側で表現する必要がある。
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -746,10 +767,10 @@ graph TD
     Q1 -->|どこから来たか| WHERE[Layer 1<br/>明示的な拒否 + Condition<br/>aws:SourceVpce]
     Q1 -->|どの組織か| ORG[Layer 1<br/>明示的な拒否 + Condition<br/>aws:PrincipalOrgID]
     Q1 -->|どのプレフィックスか| PFX[Layer 1<br/>明示的な拒否 + NotResource<br/>+ s3:prefix]
-    Q1 -->|何ができるか| WHAT{ポリシーで足りるか}
+    Q1 -->|何ができるか| WHAT{対象 Action の権限を<br/>AP に固定する ID からも除くか}
 
-    WHAT -->|足りる| ACT[Layer 1<br/>明示的な拒否に対象 Action を列挙]
-    WHAT -->|確実に止めたい| ID[Layer 2<br/>その権限を持たない ID を<br/>AP に固定する]
+    WHAT -->|除かない: Layer 1 で制御| ACT[Layer 1<br/>明示的な拒否に対象 Action を列挙]
+    WHAT -->|除く: Layer 2 でも制御| ID[Layer 2<br/>その権限を持たない ID を<br/>AP に固定する]
 
     WHO --> CHK[Allow を狭くするだけでは絞れない]
     WHERE --> CHK
@@ -787,14 +808,28 @@ graph TD
 
 **ポリシーの反映には数秒かかります。** 適用の約 6 秒後には前のポリシーの判定が返り、10〜12 秒後には安定しました。**適用直後の 1 回だけを見ると、実際とは違う結論になります。** この検証でも一度それを踏み、再実行で気づきました。
 
+既存アクセスポイントのポリシーは、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws s3control get-access-point-policy --account-id <account-id> --name <access-point-name> --query Policy --output text
+```
+
+### 期待結果
+
+```text
+<access-point-policy-json-or-NoSuchAccessPointPolicy>
+```
+
+この確認で分かるのは現在のアクセスポイントポリシーの有無と内容だけです。ポリシーを変更せず、Layer 2 のファイル権限、認可の評価結果、削除可能性は証明しません。
+
 ---
 
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
 | FSx for ONTAP S3 AP にバケットポリシーを設定する | バケットが無いので設定できません。アクセスポイントポリシーです |
-| 同一アカウント所有が必須なので、別アカウントからは読めない | **読めます。** 同一アカウント所有は AP を作る側の制約です。AP ポリシーで許可すれば別組織のアカウントからも通ります（実測） |
+| 同一アカウント所有が必須なので、別アカウントからは読めない | **読めます。** 同一アカウント所有は AP を作る側の制約です。AP ポリシーと呼び出し元の identity-based ポリシーの両方が許可すれば、別組織のアカウントからも通ります（実測） |
 | AP ポリシーを付けないと誰もアクセスできない | identity-based ポリシーが許可していればアクセスできます |
 | AP ポリシーの `Allow` に書いた範囲しか通らない | 同一アカウントでは結合で評価されます。絞るには明示的な拒否が必要です |
 | `Allow` の `Action` に書いていない操作はできない | できます。`Action` を狭く書いても絞り込みになりません |
@@ -814,13 +849,13 @@ graph TD
 | `AccessDenied` はポリシーを見れば分かる | 修飾のない `Access Denied` は **Layer 2**（ファイル権限）です。ポリシーを探しても原因はありません |
 | AP ポリシーに `s3:` のアクションが 1 つも無ければ、ファイルには触れられない | 触れられます。**Layer 1 と Layer 2 は独立です。** identity-based ポリシーが許可し、AP の ID がファイル権限を持てば通ります |
 | UNIX ID を使うには LDAP、Windows ID を使うには AD 参加が必要 | どちらも必須ではありません。**SVM のローカルユーザー、および workgroup モードのローカル Windows ユーザーで実測しました** |
-| 監査ログを見れば呼び出し元の IAM プリンシパルが分かる | 分かりません。残るのは **AP に固定した ID の SID** だけで、名前も解決されません。**呼び出し元の特定には CloudTrail 側との突き合わせが必要です** |
+| 監査ログを見れば呼び出し元の IAM プリンシパルが分かる | ONTAP 監査には AP に固定した ID が残ります。呼び出し元は、Access Point に構成した CloudTrail の S3 データイベントで確認します |
 | 監査ログの `SubjectIP` で呼び出し元を追える | 追えません。AWS のサービス側アドレスで、**同一セッションの連続リクエストでも変わりました** |
 | SVM で監査を有効化すれば全ボリュームで記録される | UNIX スタイルで mode bits だけのボリュームは **0 件でした。** 監査 ACE が必要です |
 
 ---
 
-## この記述の限界
+### この記述の限界
 
 - **クロスアカウントの実測は 1 組のアカウント間で 1 回です。** 相手は AWS Organizations の別組織に属するアカウントで、呼び出し元は IAM Identity Center 経由の管理者ロールでした。**組織関係やプリンシパルの型が違う組み合わせは試していません。**
 - **Layer 1 の挙動は ONTAP のバージョンに依存しません。** アクセスポイントポリシーの評価は S3 と IAM 側の話です。**一方 Layer 2 と監査の挙動は ONTAP 側に属します。** 記録したバージョン（`9.18.1P3D1`）以外での再現性は確認していません。
@@ -835,7 +870,7 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -846,6 +881,9 @@ graph TD
 | AP ポリシーは 20 KB、VPC 設定は作成後に変更不可、HTTPS のみ対応で HTTP はリダイレクト、10,000 AP / アカウント / リージョン | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 | AP 作成時に指定するプロパティ、ボリュームに junction path が必要 | [AWS: Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) |
 | `CreateAndAttachS3AccessPoint` のパラメータと制約 | [AWS: CreateAndAttachS3AccessPointOntapConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateAndAttachS3AccessPointOntapConfiguration.html) |
+| `FileSystemIdentity` が全ファイルアクセス要求の認可に使われ、UNIX または Windows ID を取ること | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
+| identity-based と resource-based ポリシーの同一アカウント評価 | [AWS: Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) |
+| Access Point 経由のリクエストを CloudTrail の S3 データイベントとして記録できること、Amazon FSx ボリュームでは `AWS::FSx::Volume` がリソースとして記録されること | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) |
 | CloudFormation のプロパティ | [AWS: AWS::FSx::S3AccessPointAttachment](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-s3accesspointattachment.html) |
 | ARN 形式、二層認可の整理、トラブルシュートの手がかり | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns の認可モデル](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-authorization-model.md) |
 | Windows ID は「AD 参加済みドメイン」の場合を記述（**本ノートの実測はこれより広い**） | [AWS: Troubleshooting access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
@@ -853,7 +891,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [S3 Access Point 経由のリクエストはどう判定されるか](../../../reference/decision-trees/access-point-authorization.md) — **評価順序と、症状から落ちた段への逆引き。仕組みから読むならこちらが先**
 - [Domain — セキュリティ・ガバナンス](../README.md) — このモジュールのハブ
@@ -866,8 +904,6 @@ graph TD
 
 ---
 
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
+## Read next
 
-<!-- lang-switcher:start -->
-🌐 [日本語](access-point-authorization-layers.md) | [English](../../../../en/domains/security-governance/notes/access-point-authorization-layers.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[SMB ログオン監査 — 4624 は記録される](smb-logon-audit-event-coverage.md)

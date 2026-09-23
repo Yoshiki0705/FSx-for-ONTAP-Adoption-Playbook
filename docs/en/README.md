@@ -1,42 +1,66 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## Audience
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](README.md) | [한국어](../ko/README.md) | [简体中文](../zh-CN/README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](../de/README.md) | [Español](../es/README.md)
-<!-- lang-switcher:end -->
+- Architects deciding whether and how to adopt FSx for ONTAP
+- Builders planning migration, implementation, and production readiness
+- Operators managing performance, protection, security, and cost after launch
 
----
+## Non-goals
 
-> A knowledge base for migrating to **Amazon FSx for NetApp ONTAP** and for the design, build, and operations work that follows.
-> Two navigation axes: the lifecycle (assess → design → migrate → build → operate → optimize) and the topic (data protection, data utilization, security, performance, cost, multiprotocol identity).
->
-> Findings from field technical-support work are organized here as anonymized reference material. The structure is intended to be readable by humans and by AI agents / web crawlers alike.
+This repository does not perform or replace:
 
----
+- Contracting or contract negotiation
+- License interpretation
+- Price quotations or formal estimates
+- Procedures for migrating from SaaS file-sharing services
+- Environment-specific adoption or procurement decisions
+- Final legal, compliance, or regulatory judgments
+
+Decision inputs grounded in public sources remain in scope, as do builder observations and design views when they are clearly separated from documented facts.
+
+## Translation status
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+Tier 1 first-touch guidance is available in eight languages. Tier 2 module hubs are available in Japanese and English. Note and checklist bodies are primarily Japanese, with selected English translations. The Japanese version is authoritative for technical accuracy.
+
+## Before production
+
+- [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — irreversible settings and checks to exercise before launch
+- [At-rest encryption is automatic; in-transit conditions differ by method](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — responsibility boundaries for encryption in transit and auditing
 
 ## Get Started
 
 | What you want to do | Guide | Time |
 |---|---|---|
+| Decide whether FSx for ONTAP fits the workload | [Choose an AWS file storage service](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10 min |
 | Learn how to navigate this repository | [Navigation Guide](navigation.md) | 3 min |
-| Decide whether and how to migrate | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) | 10 min |
-| Check verified limits and quotas | [Limits and Quotas](../ja/reference/limits/) | 5 min |
-| Compare the trade-offs between options | [Comparison Matrices](../ja/reference/comparison/) | 10 min |
-| Learn how to read the confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
-| Find primary sources in the public record | [Public references and how to weigh them](../ja/case-studies/public-references.md) (日本語) | 5 min |
-| Find a case study for your industry or workload | [Published FSx for ONTAP case studies](../ja/case-studies/public-case-studies.md) (日本語) | 10 min |
-| **Work out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | 10 min |
-| Learn from a judgement that went wrong | [Case studies](case-studies/README.md) | 10 min |
-| Add knowledge (authoring) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
+| Learn how to read confidence levels | [Evidence Policy](evidence-policy.md) | 5 min |
 
-> **Coverage**: **all 12 modules have content.**
-> Each module README lists the questions it covers alongside the note that answers each one.
-> **A question whose answer is not yet written is marked `_未追加_`.**
+<details>
+<summary><strong>More entry points</strong></summary>
+
+| Situation | Entry point |
+|---|---|
+| Choose a migration method | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| Check limits and quotas | [Limits and Quotas](../ja/reference/limits/) |
+| Compare option trade-offs | [Comparison Matrices](../ja/reference/comparison/) (日本語) |
+| Start from an industry or workload | [Industry resource map](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Contribute knowledge | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> The file-storage decision tree is designed to let readers stop once FSx for ONTAP is not a fit.
+> Each module README lists the questions it answers and the corresponding notes.
+> Questions without an answer are marked `_未追加_`.
+
+<details>
+<summary><strong>Symptom routes and available material</strong></summary>
 
 ### Entering from a symptom
 
-**For when the starting point is what is happening rather than what you want to do.** The full set — 10 decision trees and 9 comparisons — is in the [decision tree index](reference/decision-trees/) and the [comparison index](../ja/reference/comparison/) (日本語).
+**For when the starting point is what is happening rather than what you want to do.** Browse the [decision tree index](reference/decision-trees/) and the [comparison index](../ja/reference/comparison/) (日本語).
 
 | What is happening | Where to go |
 |---|---|
@@ -57,35 +81,37 @@ Each note is one concern per file, and always carries **its primary sources** an
 
 | Finding | What it answers |
 |---|---|
-| [Free space does not mean you can still write](playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | Why an inventory has to count files, not just bytes — the default inode count stops growing past 648 GiB |
+| [Free space does not mean you can still write](playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | AWS documents a default inode cap at 648 GiB, but the 2026-08-06 observation scaled with capacity. Check the value in your environment |
 | [Deployment type is decided once](playbooks/02-design/notes/deployment-type-is-decided-once.md) | The availability choice also sets the scale-out ceiling. Multi-AZ is fixed at one HA pair |
 | [ACL preservation is a privilege problem, not a tool problem](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Run with the defaults and ACLs are dropped silently, while the job still reports success |
 | [The rollback window closes when clients start writing](playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | There is no operation that undoes a cutover, and incremental sync depends on the common snapshot |
 | [The IaC boundary is set by the API surface](playbooks/04-build/notes/what-iac-cannot-reach.md) | A successful template is not a complete configuration — ONTAP-level settings are out of reach |
 | [Pre-production review](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) | Checklist of the irreversible settings and what to actually exercise before going live |
 | [Monitoring fails on averages](playbooks/05-operate/notes/monitoring-fails-on-averages.md) | Why the statistic is decided before the threshold — standby nodes pull the average down |
-| [Maintenance cannot be deferred past 14 days](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
+| [Maintenance proceeds if no window occurs within 14 days after a patch release](../ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) (日本語) | SSD above 90% and a missing route both make patching materially worse |
 | [Tiering defaults differ by creation method](../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) | The console and IaC do not produce the same default policy. Order changes by whether they can be undone |
 | [Having snapshots is not the same as being able to recover](domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | Each mechanism covers a different failure. A snapshot is lost along with its volume |
 | [Enabling SnapLock is not the same as locking](../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | Three separate irreversible decisions, and privileged delete does not work after expiry |
-| [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account and same-Region prerequisites become plan-level constraints |
+| [FSx for ONTAP S3 AP is not "S3 you can use as S3"](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Creation is same-account and same-Region; cross-account use requires permission on both account sides |
 | [An S3 access point authorizes every request as one identity](../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry into an AI or RAG pipeline reading through it |
-| [At rest is automatic, in transit is off by default](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
-| [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) | Generation, configuration and Region all move the ceiling, and a FlexVol cannot exceed one HA pair |
-| [p99 cannot be read from the CloudWatch metrics](domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | Only an average is obtainable, and benchmarks are swayed by burst credit balance |
+| [At-rest encryption is automatic; in-transit conditions differ by method](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
+| [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) | Second-generation Single-AZ supports up to 12 HA pairs, block configurations up to 6; a FlexVol is placed on one HA pair's aggregate |
+| [p99 is not available from volume operation-time metric pairs](domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | Read/write/metadata total time divided by total count is an average; other series expose different statistics and dimensions |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) | Tiering carries per-request charges, and deduplication does not lower the bill |
 | [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
 | [The AD dependency lasts the lifetime, not just the join](domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) | An expired service account is symptomless until the next maintenance window |
 | [Some SVMs cannot serve SMB](domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | The cause is a deleted CIFS server, not the creation date. The ONTAP REST API restores it |
 | [An exhausted audit destination stops client access](domains/security-governance/notes/audit-log-space-and-client-access.md) | Not at the moment it fills, and the EMS event reporting the write failure is not visible to you |
 | [The block protocol choice is narrowed before you make it](domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | NVMe/TCP is second-generation only, shares its LIFs with iSCSI, and port 4420 is absent from the requirements table |
-| [LUN layout decides recovery granularity](../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) (日本語) | One LUN per volume is not a best practice. `lun move` was non-disruptive and kept the WWID |
+| [LUN layout decides recovery granularity](../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) (日本語) | One LUN per volume is not a general recommendation. `lun move` was non-disruptive and kept the WWID |
 | [Capacity is counted in three places](domains/block-storage/notes/capacity-is-counted-in-three-places.md) | 1,024 GiB provisioned gave a 907 GiB aggregate, and a reserved LUN consumes its size with nothing written |
 | [Paths are the failover mechanism](../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) | Following the procedure produced 16 paths per LUN, and the connection script is not idempotent |
 | [A snapshot of a LUN is crash-consistent by default](domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | The application-consistent flag is record keeping; quiescing is done by something else |
 | [LUNs and igroups sit outside the AWS API](domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | CloudFormation exposes six Amazon FSx resource types, and none of them is a block object |
 | [When shared block changes the design](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) | Amazon EBS is the straightforward choice for a single attachment. The million-IOPS figure is ten file systems combined |
 | [Kubernetes block volumes meet the volume limit](../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) | What runs out is volumes, not capacity, and the driver choice sets that ceiling |
+
+</details>
 
 ---
 

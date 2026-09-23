@@ -7,17 +7,37 @@ source: https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html
 lang: ja
 ---
 
-# 第三者バックアップ製品が届く経路は AWS の API 側ではない
+# 第三者バックアップ製品は Amazon FSx for NetApp ONTAP にどの経路で届くか？
+
+第三者バックアップ製品の到達経路を、AWS の API、ONTAP の管理面、ファイル共有の 3 つに分けて確認します。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](third-party-backup-reaches-it-by-another-route.md) | [English](../../../../en/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- AWS の API は AWS Backup、ONTAP の管理面は管理アクセス、ファイル共有は NFS / SMB の可視範囲を対象にすること
+- 明示的な非対応と、対応システムの列挙に無いことから引ける結論が異なること
+
+## このノートが答えないこと
+
+- 第三者バックアップ製品で実際にバックアップと復元が成功するか
+- 対応システムの列挙に無い ONTAP 経路を実際に利用できるか
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="第三者バックアップ製品が届く経路は-aws-の-api-側ではない"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **「既存のバックアップ製品を使っているので、FSx for ONTAP も同じ運用で入る」は、経路を確認してから言えることです。**
 
@@ -35,7 +55,7 @@ lang: ja
 
 ---
 
-## 3 つの経路と、資料の書き方の差
+### 3 つの経路と、資料の書き方の差
 
 | 経路 | 何を経由するか | FSx for ONTAP | 資料の書き方 |
 |---|---|---|---|
@@ -49,7 +69,7 @@ lang: ja
 
 ---
 
-## 明示的な除外と列挙の不在の区別
+### 明示的な除外と列挙の不在の区別
 
 **経路 1 と経路 2 は、読者が引ける結論の強さが違います。**
 
@@ -68,7 +88,7 @@ lang: ja
 
 ---
 
-## AWS ネイティブの手立てとの対称な比較
+### AWS ネイティブの手立てとの対称な比較
 
 **第三者製品を足さない選択も同じ重みで置きます。** どちらにも引き受けるものがあります。
 
@@ -89,6 +109,43 @@ lang: ja
 
 ---
 
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 既存のバックアップ製品を使っているので同じ運用で入る | **経路が違う場合があります。** 資料の中で経路を特定してください |
+| Amazon FSx に対応しているなら FSx for ONTAP にも対応している | **ファミリー単位ではありません。** クラウドネイティブな経路から名指しで除外されている例があります |
+| 対応システムの列挙に無いので非対応である | **引けません。** 非対応・未評価・記載漏れのいずれもありえます |
+| ファイル共有経由なら中のデータはすべて対象になる | **NFS / SMB から見えるものが対象です。** LUN の中身はファイルプロトコルに現れません |
+| 第三者製品を入れれば AWS ネイティブ側は不要になる | 目的が違います。**集約の要件が無いなら、製品を足さない選択が最も軽くなります** |
+| 不可逆な保持設定はバックアップを強くするだけ | **ツールの保存先から外れる例があります。** 設定する前に確認してください |
+| この記述は製品の動作の確認である | **資料が何を述べているかの整理です。** 当リポジトリで動作を検証していません |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 | 取得日 |
+|---|---|---|
+| AWS プラグインが FSx for ONTAP のクラウドネイティブバックアップに対応せず、Backup & Replication のコンソールへ案内していること。同経路が AWS Backup サービスを使い Amazon FSx リソースタイプのオプトインを要すること。クラウドネイティブバックアップが同一アカウント内に限られること。logically air-gapped vault と AWS Backup Vault Lock を有効にした vault に保存できないこと | [ベンダー文書: Before You Begin（Amazon FSx のバックアップ）](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) | 2026-09-15 |
+| ONTAP プラグインの対応システムの列挙が FAS / AFF / ASA / ASA r2（ONTAP 9.10.1 以降）であること。同プラグインが NAS 統合（unstructured data backup）に対応せず組み込み統合を要すること。FlexClone ライセンスの必要性。Tamperproof Snapshot がクラスタ単位の登録を要し SVM 単位では不可であること | [ベンダー文書: NetApp ONTAP プラグインのリリース情報](https://www.veeam.com/kb4904) | 2026-09-15 |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — データ保護](../README.md) — このモジュールのハブ
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md#既存バックアップ基盤への統合) — 既存バックアップ基盤への統合に使える選択肢の索引
+- [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — AWS ネイティブ側の経路と境界
+- [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 経路を決めたあとの検証
+- [データ保護手段の比較](../../../reference/comparison/data-protection-methods.md) — 手段の比較表
+- [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — 経路 3 の対象範囲
+- [不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md) — Vault Lock を入れる前の承認
+- [適合条件 — 根拠に使ってはいけないもの](../../../reference/fsx-ontap-fit-conditions.md) — 列挙の不在の扱い
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
 ## 自環境での確認手順
 
 **製品を問わず立てられる問いとして書いています。**
@@ -105,47 +162,27 @@ lang: ja
 
 **手順 5 を後回しにすると、コンプライアンス側の要求を満たした結果としてバックアップ経路が閉じます。**
 
----
+### ファイル共有の可視性の読み取り専用確認
 
-## よくある誤解
+マウント済みの NFS / SMB パスに対して、現在の ID から見えるエントリを読み取り専用で確認します。
 
-| 誤解 | 実際 |
-|---|---|
-| 既存のバックアップ製品を使っているので同じ運用で入る | **経路が違う場合があります。** 資料の中で経路を特定してください |
-| Amazon FSx に対応しているなら FSx for ONTAP にも対応している | **ファミリー単位ではありません。** クラウドネイティブな経路から名指しで除外されている例があります |
-| 対応システムの列挙に無いので非対応である | **引けません。** 非対応・未評価・記載漏れのいずれもありえます |
-| ファイル共有経由なら中のデータはすべて対象になる | **NFS / SMB から見えるものが対象です。** LUN の中身はファイルプロトコルに現れません |
-| 第三者製品を入れれば AWS ネイティブ側は不要になる | 目的が違います。**集約の要件が無いなら、製品を足さない選択が最も軽くなります** |
-| 不可逆な保持設定はバックアップを強くするだけ | **ツールの保存先から外れる例があります。** 設定する前に確認してください |
-| この記述は製品の動作の確認である | **資料が何を述べているかの整理です。** 当リポジトリで動作を検証していません |
+```bash
+ls -la -- <mounted-nfs-or-smb-path>
+```
 
----
+### 期待結果
 
-## 参照した一次情報
+出力は次の形です。所有者、グループ、時刻、名前は環境によって変わります。
 
-| 論点 | 出典 | 取得日 |
-|---|---|---|
-| AWS プラグインが FSx for ONTAP のクラウドネイティブバックアップに対応せず、Backup & Replication のコンソールへ案内していること。同経路が AWS Backup サービスを使い Amazon FSx リソースタイプのオプトインを要すること。クラウドネイティブバックアップが同一アカウント内に限られること。logically air-gapped vault と AWS Backup Vault Lock を有効にした vault に保存できないこと | [ベンダー文書: Before You Begin（Amazon FSx のバックアップ）](https://helpcenter.veeam.com/docs/vbaws/guide/add_fsx_policy_byb.html) | 2026-09-15 |
-| ONTAP プラグインの対応システムの列挙が FAS / AFF / ASA / ASA r2（ONTAP 9.10.1 以降）であること。同プラグインが NAS 統合（unstructured data backup）に対応せず組み込み統合を要すること。FlexClone ライセンスの必要性。Tamperproof Snapshot がクラスタ単位の登録を要し SVM 単位では不可であること | [ベンダー文書: NetApp ONTAP プラグインのリリース情報](https://www.veeam.com/kb4904) | 2026-09-15 |
+```text
+drwxr-x---  2 <owner> <group> 4096 <timestamp> <entry>
+-rw-r-----  1 <owner> <group> <size> <timestamp> <file>
+```
+
+この確認が示すのは、**現在の ID から見た、その時点のファイル共有上の可視性だけ**です。製品の対応、バックアップの成功、復元の成功、ONTAP の管理面経路、LUN の内容、メタデータの保護、ベンダー互換性は証明しません。
 
 ---
 
-## 関連ドキュメント
+## Read next
 
-- [Domain — データ保護](../README.md) — このモジュールのハブ
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#既存バックアップ基盤への統合) — この課題領域の索引
-- [バックアップコピーは復元するまでファイルシステムを持たない](backup-copies-across-regions-and-accounts.md) — AWS ネイティブ側の経路と境界
-- [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 経路を決めたあとの検証
-- [データ保護手段の比較](../../../reference/comparison/data-protection-methods.md) — 手段の比較表
-- [LUN の中身はファイルプロトコルに現れない](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — 経路 3 の対象範囲
-- [不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md) — Vault Lock を入れる前の承認
-- [適合条件 — 根拠に使ってはいけないもの](../../../reference/fsx-ontap-fit-conditions.md) — 列挙の不在の扱い
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](third-party-backup-reaches-it-by-another-route.md) | [English](../../../../en/domains/data-protection/notes/third-party-backup-reaches-it-by-another-route.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[Domain — データ保護](../README.md) で、保護対象と復旧要件に対応する次のノートを選びます。

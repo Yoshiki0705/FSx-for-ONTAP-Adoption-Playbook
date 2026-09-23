@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: [SINGLE_AZ_2, MULTI_AZ_2]
 lang: en
 ---
 
-# Capacity is counted in three places
+# Where is capacity counted?
+
+In three places. Of the provisioned SSD, only the amount left after three deductions is usable by a LUN.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [English](capacity-is-counted-in-three-places.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That there are three deductions (aggregate shrinkage, snapshot reserve, LUN reservation) from the provisioned SSD to the capacity a LUN can use
+- That capacity accounting has a delay, and that when full, the LUN drops to read-only rather than returning a write error
+
+## What this note does not answer
+
+- A general value for the shrinkage ratio (e.g. `1024→907.03`) (configuration-dependent; count it in your own environment)
+- Block performance figures (only the way capacity is counted and the accounting delay were measured)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="capacity-is-counted-in-three-places"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **From the provisioned SSD capacity to the capacity a LUN can actually use, there are three deductions.**
 
@@ -39,13 +60,13 @@ And **this accounting is not immediate.** Reading right after a config change **
 
 > **Tier**: `verified` (verified 2026-09-05, `ap-northeast-1`, `SINGLE_AZ_2` second generation, 1 HA pair, throughput capacity 384 MBps, ONTAP 9.18.1P5).
 > **Performance figures are not included.** What was measured is only the way capacity is counted and the delay in accounting. The drop to read-only is `documented` based on AWS re:Post (not induced in our environment).
-> The steps to confirm in your own environment are in [How to confirm in your own environment](#how-to-confirm-in-your-own-environment).
+> The steps to confirm in your own environment are in [Verify it in your environment](#verify-it-in-your-environment).
 
 ---
 
-## The breakdown of the three places
+### The breakdown of the three places
 
-### From SSD to aggregate
+#### From SSD to aggregate
 
 **The aggregate of a file system provisioned with 1,024 GiB was 907.03 GiB.** The difference of about 117 GiB is not assignable to volumes.
 
@@ -60,7 +81,7 @@ And **this accounting is not immediate.** Reading right after a config change **
 
 **The difference between the two environments is the deployment type, but no verification was done to isolate other factors.** It is an observation of two environments: "the amount usable from the same 1,024 GiB was smaller on Multi-AZ." **For capacity design, count it yourself with the deployment type you choose.**
 
-### From volume to active file system
+#### From volume to active file system
 
 **The `afs_total` of a 100 GiB volume was 95 GiB.** The snapshot reserve is 5% by default, and that portion is not usable by the LUN.
 
@@ -68,17 +89,17 @@ And **this accounting is not immediate.** Reading right after a config change **
 
 The snapshot reserve can be changed. AWS names **setting the snapshot reserve to 0%** in its SQL Server configuration example. But if you set it to 0%, the capacity snapshots use is taken from the active file system side. **Either way capacity is needed. The reserve is the difference between "take it up front or take it later."**
 
-### From the LUN's reservation to the actual free space
+#### From the LUN's reservation to the actual free space
 
 **A 20 GiB LUN with `space-reserve enabled` increased the volume's usage by 20.078 GiB with zero writes.** Disabling the setting returned it to 0.093 GiB, and enabling it made it 20.171 GiB again. **It is reversible in both directions.**
 
 **The default is disabled.** A LUN created via the REST API was `space_reserve=disabled`. Enabling it is an explicit choice.
 
-**There is a pitfall here.** AWS's SQL Server best practice names **"LUN reservation enabled."** Meanwhile, a volume created with the FSx for ONTAP API was **`space-guarantee none`, `fractional-reserve 0`.** In NetApp's documentation, `fractional-reserve` defaults to 0 when the volume's guarantee is `none`, and **the write guarantee becomes only best-effort.** That is, **enabling the reservation does not guarantee space for overwrites.** What the reservation guarantees goes as far as "the LUN-sized capacity is not used by anything else."
+**There is a pitfall here.** AWS's SQL Server configuration example names **"LUN reservation enabled."** Meanwhile, a volume created with the FSx for ONTAP API was **`space-guarantee none`, `fractional-reserve 0`.** In NetApp's documentation, `fractional-reserve` defaults to 0 when the volume's guarantee is `none`, and **continuing to overwrite then depends on available free capacity.** That is, **enabling the reservation does not guarantee space for overwrites.** What the reservation guarantees goes as far as "the LUN-sized capacity is not used by anything else."
 
 ---
 
-## The accounting delay
+### The accounting delay
 
 **A read right after changing a setting returns the pre-change value.**
 
@@ -94,9 +115,9 @@ The snapshot reserve can be changed. AWS names **setting the snapshot reserve to
 
 ---
 
-## The paths to becoming unwritable
+### The paths to becoming unwritable
 
-### That deleting a file inside the LUN does not return capacity
+#### That deleting a file inside the LUN does not return capacity
 
 **Writing 4 GiB to a 20 GiB thin LUN and deleting that file did not change the volume's usage.**
 
@@ -111,7 +132,7 @@ The snapshot reserve can be changed. AWS names **setting the snapshot reserve to
 
 **Note that `space-allocation` was enabled by default on ONTAP 9.18.1P5.** AWS recommends enabling it, but a LUN created via the REST API was `enabled` from the start.
 
-### That the returned capacity moves to a snapshot
+#### That the returned capacity moves to a snapshot
 
 **The capacity supposedly returned by `fstrim` did not become free space.**
 
@@ -121,7 +142,7 @@ The snapshot reserve can be changed. AWS names **setting the snapshot reserve to
 
 **So "deleted but does not shrink" has two stages of cause.** Either the host has not sent UNMAP, or a snapshot is holding it.
 
-### The drop to read-only
+#### The drop to read-only
 
 **When a thin-provisioned filesystem fills up, the LUN drops to read-only.** AWS re:Post names `Space allocation failed write protect` and `critical space allocation error` as symptoms, and gives the recovery procedure as **volume expansion → `lun resize` → fsck on the OS side.**
 
@@ -131,7 +152,7 @@ The snapshot reserve can be changed. AWS names **setting the snapshot reserve to
 
 ---
 
-## An example where capacity appears doubled
+### An example where capacity appears doubled
 
 **Viewing the same volume from both the LUN and NFS, the capacity display does not match.**
 
@@ -141,7 +162,7 @@ In the verification environment, `df` displayed the same volume as **20 G via th
 
 ---
 
-## The design flow
+### The design flow
 
 ```mermaid
 graph TD
@@ -168,31 +189,14 @@ graph TD
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Check the aggregate size with `storage aggregate show -fields size,usedsize` and compare with the provisioned SSD capacity | **The first-stage shrinkage** |
-| 2 | Check `volume show -fields size,available,percent-snapshot-space` | **The second-stage snapshot reserve** |
-| 3 | Check the reservation with `lun show -fields space-reserve,size,size-used` | The third-stage reservation |
-| 4 | Toggle the reservation and read the volume's usage **after waiting at least 30 seconds** | **The accounting delay. Reading right after returns the pre-change value** |
-| 5 | Create and delete a file on the LUN and watch the volume's usage. Then run `fstrim` and watch again | That it does not return until UNMAP is conveyed |
-| 6 | Check with `volume snapshot show` whether the freed blocks have moved to a snapshot | The second reason for "does not return" |
-| 7 | Check `volume show -fields space-guarantee,fractional-reserve` | **If `none` / `0`, even with a reservation the overwrite guarantee is best-effort** |
-| 8 | Record the host's `df` and the volume's free space side by side | Which to watch in monitoring |
-
-Do steps 4 and 5 **in a test environment.** Toggling the reservation on a production LUN changes the calculation of the volume's free capacity.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
 | The provisioned SSD capacity is usable by volumes as-is | **With 1,024 GiB provisioned the aggregate was 907.03 GiB** (measured in the verification environment) |
 | A 100 GiB volume can place 100 GiB | **There is a default 5% snapshot reserve, and the active file system was 95 GiB** |
 | Merely creating a LUN consumes no capacity | **With the reservation enabled, it consumes its size even with zero writes** |
-| Enabling the reservation guarantees space for overwrites | Because the volume's guarantee is `none` and `fractional-reserve` is 0, it is **best-effort** |
+| Enabling the reservation guarantees space for overwrites | Because the volume's guarantee is `none` and `fractional-reserve` is 0, **continuing to overwrite depends on available free capacity** |
 | The effect of a config change can be confirmed right after | **There is a delay of about 30 seconds.** A read right after is the pre-change value |
 | Deleting a file on the LUN returns capacity | **It does not return until UNMAP is sent, e.g. by `fstrim`** |
 | `fstrim` makes it free space | **If a snapshot is holding it, it just moves there** |
@@ -202,7 +206,7 @@ Do steps 4 and 5 **in a test environment.** Toggling the reservation on a produc
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -220,7 +224,7 @@ Do steps 4 and 5 **in a test environment.** Toggling the reservation on a produc
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -228,13 +232,13 @@ Do steps 4 and 5 **in a test environment.** Toggling the reservation on a produc
 | Making the volume at least 5% larger than the LUN, the reason to enable `space-allocation`, LUN max 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | That the LUN drops to read-only when full, and that recovery is expansion → `lun resize` → fsck | [AWS re:Post: LUN in read-only mode](https://repost.aws/knowledge-center/fsx-ontap-lun-in-read-only-mode) |
 | The difference between `space-guarantee none` / `space-slo thick` / `semi-thick`, that a space-reserved LUN provisions capacity at creation | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
-| That `fractional-reserve` takes only 0 or 100, defaults to 0 when the guarantee is `none`, and that at 0 the write guarantee is best-effort | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
-| A configuration example of snapshot reserve 0%, LUN reservation enabled, autodelete oldest_first, autosize autogrow | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| That `fractional-reserve` takes only 0 or 100, defaults to 0 when the guarantee is `none`, and that at 0 continuing to overwrite depends on available free capacity | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
+| A configuration example of snapshot reserve 0%, LUN reservation enabled, autodelete oldest_first, autosize autogrow | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | The minimum SSD capacity and the IOPS default (3 per GiB) | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) — the relation between snapshot reserve and layout
@@ -245,6 +249,37 @@ Do steps 4 and 5 **in a test environment.** Toggling the reservation on a produc
 - [Limits and quotas (日本語)](../../../../ja/reference/limits/) — limits with sources and verification dates
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [English](capacity-is-counted-in-three-places.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Check the aggregate size with `storage aggregate show -fields size,usedsize` and compare with the provisioned SSD capacity | **The first-stage shrinkage** |
+| 2 | Check `volume show -fields size,available,percent-snapshot-space` | **The second-stage snapshot reserve** |
+| 3 | Check the reservation with `lun show -fields space-reserve,size,size-used` | The third-stage reservation |
+| 4 | Toggle the reservation and read the volume's usage **after waiting at least 30 seconds** | **The accounting delay. Reading right after returns the pre-change value** |
+| 5 | Create and delete a file on the LUN and watch the volume's usage. Then run `fstrim` and watch again | That it does not return until UNMAP is conveyed |
+| 6 | Check with `volume snapshot show` whether the freed blocks have moved to a snapshot | The second reason for "does not return" |
+| 7 | Check `volume show -fields space-guarantee,fractional-reserve` | **If `none` / `0`, continuing to overwrite even with a reservation depends on available free capacity** |
+| 8 | Record the host's `df` and the volume's free space side by side | Which to watch in monitoring |
+
+Do steps 4 and 5 **in a test environment.** Toggling the reservation on a production LUN changes the calculation of the volume's free capacity.
+
+The aggregate shrinkage in step 1 can be confirmed with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> storage aggregate show -fields size,usedsize
+```
+
+### Expected output
+
+```text
+The aggregate size is smaller than the provisioned SSD capacity (1,024 GiB → 907.03 GiB in the
+verification environment). The ratio changes with configuration and deployment type, so recount
+the usable amount from the provisioned amount in your own environment.
+```
+
+This command only reads the aggregate size; it changes nothing on the capacity or the volume. Because toggling the reservation has an accounting delay, wait at least 30 seconds after the change before reading again.
+
+## Read next
+
+[Are paths the failover mechanism itself? (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md)

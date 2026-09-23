@@ -7,19 +7,41 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-sn
 lang: en
 ---
 
-# The Rollback Window Closes the Moment a Client Writes
+# When does the rollback window close?
+
+The moment a client writes to the destination — incremental sync depends on a common Snapshot.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [English](where-the-rollback-window-closes.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That the rollback window closes at the first client write, not at break, and that reverting the cutover configuration is not a rollback path.
+- That incremental sync depends on a common Snapshot on the source, whose deletion forces a baseline resync.
+
+## What this note does not answer
+
+- Measured transfer times for baseline or incremental sync (they depend on bandwidth and data volume).
+- The full list of what resync preserves and loses (`preserve` is XDP-only; see the primary sources).
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
 > This is the English translation. Japanese is authoritative for technical accuracy.
 
+> **Evidence**: `documented` — command sequences, states, and constraints are based on AWS official documentation, AWS Storage Blog, and AWS re:Post articles.
+> **No measured transfer times are included.** Duration depends on bandwidth and data volume.
+> Measurement steps are in "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
-## Conclusion
+### Conclusion
 
 **A SnapMirror destination remains read-only until you break the relationship.** Before the break, rolling back simply means continuing to use the source. Nothing is lost.
 
@@ -29,13 +51,9 @@ Breaking makes the destination read-write, **without affecting the source.** At 
 
 One more thing. **Incremental sync depends on a common Snapshot on the source.** If you delete a SnapMirror-created Snapshot on the source, **incremental transfer becomes impossible and you must restart from a baseline sync.** This is the largest schedule risk in any migration.
 
-> **Evidence**: `documented` — command sequences, states, and constraints are based on AWS official documentation, AWS Storage Blog, and AWS re:Post articles.
-> **No measured transfer times are included.** Duration depends on bandwidth and data volume.
-> Measurement steps are in "[Verify in your own environment](#verify-in-your-own-environment)".
-
 ---
 
-## Baseline Sync and Incremental Sync
+### Baseline Sync and Incremental Sync
 
 | Phase | Command | Description |
 |---|---|---|
@@ -45,7 +63,7 @@ One more thing. **Incremental sync depends on a common Snapshot on the source.**
 
 **When migrating live data, keep incremental syncs running until cutover.** If you plan to start the baseline sync just before cutover, the transfer time becomes your downtime.
 
-### Conditions That Break Incremental Sync
+#### Conditions That Break Incremental Sync
 
 | Condition | What happens |
 |---|---|
@@ -59,7 +77,7 @@ One more thing. **Incremental sync depends on a common Snapshot on the source.**
 
 ---
 
-## Cutover Sequence
+### Cutover Sequence
 
 **What determines downtime is where in this sequence you stop clients.**
 
@@ -80,28 +98,28 @@ Do not skip step 3. **`Idle` means "not currently transferring" — it does not 
 
 ---
 
-## How Far Back Can You Roll?
+### How Far Back Can You Roll?
 
 ```mermaid
 graph TD
     A[Start baseline sync] --> B[Run incremental syncs]
-    B --> C{Before break}
+    B --> C[Before break]
     C --> C1["Destination is read-only<br/>Rolling back = keep using the source<br/>Nothing is lost"]
 
     B --> D[Execute break]
     D --> D1["Destination becomes read-write<br/>Source is intact<br/>Still recoverable"]
 
-    D1 --> E{Client writes<br/>to the destination}
+    D1 --> E[Clients write to the destination]
     E --> E1["Window closes here<br/>Subsequent writes do not exist on the source"]
 
-    E1 --> F{Want to roll back}
-    F --> F1[Discard writes and<br/>return to the source]
-    F --> F2["Reverse the replication direction<br/>resync is a separate operation"]
+    E1 --> F{Must destination writes<br/>be preserved during rollback}
+    F -->|Do not preserve| F1[Discard writes and<br/>return to the source]
+    F -->|Preserve| F2["Reverse the replication direction<br/>resync is a separate operation"]
 ```
 
 **There is no rollback path called "revert the cutover configuration."** Rolling back is a decision about what to do with the data written to the destination.
 
-### Notes on Rolling Back with resync
+#### Notes on Rolling Back with resync
 
 `snapmirror resync` re-establishes the relationship, but **user-created Snapshots are not replicated.** Exported Snapshots on the destination are deleted, and clients see the destination's active file system.
 
@@ -111,7 +129,7 @@ To avoid issues with Snapshot policy replication, **the `preserve` parameter is 
 
 ---
 
-## Conditions That Affect Transfer Performance
+### Conditions That Affect Transfer Performance
 
 | Condition | Impact |
 |---|---|
@@ -124,25 +142,7 @@ The last row matters operationally. **If transfers are slower than expected, the
 
 ---
 
-## Verify in Your Own Environment
-
-**What you should measure is not transfer time but the working time of steps 5–7.** That is the downtime.
-
-| # | Step | What you can confirm |
-|---|---|---|
-| 1 | Run a baseline sync in a test environment and record the duration | Real time for baseline sync given your data volume and bandwidth |
-| 2 | Run one incremental sync and record the duration | Time for the final sync just before cutover |
-| 3 | Time the full `quiesce` → `break` → mount sequence | **Actual downtime.** A measurement, not an estimate |
-| 4 | Add `Last Transfer End Timestamp` verification to the runbook | Prevents cutting over with stale data |
-| 5 | Confirm the source is intact after break | The premise for rollback. Verify you can actually read it |
-| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自環境での確認手順) (日本語) |
-| 7 | Run the rollback procedure once in the test environment | **Whether the written procedure actually works.** Do not try it for the first time in production |
-
-Many migration plans skip step 7. **A rollback procedure — even one you hope never to use — must be verified to work.**
-
----
-
-## Common Misconceptions
+### Common Misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -158,7 +158,7 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 
 ---
 
-## Primary Sources Referenced
+### Primary Sources Referenced
 
 | Topic | Source |
 |---|---|
@@ -171,7 +171,7 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 
 ---
 
-## Related Documents
+### Related Documents
 
 - [Playbook 03 — Migration](../README.md) — Module hub
 - [Migration Method Decision Tree](../../../../ja/reference/decision-trees/migration-method.md) — Method selection and version compatibility
@@ -181,10 +181,39 @@ Many migration plans skip step 7. **A rollback procedure — even one you hope n
 - [Monitoring Fails on Averages](../../05-operate/notes/monitoring-fails-on-averages.md) — Diagnosing slow transfers
 - [Evidence Classification Policy](../../../evidence-policy.md)
 
----
-
 [🏠 Repository Top](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [English](where-the-rollback-window-closes.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**What you should measure is not transfer time but the working time of steps 5–7.** That is the downtime.
+
+| # | Step | What you can confirm |
+|---|---|---|
+| 1 | Run a baseline sync in a test environment and record the duration | Real time for baseline sync given your data volume and bandwidth |
+| 2 | Run one incremental sync and record the duration | Time for the final sync just before cutover |
+| 3 | Time the full `quiesce` → `break` → mount sequence | **Actual downtime.** A measurement, not an estimate |
+| 4 | Add `Last Transfer End Timestamp` verification to the runbook | Prevents cutting over with stale data |
+| 5 | Confirm the source is intact after break | The premise for rollback. Verify you can actually read it |
+| 6 | Compare ACLs on the destination against the source | Whether permissions are preserved. Steps are in [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#自環境での確認手順) (日本語) |
+| 7 | Run the rollback procedure once in the test environment | **Whether the written procedure actually works.** Do not try it for the first time in production |
+
+Many migration plans skip step 7. **A rollback procedure — even one you hope never to use — must be verified to work.**
+
+The state of the SnapMirror relationship and the freshness of the destination data can be read with the following read-only command.
+
+```bash
+curl -sk -u fsxadmin \
+  "https://<management-endpoint>/api/snapmirror/relationships?fields=state,healthy,transfer.end_time"
+```
+
+### Expected output
+
+Each relationship's `state` (such as `snapmirrored`), `healthy` (true), and `transfer.end_time` (the completion time of the last transfer) are returned. If `transfer.end_time` is older than expected, the destination is not up to date and you should not cut over.
+
+## Read next
+
+[Where is the IaC boundary set?](../../04-build/notes/what-iac-cannot-reach.md)

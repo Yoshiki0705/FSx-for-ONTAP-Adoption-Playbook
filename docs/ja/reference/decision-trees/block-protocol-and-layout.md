@@ -18,7 +18,7 @@ lang: ja
 **順序があります。プロトコルを選ぶ前に、選択肢を狭めている条件を確認してください。**
 
 1. **デプロイタイプと世代** — NVMe/TCP は第 2 世代のみ。作成後に変更できません
-2. **HA ペア数** — 6 組を超えるとブロックプロトコルが使えなくなり、増やした HA ペアは削除できません
+2. **HA ペア数** — ブロックプロトコルは 6 組以下のファイルシステムだけがサポート対象で、増やした HA ペアは削除できません
 3. **ホスト OS** — **Windows Server との NVMe/TCP は ONTAP 側で非対応です**（AWS 固有の制約ではありません）
 4. **LUN のレイアウト** — 決めているのは復旧の粒度です
 5. **容量** — 3 か所で数えられ、足りなくなると LUN が read-only に落ちます
@@ -35,13 +35,14 @@ lang: ja
 
 ```mermaid
 graph TD
-    START[ブロックで提供すると決めた] --> DT{デプロイタイプは決まっているか}
+    START[ブロックで提供すると決めた] --> DT{現在のデプロイ世代}
 
     DT -->|未決定| GEN{NVMe-TCP を使いたいか}
     GEN -->|使いたい| G2["第 2 世代を選ぶ<br/>SINGLE_AZ_2 または MULTI_AZ_2"]
     GEN -->|iSCSI で足りる| GANY["第 1 世代でも可"]
 
     DT -->|既存の第 1 世代| ONLY["iSCSI のみ<br/>NVMe-TCP は作り直しが必要"]
+    DT -->|既存の第 2 世代| HA
 
     G2 --> HA{HA ペアを 7 組以上に<br/>増やす計画があるか}
     GANY --> HA
@@ -50,10 +51,10 @@ graph TD
     HA -->|ある| STOP["ブロックは使えません<br/>6 組を上限に設計し直す"]
     HA -->|ない| OS{ホスト OS}
 
-    OS -->|Linux| PROTO{プロトコルの選択}
+    OS -->|Linux| PROTO{プロトコル選択で<br/>優先する条件}
     OS -->|Windows| WIN["iSCSI を選ぶ<br/>NVMe/TCP は ONTAP 側で非対応"]
 
-    PROTO -->|レイテンシ重視・MPIO を単純にしたい| KERNEL{"カーネルに<br/>CONFIG_NVME_MULTIPATH があるか"}
+    PROTO -->|低レイテンシと MPIO 構成の単純さ| KERNEL{"カーネルに<br/>CONFIG_NVME_MULTIPATH があるか"}
     PROTO -->|実績と手順の豊富さ| ISCSI["iSCSI<br/>ポート 3260 を開ける"]
 
     KERNEL -->|ある| NVME["NVMe-TCP<br/>ポート 4420 と 8009 を開ける"]
@@ -71,7 +72,7 @@ graph TD
     SPLIT --> CAP
     TOGETHER --> CAP
 
-    CAP{容量設計}
+    CAP[容量設計の必須手順]
     CAP --> CAP1["ボリュームを LUN より 5% 以上大きく"]
     CAP1 --> CAP2["space-allocation を有効化"]
     CAP2 --> CAP3{Snapshot を<br/>このボリュームで取るか}
@@ -88,7 +89,7 @@ graph TD
     SC --> AUTO
     CC --> AUTO
 
-    AUTO{自動化の範囲}
+    AUTO[自動化対象の切り分け]
     AUTO --> A1["ファイルシステム・SVM・ボリューム<br/>= AWS の API / CloudFormation"]
     A1 --> A2{LUN より下も IaC にするか}
     A2 -->|する| A3["NetApp Terraform provider または<br/>Ansible netapp.ontap または ONTAP REST"]
@@ -101,10 +102,10 @@ graph TD
 
 | 分岐 | 条件 | 出典 |
 |---|---|---|
-| NVMe/TCP は第 2 世代のみ | 「第 2 世代かつ HA ペア 6 組以下」 | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| NVMe/TCP は第 2 世代のみ | 「第 2 世代かつ HA ペア 6 組以下」 | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | iSCSI は世代を問わない | 「HA ペア 6 組以下のすべてのファイルシステム」 | 同上 |
-| デプロイタイプは変更不可 | 変更操作が存在せず、移行手段はバックアップ復元・SnapMirror・DataSync・サードパーティ | [AWS: Availability and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
-| 7 組目でブロックが使えなくなる。HA ペアは削除不可 | 「6 組を超えるファイルシステムではサポートされません」 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| デプロイタイプは変更不可 | AWS は作成後に変更できないと明記し、移行手段としてバックアップ復元・SnapMirror・DataSync・サードパーティを列挙 | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) |
+| ブロックプロトコルのサポート範囲は 6 組以下。HA ペアは削除不可 | 7 組目追加時の既存 LUN と接続の遷移動作は記載されていません | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | **Windows Server との NVMe/TCP は ONTAP 側で非対応** | Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られる。回避策として挙げられている NVMe/FC は、FC を提供しない FSx for ONTAP では使えません | [NetApp KB: Does ONTAP SAN support NVMe/TCP with Windows Server](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server) |
 | AWS が列挙しているブロックの手順は 3 つ | iSCSI for Linux / iSCSI for Windows / NVMe/TCP for Linux | [AWS: Accessing your data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
 | Windows 版が無いことを欠落と見なさない判断 | **これは当方の推論で、出典の記述ではありません。** 上流が非対応であることから、AWS 側に手順が無いことは説明が付く、という読みです | — |
@@ -147,10 +148,10 @@ graph TD
 | プロトコルは後から変えられる | **iSCSI から NVMe/TCP へ移るには第 2 世代が必要**で、第 1 世代なら作り直しです |
 | iSCSI 用のセキュリティグループがあれば NVMe/TCP も通る | **ポートが違います**（3260 と、4420 + 8009）。しかも **4420 と 8009 はどちらも AWS の要件表に載っていません** |
 | NVMe/TCP のほうが MPIO が単純なので可用性も有利 | **カーネル次第です。** `CONFIG_NVME_MULTIPATH` が無効なディストリビューションでは切り替わりませんでした |
-| 1 LUN 1 ボリュームが常に正解 | NetApp は 1:1 を formal best practice としていません。**決めているのは復旧の粒度です** |
+| 1 LUN 1 ボリュームが常に正解 | NetApp は 1:1 を正式な推奨構成として定義していません。**決めているのは復旧の粒度です** |
 | ボリュームと LUN を同じサイズにすればよい | **ボリュームは LUN より 5% 以上大きく**することが推奨されています |
 | Snapshot があればデータベースをその時点から起動できる | 既定は crash-consistent です。起動できるかはアプリケーション側の復旧処理に依存します |
-| HA ペアを増やしてブロックの性能を伸ばす | **7 組目からブロックが使えなくなります** |
+| HA ペアを増やしてブロックの性能を伸ばす | **ブロック構成は 6 組以下だけがサポート対象です** |
 
 ---
 

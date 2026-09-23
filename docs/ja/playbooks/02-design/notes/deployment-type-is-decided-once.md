@@ -3,23 +3,43 @@ title: デプロイタイプは一度しか決められない — 可用性の�
 lifecycle: [design, assess]
 domains: [performance, cost]
 evidence: documented
-source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html
+source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html
 lang: ja
 ---
 
-# デプロイタイプは一度しか決められない
+# デプロイタイプは後から変えられるか？
+
+変えられません。作成後は変更できず、可用性の選択がスケールアウトの上限も同時に決めます。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](deployment-type-is-decided-once.md) | [English](../../../../en/playbooks/02-design/notes/deployment-type-is-decided-once.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- デプロイタイプが作成後に変更できず、変更には新規ファイルシステムへのデータ移行が必要なこと
+- 可用性（Multi-AZ / Single-AZ）と世代の選択が、HA ペアのスケールアウト上限を同時に確定させること
+
+## このノートが答えないこと
+
+- 世代別・デプロイタイプ別の料金比率（改定されるため現行の料金ページを参照）
+- HA ペアを 7 組目に追加したときの既存 LUN・接続の遷移動作（ドキュメント未規定）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="デプロイタイプは一度しか決められない"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 02 — 設計](../README.md)
 
 ---
 
-## 結論
+### 結論
 
-**ファイルシステムのデプロイタイプは作成後に変更できません。** 変更したい場合は、新しいファイルシステムを作ってデータを移す以外の方法がありません。
+**AWS は、ファイルシステムのデプロイタイプを作成後に変更できないと明記しています。** 変更する場合は、新しいファイルシステムを作り、バックアップ復元、SnapMirror、AWS DataSync、またはコピー用ツールでデータを移します。
 
 そして重要なのは、**この 1 つの選択が可用性とスケールアウト上限を同時に決めてしまう**ことです。
 
@@ -36,7 +56,7 @@ lang: ja
 
 ---
 
-## 4 つのデプロイタイプと、選べる HA ペア数
+### 4 つのデプロイタイプと、選べる HA ペア数
 
 | デプロイタイプ | 世代 | HA ペア数 | 後から増やせるか |
 |---|---|---|---|
@@ -45,7 +65,7 @@ lang: ja
 | `MULTI_AZ_1` | 第 1 世代 | 1 組 | **不可** |
 | `MULTI_AZ_2` | 第 2 世代 | 1 組 | **不可** |
 
-**`SINGLE_AZ_1` から `SINGLE_AZ_2` への変更も作り直しです。** 同じ Single-AZ でも世代が違えば別のデプロイタイプであり、変更操作は存在しません。
+**`SINGLE_AZ_1` から `SINGLE_AZ_2` への変更も作り直しです。** 同じ Single-AZ でも世代が違えば別のデプロイタイプであり、AWS 文書は新しいファイルシステムへの移行を案内しています。
 
 移行手段は、バックアップからの復元、SnapMirror、AWS DataSync、サードパーティのコピーツールです。方式の選び方は [移行方式の決定木](../../../reference/decision-trees/migration-method.md) にあります。
 
@@ -53,7 +73,7 @@ lang: ja
 
 ---
 
-## Multi-AZ と Single-AZ の判断
+### Multi-AZ と Single-AZ の判断
 
 | 論点 | Single-AZ | Multi-AZ |
 |---|---|---|
@@ -72,7 +92,7 @@ lang: ja
 
 ---
 
-## HA ペアを足すときに起きること
+### HA ペアを足すときに起きること
 
 第 2 世代 Single-AZ で HA ペアを追加する操作は**無停止で、数分で完了します。** ただし副作用があります。
 
@@ -89,22 +109,22 @@ lang: ja
 
 ---
 
-## HA ペア追加で使えなくなるプロトコルの存在
+### ブロックプロトコル利用時の 6 HA ペア上限
 
 | プロトコル | 条件 |
 |---|---|
 | iSCSI | **HA ペアが 6 組以下**のファイルシステムで利用可能 |
 | NVMe/TCP | **第 2 世代かつ HA ペアが 6 組以下**で利用可能 |
 
-**7 組目を足した時点でブロックプロトコルが使えなくなります。** そして HA ペアは削除できないので、この操作は元に戻せません。
+AWS がサポート対象としているのは、iSCSI では 6 HA ペア以下、NVMe/TCP では第 2 世代かつ 6 HA ペア以下のファイルシステムです。**7 組目の追加時に既存 LUN や接続へ何が起きるかは、この文書では規定されていません。**
 
-ブロックプロトコルを使う予定があるなら、**6 組を上限として設計してください。**
+ブロックプロトコルを使う予定があるなら、**6 組をファイルシステムの上限として設計してください。** 追加した HA ペアは削除できません。
 
 なお HA ペアを追加すると、新しいノードでは NVMe キャッシュが既定で有効になります。スループット重視のワークロードでは無効化が推奨されています。
 
 ---
 
-## 単一 HA ペアの天井
+### 単一 HA ペアの天井
 
 1 組の HA ペアで到達できる範囲は **6 GB/s のスループットと 200,000 IOPS** 程度とされています。一般的なファイル共有やコンテンツ管理はこの範囲に収まります。
 
@@ -114,7 +134,7 @@ lang: ja
 
 ---
 
-## チェックリストに載っていない不可逆項目
+### チェックリストに載っていない不可逆項目
 
 [本番投入前レビュー](../../04-build/checklists/pre-production-review.md#不可逆な項目の一覧) はボリューム単位・SVM 単位の不可逆項目を扱っています。**ファイルシステム単位の不可逆項目はこのノートの範囲です。**
 
@@ -128,7 +148,7 @@ lang: ja
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -142,19 +162,63 @@ graph TD
     CAP -->|足りない| RETHINK[Multi-AZ では届かない<br/>要件を再検討する]
     CAP -->|足りる| OK1[確定]
 
-    SAZ --> GEN{第 2 世代か}
+    SAZ --> GEN{選択対象は第 2 世代か}
     GEN -->|第 2 世代| SCALE["最大 12 組まで追加可能"]
     GEN -->|第 1 世代| FIXED[1 組で固定]
 
-    SCALE --> BLOCK{iSCSI / NVMe-TCP<br/>を使うか}
-    BLOCK -->|使う| SIX[6 組を上限に設計する]
-    BLOCK -->|使わない| TWELVE[12 組まで検討可]
+    SCALE --> BLOCK{iSCSI / NVMe-TCP<br/>を使う予定があるか}
+    BLOCK -->|使う予定あり| SIX[6 組を上限に設計する]
+    BLOCK -->|ファイルプロトコルのみ| TWELVE[12 組まで検討可]
 
     SIX --> GRAN[移動できる粒度で<br/>ボリュームを分割しておく]
     TWELVE --> GRAN
 ```
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 後からデプロイタイプを変えられる | **AWS は作成後に変更できないと明記しています。** 新しいファイルシステムを作ってデータを移します |
+| Single-AZ 1 から Single-AZ 2 は設定変更で移れる | 別のデプロイタイプです。作り直しになります |
+| Multi-AZ でも後から HA ペアを足せる | **足せません。** 第 1 世代・第 2 世代とも 1 組で固定です |
+| HA ペアを足せば自動的に速くなる | 既存ボリュームを新しいペアへ移動し、再マウントする必要があります |
+| HA ペアは必要なときだけ足して後で戻せる | **削除できません。** 一時的な増強はスループット容量の調整で行います |
+| HA ペアを足すのは性能だけの判断 | 同じ比率で SSD 容量も増えます。コストの判断でもあります |
+| HA ペアはいくら増やしても機能は同じ | **ブロックプロトコルを使うファイルシステムは 6 組以下だけがサポート対象です。** 7 組目追加時の遷移動作は文書化されていません |
+| Multi-AZ のほうが常に性能で有利 | 書き込み上限は高いですが、HA ペア 1 組の天井があります |
+| Single-AZ は可用性が低い | 1 つの AZ 内の別の障害ドメインに配置され、同期複製とフェイルオーバーは同じです。違いは AZ 障害への継続性です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| デプロイタイプは作成後に変更できないこと、Single-AZ 1 から Single-AZ 2 も作り直しであること、移行手段 | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) |
+| 第 1 世代と第 2 世代 Multi-AZ が 1 組、第 2 世代 Single-AZ が最大 12 組であること。追加は無停止で数分、削除は不可。新ペアが同じスループットと SSD 容量を持つこと。移動と再マウントが必要なこと。追加中は容量変更ができないこと。iSCSI と NVMe/TCP の 6 組以下という条件。NVMe キャッシュの既定 | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| 4 つのデプロイタイプと世代の対応 | [AWS SDK reference: deploymentType](https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/fsx/aws.sdk.kotlin.services.fsx.model/-create-file-system-ontap-configuration/deployment-type.html) |
+| Multi-AZ の待機系が別 AZ にあり同期複製されること、Multi-AZ 1 が第 1 世代・Multi-AZ 2 が第 2 世代であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
+| Multi-AZ の書き込みスループット上限が Single-AZ より高いこと、書き込みが両方のファイルサーバーに書かれてから応答すること | [AWS Storage Blog: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) <!-- allow:sales-vocabulary - exact external title --> |
+| 単一 HA ペアの 6 GB/s・200,000 IOPS、スケールアウトを選ぶ用途 | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+| クイック作成でリージョンの最新世代が既定で選ばれること | [AWS: Getting started with Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/getting-started.html) |
+| スタンダード作成のデプロイタイプ初期選択（東京リージョン、コンソール実機確認、2026-09-21） | 自環境での確認。本ノート執筆時点のスクリーンショットは非公開の検証記録として保管 |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 02 — 設計](../README.md) — このモジュールのハブ
+- [スループットは 1 つの設定値では決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア単位の共有と FlexVol の制約
+- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — 設計の入力になる棚卸し項目
+- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — ボリューム / SVM 単位の不可逆項目
+- [移行方式の決定木](../../../reference/decision-trees/migration-method.md) — デプロイタイプを変えるときの移行手段
+- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — AZ・リージョン障害の守備範囲
+- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 02 — 設計](../README.md)
 
 ## 自環境での確認手順
 
@@ -171,54 +235,17 @@ graph TD
 
 手順 5 は**検証環境で行ってください。** 追加した HA ペアは削除できません。
 
----
+既存ファイルシステムのデプロイタイプと HA ペア数は、次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+aws fsx describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[0].OntapConfiguration.[DeploymentType,HAPairs]'
+```
 
-| 誤解 | 実際 |
-|---|---|
-| 後からデプロイタイプを変えられる | **変更操作はありません。** 新しいファイルシステムを作ってデータを移します |
-| Single-AZ 1 から Single-AZ 2 は設定変更で移れる | 別のデプロイタイプです。作り直しになります |
-| Multi-AZ でも後から HA ペアを足せる | **足せません。** 第 1 世代・第 2 世代とも 1 組で固定です |
-| HA ペアを足せば自動的に速くなる | 既存ボリュームを新しいペアへ移動し、再マウントする必要があります |
-| HA ペアは必要なときだけ足して後で戻せる | **削除できません。** 一時的な増強はスループット容量の調整で行います |
-| HA ペアを足すのは性能だけの判断 | 同じ比率で SSD 容量も増えます。コストの判断でもあります |
-| HA ペアはいくら増やしても機能は同じ | **7 組以上で iSCSI と NVMe/TCP が使えなくなります** |
-| Multi-AZ のほうが常に性能で有利 | 書き込み上限は高いですが、HA ペア 1 組の天井があります |
-| Single-AZ は可用性が低い | 1 つの AZ 内の別の障害ドメインに配置され、同期複製とフェイルオーバーは同じです。違いは AZ 障害への継続性です |
+### 期待結果
 
----
+`DeploymentType`（`SINGLE_AZ_1` / `SINGLE_AZ_2` / `MULTI_AZ_1` / `MULTI_AZ_2` のいずれか）と現在の `HAPairs` が返ります。この 2 つが、後から増やせる範囲とブロックプロトコルの利用可否を決めます。
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| デプロイタイプは作成後に変更できないこと、Single-AZ 1 から Single-AZ 2 も作り直しであること、移行手段 | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) |
-| 第 1 世代と第 2 世代 Multi-AZ が 1 組、第 2 世代 Single-AZ が最大 12 組であること。追加は無停止で数分、削除は不可。新ペアが同じスループットと SSD 容量を持つこと。移動と再マウントが必要なこと。追加中は容量変更ができないこと。iSCSI と NVMe/TCP の 6 組以下という条件。NVMe キャッシュの既定 | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
-| 4 つのデプロイタイプと世代の対応 | [AWS SDK reference: deploymentType](https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/fsx/aws.sdk.kotlin.services.fsx.model/-create-file-system-ontap-configuration/deployment-type.html) |
-| Multi-AZ の待機系が別 AZ にあり同期複製されること、Multi-AZ 1 が第 1 世代・Multi-AZ 2 が第 2 世代であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
-| Multi-AZ の書き込みスループット上限が Single-AZ より高いこと、書き込みが両方のファイルサーバーに書かれてから応答すること | [AWS Storage Blog: Best practice configuration for SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
-| 単一 HA ペアの 6 GB/s・200,000 IOPS、スケールアウトを選ぶ用途 | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
-| クイック作成でリージョンの最新世代が既定で選ばれること | [AWS: Getting started with Amazon FSx for NetApp ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/getting-started.html) |
-| スタンダード作成のデプロイタイプ初期選択（東京リージョン、コンソール実機確認、2026-09-21） | 自環境での確認。本ノート執筆時点のスクリーンショットは非公開の検証記録として保管 |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 02 — 設計](../README.md) — このモジュールのハブ
-- [スループットは 1 つの設定値では決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア単位の共有と FlexVol の制約
-- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — 設計の入力になる棚卸し項目
-- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — ボリューム / SVM 単位の不可逆項目
-- [移行方式の決定木](../../../reference/decision-trees/migration-method.md) — デプロイタイプを変えるときの移行手段
-- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — AZ・リージョン障害の守備範囲
-- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 02 — 設計](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](deployment-type-is-decided-once.md) | [English](../../../../en/playbooks/02-design/notes/deployment-type-is-decided-once.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[SaaS からの移行は何から始めるか？](../../03-migrate/notes/saas-source-migration-scoping.md)

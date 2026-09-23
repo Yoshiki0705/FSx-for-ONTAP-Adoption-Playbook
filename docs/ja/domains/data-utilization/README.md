@@ -1,9 +1,5 @@
 # Domain — データ活用 (Data Utilization)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/data-utilization/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 NAS 上のデータを、コピーを増やさずに分析・AI・アプリケーションから使うための知見です。

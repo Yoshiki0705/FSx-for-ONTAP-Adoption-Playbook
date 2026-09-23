@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on
 lang: ja
 ---
 
-# 端末の種類がプロトコルを先に狭める
+# 端末の種類はプロトコルを先に狭めるか？
+
+狭めます。端末が決まればストレージ形態も決まり、Mac にブロックの選択肢はありません。
+
+## このノートで学べること
+
+- 端末の種類（Windows / WSL2 / Mac）でファイル・ブロック・オブジェクトの可否が先に決まること
+- Mac にブロックの選択肢が無いのが設計の制約であり、設定で解決する問題ではないこと
+
+## このノートが答えないこと
+
+- サードパーティ iSCSI イニシエータを Mac に入れた場合のフェイルオーバー挙動（未検証）
+- WSL2 の既定カーネルに `iscsi_tcp` が無いことの Windows 実機での確認（未検証）
+
+## 前提レベル
+
+basic
+
+## 本文
+
+<a id="端末の種類がプロトコルを先に狭める"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **端末が決まっている場合、使えるストレージ形態も決まっています。** 設計の余地は残った範囲だけです。
 
@@ -37,7 +57,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## × と △ の根拠
+### × と △ の根拠
 
 **「できない」は主張です。根拠の性質を分けます。**
 
@@ -52,7 +72,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## 端末が選べない場合の読み方
+### 端末が選べない場合の読み方
 
 **多くの場合、端末は既に配備されています。** その場合この表は「何を諦めるか」の一覧です。
 
@@ -70,7 +90,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## AWS の手順ページが前提にしている端末
+### AWS の手順ページが前提にしている端末
 
 **3 つのページはどれも EC2 インスタンスを前提に書かれています。** そのまま実機に当てると 2 か所ずれます。
 
@@ -86,21 +106,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | 端末の一覧を OS とバージョンで棚卸しする | どの行に当たるか |
-| 2 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことは自環境で確認するのが最も確実です** |
-| 3 | WSL2: `modprobe iscsi_tcp; echo $?` と `lsmod \| grep iscsi` | ブロックが使えるかどうか |
-| 4 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` と `Get-Service MSiSCSI` | MPIO の有効化手段と iSCSI サービスの状態 |
-| 5 | `examples/client-access/probe-endpoint.sh` または `probe-endpoint.ps1` を各端末で実行する | 上記を同じ形の JSON で並べられます |
-
-**手順 2 と 3 を飛ばして設計に入ると、端末の担当者に不可能な作業を割り当てることになります。**
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -113,7 +119,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -126,7 +132,7 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — クライアントアクセス](../README.md) — このモジュールのハブ
 - [端末別にできることの比較](../../../reference/comparison/client-endpoint-capabilities.md) — 同じ表の詳細版
@@ -139,3 +145,34 @@ iSCSI for Linux、iSCSI for Windows、NVMe/TCP for Linux です。
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 端末の一覧を OS とバージョンで棚卸しする | どの行に当たるか |
+| 2 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**自環境でコマンドと実行ファイルの有無を確認します** |
+| 3 | WSL2: `modprobe iscsi_tcp; echo $?` と `lsmod \| grep iscsi` | ブロックが使えるかどうか |
+| 4 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` と `Get-Service MSiSCSI` | MPIO の有効化手段と iSCSI サービスの状態 |
+| 5 | `examples/client-access/probe-endpoint.sh` または `probe-endpoint.ps1` を各端末で実行する | 上記を同じ形の JSON で並べられます |
+
+**手順 2 と 3 を飛ばして設計に入ると、端末の担当者に不可能な作業を割り当てることになります。**
+
+手順 2 の Mac での確認は、次の読み取り専用コマンドで行えます。
+
+```bash
+which iscsiadm; ls /usr/sbin | grep -i iscsi
+```
+
+### 期待結果
+
+```text
+どちらも何も出力しない（macOS には iSCSI イニシエータが同梱されていない）。
+ブロックが必要な処理は Mac 以外に寄せる設計になる
+```
+
+このコマンドは端末上のコマンドと実行ファイルの有無を読むだけで、何もインストールも変更もしません。
+
+## Read next
+
+[WSL2 の Linux は Windows と同じ経路を使えるか？](wsl2-network-boundary.md)

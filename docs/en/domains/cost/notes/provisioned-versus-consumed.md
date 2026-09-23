@@ -7,11 +7,29 @@ source: https://aws.amazon.com/fsx/netapp-ontap/pricing/
 lang: en
 ---
 
-# Billing splits into "provisioned" and "consumed"
+# Does Amazon FSx for NetApp ONTAP billing depend on provisioned or consumed quantity?
+
+SSD, IOPS, and throughput are provisioned charges; capacity pool and backups are consumed charges.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/cost/notes/provisioned-versus-consumed.md) | [English](provisioned-versus-consumed.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
+
+## What you will learn
+
+- Which SSD, IOPS, throughput, capacity-pool, and backup charges are provisioned or consumed.
+- How tiering, storage efficiency, and Snapshots affect charges and capacity.
+
+## What this note does not answer
+
+- Current unit prices or a monthly production estimate for your environment.
+- A universal cost-cutting choice without measured access, availability, and performance requirements.
+
+## Prerequisite level
+
+basic
+
+## Body
 
 [🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
 
@@ -19,14 +37,14 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Billing items fall into two categories: those charged by provisioned capacity and those charged by actual consumption.** Most estimation errors trace back to this distinction.
 
 - **SSD capacity and throughput capacity are billed by provisioned amount.** You pay even when they are idle.
 - **Capacity pool and backups are billed by consumed amount.**
 
-And one more thing. **Capacity pool storage incurs per-request charges for reads and writes, separate from the storage fee.** They accumulate every time data is accessed.
+And one more thing. **Capacity pool storage incurs per-request charges for reads and writes, separate from the storage fee.** They apply when data in the capacity pool is read or written.
 
 This means "moving cold data to the capacity pool saves money" **can reverse depending on access frequency.** The per-GB rate is lower, but if the data keeps being read, request charges pile up.
 
@@ -36,7 +54,7 @@ This means "moving cold data to the capacity pool saves money" **can reverse dep
 
 ---
 
-## What is billed
+### What is billed
 
 | Billing item | Unit | Provisioned / Consumed |
 |---|---|---|
@@ -44,20 +62,20 @@ This means "moving cold data to the capacity pool saves money" **can reverse dep
 | SSD IOPS (amount provisioned beyond 3 IOPS/GB) | IOPS-month | **Provisioned** |
 | Throughput capacity | MBps-month | **Provisioned** |
 | Capacity pool storage | GB-month | Consumed |
-| **Capacity pool requests** | Per read / write | Consumed |
+| **Capacity pool read and write requests** | Operations | Consumed |
 | Backup storage | GB-month | Consumed (incremental) |
-| SnapLock license | — | When in use |
-| S3 requests and data transfer | Requests / transfer volume | When accessed via S3 Access Point |
+| SnapLock usage | GB-month | Storage capacity used by SnapLock volumes |
+| S3 requests and data transfer | Requests / transfer volume | When data is accessed through FSx for ONTAP S3 Access Points |
 
 **SSD IOPS includes 3 IOPS per GB by default.** Additional charges apply only to IOPS provisioned beyond this baseline. "Increasing IOPS always increases the bill" is not accurate — anything within 3 IOPS/GB is included.
 
-Backups are **incremental**. Only changes since the previous backup are stored, so the same data is never billed twice.
+Backups are **incremental**. Blocks changed since the previous backup are stored in the next recovery point. Backup storage consumption grows with the changed blocks and the recovery points retained.
 
 ---
 
-## Tiering does not always save money
+### Tiering does not always save money
 
-Capacity pool is cost-optimized storage for infrequently accessed data. **However, every time data stored there is read, per-request charges are incurred.**
+Capacity pool is cost-optimized storage for infrequently accessed data. **However, reading or writing data stored there incurs capacity pool request charges.**
 
 The decision cannot be made on per-GB cost alone.
 
@@ -73,7 +91,7 @@ This means **SSD consumption never reaches zero even with `All` tiering policy.*
 
 ---
 
-## Deduplication and compression do not reduce the SSD bill
+### Deduplication and compression do not reduce the SSD bill
 
 **Deduplication and compression shrink data size, but SSD is billed by provisioned capacity.**
 
@@ -83,20 +101,20 @@ To lower the bill, you need to **reduce provisioned capacity** by the amount fre
 
 ---
 
-## Items commonly mistaken as not billed
+### Items commonly mistaken as not billed
 
 | Item | Reality |
 |---|---|
-| Inter-AZ replication transfer (Multi-AZ) | **Included in throughput capacity pricing.** No separate data transfer charge |
+| Inter-AZ replication transfer performed internally by the Multi-AZ service | **Included in throughput capacity pricing.** This statement does not include client traffic, backup copies, or SnapMirror transfer |
 | SSD IOPS up to 3 IOPS/GB | Included by default |
-| Duplicate data in backups | Backups are incremental — no double billing |
-| Minimum usage fee or setup fee | None |
+| Data retained by backups | Blocks changed since the previous backup are stored in the next recovery point. Consumption depends on changed data and retained recovery points |
+| Service minimum fee or setup fee | None. A created file system still has provisioned SSD and throughput configuration floors, and those provisioned amounts are billed |
 
-**Estimating Multi-AZ with a separate inter-AZ transfer charge overstates its cost.** For the actual decision factors, the throughput ceiling and HA pair constraints in [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md#choosing-between-multi-az-and-single-az) carry more weight.
+**Adding a separate inter-AZ transfer charge for Multi-AZ service replication counts the same transfer twice.** There is no basis for extending that inclusion to client traffic, backup copies, or SnapMirror. Also consider the throughput ceiling and HA pair constraints in [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md#choosing-between-multi-az-and-single-az).
 
 ---
 
-## Snapshots consume capacity
+### Snapshots consume capacity
 
 Snapshots consume **volume capacity**, not capacity pool. And when a Snapshot holds deleted data, **deleting that data does not free space.**
 
@@ -106,7 +124,7 @@ Retention policies directly affect capacity estimates. The relationship with lim
 
 ---
 
-## Typical estimation assumptions that break
+### Typical estimation assumptions that break
 
 | Assumption | What actually happens |
 |---|---|
@@ -114,7 +132,7 @@ Retention policies directly affect capacity estimates. The relationship with lim
 | Moving data to capacity pool always saves money | Data that is read incurs request charges |
 | `All` tiering means SSD is barely needed | Metadata always stays on SSD. Rule of thumb is 1 : 10 |
 | Deduplication lowers the bill | No change until provisioned capacity is reduced |
-| Multi-AZ is expensive due to inter-AZ transfer | Transfer is included in throughput capacity pricing |
+| Multi-AZ service replication incurs a separate inter-AZ transfer charge | That replication transfer is included in throughput capacity pricing. Check other transfer paths separately |
 | Adding HA pairs is a performance decision | SSD capacity increases proportionally. **The minimum throughput also rises** |
 | Snapshots have no impact on billing | They consume both capacity and inodes |
 | Increasing IOPS always increases the bill | Up to 3 IOPS/GB is included |
@@ -123,7 +141,7 @@ The point about HA pair addition raising minimum throughput is in [Throughput is
 
 ---
 
-## How to weigh trade-offs
+### How to weigh trade-offs
 
 A cost decision becomes possible when **the amount saved and what is given up in exchange are set side by side symmetrically.** Looking at only one side leaves the decision undecidable.
 
@@ -139,30 +157,79 @@ A cost decision becomes possible when **the amount saved and what is given up in
 
 ---
 
-## Decision flow
+### Decision flow
 
 ```mermaid
 graph TD
-    A[Estimate costs] --> B{Classify billing items}
-    B --> P[Billed by provisioned<br/>SSD capacity · SSD IOPS · Throughput]
-    B --> C[Billed by consumed<br/>Capacity pool · Backups]
+    A[Estimate costs] --> B{Does the charge depend on<br/>provisioned or consumed quantity}
+    B -->|Provisioned quantity| P[SSD capacity · SSD IOPS · Throughput]
+    B -->|Consumed quantity| C[Capacity pool · Backups]
 
     P --> P1[Unused space is still charged<br/>Bill does not drop without reducing provisioned amount]
     C --> C1[Capacity pool also incurs<br/>per-request charges]
 
-    C1 --> ACC{Is the data<br/>actually read?}
+    C1 --> ACC{How often was capacity-pool data<br/>read during the measurement period}
     ACC -->|Rarely read| TIER[Tiering is suitable]
     ACC -->|Periodically read| STAY[Keeping on SSD may be cheaper]
-    ACC -->|Unknown| MEASURE[Measure first]
+    ACC -->|Not measured| MEASURE[Measure access frequency]
 
-    P1 --> EFF{Apply deduplication / compression}
+    P1 --> EFF[Enable deduplication / compression]
     EFF --> EFF1[Free space increases<br/>but bill does not change]
     EFF1 --> SHRINK[Bill drops only after<br/>reducing provisioned capacity]
 ```
 
 ---
 
-## Verify in your own environment
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| You pay only for what you use | SSD, IOPS, and throughput are billed by **provisioned capacity** |
+| Capacity pool is storage-only pricing | **Per-request charges for reads and writes** apply |
+| Moving all cold data to the pool always saves money | Periodically scanned data accumulates request charges |
+| Deduplication lowers the bill | No change until provisioned capacity is reduced |
+| Every backup stores a full copy | Blocks changed since the previous backup are stored in the next recovery point |
+| Multi-AZ service replication has separate inter-AZ transfer charges | That replication transfer is included in throughput capacity pricing. Client traffic, backup copies, and SnapMirror are separate paths |
+| Increasing IOPS always costs more | Up to 3 IOPS/GB is included |
+| Snapshots are irrelevant to storage billing | They consume both capacity and inodes |
+| `All` tiering means near-zero SSD charges | Metadata always remains on SSD |
+
+---
+
+### Primary sources referenced
+
+| Topic | Source |
+|---|---|
+| SSD IOPS being charged only beyond 3 IOPS/GB and capacity pool having per-request charges for reads and writes | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
+| SnapLock usage recording storage used by SnapLock volumes in GB-months and capacity pool reads and writes recording operation counts | [AWS: AWS billing and usage reports for FSx for ONTAP](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/FSxONTAP-Billing.html) |
+| Provisioned vs. consumed distinction, Multi-AZ service replication transfer included in throughput pricing, changed blocks stored by backups, no service minimum or setup fee, and requests and data transfer through FSx for ONTAP S3 Access Points | [AWS: FSx for ONTAP Pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
+| Billing based on provisioned capacity, capacity pool and backups billed on consumption | [AWS: FSx for ONTAP Features](https://aws.amazon.com/fsx/netapp-ontap/features/) |
+| Deduplication/compression shrinks data but billing is against provisioned storage, tiering as cost reduction | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
+| All writes going through SSD first, metadata always on SSD, 1 : 10 rule of thumb | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| Free space taking time to update after large deletions (block ownership calculation), no performance impact | [AWS re:Post: Why didn't the available space update after I deleted a large amount of data?](https://repost.aws/knowledge-center/fsx-ontap-space-available-from-deletions) |
+
+---
+
+### Related documents
+
+- [Domain — Cost](../README.md) — This module's hub
+- [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
+- [Throughput is not determined by a single setting](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA pair addition raises minimum throughput
+- [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Tiering and background task behavior
+- [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — Retention design and capacity
+- [Running out of space despite available capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Inodes and Snapshots
+- [Limits and quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
+- [Evidence classification policy](../../../evidence-policy.md)
+
+---
+
+[🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
+
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **The measurement targets are "the gap between provisioned and consumed capacity" and "access frequency to the capacity pool."** These two factors explain most estimation errors.
 
@@ -178,53 +245,31 @@ graph TD
 
 Step 3 is most commonly overlooked. **Reporting efficiency gains as "free space" masks the fact that the bill has not changed.**
 
----
+The following read-only command checks the provisioned SSD capacity from step 1 and also reports provisioned throughput capacity.
 
-## Common misconceptions
+```bash
+QUERY='FileSystems[0].{
+  SSDGiB:StorageCapacity,
+  ThroughputMBps:OntapConfiguration.ThroughputCapacity
+}'
+aws fsx describe-file-systems \
+  --file-system-ids <fs-id> \
+  --query "$QUERY"
+```
 
-| Misconception | Reality |
-|---|---|
-| You pay only for what you use | SSD, IOPS, and throughput are billed by **provisioned capacity** |
-| Capacity pool is storage-only pricing | **Per-request charges for reads and writes** apply |
-| Moving all cold data to the pool always saves money | Periodically scanned data accumulates request charges |
-| Deduplication lowers the bill | No change until provisioned capacity is reduced |
-| Backups are full-volume charges | They are incremental |
-| Multi-AZ has separate inter-AZ transfer charges | Included in throughput capacity pricing |
-| Increasing IOPS always costs more | Up to 3 IOPS/GB is included |
-| Snapshots are irrelevant to storage billing | They consume both capacity and inodes |
-| `All` tiering means near-zero SSD charges | Metadata always remains on SSD |
+### Expected output
 
----
+```text
+{
+  "SSDGiB": <provisioned SSD capacity>,
+  "ThroughputMBps": <provisioned throughput capacity>
+}
+```
 
-## Primary sources referenced
-
-| Topic | Source |
-|---|---|
-| Six billing items, SSD IOPS being charged only beyond 3 IOPS/GB, capacity pool having per-request charges for reads and writes | [AWS: What is Amazon FSx for NetApp ONTAP?](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html) |
-| Provisioned vs. consumed distinction, inter-AZ replication transfer included in throughput pricing, incremental backups, no minimum or setup fee, S3 Access Point requests and data transfer | [AWS: FSx for ONTAP Pricing](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
-| Billing based on provisioned capacity, capacity pool and backups billed on consumption | [AWS: FSx for ONTAP Features](https://aws.amazon.com/fsx/netapp-ontap/features/) |
-| Deduplication/compression shrinks data but billing is against provisioned storage, tiering as cost reduction | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
-| SnapLock license as a billing element | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
-| All writes going through SSD first, metadata always on SSD, 1 : 10 rule of thumb | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| Free space taking time to update after large deletions (block ownership calculation), no performance impact | [AWS re:Post: Why didn't the available space update after I deleted a large amount of data?](https://repost.aws/knowledge-center/fsx-ontap-space-available-from-deletions) |
+This output does not show actual usage, capacity-pool request counts, unit prices, or the bill. Check the remaining table steps and billing data separately.
 
 ---
 
-## Related documents
+## Read next
 
-- [Domain — Cost](../README.md) — This module's hub
-- [Deployment type can only be chosen once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — Single-AZ / Multi-AZ and scale-out constraints
-- [Throughput is not determined by a single setting](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA pair addition raises minimum throughput
-- [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — Tiering and background task behavior
-- [Having Snapshots and being able to recover are different things](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — Retention design and capacity
-- [Running out of space despite available capacity](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — Inodes and Snapshots
-- [Limits and quotas](../../../../ja/reference/limits/) — Limits with sources and verification dates
-- [Evidence classification policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository Top](../../../README.md) | [Domain — Cost](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/cost/notes/provisioned-versus-consumed.md) | [English](provisioned-versus-consumed.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[How should external archiving and capacity-pool tiering be combined?](archiving-and-tiering-are-ordered-not-alternatives.md)

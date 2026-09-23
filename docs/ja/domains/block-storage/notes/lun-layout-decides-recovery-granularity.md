@@ -6,16 +6,37 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: SINGLE_AZ_2
 lang: ja
 ---
 
-# LUN の並べ方が決めているのは復旧の粒度
+# LUN の並べ方が決めているのは何か？
+
+復旧の粒度です。1 LUN 1 ボリュームは一律の推奨ではなく、後から並べ替えられます。
+
+## このノートで学べること
+
+- Snapshot / SnapMirror がボリューム単位で動くため、LUN のレイアウトが復旧の粒度（相互整合か個別復旧か）を決めること
+- `lun move` が無停止で WWID を保ったまま並べ替えられること、クローン削除後に recovery queue が親削除を止めること
+
+## このノートが答えないこと
+
+- LUN 数の上限（AWS ドキュメント未記載、先に当たるのはボリューム数の上限）
+- 複数 HA ペアにまたがる `lun move` と reporting-nodes の準備（1 HA ペアのため未検証）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="lun-の並べ方が決めているのは復旧の粒度"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **LUN を 1 ボリューム 1 個にするか、まとめて置くかは、性能の判断ではありません。復旧の粒度の判断です。**
 
@@ -30,7 +51,7 @@ lang: ja
 |---|---|
 | AWS: SQL Server ベストプラクティス | **1 ボリューム 1 LUN**（.MDF 用と .LDF 用に分ける） |
 | AWS: SQL Server の高可用性 | **1 ボリュームに 3 LUN**（quorum / data / logs） |
-| NetApp: LUN placement | **1:1 は formal best practice ではない。** 関連する LUN は同居させるのが通常 |
+| NetApp: LUN placement | **1:1 を一律の指針とはしていない。** 関連する LUN は同居させるのが通常 |
 | AWS Transform | 移行元 1 サーバーの複数 LUN を **1 ボリュームに配置**し、後から `lun move` で分ける想定 |
 
 **どれかが誤りというより、想定している復旧単位が違います。** 自分の復旧単位を決めてから読んでください。
@@ -43,7 +64,7 @@ lang: ja
 
 ---
 
-## 復旧の粒度からの決め方
+### 復旧の粒度からの決め方
 
 **問いは「LUN をいくつのボリュームに分けるか」ではなく「どの単位で時刻を戻したいか」です。**
 
@@ -53,13 +74,13 @@ lang: ja
 | LUN ごとに独立して | **LUN ごとにボリュームを分ける** | 個別に戻せる | **相互の整合が保証されません。** スケジュールがボリューム数だけ増え、ボリューム数の上限に早く当たります |
 | data と log は別、その中では一緒 | **役割ごとに分ける** | 実務でよく使われる中間 | 上の両方を部分的に引き受けます |
 
-**NetApp の記載が「1:1 は best practice ではない」なのは、この整合性の側面が理由です。** 10 個の LUN を持つデータベースは通常 1 つのボリュームに置く、と書かれています。**理由は Snapshot と SnapMirror のポリシーがボリュームに掛かるので、まとめておけば原子的で相互整合した複製になるからです。**
+**NetApp が 1:1 を一律の指針としていないのは、この整合性の側面が理由です。** 10 個の LUN を持つデータベースは通常 1 つのボリュームに置く、と書かれています。**理由は Snapshot と SnapMirror のポリシーがボリュームに掛かるので、まとめておけば原子的で相互整合した複製になるからです。**
 
 **逆に 1:1 が理にかなう場面としてコンテナ化が挙げられています。** Kubernetes の PV は独立して作られ消されるので、1 PV = 1 ボリューム + 1 LUN という Trident の `ontap-san` の形が素直です。**ただしそれはボリューム数の上限に当たります。** 詳細は [Kubernetes のブロック PV はボリューム数の上限に当たる](kubernetes-block-volumes-and-the-volume-limit.md) にあります。
 
 ---
 
-## ボリューム数の上限という現実的な天井
+### ボリューム数の上限という現実的な天井
 
 **LUN ごとにボリュームを分ける設計は、ボリューム数の上限に当たります。**
 
@@ -75,7 +96,7 @@ lang: ja
 
 ---
 
-## 並べ替えが後からできること
+### 並べ替えが後からできること
 
 **`lun move` はマウント済み・書き込み中の LUN を別のボリュームへ移せました。**
 
@@ -99,7 +120,7 @@ lang: ja
 
 ---
 
-## Selective LUN Map が絞っている範囲
+### Selective LUN Map が絞っている範囲
 
 **新しい LUN マップでは Selective LUN Map が既定で有効でした。**
 
@@ -111,7 +132,7 @@ lang: ja
 
 ---
 
-## クローンと複製で「持ち込まれないもの」
+### クローンと複製で「持ち込まれないもの」
 
 **ボリュームを複製すると LUN は付いてきますが、マッピングは付いてきません。**
 
@@ -129,7 +150,7 @@ lang: ja
 
 ---
 
-## クローンを消しても親が消せない期間
+### クローンを消しても親が消せない期間
 
 **`volume delete` は即座に消しません。ボリュームは recovery queue に入り、既定で 12 時間以上そこに留まります。** その間、FlexClone の関係は生きたままなので、**親ボリュームを削除できません。**
 
@@ -145,7 +166,7 @@ lang: ja
 
 **依存が連鎖します。** ファイルシステムは SVM があると削除できず、SVM はボリュームがあると削除できず、ボリュームはクローンの関係があると削除できません。**削除できない間、課金は続きます。**
 
-### 誤解を招くエラーメッセージ
+#### 誤解を招くエラーメッセージ
 
 **ONTAP が返す指示は、この状況では機能しません。**
 
@@ -156,7 +177,7 @@ Use "volume delete -vserver <svm name> -volume <clone name>" to delete clones.
 
 **その `volume delete` は `entry doesn't exist` を返します。** recovery queue にあるボリュームは通常のボリュームではないため、`volume delete` の対象になりません。**メッセージは存在しないコマンドの実行を指示しています。**
 
-### 解決手順
+#### 解決手順
 
 **`volume recovery-queue` を使います。advanced 権限が必要です。**
 
@@ -174,13 +195,13 @@ Use "volume delete -vserver <svm name> -volume <clone name>" to delete clones.
 
 **そして recovery queue には削除に成功したボリュームも入っています。** 検証環境では、CloudFormation が正常に削除した `blockverify_move_vol` も `blockverify_move_vol_1028` として残っていました。**「削除が成功した」と「容量が戻った」は別です。**
 
-### Amazon FSx の API からは見えないこと
+#### Amazon FSx の API からは見えないこと
 
 **FlexClone は一度も `describe-volumes` に現れませんでした。** recovery queue の中身も現れません。**AWS 側の一覧に出ないオブジェクトが、AWS 側の削除を止めます。**
 
 CloudFormation が返すのは ONTAP のメッセージをそのまま包んだものなので、**原因の特定には ONTAP 側を見る必要があります。**
 
-### 設計上の教訓
+#### 設計上の教訓
 
 | 教訓 | 内容 |
 |---|---|
@@ -191,7 +212,7 @@ CloudFormation が返すのは ONTAP のメッセージをそのまま包んだ�
 
 ---
 
-## 移行で入ってくるレイアウト
+### 移行で入ってくるレイアウト
 
 **AWS Transform でブロックストレージを移行すると、ONTAP の推奨とは違うレイアウトになります。**
 
@@ -201,7 +222,7 @@ CloudFormation が返すのは ONTAP のメッセージをそのまま包んだ�
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -210,17 +231,17 @@ graph TD
     R -->|LUN ごとに独立して| MANY["LUN ごとにボリューム<br/>個別に戻せる"]
     R -->|役割ごと| ROLE["data 用と log 用に分ける"]
 
-    ONE --> V{ボリューム数の見込み}
+    ONE --> V{見込みボリューム数は<br/>ファイルシステムの上限に近いか}
     MANY --> V
     ROLE --> V
     V -->|上限に近い| VLIM["ボリューム数の上限を確認<br/>500 または合計 1,000"]
-    V -->|余裕がある| CAP
+    V -->|上限まで余裕あり| CAP
 
     VLIM --> CAP
     CAP["ボリュームは LUN 合計より 5% 以上大きく"]
-    CAP --> SNAP{Snapshot を<br/>このボリュームで取るか}
-    SNAP -->|取る| S1["snapshot 予約を見積もる"]
-    SNAP -->|静止が必要| S2["snapshot policy を none にし<br/>静止の仕組みに任せる"]
+    CAP --> SNAP{Snapshot の作成方法はどれか}
+    SNAP -->|ONTAP の Snapshot ポリシー| S1["snapshot 予約を見積もる"]
+    SNAP -->|アプリ静止または SnapCenter| S2["snapshot policy を none にし<br/>静止の仕組みに任せる"]
 
     S1 --> CLONE
     S2 --> CLONE
@@ -237,30 +258,11 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | 復旧したい単位を関係者と合意し、文書化する | **レイアウトの根拠。これがないと後で議論が戻ります** |
-| 2 | `volume show -vserver <svm>` でボリューム数を数え、上限と比べる | 分ける設計が上限に当たらないか |
-| 3 | `lun mapping show -fields reporting-nodes` を記録する | Selective LUN Map が絞っている範囲 |
-| 4 | 検証環境で LUN をマウントし書き込みながら `lun move start` を実行し、所要時間・WWID・マウントの継続を記録する | **無停止性と WWID の保持を自環境で確認する** |
-| 5 | 複数 HA ペアの環境なら、移動前に reporting-nodes へ宛先ノードと HA パートナーを追加する | **このノートで未検証の条件** |
-| 6 | 検証環境で FlexClone を作り、クローン内の LUN が `mapped=unmapped` であることを確認する | 複製にマッピングが付いてこないこと |
-| 7 | クローンをマウントする際に `-o nouuid` が必要かを確認する | 同一ホストで元とクローンを併用するときの前提 |
-| 8 | クローンを削除し、`volume recovery-queue show` に残っていないか、`volume clone show` が空かを確認してから親ボリュームの削除に進む | **削除順序。`volume delete` の成功応答は削除完了の証拠になりません** |
-| 9 | 検証環境でクローンを削除した直後に `volume recovery-queue show` を実行する | **削除したボリュームが 12 時間残ることの確認** |
-| 10 | `volume recovery-queue purge -vserver <svm> -volume <名前>_<データセット ID>` を実行し、`volume clone show` が空になることを確認する | 撤去手順に入れるべきコマンド |
-
-手順 4・6・7・8 は**検証環境で行ってください。** 特に手順 8 の順序を守らないと、親ボリュームが削除できない状態になり得ます。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
-| 1 LUN 1 ボリュームが best practice | **NetApp は formal best practice ではないと明記しています。** AWS の 2 つの記事も一致していません |
+| 1 LUN 1 ボリュームが常に推奨される | **NetApp は 1:1 を一律の指針とはしていません。** AWS の 2 つの記事も一致していません |
 | LUN をまとめると性能が落ちる | **決めているのは復旧の粒度です。** 性能の判断ではありません |
 | 分けておけば後で困らない | **ボリューム数の上限に当たります。** LUN 数の上限は文書化されていません |
 | レイアウトは後から変えられない | **`lun move` で無停止に変えられ、WWID も変わりませんでした** |
@@ -275,7 +277,7 @@ graph TD
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -291,12 +293,12 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
-| 1:1 が formal best practice ではないこと、関連する LUN を同居させる理由が Snapshot と SnapMirror の原子性であること、コンテナ化では 1:1 が理にかなうこと | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
-| 1 ボリューム 1 LUN（.MDF 用と .LDF 用）という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| 1:1 が一律の指針ではないこと、関連する LUN を同居させる理由が Snapshot と SnapMirror の原子性であること、コンテナ化では 1:1 が理にかなうこと | [NetApp: LUN placement](https://docs.netapp.com/us-en/ontap-apps-dbs/oracle/oracle-storage-san-config-lun-placement.html) |
+| 1 ボリューム 1 LUN（.MDF 用と .LDF 用）という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | 1 ボリュームに quorum / data / logs の 3 LUN という構成例、両ノードの IQN を 1 つの igroup に入れること | [AWS: SQL Server high availability with FSx for ONTAP](https://aws.amazon.com/jp/blogs/modernizing-with-aws/sql-server-high-availability-amazon-fsx-for-netapp-ontap/) |
 | Selective LUN Map が新しい LUN マップで既定で有効であること、別の HA ペアへ移す前に reporting-nodes へ宛先ノードと HA パートナーを追加すること | [NetApp: Selective LUN Map](https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
@@ -311,7 +313,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の Snapshot は既定で crash-consistent](a-snapshot-of-a-lun-is-crash-consistent.md) — まとめて取った Snapshot が何を保証するか
@@ -326,3 +328,39 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 復旧したい単位を関係者と合意し、文書化する | **レイアウトの根拠。これがないと後で議論が戻ります** |
+| 2 | `volume show -vserver <svm>` でボリューム数を数え、上限と比べる | 分ける設計が上限に当たらないか |
+| 3 | `lun mapping show -fields reporting-nodes` を記録する | Selective LUN Map が絞っている範囲 |
+| 4 | 検証環境で LUN をマウントし書き込みながら `lun move start` を実行し、所要時間・WWID・マウントの継続を記録する | **無停止性と WWID の保持を自環境で確認する** |
+| 5 | 複数 HA ペアの環境なら、移動前に reporting-nodes へ宛先ノードと HA パートナーを追加する | **このノートで未検証の条件** |
+| 6 | 検証環境で FlexClone を作り、クローン内の LUN が `mapped=unmapped` であることを確認する | 複製にマッピングが付いてこないこと |
+| 7 | クローンをマウントする際に `-o nouuid` が必要かを確認する | 同一ホストで元とクローンを併用するときの前提 |
+| 8 | クローンを削除し、`volume recovery-queue show` に残っていないか、`volume clone show` が空かを確認してから親ボリュームの削除に進む | **削除順序。`volume delete` の成功応答は削除完了の証拠になりません** |
+| 9 | 検証環境でクローンを削除した直後に `volume recovery-queue show` を実行する | **削除したボリュームが 12 時間残ることの確認** |
+| 10 | 撤去手順に recovery-queue の purge を入れ、`volume clone show` が空になることを確認する | 撤去手順に入れるべき操作 |
+
+手順 4・6・7・8 は**検証環境で行ってください。** 特に手順 8 の順序を守らないと、親ボリュームが削除できない状態になり得ます。
+
+手順 3 の reporting node は、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> lun mapping show -vserver <svm> -fields reporting-nodes
+```
+
+### 期待結果
+
+```text
+所有ノードと HA パートナーの 2 ノードが reporting-nodes に並ぶ（Selective LUN Map が既定で有効）。
+別 HA ペアへ lun move する前は、宛先ノードとその HA パートナーをここに追加する必要がある
+```
+
+このコマンドは LUN マッピングを読むだけで、LUN にもボリュームにも変更を加えません。クローン削除後の親ボリューム削除は、recovery queue が空になったことを `volume clone show` で確認してから進めてください。
+
+## Read next
+
+[LUN と igroup は AWS の API で操作できるか？](block-objects-are-outside-the-aws-api.md)

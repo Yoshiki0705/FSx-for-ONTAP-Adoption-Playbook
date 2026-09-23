@@ -53,14 +53,14 @@ lang: ja
 
 ---
 
-### Nitro ベースの転送時暗号化 — 全リージョン対応（2026-07-20）
+### Nitro ベースの転送時暗号化 — 世代別のリージョン拡張（2026-07-20）
 
-第 2 世代ファイルシステムで、Nitro System による転送時暗号化（encryption of data in transit）が**全リージョン**で利用可能になりました。第 1 世代は新たに 5 リージョン（Malaysia, New Zealand, Taipei, Thailand, Mexico）に拡張。
+第 2 世代ファイルシステムでは、Nitro System による転送時暗号化が**第 2 世代を提供する全リージョン**で利用可能になりました。第 1 世代は Malaysia、New Zealand、Taipei、Thailand、Mexico (Central) に追加され、対応リージョンは限定されたままです。
 
 | 設計への影響 | 関連ノート |
 |---|---|
-| 「転送時暗号化が使えるリージョン」という制約がなくなった | [保存時の暗号化は自動、転送時は既定で無効](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) |
-| 第 2 世代 + Nitro 暗号化が全リージョン共通になり、リージョン選定基準がシンプルに | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md)（リージョン別上限セクション） |
+| 第 2 世代では、第 2 世代を提供するリージョン間で Nitro 暗号化の可否を別に判定する必要がなくなった | [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) |
+| 第 1 世代では、作成日とリージョンの条件が残る | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md)（リージョン別上限セクション） |
 
 出典: [Document History](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html) — July 20, 2026
 
@@ -227,7 +227,7 @@ FSx for ONTAP Multi-AZ を共有ストレージとして、EC2 Auto Scaling + La
 
 ### データディスカバリー — S3 AP + S3 Tables + Athena（Blog, 2026）
 
-ファイルメタデータ（パス・サイズ・拡張子・最終アクセス日・エージ）を S3 AP 経由で収集し、Apache Iceberg テーブルとして Athena でクエリ可能にする CDK ソリューション。「どのフォルダが最も容量を消費しているか」「1 年以上アクセスされていないファイルはどれだけあるか」を SQL で即答。
+ファイルメタデータ（パス・サイズ・拡張子・最終アクセス日・エージ）を S3 AP 経由で収集し、Apache Iceberg テーブルとして Athena でクエリ可能にする CDK 実装。「どのフォルダが最も容量を消費しているか」「1 年以上アクセスされていないファイルはどれだけあるか」を SQL で即答。
 
 | 設計への影響 | 関連ノート |
 |---|---|

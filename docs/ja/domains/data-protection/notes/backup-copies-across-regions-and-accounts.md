@@ -6,16 +6,37 @@ evidence: verified
 verified_on: 2026-08-28
 region: ap-northeast-1 → ap-northeast-3
 ontap_version: 9.17.1P7D1
+deployment_type: SINGLE_AZ_1
 lang: ja
 ---
 
-# バックアップコピーはリストアするまでファイルシステムを持たない
+# Amazon FSx for NetApp ONTAP のバックアップコピーだけで復旧できるか？
+
+バックアップコピーの保管に宛先ファイルシステムは不要です。復旧時は保管先のファイルシステムと SVM が必要です。
+
+## このノートで学べること
+
+- 別リージョン・別アカウントへのバックアップコピー経路と、バックアップと同じリージョンにあるファイルシステムへ新規ボリュームとしてリストアする制約
+- バックアップコピーと SnapMirror の RPO、RTO、切り戻し経路、平常時コストの違い
+
+## このノートが答えないこと
+
+- 別アカウントと未検証リージョンにおける実測値
+- 本番規模の RTO、増分転送、請求済み転送料
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="バックアップコピーはリストアするまでファイルシステムを持たない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **Amazon FSx for NetApp ONTAP のバックアップを、別リージョンと別アカウントへコピーできるようになりました。** 2026 年 8 月のアップデートで、それ以前は「ファイルシステムと同じリージョン・同じアカウントでバックアップを作成しリストアする」ことしかできませんでした。
 
@@ -35,7 +56,7 @@ lang: ja
 
 ---
 
-## 変わった点
+### 変わった点
 
 | 経路 | 以前 | 現在 | 手段 |
 |---|---|---|---|
@@ -70,7 +91,7 @@ lang: ja
 
 ---
 
-## リストアの制約の不変
+### リストアの制約の不変
 
 ここを混ぜると設計を誤ります。**変わったのは「バックアップをどこに置けるか」で、「どこへリストアできるか」は同じです。**
 
@@ -85,9 +106,9 @@ lang: ja
 
 ---
 
-## 実測 — 東京から大阪へ
+### 実測 — 東京から大阪へ
 
-### 環境
+#### 環境
 
 | 項目 | 値 |
 |---|---|
@@ -100,7 +121,7 @@ lang: ja
 
 `ap-northeast-3` で `SINGLE_AZ_1` が受理されたため、第 1 世代の最小構成（128 MBps）で検証できました。第 2 世代しか作れないリージョンでは最小スループットが 384 MBps になり、待機コストが約 1.9 倍になります。
 
-### 所要時間
+#### 所要時間
 
 | 工程 | 所要 |
 |---|---|
@@ -111,7 +132,7 @@ lang: ja
 
 **この数値は 9.4 MiB のデータに対するものです。** 所要時間は固定的なオーバーヘッドが支配していて、データ量に比例する部分はほとんど見えていません。**自環境の RTO の根拠には使えません。** 公式ドキュメントはバックアップからのリストアを「数分から数時間」としており、サイズ依存であることを明記しています。
 
-### 確認できたこと
+#### 確認できたこと
 
 | # | 確認したこと | 結果 |
 |---|---|---|
@@ -124,7 +145,7 @@ lang: ja
 
 2 行目は運用上の含意があります。**ボリュームを消してしまった後でも、残っているバックアップを別リージョンへ退避できます。**
 
-### コンソールから操作したときに気づく 4 点
+#### コンソールから操作したときに気づく 4 点
 
 CLI と同じ操作をコンソールで通したときに、画面側にしか現れない挙動がありました（2026-08-28 実測）。
 
@@ -139,7 +160,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 もう 1 点、リストアダイアログには **SnapLock を有効にする選択肢があります。** WORM は不可逆で影響範囲が対象ボリュームより広いため、この画面から有効にしないでください（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)）。
 
-### リストア中の表示 — `RW` ではなく `DP`
+#### リストア中の表示 — `RW` ではなく `DP`
 
 **リストア中のボリュームは `OntapVolumeType` が `DP` として返り、完了時に `RW` へ変わります。**
 
@@ -154,7 +175,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 **コンソールでも同じ値が表示されます。** リストア中のボリューム詳細は「ライフサイクルの状態: 作成」と「ONTAP ボリュームタイプ: `DP`」を並べて表示し、フォームで Read-Write (RW) を選んでいてもこうなります。さらに**詳細画面は自動更新されません。** リストアが完了しても、再読み込みするまで `DP` のまま表示されていました。目視確認だけで判断すると、完了を見落とします。
 
-### リストアされたボリュームの属性差
+#### リストアされたボリュームの属性差
 
 | 属性 | ソース | リストア後 | 備考 |
 |---|---|---|---|
@@ -174,7 +195,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 ---
 
-## 実測 — AWS Backup 経由のクロスリージョンコピーとリストア
+### 実測 — AWS Backup 経由のクロスリージョンコピーとリストア
 
 2026-08-29（JST）に、同じ東京→大阪の経路を **AWS Backup** で実測しました。バックアッププランに
 コピールールを付けた形と、オンデマンドのバックアップ + コピージョブの両方を通しています。ソースは
@@ -223,7 +244,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 > **別アカウントへのコピーは実測していません**（`documented`）。AWS Organizations が前提のため、
 > この検証は同一アカウント内に限っています。
 
-### 別アカウントコピーに必要な CMK — 判断はファイルシステム作成前
+#### 別アカウントコピーに必要な CMK — 判断はファイルシステム作成前
 
 **AWS Backup が完全に管理していないリソースタイプでは、AWS 管理キーでの別アカウントコピーがサポートされません。** AWS 管理キーのキーポリシーは変更できず、アカウント間で共有できないためです（[Encryption for backups in AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/encryption.html)、`documented`）。FSx for ONTAP はこの「完全には管理されていない」側にあたります。
 
@@ -236,7 +257,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 **設計上の帰結**: ファイルシステムの KMS キーは作成時に決まり、`update-file-system` にキーを変更する引数はありません（AWS CLI で確認、`verified`）。**別アカウントコピーを将来行う可能性があるなら、CMK はファイルシステムを作る前に決める判断になります。** 宛先側では既定のボールトが使えません（キーを共有できないため、`documented`）。
 
-### 個別に列挙されたリージョンの例外
+#### 個別に列挙されたリージョンの例外
 
 [AWS Backup feature availability](https://docs.aws.amazon.com/aws-backup/latest/devguide/backup-feature-availability.html) に例外が並んでいます（`documented`、2026-08-29 参照）。
 
@@ -251,7 +272,7 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 ---
 
-## FlexGroup の扱い
+### FlexGroup の扱い
 
 公式ドキュメントの制約は「**FlexGroup ボリュームのバックアップの*コピー*には対応しない**」です。バックアップの作成ではなくコピーに掛かっています。
 
@@ -269,7 +290,7 @@ Backup failed. Please delete the backup and try again.
 
 ---
 
-## 残っている制約
+### 残っている制約
 
 | 制約 | 内容 |
 |---|---|
@@ -289,11 +310,11 @@ Backup failed. Please delete the backup and try again.
 
 ---
 
-## 本番に入れるときに決めること
+### 本番に入れるときに決めること
 
 **経路が成立することと、運用に載ることは別です。** 実測で経路は通りましたが、本番投入には以下を決める必要があります。
 
-### `CopyBackup` における定期実行の仕組みの不在
+#### `CopyBackup` における定期実行の仕組みの不在
 
 公式ドキュメントは FSx for ONTAP の `CopyBackup` を "**manually** copy volume backups" と記述しています。**コンソール / CLI / API から都度実行する形で、スケジューラを持ちません。**
 
@@ -306,40 +327,40 @@ Backup failed. Please delete the backup and try again.
 
 **`AUTOMATIC` タイプの自動バックアップをコピーできるかは未確認です。** What's New は「新規および既存のバックアップ」と書いていますが、種別への明示がありません。自動バックアップを退避の起点にする設計なら、1 世代で確認してから組んでください。
 
-### CloudFormation で宣言できるリストア
+#### CloudFormation で宣言できるリストア
 
 **`AWS::FSx::Volume` には `BackupId` プロパティがあります**（「新しいボリュームを作るのに使うバックアップの ID」）。ファイルシステム・SVM・バックアップからのリストアを 1 テンプレートで書けるため、**宛先リージョンに未デプロイのテンプレートを置いておく**形が取れます。平常時の課金はゼロで、復旧時は 1 回のデプロイになります。
 
 **この形は本リポジトリではデプロイ検証していません**（CLI で同じ順序を通しただけです）。**デプロイ検証していない復旧テンプレートは復旧手順ではありません。** 一度デプロイして所要時間を計ってから手順書に載せてください。
 
-### リストアの性能に効く条件
+#### リストアの性能に効く条件
 
 | 条件 | 内容 | 区分 |
 |---|---|---|
 | SSD 容量 | リストアされるデータは**まず SSD 層に書かれます**。空きが尽きるとリストアは一時停止し、空きができると自動再開します | `documented` |
 | 世代 | **第 2 世代はリストア中でも読み取り可能**（メタデータのロード後）。**第 1 世代は完了待ち** | `documented` |
 | 背景処理の優先度 | バックアップとリストアは**クライアント I/O より優先度が低く**、未使用のスループット容量を使います | `documented` |
-| FlexVol の範囲 | FlexVol は 1 つの HA ペアを超えられません。大きなボリュームのリストア先は世代と容量で決まります | `documented` |
+| FlexVol の配置 | FlexVol の `AggregateConfiguration` は常に 1 aggregate で、その aggregate は 1 HA ペアに属します。大きなボリュームのリストア先は世代と容量で決まります | `documented` |
 
 3 行目には運用上の含意があります。**業務のピークにバックアップを重ねると、どちらも遅くなります。**
 
-### 別の問題としてのアプリケーション整合性
+#### 別の問題としてのアプリケーション整合性
 
 **バックアップはボリュームのポイントインタイムのコピーで、アプリケーションの静止点を取る仕組みではありません。** データベースを載せている構成で「別リージョンへコピーしているので DR は済んでいる」と読むと、リストアできてもデータベースが起動しない可能性があります。DB 側のバックアップ、またはバックアップ前の静止処理と組み合わせてください。
 
-### 隔離が成立する条件
+#### 隔離が成立する条件
 
 **コピーを別アカウントへ置いても、それだけでは削除耐性は得られません。** 隔離が成立するのは、**宛先アカウントの IAM や vault のポリシーが削除を防いでいる場合だけ**です。保持期間中の削除禁止そのものは WORM 系の機能（Object Lock、SnapLock、Vault Lock）の領域で、**いずれも不可逆なため有効化は別の承認を要します**（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)）。
 
 一方で、**リストアが必ず新規ボリュームになることはインシデント対応では利点です。** 侵害されたボリュームを保全したまま、別ボリュームへリストアして業務を再開できます。
 
-### 意図しないリージョンへコピーさせないガード
+#### 意図しないリージョンへコピーさせないガード
 
 データの所在に要件がある場合、**`aws:RequestedRegion` の条件キーで `fsx:CopyBackup` の宛先を限定**してください。運用ルールだけでの担保は成立しません。
 
 ---
 
-## レプリケーションとコピーは別の操作
+### レプリケーションとコピーは別の操作
 
 選び分けの前に語を揃えます。「別リージョンにデータを持つ」を指して**レプリケーション**と**コピー**が混ざって使われますが、宛先に何が残るかが違います。
 
@@ -360,7 +381,7 @@ Backup failed. Please delete the backup and try again.
 
 ---
 
-## SnapMirror との選び分け
+### SnapMirror との選び分け
 
 **どちらかが優れているという関係ではありません。** 公式ドキュメントに RPO / RTO の目安が示されており、守る対象が違います。
 
@@ -383,7 +404,7 @@ Backup failed. Please delete the backup and try again.
 
 両方を使う構成も成立します。**SnapMirror で可用性を、バックアップコピーで隔離された保管を担う**という分担です。この場合、SnapMirror の宛先は `DP` ボリュームでバックアップ対象外なので、**バックアップは複製元で取り、そのバックアップをコピーします**（[Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#バックアップできないボリュームの存在)）。
 
-### 「宛先を常時起動するほうが高い」の規模による逆転
+#### 「宛先を常時起動するほうが高い」の規模による逆転
 
 **上表の「宛先の容量とスループットを常時支払う」を、常に不利なトレードオフとして読まないでください。** データ量が一定を超えると、常時起動のほうが月額が下がります。単価の構造がそうなっています（`documented`）。
 
@@ -419,7 +440,7 @@ Backup failed. Please delete the backup and try again.
 
 **ただし規模が大きいと、この判断は逆になります。** リストアの所要時間が効くためです（下記）。
 
-### リストア所要時間の容量比例と、スループット容量という上限
+#### リストア所要時間の容量比例と、スループット容量という上限
 
 AWS はリストアのレートを **大きいファイル中心で 250 MBps、小さいファイル中心で 100 MBps** と公開しています（`documented`、[Backup and restore performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html)）。前提が 2 つあり、どちらも所要時間を長い側に振ります。
 
@@ -440,7 +461,7 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 | **10 TB 以上で RTO が時間単位** | **第 2 世代。** リストア中読み取りが最小金額の差を正当化します |
 | 分単位の RPO / RTO | どちらでもなく SnapMirror（宛先ボリュームが既に存在します） |
 
-### 「平常時ゼロ」が引き換えにしているもの
+#### 「平常時ゼロ」が引き換えにしているもの
 
 **宛先ファイルシステムを平常時に持たない構成では、スループット容量と SSD 容量の課金が発生しません。** 月額では明確な利点です。**引き換えになるのは、同じ作業がフェイルオーバの瞬間に集まることです。**
 
@@ -465,17 +486,15 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 
 **AWS Backup を経由してもバックアップストレージの単価は変わりません。** FSx for ONTAP は AWS Backup が完全に管理するリソースタイプではないため、**ストレージ課金は AWS Backup ではなく FSx for ONTAP 側に出ます**（`documented`、[Metering, costs, and billing for AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html)）。論理エアギャップボールトを使う場合だけ、ストレージと転送のすべてが AWS Backup 側に出ます。
 
-### 経路によるリージョン間転送料の扱いの差
+#### 経路によるリージョン間転送料の扱いの差
 
 **AWS Backup 経由のコピーには転送料の項目があります。** AWS Backup の料金ページは、Amazon FSx を含む Resource Group 3 について、**通常のボールトと論理エアギャップボールトで転送単価は同じ**としています（`documented`）。
 
-**ネイティブの `CopyBackup` は、転送料がかかる前提で見積もってください**（`unverified`）。
+**ネイティブの `CopyBackup` にクロスリージョン転送料が発生するかは確認できていません**（`open`）。FSx for ONTAP の料金ページにあるデータ転送の説明は、FSx for ONTAP S3 Access Points 経由のアクセスに限定されています。料金ページに `CopyBackup` の項目がないことは無料の根拠にならず、汎用の AWS Data Transfer SKU が存在することも `CopyBackup` への適用を確定しません。
 
-**「Amazon FSx の料金表に転送項目が無いから課金されない」は成り立ちません。** リージョン間転送は**発生元サービスの料金表ではなく `AWSDataTransfer` 側に載ります。** `AWSDataTransfer` にはサービスを問わない汎用の SKU があり、東京 → 大阪の送出は `APN1-APN3-AWS-Out-Bytes`、受信は `APN1-APN3-AWS-In-Bytes` で $0.00 です（Price List API、2026-08-29 取得）。AWS Backup 側の Amazon FSx 向け SKU と同じ単価が汎用 SKU にも現れます。
+EBS スナップショットのクロスリージョンコピーでは AWS Data Transfer の課金が発生し、AWS Storage Blog は Cost Explorer で `USW2-USE1-AWS-Out-Byte` を「EC2 - Other」として追う手順を示しています（`documented`、[Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/)）。これは EBS の直接資料であり、FSx for ONTAP の `CopyBackup` に同じ課金を適用する根拠にはしません。
 
-**同型の先行事例が反証になります。** EBS スナップショットも AWS 管理領域にあってお客様の VPC を経由しませんが、**クロスリージョンコピーには AWS Data Transfer の課金が発生します。** AWS Storage Blog はその転送料を Cost Explorer で追う手順を示しており、使用タイプは `USW2-USE1-AWS-Out-Byte`、サービスは「EC2 - Other」です（`documented`、[Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/)）。**「VPC を経由しないから課金されない」という推論は、この事例で否定されます。**
-
-**確定はしていません。** 請求内訳との照合をしていないため `unverified` として置きます。**小さいボリュームで 1 回コピーして Cost Explorer の `UsageType` を確認するのが最短です。** 見積もりでは初回フルコピーの容量 × 汎用 SKU の単価、以降は増分 × 同単価を置いてください。
+`CopyBackup` の転送料は請求内訳との照合まで未確定です。クロスリージョン構成の見積もりでは断定せず、実際の請求で `UsageType` とサービス区分を確認してください。
 
 > **転送料の請求先について、AWS の 2 つの記述が食い違っています。** FSx for ONTAP は完全に管理されるリソースタイプではないので、この差がそのまま効きます。
 >
@@ -484,13 +503,13 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 > | [AWS Backup Developer Guide](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html) | 完全に管理されないリソースタイプでは **宛先アカウント** に転送料が出る |
 > | [AWS Backup 料金ページ](https://aws.amazon.com/backup/pricing/) | 転送料は **データを送り出すアカウント**（コピー元）に課金される |
 >
-> **どちらが正しいかは確認できていません**（`unverified`）。クロスアカウント構成でコストの帰属を設計に織り込む場合は、**実際の請求で確かめてください。**
+> **どちらが正しいかは確認できていません**（`open`）。クロスアカウント構成でコストの帰属を設計に織り込む場合は、**実際の請求で確かめてください。**
 
 **待機系を `All` 階層化で安く保つ場合の引き換えを書いておきます。** `All` は読まれたブロックを SSD に引き戻さないため、**フェイルオーバ直後の読み取りは容量プールから始まり、SSD 前提の本番と同じ性能にはなりません**（`documented`）。待機中の月額と、切り替え直後の性能のどちらを取るかという判断です。
 
 ---
 
-## 国内 DR という観点
+### 国内 DR という観点
 
 **大阪リージョンへのコピーは、国内にデータを留めたまま別リージョンへ退避する構成になります。**
 
@@ -507,7 +526,7 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 
 ---
 
-## 選び方
+### 選び方
 
 **上から順に確認してください。** 答えが決まった時点で必要な構成が決まります。
 
@@ -524,13 +543,13 @@ AWS はリストアのレートを **大きいファイル中心で 250 MBps、�
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
-    A[別リージョンに備える] --> P{目的}
-    P -->|オフラインコピーの保管| B[バックアップコピー]
-    P -->|可用性の確保| S[SnapMirror]
+    A[別リージョンに備える] --> P{復旧時に優先するのは<br/>保管コストか待機時間か}
+    P -->|平常時の宛先 FS を不要にする| B[バックアップコピー]
+    P -->|宛先 FS を常時起動して待機する| S[SnapMirror]
 
     B --> B1[平常時は宛先 FS 不要]
     B1 --> B2["復旧時に FS と SVM を作る<br/>作成時間が RTO に乗る"]
@@ -550,7 +569,7 @@ graph TD
 
 ---
 
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -573,7 +592,7 @@ graph TD
 
 ---
 
-## 実測した範囲と実測していない範囲
+### 実測した範囲と実測していない範囲
 
 | 項目 | 区分 |
 |---|---|
@@ -591,6 +610,46 @@ graph TD
 
 ---
 
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| 別リージョン・別アカウントへのコピーが可能になったこと、それ以前は同一リージョン・同一アカウントに限られていたこと | [AWS What's New: FSx for NetApp ONTAP now supports copying backups across AWS Regions and accounts](https://aws.amazon.com/about-aws/whats-new/2026/08/fsx-ontap-cross-region-backup-copy/) |
+| AWS Backup 経由の別リージョン・別アカウントコピー、ポリシーベースとオンデマンドの両方 | [AWS What's New: AWS Backup adds cross-Region and cross-account backup support for FSx for NetApp ONTAP](https://aws.amazon.com/about-aws/whats-new/2026/08/aws-backup-amazon-fsx-netapp-cross-account-region/) |
+| コピーの経路、パーティション制約、同時コピー数、FlexGroup のコピー非対応、初回フル / 以降増分、`fsx:CopyBackup` の IAM 記述 | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
+| CLI / コンソールでのコピー手順、バックアップコピーと SnapMirror の選び分け、RPO 60 分 / 5 分と RTO の目安 | [AWS: Copying backups within the same AWS account](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copying-backups-same-account.html) |
+| リストア先がバックアップと同一リージョンに限られること、リストアは新規ボリュームになること、SnapLock FlexGroup がバックアップ対象外であること、リストア・バックアップのスループット目安 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| リストアがボリューム作成 API であること | [AWS: CreateVolumeFromBackup](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateVolumeFromBackup.html) / [Restoring a backup to a new volume](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/to-restore-backups.html) |
+| FlexVol の `AggregateConfiguration` が常に 1 aggregate で、各 aggregate が 1 HA ペアに属すること | [AWS: AggregateConfiguration](https://docs.aws.amazon.com/fsx/latest/APIReference/API_AggregateConfiguration.html) |
+| リストアが SSD 層優先であること、SSD 不足で一時停止すること、第 2 世代はリストア中に読めること、バックアップ / リストアが背景処理であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| `AWS::FSx::Volume` の `BackupId` でバックアップから新規ボリュームを作れること | [AWS CloudFormation: AWS::FSx::Volume](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-volume.html) |
+| AWS Backup のバックアッププランでコピー先リージョンを指定できること | [AWS Backup: Creating backup copies across AWS Regions](https://docs.aws.amazon.com/aws-backup/latest/devguide/cross-region-backup.html) |
+| SnapMirror の切り戻し手順（関係の削除と `snapmirror resync`） | [AWS Storage Blog: Implementing HA and DR for SQL Server Always-On FCI](https://aws.amazon.com/blogs/storage/implementing-ha-and-dr-for-sql-server-always-on-failover-cluster-instance-using-amazon-fsx-for-netapp-ontap/) |
+| `snapmirror resync` でユーザー作成 Snapshot が複製されないこと | [AWS re:Post: Why does the snapshot policy stop working after snapmirror resync?](https://repost.aws/knowledge-center/fsx-ontap-snapmirror-resync) |
+| 大阪リージョンの SSD・スループット・バックアップストレージ料率、容量プール Standard が Single-AZ ではバックアップストレージより低く Multi-AZ ではほぼ同額になること、東京と大阪が同額であること | AWS Price List API（`AmazonFSx`、`ap-northeast-1` / `ap-northeast-3`、effective 2026-07-01、2026-08-29 取得） |
+| AWS Backup が完全に管理しないリソースタイプではストレージ課金が各サービス側に出ること、論理エアギャップボールトでは AWS Backup 側に出ること、転送料の請求先を「宛先アカウント」としていること | [AWS Backup: Metering, costs, and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html) |
+| 転送単価が通常のボールトと論理エアギャップボールトで同じこと、転送料の請求先を「データを送り出すアカウント」としていること（上記と食い違う点） | [AWS Backup 料金](https://aws.amazon.com/backup/pricing/) |
+| EBS スナップショットのクロスリージョンコピーに AWS Data Transfer の課金が発生すること、その使用タイプが `*-AWS-Out-Byte` で「EC2 - Other」に出ること。FSx for ONTAP の `CopyBackup` への適用は確定しないこと | [AWS Storage Blog: Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/) |
+| リストアのレート（大きいファイル 250 MBps / 小さいファイル 100 MBps）、バックアップのレート、背景処理として未使用スループットのみを使うこと、第 2 世代はリストア中に読めること、メタデータがバックアップデータの 1〜7% であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
+| S3 リクエストとデータ転送の課金説明が FSx for ONTAP S3 Access Points 経由のアクセスに限定されていること | [AWS: FSx for ONTAP 料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
+| 第 1 世代・第 2 世代で選べるスループット値、デプロイタイプが作成後に変更できないこと | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
+| フルマネージドバックアップと、容量プールに向けた SnapVault の GB 単価の比較 | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
+| `All` 階層化が読まれたブロックを SSD に引き戻さないこと、メタデータが常に SSD に残ること | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — データ保護](../README.md) — このモジュールのハブ
+- [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 各仕組みの守備範囲
+- [SnapLock は有効化とロックが別](snaplock-and-layered-ransomware-readiness.md) — 不可逆な選択
+- [データ保護方式の比較](../../../reference/comparison/data-protection-methods.md) — 方式の選定と、[レプリケーションとコピーの違い](../../../reference/comparison/data-protection-methods.md#レプリケーションとコピーは別の操作)を 4 方式の表の中で見る場合
+- [直近のアップデートと設計への影響](../../../reference/recent-updates.md) — このアップデートの位置づけ
+- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — バックアップの課金特性
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
 ## 自環境での確認手順
 
 | # | 手順 | 確認できること |
@@ -605,47 +664,29 @@ graph TD
 
 手順 2 が要点です。**コピーの成功はバックアップが届いたことしか示しません。** 復旧できることは別の確認項目です。
 
----
+バックアップコピーのメタデータは、次の読み取り専用コマンドで確認できます。
 
-## 参照した一次情報
+```bash
+aws fsx describe-backups \
+  --backup-ids <backup-id> \
+  --query 'Backups[0].{Lifecycle:Lifecycle,SourceBackupId:SourceBackupId,SourceBackupRegion:SourceBackupRegion}' \
+  --output json
+```
 
-| 論点 | 出典 |
-|---|---|
-| 別リージョン・別アカウントへのコピーが可能になったこと、それ以前は同一リージョン・同一アカウントに限られていたこと | [AWS What's New: FSx for NetApp ONTAP now supports copying backups across AWS Regions and accounts](https://aws.amazon.com/about-aws/whats-new/2026/08/fsx-ontap-cross-region-backup-copy/) |
-| AWS Backup 経由の別リージョン・別アカウントコピー、ポリシーベースとオンデマンドの両方 | [AWS What's New: AWS Backup adds cross-Region and cross-account backup support for FSx for NetApp ONTAP](https://aws.amazon.com/about-aws/whats-new/2026/08/aws-backup-amazon-fsx-netapp-cross-account-region/) |
-| コピーの経路、パーティション制約、同時コピー数、FlexGroup のコピー非対応、初回フル / 以降増分、`fsx:CopyBackup` の IAM 記述 | [AWS: Copying backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copy-backups.html) |
-| CLI / コンソールでのコピー手順、バックアップコピーと SnapMirror の選び分け、RPO 60 分 / 5 分と RTO の目安 | [AWS: Copying backups within the same AWS account](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/copying-backups-same-account.html) |
-| リストア先がバックアップと同一リージョンに限られること、リストアは新規ボリュームになること、SnapLock FlexGroup がバックアップ対象外であること、リストア・バックアップのスループット目安 | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
-| リストアがボリューム作成 API であること | [AWS: CreateVolumeFromBackup](https://docs.aws.amazon.com/fsx/latest/APIReference/API_CreateVolumeFromBackup.html) / [Restoring a backup to a new volume](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/to-restore-backups.html) |
-| 第 1 世代・第 2 世代の最小スループットと最小 SSD 容量、FlexVol が 1 HA ペアを超えられないこと | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
-| リストアが SSD 層優先であること、SSD 不足で一時停止すること、第 2 世代はリストア中に読めること、バックアップ / リストアが背景処理であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
-| `AWS::FSx::Volume` の `BackupId` でバックアップから新規ボリュームを作れること | [AWS CloudFormation: AWS::FSx::Volume](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-volume.html) |
-| AWS Backup のバックアッププランでコピー先リージョンを指定できること | [AWS Backup: Creating backup copies across AWS Regions](https://docs.aws.amazon.com/aws-backup/latest/devguide/cross-region-backup.html) |
-| SnapMirror の切り戻し手順（関係の削除と `snapmirror resync`） | [AWS Storage Blog: Implementing HA and DR for SQL Server Always-On FCI](https://aws.amazon.com/blogs/storage/implementing-ha-and-dr-for-sql-server-always-on-failover-cluster-instance-using-amazon-fsx-for-netapp-ontap/) |
-| `snapmirror resync` でユーザー作成 Snapshot が複製されないこと | [AWS re:Post: Why does the snapshot policy stop working after snapmirror resync?](https://repost.aws/knowledge-center/fsx-ontap-snapmirror-resync) |
-| 大阪リージョンの SSD・スループット・バックアップストレージ料率、容量プール Standard が Single-AZ ではバックアップストレージより低く Multi-AZ ではほぼ同額になること、東京と大阪が同額であること | AWS Price List API（`AmazonFSx`、`ap-northeast-1` / `ap-northeast-3`、effective 2026-07-01、2026-08-29 取得） |
-| AWS Backup が完全に管理しないリソースタイプではストレージ課金が各サービス側に出ること、論理エアギャップボールトでは AWS Backup 側に出ること、転送料の請求先を「宛先アカウント」としていること | [AWS Backup: Metering, costs, and billing](https://docs.aws.amazon.com/aws-backup/latest/devguide/metering-and-billing.html) |
-| 転送単価が通常のボールトと論理エアギャップボールトで同じこと、転送料の請求先を「データを送り出すアカウント」としていること（上記と食い違う点） | [AWS Backup 料金](https://aws.amazon.com/backup/pricing/) |
-| EBS スナップショットのクロスリージョンコピーに AWS Data Transfer の課金が発生すること、その使用タイプが `*-AWS-Out-Byte` で「EC2 - Other」に出ること（VPC を経由しない転送でも課金される反証） | [AWS Storage Blog: Effectively track AWS data transfer costs for cross-region Amazon EBS Snapshot Copy](https://aws.amazon.com/blogs/storage/effectively-track-aws-data-transfer-costs-for-cross-region-amazon-ebs-snapshot-copy/) |
-| サービスを問わない汎用のリージョン間転送 SKU（`APN1-APN3-AWS-Out-Bytes` / `-In-Bytes`）が存在すること | AWS Price List API（`AWSDataTransfer`、effective 2026-06-01、2026-08-29 取得） |
-| リストアのレート（大きいファイル 250 MBps / 小さいファイル 100 MBps）、バックアップのレート、背景処理として未使用スループットのみを使うこと、第 2 世代はリストア中に読めること、メタデータがバックアップデータの 1〜7% であること | [AWS: Protecting your data with volume backups](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html) |
-| 課金対象が 5 つ＋ S3 リクエストとデータ転送であり、そのデータ転送が S3 Access Point 経由のアクセスに限定されていること | [AWS: FSx for ONTAP 料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/) |
-| 第 1 世代・第 2 世代で選べるスループット値、デプロイタイプが作成後に変更できないこと | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
-| フルマネージドバックアップと、容量プールに向けた SnapVault の GB 単価の比較 | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
-| `All` 階層化が読まれたブロックを SSD に引き戻さないこと、メタデータが常に SSD に残ること | [AWS Storage Blog: How to size an FSx for ONTAP file system](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+### 期待結果
 
----
+```json
+{
+  "Lifecycle": "<lifecycle>",
+  "SourceBackupId": "<source-backup-id-or-null>",
+  "SourceBackupRegion": "<source-region-or-null>"
+}
+```
 
-## 関連ドキュメント
+`SourceBackupId` と `SourceBackupRegion` は、コピーではないバックアップでは `null` になりえます。
+この確認で分かるのはバックアップのライフサイクルとコピー元メタデータだけです。
+**内容、リストア可否、RTO、増分性、別アカウント、整合性、請求を証明するものではありません。**
 
-- [Domain — データ保護](../README.md) — このモジュールのハブ
-- [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md) — 各仕組みの守備範囲
-- [SnapLock は有効化とロックが別](snaplock-and-layered-ransomware-readiness.md) — 不可逆な選択
-- [データ保護方式の比較](../../../reference/comparison/data-protection-methods.md) — 方式の選定と、[レプリケーションとコピーの違い](../../../reference/comparison/data-protection-methods.md#レプリケーションとコピーは別の操作)を 4 方式の表の中で見る場合
-- [直近のアップデートと設計への影響](../../../reference/recent-updates.md) — このアップデートの位置づけ
-- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — バックアップの課金特性
-- [知見の分類ポリシー](../../../evidence-policy.md)
+## Read next
 
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ保護](../README.md)
+[SnapLock は有効化とロックが別](snaplock-and-layered-ransomware-readiness.md)

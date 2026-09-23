@@ -1,9 +1,5 @@
 # Playbook 02 — Design
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/02-design/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Turn assessment output into a target configuration. Capacity and throughput can be changed later, but some choices (security style, SnapLock enablement) are irreversible.

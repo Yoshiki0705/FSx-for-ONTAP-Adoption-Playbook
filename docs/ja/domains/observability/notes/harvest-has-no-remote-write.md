@@ -7,13 +7,33 @@ source: https://netapp.github.io/harvest/25.08/prometheus-exporter/
 lang: ja
 ---
 
-# Harvest は remote_write を持たない
+# Harvest は Amazon Managed Service for Prometheus に直接送れるか？
+
+送れません。remote_write を持たず、収集基盤の運用が 4 面まとめて自分に来ます。
+
+## このノートで学べること
+
+- Harvest がプルされる側で、Amazon Managed Service for Prometheus へは 1 ホップ挟むこと
+- 監視面の単一障害点・`fsxadmin` 認証・初期資格情報という運用の 4 面
+
+## このノートが答えないこと
+
+- 現在の Harvest の版で remote_write が追加されているか（版ごとに要確認）
+- この監視構成の効果や負荷の実測値
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="harvest-は-remote_write-を持たない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **NetApp Harvest を選ぶと、収集基盤そのものの運用が自分に来ます。** その内容は 4 面に分かれます。
 
@@ -30,7 +50,7 @@ lang: ja
 
 ---
 
-## エクスポータの選択肢と remote_write の不在
+### エクスポータの選択肢と remote_write の不在
 
 Harvest の Prometheus エクスポータの役目は 2 つと明記されています。**メトリクスを Prometheus のライン形式に整形すること**と、**`http://<ADDR>:<PORT>/metrics` に web エンドポイントを作ること**です。そして「**Prometheus が Harvest をポーリングする**」と書かれています。
 
@@ -46,7 +66,7 @@ Harvest の Prometheus エクスポータの役目は 2 つと明記されてい
 
 ---
 
-## Amazon Managed Service for Prometheus へ入れる 1 ホップ
+### Amazon Managed Service for Prometheus へ入れる 1 ホップ
 
 Amazon Managed Service for Prometheus は `remote_write` で受け取ります。Harvest は `remote_write` で送りません。**したがって間に 1 ホップが必要になります。**
 
@@ -64,7 +84,7 @@ Amazon Managed Service for Prometheus は `remote_write` で受け取ります�
 
 ---
 
-### 実装側からの裏づけと、そこで見つかった盲点
+#### 実装側からの裏づけと、そこで見つかった盲点
 
 **この 1 ホップは sibling プロジェクトが実装しています**（ADOT のサイドカーで
 `prometheusremotewrite` に SigV4 を付けて Amazon Managed Service for Prometheus へ送る形、
@@ -79,7 +99,7 @@ Amazon Managed Service for Prometheus は `remote_write` で受け取ります�
 > **著者による実測は含みません。** 引用の保留理由は
 > [まだ probe を張れていない引用](../../../reference/cross-repo-index.md#まだ-probe-を張れていない引用) を参照してください。
 
-## 監視面の単一障害点
+### 監視面の単一障害点
 
 AWS が提供する CloudFormation テンプレートは、**Harvest と Grafana をインストールした Amazon EC2 Linux インスタンスを 1 台作成する**構成です。既定のインスタンスタイプは `t3.micro` です。
 
@@ -95,7 +115,7 @@ AWS が提供する CloudFormation テンプレートは、**Harvest と Grafana
 
 ---
 
-## ロック時の影響範囲を決める収集対象数
+### ロック時の影響範囲を決める収集対象数
 
 CloudFormation テンプレートのパラメータには **AWS Secrets Manager のシークレット名**があり、そこに **ファイルシステムの `fsxadmin` ユーザーのパスワード**を格納します。つまり **Harvest は管理アカウントで ONTAP に認証します。**
 
@@ -120,7 +140,7 @@ CloudFormation テンプレートのパラメータには **AWS Secrets Manager 
 
 ---
 
-## 初期資格情報の変更
+### 初期資格情報の変更
 
 デプロイ後の Grafana へは `http://<EC2 のアドレス>:3000` でアクセスし、**Grafana の既定のユーザー名とパスワード**でログインする手順が公式ドキュメントに記載されています。ドキュメント自身が**ログイン後すぐの変更を推奨**しています。
 
@@ -133,6 +153,44 @@ CloudFormation テンプレートのパラメータには **AWS Secrets Manager 
 > **セキュリティに関する補足**: サブネットの種別（`public` / `private`）とセキュリティグループの許可元は、テンプレートのパラメータで指定します。**既定値ではありません。** 到達範囲を絞る判断は導入時に行う必要があります。
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| Harvest から Amazon Managed Service for Prometheus に直接送れる | **エクスポータはプルエンドポイントと InfluxDB です。** スクレイパ + SigV4 の 1 ホップが要ります |
+| Harvest がメトリクスを送信する | **Prometheus が Harvest をポーリングします。** 取りに来られる側です |
+| 1 ホップは設定を足すだけ | **運用対象が 1 つ増えます。** それ自体の死活監視も要ります |
+| AWS のテンプレートは本番構成である | **Amazon EC2 1 台です。** 可用性が要件なら構成を変える判断が先に来ます |
+| 監視の追加は読み取りだけなので安全 | **`fsxadmin` で認証します。** 認証失敗の積み上がりはロックの引き金になりえます |
+| 収集対象を増やしてもリスクは変わらない | **同じ資格情報を共有していれば、1 つのロックが全対象に波及します** |
+| Grafana の初期資格情報は自動生成される | 公開ドキュメントに記載された既知の値です。変更が推奨されています |
+| テンプレートが到達範囲を絞ってくれる | サブネット種別と許可元はパラメータです。導入時の判断です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 | 取得日 |
+|---|---|---|
+| Prometheus エクスポータがライン形式への整形と `/metrics` の web エンドポイント公開を担い、Prometheus が Harvest をポーリングすること | [Harvest 25.08: Prometheus Exporter](https://netapp.github.io/harvest/25.08/prometheus-exporter/) | 2026-09-05 |
+| CloudFormation テンプレートが Amazon EC2 Linux 1 台に Harvest と Grafana を導入すること、既定インスタンスタイプが `t3.micro`、パラメータに Secrets Manager のシークレット名と `fsxadmin` のパスワードが含まれること、受信ポート 3000 / 9090 / 53 / 443 の要件、サブネット種別とセキュリティグループがパラメータであること、Grafana の既定資格情報と変更の推奨 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — 可観測性](../README.md) — このモジュールのハブ
+- [監視経路の選択 決定木](../../../reference/decision-trees/observability-route.md) — どの経路を選ぶか
+- [監視経路の比較](../../../reference/comparison/observability-routes.md) — 経路別のトレードオフ
+- [オンプレのダッシュボードはそのまま移らない](on-prem-dashboards-do-not-transfer.md) — Harvest を選ぶ前に確認するもの
+- [クロスアカウントは IAM ではなくネットワークの問題](cross-account-is-a-network-problem.md) — 収集対象を他アカウントに広げるとき
+- [fsxadmin はロックされる](../../../playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) — 原因・復旧手順・閾値の設定
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
 
 ## 自環境での確認手順
 
@@ -149,42 +207,21 @@ CloudFormation テンプレートのパラメータには **AWS Secrets Manager 
 
 **手順 4 が最も飛ばされます。** 監視面が落ちたことに気づかない構成は、監視が無い状態と区別できません。
 
----
+手順 2 は、次の読み取り専用アクセスで Harvest がプルされる側であることを確認できます。
 
-## よくある誤解
+```bash
+curl -s http://<harvest-host>:<port>/metrics | head
+```
 
-| 誤解 | 実際 |
-|---|---|
-| Harvest から Amazon Managed Service for Prometheus に直接送れる | **エクスポータはプルエンドポイントと InfluxDB です。** スクレイパ + SigV4 の 1 ホップが要ります |
-| Harvest がメトリクスを送信する | **Prometheus が Harvest をポーリングします。** 取りに来られる側です |
-| 1 ホップは設定を足すだけ | **運用対象が 1 つ増えます。** それ自体の死活監視も要ります |
-| AWS のテンプレートは本番構成である | **Amazon EC2 1 台です。** 可用性が要件なら構成を変える判断が先に来ます |
-| 監視の追加は読み取りだけなので安全 | **`fsxadmin` で認証します。** 認証失敗の積み上がりはロックの引き金になりえます |
-| 収集対象を増やしてもリスクは変わらない | **同じ資格情報を共有していれば、1 つのロックが全対象に波及します** |
-| Grafana の初期資格情報は自動生成される | 公開ドキュメントに記載された既知の値です。変更が推奨されています |
-| テンプレートが到達範囲を絞ってくれる | サブネット種別と許可元はパラメータです。導入時の判断です |
+### 期待結果
 
----
+```text
+Prometheus のライン形式のメトリクスが返る（Harvest はこのエンドポイントを公開し、
+Prometheus がポーリングして取得する。Harvest 側からの送信ではない）
+```
 
-## 参照した一次情報
+このアクセスは Harvest の公開エンドポイントを読むだけで、収集構成は何も変更しません。remote_write の有無は導入する版のドキュメントで確認してください。
 
-| 論点 | 出典 | 取得日 |
-|---|---|---|
-| Prometheus エクスポータがライン形式への整形と `/metrics` の web エンドポイント公開を担い、Prometheus が Harvest をポーリングすること | [Harvest 25.08: Prometheus Exporter](https://netapp.github.io/harvest/25.08/prometheus-exporter/) | 2026-09-05 |
-| CloudFormation テンプレートが Amazon EC2 Linux 1 台に Harvest と Grafana を導入すること、既定インスタンスタイプが `t3.micro`、パラメータに Secrets Manager のシークレット名と `fsxadmin` のパスワードが含まれること、受信ポート 3000 / 9090 / 53 / 443 の要件、サブネット種別とセキュリティグループがパラメータであること、Grafana の既定資格情報と変更の推奨 | [AWS: Monitoring FSx for ONTAP file systems using Harvest and Grafana](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-harvest-grafana.html) | 2026-09-05 |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — 可観測性](../README.md) — このモジュールのハブ
-- [監視経路の選択 決定木](../../../reference/decision-trees/observability-route.md) — どの経路を選ぶか
-- [監視経路の比較](../../../reference/comparison/observability-routes.md) — 経路別のトレードオフ
-- [オンプレのダッシュボードはそのまま移らない](on-prem-dashboards-do-not-transfer.md) — Harvest を選ぶ前に確認するもの
-- [クロスアカウントは IAM ではなくネットワークの問題](cross-account-is-a-network-problem.md) — 収集対象を他アカウントに広げるとき
-- [fsxadmin はロックされる](../../../playbooks/05-operate/notes/admin-account-lockout-and-recovery.md) — 原因・復旧手順・閾値の設定
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — 可観測性](../README.md)
+[クロスアカウントは IAM ではなくネットワークの問題](cross-account-is-a-network-problem.md)

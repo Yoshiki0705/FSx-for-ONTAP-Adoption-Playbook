@@ -1,9 +1,5 @@
 # ナビゲーションガイド
 
-<!-- lang-switcher:start -->
-🌐 [日本語](navigation.md) | [English](../en/navigation.md) | [한국어](../ko/navigation.md) | [简体中文](../zh-CN/navigation.md) | [繁體中文](../zh-TW/navigation.md) | [Français](../fr/navigation.md) | [Deutsch](../de/navigation.md) | [Español](../es/navigation.md) | [🏠 リポジトリトップ](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## 結論
@@ -63,7 +59,7 @@ graph TD
 | **手元の Windows / Mac / WSL2 から使いたい** | [端末からデータに届く経路の決定木](reference/decision-trees/client-access-route.md) | [クライアントアクセス](domains/client-access/) |
 | **端末からマウントできない / VPN は繋がっているのに届かない** | [端末の到達経路の比較](reference/comparison/endpoint-reachability-options.md) | [端末別にできることの比較](reference/comparison/client-endpoint-capabilities.md) |
 | **自分の業種から、何を決めればよいか調べたい** | [業種別リソースマップ — 読む順序](reference/industry-resource-map.md#業種から入ったときの読む順序) | [業種別索引](reference/industry-resource-map.md#業種別索引) |
-| **既存の製品を FSx for ONTAP と組み合わせたい** | [課題別 ISV / SaaS ソリューションマップ](reference/isv-solution-map.md) | [掲載基準を満たさないもの](reference/isv-solution-map.md#掲載基準を満たさないもの) |
+| **既存の製品を FSx for ONTAP と組み合わせたい** | [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | [掲載基準を満たさないもの](reference/isv-solution-map.md#掲載基準を満たさないもの) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
 | AI / ML の学習データを置き、実験ごとに分岐させたい | [学習データセットの版と実験ブランチの制約](domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | [実験ブランチを配るときに縛る 3 つの対象](domains/security-governance/notes/self-service-without-storage-admin.md) |
@@ -112,7 +108,7 @@ graph TD
 | [決定ツリー](reference/decision-trees/) | 選択肢が複数あり、どれを選ぶか決めたい |
 | [比較マトリクス](reference/comparison/) | 他の選択肢とのトレードオフを整理したい |
 | [業種別リソースマップ](reference/industry-resource-map.md) | 業種を入口に、読むモジュールと公開リソースを引きたい |
-| [課題別 ISV / SaaS ソリューションマップ](reference/isv-solution-map.md) | 課題を入口に、組み合わせが公表されている製品と判断ノートの有無を引きたい |
+| [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | 課題を入口に、組み合わせが公表されている製品と判断ノートの有無を引きたい |
 | [プロジェクト間の引用索引](reference/cross-repo-index.md) | ある数値をどのリポジトリから引いているか確かめたい |
 | [上限値・クォータ](reference/limits/) | 設計が上限に当たらないか確認したい |
 | [用語集](reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |

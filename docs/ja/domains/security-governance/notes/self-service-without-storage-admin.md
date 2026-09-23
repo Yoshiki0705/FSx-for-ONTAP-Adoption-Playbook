@@ -6,13 +6,33 @@ evidence: hypothesis
 lang: ja
 ---
 
-# 実験ブランチを配るときに縛る対象は権限だけではない
+# 実験ブランチは権限だけ縛れば足りるか？
+
+権限だけでは足りません。認可・資源・寿命の 3 つを同時に縛らないと本番に波及します。
+
+## このノートで学べること
+
+- 実験ブランチを配るとき、認可・資源・寿命の 3 つを同時に縛る必要があること
+- クローンが親の QoS 制限を継承せず、ボリューム数の上限が共有資源であること
+
+## このノートが答えないこと
+
+- ONTAP REST API 経由の操作が CloudTrail に現れるか（未検証）
+- この運用モデルの効果の実測値
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="実験ブランチを配るときに縛る対象は権限だけではない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ / ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **データサイエンティストや解析エンジニアに Snapshot とクローンを使わせるために、`fsxadmin` を渡す必要はありません。** SVM 単位の操作は `vsadmin` で足り、ONTAP REST API は SVM の管理エンドポイント経由で呼べます。**プラットフォーム側が `vsadmin` として呼び、利用者はその窓口を叩く形にできます。**
 
@@ -32,12 +52,12 @@ lang: ja
 > （`vsadmin` の範囲、ONTAP REST API の経路、QoS ポリシーグループ、ボリューム数の上限）、
 > **これらを組み合わせた自己サービスの窓口を実際に構築・運用した結果ではありません。**
 > とくに「ONTAP REST API 経由の操作が CloudTrail に現れるか」は**確認していません**（下記に明記しています）。
-> 責務分割の整理は参照記事に依拠していますが、**その記事も実装提案であり検証結果ではないと明記しています。**
+> 責務分割の整理は参照記事に依拠していますが、**その記事は実装案を示しており、検証結果を含まないと記載しています。**
 > 検証の出発点として使ってください。**設計の根拠にする前に、[自環境での確認手順](#自環境での確認手順) を通してください。**
 
 ---
 
-## 背景 — 最初に来る「管理者権限を渡すのか」という問い
+### 背景 — 最初に来る「管理者権限を渡すのか」という問い
 
 Snapshot・クローン・ストレージ API が AI のワークフローに入ってくると、**最初に出る懸念は権限です。** データサイエンティストにストレージの管理者権限を渡すのか、という問いです。
 
@@ -54,7 +74,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## 責務の分割
+### 責務の分割
 
 **利用者が要求するのは結果で、方針を強制するのはプラットフォーム、操作を実行するのは基盤という分け方です。**
 
@@ -65,11 +85,11 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 **利用者は「このデータセットの版から実験ブランチを作りたい」と要求し、プラットフォームが要求を検証して、絞られたサービス識別情報で承認済みの操作を実行します。**
 
-この整理は参照記事の提案と同じです。**このノートの追加分は、FSx for ONTAP でそれを実装しようとしたときに、権限以外に何を縛る必要があるかです。**
+この責務分割は参照記事にも記載されています。**FSx for ONTAP でこの構成を使うプラットフォーム管理者は、権限に加えて資源と寿命を制御する必要があります。**
 
 ---
 
-## 縛る対象 1 — 認可
+### 縛る対象 1 — 認可
 
 | 決めること | 使える仕組み | 注意 |
 |---|---|---|
@@ -81,7 +101,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## 縛る対象 2 — 資源
+### 縛る対象 2 — 資源
 
 **ここが権限設計では止まらない部分です。**
 
@@ -101,7 +121,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## 縛る対象 3 — 寿命
+### 縛る対象 3 — 寿命
 
 **作ったものが消えないと、資源の割り当ては時間とともに必ず枯れます。**
 
@@ -117,7 +137,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## この窓口に載せてはいけない操作
+### この窓口に載せてはいけない操作
 
 **成功しても取り消せない操作は、自己サービスの対象外です。**
 
@@ -131,7 +151,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## 監査で答えられる範囲と答えられない範囲
+### 監査で答えられる範囲と答えられない範囲
 
 **自己サービスにする以上、「誰が何をしたか」を後から言える必要があります。** ここには**確認できていない点があります。**
 
@@ -148,7 +168,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## エージェントに実行させる場合の扱い
+### エージェントに実行させる場合の扱い
 
 **同じ窓口を使わせてください。** エージェントに直接インフラの権限を渡すのではなく、人間の利用者と同じ制約付きのサービス層を通します。
 
@@ -165,7 +185,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## 効果の主張に必要な測定項目
+### 効果の主張に必要な測定項目
 
 **このモデルの価値は容量削減ではなく、待ち時間と手戻りの削減として現れます。** そして **このノートはどれも測っていません。** 主張する前に基準値を取ってください。
 
@@ -183,7 +203,7 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 ---
 
-## このモデルの未検証な点
+### このモデルの未検証な点
 
 **明示しておきます。以下はいずれも確認していません。**
 
@@ -194,6 +214,51 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 | `vsadmin` に対して「クローンの作成は許すが削除は許さない」のような操作単位の絞り込みができるか | ロールの定義範囲を確認する |
 | 窓口越しのクローン作成が、実験開始までの待ち時間を実際にどれだけ縮めるか | 手渡しの現状を測って比べる |
 | 実験ブランチの本数が実運用でボリューム数の上限にどれだけ近づくか | 現状のボリューム数と実験件数から試算し、実績と比べる |
+
+---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| Snapshot やクローンを使わせるには管理者権限が必要 | SVM 単位の操作は `vsadmin` で足ります。プラットフォームが代理で実行する形にできます |
+| 権限を絞れば本番への影響は防げる | **クローンは親の QoS を継承しません。** 権限の外に資源の問題が残ります |
+| 本番ボリュームに QoS をかけてあるので安全 | その制限はクローンに引き継がれません |
+| 非共有型の QoS で 1 本あたりを決めれば総量も決まる | 本数に比例して総量が増えます。**総量を縛るなら共有型です** |
+| QoS の型は後から変えられる | **`is-shared` は既存ポリシーで変更できません。** 作り直して差し替えます |
+| クローンは容量を使わないので放置してよい | **ボリューム数の上限を消費します。** 枯れると本番のボリュームが作れなくなります |
+| 版を守るためにロックを自動化するとよい | **不可逆な操作です。** この窓口に載せず、承認を分けて取ります |
+| CloudTrail があるので操作は全部追える | CloudTrail は Amazon FSx の API 呼び出しです。**ONTAP REST API 経由の操作が現れるかは未検証です** |
+| エージェントには専用の強い権限を用意する | 人間の利用者と**同じ窓口・同じ制約**を通します |
+| 削減額は導入前に見積もれる | 実際に作っていたフルコピーの本数を測ってからでないと、削減か「増えなかった」かが区別できません |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| `fsxadmin` と `vsadmin` の範囲の違い、`vsadmin` のパスワードを SVM 作成時に設定する必要 | [AWS: Enabling SMB encryption of data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) |
+| ONTAP CLI と ONTAP REST API が SVM の管理エンドポイント経由（SSH / HTTP）で使えること、AWS 側とネイティブ側の両方の管理手段があること | [AWS: How Amazon FSx for NetApp ONTAP works](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-it-works-fsx-ontap.html) / [AWS Storage Blog: How to use NetApp ONTAP REST APIs with Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/how-to-use-netapp-ontap-rest-apis-with-amazon-fsx-for-netapp-ontap/) |
+| **クローンが親の QoS 制限を継承しないこと**、共有・非共有の QoS ポリシーグループ、`is-shared` を既存ポリシーで変更できないこと | [AWS Storage Blog: Using Quality of Service in Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/using-quality-of-service-in-amazon-fsx-for-netapp-ontap/) |
+| ボリューム数の上限（1 HA ペア 500、合計 1,000）、FlexGroup のコンスティチュエントが同じ枠に数えられること | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
+| CloudTrail が Amazon FSx の API 呼び出しを記録すること | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
+| ファイルアクセス監査で 4663 が 1 オブジェクトにつき最初の読み取りと最初の書き込みのみを記録すること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
+| SnapLock の保持モードと `PrivilegedDelete` の終端状態、監査ログボリュームの最小保持期間が 6 か月であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
+| SSD 縮小操作の開始後に作られたクローンが縮小を一時停止させ、削除で再開すること | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
+| 管理者と利用者の責務分割の整理、統制されたエージェントに与えるガードレールの構成、効果を測るための項目、業界水準の投資対効果をストレージに帰属させないこと | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) — **記事自身が実装案であり、検証結果を含まないと明記しています** |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — セキュリティ / ガバナンス](../README.md) — このモジュールのハブ
+- [学習データセットの版をスケジュール Snapshot に載せると消える](../../data-utilization/notes/dataset-versions-and-experiment-branches.md) — 版と実験ブランチの制約
+- [不可逆な操作の承認は作業の承認とは別に取る](irreversible-operations-need-separate-approval.md) — この窓口に載せない操作
+- [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) — 管理者の分け方と監査の 2 つの面
+- [S3 Access Point は全リクエストを 1 つの ID で認可する](../../data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) — AI パイプライン側の権限設計
+- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — クローンがテンプレートから届かない理由
+- [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---
 
@@ -216,51 +281,20 @@ FSx for ONTAP 側には境界を引ける層が既にあります。
 
 適用手順の全体像は [本番に取り入れる前の確認](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
 
----
+ONTAP 操作が記録されるかは、まず次の読み取り専用コマンドで CloudTrail を確認します。
 
-## よくある誤解
+```bash
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventSource,AttributeValue=fsx.amazonaws.com --max-results 10
+```
 
-| 誤解 | 実際 |
-|---|---|
-| Snapshot やクローンを使わせるには管理者権限が必要 | SVM 単位の操作は `vsadmin` で足ります。プラットフォームが代理で実行する形にできます |
-| 権限を絞れば本番への影響は防げる | **クローンは親の QoS を継承しません。** 権限の外に資源の問題が残ります |
-| 本番ボリュームに QoS をかけてあるので安全 | その制限はクローンに引き継がれません |
-| 非共有型の QoS で 1 本あたりを決めれば総量も決まる | 本数に比例して総量が増えます。**総量を縛るなら共有型です** |
-| QoS の型は後から変えられる | **`is-shared` は既存ポリシーで変更できません。** 作り直して差し替えます |
-| クローンは容量を使わないので放置してよい | **ボリューム数の上限を消費します。** 枯れると本番のボリュームが作れなくなります |
-| 版を守るためにロックを自動化するとよい | **不可逆な操作です。** この窓口に載せず、承認を分けて取ります |
-| CloudTrail があるので操作は全部追える | CloudTrail は Amazon FSx の API 呼び出しです。**ONTAP REST API 経由の操作が現れるかは未検証です** |
-| エージェントには専用の強い権限を用意する | 人間の利用者と**同じ窓口・同じ制約**を通します |
-| 削減額は導入前に見積もれる | 実際に作っていたフルコピーの本数を測ってからでないと、削減か「増えなかった」かが区別できません |
+### 期待結果
 
----
+```text
+Amazon FSx API 呼び出しのイベント一覧（ONTAP REST 経由のクローン操作は現れない可能性が高い）
+```
 
-## 参照した一次情報
+この確認で分かるのは Amazon FSx API 呼び出しの記録だけです。ONTAP REST / CLI 経由の操作が残るかは、実際にクローンを 1 本作って同時刻の CloudTrail を検索して確かめる必要があります。
 
-| 論点 | 出典 |
-|---|---|
-| `fsxadmin` と `vsadmin` の範囲の違い、`vsadmin` のパスワードを SVM 作成時に設定する必要 | [AWS: Enabling SMB encryption of data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/enable-smb-encryption.html) |
-| ONTAP CLI と ONTAP REST API が SVM の管理エンドポイント経由（SSH / HTTP）で使えること、AWS 側とネイティブ側の両方の管理手段があること | [AWS: How Amazon FSx for NetApp ONTAP works](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-it-works-fsx-ontap.html) / [AWS Storage Blog: How to use NetApp ONTAP REST APIs with Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/how-to-use-netapp-ontap-rest-apis-with-amazon-fsx-for-netapp-ontap/) |
-| **クローンが親の QoS 制限を継承しないこと**、共有・非共有の QoS ポリシーグループ、`is-shared` を既存ポリシーで変更できないこと | [AWS Storage Blog: Using Quality of Service in Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/using-quality-of-service-in-amazon-fsx-for-netapp-ontap/) |
-| ボリューム数の上限（1 HA ペア 500、合計 1,000）、FlexGroup のコンスティチュエントが同じ枠に数えられること | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
-| CloudTrail が Amazon FSx の API 呼び出しを記録すること | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
-| ファイルアクセス監査で 4663 が 1 オブジェクトにつき最初の読み取りと最初の書き込みのみを記録すること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
-| SnapLock の保持モードと `PrivilegedDelete` の終端状態、監査ログボリュームの最小保持期間が 6 か月であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
-| SSD 縮小操作の開始後に作られたクローンが縮小を一時停止させ、削除で再開すること | [AWS: Troubleshooting SSD decrease operation issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/ssd-decrease-troubleshooting.html) |
-| 管理者と利用者の責務分割の整理、統制されたエージェントに与えるガードレールの構成、効果を測るための項目、業界水準の投資対効果をストレージに帰属させないこと | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) — **記事自身が実装提案であり検証結果ではないと明記しています** |
+## Read next
 
----
-
-## 関連ドキュメント
-
-- [Domain — セキュリティ / ガバナンス](../README.md) — このモジュールのハブ
-- [学習データセットの版をスケジュール Snapshot に載せると消える](../../data-utilization/notes/dataset-versions-and-experiment-branches.md) — 版と実験ブランチの制約
-- [不可逆な操作の承認は作業の承認とは別に取る](irreversible-operations-need-separate-approval.md) — この窓口に載せない操作
-- [保存時の暗号化は自動、転送時は既定で無効](what-the-platform-gives-and-what-stays-yours.md#権限設計--管理者の分離) — 管理者の分け方と監査の 2 つの面
-- [S3 Access Point は全リクエストを 1 つの ID で認可する](../../data-utilization/notes/reaching-data-without-copies.md#権限が平坦化されることの意味) — AI パイプライン側の権限設計
-- [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — クローンがテンプレートから届かない理由
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ / ガバナンス](../README.md)
+[不可逆な操作はなぜ作業承認と分けるか？](irreversible-operations-need-separate-approval.md)

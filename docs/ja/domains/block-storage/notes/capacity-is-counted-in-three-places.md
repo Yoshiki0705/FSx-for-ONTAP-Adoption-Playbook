@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: [SINGLE_AZ_2, MULTI_AZ_2]
 lang: ja
 ---
 
-# 容量は 3 か所で数えられる
+# 容量はどこで数えられているか？
+
+3 か所です。確保した SSD のうち LUN が使えるのは 3 回の差し引き後の量だけです。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- 確保した SSD から LUN が使える容量まで 3 回の差し引き（aggregate 目減り・snapshot 予約・LUN 予約）があること
+- 容量計上に遅延があり、満杯時は書き込みエラーではなく LUN が read-only に落ちること
+
+## このノートが答えないこと
+
+- 目減り比率（`1024→907.03` など）の一般値（構成依存、自環境で数える）
+- ブロックの性能値（測ったのは容量の数え方と反映の遅れのみ）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="容量は-3-か所で数えられる"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **確保した SSD 容量から LUN が実際に使える容量までに、3 回の差し引きがあります。**
 
@@ -43,9 +64,9 @@ lang: ja
 
 ---
 
-## 3 か所の内訳
+### 3 か所の内訳
 
-### SSD から aggregate へ
+#### SSD から aggregate へ
 
 **1,024 GiB を確保したファイルシステムの aggregate は 907.03 GiB でした。** 差の約 117 GiB はボリュームに割り当てられません。
 
@@ -60,7 +81,7 @@ lang: ja
 
 **2 つの環境の違いはデプロイタイプですが、それ以外の要因を切り分ける検証はしていません。** 「同じ 1,024 GiB から使える量が Multi-AZ のほうが少なかった」という 2 環境の観測です。**容量設計では、選ぶデプロイタイプで自分で数えてください。**
 
-### ボリュームから active file system へ
+#### ボリュームから active file system へ
 
 **100 GiB のボリュームの `afs_total` は 95 GiB でした。** snapshot 予約が既定で 5% あり、その分は LUN に使えません。
 
@@ -68,17 +89,17 @@ lang: ja
 
 snapshot 予約は変更できます。AWS は SQL Server の構成例で **snapshot 予約を 0% にする**ことを挙げています。ただし 0% にすると、Snapshot が使う容量は active file system 側から取られます。**どちらにしても容量は要ります。予約は「先に取るか、後で取るか」の違いです。**
 
-### LUN の予約から実際の空きへ
+#### LUN の予約から実際の空きへ
 
 **`space-reserve enabled` の 20 GiB LUN は、書き込み 0 の状態でボリュームの使用量を 20.078 GiB 増やしました。** 設定を無効にすると 0.093 GiB に戻り、有効にすると再び 20.171 GiB になりました。**両方向に可逆です。**
 
 **既定は無効です。** REST API で作った LUN は `space_reserve=disabled` でした。有効にするのは明示的な選択です。
 
-**ここに落とし穴があります。** AWS の SQL Server ベストプラクティスは **「LUN reservation enabled」** を挙げています。一方 FSx for ONTAP の API で作ったボリュームは **`space-guarantee none`、`fractional-reserve 0`** でした。NetApp のドキュメントでは、`fractional-reserve` はボリュームの guarantee が `none` のとき既定で 0 になり、**書き込みの保証は best-effort にしかなりません。** つまり **予約を有効にしても、上書きのための領域が保証されるわけではありません。** 予約が保証するのは「LUN のサイズ分の容量が他に使われないこと」までです。
+**ここに落とし穴があります。** AWS の SQL Server 構成例は **「LUN reservation enabled」** を挙げています。一方 FSx for ONTAP の API で作ったボリュームは **`space-guarantee none`、`fractional-reserve 0`** でした。NetApp のドキュメントでは、`fractional-reserve` はボリュームの guarantee が `none` のとき既定で 0 になり、**書き込みの継続は利用可能な空き容量に依存します。** つまり **予約を有効にしても、上書きのための領域が保証されるわけではありません。** 予約が保証するのは「LUN のサイズ分の容量が他に使われないこと」までです。
 
 ---
 
-## 計上の遅延
+### 計上の遅延
 
 **設定を変えた直後の読み取りは、変更前の値を返します。**
 
@@ -94,9 +115,9 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 ---
 
-## 書き込めなくなる経路
+### 書き込めなくなる経路
 
-### LUN 内のファイル削除では容量が戻らないこと
+#### LUN 内のファイル削除では容量が戻らないこと
 
 **20 GiB の thin LUN に 4 GiB 書き、そのファイルを削除しても、ボリュームの使用量は変わりませんでした。**
 
@@ -111,7 +132,7 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 **なお `space-allocation` は ONTAP 9.18.1P5 では既定で有効でした。** AWS は有効化を推奨していますが、REST API で作った LUN は最初から `enabled` でした。
 
-### 戻った容量が Snapshot に移ること
+#### 戻った容量が Snapshot に移ること
 
 **`fstrim` で戻したはずの容量は、free space にはなりませんでした。**
 
@@ -121,7 +142,7 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 **つまり「消したのに減らない」の原因は 2 段あります。** ホストが UNMAP を送っていないか、Snapshot が握っているかです。
 
-### read-only への転落
+#### read-only への転落
 
 **thin provisioning でファイルシステムが満杯になると、LUN は read-only に落ちます。** AWS re:Post は症状として `Space allocation failed write protect` と `critical space allocation error` を挙げ、復旧手順を **ボリューム拡張 → `lun resize` → OS 側の fsck** としています。
 
@@ -131,7 +152,7 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 ---
 
-## 容量が二重に見える例
+### 容量が二重に見える例
 
 **同じボリュームを LUN と NFS の両方から見ると、容量の表示が一致しません。**
 
@@ -141,7 +162,7 @@ snapshot 予約は変更できます。AWS は SQL Server の構成例で **snap
 
 ---
 
-## 設計フロー
+### 設計フロー
 
 ```mermaid
 graph TD
@@ -158,7 +179,7 @@ graph TD
     S1 --> A1
     S2 --> A1
     A1["ボリューム合計 x 1.114 = 必要な SSD 確保量<br/>aggregate への目減りを見込む"]
-    A1 --> M1{監視で見る層を決める}
+    A1 --> M1[監視対象の容量レイヤーを決める]
     M1 --> M2["ボリュームの空き<br/>ホストの df では見えない"]
     M2 --> M3["space-allocation を有効に<br/>ホストの解放を伝える"]
     M3 --> M4["autodelete と autogrow を設定<br/>read-only への転落を避ける"]
@@ -168,31 +189,14 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `storage aggregate show -fields size,usedsize` で aggregate のサイズを確認し、確保した SSD 容量と比べる | **1 段目の目減り** |
-| 2 | `volume show -fields size,available,percent-snapshot-space` を確認する | **2 段目の snapshot 予約** |
-| 3 | `lun show -fields space-reserve,size,size-used` で予約の有無を確認する | 3 段目の予約 |
-| 4 | 予約を切り替え、**30 秒以上待ってから** ボリュームの使用量を読む | **計上の遅延。直後に読むと変更前の値が返ります** |
-| 5 | LUN 上でファイルを作って削除し、ボリュームの使用量を見る。次に `fstrim` を実行して再度見る | UNMAP が伝わるまで戻らないこと |
-| 6 | `volume snapshot show` で、解放したブロックが Snapshot に移っていないかを確認する | 2 つ目の「戻らない」理由 |
-| 7 | `volume show -fields space-guarantee,fractional-reserve` を確認する | **`none` / `0` なら、予約しても上書きの保証は best-effort です** |
-| 8 | ホストの `df` とボリュームの空きを並べて記録する | 監視でどちらを見るべきか |
-
-手順 4 と 5 は**検証環境で行ってください。** 本番の LUN で予約を切り替えると、ボリュームの空き容量の計算が変わります。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
 | 確保した SSD 容量がそのままボリュームに使える | **1,024 GiB の確保で aggregate は 907.03 GiB でした**（検証環境の実測） |
 | 100 GiB のボリュームには 100 GiB 置ける | **既定の 5% snapshot 予約があり、active file system は 95 GiB でした** |
 | LUN を作っただけでは容量を消費しない | **予約を有効にすると、書き込み 0 でもサイズ分を消費します** |
-| 予約を有効にすれば上書きの領域が保証される | ボリュームの guarantee が `none`、`fractional-reserve` が 0 なので **best-effort です** |
+| 予約を有効にすれば上書きの領域が保証される | ボリュームの guarantee が `none`、`fractional-reserve` が 0 なので、**上書きの継続は利用可能な空き容量に依存します** |
 | 設定変更の効果は直後に確認できる | **30 秒程度の遅れがあります。** 直後の読み取りは変更前の値です |
 | LUN 上でファイルを消せば容量が戻る | **`fstrim` などで UNMAP を送るまで戻りません** |
 | `fstrim` すれば free space になる | **Snapshot が握っていればそちらに移るだけです** |
@@ -202,7 +206,7 @@ graph TD
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -220,7 +224,7 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -228,13 +232,13 @@ graph TD
 | ボリュームを LUN より 5% 以上大きくすること、`space-allocation` を有効にする理由、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | 満杯時に LUN が read-only に落ちること、復旧が拡張 → `lun resize` → fsck であること | [AWS re:Post: LUN in read-only mode](https://repost.aws/knowledge-center/fsx-ontap-lun-in-read-only-mode) |
 | `space-guarantee none` / `space-slo thick` / `semi-thick` の違い、空間予約された LUN が作成時に容量を確保すること | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
-| `fractional-reserve` が 0 か 100 しか取らず、guarantee が `none` のとき既定で 0 になること、0 では書き込み保証が best-effort であること | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
-| snapshot 予約 0%、LUN 予約有効、autodelete oldest_first、autosize autogrow という構成例 | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| `fractional-reserve` が 0 か 100 しか取らず、guarantee が `none` のとき既定で 0 になること、0 では書き込みの継続が利用可能な空き容量に依存すること | [NetApp: Set fractional reserve](https://docs.netapp.com/us-en/ontap/san-admin/set-fractional-reserve-concept.html) |
+| snapshot 予約 0%、LUN 予約有効、autodelete oldest_first、autosize autogrow という構成例 | [AWS: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | SSD 容量の最小値と IOPS の既定（3 per GiB） | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) — Snapshot 予約とレイアウトの関係
@@ -249,6 +253,36 @@ graph TD
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `storage aggregate show -fields size,usedsize` で aggregate のサイズを確認し、確保した SSD 容量と比べる | **1 段目の目減り** |
+| 2 | `volume show -fields size,available,percent-snapshot-space` を確認する | **2 段目の snapshot 予約** |
+| 3 | `lun show -fields space-reserve,size,size-used` で予約の有無を確認する | 3 段目の予約 |
+| 4 | 予約を切り替え、**30 秒以上待ってから** ボリュームの使用量を読む | **計上の遅延。直後に読むと変更前の値が返ります** |
+| 5 | LUN 上でファイルを作って削除し、ボリュームの使用量を見る。次に `fstrim` を実行して再度見る | UNMAP が伝わるまで戻らないこと |
+| 6 | `volume snapshot show` で、解放したブロックが Snapshot に移っていないかを確認する | 2 つ目の「戻らない」理由 |
+| 7 | `volume show -fields space-guarantee,fractional-reserve` を確認する | **`none` / `0` なら、予約しても上書きの継続は利用可能な空き容量に依存します** |
+| 8 | ホストの `df` とボリュームの空きを並べて記録する | 監視でどちらを見るべきか |
+
+手順 4 と 5 は**検証環境で行ってください。** 本番の LUN で予約を切り替えると、ボリュームの空き容量の計算が変わります。
+
+手順 1 の aggregate の目減りは、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> storage aggregate show -fields size,usedsize
+```
+
+### 期待結果
+
+```text
+確保した SSD 容量より aggregate のサイズが小さい（検証環境では 1,024 GiB → 907.03 GiB）。
+比率は構成とデプロイタイプで変わるため、確保量から使える量を自環境で数え直す
+```
+
+このコマンドは aggregate のサイズを読むだけで、容量にもボリュームにも変更を加えません。予約の切り替えは計上に遅延があるため、変更後は 30 秒以上待ってから読み直してください。
+
+## Read next
+
+[パスはフェイルオーバーの仕組みそのものか？](paths-are-the-failover-mechanism.md)

@@ -7,22 +7,52 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacit
 lang: ja
 ---
 
-# 階層化の既定値は作成方法で違う
+# 階層化の既定値は作成方法で同じか？
+
+同じになりません。コンソールと IaC で既定が違うので、ポリシーと cooling period を明示します。
+
+## このノートで学べること
+
+- 階層化ポリシーを省略したときの既定値が作成経路（コンソール / CLI / API / CFN / CDK / Terraform / ONTAP CLI）で異なること
+- 読み取ったデータが SSD に戻るかがポリシーで違い、最適化は「戻せる順」に試すこと
+
+## このノートが答えないこと
+
+- 重複排除・圧縮の削減率や階層化の効果の実測値（自環境で測る）
+- コンソール作成時の既定値の再現（ドキュメント記載と環境内の観察にとどまる）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="階層化の既定値は作成方法で違う"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 06 — 最適化](../README.md)
 
 ---
 
-## 結論
+### 結論
 
-**階層化ポリシーの既定値は、ボリュームをどう作ったかで変わります。**
+**階層化ポリシーを省略したときの結果は、ボリュームの作成経路と、その経路が既定値を設定するかで変わります。**
 
-| 作成方法 | 既定のポリシー | 既定の cooling period |
-|---|---|---|
-| Amazon FSx コンソール | **`Auto`** | **31 日** |
-| AWS CLI / Amazon FSx API / ONTAP CLI | **`Snapshot Only`** | **2 日** |
+| 作成方法 | 経路が定める既定値 | 根拠の範囲 | 変更可否 |
+|---|---|---|---|
+| Amazon FSx コンソール | `AUTO` / 31 日 | [コンソール](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) | 変更可 |
+| AWS CLI / Amazon FSx API | CLI: `Not established`<br>API: `SNAPSHOT_ONLY` / 2 日 | [Amazon FSx API](https://docs.aws.amazon.com/fsx/latest/APIReference/API_TieringPolicy.html) | 変更可 |
+| CloudFormation / CDK | CFN: `SNAPSHOT_ONLY` / 2 日<br>CDK: `Not established` | [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) / [CDK L1](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_fsx.CfnVolume.TieringPolicyProperty.html) | 中断なし |
+| Terraform AWS Provider | `Not established` | [provider schema](https://github.com/hashicorp/terraform-provider-aws/blob/941220630893c456f38d54e804e3201c90d4e654/internal/service/fsx/ontap_volume.go) | 変更可 |
+| ONTAP CLI | FlexVol: `snapshot-only` / 2 日<br>FlexGroup: `none` | [ONTAP CLI](https://docs.netapp.com/us-en/ontap-cli/volume-create.html) | 変更可 |
 
-**同じ「既定のまま」で作ったボリュームが、作成経路によって別の挙動になります。** コンソールで作った検証環境と、CloudFormation で作った本番環境で階層化の挙動が違う、という状態が既定で起こります。
+`Not established` は、ツール自身が既定値を設定する根拠を確認できないことを示します。AWS CLI の
+公開リファレンスでは CLI 固有の既定値を確認できません。Terraform AWS Provider は `tiering_policy` の
+省略時に値を設定せず、CDK の L1 は CloudFormation のプロパティを写像します。下流の既定値が適用されても、
+ラッパー固有の既定値とは扱いません。
+
+**ポリシーと cooling period をすべての経路で明示すると、作成手段を変えても同じ意図を再現できます。**
+ただし CloudFormation / CDK は CloudFormation の更新動作、Terraform は provider schema、ONTAP CLI は
+FlexVol / FlexGroup の差をそれぞれ確認する必要があります。
 
 > **CLI 側は実測で確認しました。** AWS CLI で `TieringPolicy` を指定せずにボリュームを作成すると
 > **`SNAPSHOT_ONLY` / cooling `2`** になります。作成経路を制御した**因果の確認**です。
@@ -38,7 +68,7 @@ lang: ja
 
 ---
 
-## 4 つのポリシーと、読み取り時の挙動
+### 4 つのポリシーと、読み取り時の挙動
 
 | ポリシー | 容量プールへ移すもの | cooling period | 読み取ったときの挙動 |
 |---|---|---|---|
@@ -55,7 +85,7 @@ lang: ja
 
 ---
 
-## 既定値の差が問題になる理由
+### 既定値の差が問題になる理由
 
 `Snapshot Only`（既定 2 日）と `Auto`（既定 31 日）では、**移す対象そのものが違います。** 前者は Snapshot だけ、後者はユーザーデータも含みます。
 
@@ -65,14 +95,14 @@ lang: ja
 
 | 場面 | 起きること |
 |---|---|
-| 検証はコンソール、本番は IaC | 検証で観測した容量とコストの推移が本番で再現しません |
-| 移行ツールや自動化がボリュームを作る | 自動化経路は `Snapshot Only` になるため、想定していた階層化が起きません |
+| 検証はコンソール、本番は IaC | 値を明示しなければ、検証時と本番時の設定が一致する保証がありません |
+| 移行ツールや自動化がボリュームを作る | 経路ごとの既定値に依存すると、想定した階層化にならない場合があります |
 
 **対策は 1 つです。ポリシーと cooling period を明示的に指定してください。** 既定に任せると、作成経路が変わったときに挙動が変わります。再現可能な構築を扱う [Playbook 04 — 構築](../../04-build/) の観点でも、ここは明示すべき項目です。
 
 ---
 
-## 「戻せるか」で決める変更の順序
+### 「戻せるか」で決める変更の順序
 
 最適化は「効果が大きい順」ではなく、**戻せる順に試すのが安全です。** 戻せない変更を先に打つと、効果がなかったときに元に戻せません。
 
@@ -90,7 +120,7 @@ lang: ja
 
 ---
 
-## 測定なしの変更の、最適化としての不成立
+### 測定なしの変更の、最適化としての不成立
 
 **変更前の値がなければ、効果を主張できません。** そして測り方には前提があります。
 
@@ -106,7 +136,7 @@ lang: ja
 
 ---
 
-## ストレージ効率の効果の測り方
+### ストレージ効率の効果の測り方
 
 重複排除と圧縮の効果は、**「空き容量が増えた」では測れません。** 請求は確保容量に対して発生するためです。
 
@@ -121,7 +151,7 @@ lang: ja
 
 ---
 
-## コストと可用性のトレードオフ
+### コストと可用性のトレードオフ
 
 削れる額と引き換えに何を受け入れるかは、[トレードオフの見比べかた](../../../domains/cost/notes/provisioned-versus-consumed.md#トレードオフの見比べかた) に対称の表があります。**このノートでは重複させません。**
 
@@ -129,21 +159,21 @@ lang: ja
 
 ---
 
-## 最適化フロー
+### 最適化フロー
 
 ```mermaid
 graph TD
-    A[最適化を始める] --> M{変更前の値があるか}
-    M -->|ない| MEAS[まず測る<br/>最大値・ピーク時刻・<br/>実使用量と確保容量]
-    M -->|ある| POL
+    A[最適化を始める] --> M{比較対象の利用率メトリクスの Maximum・<br/>ピーク時刻・実使用量・確保容量を<br/>同じ比較期間で記録済みか}
+    M -->|未記録| MEAS[同じ比較期間で変更前の値を測る]
+    M -->|記録済み| POL
 
     MEAS --> POL[1. 階層化ポリシーと<br/>cooling period]
-    POL --> CHECK{既定に任せていないか}
-    CHECK -->|任せている| EXPLICIT[明示的に指定する<br/>作成経路で既定が違う]
-    CHECK -->|指定済み| ACC{読まれるデータか}
+    POL --> CHECK{階層化ポリシーと cooling period を<br/>明示的に指定しているか}
+    CHECK -->|既定値に依存| EXPLICIT[明示的に指定する<br/>作成経路で既定が違う]
+    CHECK -->|明示済み| ACC{対象データを測定期間中に<br/>繰り返し読むか}
 
-    ACC -->|繰り返し読まれる| NOTALL["ALL は避ける<br/>戻らないので請求が続く"]
-    ACC -->|ほぼ読まれない| OKALL[ALL / Auto を検討]
+    ACC -->|繰り返し読む| NOTALL["ALL は避ける<br/>戻らないので請求が続く"]
+    ACC -->|ほぼ読まない| OKALL[ALL / Auto を検討]
 
     EXPLICIT --> EFF[2. ストレージ効率]
     NOTALL --> EFF
@@ -154,6 +184,55 @@ graph TD
 ```
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 既定の階層化ポリシーは 1 つ | 作成経路とボリューム形式で異なります。`Not established` の経路では下流の既定値と区別します |
+| コンソールで検証した結果が IaC の本番でも再現する | 既定に任せている場合、階層化の対象そのものが違います |
+| `Snapshot Only` でもユーザーデータは移る | 移りません。Snapshot のデータのみです |
+| cooling period は固定 | 2〜183 日で設定できます |
+| 階層化ポリシーの変更には停止が伴う | 無停止で変更できます |
+| 一度容量プールに移ったデータは戻らない | ポリシー次第です。`Auto` はランダム読み取りで戻り、`ALL` は戻りません |
+| ウイルススキャンを走らせると全データが SSD に戻る | `Auto` ではシーケンシャル読み取りはコールドのまま扱われます |
+| `ALL` にすれば読み取りも安くなる | 戻らないので、読むたびにリクエスト課金が発生し続けます |
+| 効率化を有効にすれば請求が下がる | 確保容量を下げるまで変わりません |
+| 効果が出ないのは効率化が効いていないから | 背景タスクは後回しにされます。追いついていない可能性があります |
+| 効果の大きい変更から試すべき | **戻せる順に試してください。** HA ペア追加は戻せません |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| 4 つのポリシーの動作、cooling period の既定値（`Auto` 31 日 / `Snapshot Only` 2 日）、コンソールの既定が `Auto`・CLI / API / ONTAP CLI の既定が `Snapshot Only` であること、ランダム読み取りで hot になり書き戻される一方でシーケンシャル読み取りはコールドのまま残ること、`ALL` では読んでも書き戻されないこと、メタデータが常に SSD に残ること、ポリシーは随時変更できること | [AWS: Volume storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) |
+| cooling period の範囲が 2〜183 日であること、既定ポリシーが `SNAPSHOT_ONLY` であること、各ポリシーの定義 | [AWS API Reference: TieringPolicy](https://docs.aws.amazon.com/fsx/latest/APIReference/API_TieringPolicy.html) |
+| CloudFormation での既定値と中断を伴わない変更 | [AWS CloudFormation: AWS::FSx::Volume TieringPolicy](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) |
+| CDK L1 が CloudFormation プロパティを写像し、コンストラクタ引数を省略可能にしていること | [AWS CDK: `CfnVolume.TieringPolicyProperty`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_fsx.CfnVolume.TieringPolicyProperty.html) |
+| Terraform AWS Provider が `tiering_policy` の省略時に値を設定せず、Amazon FSx API に送信しないこと | [Terraform AWS Provider: `ontap_volume.go`](https://github.com/hashicorp/terraform-provider-aws/blob/941220630893c456f38d54e804e3201c90d4e654/internal/service/fsx/ontap_volume.go) |
+| ONTAP CLI の既定値が FlexVol では `snapshot-only`、FlexGroup では `none` であること | [NetApp: `volume create`](https://docs.netapp.com/us-en/ontap-cli/volume-create.html) |
+| 重複排除・圧縮がデータを縮めるが確保済みストレージに対して課金されること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
+| クライアントトラフィックが背景タスクより優先されること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 追加した HA ペアを削除できないこと | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 06 — 最適化](../README.md) — このモジュールのハブ
+- [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — 測り方とボトルネックの切り分け順
+- [課金は「確保した量」と「使った量」に分かれる](../../../domains/cost/notes/provisioned-versus-consumed.md) — リクエスト課金とトレードオフの提示
+- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — HA ペア追加の不可逆性
+- [スループットは 1 つの設定値では決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — スループット設定を上げる前の前提
+- [Playbook 04 — 構築](../../04-build/) — 再現可能な構築。ポリシーの明示はここでも扱う項目です
+- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+---
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 06 — 最適化](../README.md)
 
 ## 自環境での確認手順
 
@@ -169,54 +248,23 @@ graph TD
 | 6 | 効率化の前後で実使用量と確保容量を分けて記録する | 請求に効いていないことの確認 |
 | 7 | 変更前後で最大値・ピーク時刻を揃えて比較する | 効果の主張ができるか |
 
-手順 1 と 2 は読み取りのみで、すぐに実行できます。**ここで差が出たら、それが最初に直すべき項目です。**
+手順 1 と 2 は読み取りのみで、すぐに実行できます。**ここで差が出たら、それが最初に直すべき項目です。** 手順 3 と 4 は検証環境を推奨します。本番で行うと SSD 利用率が上がります。
 
-手順 3 と 4 は検証環境を推奨します。本番で行うと SSD 利用率が上がります。
+手順 1 のポリシーと cooling period は、次の読み取り専用コマンドで一覧できます。
 
----
+```bash
+ssh <svm-management-endpoint> volume show -fields volume,tiering-policy,tiering-minimum-cooling-days
+```
 
-## よくある誤解
+### 期待結果
 
-| 誤解 | 実際 |
-|---|---|
-| 既定の階層化ポリシーは 1 つ | **作成方法で違います。** コンソールは `Auto`（31 日）、CLI / API / ONTAP CLI は `Snapshot Only`（2 日） |
-| コンソールで検証した結果が IaC の本番でも再現する | 既定に任せている場合、階層化の対象そのものが違います |
-| `Snapshot Only` でもユーザーデータは移る | 移りません。Snapshot のデータのみです |
-| cooling period は固定 | 2〜183 日で設定できます |
-| 階層化ポリシーの変更には停止が伴う | 無停止で変更できます |
-| 一度容量プールに移ったデータは戻らない | ポリシー次第です。`Auto` はランダム読み取りで戻り、`ALL` は戻りません |
-| ウイルススキャンを走らせると全データが SSD に戻る | `Auto` ではシーケンシャル読み取りはコールドのまま扱われます |
-| `ALL` にすれば読み取りも安くなる | 戻らないので、読むたびにリクエスト課金が発生し続けます |
-| 効率化を有効にすれば請求が下がる | 確保容量を下げるまで変わりません |
-| 効果が出ないのは効率化が効いていないから | 背景タスクは後回しにされます。追いついていない可能性があります |
-| 効果の大きい変更から試すべき | **戻せる順に試してください。** HA ペア追加は戻せません |
+```text
+各ボリュームのポリシーと cooling period が返る。コンソール作成（Auto/31）と IaC 作成（SNAPSHOT_ONLY/2）
+が混在していれば、既定に依存している。ポリシーと cooling period を明示すると作成経路によらず再現できる
+```
 
----
+このコマンドはボリュームの設定を読むだけで、階層化にもデータにも変更を加えません。読み取りの書き戻し（手順 3・4）は検証環境で確認してください。
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| 4 つのポリシーの動作、cooling period の既定値（`Auto` 31 日 / `Snapshot Only` 2 日）、コンソールの既定が `Auto`・CLI / API / ONTAP CLI の既定が `Snapshot Only` であること、ランダム読み取りで hot になり書き戻される一方でシーケンシャル読み取りはコールドのまま残ること、`ALL` では読んでも書き戻されないこと、メタデータが常に SSD に残ること、ポリシーは随時変更できること | [AWS: Volume storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) |
-| cooling period の範囲が 2〜183 日であること、既定ポリシーが `SNAPSHOT_ONLY` であること、各ポリシーの定義 | [AWS API Reference: TieringPolicy](https://docs.aws.amazon.com/fsx/latest/APIReference/API_TieringPolicy.html) |
-| CloudFormation でのポリシー指定と、変更が中断を伴わないこと | [AWS CloudFormation: AWS::FSx::Volume TieringPolicy](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-volume-tieringpolicy.html) |
-| 重複排除・圧縮がデータを縮めるが確保済みストレージに対して課金されること | [AWS Prescriptive Guidance: Choose the right SMB file storage](https://docs.aws.amazon.com/prescriptive-guidance/latest/optimize-costs-microsoft-workloads/storage-fsx-smb.html) |
-| クライアントトラフィックが背景タスクより優先されること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| 追加した HA ペアを削除できないこと | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 06 — 最適化](../README.md) — このモジュールのハブ
-- [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — 測り方とボトルネックの切り分け順
-- [課金は「確保した量」と「使った量」に分かれる](../../../domains/cost/notes/provisioned-versus-consumed.md) — リクエスト課金とトレードオフの提示
-- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — HA ペア追加の不可逆性
-- [スループットは 1 つの設定値では決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — スループット設定を上げる前の前提
-- [Playbook 04 — 構築](../../04-build/) — 再現可能な構築。ポリシーの明示はここでも扱う項目です
-- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 06 — 最適化](../README.md)
+[課金は確保量と消費量のどちらで決まるか？](../../../domains/cost/notes/provisioned-versus-consumed.md)

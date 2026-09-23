@@ -1,9 +1,5 @@
 # Playbook 04 — Build
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/playbooks/04-build/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 A hand-built environment cannot be reproduced. Infrastructure as code and automation make the build verifiable and repeatable.

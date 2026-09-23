@@ -6,21 +6,42 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 source: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_FSx.html
 lang: ja
 ---
 
-# LUN と igroup は AWS の API の外側にある
+# LUN と igroup は AWS の API で操作できるか？
+
+できません。境界はボリュームと LUN の間で、ブロックの構築手順は制御面を必ずまたぎます。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- CloudFormation の Amazon FSx リソースが 6 種だけで、LUN・igroup・NVMe subsystem・namespace が存在しないこと
+- 構築手順が AWS 側から ONTAP 側へ移り、削除順序・認証情報・ドリフト検出が制御面ごとに分かれること
+
+## このノートが答えないこと
+
+- 特定の自動化ツール構成の推奨（到達範囲の違いを示すのみ）
+- NVMe/TCP を Terraform 単独で完結できるか（provider の現行版で要確認、v2.7.1 では不可）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="lun-と-igroup-は-aws-の-api-の外側にある"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **ブロックストレージの構築手順は、途中で必ず AWS の制御面から ONTAP の制御面へ移ります。境界はボリュームと LUN の間です。**
 
@@ -36,7 +57,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## 境界の位置
+### 境界の位置
 
 | オブジェクト | AWS の API / CloudFormation | ONTAP CLI / REST |
 |---|---|---|
@@ -54,7 +75,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 **AWS のドキュメントのブロック手順が、どれも `ssh fsxadmin@<management endpoint>` から始まるのはこのためです。**
 
-### ボリュームは両方から作れるが、作った側で見え方が変わること
+#### ボリュームは両方から作れるが、作った側で見え方が変わること
 
 **ボリュームの行が「両方に届く」になっているのは、選択の余地があるという意味です。そしてどちらで作るかが監視とバックアップを変えます。**
 
@@ -83,7 +104,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## 境界の向こう側に届くツール
+### 境界の向こう側に届くツール
 
 **選択肢は 4 つあり、到達範囲が同じではありません。**
 
@@ -100,7 +121,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## 手順書が制御面をまたぐことの帰結
+### 手順書が制御面をまたぐことの帰結
 
 **「ボリュームまで IaC、LUN 以降は手順書」という分担は成立しますが、代償があります。**
 
@@ -116,7 +137,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## 公開されている実装例
+### 公開されている実装例
 
 **ブロック向けの自動化は AWS 側のサンプルより NetApp 側のリポジトリに集まっています。**
 
@@ -132,7 +153,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## セキュリティグループに現れる境界
+### セキュリティグループに現れる境界
 
 **ポートの要件表も制御面ごとに分かれています。**
 
@@ -148,7 +169,7 @@ CloudFormation の Amazon FSx のリソースタイプは **6 種類だけ**で�
 
 ---
 
-## 構築フロー
+### 構築フロー
 
 ```mermaid
 graph TD
@@ -178,23 +199,7 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `aws fsx help` の出力に LUN や igroup の操作がないことを確認する | 境界の位置 |
-| 2 | CloudFormation の Amazon FSx のリソースタイプ一覧を開き、6 種類であることを確認する | テンプレートで到達できる範囲 |
-| 3 | `ssh fsxadmin@<management endpoint>` で接続し、`lun show` が動くことを確認する | ONTAP 側の到達経路 |
-| 4 | ONTAP REST API に `GET /api/storage/luns` を投げる | 自動化に使える経路 |
-| 5 | Terraform を使う場合、**現行版の** NetApp provider のリソース一覧に `nvme_subsystem` があるかを確認する | **v2.7.1 では NVMe/TCP を Terraform だけで完結できないこと。追加されていれば前提が変わります** |
-| 6 | 検証環境で LUN をマップしたままボリュームを削除しようとし、返るエラーを記録する | 削除順序の依存関係と、AWS 側から理由が返らないこと |
-| 7 | 構築手順書を読み返し、AWS の資格情報と `fsxadmin` の資格情報の受け渡しが書かれているかを確認する | 手順書が制御面をまたげているか |
-
-手順 6 は**検証環境で行ってください。** 本番のボリュームで削除を試す操作ではありません。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -208,7 +213,7 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -224,7 +229,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [IaC の境界は好みではなく API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — 境界の一般論とボリューム削除の失敗理由
@@ -238,6 +243,35 @@ graph TD
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `aws fsx help` の出力に LUN や igroup の操作がないことを確認する | 境界の位置 |
+| 2 | CloudFormation の Amazon FSx のリソースタイプ一覧を開き、6 種類であることを確認する | テンプレートで到達できる範囲 |
+| 3 | `ssh fsxadmin@<management endpoint>` で接続し、`lun show` が動くことを確認する | ONTAP 側の到達経路 |
+| 4 | ONTAP REST API に `GET /api/storage/luns` を投げる | 自動化に使える経路 |
+| 5 | Terraform を使う場合、**現行版の** NetApp provider のリソース一覧に `nvme_subsystem` があるかを確認する | **v2.7.1 では NVMe/TCP を Terraform だけで完結できないこと。追加されていれば前提が変わります** |
+| 6 | 検証環境で LUN をマップしたままボリュームを削除しようとし、返るエラーを記録する | 削除順序の依存関係と、AWS 側から理由が返らないこと |
+| 7 | 構築手順書を読み返し、AWS の資格情報と `fsxadmin` の資格情報の受け渡しが書かれているかを確認する | 手順書が制御面をまたげているか |
+
+手順 6 は**検証環境で行ってください。** 本番のボリュームで削除を試す操作ではありません。
+
+手順 4 の ONTAP REST 経路は、次の読み取り専用コマンドで確認できます。
+
+```bash
+curl -sk -u fsxadmin "https://<management-endpoint>/api/storage/luns?return_records=false"
+```
+
+### 期待結果
+
+```text
+num_records に LUN 数が返る（ブロックオブジェクトは ONTAP 側の制御面にある）。
+aws fsx / CloudFormation にはこれに対応するリソースが無いので、構築手順は制御面をまたぐ
+```
+
+このコマンドは LUN の件数を読むだけで、LUN にもボリュームにも変更を加えません。削除は LUN マップを外してからボリューム、という順序を手順書に明記してください。
+
+## Read next
+
+[容量はどこで数えられているか？](capacity-is-counted-in-three-places.md)

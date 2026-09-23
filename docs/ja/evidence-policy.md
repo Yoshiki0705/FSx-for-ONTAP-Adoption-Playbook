@@ -1,9 +1,5 @@
 # 知見の分類ポリシー
 
-<!-- lang-switcher:start -->
-🌐 [日本語](evidence-policy.md) | [English](../en/evidence-policy.md) | [한국어](../ko/evidence-policy.md) | [简体中文](../zh-CN/evidence-policy.md) | [繁體中文](../zh-TW/evidence-policy.md) | [Français](../fr/evidence-policy.md) | [Deutsch](../de/evidence-policy.md) | [Español](../es/evidence-policy.md) | [🏠 リポジトリトップ](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 ## 結論

@@ -1,5 +1,5 @@
 ---
-title: メンテナンスは 14 日を超えて延期できない — 2 つの状態がパッチ適用を悪化させる
+title: パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される — 2 つの状態がパッチ適用を悪化させる
 lifecycle: [operate, design]
 domains: [performance, cost]
 evidence: documented
@@ -7,17 +7,41 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.ht
 lang: ja
 ---
 
-# メンテナンスは 14 日を超えて延期できない
+# メンテナンスは先送りできるか？
+
+実施そのものは止められません。パッチ公開後 14 日以内にウィンドウがなければサービスが実施します。
+
+## このノートで学べること
+
+- ONTAP パッチの実施主体と時刻の決まり方、パッチ公開後 14 日以内にウィンドウがなければサービスが実施すること
+- SSD 階層 90% 超過と route 欠落という 2 つの状態が、パッチ適用時にスループット絞りとクライアント切断を招くこと
+
+## このノートが答えないこと
+
+- ウィンドウ中の実際の停止時間が自環境のワークロードで許容できるか（測定が必要）
+- 特定バージョンのパッチ内容やリリースノート（AWS の公式リリース情報を参照）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="パッチ公開後-14-日以内にウィンドウがなければメンテナンスが実施される"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
+> **Evidence**: `documented` — 頻度・所要時間・停止時間・悪化条件は AWS 公式ドキュメントの記載に基づきます。
+> **自環境での実測値は含みません。** ウィンドウ中の影響を測る手順は
+> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
+
 ---
 
-## 結論
+### 結論
 
 **ONTAP のパッチ適用はサービス側が実施します。** 自分でバージョンを選ぶ操作ではありません。決められるのは**いつ実施されるか**だけです。
 
-そして延期には上限があります。**メンテナンスウィンドウは 14 日に 1 回は発生する必要があります。** パッチが公開されてから 14 日以内にウィンドウが来ない場合、**FSx for ONTAP はメンテナンスを実施します。** 無期限に避けることはできません。
+メンテナンスウィンドウは必要に応じて移動できます。ただし、**ONTAP パッチが公開され、その後 14 日以内にメンテナンスウィンドウが来ない場合、FSx for ONTAP はメンテナンスを実施します。** 14 日は通常のメンテナンス周期ではなく、この条件におけるパッチ公開後の期間です。パッチ適用自体は通常、数週間に 1 回程度です。
 
 さらに重要なのは、**2 つの状態がパッチ適用を悪化させる**という点です。どちらも事前に解消できます。
 
@@ -26,13 +50,9 @@ lang: ja
 | **SSD 階層が 90% を超えている** | **スループットが一時的に絞られます。** 背景処理を妥当な時間で完了させるためです |
 | **ファイルサーバーへの route が欠けている**（Multi-AZ で route table に空きがない） | **接続中のクライアントがパッチ適用の間、切断されます** |
 
-> **Evidence**: `documented` — 頻度・所要時間・停止時間・悪化条件は AWS 公式ドキュメントの記載に基づきます。
-> **自環境での実測値は含みません。** ウィンドウ中の影響を測る手順は
-> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
-
 ---
 
-## パッチ適用中の挙動
+### パッチ適用中の挙動
 
 | 項目 | 内容 |
 |---|---|
@@ -47,7 +67,7 @@ lang: ja
 
 メンテナンス開始前に、**FSx for ONTAP は日和見ロック（opportunistic lock）をすべて閉じ、保留中の書き込みを完了させます。** データ整合性を確保するためです。
 
-### online にされるオフラインボリューム
+#### online にされるオフラインボリューム
 
 **パッチ適用を成功させるため、FSx for ONTAP はオフラインのボリュームを適用期間中 online にします。**
 
@@ -57,7 +77,7 @@ lang: ja
 
 ---
 
-## ウィンドウの置き方
+### ウィンドウの置き方
 
 | 項目 | 内容 |
 |---|---|
@@ -65,7 +85,7 @@ lang: ja
 | 例 | `1:05:00` は月曜 5 時（UTC） |
 | 作成時に未指定の場合 | **自動的に割り当てられます** |
 | 変更 | 必要に応じて何度でも変更できます |
-| 制約 | **14 日に 1 回はウィンドウが発生する必要があります** |
+| 移動の条件 | **パッチ公開後 14 日以内にウィンドウが来ない場合は、サービスがメンテナンスを実施します** |
 
 **UTC であることに注意してください。** 現地時間で夜間を狙って設定したつもりが、業務時間に当たることがあります。
 
@@ -73,9 +93,9 @@ lang: ja
 
 ---
 
-## メンテナンスを悪化させる 2 つの状態
+### メンテナンスを悪化させる 2 つの状態
 
-### SSD 階層の 90% 超過
+#### SSD 階層の 90% 超過
 
 **次のメンテナンスウィンドウまでに SSD 階層の空きを作らないと、パッチ適用の間スループットが絞られます。**
 
@@ -89,7 +109,7 @@ lang: ja
 
 3 番目を忘れないでください。データを削除しても Snapshot が保持していると空きは増えません。理由は [Snapshot は容量として現れます](../../../domains/cost/notes/provisioned-versus-consumed.md#容量として現れる-snapshot) にあります。
 
-### ファイルサーバーへの route が欠けている（Multi-AZ）
+#### ファイルサーバーへの route が欠けている（Multi-AZ）
 
 Multi-AZ では、NFS / SMB のデータアクセス用エンドポイントと管理エンドポイントが **VPC route table の浮動 IP アドレス**を使います。
 
@@ -101,7 +121,7 @@ FSx for ONTAP は Multi-AZ の route table を**タグベースの認証**で管
 
 ---
 
-## インシデント時の初動
+### インシデント時の初動
 
 **最初にやるのは設定変更ではなく、状態と理由を読むことです。** FSx for ONTAP は `MISCONFIGURED` などの状態と、その理由を提示します。**理由が対処方法を名指しします。**
 
@@ -120,7 +140,7 @@ FSx for ONTAP は Multi-AZ の route table を**タグベースの認証**で管
 
 ---
 
-## 更新できるファイルシステムのプロパティ
+### 更新できるファイルシステムのプロパティ
 
 メンテナンスに関係するものを含め、稼働中に変更できる項目です。
 
@@ -135,23 +155,23 @@ FSx for ONTAP は Multi-AZ の route table を**タグベースの認証**で管
 
 ---
 
-## 運用フロー
+### 運用フロー
 
 ```mermaid
 graph TD
     A[運用を設計する] --> W[メンテナンスウィンドウを置く]
-    W --> UTC{UTC で業務時間を<br/>外しているか}
+    W --> UTC{メンテナンスウィンドウを<br/>UTC で指定したか}
     UTC -->|未指定| AUTO["自動割り当て<br/>業務時間に当たっていないか確認"]
-    UTC -->|指定済み| OK[確定]
+    UTC -->|UTC で指定済み| OK[確定]
 
     A --> PRE[悪化条件を平時に潰す]
-    PRE --> SSD{SSD 利用率が<br/>90% 未満か}
-    SSD -->|超えている| FIX1["容量追加 / データ削除 /<br/>Snapshot 削除<br/>放置するとパッチ中に絞られる"]
-    SSD -->|未満| GOOD1[良好]
+    PRE --> SSD{障害時間帯の Maximum で<br/>SSD 利用率は 90% 以上か}
+    SSD -->|90% 以上| FIX1["容量追加 / データ削除 /<br/>Snapshot 削除<br/>放置するとパッチ中に絞られる"]
+    SSD -->|90% 未満| GOOD1[良好]
 
-    PRE --> RT{Multi-AZ の route table<br/>に空きがあるか}
-    RT -->|欠けている| FIX2["route を追加する<br/>放置するとパッチ中に切断"]
-    RT -->|ある| GOOD2[良好]
+    PRE --> RT{Multi-AZ の route table に<br/>必要な route 枠が残っているか}
+    RT -->|枠なし| FIX2["route 枠を確保する<br/>放置するとパッチ中に切断"]
+    RT -->|必要な枠あり| GOOD2[良好]
 
     A --> INC[インシデント時]
     INC --> S1[1 状態と MISCONFIGURED の理由を読む]
@@ -161,6 +181,47 @@ graph TD
 ```
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| ONTAP のバージョンを自分で選んで更新する | サービス側が実施します。決められるのは実施時刻です |
+| メンテナンスは常に 14 日周期で実施される | パッチ適用は通常、数週間に 1 回程度です。**パッチ公開後 14 日以内にウィンドウがない場合**はサービスが実施します |
+| 停止は切り替わるときの 1 回だけ | **フェイルオーバーとフェイルバックで 2 回**発生しえます |
+| パッチ適用は一斉に行われる | ファイルサーバーを 1 台ずつ、1 台あたり最大 1 時間程度です |
+| ウィンドウを指定しなければメンテナンスされない | 未指定なら**自動的に割り当てられます** |
+| ウィンドウはローカル時間 | **UTC** です |
+| オフラインにしたボリュームはその状態が保たれる | パッチ適用中は online にされ、**クライアントからはアクセスできません** |
+| SSD 利用率はメンテナンスと無関係 | **90% を超えるとパッチ適用中にスループットが絞られます** |
+| route の不足は性能問題 | **パッチ適用中にクライアントが切断されます** |
+| インシデントではまず設定を変える | 状態と `MISCONFIGURED` の理由を先に読みます。理由が対処を名指しします |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| パッチ頻度が通常数週間に 1 回程度であること、1 台ずつ最大 1 時間程度、フェイルオーバーとフェイルバックでそれぞれ 60 秒未満の I/O 一時停止、性能への影響、ウィンドウの指定と自動割り当て、パッチ公開後 14 日以内にウィンドウがなければサービスが実施すること、オフラインボリュームが online にされクライアントからアクセスできないこと、日和見ロックを閉じて保留書き込みを完了させること | [AWS: Optimizing performance with Amazon FSx maintenance windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.html) |
+| SSD 階層が 90% を超えたままウィンドウを迎えるとパッチ適用の間スループットが絞られること、解消手段（容量追加・データ削除・Snapshot 削除） | [AWS: Your file system is in a MISCONFIGURED state](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-in-misconfigured-state.html) |
+| route が欠けていて route table に空きがない場合、次のウィンドウまでに追加しないとパッチ適用中にクライアントが切断されること | [AWS: You can't access your file system](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/unable-to-access.html) |
+| 更新できるプロパティ（自動日次バックアップ、週次メンテナンスウィンドウ、`fsxadmin` パスワード、VPC route table）、Multi-AZ が浮動 IP を使うこと、タグベース認証と `Key: AmazonFSx` / `Value: ManagedByAmazonFSx`、CloudFormation では手動でのタグ追加が推奨されること | [AWS: Updating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-file-system.html) |
+| ウィンドウの `d:HH:MM` 形式と曜日番号 | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 05 — 運用](../README.md) — このモジュールのハブ
+- [監視は平均値で失敗する](monitoring-fails-on-averages.md) — SSD 利用率の帯域と切り分け順
+- [課金は「確保した量」と「使った量」に分かれる](../../../domains/cost/notes/provisioned-versus-consumed.md) — Snapshot が容量を保持する仕組み
+- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — 変更できない項目
+- [IaC の境界は API の表面で決まる](../../04-build/notes/what-iac-cannot-reach.md) — Multi-AZ の route table タグ
+- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 復旧の守備範囲
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
 ## 自環境での確認手順
 
@@ -178,47 +239,17 @@ graph TD
 
 手順 3 が最も重要です。**「60 秒未満」が許容できるかどうかは、アプリケーションのタイムアウト設定で決まります。** ストレージ側の値だけでは判断できません。
 
----
+メンテナンスウィンドウの設定値と直近の実施状況は、次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+aws fsx describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[0].OntapConfiguration.WeeklyMaintenanceStartTime'
+```
 
-| 誤解 | 実際 |
-|---|---|
-| ONTAP のバージョンを自分で選んで更新する | サービス側が実施します。決められるのは実施時刻です |
-| メンテナンスは延期し続けられる | **14 日以内にウィンドウがなければ実施されます** |
-| 停止は切り替わるときの 1 回だけ | **フェイルオーバーとフェイルバックで 2 回**発生しえます |
-| パッチ適用は一斉に行われる | ファイルサーバーを 1 台ずつ、1 台あたり最大 1 時間程度です |
-| ウィンドウを指定しなければメンテナンスされない | 未指定なら**自動的に割り当てられます** |
-| ウィンドウはローカル時間 | **UTC** です |
-| オフラインにしたボリュームはその状態が保たれる | パッチ適用中は online にされ、**クライアントからはアクセスできません** |
-| SSD 利用率はメンテナンスと無関係 | **90% を超えるとパッチ適用中にスループットが絞られます** |
-| route の不足は性能問題 | **パッチ適用中にクライアントが切断されます** |
-| インシデントではまず設定を変える | 状態と `MISCONFIGURED` の理由を先に読みます。理由が対処を名指しします |
+### 期待結果
 
----
+`d:HH:MM`（UTC）形式のウィンドウ設定値が返ります。この曜日・時刻が自環境の業務時間に当たっていないこと、また未指定でなく明示的に設定されていることを確認します。
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| パッチ頻度が数週間に 1 回程度であること、1 台ずつ最大 1 時間程度、フェイルオーバーとフェイルバックでそれぞれ 60 秒未満の I/O 一時停止、性能への影響、ウィンドウの指定と自動割り当て、14 日に 1 回の制約と超過時に実施されること、オフラインボリュームが online にされクライアントからアクセスできないこと、日和見ロックを閉じて保留書き込みを完了させること | [AWS: Optimizing performance with Amazon FSx maintenance windows](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/maintenance-windows.html) |
-| SSD 階層が 90% を超えたままウィンドウを迎えるとパッチ適用の間スループットが絞られること、解消手段（容量追加・データ削除・Snapshot 削除） | [AWS: Your file system is in a MISCONFIGURED state](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-in-misconfigured-state.html) |
-| route が欠けていて route table に空きがない場合、次のウィンドウまでに追加しないとパッチ適用中にクライアントが切断されること | [AWS: You can't access your file system](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/unable-to-access.html) |
-| 更新できるプロパティ（自動日次バックアップ、週次メンテナンスウィンドウ、`fsxadmin` パスワード、VPC route table）、Multi-AZ が浮動 IP を使うこと、タグベース認証と `Key: AmazonFSx` / `Value: ManagedByAmazonFSx`、CloudFormation では手動でのタグ追加が推奨されること | [AWS: Updating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-file-system.html) |
-| ウィンドウの `d:HH:MM` 形式と曜日番号 | [AWS CloudFormation: AWS::FSx::FileSystem OntapConfiguration](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-fsx-filesystem-ontapconfiguration.html) |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 05 — 運用](../README.md) — このモジュールのハブ
-- [監視は平均値で失敗する](monitoring-fails-on-averages.md) — SSD 利用率の帯域と切り分け順
-- [課金は「確保した量」と「使った量」に分かれる](../../../domains/cost/notes/provisioned-versus-consumed.md) — Snapshot が容量を保持する仕組み
-- [デプロイタイプは一度しか決められない](../../02-design/notes/deployment-type-is-decided-once.md) — 変更できない項目
-- [IaC の境界は API の表面で決まる](../../04-build/notes/what-iac-cannot-reach.md) — Multi-AZ の route table タグ
-- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 復旧の守備範囲
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
+[監視はなぜ平均値で失敗するか？](monitoring-fails-on-averages.md)

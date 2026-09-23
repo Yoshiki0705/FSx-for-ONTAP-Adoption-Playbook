@@ -17,9 +17,9 @@ validators under `tools/`, and the smallest runnable environment per topic under
 example exists so a claim in the prose can be reproduced, and is verified by being run, not by
 passing a linter.
 
-**Every localizable document lives under `docs/<lang>/`.** Japanese is the reference language and the
-only complete tree. The one exception is the root `README.md`, which *is* the Japanese hub — so
-`docs/ja/README.md` does not exist.
+**Reader-facing localized documents live under `docs/<lang>/`.** Japanese is the complete
+reference tree. Contributor-only paired specifications may use files under `docs/`. The root
+`README.md` is the Japanese hub; `docs/ja/README.md` does not exist.
 
 Two navigation axes, mirrored in each language:
 
@@ -81,7 +81,7 @@ make anchors         # Externally cited section anchors have not been renamed
 make pr-verify PR=n  # CI passed for the commit this PR will merge, keyed on its head SHA
 make drift           # AGENTS.md size budget, steering loader thinness, index reachability
 make shell           # shellcheck over SH_PATHS; make cfn -- cfn-lint over CFN_PATHS
-make test            # Guardrail tests: guard contract, .PHONY, one break per gate, mutations
+make test            # Guardrail tests: guard protocol, .PHONY, one break per gate, mutations
 make all             # everything above (commit gate)
 
 # Individual validators (also callable directly)

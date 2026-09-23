@@ -7,17 +7,37 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-vscan.html
 lang: ja
 ---
 
-# ウイルス対策の選択はベンダーより前に決まる
+# ウイルス対策はベンダー選定が最初の判断か？
+
+ベンダー選定は最後です。プロトコル・ID・可用性・除外条件の 4 つが先に候補を狭めます。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](vscan-scope-is-bounded-before-the-vendor.md) | [English](../../../../en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- Vscan の候補を狭めるプロトコル・ID・可用性・除外条件の 4 条件が、ベンダー選定より先に決まること
+- `scan-mandatory on` でも除外条件に合致するファイルはスキャンされないこと
+
+## このノートが答えないこと
+
+- 6 ベンダーの製品差や版の組み合わせの適合性
+- FSx for ONTAP 固有の Vscan 制約（確認できていない）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ウイルス対策の選択はベンダーより前に決まる"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **Amazon FSx for NetApp ONTAP のウイルス対策を検討すると、最初に出てくる資料は「対応ベンダーの一覧」です。しかし選ぶ順序としては最後に来ます。**
 
@@ -34,7 +54,7 @@ AWS のユーザーガイドは 6 社（Deep Instinct / SentinelOne / Symantec /
 
 ---
 
-## 6 ベンダーの列挙元と、そこに書かれていないもの
+### 6 ベンダーの列挙元と、そこに書かれていないもの
 
 **FSx for ONTAP でサードパーティのウイルス対策を使う根拠は、AWS 自身のユーザーガイドにあります。** ベンダー製品との組み合わせで、AWS のドキュメントに専用ページが存在するものは限られており、これはその 1 つです。
 
@@ -48,9 +68,9 @@ AWS のユーザーガイドは 6 社（Deep Instinct / SentinelOne / Symantec /
 
 ---
 
-## ベンダーより前に決まる 4 つの条件
+### ベンダーより前に決まる 4 つの条件
 
-### プロトコル — on-access は SMB のみ
+#### プロトコル — on-access は SMB のみ
 
 **on-access ポリシーの作成コマンドが受け付けるプロトコルは `CIFS` です。**
 
@@ -71,7 +91,7 @@ NFS エクスポートに対して on-access スキャンは構成できませ�
 
 さらに on-demand は**既存の Vscan サーバーを使います。** 専用の実行基盤があるわけではないので、**on-demand しか使わない構成でも Vscan サーバーの運用は必要です。**
 
-### ID — privileged user はドメインユーザー
+#### ID — privileged user はドメインユーザー
 
 **Vscan サーバーが SVM に接続するために使う privileged user は、ドメインユーザーアカウントです。** scanner pool の privileged user 一覧に存在する必要があります。
 
@@ -79,7 +99,7 @@ NFS エクスポートに対して on-access スキャンは構成できませ�
 
 **そして AD への依存は参加した時点で終わりません。** 資格情報の失効はメンテナンスの局面で顕在化します。詳細は [AD への依存は参加時ではなく生涯続く](../../multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md) にあります。**ウイルス対策を足すことは、AD への依存点を 1 つ増やすことでもあります。**
 
-### 可用性 — scan-mandatory とクライアントアクセスの結合
+#### 可用性 — scan-mandatory とクライアントアクセスの結合
 
 **`scan-mandatory` が `on` のとき、Vscan サーバーが応答しなければクライアントのアクセスは拒否されます。**
 
@@ -94,7 +114,7 @@ NFS エクスポートに対して on-access スキャンは構成できませ�
 
 **冗長化の手段は scanner policy です。** `Primary` は常時有効、`Secondary` は primary の Vscan サーバーがどれも接続されていないときだけ有効、`Idle` は常時無効。**カスタムの scanner policy は作れません**（3 種はシステム定義）。
 
-### 除外条件 — mandatory でもスキャンされないファイルの存在
+#### 除外条件 — mandatory でもスキャンされないファイルの存在
 
 **`scan-mandatory` を `on` にしても、除外条件に合致するファイルはスキャン対象として扱われません。** NetApp のドキュメントがこれを明記しています。
 
@@ -131,7 +151,7 @@ NFS エクスポートに対して on-access スキャンは構成できませ�
 
 ---
 
-## 書き込みの着地経路による、インラインでの拒否の可否
+### 書き込みの着地経路による、インラインでの拒否の可否
 
 **プロトコルの制約は、対象範囲だけでなく「いつ止められるか」も決めます。**
 
@@ -153,7 +173,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 ---
 
-## ONTAP 一般の制約と FSx for ONTAP 固有の制約の区別
+### ONTAP 一般の制約と FSx for ONTAP 固有の制約の区別
 
 **上に挙げた制約はすべて ONTAP 一般の性質です。** FSx for ONTAP のドキュメントにも NetApp のドキュメントにも、**FSx for ONTAP 固有の Vscan 制約は見つけていません。**
 
@@ -174,7 +194,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 ---
 
-## 選択肢の対称な比較
+### 選択肢の対称な比較
 
 **ウイルス対策の手立ては Vscan だけではありません。** そして Vscan を選ぶ側の制約も対称に置きます。
 
@@ -200,25 +220,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | SVM が AD 参加しているかを確認する | **参加していなければ Vscan は選べません。** 最初の分岐 |
-| 2 | スキャン対象にしたい共有 / エクスポートをプロトコル別に数える | NFS 分は on-demand のみになります |
-| 3 | `continuously-available` を `Yes` にしている SMB 共有を列挙する | **その共有はスキャンされません。** 範囲の宣言から外します |
-| 4 | 既存の `default_CIFS` ポリシーの状態を確認する | 「未構成」ではなく「既定が有効」の可能性 |
-| 5 | 対象データの最大ファイルサイズを測り、既定の除外サイズ 2 GB と比べる | **超えるファイルは既定でスキャンされません** |
-| 5-1 | **書き込みが着地するプロトコルを経路ごとに書き出す** | **リアルタイムに拒否できる範囲。** S3 Access Point 経由の経路があるなら、そこは on-demand しか届きません |
-| 6 | `fsxadmin` で `vserver vscan on-access-policy show` が実行できるか試す | **未確認の項目 1。** 権限境界の位置 |
-| 7 | Vscan サーバーの運用主体・パッチ適用・監視の担当を決める | **決まる前に `scan-mandatory on` にしないこと** |
-| 8 | 相互運用性マトリックスで ONTAP 版と AV 製品版の組み合わせを確認する | ベンダー選択に必要な最後の材料 |
-
-**手順 7 を後回しにすると、`scan-mandatory on` のまま Vscan サーバーが停止したときにアクセス断になります。**
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -240,7 +242,7 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 | 取得日 |
 |---|---|---|
@@ -254,11 +256,11 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — セキュリティ・ガバナンス](../README.md) — このモジュールのハブ
 - [ウイルス対策の適用範囲をどこまでにするか](../../../reference/decision-trees/vscan-antivirus-scope.md) — この判断の決定木版
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md) — 他の課題領域で組み合わせられる選択肢の索引
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md) — ウイルス対策と組み合わせられる他の選択肢の索引
 - [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](../../data-utilization/notes/fpolicy-fits-by-how-writes-land.md) — 代替として検討する場合の適合条件
 - [S3 Access Point 経由のアクセスを見ない FPolicy](access-point-authorization-layers.md#この経路を見ない-fpolicy) — 着地経路の表の測定元
 - [監査宛先が枯渇するとクライアントアクセスは止まる](audit-log-space-and-client-access.md) — 同じ「設定でアクセスと結合する」構造
@@ -267,10 +269,36 @@ on-access が SMB に対するものだという事実を、**書き込みが S3
 - [この設定はどこから作るか](../../../reference/decision-trees/where-a-setting-is-created.md) — `fsxadmin` の権限境界
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
----
+## 自環境での確認手順
 
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | SVM が AD 参加しているかを確認する | **参加していなければ Vscan は選べません。** 最初の分岐 |
+| 2 | スキャン対象にしたい共有 / エクスポートをプロトコル別に数える | NFS 分は on-demand のみになります |
+| 3 | `continuously-available` を `Yes` にしている SMB 共有を列挙する | **その共有はスキャンされません。** 範囲の宣言から外します |
+| 4 | 既存の `default_CIFS` ポリシーの状態を確認する | 「未構成」ではなく「既定が有効」の可能性 |
+| 5 | 対象データの最大ファイルサイズを測り、既定の除外サイズ 2 GB と比べる | **超えるファイルは既定でスキャンされません** |
+| 5-1 | **書き込みが着地するプロトコルを経路ごとに書き出す** | **リアルタイムに拒否できる範囲。** S3 Access Point 経由の経路があるなら、そこは on-demand しか届きません |
+| 6 | `fsxadmin` で `vserver vscan on-access-policy show` が実行できるか試す | **未確認の項目 1。** 権限境界の位置 |
+| 7 | Vscan サーバーの運用主体・パッチ適用・監視の担当を決める | **決まる前に `scan-mandatory on` にしないこと** |
+| 8 | 相互運用性マトリックスで ONTAP 版と AV 製品版の組み合わせを確認する | ベンダー選択に必要な最後の材料 |
 
-<!-- lang-switcher:start -->
-🌐 [日本語](vscan-scope-is-bounded-before-the-vendor.md) | [English](../../../../en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+**手順 7 を後回しにすると、`scan-mandatory on` のまま Vscan サーバーが停止したときにアクセス断になります。**
+
+既存の on-access ポリシーは次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> vserver vscan on-access-policy show
+```
+
+### 期待結果
+
+```text
+既存ポリシー（default_CIFS を含む）の名前と有効状態の一覧
+```
+
+この確認で分かるのは構成済みの on-access ポリシーだけです。実際にスキャンされる範囲、除外条件の効き方、ベンダー適合性は証明しません。
+
+## Read next
+
+[実験ブランチは権限だけ縛れば足りるか？](self-service-without-storage-admin.md)

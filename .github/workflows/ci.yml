@@ -34,6 +34,11 @@ jobs:
       - name: Install ruff and cfn-lint
         run: pip install -r requirements-dev.txt
 
+      # Lockfile installation proves the exact-pinned Mermaid development dependency resolves.
+      # Mermaid corpus rendering remains a staged report and is not a pull-request gate.
+      - name: Install exact-pinned Node development tools
+        run: npm ci
+
       # shellcheck is not pip-installable, so it cannot live in requirements-dev.txt with the
       # others. ubuntu-latest ships it preinstalled; this step fails loudly if that ever stops
       # being true, rather than letting `make shell` report a missing tool as a red gate with a

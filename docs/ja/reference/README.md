@@ -17,11 +17,11 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | ディレクトリ / Directory | 内容 / Contents |
 |---|---|
 | [`decision-trees/`](decision-trees/) | 選択フローチャート。複数の選択肢からどれを選ぶか / Selection flowcharts |
-| [`comparison/`](comparison/) | 比較マトリクス。トレードオフを対称に記載 / Comparison matrices with symmetric trade-offs |
+| [`comparison/`](comparison/) | 比較マトリクス。トレードオフを対称に記載。[オンプレミスの NAS / SAN 運用概念と ONTAP の対応](comparison/on-prem-concept-mapping.md)を含む / Comparison matrices with symmetric trade-offs, including the on-premises NAS/SAN concept mapping |
 | [`limits/`](limits/) | 上限値・クォータ。出典と検証日付き / Limits and quotas, with source and verification date |
 | [`glossary/`](glossary/) | ONTAP / AWS 用語集 / Terminology |
 | [`industry-resource-map.md`](industry-resource-map.md) | 業種別リソースマップ。業種から入ったときにどのモジュールを読むかの対応と、公開事例・実装パターン・設計ノートの横断索引 / Industry resource map: which modules to read when entering from an industry, plus a cross-index of case studies, implementation patterns, and design notes |
-| [`isv-solution-map.md`](isv-solution-map.md) | 課題別 ISV / SaaS ソリューションマップ。組み合わせが公表されている選択肢と、判断ノートの有無、まだ確認できていないものの区別 / Problem-first map of ISV and SaaS options whose combination with FSx for ONTAP is published, which of them this repository has a design note for, and which could not be confirmed。**英語版あり / [English version](../../en/reference/isv-solution-map.md)** |
+| [`isv-solution-map.md`](isv-solution-map.md) | 課題別 ISV / SaaS 選択肢マップ。組み合わせが公表されている選択肢と、判断ノートの有無、まだ確認できていないものの区別 / Problem-first map of ISV and SaaS options whose combination with FSx for ONTAP is published, which of them this repository has a design note for, and which could not be confirmed。**英語版あり / [English version](../../en/reference/isv-solution-map.md)** |
 | [`fsx-ontap-fit-conditions.md`](fsx-ontap-fit-conditions.md) | 利用者のエージェントが判定に使う適合条件・適合しない条件と、根拠に使ってはいけないもの / Fit and non-fit conditions for a consuming agent, and what must not be used as grounds |
 | [`file-protocol-resource-map.md`](file-protocol-resource-map.md) | ファイルプロトコルの一次情報・公開 IaC の索引と、資料間の食い違い / Index of file-protocol primary sources and public infrastructure as code, and where they disagree |
 | [`block-storage-resource-map.md`](block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い / Index of block primary sources and public infrastructure as code, and where they disagree |

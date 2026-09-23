@@ -7,13 +7,33 @@ source: https://learn.microsoft.com/en-us/windows/wsl/networking
 lang: ja
 ---
 
-# WSL2 のネットワーク境界
+# WSL2 の Linux は Windows と同じ経路を使えるか？
+
+限りません。既定は NAT で、ホストが VPN に繋がっていても WSL2 から届くとは限りません。
+
+## このノートで学べること
+
+- WSL2 が Windows ホストと同じネットワークにおらず、ネットワークとカーネルの 2 つの境界を持つこと
+- ホストの VPN 接続が WSL2 からの到達性を意味せず、mirrored モードも解決策として断言できないこと
+
+## このノートが答えないこと
+
+- NAT / mirrored のどちらで NFS / SMB が成立するか（未測定、モード両方で要確認）
+- mirrored モードで NFS マウントが失敗する報告の自環境での再現
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="wsl2-のネットワーク境界"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **WSL2 は Windows ホストと同じネットワークにいません。** 既定では仮想化されたネットワークインター
 フェースと NAT を持つため、**ホストが VPN に接続していても WSL2 から同じ経路が使えるとは限りません。**
@@ -37,7 +57,7 @@ lang: ja
 
 ---
 
-## 2 つのモードと、どちらでも確認が必要な理由
+### 2 つのモードと、どちらでも確認が必要な理由
 
 | モード | ネットワークの見え方 | 既知の懸念 |
 |---|---|---|
@@ -51,7 +71,7 @@ Linux 側から見えるのは前者だけなので、`probe-endpoint.sh` が `n
 
 ---
 
-## 実務上とれる 3 つの形
+### 実務上とれる 3 つの形
 
 **どれが優れているという話ではありません。** 端末の構成と、何を WSL2 でやりたいかで決まります。
 
@@ -66,25 +86,7 @@ Linux 側から見えるのは前者だけなので、`probe-endpoint.sh` が `n
 
 ---
 
-## 自環境での確認手順
-
-**ホスト側と WSL2 側を別々に見てください。** 片方だけでは境界の状態が分かりません。
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | Windows 側で `wsl.exe --version` | WSL のバージョン。mirrored モードが使えるか |
-| 2 | Windows 側で `type %USERPROFILE%\.wslconfig` | **mirrored モードは主にここで設定されます。** Linux 側から見えません |
-| 3 | WSL2 側で `cat /etc/wsl.conf` | Linux 側の設定。無くても mirrored の可能性があります |
-| 4 | WSL2 側で `ip addr` と `ip route`、Windows 側で `route print` を並べる | 同じ経路を見ているか |
-| 5 | VPN 接続中に、Windows 側と WSL2 側の両方から `nc -vz <nfs-ip> 2049` 相当を試す | **境界がどちらにあるか。** ホストで通り WSL2 で通らなければネットワーク境界です |
-| 6 | WSL2 側で `modprobe iscsi_tcp; echo $?` | カーネル境界。ブロックが使えるか |
-| 7 | 両方で `examples/client-access/probe-endpoint.sh` / `probe-endpoint.ps1` を実行する | 同じ形の JSON で並べられます |
-
-**手順 5 が判定の中心です。** ホストで通って WSL2 で通らないなら、マウントオプションを変えても直りません。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -97,7 +99,7 @@ Linux 側から見えるのは前者だけなので、`probe-endpoint.sh` が `n
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -108,7 +110,7 @@ Linux 側から見えるのは前者だけなので、`probe-endpoint.sh` が `n
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — クライアントアクセス](../README.md) — このモジュールのハブ
 - [端末の種類がプロトコルを先に狭める](the-endpoint-narrows-the-protocol.md) — WSL2 の △ の位置
@@ -120,3 +122,38 @@ Linux 側から見えるのは前者だけなので、`probe-endpoint.sh` が `n
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — クライアントアクセス](../README.md)
+
+## 自環境での確認手順
+
+**ホスト側と WSL2 側を別々に見てください。** 片方だけでは境界の状態が分かりません。
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | Windows 側で `wsl.exe --version` | WSL のバージョン。mirrored モードが使えるか |
+| 2 | Windows 側で `type %USERPROFILE%\.wslconfig` | **mirrored モードは主にここで設定されます。** Linux 側から見えません |
+| 3 | WSL2 側で `cat /etc/wsl.conf` | Linux 側の設定。無くても mirrored の可能性があります |
+| 4 | WSL2 側で `ip addr` と `ip route`、Windows 側で `route print` を並べる | 同じ経路を見ているか |
+| 5 | VPN 接続中に、Windows 側と WSL2 側の両方からデータ経路の到達性を試す | **境界がどちらにあるか。** ホストで通り WSL2 で通らなければネットワーク境界です |
+| 6 | WSL2 側で `modprobe iscsi_tcp; echo $?` | カーネル境界。ブロックが使えるか |
+| 7 | 両方で `examples/client-access/probe-endpoint.sh` / `probe-endpoint.ps1` を実行する | 同じ形の JSON で並べられます |
+
+**手順 5 が判定の中心です。** ホストで通って WSL2 で通らないなら、マウントオプションを変えても直りません。
+
+手順 5 の到達性は、Windows ホストと WSL2 の双方で次の読み取り専用コマンドを実行して比べます。
+
+```bash
+nc -vz <nfs-ip> 2049
+```
+
+### 期待結果
+
+```text
+ホストで成功し WSL2 で失敗するなら、境界はネットワーク側（NAT / VPN 経路の非共有）にある。
+両方で失敗するなら、そもそも VPC への到達経路が無い。マウントオプションの変更では直らない
+```
+
+このコマンドはポートへの到達性を試すだけで、WSL の構成にもネットワークにも変更を加えません。
+
+## Read next
+
+[端末側に何の資格情報が残るか？](where-endpoint-credentials-live.md)

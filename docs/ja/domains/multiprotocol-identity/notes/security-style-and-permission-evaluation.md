@@ -7,35 +7,55 @@ source: https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effe
 lang: ja
 ---
 
-# ボリュームのセキュリティスタイルが権限評価のモデルを決める
+# セキュリティスタイルは保存プロトコルを決めるか？
+
+決めません。決めるのは権限評価のモデルで、NTFS スタイルでは ID マッピング拒否が効きません。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](security-style-and-permission-evaluation.md) | [English](../../../../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- セキュリティスタイルが保存プロトコルではなく権限評価のモデルを決めること
+- NTFS スタイルでは ID マッピング拒否で SMB アクセスを止められないこと
+
+## このノートが答えないこと
+
+- 数値・所要時間の実測
+- 管理者グループのメンバーに対する遮断（影響を受けない）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ボリュームのセキュリティスタイルが権限評価のモデルを決める"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **ボリュームのセキュリティスタイルは「どちらの権限モデルで評価するか」を決めます。** ファイルを保存できるプロトコルを制限するものではありません。
 
-この違いが実務で効いてくる場面が 1 つあります。**NTFS セキュリティスタイルのボリュームでは、UNIX 側の ID マッピングを失敗させても SMB アクセスは止まりません。** NTFS スタイルは Windows の ACL をそのまま権限評価に使うため、win→unix マッピングの結果を参照しないからです。
+この違いが実務で効いてくる場面が 1 つあります。**NTFS セキュリティスタイルのボリュームでは、UNIX 側の ID マッピングを失敗させても SMB アクセスは止まりません。** NTFS スタイルは Windows の ACL をそのまま権限評価に使うため、Windows→UNIX マッピングの結果を参照しないからです。
 
-UNIX / MIXED スタイルなら SMB アクセスの権限評価に win→unix マッピングが関わるため、マッピングを拒否する手法が効きます。**同じ操作が、ボリュームのセキュリティスタイル次第で効いたり効かなかったりします。**
+UNIX / MIXED スタイルなら SMB アクセスの権限評価に Windows→UNIX マッピングが関わるため、マッピングを拒否する手法が効きます。**同じ操作が、ボリュームのセキュリティスタイル次第で効いたり効かなかったりします。**
 
 > **Evidence**: `documented` — 挙動の根拠はベンダー公式ドキュメントです。数値や所要時間は含みません。
 > 自環境での確認手順を「自分の環境で確かめる」節に置いてあります。**適用前に必ず確認してください。**
 
 ---
 
-## 問題の所在
+### 問題の所在
 
 Amazon FSx for NetApp ONTAP は NFS と SMB を同じボリュームに対して提供できます。このとき「誰がどのファイルにアクセスできるか」を決めるのは、次の 2 つの組み合わせです。
 
 1. ボリュームのセキュリティスタイル（UNIX / MIXED / NTFS）
-2. ID マッピング（win→unix / unix→win）
+2. ID マッピング（Windows→UNIX / UNIX→Windows）
 
 セキュリティスタイルを「保存できるプロトコルの指定」だと理解していると、権限設計を誤ります。実際に決まるのは**評価に使う権限の種類**です。
 
@@ -43,7 +63,7 @@ Amazon FSx for NetApp ONTAP は NFS と SMB を同じボリュームに対して
 
 ---
 
-## セキュリティスタイルと権限評価の対応
+### セキュリティスタイルと権限評価の対応
 
 | セキュリティスタイル | 権限評価に使うもの | ID マッピング拒否で SMB を止められるか |
 |---|:---|:---:|
@@ -53,7 +73,7 @@ Amazon FSx for NetApp ONTAP は NFS と SMB を同じボリュームに対して
 
 MIXED は「両方が使える」ではなく「**最後に権限を設定した側のモデルで評価する**」挙動です。運用中に評価モデルが切り替わりうるため、意図した状態を保ちにくい選択肢です。
 
-### もう 1 つの例外
+#### もう 1 つの例外
 
 `FileSystemAdministratorsGroup` に指定したグループ（通常は `Domain Admins`）のメンバーは、この種の遮断の影響を受けません。ストレージ管理者相当の権限で評価されます。
 
@@ -61,7 +81,7 @@ MIXED は「両方が使える」ではなく「**最後に権限を設定した
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -79,6 +99,54 @@ graph TD
 
     E --> E1[ボリューム種別に依存せず有効]
 ```
+
+---
+
+### 止められるものと止められないもの
+
+遮断手段を選ぶときの対応表です。推奨案の制約も併記しています。
+
+| 手段 | 有効な範囲 | 制約 / 考慮事項 |
+|---|---|---|
+| NFS export-policy の deny ルール | NFS。ボリュームのセキュリティスタイルに依存しない | NFS のみ。SMB には効かない |
+| ID マッピング拒否 | SMB。UNIX / MIXED スタイルのみ | NTFS スタイルでは効かない。管理者グループのメンバーには効かない |
+| NTFS ACL の変更 | SMB。NTFS スタイルを含む | ACL の管理主体が Windows 側になる。変更履歴の追跡が別系統になる |
+| Active Directory 側でアカウントを無効化 | 認証段階で止まるため広く効く | 影響範囲が当該システムに限定されない。他システムへの波及を確認する必要がある |
+
+---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| セキュリティスタイルは保存できるプロトコルを決める | 決めるのは権限評価に使うモデルです。プロトコルの可否ではありません |
+| ID マッピングを止めればどのボリュームでも SMB を遮断できる | NTFS スタイルでは効きません。評価に NTFS ACL を使うためです |
+| MIXED は UNIX と NTFS の両方の権限で評価される | 最後に権限を設定した側のモデルで評価されます。運用中に切り替わりえます |
+| 管理者アカウントで遮断を確認すれば十分 | `FileSystemAdministratorsGroup` のメンバーは影響を受けません。一般ユーザーで確認してください |
+| 遮断できたかはクライアント側の表示で判断できる | クライアント側のキャッシュや再接続の挙動に影響されます。サーバー側の設定と併せて確認してください |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| セキュリティスタイルは権限の種類を決める | [NetApp Docs: Security styles and their effects](https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effects-concept.html) |
+| NTFS スタイルでは Windows の資格情報で評価される | [NetApp KB: CIFS clients accessing NTFS security style resources](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/How_does_name-mapping_work_when_CIFS_clients_access_NTFS_security_style_resources) |
+| UNIX スタイルではマップ後の UID / GID で評価される | [NetApp KB: name-mapping in a multiprotocol environment](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/Understanding_name-mapping_in_a_multiprotocol_environment) |
+| マッピングの明示的な拒否 | [NetApp Docs: Create name mappings](https://docs.netapp.com/us-en/ontap/nfs-admin/create-name-mapping-task.html) |
+
+---
+
+### 関連ドキュメント
+
+- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
+- [SMB で運用中のボリュームに NFS を足すのに複製は要らない](adding-a-protocol-does-not-need-a-clone.md) — **スタイルが決めていないもの**と、変更する場合の経路
+- [Domain — セキュリティ・ガバナンス](../../security-governance/) — 権限設計の全体像
+- [Playbook 02 — 設計](../../../playbooks/02-design/) — セキュリティスタイルは設計時に決める項目
+- [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択に影響する
+- [用語集](../../../reference/glossary/) — SVM / LIF / name-mapping の定義
+- [知見の分類ポリシー](../../../evidence-policy.md) — `documented` の扱い
 
 ---
 
@@ -118,58 +186,20 @@ volume show -vserver <svm> -fields volume,security-style
 
 詳細は [知見の分類ポリシー](../../../evidence-policy.md) を参照してください。
 
----
+対象ボリュームのセキュリティスタイルは、次の読み取り専用コマンドで確認できます。
 
-## 止められるものと止められないもの
+```bash
+ssh <svm-management-endpoint> volume show -vserver <svm> -fields volume,security-style
+```
 
-遮断手段を選ぶときの対応表です。推奨案の制約も併記しています。
+### 期待結果
 
-| 手段 | 有効な範囲 | 制約 / 考慮事項 |
-|---|---|---|
-| NFS export-policy の deny ルール | NFS。ボリュームのセキュリティスタイルに依存しない | NFS のみ。SMB には効かない |
-| ID マッピング拒否 | SMB。UNIX / MIXED スタイルのみ | NTFS スタイルでは効かない。管理者グループのメンバーには効かない |
-| NTFS ACL の変更 | SMB。NTFS スタイルを含む | ACL の管理主体が Windows 側になる。変更履歴の追跡が別系統になる |
-| Active Directory 側でアカウントを無効化 | 認証段階で止まるため広く効く | 影響範囲が当該システムに限定されない。他システムへの波及を確認する必要がある |
+```text
+各ボリュームの security-style（unix / ntfs / mixed）
+```
 
----
+この確認で分かるのはセキュリティスタイルだけです。実際の遮断の可否は、管理者グループに属さない一般ユーザーでの実試行で確認します。何も変更しません。
 
-## よくある誤解
+## Read next
 
-| 誤解 | 実際 |
-|---|---|
-| セキュリティスタイルは保存できるプロトコルを決める | 決めるのは権限評価に使うモデルです。プロトコルの可否ではありません |
-| ID マッピングを止めればどのボリュームでも SMB を遮断できる | NTFS スタイルでは効きません。評価に NTFS ACL を使うためです |
-| MIXED は UNIX と NTFS の両方の権限で評価される | 最後に権限を設定した側のモデルで評価されます。運用中に切り替わりえます |
-| 管理者アカウントで遮断を確認すれば十分 | `FileSystemAdministratorsGroup` のメンバーは影響を受けません。一般ユーザーで確認してください |
-| 遮断できたかはクライアント側の表示で判断できる | クライアント側のキャッシュや再接続の挙動に影響されます。サーバー側の設定と併せて確認してください |
-
----
-
-## 参照した一次情報
-
-| 論点 | 出典 |
-|---|---|
-| セキュリティスタイルは権限の種類を決める | [NetApp Docs: Security styles and their effects](https://docs.netapp.com/us-en/ontap/smb-admin/security-styles-their-effects-concept.html) |
-| NTFS スタイルでは Windows の資格情報で評価される | [NetApp KB: CIFS clients accessing NTFS security style resources](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/How_does_name-mapping_work_when_CIFS_clients_access_NTFS_security_style_resources) |
-| UNIX スタイルではマップ後の UID / GID で評価される | [NetApp KB: name-mapping in a multiprotocol environment](https://kb.netapp.com/on-prem/ontap/da/NAS/NAS-KBs/Understanding_name-mapping_in_a_multiprotocol_environment) |
-| マッピングの明示的な拒否 | [NetApp Docs: Create name mappings](https://docs.netapp.com/us-en/ontap/nfs-admin/create-name-mapping-task.html) |
-
----
-
-## 関連ドキュメント
-
-- [Domain — マルチプロトコル・ID](../README.md) — このモジュールのハブ
-- [SMB で運用中のボリュームに NFS を足すのに複製は要らない](adding-a-protocol-does-not-need-a-clone.md) — **スタイルが決めていないもの**と、変更する場合の経路
-- [Domain — セキュリティ・ガバナンス](../../security-governance/) — 権限設計の全体像
-- [Playbook 02 — 設計](../../../playbooks/02-design/) — セキュリティスタイルは設計時に決める項目
-- [移行方式の選択](../../../reference/decision-trees/migration-method.md) — ACL 保持要件が方式選択に影響する
-- [用語集](../../../reference/glossary/) — SVM / LIF / name-mapping の定義
-- [知見の分類ポリシー](../../../evidence-policy.md) — `documented` の扱い
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](security-style-and-permission-evaluation.md) | [English](../../../../en/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[NTFS スタイルのボリュームでは、NFS 側から見える権限表現が実際の可否と一致しない](nfs-side-view-does-not-explain-ntfs-denials.md)

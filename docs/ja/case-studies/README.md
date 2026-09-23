@@ -1,9 +1,5 @@
 # Case Studies
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../en/case-studies/README.md) | [🏠 リポジトリトップ](../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 技術支援の現場で得た知見を、**一般化された教訓**として整理しています。

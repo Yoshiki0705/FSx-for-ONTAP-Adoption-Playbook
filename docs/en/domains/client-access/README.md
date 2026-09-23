@@ -1,9 +1,5 @@
 # Domain — Client Access
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/client-access/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Reaching Amazon FSx for NetApp ONTAP data from an actual endpoint — a Windows machine, the Linux

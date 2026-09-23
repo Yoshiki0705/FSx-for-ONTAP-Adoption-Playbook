@@ -7,19 +7,42 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics
 lang: en
 ---
 
-# Monitoring fails on averages
+# Why does monitoring fail on averages?
+
+Averages are diluted by standby nodes and unsaturated aggregates, so saturation looks healthy.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [English](monitoring-fails-on-averages.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- Why to decide the statistic (Average / Maximum) before the threshold, and the two structures by which averages hide saturation.
+- That SSD utilisation changes behaviour in stages at 80 / 90 / 98%, and that background-task lag is not alerted.
+
+## What this note does not answer
+
+- Measured figures for how much slower it gets at a given threshold (environment-dependent).
+- Using "maximum" as a benchmark headline (opposite in purpose to the monitoring Maximum).
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
 [🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
 
 This is the English translation. Japanese is authoritative for technical accuracy.
 
+> **Evidence**: `documented` — the thresholds and behaviour rest on AWS documentation.
+> **No measured figures for how much slower it gets at a given threshold are included.** Steps for
+> confirming this in your own environment are in
+> "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
-## Conclusion
+### Conclusion
 
 **Decide which statistic (Average / Maximum) you read before you decide the threshold.** Monitored on averages, a saturated file system looks healthy.
 
@@ -30,14 +53,9 @@ There are two reasons, and both are structural.
 
 A third problem is worse, and choosing the statistic does not prevent it. **FSx for ONTAP prioritises client traffic over background tasks** — tiering, storage efficiency, and backups. During periods of high load these **fall behind without raising an alert.**
 
-> **Evidence**: `documented` — the thresholds and behaviour rest on AWS documentation.
-> **No measured figures for how much slower it gets at a given threshold are included.** Steps for
-> confirming this in your own environment are in
-> "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
-
 ---
 
-## The SSD utilisation bands, and what changes at each point
+### The SSD utilisation bands, and what changes at each point
 
 80% is a recommendation, but **there are two points beyond it where behaviour changes.** A threshold placed only at 80% cannot explain what happens after it is crossed.
 
@@ -51,7 +69,7 @@ A third problem is worse, and choosing the statistic does not prevent it. **FSx 
 
 ---
 
-## Why capacity does not drop — deleted data held by Snapshots
+### Why capacity does not drop — deleted data held by Snapshots
 
 If SSD utilisation does not change after deleting data, **a Snapshot containing the deleted data still exists.** Freeing space requires deleting the Snapshot.
 
@@ -59,7 +77,7 @@ This means capacity monitoring and retention policy are the same problem. **Snap
 
 ---
 
-## SSD used even with tiering policy `All`
+### SSD used even with tiering policy `All`
 
 **Every write lands on SSD first, regardless of the tiering policy.** It moves to the capacity pool afterwards.
 
@@ -69,7 +87,7 @@ Sizing on the assumption that "`All` means no SSD is needed" runs short on the m
 
 ---
 
-## Order for isolating a performance regression
+### Order for isolating a performance regression
 
 **Look at whether the network or the disk saturates first.** The order matters — it runs from the widest blast radius downward.
 
@@ -80,11 +98,24 @@ Sizing on the assumption that "`All` means no SSD is needed" runs short on the m
 | 3 | Disk IOPS utilisation | Has it reached 100%? Read it per aggregate |
 | 4 | Background task lag | Are tiering and backups keeping up? |
 
+```mermaid
+graph TD
+    START[Performance regression occurs] --> SSD{Did SSD utilization exceed<br/>90% or 98% during<br/>the incident window}
+    SSD -->|Exceeded either threshold| SSDHIT[SSD utilization is the cause]
+    SSD -->|Exceeded neither threshold| NET{Did network throughput utilization<br/>reach 100% during<br/>the same window}
+    NET -->|Reached 100%| NETHIT[Network throughput is saturated]
+    NET -->|Below 100%| IOPS{Did per-aggregate disk IOPS utilization<br/>reach 100% during<br/>the same window}
+    IOPS -->|Reached 100%| IOPSHIT[The affected aggregate reached its IOPS ceiling]
+    IOPS -->|Below 100%| BG{Did tiering and backups complete<br/>within their expected time}
+    BG -->|Incomplete or late| BGHIT[Background tasks are not keeping up]
+    BG -->|Completed on time| NONE[These four checks do not<br/>identify the cause]
+```
+
 Step 2 needs care. `NetworkThroughputUtilization` covers **all traffic, including background tasks** (SnapMirror, tiering, backups). If client load is low while utilisation is high, background tasks are running.
 
 ---
 
-## Warnings FSx for ONTAP raises, and alarms you build yourself
+### Warnings FSx for ONTAP raises, and alarms you build yourself
 
 FSx for ONTAP displays a warning when a metric approaches or crosses a predefined threshold **across multiple consecutive data points.** **A single spike does not raise one.**
 
@@ -101,7 +132,7 @@ To build your own SSD capacity alarm, the configuration the documentation gives 
 
 ---
 
-## Monitoring granularity and retention
+### Monitoring granularity and retention
 
 | Item | Value |
 |---|---|
@@ -114,11 +145,11 @@ To build your own SSD capacity alarm, the configuration the documentation gives 
 
 ---
 
-## Monitoring design flow
+### Monitoring design flow
 
 ```mermaid
 graph TD
-    S[Decide what to monitor] --> STAT{Choose the statistic}
+    S[Choose a utilization metric to monitor] --> STAT{Which CloudWatch statistic<br/>will the utilization series use}
     STAT -->|Average| BAD[Diluted by standby nodes<br/>and unsaturated aggregates]
     STAT -->|Maximum| GOOD[The saturated party is visible]
 
@@ -128,8 +159,8 @@ graph TD
     T --> T98["98%: tiering stops"]
 
     T98 --> FIX[Add SSD, or delete data<br/>until below 90%]
-    FIX --> SNAP{Capacity does not drop}
-    SNAP -->|Held by a Snapshot| DEL[The Snapshot must be deleted]
+    FIX --> SNAP[SSD utilization remains high after deletion]
+    SNAP --> DEL[Check whether a retained Snapshot<br/>must be deleted]
 
     GOOD --> BG[Background task lag<br/>is not alerted]
     BG --> BGCHK[Confirm tiering and backup<br/>completion separately]
@@ -137,7 +168,71 @@ graph TD
 
 ---
 
-## Confirming this in your own environment
+### Three distinct meanings of "maximum"
+
+**"Use Maximum" above is about monitoring, not about the headline number of a benchmark.** One word covers three different things, and **carrying the monitoring conclusion into a measurement plan produces confidently wrong answers.**
+
+| Use | What it is | Where it fits | Where it breaks |
+|---|---|---|---|
+| **The `Maximum` statistic** | CloudWatch returns the highest value in the period | **A monitoring choice.** Inspect peaks in utilization series, together with per-`FileServer` / per-`Aggregate` series on second-generation systems | Judging from Maximum alone while discarding averages, minima, and per-dimension series |
+| **Maximum as a headline number** | Reporting the highest of several runs as "the value for this configuration" | **Nowhere** | **Benchmarking.** The noisier the series, the further the maximum is pulled upward — it is **the least reproducible statistic** |
+| **`max` as an instruction to the load generator** | `fio`'s `rate=` / `iorate=max`, meaning "do not cap" | When the goal is to saturate | **Not a statistic at all.** The achieved figure can land below the target, so the instruction cannot be recorded as the result |
+
+**The first two rows have opposite purposes.** Monitoring exists to **detect**, so use `Maximum` for peaks and the per-`FileServer` / per-`Aggregate` series AWS publishes when those dimensions answer the question. Benchmarking exists to **reproduce**, so it needs a statistic another person can obtain. **Maximum is a monitoring choice, not a suitable benchmark headline.**
+
+**This distinction was made explicit after a citing repository raised it.** In that environment, repeated runs of an identical configuration varied by 45%, 300-second and 900-second runs settled on different values, and `iorate=max` landed below the target. **The measured figures stay with that repository** — they are environment-dependent, so they are not copied here.
+
+> **When carrying this into a measurement plan**: report the **median and the distribution** as the headline, and cite the maximum only to show whether outliers exist. **The maximum alone does not let the next person obtain the same number.**
+
+---
+
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| Utilisation averages 40%, so there is headroom | **Standby nodes pull the average down.** The average reads low even when the preferred node is saturated |
+| The aggregate average is low, so there is no problem | A FlexVol sits on one aggregate. **The one saturated aggregate is holding the volume with the problem** |
+| A threshold at 80% is enough | Caching stops at 90% and tiering stops at 98%. **Behaviour changes in stages after it is crossed** |
+| Crossing 80% temporarily requires immediate action | Temporary spikes are tolerated. The **sustained average** is what to judge on |
+| Setting the tiering policy to `All` means no SSD is consumed | Every write goes to SSD first and metadata always stays on SSD. The guide is 1 : 10 |
+| Deleting data increases free SSD space | Not while a Snapshot containing the deleted data remains |
+| Backups have not failed, so they are keeping up | Background tasks are **deprioritised below client traffic.** The lag is not alerted |
+| High network utilisation means client load | SnapMirror, tiering and backup traffic are in the same metric |
+| Adding SSD recovers immediately after crossing 98% | Tiering resumes only **after dropping below 90%** |
+
+---
+
+### Primary sources
+
+| Point | Source |
+|---|---|
+| Odd-numbered nodes are preferred and even-numbered are standby so utilisation reads low; `NetworkThroughputUtilization` is a ratio against one HA pair and includes background tasks | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
+| Utilisation metrics are emitted per aggregate and per file server; the rest are a single total | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
+| Namespace, 1-minute interval with two exceptions, 15-month retention, metric categories | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
+| 80% recommendation, spike tolerance, the alarm configuration using `MAX(StorageCapacityUtilization)` | [AWS: Creating a storage capacity utilization alarm](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/alarm-low-primary-storage.html) |
+| No caching at 90%, tiering stops at 98%, SSD stages capacity pool writes and random reads | [AWS re:Post: How do I troubleshoot slow performance?](https://repost.aws/knowledge-center/fsx-ontap-fix-slow-performance) |
+| All writes pass through SSD, tiering resumes after deleting down below 90%, Snapshots hold deleted data | [AWS re:Post: Why didn't the capacity change after changing the tiering policy to ALL?](https://repost.aws/knowledge-center/fsx-ontap-volume-tiering-troubleshoot) |
+| Client traffic is prioritised over background tasks (tiering, storage efficiency, backups), metadata is always on SSD, the 1 : 10 guide | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| Warnings require multiple consecutive data points; where they appear on the dashboard | [AWS: Performance warnings and recommendations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance-insights-FSxN.html) <!-- allow:naming - the AWS documentation URL -->|
+
+---
+
+### Related documents
+
+- [Playbook 05 — Operate](../README.md) — this module's hub
+- [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — how the limits themselves are set. The FlexVol-to-aggregate relationship is there
+- [Having Snapshots and being able to recover are different things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — retention design is the same problem as capacity design
+- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — includes an item for confirming monitoring is in place
+- [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
+- [Evidence classification policy](../../../evidence-policy.md)
+
+[🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
+
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **Measure how far apart the average and the maximum are in your own environment.** On some configurations the gap is small enough that the average would still show it — but that is only sayable after checking.
 
@@ -154,70 +249,17 @@ Step 1 comes first because **it is the cheapest and the most effective.** It onl
 
 The premise behind step 6 is in [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md).
 
----
+The generation and deployment type can be read with the following read-only command. Because the limits themselves differ by generation, record them before reading any statistic.
 
-## Three distinct meanings of "maximum"
+```bash
+aws fsx describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[0].[FileSystemTypeVersion,OntapConfiguration.DeploymentType]'
+```
 
-**"Use Maximum" above is about monitoring, not about the headline number of a benchmark.** One word covers three different things, and **carrying the monitoring conclusion into a measurement plan produces confidently wrong answers.**
+### Expected output
 
-| Use | What it is | Where it fits | Where it breaks |
-|---|---|---|---|
-| **The `Maximum` statistic** | CloudWatch returns the highest value in the period | **Monitoring.** The only way to see which party saturated | — |
-| **Maximum as a headline number** | Reporting the highest of several runs as "the value for this configuration" | **Nowhere** | **Benchmarking.** The noisier the series, the further the maximum is pulled upward — it is **the least reproducible statistic** |
-| **`max` as an instruction to the load generator** | `fio`'s `rate=` / `iorate=max`, meaning "do not cap" | When the goal is to saturate | **Not a statistic at all.** The achieved figure can land below the target, so the instruction cannot be recorded as the result |
+The ONTAP version and deployment type (such as `SINGLE_AZ_2`) are returned. Because the metric series published (per-`FileServer` / per-`Aggregate`) differ between first and second generation, confirm which generation's series you are reading before comparing utilisation as Average against Maximum.
 
-**The first two rows have opposite purposes.** Monitoring exists to **detect**, so it needs a statistic that reveals saturation that happened even once. Benchmarking exists to **reproduce**, so it needs a statistic another person can obtain. **The maximum suits the first best and the second worst.**
+## Read next
 
-**This distinction was made explicit after a citing repository raised it.** In that environment, repeated runs of an identical configuration varied by 45%, 300-second and 900-second runs settled on different values, and `iorate=max` landed below the target. **The measured figures stay with that repository** — they are environment-dependent, so they are not copied here.
-
-> **When carrying this into a measurement plan**: report the **median and the distribution** as the headline, and cite the maximum only to show whether outliers exist. **The maximum alone does not let the next person obtain the same number.**
-
----
-
-## Common misconceptions
-
-| Misconception | Reality |
-|---|---|
-| Utilisation averages 40%, so there is headroom | **Standby nodes pull the average down.** The average reads low even when the preferred node is saturated |
-| The aggregate average is low, so there is no problem | A FlexVol sits on one aggregate. **The one saturated aggregate is holding the volume with the problem** |
-| A threshold at 80% is enough | Caching stops at 90% and tiering stops at 98%. **Behaviour changes in stages after it is crossed** |
-| Crossing 80% temporarily requires immediate action | Temporary spikes are tolerated. The **sustained average** is what to judge on |
-| Setting the tiering policy to `All` means no SSD is consumed | Every write goes to SSD first and metadata always stays on SSD. The guide is 1 : 10 |
-| Deleting data increases free SSD space | Not while a Snapshot containing the deleted data remains |
-| Backups have not failed, so they are keeping up | Background tasks are **deprioritised below client traffic.** The lag is not alerted |
-| High network utilisation means client load | SnapMirror, tiering and backup traffic are in the same metric |
-| Adding SSD recovers immediately after crossing 98% | Tiering resumes only **after dropping below 90%** |
-
----
-
-## Primary sources
-
-| Point | Source |
-|---|---|
-| Odd-numbered nodes are preferred and even-numbered are standby so utilisation reads low; `NetworkThroughputUtilization` is a ratio against one HA pair and includes background tasks | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
-| Utilisation metrics are emitted per aggregate and per file server; the rest are a single total | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
-| Namespace, 1-minute interval with two exceptions, 15-month retention, metric categories | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
-| 80% recommendation, spike tolerance, the alarm configuration using `MAX(StorageCapacityUtilization)` | [AWS: Creating a storage capacity utilization alarm](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/alarm-low-primary-storage.html) |
-| No caching at 90%, tiering stops at 98%, SSD stages capacity pool writes and random reads | [AWS re:Post: How do I troubleshoot slow performance?](https://repost.aws/knowledge-center/fsx-ontap-fix-slow-performance) |
-| All writes pass through SSD, tiering resumes after deleting down below 90%, Snapshots hold deleted data | [AWS re:Post: Why didn't the capacity change after changing the tiering policy to ALL?](https://repost.aws/knowledge-center/fsx-ontap-volume-tiering-troubleshoot) |
-| Client traffic is prioritised over background tasks (tiering, storage efficiency, backups), metadata is always on SSD, the 1 : 10 guide | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| Warnings require multiple consecutive data points; where they appear on the dashboard | [AWS: Performance warnings and recommendations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance-insights-FSxN.html) <!-- allow:naming - the AWS documentation URL -->|
-
----
-
-## Related documents
-
-- [Playbook 05 — Operate](../README.md) — this module's hub
-- [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — how the limits themselves are set. The FlexVol-to-aggregate relationship is there
-- [Having Snapshots and being able to recover are different things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — retention design is the same problem as capacity design
-- [Pre-production review](../../../../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — includes an item for confirming monitoring is in place
-- [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
-- [Evidence classification policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository Top](../../../README.md) | [Playbook 05 — Operate](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [English](monitoring-fails-on-averages.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Can a volume run out of writes with capacity to spare?](../../01-assess/notes/counting-bytes-is-not-counting-files.md)

@@ -9,10 +9,6 @@ lang: ja
 
 # コンテナ / モダナイゼーションへの移行経路は 3 つに分かれる
 
-<!-- lang-switcher:start -->
-🌐 [日本語](migration-paths-to-containers.md) | [English](../../../../en/playbooks/03-migrate/notes/migration-paths-to-containers.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook — 移行](../README.md)
 
 ---

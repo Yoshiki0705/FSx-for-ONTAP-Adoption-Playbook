@@ -1,9 +1,5 @@
 # Playbook 04 — 構築 (Build)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/04-build/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 手作業で作った環境は再現できません。IaC と自動化で、構築を検証可能・再現可能にします。

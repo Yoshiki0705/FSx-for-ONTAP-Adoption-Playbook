@@ -114,8 +114,9 @@ NFS で書き込んだ直後のファイルが、待ち時間なしに S3 API �
 | 画面の `Status` 列 | `Syncing` |
 | 画面の `Sync status` 列 | `In progress` |
 
-API だけを見て「できた」と判断すると、まだ答えられないナレッジベースに質問することになります。
-[FSx for ONTAP S3 AP で `HeadBucket` が成功してもデータ操作が失敗する](../../domains/data-utilization/notes/s3-access-point-constraints.md)
+API の状態だけを見て「できた」と判断すると、まだ答えられないナレッジベースに質問することになります。
+同様に、S3 Access Point でも状態確認やメタデータ操作の成功だけではファイル権限を含むデータ経路を確認できません。
+[ListObjectsV2 などのデータ操作まで確認する理由](../../domains/data-utilization/notes/s3-access-point-constraints.md)
 のと同じ構造の落とし穴で、**成功を報告する API と、実際に使える状態が別**です。
 
 この実測を踏まえて[タイムテーブル](README.md#90-分タイムテーブル)は、同期開始を経過 40 分の時点に置き、
@@ -161,7 +162,7 @@ FlexNet ライセンスサーバーで利用可能数が 0 だったという原
 **`aws quicksight create-knowledge-base` と `list-knowledge-bases` は CLI に存在します。**
 `DataSourceArn` を要求するのでデータソースを先に作る必要はありますが、
 GUI 前提に見える本家の手順を事前スクリプト化する余地があります。ここは未検証の想定です。
-同期に 10 分以上かかる以上、**当日ではなく開催前に同期を終わらせておく**のが最も確実です。
+同期に 10 分以上かかるため、**当日ではなく開催前に同期を終わらせておく**と、当日の進行から同期待ちを除外できます。
 
 ## AgentCore Gateway を入れる場合の見積もり
 

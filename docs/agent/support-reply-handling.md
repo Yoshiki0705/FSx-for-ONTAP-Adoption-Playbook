@@ -16,7 +16,7 @@ goes in `.private/`. Procedure:
 ## The rule
 
 **A vendor's support reply cannot be the published basis for a claim.** AWS treats replies from AWS
-Support as its confidential information under the customer agreement, and asked in a reply on a case
+Support as its confidential information under the agreement governing the service, and asked in a reply on a case
 in 2026-09 that they not be published. NetApp, Databricks and Snowflake carry comparable terms, so
 the rule is vendor-neutral.
 
@@ -79,5 +79,5 @@ Tests: `scripts/tests/test_support_attribution_rule.py`. The permitted direction
 same weight as the blocked one, because a rule that flags ordinary prose gets switched off wholesale.
 
 Two shapes the pattern does not catch, and which a reviewer still has to: an internal detail no
-customer could observe stated as fact ("there is no branch in that code path"), and a vendor's
+service user could observe stated as fact ("there is no branch in that code path"), and a vendor's
 expectation reported as "想定されています". Both are reply content wearing different clothes.

@@ -418,11 +418,6 @@ MODULES = [
 
 JA = """# {title}
 
-<!-- lang-switcher:start -->
-<!-- lang-switcher:end -->
-
----
-
 {lead}
 
 ---
@@ -472,11 +467,6 @@ JA = """# {title}
 """
 
 EN = """# {title}
-
-<!-- lang-switcher:start -->
-<!-- lang-switcher:end -->
-
----
 
 {lead}
 

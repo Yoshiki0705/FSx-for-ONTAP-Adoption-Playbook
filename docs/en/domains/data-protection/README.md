@@ -1,9 +1,5 @@
 # Domain — Data Protection
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../ja/domains/data-protection/README.md) | [English](README.md) | [🏠 Repository home](../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Covers Snapshot, SnapMirror, SnapLock, backup, and ransomware readiness. "Protected" and "recoverable" are two different claims.

@@ -1,9 +1,5 @@
 # Case Studies
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../ja/case-studies/README.md) | [English](README.md) | [🏠 Repository home](../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 Findings from field technical-support work, organized as **generalized lessons**.
@@ -70,7 +66,7 @@ A collection of success stories is worth less than it looks. **The points where 
 |---|---|---|
 | Public case study | Published by AWS or NetApp. **Organized as a linked index** | Location of the published account only |
 | Field case | A lesson from technical-support work, generalized | `field-observation` |
-| Verification case | An observation in **this repository's own verification environment** — not a customer engagement | `field-observation` |
+| Verification case | An observation in **this repository's own verification environment** — not an external engagement | `field-observation` |
 
 **They are separated so a reader cannot mistake whose environment is being described.**
 

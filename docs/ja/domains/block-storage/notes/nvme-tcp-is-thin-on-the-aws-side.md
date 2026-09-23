@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: ja
 ---
 
-# NVMe/TCP は AWS 側の面から一貫して抜けている
+# NVMe/TCP は AWS 側の面から抜けているか？
+
+抜けています。セキュリティグループ要件表・プロトコル列挙・API の 3 か所で一貫して現れません。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- NVMe/TCP のポート（データ 4420・ディスカバリ 8009）が AWS のセキュリティグループ要件表に載っておらず、要件表だけで設計すると接続できないこと
+- `describe-storage-virtual-machines` の `Nvme` が `null` を返し、接続先アドレスを AWS API だけで求められないこと
+
+## このノートが答えないこと
+
+- 4420 と 8009 だけで接続が網羅されるか（否定対照を取っておらず未確認）
+- 8009 を開けるべきポートとして記した公開一次情報（見つけられず、実測で成立）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="nvmetcp-は-aws-側の面から一貫して抜けている"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **FSx for ONTAP のセキュリティグループ要件表に、NVMe/TCP のポートは載っていません。** iSCSI の TCP 3260 は載っています。したがって**要件表だけを見てセキュリティグループを設計すると、NVMe/TCP は接続できません。**
 
@@ -37,7 +58,7 @@ lang: ja
 
 ---
 
-## 記載を探した範囲と結果
+### 記載を探した範囲と結果
 
 **2026-09-12 時点で、次の 3 ページを通読しました。**
 
@@ -53,7 +74,7 @@ lang: ja
 
 ---
 
-## セキュリティグループを設計するときに採る手順
+### セキュリティグループを設計するときに採る手順
 
 **要件表を出発点にして、プロトコルごとの手順ページで足し込む。** 表を網羅的な一覧として扱わないことがこのノートの実務上の帰結です。
 
@@ -67,7 +88,7 @@ lang: ja
 
 ---
 
-## AWS API から NVMe エンドポイントが取れないことの帰結
+### AWS API から NVMe エンドポイントが取れないことの帰結
 
 `describe-storage-virtual-machines` の `Endpoints` に `Nvme` は含まれず `null` が返ります。NVMe/TCP が実際に到達できている状態でも変わりません。
 
@@ -77,7 +98,7 @@ lang: ja
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -93,20 +114,7 @@ lang: ja
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `network interface show -vserver <svm> -lif <iscsi_lif> -fields services` | そのアドレスが `data-nvme-tcp` を提供しているか。iSCSI 用のアドレスがそのまま使えるかがここで決まります |
-| 2 | クライアントで `nvme discover -t tcp -a <lif_ip> -s 8009` と `nvme connect-all -t tcp -a <lif_ip>` を実行し、`nvme list-subsys` で `trsvcid` を読む | ディスカバリとデータがそれぞれどのポートを使ったか |
-| 3 | **4420 と 8009 だけを許可したセキュリティグループを新規に作り、それだけを付けた状態で手順 2 を再実行する** | **網羅性。** これが通れば「2 つで足りる」と書けます。当方は未実施です |
-| 4 | `aws fsx describe-storage-virtual-machines --storage-virtual-machine-ids <id> --query 'StorageVirtualMachines[].Endpoints'` | `Nvme` が返るかどうか。自環境でも `null` なら、接続先は ONTAP 側から取る前提で手順を組みます |
-
-適用手順の全体像は [本番に取り入れる前の確認](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -118,13 +126,39 @@ lang: ja
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる](protocol-choice-is-bounded-before-you-choose.md) — どちらを選ぶかの判断
 - [パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) — 接続後のパス数とフェイルオーバー。**NVMe/TCP は Amazon Linux 2023 でネイティブマルチパスが構成できません**
 - [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) — 作成側の分界線
 - [ブロックストレージを 30 分で動かす手順](../quickstart.md) — iSCSI のみを開ける CloudFormation
 
-<!-- lang-switcher:start -->
-🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `network interface show -vserver <svm> -lif <iscsi_lif> -fields services` | そのアドレスが `data-nvme-tcp` を提供しているか。iSCSI 用のアドレスがそのまま使えるかがここで決まります |
+| 2 | クライアントで `nvme discover -t tcp -a <lif_ip> -s 8009` と `nvme connect-all -t tcp -a <lif_ip>` を実行し、`nvme list-subsys` で `trsvcid` を読む | ディスカバリとデータがそれぞれどのポートを使ったか |
+| 3 | **4420 と 8009 だけを許可したセキュリティグループを新規に作り、それだけを付けた状態で手順 2 を再実行する** | **網羅性。** これが通れば「2 つで足りる」と書けます。当方は未実施です |
+| 4 | `aws fsx describe-storage-virtual-machines` の `Endpoints` を読む | `Nvme` が返るかどうか。自環境でも `null` なら、接続先は ONTAP 側から取る前提で手順を組みます |
+
+適用手順の全体像は [本番に取り入れる前の確認](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
+
+手順 1 のサービス提供は、次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> network interface show -vserver <svm> -fields services
+```
+
+### 期待結果
+
+```text
+iSCSI 用の LIF の services に data-nvme-tcp が含まれる（同じ 2 アドレスが両プロトコルを提供）。
+セキュリティグループには 4420 と 8009 を足す。要件表には載っていないため、手順ページで補う
+```
+
+このコマンドは LIF のサービスを読むだけで、LIF にもセキュリティグループにも変更を加えません。接続先アドレスは AWS API の `Nvme` からは取れないため、`Iscsi` 側か ONTAP 側から取ります。
+
+## Read next
+
+[`volume rehost` が変えるのは所有 SVM だけか？](volume-rehost-changes-ownership-not-contents.md)

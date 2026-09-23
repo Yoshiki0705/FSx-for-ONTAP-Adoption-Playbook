@@ -94,10 +94,9 @@ graph TD
 
     U --> R{"その ID に<br/>対象パスの権限があるか"}
 
-    W --> AD{"AD 参加済み SVM か"}
-    AD -->|はい| DC["ドメインコントローラへの<br/>到達性が必要"]
-    AD -->|いいえ| R
-    DC --> R
+    W --> RESOLVE{"Windows ID を<br/>解決できるか"}
+    RESOLVE -->|はい| R
+    RESOLVE -->|いいえ| NG
 
     R -->|ある| OK[成功]
     R -->|ない| NG["AccessDenied<br/>IAM 側が許可していても失敗する"]
@@ -108,7 +107,7 @@ graph TD
 | 誰として評価されるか | Access Point 作成時に指定した **UNIX ユーザーまたは Windows ユーザー 1 つ**。呼び出し元の IAM プリンシパルとは無関係です |
 | 元のファイル ACL | **引き継がれません。** 「その ID が見えるもの」が見える範囲になります |
 | ID の変更 | **できません。** Access Point の作り直しになります。用途ごとに Access Point を分ける設計になります |
-| AD 参加済み SVM | S3 経由の**すべてのデータ操作**にドメインコントローラへの到達性が必要です。`HeadBucket` は AD が到達不能でも成功するため、疎通確認に使うと偽陽性になります |
+| AD 参加済み SVM | AWS は Windows ID が参加済みドメインで解決できることと、名前サービス到達不能時に `MISCONFIGURED` になりうることを記載しています。全データ操作の DC 依存と、AD 到達不能時の `HeadBucket` 成功は完全な公開記録がなく `open` です |
 
 **この段があるおかげで、IAM より硬い制限が書けます。** 読み取り専用の ID を紐づけると、
 **Layer 1 の設定を変えても書き込みは通りません。** ポリシー 1 行の変更で書けるようになる状態を
@@ -133,7 +132,7 @@ graph TD
 | `ListBucket` は通るが `GetObject` が落ちる | Layer 2 | 対象パスの実効権限。`Resource` の粒度も併せて確認します |
 | IAM で許可しているのに落ちる | Layer 2 | Access Point に紐づく ID の権限 |
 | エラー本文が修飾のない `Access Denied` だけ | **Layer 2** | ファイル権限。**ポリシーを探しても原因はありません**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#accessdenied-のメッセージによる層の切り分け)） |
-| `HeadBucket` は成功するがデータ操作が落ちる | Layer 2（AD 参加済み SVM） | ドメインコントローラへの到達性 |
+| `HeadBucket` は成功するがデータ操作が落ちる | Layer 2 を含むエンドツーエンド経路 | ファイルシステム ID の解決と対象パスの権限。AD 到達不能が原因という既存主張は `open` です |
 
 ---
 
@@ -148,7 +147,7 @@ graph TD
 | 同一アカウント所有が必須だから別アカウントからは読めない | 制約は Access Point を**作る**側です。ポリシーで許可すれば読めます |
 | IAM で許可すればデータに届く | Layer 2 が別に評価します |
 | ファイルごとの ACL が S3 経由でも効く | 効きません。1 つの ID として評価されます |
-| 監査ログを見れば呼び出し元が分かる | Layer 2 の ID として記録されます。呼び出し元の特定には CloudTrail との突き合わせが必要です |
+| 監査ログを見れば呼び出し元が分かる | ONTAP 監査には Layer 2 の ID が記録されます。Access Point に CloudTrail の S3 データイベントを構成すると、呼び出し元の IAM プリンシパルを確認できます |
 
 ---
 
@@ -156,7 +155,7 @@ graph TD
 
 - **Layer 1 の順序は AWS の公開ドキュメントの記載で、本ツリー自身は測定していません。** FSx for ONTAP の S3 Access Point で確認した範囲は [対応するノート](../../domains/security-governance/notes/access-point-authorization-layers.md)にあり、そこに実測日と環境が書かれています。
 - **permissions boundary と session policy の分岐は実測していません。** 図に入れてあるのは、順序を欠けたまま示すと「boundary があるのに通った / 通らない」の切り分けができなくなるためです。
-- **図は判定の順序を示すもので、性能や監査の経路は含みません。** 誰が読んだかは CloudTrail と IAM 側で追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログに記録される主体)）。監査の構成そのものは [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) で扱っています。
+- **図は判定の順序を示すもので、性能や監査の経路は含みません。** [CloudTrail の S3 データイベント](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)を Access Point に構成すると呼び出し元を追えますが、Layer 2 では区別されません。**ONTAP のファイルアクセス監査に残るのは Access Point に紐づく ID です**（[実測](../../domains/security-governance/notes/access-point-authorization-layers.md#監査ログに記録される主体)）。
 
 ---
 
@@ -169,6 +168,9 @@ graph TD
 | 同一アカウントで片方だけが許可しても許可されること | [AWS: Policy evaluation for requests within a single account](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-basics.html) |
 | クロスアカウントは**両方**の評価が真である必要があること | [AWS: Cross-account policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic-cross-account.html) |
 | 二段階認可モデル、ファイルシステム ID による認可、Block Public Access が固定であること | [AWS: Managing access point access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) |
+| `FileSystemIdentity` が全ファイルアクセス要求の認可に使われ、UNIX または Windows ID を取ること | [AWS: OntapFileSystemIdentity](https://docs.aws.amazon.com/fsx/latest/APIReference/API_OntapFileSystemIdentity.html) |
+| Windows ID の解決要件と、名前サービス到達不能時の `MISCONFIGURED` | [AWS: Troubleshooting S3 access point issues](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/troubleshooting-access-points-for-fsxn.html) |
+| Access Point 経由のリクエストを CloudTrail の S3 データイベントとして記録できること | [Amazon S3: Monitoring and logging access points](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html) |
 | Access Point は HTTPS のみ、HTTP はリダイレクトされること | [AWS: Access points restrictions and limitations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations-naming-rules.html) |
 
 ---

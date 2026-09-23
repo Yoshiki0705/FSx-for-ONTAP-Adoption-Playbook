@@ -1,9 +1,5 @@
 # Domain — 性能 (Performance)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/domains/performance/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 スループット設計、レイテンシ、キャッシュ、共有帯域の挙動を扱います。数値は必ず測定環境とセットで読んでください。
@@ -30,7 +26,7 @@
 |---|---|---|
 | 1 | スループットはどこで決まり、どこで共有されるか | [スループットは 1 つの設定値では決まらない](notes/where-throughput-is-determined-and-shared.md) |
 | 2 | プロトコル間で帯域をどう分け合うか | [プロトコル間で帯域はどう分け合われるか](notes/what-you-cannot-read-from-cloudwatch.md#プロトコル間での帯域の分け合い方) |
-| 3 | レイテンシのテール（p99）をどう見るか | [p99 は CloudWatch のメトリクスからは出せない](notes/what-you-cannot-read-from-cloudwatch.md) |
+| 3 | レイテンシのテール（p99）をどう見るか | [ボリュームの操作時間メトリクスから p99 は出せない](notes/what-you-cannot-read-from-cloudwatch.md) |
 | 4 | キャッシュが効くワークロードの条件は何か | [キャッシュが効く条件](notes/what-you-cannot-read-from-cloudwatch.md#キャッシュが効く条件) |
 | 5 | ベンチマークをどう設計すれば再現できるか | [再現できるベンチマークの条件](notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) |
 | 6 | 手元で測った値は何を測っているのか | [単一接続で測った値はストレージの性能ではない](notes/a-single-connection-measures-the-client.md) |

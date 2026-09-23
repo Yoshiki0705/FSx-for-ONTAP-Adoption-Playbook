@@ -96,7 +96,7 @@ lang: ja
 |---|---|---|
 | ファイル共有だけ | **全部**（Chromebook / iPad を除く） | AD 参加か workgroup かは別の判断です |
 | ブロック（LUN） | **Windows、ネイティブ Linux。** WSL2 は要確認 | Mac は選択肢に入りません |
-| オブジェクト（S3 Access Points） | **全部** | インターフェースエンドポイントが要ります |
+| オブジェクト（S3 Access Points） | **全部** | `Internet` origin は公開 S3 エンドポイント、VPC 内の通信はゲートウェイエンドポイントを利用できます。VPN 等で VPC に入る通信を私設経路に限定する場合はインターフェイスエンドポイントが必要です |
 | 端末に何もインストールしない | **Chromebook / iPad / 任意のブラウザ**、または VDI | マウントの選択肢が消えます |
 | 端末側の運用をしたくない | **WorkSpaces / AppStream** | VDI の費用と運用が乗ります |
 
@@ -112,7 +112,7 @@ Windows は AWS の手順が Server SKU 前提でそのまま動かず、ネイ�
 |---|---|---|
 | 1 | 端末の一覧を OS とバージョンで棚卸しする | この表のどの列に当たるか |
 | 2 | Windows: `Get-WindowsOptionalFeature -Online -FeatureName MultiPathIO` と `Get-Service MSiSCSI` | MPIO の有効化手段と iSCSI サービスの状態 |
-| 3 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**「無い」ことは自環境で確認するのが最も確実です** |
+| 3 | Mac: `which iscsiadm; ls /usr/sbin \| grep -i iscsi` | イニシエータの不在。**自環境でコマンドと実行ファイルの有無を確認します** |
 | 4 | WSL2: `wsl.exe --version`、`modprobe iscsi_tcp; echo $?`、`cat /etc/wsl.conf` | カーネルとネットワークモード |
 | 5 | 各端末で `aws sts get-caller-identity` | AWS の資格情報が端末にどう置かれているか |
 | 6 | 各端末で `mount` の出力を記録する | すでに何がマウントされているか |
@@ -131,7 +131,7 @@ Windows は AWS の手順が Server SKU 前提でそのまま動かず、ネイ�
 | Windows なら AWS の iSCSI 手順をそのまま使える | **手順は Windows Server 2019 の EC2 を前提にしています。** MPIO の有効化コマンドと、渡すローカル IP の 2 か所が端末では変わります |
 | Chromebook でも VPN を入れればマウントできる | **マウントの仕組みがありません。** VPN は経路の問題を解くだけです |
 | VDI にすれば端末の制約が消える | **VDI の中の OS に移るだけです。** 消えるのは端末側の運用で、制約の表は VDI の OS の列を読むことになります |
-| S3 Access Points は端末からインターネット経由で使える | **VPC 内のインターフェースエンドポイントが要ります。** ゲートウェイエンドポイントは VPN 経由の流入をルーティングしません |
+| S3 Access Points は端末から常に同じ経路で使える | `Internet` origin は公開 S3 エンドポイントから利用できます。VPC 内の通信はゲートウェイエンドポイントを利用でき、VPN 等で VPC に入る通信を私設経路に限定する場合はインターフェイスエンドポイントが必要です |
 
 ---
 

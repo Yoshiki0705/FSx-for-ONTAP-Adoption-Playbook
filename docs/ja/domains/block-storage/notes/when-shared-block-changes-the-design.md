@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volumes-multi.html
 lang: ja
 ---
 
-# 共有ブロックが設計を変える条件
+# 共有ブロックはどんな条件で設計を変えるか？
+
+単独接続で足りるなら持ち込む理由はありません。効くのは構造が要る 4 条件のときです。
+
+## このノートで学べること
+
+- FSx for ONTAP をブロックに選ぶ理由が速さではなく構造で、単独接続なら Amazon EBS が素直なこと
+- 構造が効く 4 条件（ファイル併用・世代無制限 Snapshot・別リージョン複製・実データなし複製）と、対称に置く FSx for ONTAP 側のトレードオフ
+
+## このノートが答えないこと
+
+- FSx for ONTAP と Amazon EBS の性能比較（公開ベンチマークの読み方のみ扱い、数値は持たない）
+- 調停を担うクラスタ製品の当リポジトリでの検証結果（サポートの所在の記載であって検証ではない）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="共有ブロックが設計を変える条件"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **FSx for ONTAP をブロックストレージとして選ぶ理由は、速さではなく構造です。** そして構造が効かない要件では、Amazon EBS のほうが素直です。
 
@@ -35,7 +55,7 @@ lang: ja
 
 ---
 
-## 単独接続で足りる場合の判断
+### 単独接続で足りる場合の判断
 
 **「ブロックストレージが必要」は「共有ブロックが必要」ではありません。** ここを分けないまま FSx for ONTAP を検討すると、要件に対して過剰な構成になります。
 
@@ -53,27 +73,27 @@ lang: ja
 
 ---
 
-## 構造が効く 4 つの条件
+### 構造が効く 4 つの条件
 
-### ファイルとブロックが同じストレージから出ること
+#### ファイルとブロックが同じストレージから出ること
 
 **同一のファイルシステム・SVM から NFS・SMB・iSCSI・NVMe/TCP・S3 Access Point を同時に提供できます。** 同じデータセットを分析基盤には NFS で見せ、データベースには LUN で見せる、という構成が 1 台で組めます。
 
 **ただしボリュームの粒度では話が変わります。** NetApp は **SAN の LUN と NAS 共有を同じ FlexVol に混在させることを推奨していません。** 技術的に不可能なのではなく、容量計算と Snapshot の扱いが両者で異なるためです。**「1 台で両方出せる」は正しく、「1 ボリュームで両方出すのが普通」は誤りです。**
 
-### Snapshot が確保済み容量を消費すること
+#### Snapshot が確保済み容量を消費すること
 
 FSx for ONTAP の Snapshot は、**すでに確保している SSD 容量を消費します。別建ての課金項目にはなりません。** Amazon EBS の Snapshot は GB-月で別に課金されます。
 
 **世代を多く持つ設計では、この差が積み上がります。** 一方で、**容量を食うという事実は消えません。** SSD が満杯になると LUN が read-only に落ちるという別の失敗経路が現れます。そちらは [容量は 3 か所で数えられる](capacity-is-counted-in-three-places.md) の範囲です。
 
-### SnapMirror がボリューム単位で動くこと
+#### SnapMirror がボリューム単位で動くこと
 
 **LUN を含むボリュームをそのまま別のファイルシステムへ複製できます。** ホストを経由しないため、複製のためにアプリケーションを止める必要がありません。
 
 **宛先で LUN がそのまま使えるわけではありません。** 宛先ボリュームを書き込み可能にした後、**LUN を igroup にマップし、ホストから iSCSI セッションを張り、再スキャンする**必要があります。**igroup のマッピングはデータと一緒に移りません。**
 
-### FlexClone が実データをコピーしないこと
+#### FlexClone が実データをコピーしないこと
 
 **本番 LUN の書き込み可能な複製を、実データのコピーなしで作れます。** Amazon EBS では Snapshot から新しいボリュームを作る形になり、コピーが発生します。
 
@@ -81,13 +101,13 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 
 ---
 
-## FSx for ONTAP 側のトレードオフ
+### FSx for ONTAP 側のトレードオフ
 
 **上の 4 つと同じ重みで置きます。** 該当する要件がないなら、これらは払う必要のないコストです。
 
 | トレードオフ | 内容 | 逃げ道 |
 |---|---|---|
-| **HA ペア 6 組の天井** | 7 組目を追加した時点で iSCSI と NVMe/TCP が使えなくなります。**追加した HA ペアは削除できません** | 6 組を上限に設計する。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
+| **HA ペア 6 組の天井** | iSCSI は 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下のファイルシステムだけがサポート対象です。**7 組目追加時の遷移動作は文書化されていません** | 6 組を上限に設計する。追加した HA ペアは削除できません。詳細は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) |
 | **ホスト側 multipath の責任** | パスの構成・タイムアウト・切り替わりの確認はホスト側の作業です | 手順は文書化されています。[パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) |
 | **書き込み整合性の責任** | 複数ホストから同じ LUN に書くとき、調停はホスト側のクラスタ機能が行います | Amazon EBS Multi-Attach でも同じです。**共有ブロックに共通の性質です**。担い手の選択肢は [ホスト側のクラスタ機能を担う製品](#ホスト側のクラスタ機能を担う製品) |
 | **制御面が 2 つ** | LUN・igroup・NVMe subsystem は AWS の API に存在しません | [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) |
@@ -99,7 +119,7 @@ AWS は SQL Server の文脈で、**1 TB のデータベースの iSCSI LUN の�
 
 ---
 
-## ホスト側のクラスタ機能を担う製品
+### ホスト側のクラスタ機能を担う製品
 
 **上のトレードオフ表にある「書き込み整合性の責任」は、責任の所在を述べているだけで、誰が担うかを述べていません。** ここを空欄のまま設計すると、共有ブロックを選んだのに調停の実装が決まっていない状態になります。
 
@@ -117,11 +137,11 @@ SIOS LifeKeeper について、ベンダーは **2024-11-28 からサポート�
 
 **この記載が意味するのはサポートの所在で、当リポジトリでの検証結果ではありません。** 版の組み合わせと対応プロトコルは選定時点でベンダーの最新情報を確認してください。
 
-**他の候補について、こちらが到達できていない範囲があります。** 同じ課題領域で日本の環境から想起される製品のうち、**FSx for ONTAP を名指しした対応記述に到達できていないものがあります**（検索日 2026-09-15）。到達できていないことは非対応を意味しません。調査状態は [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md#掲載基準を満たさないもの) に記録しています。
+**他の候補について、こちらが到達できていない範囲があります。** 同じ課題領域で日本の環境から想起される製品のうち、**FSx for ONTAP を名指しした対応記述に到達できていないものがあります**（検索日 2026-09-15）。到達できていないことは非対応を意味しません。調査状態は [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md#掲載基準を満たさないもの) に記録しています。
 
 ---
 
-## 公開ベンチマークの読み方
+### 公開ベンチマークの読み方
 
 **FSx for ONTAP のブロック性能について最もよく引用される数値は「100 万 IOPS」です。この数値は 1 つのファイルシステムのものではありません。**
 
@@ -161,21 +181,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | ブロックデバイスを同時に使うホスト数を数える | 1 なら Amazon EBS で足ります |
-| 2 | 同じデータをファイル共有としても出す要件があるかを確認する | 構造が効く条件 1 に該当するか |
-| 3 | 保持したい Snapshot の世代数と 1 世代あたりの変化量を見積もる | 構造が効く条件 2 の効果と、SSD 容量への影響 |
-| 4 | 別リージョンへの複製要件と RPO を確認する | 構造が効く条件 3 に該当するか |
-| 5 | AZ をまたぐ必要があるかを確認する | **Amazon EBS Multi-Attach は同一 AZ のみ**なので、またぐなら選択肢から外れます |
-| 6 | HA ペアを 7 組以上に増やす計画があるかを確認する | **計画があるならブロックは使えません** |
-| 7 | 現行の料金ページで最小構成の月額を試算し、要件のデータ量と比べる | 過剰な構成になっていないか |
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -190,7 +196,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
@@ -202,7 +208,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 | SAN の LUN と NAS 共有を同じ FlexVol に混在させることが推奨されないこと | [NetApp: SAN volumes](https://docs.netapp.com/us-en/ontap/volumes/san-volumes-concept.html) |
 | SnapMirror 宛先で LUN マップ・iSCSI セッション・再スキャンが必要であること | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | 1 TB のデータベースの iSCSI LUN クローンが通常 5 分以内であること | [AWS: Using SnapCenter to protect SQL Server workloads](https://aws.amazon.com/blogs/storage/using-netapp-snapcenter-with-amazon-fsx-for-netapp-ontap-to-protect-your-sql-server-workloads) |
-| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) |
+| iSCSI は HA ペア 6 組以下、NVMe/TCP は第 2 世代かつ 6 組以下 | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | 第三者のクラスタソフトウェアとの組み合わせのサポートが公表されていること（2024-11-28 開始、Linux 版は iSCSI と NFS、Windows 版は iSCSI） | [ベンダー告知](https://sios.jp/news/info/2024/20241128_lk-fsx.html) · [AWS Prescriptive Guidance ブログ](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/)（いずれも 2026-09-15 に確認） |
 | AZ 障害をまたぐ要件での EBS 2 AZ 構成と FSx for ONTAP Multi-AZ の単価比較、逆転点が必要スループット容量に依存し定数化できないこと | [別プロジェクトでの容量帯別の再計算手順](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/tco-comparison.md) — 数値はそちらのサンプル構成の定価計算であり、本番の見積りではありません |
 | Multi-AZ の standby が active と別 AZ に配置され書き込みが AZ 間で同期複製されること、AZ 障害が自動フェイルオーバーの発動条件に含まれること、フェイルオーバー・フェイルバックが通常 60 秒未満であること | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
@@ -210,7 +216,7 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [ブロックストレージの選択肢の比較](../../../reference/comparison/block-storage-options.md) — この判断の比較表版
@@ -220,9 +226,41 @@ AWS Storage Blog の [SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](h
 - [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — HA ペア単位の共有
 - [再現できるベンチマークの条件](../../performance/notes/what-you-cannot-read-from-cloudwatch.md#再現できるベンチマークの条件) — 測定の設計
 - [ブロックストレージ横断リソースマップ](../../../reference/block-storage-resource-map.md) — 一次情報の索引
-- [課題別 ISV / SaaS ソリューションマップ](../../../reference/isv-solution-map.md) — 調停を担う製品の索引と、こちらが到達できていない範囲
+- [課題別 ISV / SaaS 選択肢マップ](../../../reference/isv-solution-map.md) — 調停を担う製品の索引と、こちらが到達できていない範囲
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | ブロックデバイスを同時に使うホスト数を数える | 1 なら Amazon EBS で足ります |
+| 2 | 同じデータをファイル共有としても出す要件があるかを確認する | 構造が効く条件 1 に該当するか |
+| 3 | 保持したい Snapshot の世代数と 1 世代あたりの変化量を見積もる | 構造が効く条件 2 の効果と、SSD 容量への影響 |
+| 4 | 別リージョンへの複製要件と RPO を確認する | 構造が効く条件 3 に該当するか |
+| 5 | AZ をまたぐ必要があるかを確認する | **Amazon EBS Multi-Attach は同一 AZ のみ**なので、またぐなら選択肢から外れます |
+| 6 | HA ペアを 7 組以上に増やす計画があるかを確認する | **計画があるならブロックは使えません** |
+| 7 | 現行の料金ページで最小構成の月額を試算し、要件のデータ量と比べる | 過剰な構成になっていないか |
+
+手順 6 の現在の HA ペア数は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws fsx describe-file-systems --file-system-ids <fs-id> \
+  --query 'FileSystems[0].OntapConfiguration.HAPairs'
+```
+
+### 期待結果
+
+```text
+現在の HA ペア数が返る。6 に達していれば iSCSI / NVMe-TCP のサポート上限で、
+7 組目を足す計画があるならブロックは使えない（追加した HA ペアは削除できない）
+```
+
+このコマンドはファイルシステムの構成を読むだけで、HA ペアにもボリュームにも変更を加えません。
+
+## Read next
+
+[EBS が安くなくなる境目は台数か？](when-ebs-stops-being-the-cheaper-answer.md)

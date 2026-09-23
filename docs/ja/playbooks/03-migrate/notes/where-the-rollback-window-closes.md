@@ -7,17 +7,41 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-sn
 lang: ja
 ---
 
-# 切り戻せる時点はクライアントが書き始めた瞬間に閉じる
+# 切り戻せる時点はいつ閉じるか？
+
+クライアントが複製先に書き始めた瞬間に閉じます。差分同期は移行元の共通 Snapshot に依存します。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](where-the-rollback-window-closes.md) | [English](../../../../en/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- 切り戻せる時点が break ではなくクライアントの初回書き込みで閉じること、その後の戻し方が「設定を戻す」ではないこと
+- 差分同期が移行元の共通 Snapshot に依存し、その削除が初期同期のやり直しを招くこと
+
+## このノートが答えないこと
+
+- 初期同期・差分同期の転送時間の実測値（回線とデータ量に依存）
+- resync 時に保持されるものと失われるものの網羅（`preserve` は XDP のみ、詳細は一次情報）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="切り戻せる時点はクライアントが書き始めた瞬間に閉じる"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
+
+> **Evidence**: `documented` — コマンド列・状態・制約は AWS 公式ドキュメント、AWS Storage Blog、AWS re:Post の記載に基づきます。
+> **転送時間の実測値は含みません。** 所要時間は回線とデータ量に依存します。
+> 計測手順は「[自分の環境で確かめる](#自環境での確認手順)」にあります。
 
 ---
 
-## 結論
+### 結論
 
 **SnapMirror の複製先は、関係を break するまで読み取り専用です。** つまり break の前は、切り戻しは「移行元を使い続ける」だけで済みます。何も失われません。
 
@@ -27,13 +51,9 @@ break すると複製先が読み書き可能になり、**移行元には影響
 
 もう 1 つ。**差分同期は移行元にある共通 Snapshot に依存します。** SnapMirror が作成した Snapshot を移行元で削除すると、**差分転送ができなくなり初期同期からやり直しになります。** これが移行スケジュールで最も大きなリスクです。
 
-> **Evidence**: `documented` — コマンド列・状態・制約は AWS 公式ドキュメント、AWS Storage Blog、AWS re:Post の記載に基づきます。
-> **転送時間の実測値は含みません。** 所要時間は回線とデータ量に依存します。
-> 計測手順は「[自分の環境で確かめる](#自環境での確認手順)」にあります。
-
 ---
 
-## 初期同期と差分同期
+### 初期同期と差分同期
 
 | 段階 | コマンド | 内容 |
 |---|---|---|
@@ -43,7 +63,7 @@ break すると複製先が読み書き可能になり、**移行元には影響
 
 **稼働中のデータを移行する場合は、切り替えまで差分同期を回し続けます。** 初期同期を切り替え直前に始める計画にすると、転送時間がそのままダウンタイムになります。
 
-### 差分同期が壊れる条件
+#### 差分同期が壊れる条件
 
 | 条件 | 起きること |
 |---|---|
@@ -57,7 +77,7 @@ break すると複製先が読み書き可能になり、**移行元には影響
 
 ---
 
-## 切り替えの順序
+### 切り替えの順序
 
 **ダウンタイムを決めるのは、この順序のどこでクライアントを止めるかです。**
 
@@ -78,28 +98,28 @@ break すると複製先が読み書き可能になり、**移行元には影響
 
 ---
 
-## 戻せる範囲
+### 戻せる範囲
 
 ```mermaid
 graph TD
     A[初期同期を開始] --> B[差分同期を回す]
-    B --> C{break する前}
+    B --> C[break 実行前]
     C --> C1["複製先は読み取り専用<br/>戻すのは移行元を使い続けるだけ<br/>失うものはない"]
 
     B --> D[break を実行]
     D --> D1["複製先が読み書き可能になる<br/>移行元は無傷<br/>まだ戻せる"]
 
-    D1 --> E{クライアントが<br/>複製先に書き込む}
+    D1 --> E[クライアントが複製先へ書き込み]
     E --> E1["ここで閉じる<br/>以降の書き込みは移行元にない"]
 
-    E1 --> F{戻したい}
-    F --> F1[書き込みを捨てて<br/>移行元へ戻す]
-    F --> F2["複製方向を逆にする<br/>resync は別の操作"]
+    E1 --> F{複製先への書き込みを<br/>保持して切り戻すか}
+    F -->|保持しない| F1[書き込みを捨てて<br/>移行元へ戻す]
+    F -->|保持する| F2["複製方向を逆にする<br/>resync は別の操作"]
 ```
 
 **「切り替え設定を戻す」という戻し方は存在しません。** 戻すという判断は、複製先に書かれたデータをどうするかの判断です。
 
-### resync で戻す場合の注意
+#### resync で戻す場合の注意
 
 `snapmirror resync` は関係を再確立しますが、**ユーザーが作成した Snapshot は複製されません。** 複製先の export された Snapshot は削除され、クライアントには複製先のアクティブなファイルシステムが見えます。
 
@@ -109,7 +129,7 @@ Snapshot ポリシーの複製で問題を避けるため、**`preserve` パラ�
 
 ---
 
-## 転送性能に影響する条件
+### 転送性能に影響する条件
 
 | 条件 | 影響 |
 |---|---|
@@ -121,6 +141,47 @@ Snapshot ポリシーの複製で問題を避けるため、**`preserve` パラ�
 最後の行は運用に効きます。**転送が想定より遅い場合、回線ではなく優先度の問題である可能性があります。** 仕組みは [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) にあります。
 
 ---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 切り替え後もいつでも戻せる | **クライアントが複製先に書いた時点で閉じます。** それ以降は書き込みの扱いを決める判断です |
+| break すると移行元に影響する | 影響しません。移行元は無傷です |
+| break する前でも複製先に書ける | **読み取り専用です。** break するまで書けません |
+| `Relationship Status` が `Idle` なら最新 | `Idle` は転送していないという意味です。新しさは `Last Transfer End Timestamp` で見ます |
+| ダウンタイムは転送時間で決まる | 転送は切り替え前に終わっています。ダウンタイムは `quiesce` からマウントまでです |
+| 移行元の Snapshot は消してよい | **SnapMirror が作った Snapshot を消すと差分転送ができません。** 初期同期からやり直しです |
+| 失敗した複製先ボリュームは再利用できる | 再利用は推奨されません。新しいボリュームを作成します |
+| NAT 経由でも SnapMirror は動く | **対応していません** |
+| `resync` すれば元の状態に戻る | ユーザー作成の Snapshot は複製されません。新しい状態を作る操作です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| `snapmirror initialize` による初期同期、`snapmirror update` による単発の差分同期、`snapmirror modify -schedule` による定期同期 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 複製先が break するまで読み取り専用であること、切り替え手順（状態確認 → `Last Transfer End Timestamp` の確認 → `quiesce` → `break` → マウント）、`Last Transfer End Timestamp` がデータの新しさを表すこと | [AWS Storage Blog: Migrating on-premises file shares to FSx for ONTAP](https://aws.amazon.com/blogs/storage/migrating-on-premises-file-shares-to-amazon-fsx-for-netapp-ontap/) |
+| 複製先が online かつ読み取り専用で作られること、break が複製先を書き込み可能にし移行元に影響しないこと、スケジュールに従って差分更新されること | [AWS Storage Blog: Cross-region disaster recovery with FSx for ONTAP](https://aws.amazon.com/blogs/storage/cross-region-disaster-recovery-with-amazon-fsx-for-netapp-ontap/) |
+| `resync` がユーザー作成 Snapshot を複製しないこと、複製先の export された Snapshot が削除されること、`preserve` が XDP のみで使えること | [AWS re:Post: Why does the snapshot policy stop working after snapmirror resync?](https://repost.aws/knowledge-center/fsx-ontap-snapmirror-resync) |
+| 共通 Snapshot（NCS）に差分転送が依存すること、複製先ボリュームを再利用しないこと、複製先をオフラインにしないこと、効率化ジョブと併走させないこと、NAT 非対応、利用率 50% 超で専用フェイルオーバーグループ、RTT の影響、`volume autosize` の推奨 | [AWS re:Post: How can I optimize SnapMirror performance?](https://repost.aws/knowledge-center/fsx-ontap-optimize-snapmirror) |
+| 転送状態が不正になった場合に関係とボリュームを作り直す手順 | [AWS re:Post: How do I troubleshoot SnapMirror issues?](https://repost.aws/knowledge-center/fsx-ontap-troubleshoot-snapmirror) |
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 03 — 移行](../README.md) — このモジュールのハブ
+- [移行方式の決定木](../../../reference/decision-trees/migration-method.md) — 方式の選択とバージョン互換性
+- [ACL 保持は権限の問題であってツールの問題ではない](preserving-acls-during-migration.md) — 移行後の ACL 比較手順
+- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — 移行前に数えるもの
+- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 複製先はバックアップ対象外です
+- [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — 転送が遅い理由の切り分け
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
 
 ## 自環境での確認手順
 
@@ -138,51 +199,17 @@ Snapshot ポリシーの複製で問題を避けるため、**`preserve` パラ�
 
 手順 7 を飛ばす移行計画が多いです。**切り戻し手順は、使わないことを願う手順であっても、動くことを確認しておく対象です。**
 
----
+SnapMirror 関係の状態と複製先データの新しさは、次の読み取り専用コマンドで確認できます。
 
-## よくある誤解
+```bash
+curl -sk -u fsxadmin \
+  "https://<management-endpoint>/api/snapmirror/relationships?fields=state,healthy,transfer.end_time"
+```
 
-| 誤解 | 実際 |
-|---|---|
-| 切り替え後もいつでも戻せる | **クライアントが複製先に書いた時点で閉じます。** それ以降は書き込みの扱いを決める判断です |
-| break すると移行元に影響する | 影響しません。移行元は無傷です |
-| break する前でも複製先に書ける | **読み取り専用です。** break するまで書けません |
-| `Relationship Status` が `Idle` なら最新 | `Idle` は転送していないという意味です。新しさは `Last Transfer End Timestamp` で見ます |
-| ダウンタイムは転送時間で決まる | 転送は切り替え前に終わっています。ダウンタイムは `quiesce` からマウントまでです |
-| 移行元の Snapshot は消してよい | **SnapMirror が作った Snapshot を消すと差分転送ができません。** 初期同期からやり直しです |
-| 失敗した複製先ボリュームは再利用できる | 再利用は推奨されません。新しいボリュームを作成します |
-| NAT 経由でも SnapMirror は動く | **対応していません** |
-| `resync` すれば元の状態に戻る | ユーザー作成の Snapshot は複製されません。新しい状態を作る操作です |
+### 期待結果
 
----
+各関係の `state`（`snapmirrored` など）、`healthy`（true）、`transfer.end_time`（最終転送の完了時刻）が返ります。`transfer.end_time` が想定より古い場合、複製先は最新ではなく、切り替えてはいけません。
 
-## 参照した一次情報
+## Read next
 
-| 論点 | 出典 |
-|---|---|
-| `snapmirror initialize` による初期同期、`snapmirror update` による単発の差分同期、`snapmirror modify -schedule` による定期同期 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| 複製先が break するまで読み取り専用であること、切り替え手順（状態確認 → `Last Transfer End Timestamp` の確認 → `quiesce` → `break` → マウント）、`Last Transfer End Timestamp` がデータの新しさを表すこと | [AWS Storage Blog: Migrating on-premises file shares to FSx for ONTAP](https://aws.amazon.com/blogs/storage/migrating-on-premises-file-shares-to-amazon-fsx-for-netapp-ontap/) |
-| 複製先が online かつ読み取り専用で作られること、break が複製先を書き込み可能にし移行元に影響しないこと、スケジュールに従って差分更新されること | [AWS Storage Blog: Cross-region disaster recovery with FSx for ONTAP](https://aws.amazon.com/blogs/storage/cross-region-disaster-recovery-with-amazon-fsx-for-netapp-ontap/) |
-| `resync` がユーザー作成 Snapshot を複製しないこと、複製先の export された Snapshot が削除されること、`preserve` が XDP のみで使えること | [AWS re:Post: Why does the snapshot policy stop working after snapmirror resync?](https://repost.aws/knowledge-center/fsx-ontap-snapmirror-resync) |
-| 共通 Snapshot（NCS）に差分転送が依存すること、複製先ボリュームを再利用しないこと、複製先をオフラインにしないこと、効率化ジョブと併走させないこと、NAT 非対応、利用率 50% 超で専用フェイルオーバーグループ、RTT の影響、`volume autosize` の推奨 | [AWS re:Post: How can I optimize SnapMirror performance?](https://repost.aws/knowledge-center/fsx-ontap-optimize-snapmirror) |
-| 転送状態が不正になった場合に関係とボリュームを作り直す手順 | [AWS re:Post: How do I troubleshoot SnapMirror issues?](https://repost.aws/knowledge-center/fsx-ontap-troubleshoot-snapmirror) |
-
----
-
-## 関連ドキュメント
-
-- [Playbook 03 — 移行](../README.md) — このモジュールのハブ
-- [移行方式の決定木](../../../reference/decision-trees/migration-method.md) — 方式の選択とバージョン互換性
-- [ACL 保持は権限の問題であってツールの問題ではない](preserving-acls-during-migration.md) — 移行後の ACL 比較手順
-- [容量が余っていても書けなくなる](../../01-assess/notes/counting-bytes-is-not-counting-files.md) — 移行前に数えるもの
-- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 複製先はバックアップ対象外です
-- [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — 転送が遅い理由の切り分け
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 03 — 移行](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](where-the-rollback-window-closes.md) | [English](../../../../en/playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[IaC が届く境界はどこで決まるか？](../../04-build/notes/what-iac-cannot-reach.md)

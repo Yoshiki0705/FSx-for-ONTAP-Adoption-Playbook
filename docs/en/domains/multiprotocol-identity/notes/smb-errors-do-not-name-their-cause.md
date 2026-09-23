@@ -7,17 +7,37 @@ source: https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja
 lang: en
 ---
 
-# An SMB error string does not name its cause
+# Does an SMB error string name its cause?
+
+No. A wrong-credential error can be a missing account or a missing share.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-errors-do-not-name-their-cause.md) | [English](smb-errors-do-not-name-their-cause.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That a generic SMB client error does not name a single cause, mapping to a missing account, a missing share, or a broken UNC
+- That SMB reaches only a share, and a volume's junction path is not a share name
+
+## What this note does not answer
+
+- Whether the same error string arises from other causes (unconfirmed)
+- Differences between Windows versions
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="an-smb-error-string-does-not-name-its-cause"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol and identity](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **The strings an SMB client returns do not point at a single cause.** Three generic messages each surface as a missing piece in a different layer.
 
@@ -33,7 +53,7 @@ lang: en
 
 ---
 
-## SMB reaches shares and nothing else
+### SMB reaches shares and nothing else
 
 **A volume's junction path is not a share name.** NFS can mount an exported path directly, but what an SMB client names is a share (a CIFS share), which is a separate object in ONTAP.
 
@@ -49,7 +69,7 @@ lang: en
 
 ---
 
-## Do not count the default administrative shares as "a share exists"
+### Do not count the default administrative shares as "a share exists"
 
 Creating a CIFS server creates administrative shares automatically. **It does not create a data share.**
 
@@ -67,7 +87,7 @@ Creating a CIFS server creates administrative shares automatically. **It does no
 
 ---
 
-## Read identifiers; do not derive them from a neighbouring name
+### Read identifiers; do not derive them from a neighbouring name
 
 **Read resource, share, account and SVM names from the API that owns them.** Do not derive them from a naming convention even when it looks derivable. **Separator characters routinely differ within one environment** — in the cited environment the SVM name used hyphens and the volume name used underscores, so deriving either from the other was wrong.
 
@@ -82,7 +102,42 @@ Creating a CIFS server creates administrative shares automatically. **It does no
 
 ---
 
-## Verify in your own environment
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| `network password is not correct` is a password problem | **An absent account produces the same string.** Read the directory first |
+| If the secret is there, the account is too | **They are separate.** In a new directory only the secret survives |
+| Creating a volume makes it visible over SMB | **Creating a share is a separate step.** A junction path is not a share name |
+| If administrative shares exist, they can be used for a connectivity check | `ipc$` cannot be used, and `c$` bypasses part of the permission evaluation |
+| A share absent from the listing does not exist | **Shares ending in `$` are hidden** |
+| An SVM name can be derived from the naming convention | **Separators are mixed within one environment.** Read it from the API |
+
+---
+
+### Outside the scope of this record
+
+| Question | State |
+|---|---|
+| Whether the same error strings arise from other causes | **Unconfirmed.** Only the three correspondences above were observed |
+| Differences across Windows versions | The cited source does not record them |
+| Whether `New-SmbMapping` is always more reliable than `net use` | **The replacement is for avoiding multi-layer backslash escaping.** No other difference was measured |
+
+---
+
+### Related documents
+
+- [Some SVMs cannot serve SMB](smb-service-lost-on-cifs-server-delete.md) — the cause on the side where port 445 never opens
+- [AD dependency lasts the lifetime](ad-dependency-lasts-the-lifetime.md) — the account and domain-side prerequisites
+- [What NFS shows about permissions does not explain an NTFS denial](nfs-side-view-does-not-explain-ntfs-denials.md) — a rule that reports success while only name resolution fails
+- [Domain — Multiprotocol and identity](../README.md)
+- [Evidence policy](../../../evidence-policy.md)
+
+---
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 **Read the state before attempting a mount.** It replaces guessing a cause from a generic error string.
 
@@ -96,43 +151,20 @@ Creating a CIFS server creates administrative shares automatically. **It does no
 
 **Those four holding is what justifies attempting the mount.** Attempting it with any one of them missing means reading one of the generic errors in the table above.
 
----
+The share list can be read with this read-only command.
 
-## Common misconceptions
+```bash
+curl -X GET -u fsxadmin -k "https://<management-endpoint>/api/protocols/cifs/shares?fields=name,path,svm.name"
+```
 
-| Misconception | Reality |
-|---|---|
-| `network password is not correct` is a password problem | **An absent account produces the same string.** Read the directory first |
-| If the secret is there, the account is too | **They are separate.** In a new directory only the secret survives |
-| Creating a volume makes it visible over SMB | **Creating a share is a separate step.** A junction path is not a share name |
-| If administrative shares exist, they can be used for a connectivity check | `ipc$` cannot be used, and `c$` bypasses part of the permission evaluation |
-| A share absent from the listing does not exist | **Shares ending in `$` are hidden** |
-| An SVM name can be derived from the naming convention | **Separators are mixed within one environment.** Read it from the API |
+### Expected output
 
----
+```text
+Whether a data share exists (do not count a state with only c$ / ipc$ as "a share exists")
+```
 
-## Outside the scope of this record
+This shows only the configured shares. Whether the account exists, whether 445 is open, and whether the mount succeeds are checked separately. It changes nothing.
 
-| Question | State |
-|---|---|
-| Whether the same error strings arise from other causes | **Unconfirmed.** Only the three correspondences above were observed |
-| Differences across Windows versions | The cited source does not record them |
-| Whether `New-SmbMapping` is always more reliable than `net use` | **The replacement is for avoiding multi-layer backslash escaping.** No other difference was measured |
+## Read next
 
----
-
-## Related documents
-
-- [Some SVMs cannot serve SMB](smb-service-lost-on-cifs-server-delete.md) — the cause on the side where port 445 never opens
-- [AD dependency lasts the lifetime](ad-dependency-lasts-the-lifetime.md) — the account and domain-side prerequisites
-- [What NFS shows about permissions does not explain an NTFS denial](nfs-side-view-does-not-explain-ntfs-denials.md) — a rule that reports success while only name resolution fails
-- [Domain — Multiprotocol and identity](../README.md)
-- [Evidence policy](../../../evidence-policy.md)
-
----
-
-[🏠 Repository home](../../../README.md) | [Domain — Multiprotocol and identity](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-errors-do-not-name-their-cause.md) | [English](smb-errors-do-not-name-their-cause.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Why can some SVMs not serve SMB?](smb-service-lost-on-cifs-server-delete.md)

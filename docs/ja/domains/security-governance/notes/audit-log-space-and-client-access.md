@@ -9,17 +9,37 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# 監査宛先が枯渇するとクライアントアクセスは止まる。止まるのは満杯になった瞬間ではなく、観測できない緩衝が吸収し切った時点で、記録は 1 件も落ちない
+# 監査宛先の枯渇はいつクライアントを止めるか？
+
+監査宛先が枯渇すると、満杯の瞬間ではなく緩衝が吸収し切った時点でクライアントが止まります。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](audit-log-space-and-client-access.md) | [English](../../../../en/domains/security-governance/notes/audit-log-space-and-client-access.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- 監査宛先の枯渇が、満杯の瞬間ではなく観測できない緩衝の吸収後にクライアントアクセスを止めること
+- `-strict-guarantee` の既定と保持設定が、可用性と記録の欠落のどちらを犠牲にするかを決めること
+
+## このノートが答えないこと
+
+- 停止までの猶予時間や滞留レコード数の再現可能な閾値
+- NFS 経路や `-strict-guarantee false` での欠落の仕方
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="監査宛先が枯渇するとクライアントアクセスは止まる止まるのは満杯になった瞬間ではなく観測できない緩衝が吸収し切った時点で記録は-1-件も落ちない"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — セキュリティ・ガバナンス](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **監査宛先ボリュームが枯渇すると、監査対象ボリュームへの SMB アクセスは最終的に止まりました。** 止まり方は `{Audit Failed} An attempt to generate a security audit failed.`（Windows のシステムエラー 606）で、**ファイル書き込みだけでなく `net use` によるセッション確立そのものが失敗します。**
 
@@ -60,7 +80,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## 停止までの実測 — 決め手としての負荷量
+### 停止までの実測 — 負荷量によって変わる停止条件
 
 **同じ「宛先が枯渇した状態」で、負荷量を変えると結果が変わります。** 停止するかどうかを決めるのは宛先の空き率ではなく、**枯渇している間に発生した操作の量**です。
 
@@ -70,11 +90,11 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 | ファイル作成＋読み出し 10,000 件（1 回目） | 空き 8 KB。1 MB の伸長が不可 | **794 件成功 → 795 件目で失敗** | 空き回復後に 4,960 レコード全件 |
 | ファイル作成＋読み出し 5,000 件（2 回目） | 空き 16 KB。1 MB の伸長が不可 | **56 件成功 → 57 件目で失敗** | 空き回復後に 56 件分全件 |
 
-**5 操作では止まりませんでした。** 同じ枯渇状態でも、緩衝が吸収できる量に収まっていたためです。**この差を「宛先の空きが 8 KB あったから」と読むと設計を誤ります。** 決め手は滞留量です。
+**5 操作では止まりませんでした。** 同じ枯渇状態でも、緩衝が吸収できる量に収まっていたためです。**この差を「宛先の空きが 8 KB あったから」と読むと設計を誤ります。** 停止の有無は滞留量によって変わりました。
 
 **そして成功し続ける件数は再現しません。** 同一構成・同一ワークロードで 794 件と 56 件でした。**停止までの猶予を件数や時間で見積もることはできません。** 直前の監査活動が緩衝をどれだけ消費していたかに依存し、その残量は観測できません。
 
-### 停止の瞬間
+#### 停止の瞬間
 
 10,000 件のワークロードを流したときの時刻です（すべて UTC、2026-09-01）。
 
@@ -97,7 +117,7 @@ FsxIdEXAMPLE::> vserver audit show -vserver <svm> -instance
 
 ---
 
-## 落ちなかった記録
+### 落ちなかった記録
 
 停止に至るまで滞留した全レコードが、空き回復後に宛先へ書き出されました。
 
@@ -125,7 +145,7 @@ gaps in range    : 0
 > 「この時刻のアクセス記録が無い」ことを欠落と判断する前に、宛先の空き容量の履歴を確認してください。
 > 空きを回復させれば埋まります。
 
-### 影響範囲 — 監査対象のパスだけ
+#### 影響範囲 — 監査対象のパスだけ
 
 **停止するのは監査レコードを必要とする操作だけでした。同一 SVM の監査対象外ボリュームは影響を受けません。**
 
@@ -154,7 +174,7 @@ gaps in range    : 0
 
 **逆に、緩衝が完全に埋まった状態では新規セッションの確立自体も失敗します。** 1 回目の実測では `19:50:05` の時点で `net use` が Windows システムエラー 606 で失敗しました。セッション確立には `4624` の書き込みが必要だからです。**2 回目に `plain` への接続が通ったのは、`work` への接続で認証済みセッションが既に成立しており、新しい `4624` を必要としなかったためです。**
 
-### 滞留の上限の未特定
+#### 滞留の上限の未特定
 
 滞留を吸収した量として観測できたのは **4,538 レコード**でした。復旧時に出力された EVTX は 5,246,976 バイトで、**`-rotate-size` の 5 MB とほぼ一致します。**
 
@@ -167,7 +187,7 @@ gaps in range    : 0
 
 これを直接示す EMS イベントも定義されています。`adt.dest.directory.full`（severity `EMERGENCY`）で、説明文には **SACL を設定したオブジェクトでサービス拒否に至り得る**と明記されています。本検証は SMB 経路に SACL を付けて行ったため、観測した症状と一致します。
 
-### 観測できないイベントの不在を根拠にしないこと
+#### 観測できないイベントの不在を根拠にしないこと
 
 **本ノートは当初、ここで誤った推論をしていました。** ステージング枯渇を示す `adt.stgvol.nospace` が 2 回とも 0 件だったことを「ステージング枯渇ではない証拠」として挙げていました。
 
@@ -191,7 +211,7 @@ There are no entries matching your query.
 
 ---
 
-## 観測できる信号
+### 観測できる信号
 
 **2 回の停止を通じて記録されたのは、宛先ボリュームの容量イベントだけでした。書き込み失敗そのものを示すイベントは定義されていますが、利用者からは参照できません**（下記）。
 
@@ -243,7 +263,7 @@ ALERT  monitor.volume.full: Volume "auddest@vserver:..." is full
 
 ---
 
-## ステージングボリュームの不可視性
+### ステージングボリュームの不可視性
 
 ```text
 FsxIdEXAMPLE::> volume show -volume MDV_AUD* -fields vserver,volume,aggregate,size,state
@@ -262,7 +282,7 @@ There are no entries matching your query.
 
 ---
 
-## 保持設定 — 2 つの方式は排他
+### 保持設定 — 2 つの方式は排他
 
 ```text
 FsxIdEXAMPLE::> vserver audit modify -vserver <svm> -rotate-limit 10 -retention-duration 90d
@@ -283,7 +303,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 > `PT0S` は「期間による削除をしない」という意味です。**片方を設定する操作が、もう片方を無効化します。**
 > 保持方式を切り替えるときは、切り替え後に `vserver audit show -instance` で両方の値を読んでください。
 
-### 方式ごとの上界と検知方法
+#### 方式ごとの上界と検知方法
 
 **どちらを選んでも、選ばなかった側は監視で担保することになります。** 上の排他が実測で確定しているので、片方しか設定できません。
 
@@ -304,7 +324,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 ---
 
-## 設計時に決めておくこと
+### 設計時に決めておくこと
 
 | 項目 | 推奨 | 理由 |
 |---|---|---|
@@ -322,7 +342,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 ---
 
-## 監査ログの取り出し
+### 監査ログの取り出し
 
 宛先ボリューム上に EVTX が置かれます。**syslog 転送はできません**（AWS の記載）。取り出す経路を実測した結果です。
 
@@ -382,7 +402,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 ---
 
-## 復旧手順
+### 復旧手順
 
 停止した状態からの復旧は、**宛先ボリュームの空きを作るだけ**で成立しました。監査設定の変更や SVM の再起動は不要です。
 
@@ -421,9 +441,23 @@ S3 Access Point を使う場合の条件が 2 つあります。
 | 5 | 保持方式を明示して設定し、`show` で反映を確認する | 既定の無制限から抜けたこと |
 | 6 | 使い捨ての SVM で、宛先を埋めてから負荷をかける | **自環境の操作レートで、無記録のまま成功し続ける時間** |
 
+既定値は次の読み取り専用コマンドで確認できます。
+
+```bash
+ssh <svm-management-endpoint> vserver audit show -instance
+```
+
+### 期待結果
+
+```text
+Auditing State / Strict Guarantee of Auditing / Log Files Rotation Limit / Log Retention Duration の現在値
+```
+
+この確認で分かるのは監査設定の現在値だけです。宛先容量の推移、停止までの猶予、記録の欠落は証明しません。
+
 ---
 
-## 未確認
+### 未確認
 
 - **停止に至る内部の閾値**。要因が宛先ボリュームの枯渇であることは上記のとおり実測と KB で立ちます。**ただし何が停止の引き金なのか**（滞留レコード数・経過時間・`-rotate-size`・別の内部キュー）**は分離していません。** 4,538 レコードを吸収した時点で停止しましたが、この数値が閾値である証拠はありません
 - **滞留の上限値**。今回吸収された 4,538 レコードは、この構成・この時点での観測値です。**上限として一般化できません**
@@ -436,7 +470,7 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 - AWS: [Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html)
 - NetApp: [Troubleshoot ONTAP auditing and staging volume space issues](https://docs.netapp.com/us-en/ontap/nas-audit/troubleshoot-auditing-staging-volume-concept.html)
@@ -453,11 +487,11 @@ S3 Access Point を使う場合の条件が 2 つあります。
 
 ---
 
-## 関連
+### 関連
 
 - [SMB ログオン監査 — 4624 は記録される](smb-logon-audit-event-coverage.md)
 - [ローカルユーザーの棚卸しに使える情報は監査ログにしかない](../../multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](audit-log-space-and-client-access.md) | [English](../../../../en/domains/security-governance/notes/audit-log-space-and-client-access.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## Read next
+
+[ウイルス対策の選択はベンダーより前に決まる](vscan-scope-is-bounded-before-the-vendor.md)

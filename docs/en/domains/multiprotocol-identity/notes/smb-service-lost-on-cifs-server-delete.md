@@ -9,19 +9,37 @@ region: ap-northeast-1
 lang: en
 ---
 
-# Some SVMs cannot serve SMB. The cause is a deleted CIFS server, and the ONTAP REST API restores it
+# Why can some SVMs not serve SMB?
+
+Not their creation date. A deleted CIFS server drops data-cifs; recreating via REST restores it.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [English](smb-service-lost-on-cifs-server-delete.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
-[🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
+## What you will learn
 
-> This is the English translation. Japanese is authoritative for technical accuracy. Please report any discrepancy.
+- That the cause of an SVM being unable to serve SMB is not its creation date but the loss of `data-cifs` from a deleted CIFS server
+- That the test is whether the data LIF's `services` contains `data-cifs`, and that `Endpoints.Smb` cannot decide it
+
+## What this note does not answer
+
+- The causality by which deleting a CIFS server drops `data-cifs` (not reproduced here; `open`)
+- Whether ONTAP outside FSx for ONTAP behaves the same
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="some-svms-cannot-serve-smb-the-cause-is-a-deleted-cifs-server-and-the-ontap-rest-api-restores-it"></a>
+
+[🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Some SVMs have data LIFs whose service policy does not include `data-cifs`.** In that state the SVM lists `cifs` among its allowed protocols, a CIFS server can be created, and even `Authentication Style` looks correct — but **port 445 never opens**.
 
@@ -53,7 +71,7 @@ services: data-core,data-nfs,management-ssh,management-https,data-s3-server,data
 
 ---
 
-## The claim that has been withdrawn
+### The claim that has been withdrawn
 
 The note stated that non-AD SVMs created before 2026-06-09 lack `data-cifs` while those created from 2026-06-24 have it regardless of AD. **The current state of one file system refutes that.**
 
@@ -77,7 +95,7 @@ The note stated that non-AD SVMs created before 2026-06-09 lack `data-cifs` whil
 
 ---
 
-## Cause — a deleted CIFS server recreated through the CLI
+### Cause — a deleted CIFS server recreated through the CLI
 
 **The mechanism below was not reproduced here.** The state we observe is `verified`; the causal chain that produces it is `open`. See the evidence note after the table.
 
@@ -106,14 +124,14 @@ data_core,data_nfs,management_ssh,management_https,data_s3_server,data_dns_serve
 > chain in steps 3 to 5 and the recovery procedure have not been carried out.** Doing so requires
 > deleting a CIFS server on an SVM in a shared file system, which removes SMB share definitions and
 > sessions along with it, so it has not been run without a disposable SVM. **No public documentation
-> describes it either** — AWS Support likewise states that no published material explaining the
-> behaviour could be found.
+> describes it either** — the behaviour could not be found in any published material while writing
+> this note.
 
 ---
 
-## Recovery procedure
+### Recovery procedure
 
-**This is the procedure AWS Support supplied. It has not been run here.** Confirm it on a test SVM before applying it.
+**This procedure was assembled from the ONTAP REST API reference. It has not been run here.** Confirm it on a test SVM before applying it.
 
 ```bash
 # 1. Get the UUID of the target SVM's CIFS server
@@ -141,7 +159,7 @@ FsxIdEXAMPLE::> network interface show -vserver <svm> -lif nfs_smb_management_1 
 
 ---
 
-## Deciding this in your own environment
+### Deciding this in your own environment
 
 ```text
 # Service list on every SVM's data LIF
@@ -166,7 +184,7 @@ AWS Support reports observing **an SVM with `data-cifs` present, a running CIFS 
 
 ---
 
-## What `fsxadmin` cannot add
+### What `fsxadmin` cannot add
 
 A lost `data-cifs` cannot be restored by editing the service policy directly.
 
@@ -205,7 +223,7 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 ---
 
-## Impact and what to do
+### Impact and what to do
 
 | Situation | Impact |
 |---|---|
@@ -220,7 +238,7 @@ PATCH /api/network/ip/service-policies/<uuid>
 
 ---
 
-## A limit you meet alongside this
+### A limit you meet alongside this
 
 **Recreating SVMs is no longer the plan**, but adding SVMs for other reasons runs into the per-throughput-capacity limit.
 
@@ -233,7 +251,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 
 ---
 
-## Not confirmed
+### Not confirmed
 
 - **The causality in steps 3 to 5, and the recovery procedure.** This is what AWS Support reported and **has not been run here.** It requires deleting a CIFS server on a shared file system, and no disposable SVM has been prepared
 - **Whether a CIFS server was ever deleted on the affected SVMs here.** The current state is consistent with the mechanism, but **there is no way to review the deletion history.** A workgroup CIFS server was created and deleted on one SVM during testing, but whether `data-cifs` was lost before or after that cannot be established
@@ -243,7 +261,7 @@ Since it affects billing, confirm any decision that involves changing throughput
 
 ---
 
-## Primary sources
+### Primary sources
 
 - AWS: [Managing FSx for ONTAP resources using NetApp applications](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-resources-ontap-apps.html) — using the ONTAP REST API as `fsxadmin`
 - AWS re:Post: [How do I use the FSx for ONTAP REST API?](https://repost.aws/knowledge-center/fsx-ontap-rest-apis)
@@ -253,13 +271,39 @@ Since it affects billing, confirm any decision that involves changing throughput
 
 ---
 
-## Related
+### Related
 
-- [SMB local users carry no last-logon attribute](../../../domains/multiprotocol-identity/notes/local-user-inventory-without-last-logon.md)
-- [The AD dependency lasts a lifetime, not just the join](../../../domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md)
+- [SMB local users carry no last-logon attribute](local-user-inventory-without-last-logon.md)
+- [The AD dependency lasts a lifetime, not just the join](ad-dependency-lasts-the-lifetime.md)
 - [Security style determines the permission evaluation model](security-style-and-permission-evaluation.md)
 - [Limits and quotas](../../../../ja/reference/limits/README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) | [English](smb-service-lost-on-cifs-server-delete.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
+
+**Before trying to mount, read whether `data-cifs` is present.** That decides whether 445 opens.
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Read `services` on every SVM's data LIF | Which SVMs have `data-cifs` and which do not |
+| 2 | Also check whether the SVM's `allowed-protocols` includes `cifs` | That `cifs` being present does not open 445 when `data-cifs` is absent |
+| 3 | For an SVM without `data-cifs`, try the recovery procedure (Body) on a test SVM | That recreating through REST restores `data-cifs` |
+
+The data LIF's services are readable with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> network interface show -vserver <svm> -fields services -role data
+```
+
+### Expected output
+
+```text
+whether services contains data-cifs (445 does not open if it is absent)
+```
+
+This check tells you only whether the service policy has `data-cifs`. The recovery procedure in the Body involves deleting and recreating a CIFS server, so try it on a disposable test SVM. This read itself changes nothing.
+
+## Read next
+
+[Does an SMB error string name its cause?](smb-errors-do-not-name-their-cause.md)

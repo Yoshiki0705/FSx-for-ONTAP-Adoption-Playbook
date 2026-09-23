@@ -62,11 +62,11 @@ lang: ja
 
 ```mermaid
 graph TD
-    START["「誰がこのファイルにアクセスできるか」に<br/>いま何で答えているか"] --> Q1{"読んでいるのは<br/>Windows の ACL か"}
-    Q1 -->|はい| KEEP["移行後も正本<br/>確認手段は変わらない"]
-    Q1 -->|いいえ| Q2{"読んでいるのは<br/>mode bits か NFSv4 ACL か"}
-    Q2 -->|はい| Q3{"移行先ボリュームの<br/>セキュリティスタイルは"}
-    Q2 -->|ディレクトリのグループ所属| MAP["正本ではなく入力<br/>name-mapping が経路に加わる"]
+    START["「誰がこのファイルにアクセスできるか」に<br/>いま何で答えているか"] --> CURRENT{"現在の確認手段が<br/>読んでいるもの"}
+    CURRENT -->|Windows ACL| KEEP["移行後も正本<br/>確認手段は変わらない"]
+    CURRENT -->|mode bits| Q3{"移行先ボリュームの<br/>セキュリティスタイル"}
+    CURRENT -->|NFSv4 ACL| NFS4["移行後は既定で読めない<br/>確認手段を再設計"]
+    CURRENT -->|ディレクトリのグループ所属| MAP["正本ではなく入力<br/>name-mapping が経路に加わる"]
     Q3 -->|UNIX| KEEP2["mode bits が正本のまま<br/>確認手段は変わらない"]
     Q3 -->|NTFS| PROJ["射影に変わる<br/>Deny と主体名は現れない"]
     PROJ --> ACT["確認手段を<br/>ストレージ側の API に移す"]

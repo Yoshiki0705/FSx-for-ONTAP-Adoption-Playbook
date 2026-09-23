@@ -38,12 +38,12 @@
 | Form | Scope | When it is honest |
 |---|---|---|
 | an HTML comment containing `allow:<category>` | the line it appears on | The match is a false positive — a proper noun, or a verbatim external title that contains a forbidden form |
-| an HTML comment containing `audit-file-allow` plus a comma-separated category list | the whole file | The document *defines* the rules and therefore has to quote the patterns it forbids. `AGENTS.md` and `CONTRIBUTING.md` are the only files that qualify |
+| an HTML comment containing `audit-file-allow` plus a comma-separated category list | the whole file | A rule-definition document has to quote patterns it forbids. Content pages never qualify |
 
-Both markers are matched anywhere on a line, HTML comment or not — so writing either token in
-prose creates a real exemption. That is why the file-level one is spelled out in words here
-instead of shown literally: quoting it would silence this file. Valid categories are `naming`,
-`neutrality`, `pii`, `role-label`, and `all`.
+The line-level marker must use an HTML comment. A bare `allow:<category>` mention, an
+inline-code example, or a fenced example is documentation rather than a directive and suppresses
+nothing. Valid categories are `naming`, `neutrality`, `sales-vocabulary`, `pii`, `role-label`,
+`support-referral`, `support-attribution`, and `all`.
 
 Prefer the per-line form. A file-level allowance also exempts every mistake added to that
 file later, which is how an exemption granted for one good reason turns into an unmonitored
@@ -124,7 +124,7 @@ never called. The gate set lives once as the prerequisites of `make all` and onc
 them on every change. `ci.yml` never called either, and the comment kept looking true because no check
 read both files. They were added by hand later. **Four more were in the same state when that was
 found** — `headings`, `ja-markers`, `anchors`, `workflow-observability` — including the heading rule
-`AGENTS.md` documents as a convention, and the anchor contract whose entire premise is that the citing
+`AGENTS.md` documents as a convention, and the anchor compatibility snapshot whose premise is that the citing
 side cannot observe the break.
 
 **A gate that exists and does not run is worse than an absent one, because the checklist credits it.**
@@ -221,7 +221,7 @@ wrong repair** — the next person hits the same wall with no reason to suspect 
 `make sweep-probes` runs **first** in `make all` and at import time in both gate test modules, so a
 poisoned tree heals instead of blocking. It reports what it removed rather than doing it silently.
 
-**The name is the contract.** Anything matching `zz-gate-probe*` under `docs/` or `examples/` is a
+**The name is the invariant.** Anything matching `zz-gate-probe*` under `docs/` or `examples/` is a
 test artifact, the sweep deletes it unasked, and a test holds that no real content is called that.
 The search is bounded to those two directories: **an unbounded delete keyed on a name pattern is a
 worse failure than the one being fixed.**

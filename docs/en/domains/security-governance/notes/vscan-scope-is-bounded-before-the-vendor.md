@@ -7,17 +7,37 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-vscan.html
 lang: en
 ---
 
-# The antivirus choice is settled before the vendor
+# Is choosing the antivirus vendor the first decision?
+
+The vendor is last. Protocol, identity, availability, and exclusions narrow the field first.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [English](vscan-scope-is-bounded-before-the-vendor.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That protocol, identity, availability, and exclusions narrow the Vscan field before any vendor is compared
+- That a file matching an exclusion is not scanned even with `scan-mandatory` on
+
+## What this note does not answer
+
+- Product differences among the six vendors or version-combination fitness
+- FSx for ONTAP-specific Vscan constraints (none found)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="the-antivirus-choice-is-settled-before-the-vendor"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Look into antivirus for Amazon FSx for NetApp ONTAP and the first material you find is a list of supported vendors. In the order things are actually decided, that list comes last.**
 
@@ -34,7 +54,7 @@ The AWS user guide names six (Deep Instinct / SentinelOne / Symantec / Trellix /
 
 ---
 
-## Where the six vendors are enumerated, and what is not written there
+### Where the six vendors are enumerated, and what is not written there
 
 **The grounds for using third-party antivirus with FSx for ONTAP are in AWS's own user guide.** Few product combinations have a dedicated page in AWS documentation; this is one of them.
 
@@ -48,9 +68,9 @@ The AWS user guide names six (Deep Instinct / SentinelOne / Symantec / Trellix /
 
 ---
 
-## The four things settled before the vendor
+### The four things settled before the vendor
 
-### Protocol — on-access is SMB only
+#### Protocol — on-access is SMB only
 
 **The protocol the on-access policy creation command accepts is `CIFS`.**
 
@@ -71,7 +91,7 @@ On-access scanning cannot be configured against an NFS export. **A NetApp KB art
 
 On-demand also **uses the existing Vscan servers.** There is no separate execution tier, so **even a configuration that only ever runs on-demand still needs Vscan servers operated.**
 
-### Identity — the privileged user is a domain account
+#### Identity — the privileged user is a domain account
 
 **The privileged user a Vscan server uses to connect to the SVM is a domain user account**, and it has to be present in the scanner pool's privileged-user list.
 
@@ -79,7 +99,7 @@ So **a configuration that uses Vscan presumes Active Directory.** If the SVM run
 
 **And the dependency on AD does not end at the join.** Credential expiry surfaces during maintenance. The detail is in [Depending on AD lasts the lifetime, not the join](../../multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md). **Adding antivirus is also adding one more point of dependency on AD.**
 
-### Availability — scan-mandatory coupled to client access
+#### Availability — scan-mandatory coupled to client access
 
 **With `scan-mandatory` on, a client's access is refused when no Vscan server answers.**
 
@@ -94,7 +114,7 @@ So **a configuration that uses Vscan presumes Active Directory.** If the SVM run
 
 **Redundancy is the scanner policy.** `Primary` is always active, `Secondary` is active only when no Vscan server in the primary pool is connected, `Idle` is always inactive. **Custom scanner policies cannot be created** — the three are system-defined.
 
-### Exclusions — files that are not scanned even under mandatory
+#### Exclusions — files that are not scanned even under mandatory
 
 **Turning `scan-mandatory` on does not put an excluded file in scope.** NetApp's documentation states this explicitly.
 
@@ -121,7 +141,7 @@ There are three exclusion paths.
 | `vscan-fileop-profile` | Scan trigger | Note |
 |---|---|---|
 | `no-scan` | none | Nothing on this share is scanned |
-| `standard` (default, NetApp best practice) | open / close / rename | |
+| `standard` (default, recommended by NetApp) | open / close / rename | |
 | `strict` | open / read / close / rename | For several clients holding the same file open at once. **More scan requests, so performance can be affected** |
 | `writes-only` | Only when a modified file is closed | Fewer requests and better performance, but **the scanner must be configured to delete or quarantine unrepairable files** |
 
@@ -131,7 +151,7 @@ There are three exclusion paths.
 
 ---
 
-## Whether a write can be refused inline, by where it lands
+### Whether a write can be refused inline, by where it lands
 
 **The protocol constraint decides not only what is in scope but when it can be stopped.**
 
@@ -153,7 +173,7 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-## Which constraints belong to ONTAP and which to FSx for ONTAP
+### Which constraints belong to ONTAP and which to FSx for ONTAP
 
 **Every constraint above is a general ONTAP property.** Neither the FSx for ONTAP documentation nor NetApp's records **any FSx for ONTAP-specific Vscan constraint that we found.**
 
@@ -174,7 +194,7 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-## The options compared symmetrically
+### The options compared symmetrically
 
 **Vscan is not the only mechanism.** And the constraints on choosing Vscan are stated with the same weight.
 
@@ -200,25 +220,7 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-## Verify in your own environment
-
-| # | Step | What it establishes |
-|---|---|---|
-| 1 | Check whether the SVM is AD-joined | **If it is not, Vscan is not available.** The first branch |
-| 2 | Count the shares and exports you want scanned, by protocol | The NFS share of them is on-demand only |
-| 3 | List the SMB shares with `continuously-available` set to `Yes` | **Those are not scanned.** Remove them from what you declare |
-| 4 | Check the state of the existing `default_CIFS` policy | "Unconfigured" may in fact be "the default is enabled" |
-| 5 | Measure the largest file in scope and compare it with the 2 GB default exclusion | **Anything above it is not scanned by default** |
-| 5-1 | **Write down the protocol each write path lands on** | **What can be refused in real time.** Any path through an S3 access point is reachable only by on-demand |
-| 6 | Try `vserver vscan on-access-policy show` as `fsxadmin` | **Unverified item 1.** Where the permission boundary sits |
-| 7 | Decide who operates, patches and monitors the Vscan servers | **Do not set `scan-mandatory on` before this is decided** |
-| 8 | Confirm the ONTAP version and antivirus product version combination in the interoperability matrix | The last input the vendor choice needs |
-
-**Leaving step 7 until later means an access outage the first time a Vscan server stops while `scan-mandatory` is on.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Actually |
 |---|---|
@@ -240,7 +242,7 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-## Primary sources consulted
+### Primary sources consulted
 
 | Point | Source | Retrieved |
 |---|---|---|
@@ -254,7 +256,7 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Security and governance](../README.md) — this module's hub
 - [How far antivirus scanning applies](../../../reference/decision-trees/vscan-antivirus-scope.md) — the decision-tree form of this judgement
@@ -268,8 +270,38 @@ Applying the fact that on-access is against SMB to **a configuration where write
 
 ---
 
-[🏠 Repository home](../../../README.md) | [Domain — Security and governance](../README.md)
+<a id="verify-in-your-own-environment"></a>
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md) | [English](vscan-scope-is-bounded-before-the-vendor.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it establishes |
+|---|---|---|
+| 1 | Check whether the SVM is AD-joined | **If it is not, Vscan is not available.** The first branch |
+| 2 | Count the shares and exports you want scanned, by protocol | The NFS share of them is on-demand only |
+| 3 | List the SMB shares with `continuously-available` set to `Yes` | **Those are not scanned.** Remove them from what you declare |
+| 4 | Check the state of the existing `default_CIFS` policy | "Unconfigured" may in fact be "the default is enabled" |
+| 5 | Measure the largest file in scope and compare it with the 2 GB default exclusion | **Anything above it is not scanned by default** |
+| 5-1 | **Write down the protocol each write path lands on** | **What can be refused in real time.** Any path through an S3 access point is reachable only by on-demand |
+| 6 | Try `vserver vscan on-access-policy show` as `fsxadmin` | **Unverified item 1.** Where the permission boundary sits |
+| 7 | Decide who operates, patches and monitors the Vscan servers | **Do not set `scan-mandatory on` before this is decided** |
+| 8 | Confirm the ONTAP version and antivirus product version combination in the interoperability matrix | The last input the vendor choice needs |
+
+**Leaving step 7 until later means an access outage the first time a Vscan server stops while `scan-mandatory` is on.**
+
+The existing on-access policies can be read with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> vserver vscan on-access-policy show
+```
+
+### Expected output
+
+```text
+The names and enabled state of the existing policies (including default_CIFS)
+```
+
+This shows only the configured on-access policies. It does not prove what is actually scanned, how exclusions apply, or vendor fitness.
+
+## Read next
+
+[Do experiment branches need more than permissions locked down?](../../../../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語)

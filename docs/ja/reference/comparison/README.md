@@ -79,7 +79,8 @@ YYYY-MM-DD 時点の情報です。
 | [棚卸しの値をどこから取るかの比較](inventory-sources.md) | 設定情報 / 実アクセスの観測 / 容量 / ファイル数 / メタデータ量 / 性能の観測 / バージョン / 権限 | 2026-09-08 |
 | [ONTAP 側の設定に届く経路の比較](ontap-configuration-routes.md) | ONTAP REST / CLI / カスタムリソース / SSM / 手作業 | 2026-09-08 |
 | [アクセスを絞る手立ての比較](access-restriction-options.md) | Security Group / S3 AP のポリシー / エクスポートポリシー / NTFS ACL・UNIX モード / igroup・CHAP・portset / 管理操作の分離 | 2026-09-08 |
-| [データ保護方式の比較](data-protection-methods.md) | Snapshot / ボリュームバックアップ / AWS Backup / SnapMirror（+ SnapLock の 2 モード） | 2026-08-06 |
+| [データ保護方式の比較](data-protection-methods.md) | Snapshot / ボリュームバックアップ / AWS Backup / SnapMirror（+ SnapLock の 2 モード） | 2026-09-20 |
+| [オンプレミスの NAS / SAN 運用概念と ONTAP の対応](on-prem-concept-mapping.md) | ファイルサーバー / 名前空間 / volume / LUN / multipath / Snapshot / replication / tiering / quota / audit | 2026-09-20 |
 | [階層化ポリシーの比較](tiering-policies.md) | `NONE` / `SNAPSHOT_ONLY` / `AUTO` / `ALL` | 2026-08-06 |
 | [ブロックストレージの選択肢の比較](block-storage-options.md) | Amazon EBS / EBS Multi-Attach / FSx for ONTAP の iSCSI と NVMe/TCP | 2026-09-05 |
 | [監視経路の比較](observability-routes.md) | Amazon CloudWatch / NetApp Harvest + Prometheus + Grafana / SaaS / ONTAP REST 直叩き | 2026-09-05 |

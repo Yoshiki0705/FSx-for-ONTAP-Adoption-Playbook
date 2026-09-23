@@ -7,17 +7,41 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics
 lang: ja
 ---
 
-# 監視は平均値で失敗する
+# 監視はなぜ平均値で失敗するか？
+
+平均は待機系ノードと非飽和アグリゲートに薄められ、飽和していても正常に見えるためです。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](monitoring-fails-on-averages.md) | [English](../../../../en/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- 閾値より先に統計値（Average / Maximum）を決めるべき理由と、平均が飽和を隠す 2 つの構造
+- SSD 利用率の 80 / 90 / 98% で挙動が段階的に変わること、背景タスクの遅れがアラートされないこと
+
+## このノートが答えないこと
+
+- どの閾値でどれだけ遅くなるかの実測値（環境依存の量）
+- ベンチマークの代表値としての「最大」の使い方（監視の Maximum とは目的が逆）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="監視は平均値で失敗する"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
+
+> **Evidence**: `documented` — 閾値と挙動は AWS 公式ドキュメントの記載に基づきます。
+> **どの閾値でどう遅くなるかの実測値は含みません。** 自環境での確認手順は
+> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
 
 ---
 
-## 結論
+### 結論
 
 **閾値を決める前に、どの統計値（Average / Maximum）で見るかを決めてください。** 平均値で監視すると、飽和しているのに正常に見えます。
 
@@ -28,13 +52,9 @@ lang: ja
 
 さらに厄介なのが 3 つ目で、これは統計値の選択では防げません。**FSx for ONTAP はクライアントトラフィックを背景タスクより優先します。** 対象は階層化（tiering）、ストレージ効率化、バックアップです。負荷が高い時間帯には、これらが**アラートを出さずに遅れます。**
 
-> **Evidence**: `documented` — 閾値と挙動は AWS 公式ドキュメントの記載に基づきます。
-> **どの閾値でどう遅くなるかの実測値は含みません。** 自環境での確認手順は
-> 「[自分の環境で確かめる](#自環境での確認手順)」にあります。
-
 ---
 
-## SSD 利用率の帯域と、各点で変わること
+### SSD 利用率の帯域と、各点で変わること
 
 80% は「推奨」ですが、**その先には挙動が変わる点が 2 つあります。** 閾値を 80% だけに置くと、超えた後に何が起きるかを説明できません。
 
@@ -48,7 +68,7 @@ lang: ja
 
 ---
 
-## 容量が減らない原因 — Snapshot が握る削除済みデータ
+### 容量が減らない原因 — Snapshot が握る削除済みデータ
 
 データを削除しても SSD 利用率が変わらない場合、**削除したデータを含む Snapshot が残っています。** 空き容量を作るには Snapshot の削除が必要です。
 
@@ -56,7 +76,7 @@ lang: ja
 
 ---
 
-## 階層化ポリシー `All` でも使われる SSD
+### 階層化ポリシー `All` でも使われる SSD
 
 **すべての書き込みは、階層化ポリシーに関係なく最初に SSD に書かれます。** その後で容量プールへ移動します。
 
@@ -66,7 +86,7 @@ lang: ja
 
 ---
 
-## 性能劣化の切り分け順
+### 性能劣化の切り分け順
 
 **ネットワークとディスクのどちらが先に飽和しているかを見ます。** 順番に意味があります。上から下へ、影響範囲の広い順です。
 
@@ -77,11 +97,24 @@ lang: ja
 | 3 | ディスク IOPS 利用率 | 100% に達していないか。アグリゲート単位で見ます |
 | 4 | 背景タスクの遅れ | 階層化・バックアップが追いついているか |
 
+```mermaid
+graph TD
+    START[性能劣化が発生] --> SSD{障害時間帯の SSD 利用率は<br/>90% または 98% を超えたか}
+    SSD -->|いずれかを超過| SSDHIT[SSD 利用率が原因]
+    SSD -->|どちらも超えていない| NET{同時間帯の<br/>ネットワークスループット利用率は<br/>100% に達したか}
+    NET -->|100% に到達| NETHIT[ネットワークスループットが飽和]
+    NET -->|100% 未満| IOPS{同時間帯のアグリゲート別<br/>ディスク IOPS 利用率は<br/>100% に達したか}
+    IOPS -->|100% に到達| IOPSHIT[対象アグリゲートの IOPS が飽和]
+    IOPS -->|100% 未満| BG{階層化・バックアップは<br/>想定時間内に完了したか}
+    BG -->|未完了または遅延| BGHIT[背景タスクが追いついていない]
+    BG -->|想定時間内に完了| NONE[この表の 4 項目では<br/>原因を特定できない]
+```
+
 手順 2 で注意が要ります。`NetworkThroughputUtilization` は**背景タスク（SnapMirror、階層化、バックアップ）のトラフィックも含めた全トラフィック**を対象にします。「クライアントの負荷は低いのに利用率が高い」場合、背景タスクが動いています。
 
 ---
 
-## FSx for ONTAP が出す警告と、自分で作るアラーム
+### FSx for ONTAP が出す警告と、自分で作るアラーム
 
 FSx for ONTAP は、メトリクスが**複数の連続データポイントで**あらかじめ定められた閾値に近づくか超えたときに警告を表示します。**単発のスパイクでは出ません。**
 
@@ -98,7 +131,7 @@ FSx for ONTAP は、メトリクスが**複数の連続データポイントで*
 
 ---
 
-## 監視の粒度と保持
+### 監視の粒度と保持
 
 | 項目 | 値 |
 |---|---|
@@ -111,11 +144,11 @@ FSx for ONTAP は、メトリクスが**複数の連続データポイントで*
 
 ---
 
-## 監視設計フロー
+### 監視設計フロー
 
 ```mermaid
 graph TD
-    S[監視項目を決める] --> STAT{統計値を選ぶ}
+    S[利用率の監視項目を決める] --> STAT{利用率系列に使う<br/>CloudWatch 統計はどれか}
     STAT -->|Average| BAD[待機系ノードと<br/>非飽和アグリゲートに<br/>薄められる]
     STAT -->|Maximum| GOOD[飽和している当事者が見える]
 
@@ -125,14 +158,74 @@ graph TD
     T --> T98["98%: 階層化が停止"]
 
     T98 --> FIX[SSD 増設 または<br/>90% 未満までデータ削除]
-    FIX --> SNAP{容量が減らない}
-    SNAP -->|Snapshot が保持している| DEL[Snapshot の削除が必要]
+    FIX --> SNAP[データ削除後も SSD 利用率が下がらない]
+    SNAP --> DEL[保持している Snapshot の<br/>削除要否を確認]
 
     GOOD --> BG[背景タスクの遅れは<br/>アラートされない]
     BG --> BGCHK[階層化・バックアップの<br/>完了を別に確認する]
 ```
 
 ---
+
+### 「最大」という語の 3 つの用法の区別
+
+**この節の「Maximum で見る」は監視の話で、ベンチマークの代表値の話ではありません。** 同じ語が 3 つの別物に使われており、**監視の結論をそのまま測定計画へ持ち込むと、自信のある誤答が出ます。**
+
+| 用法 | 何か | 適切な場面 | 持ち込むと壊れる場面 |
+|---|---|---|---|
+| **`Maximum` 統計** | CloudWatch が期間内の最大値を返す | **監視の選択肢。** 利用率系列のピークを確認する。第 2 世代では `FileServer` / `Aggregate` ごとの系列も併せて見る | 平均・最小・系列ごとの状況を捨てて Maximum だけで判断する場面 |
+| **代表値としての最大** | 複数回の測定の最大を「その構成の値」として載せる | **なし** | **ベンチマーク。** 系列が振れるほど最大は上へ引っ張られ、**最も再現しない統計になります** |
+| **負荷生成器への `max` 指示** | `fio` の `rate=`/`iorate=max` など、上限を設けない指示 | 飽和させたいとき | **統計値ではありません。** 到達値は目標を下回りうるので、指示値を結果として記録できません |
+
+**1 行目と 2 行目は目的が逆です。** 監視は**検出**が目的なので、ピークを示す `Maximum` と、AWS が公開する `FileServer` / `Aggregate` ごとの系列を目的に応じて使います。ベンチマークは**再現**が目的なので、他者が同じ値を得られる統計が要ります。**Maximum は監視の選択肢ですが、ベンチマークの代表値には適しません。**
+
+**この区別は引用先のリポジトリからの指摘で明示しました。** そちらの環境では、同一構成の反復で 45% の振れ、300 秒と 900 秒で別の値への収束、`iorate=max` が目標値を下回る着地が観測されています（測定値はそちらが持ちます）。**ここに転記しないのは、環境依存の量だからです。**
+
+> **測定計画に持ち込むときの補足**: 代表値には**中央値と分布**を載せ、最大は**外れ値の有無**を示すためだけに併記してください。**最大単独では、次に測る人が同じ数を得られません。**
+
+---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 利用率が平均 40% なので余裕がある | **待機系ノードが平均を引き下げます。** 優先系が飽和していても平均は低く出ます |
+| アグリゲートの平均が低いので問題ない | FlexVol は 1 つのアグリゲートに載ります。**飽和した 1 つが問題のボリュームを抱えています** |
+| 80% を閾値にしておけば十分 | 90% でキャッシュが止まり、98% で階層化が停止します。**超えた後の挙動が段階的に変わります** |
+| 一時的に 80% を超えたら即対応が必要 | 一時的なスパイクは許容されます。**継続的な平均**が判断対象です |
+| 階層化ポリシーを `All` にすれば SSD は消費されない | 全書き込みは最初に SSD へ行き、メタデータは常に SSD に残ります。目安は 1 : 10 です |
+| データを削除すれば SSD の空きが増える | 削除したデータを含む Snapshot が残っていると減りません |
+| バックアップが失敗していないので間に合っている | 背景タスクは**クライアントトラフィックより後回しにされます。** 遅れはアラートされません |
+| ネットワーク利用率が高いのはクライアント負荷のせい | SnapMirror・階層化・バックアップのトラフィックも同じメトリクスに含まれます |
+| 98% を超えても SSD を増やせばすぐ戻る | 階層化の再開は**90% を下回ってから**です |
+
+---
+
+### 参照した一次情報
+
+| 論点 | 出典 |
+|---|---|
+| 奇数番が優先系・偶数番が待機系で利用率が低く出ること、`NetworkThroughputUtilization` が HA ペア 1 組分に対する比率で背景タスクを含むこと | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
+| 利用率系メトリクスがアグリゲート単位・ファイルサーバー単位で出ること、それ以外は合計 1 点であること | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
+| 名前空間、1 分間隔と 2 つの例外、15 か月保持、メトリクスのカテゴリ | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
+| 80% 推奨、スパイクの許容、`MAX(StorageCapacityUtilization)` を使うアラーム構成 | [AWS: Creating a storage capacity utilization alarm](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/alarm-low-primary-storage.html) |
+| 90% でキャッシュされない、98% で階層化停止、SSD が容量プールへの書き込みと乱読をステージングすること | [AWS re:Post: How do I troubleshoot slow performance?](https://repost.aws/knowledge-center/fsx-ontap-fix-slow-performance) |
+| 全書き込みが SSD 経由であること、90% 未満まで削除すると階層化が再開すること、Snapshot が削除データを保持すること | [AWS re:Post: Why didn't the capacity change after changing the tiering policy to ALL?](https://repost.aws/knowledge-center/fsx-ontap-volume-tiering-troubleshoot) |
+| クライアントトラフィックが背景タスク（階層化・ストレージ効率化・バックアップ）より優先されること、メタデータが常に SSD にあること、1 : 10 の目安 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| 複数の連続データポイントで警告が出ること、ダッシュボード上の表示位置 | [AWS: Performance warnings and recommendations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance-insights-FSxN.html) <!-- allow:naming - AWS ドキュメントの URL -->|
+
+---
+
+### 関連ドキュメント
+
+- [Playbook 05 — 運用](../README.md) — このモジュールのハブ
+- [スループットは 1 つの値で決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — 上限そのものの決まり方。FlexVol と アグリゲートの関係はここにあります
+- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 保持設計は容量設計と同じ問題です
+- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md) — 監視が入っていることを確認する項目を含みます
+- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [知見の分類ポリシー](../../../evidence-policy.md)
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
 
 ## 自環境での確認手順
 
@@ -151,70 +244,17 @@ graph TD
 
 手順 6 の前提は [スループットは 1 つの値で決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) にあります。
 
----
+世代とデプロイタイプは、次の読み取り専用コマンドで確認できます。上限値そのものが世代で変わるため、統計を読む前に記録します。
 
-## 「最大」という語の 3 つの用法の区別
+```bash
+aws fsx describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[0].[FileSystemTypeVersion,OntapConfiguration.DeploymentType]'
+```
 
-**この節の「Maximum で見る」は監視の話で、ベンチマークの代表値の話ではありません。** 同じ語が 3 つの別物に使われており、**監視の結論をそのまま測定計画へ持ち込むと、自信のある誤答が出ます。**
+### 期待結果
 
-| 用法 | 何か | 適切な場面 | 持ち込むと壊れる場面 |
-|---|---|---|---|
-| **`Maximum` 統計** | CloudWatch が期間内の最大値を返す | **監視。** 飽和した当事者を見つける唯一の手段 | — |
-| **代表値としての最大** | 複数回の測定の最大を「その構成の値」として載せる | **なし** | **ベンチマーク。** 系列が振れるほど最大は上へ引っ張られ、**最も再現しない統計になります** |
-| **負荷生成器への `max` 指示** | `fio` の `rate=`/`iorate=max` など、上限を設けない指示 | 飽和させたいとき | **統計値ではありません。** 到達値は目標を下回りうるので、指示値を結果として記録できません |
+ONTAP のバージョンとデプロイタイプ（`SINGLE_AZ_2` など）が返ります。第 1 世代と第 2 世代で公開されるメトリクスの系列（`FileServer` / `Aggregate` ごとの有無）が変わるため、利用率を Average と Maximum で読み比べる前に、どちらの世代の系列を見ているかを確定させます。
 
-**1 行目と 2 行目は目的が逆です。** 監視は**検出**が目的なので、1 度でも飽和したことが分かる統計が要ります。ベンチマークは**再現**が目的なので、他者が同じ値を得られる統計が要ります。**最大は前者に最も適し、後者に最も適しません。**
+## Read next
 
-**この区別は引用先のリポジトリからの指摘で明示しました。** そちらの環境では、同一構成の反復で 45% の振れ、300 秒と 900 秒で別の値への収束、`iorate=max` が目標値を下回る着地が観測されています（測定値はそちらが持ちます）。**ここに転記しないのは、環境依存の量だからです。**
-
-> **測定計画に持ち込むときの補足**: 代表値には**中央値と分布**を載せ、最大は**外れ値の有無**を示すためだけに併記してください。**最大単独では、次に測る人が同じ数を得られません。**
-
----
-
-## よくある誤解
-
-| 誤解 | 実際 |
-|---|---|
-| 利用率が平均 40% なので余裕がある | **待機系ノードが平均を引き下げます。** 優先系が飽和していても平均は低く出ます |
-| アグリゲートの平均が低いので問題ない | FlexVol は 1 つのアグリゲートに載ります。**飽和した 1 つが問題のボリュームを抱えています** |
-| 80% を閾値にしておけば十分 | 90% でキャッシュが止まり、98% で階層化が停止します。**超えた後の挙動が段階的に変わります** |
-| 一時的に 80% を超えたら即対応が必要 | 一時的なスパイクは許容されます。**継続的な平均**が判断対象です |
-| 階層化ポリシーを `All` にすれば SSD は消費されない | 全書き込みは最初に SSD へ行き、メタデータは常に SSD に残ります。目安は 1 : 10 です |
-| データを削除すれば SSD の空きが増える | 削除したデータを含む Snapshot が残っていると減りません |
-| バックアップが失敗していないので間に合っている | 背景タスクは**クライアントトラフィックより後回しにされます。** 遅れはアラートされません |
-| ネットワーク利用率が高いのはクライアント負荷のせい | SnapMirror・階層化・バックアップのトラフィックも同じメトリクスに含まれます |
-| 98% を超えても SSD を増やせばすぐ戻る | 階層化の再開は**90% を下回ってから**です |
-
----
-
-## 参照した一次情報
-
-| 論点 | 出典 |
-|---|---|
-| 奇数番が優先系・偶数番が待機系で利用率が低く出ること、`NetworkThroughputUtilization` が HA ペア 1 組分に対する比率で背景タスクを含むこと | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
-| 利用率系メトリクスがアグリゲート単位・ファイルサーバー単位で出ること、それ以外は合計 1 点であること | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
-| 名前空間、1 分間隔と 2 つの例外、15 か月保持、メトリクスのカテゴリ | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
-| 80% 推奨、スパイクの許容、`MAX(StorageCapacityUtilization)` を使うアラーム構成 | [AWS: Creating a storage capacity utilization alarm](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/alarm-low-primary-storage.html) |
-| 90% でキャッシュされない、98% で階層化停止、SSD が容量プールへの書き込みと乱読をステージングすること | [AWS re:Post: How do I troubleshoot slow performance?](https://repost.aws/knowledge-center/fsx-ontap-fix-slow-performance) |
-| 全書き込みが SSD 経由であること、90% 未満まで削除すると階層化が再開すること、Snapshot が削除データを保持すること | [AWS re:Post: Why didn't the capacity change after changing the tiering policy to ALL?](https://repost.aws/knowledge-center/fsx-ontap-volume-tiering-troubleshoot) |
-| クライアントトラフィックが背景タスク（階層化・ストレージ効率化・バックアップ）より優先されること、メタデータが常に SSD にあること、1 : 10 の目安 | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
-| 複数の連続データポイントで警告が出ること、ダッシュボード上の表示位置 | [AWS: Performance warnings and recommendations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance-insights-FSxN.html) <!-- allow:naming - AWS ドキュメントの URL -->|
-
----
-
-## 関連ドキュメント
-
-- [Playbook 05 — 運用](../README.md) — このモジュールのハブ
-- [スループットは 1 つの値で決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — 上限そのものの決まり方。FlexVol と アグリゲートの関係はここにあります
-- [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) — 保持設計は容量設計と同じ問題です
-- [本番投入前レビュー](../../04-build/checklists/pre-production-review.md) — 監視が入っていることを確認する項目を含みます
-- [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
-- [知見の分類ポリシー](../../../evidence-policy.md)
-
----
-
-[🏠 リポジトリトップ](../../../../../README.md) | [Playbook 05 — 運用](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](monitoring-fails-on-averages.md) | [English](../../../../en/playbooks/05-operate/notes/monitoring-fails-on-averages.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+[容量が余っていても書けなくなるのはなぜか？](../../01-assess/notes/counting-bytes-is-not-counting-files.md)

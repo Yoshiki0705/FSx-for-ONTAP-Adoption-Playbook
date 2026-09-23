@@ -9,7 +9,27 @@ region: ap-northeast-1
 lang: ja
 ---
 
-# AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程
+# AWS Transform の Finalize は後片付けか？
+
+後片付けではありません。FlexClone のスプリットで物理容量がこの工程で最大になります。
+
+## このノートで学べること
+
+- Finalize が FlexClone をスプリットして実体化するため、物理容量の使用量がこの工程で最大になること
+- 容量計画は論理値ではなく物理値（`space.physical_used` と `clone.split_estimate`）で見ること
+
+## このノートが答えないこと
+
+- アグリゲートの空きが移行データ量を下回る状態で Finalize したときの挙動（未確認）
+- データ量を変えたときの所要時間と容量の伸び方（1 構成 1 回の測定）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="aws-transform-の-finalize-は後片付けではなく物理容量が最大になる工程"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook — 移行](../README.md)
 
@@ -19,7 +39,7 @@ lang: ja
 
 ---
 
-## 結論
+### 結論
 
 **Finalize は移行の後片付けではありません。物理容量の使用量がこの工程で最大になります。** アグリゲートの空き容量を Finalize 前の数値で見積もると、移行データ 1 本分だけ足りません。
 
@@ -35,7 +55,7 @@ lang: ja
 
 ---
 
-## AWS Transform のフェーズ名と ONTAP の操作の対応
+### AWS Transform のフェーズ名と ONTAP の操作の対応
 
 ジョブログのフェーズ名がどの ONTAP 操作を指すのかを、時刻の一致で確定しました。
 
@@ -51,7 +71,7 @@ lang: ja
 
 ---
 
-## 容量以外に効く 3 点
+### 容量以外に効く 3 点
 
 | 事象 | 実測 | 設計への影響 |
 |---|---|---|
@@ -63,7 +83,7 @@ lang: ja
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -78,19 +98,7 @@ lang: ja
 
 ---
 
-## 自環境での確認手順
-
-| 確認したいこと | 方法 |
-|---|---|
-| Finalize 前のターゲットボリュームの物理消費 | ONTAP REST の `/api/storage/volumes` で `space.physical_used` と `space.used` の両方を取得し、差を見ます。論理値だけでは判断できません |
-| スプリットに必要な容量 | 同じレスポンスの `clone.split_estimate`。これがスプリットで増える物理容量の目安になります |
-| クリーンアップの完了 | Finalize 発行後、ステージング FlexVol と EBS ボリュームが消えるまで 33 分程度ポーリングします。途中の状態を最終状態と読まないでください |
-
-判断に取り入れる前の確認については [エビデンス方針](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -101,7 +109,7 @@ lang: ja
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](where-the-rollback-window-closes.md) — Finalize の不可逆性と切り戻しの関係
 - [`volume rehost` が変えるのは所有 SVM だけで、中身は変わらない](../../../domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — **split の容量ピークが同型**。rehost も FlexClone の分離を前提にします
@@ -109,3 +117,32 @@ lang: ja
 - 実測の全文と再現手順: [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP)
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook — 移行](../README.md)
+
+## 自環境での確認手順
+
+| 確認したいこと | 方法 |
+|---|---|
+| Finalize 前のターゲットボリュームの物理消費 | ONTAP REST の `/api/storage/volumes` で `space.physical_used` と `space.used` の両方を取得し、差を見ます。論理値だけでは判断できません |
+| スプリットに必要な容量 | 同じレスポンスの `clone.split_estimate`。これがスプリットで増える物理容量の目安になります |
+| クリーンアップの完了 | Finalize 発行後、ステージング FlexVol と EBS ボリュームが消えるまで 33 分程度ポーリングします。途中の状態を最終状態と読まないでください |
+
+判断に取り入れる前の確認については [エビデンス方針](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
+
+ターゲットボリュームの物理消費と split の見積りは、次の読み取り専用コマンドで確認できます。
+
+```bash
+curl -sk -u fsxadmin "https://<management-endpoint>/api/storage/volumes?fields=space.physical_used,space.used,clone.split_estimate"
+```
+
+### 期待結果
+
+```text
+FlexClone のうちは space.physical_used が space.used より 2 桁以上小さい。
+clone.split_estimate が Finalize（スプリット）で増える物理容量の目安。論理値だけでは足りない量が見えない
+```
+
+このクエリはボリュームの容量を読むだけで、Finalize にもボリュームにも変更を加えません。クリーンアップは段階的なので、33 分程度ポーリングしてから完了を判定してください。
+
+## Read next
+
+[切り戻せる時点はいつ閉じるか？](where-the-rollback-window-closes.md)

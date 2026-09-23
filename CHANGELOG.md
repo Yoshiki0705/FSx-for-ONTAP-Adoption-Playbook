@@ -9,6 +9,19 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Performance notes now use the fixed question-to-verification reading structure without changing their benchmark evidence.**
+  - Existing substantive heading text remains unchanged at a lower heading level, so its generated fragments stay stable.
+  - The CloudWatch note keeps the former H1 fragments as explicit aliases. The external-anchor snapshot adds the new structural headings; it removes no existing fragment.
+  - The three verification commands expose only configuration, one ONTAP setting, or arithmetic over supplied sums. They do not create a new benchmark result.
+
+- **S3 Access Points access and CloudWatch metric claims were narrowed to the scopes established by current AWS pages and controlled measurements.**
+  - An Internet-origin access point is reachable through an S3 gateway endpoint from an in-VPC subnet whose route table selects the S3 prefix-list route. Gateway endpoints do not route traffic entering over VPN, Direct Connect, Transit Gateway, or peering; those callers use an Interface endpoint for a private path.
+  - Same-account ownership constrains access point creation, not every later data request. Cross-account use requires both the access point policy and the caller's identity-based policy to allow it.
+  - The existing AD/domain-controller and `HeadBucket` statement is now `open`: public pages establish identity resolution and name-service reachability, but the tracked record does not establish the previous universal runtime claim. The same correction now covers the workshop prerequisite.
+  - Amazon S3 documents opt-in request metrics filtered by Access Point, but whether that configuration applies to an Access Point attached to an FSx for ONTAP volume remains `open`. Aggregate `AWS/FSx` telemetry and CloudTrail S3 data events are separate signals.
+  - p99 unavailability is scoped to the volume read/write/metadata operation-time/count pairs whose valid statistic is `Sum`. Other file-system and second-generation metrics expose other statistics and per-`FileServer` or per-`Aggregate` series; `Maximum` is one monitoring choice rather than the only telemetry path.
+  - The externally cited H1 anchor changed from `#p99-は-cloudwatch-のメトリクスからは出せない` to `#ボリュームの操作時間メトリクスから-p99-は出せない`; the anchor contract records the change. The citing repository must update its fragment when this commit becomes reachable.
+
 - **A note said the behaviour of an ANA-enabled kernel was unconfirmed. It had been measured, and this
   side did not know.** `paths-are-the-failover-mechanism.md` carried "not confirmed in this
   verification" for the case where `CONFIG_NVME_MULTIPATH` is set, while a sibling had measured it
@@ -234,7 +247,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     is still the only way one gets registered in time. What measuring establishes is how far the
     register drifts when nobody reports.
 - **Seven of the eight languages defined an evidence tier differently from Japanese, and `AGENTS.md`
-  — which wins on any disagreement — carried the incomplete definition.** `docs/ja/evidence-policy.md`
+  — which is authoritative on any disagreement — carried the incomplete definition.** `docs/ja/evidence-policy.md`
   states that transcribing another project's measurement is `documented`, with three conditions of its
   own: every measurement condition transcribed, the source's own unmeasured gaps transcribed, and a row
   in the cross-project citation index so a retraction is detected. **English, Korean, both Chinese
@@ -789,7 +802,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     remaining 30% is 88, not the "over 90%" stated, and the counting method is absent. **The ordering
     is citable; the total is not**, and the note says which is which.
   - **The reduction figure has a stated basis, which is rare enough to be the reason to cite the
-    case**: over 50% against the customer's own legacy environment at $1/GB/year, with the
+    case**: over 50% against the adopting organization's legacy environment at $1/GB/year, with the
     configuration footnoted and third-party licensing included in it. Three inputs that move the rate
     are named, so a reader can see why it does not transfer.
   - **Datadobi stays an index row.** It meets the inclusion bar on a vendor announcement, but there is
@@ -1296,7 +1309,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     gate is the thing that found it, no link check covered that path. The message says so. Here the
     external link check is opt-in, so that second defect is real and still open.
 - **`make hooks` replaces the instruction to run `git config` by hand, and reports the state neither
-  side had named.** A global `core.hooksPath` wins in any clone that has not set the local one, so
+  side had named.** A global `core.hooksPath` takes precedence in any clone that has not set the local one, so
   the tracked hook is present, correct, executable — **and never runs.** That clone looks protected,
   which is worse than having no hook. It fires on this machine.
   - **Activation cannot be enforced from inside the repository**, and asserting the config value in
@@ -1326,11 +1339,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   FPolicy**, because ONTAP holds the external engine's IP in `primary-servers` and the ingress comes
   from the SVM itself. No routing fixes that.
   - **So "network change or architecture change" has different answers per path, and the paths are hit
-    in a fixed order.** Reachability breaks first, silently, as a timeout. Authorization breaks second
-    and misreports itself as IAM — `AccessDenied … explicit deny in a resource-based policy` with no
-    policy present, `HeadBucket` returning 200 while `ListObjectsV2` fails on an AD-joined SVM.
-    Throughput never appeared. A team therefore concludes "network change" and **is right until it adds
-    FPolicy**, which makes the earlier answer narrow rather than wrong.
+  in a fixed order.** Reachability breaks first, silently, as a timeout. Authorization breaks second.
+  An earlier entry attributed one `HeadBucket` / `ListObjectsV2` split on an AD-joined SVM to domain-controller
+  reachability, but the current audit found no public source or complete tracked reproduction for that universal
+  explanation, so it remains `open`. Throughput never appeared. A team therefore concludes "network change"
+  and **is right until it adds FPolicy**, which makes the earlier answer narrow rather than wrong.
   - Answered by the repository that holds the collection stack. **It could not measure a cross-site
     deployment either**, so the mechanism is `documented` and the deployment stays unmeasured.
 - **A citation was recorded as pending rather than gated, because the cited work is uncommitted.** A
@@ -1747,7 +1760,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   change is the only way in, and second-generation file systems refuse another for six hours.
 - **The audit note argued from the absence of an event that cannot be observed.** It offered zero hits
   for `adt.stgvol.nospace` as evidence that staging exhaustion was not the cause of the client-access
-  stall. AWS Support has now confirmed that event is not visible to customers by design — retracting
+  stall. AWS Support has now confirmed that event is not exposed through the available interfaces by design — retracting
   guidance from an earlier reply in the same case that had suggested monitoring it, which this note had
   adopted. A detector that cannot fire says nothing when it is silent, so the inference never held.
   The conclusion survives on other grounds: Support confirmed that exhausting the **destination**
@@ -1757,7 +1770,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   to see staging pressure from outside" — it is not a way at all.
 - **`adt.dest.directory.full` was missing, and it is the event that matches the symptom.** Its ONTAP
   definition states it can lead to denial of service on SACL-enabled objects, which is precisely what
-  was measured over SMB. It is also not customer-visible. That makes the note's central claim stronger
+  was measured over SMB. It is also not exposed through the available interfaces. That makes the note's central claim stronger
   and differently grounded: no path exists to ask whether auditing is still writing, not because the
   search missed one, but because both events that would answer it are unreachable. The observable-signal
   table now separates what was measured, what AWS expects to be visible but is unverified here
@@ -2002,15 +2015,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   assumed eleven listed words covered an open class. What actually keeps those nouns clean is that
   `ない` is a literal rather than `い$`, so that boundary is now asserted directly in
   `scripts/tests/test_heading_style_detection.py` and fails loudly if it is widened.
-- **"Not in the price list, so not charged" was wrong about `CopyBackup` cross-Region transfer.** The
-  reasoning was that backups sit in AWS-managed S3 and never traverse the customer VPC, so an
-  EC2-style inter-Region charge cannot apply. EBS snapshots refute it: they are also in AWS-managed
-  storage, also never traverse a VPC, and their cross-Region copies do incur AWS Data Transfer,
-  billed as `*-AWS-Out-Byte` under "EC2 - Other". The check behind the claim was also unsound —
-  inter-Region transfer bills under `AWSDataTransfer`, not under the originating service's price
-  list, and there is a generic service-agnostic SKU at the same rate as the AWS Backup Amazon FSx one. The
-  note now says to budget as though it is charged, still `unverified` because it was not reconciled
-  against a bill.
+- **Native `CopyBackup` cross-Region transfer billing remains open.** The prior conclusion that
+  absence from the FSx for ONTAP price list meant no charge was unsupported. The EBS snapshot
+  transfer example and generic `AWSDataTransfer` SKUs establish other billing paths, but neither
+  proves that they apply to `CopyBackup`. The note now leaves the charge open until a direct public
+  source or bill reconciliation settles it.
 - **The measured restore duration was left without its scaling.** 13 to 16 minutes was a 9.4 MiB
   volume, and quoting it in an RTO table invited extrapolation. Restore is a background process
   bounded by unused throughput capacity, so `min(published rate, throughput capacity)` governs:
@@ -2031,7 +2040,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   type AWS Backup does not fully manage; the pricing page says the charge goes to the account
   transferring the data out, which is the source. FSx for ONTAP is exactly such a resource type, so
   the disagreement lands on this case. Both are now quoted side by side and the point is marked
-  `unverified`, with the advice to run one copy and read the bill.
+  `open`, with the advice to run one copy and read the bill.
 - **The note block's longest line ran off the exported canvas.** With `whiteSpace=wrap` a long line
   wraps at the geometry width, but it is drawn starting from `spacingLeft`, so it overruns the right
   edge by that much — and the 12px export border does not cover the overrun. In the English diagram
@@ -2484,7 +2493,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - **`docs/ja/reference/block-storage-resource-map.md`.** An index of the AWS user guide, AWS blogs,
   re:Post, NetApp documentation, and public infrastructure as code for block storage — and, more
   usefully, a table of **seven places those sources disagree with each other**: the LUN-to-volume ratio
-  (two AWS posts recommend different layouts, and NetApp states 1:1 is not a formal best practice), the
+  (two AWS posts recommend different layouts, and NetApp states 1:1 is not a general recommendation), the
   iSCSI session count (the eight-session guidance is sized for the first generation's 4,000 MBps
   ceiling), paths per LUN, the NVMe/TCP ports missing from the security-group requirements table, and
   failover transparency, which is documented for iSCSI and silent for NVMe/TCP. Also carries a section
@@ -2734,12 +2743,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   Directory, and repointing clients because the new file system has different DNS names and IPs. The
   first three finish on their own; the rest need a person, during an incident. A SnapMirror design
   skips the first three and has the SVM already joined.
-- **The native `CopyBackup` path has no cross-Region transfer charge that could be found.** The
-  `AmazonFSx` price list contains no transfer usage type at all, for any Amazon FSx file system type,
-  and the FSx for ONTAP pricing page scopes its data transfer line to S3 Access Point access.
-  Backups live in AWS-managed S3 rather than in the customer VPC, so the copy is not egress from an
-  ENI and does not have the shape those charges apply to. Recorded as `unverified` rather than as
-  "free": absence from a price list is not proof, and it was not reconciled against a bill.
+- **The native `CopyBackup` cross-Region transfer charge could not be established.** The
+  FSx for ONTAP pricing page scopes its data transfer line to S3 Access Point access, but absence of
+  a `CopyBackup` item does not establish that the copy is free. The EBS snapshot-copy example and
+  generic transfer SKUs do not establish the FSx for ONTAP path either. Recorded as `open` until a
+  direct public source or bill reconciliation settles it.
 - **The data-protection comparison matrix carries the replication-versus-copy split too.** The table
   already used 複製 for SnapMirror and コピー for backup copies, but never said the two words describe
   different operations, so a reader could take both rows as answers to the same question. The new
@@ -2773,7 +2781,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   `KeyManager: AWS`, and the copy still succeeded. That is looser than the general documented
   statement, so the two paths cannot be described under one condition. The design consequence is on
   ordering, not on configuration: a file system's KMS key is fixed at creation and
-  `update-file-system` has no argument that changes it, so a customer-managed key is a decision that
+  `update-file-system` has no argument that changes it, so a KMS key that you manage is a decision that
   precedes the file system. Recorded with the cross-Region result as `verified` and the
   cross-account restriction as `documented`, since it was not measured.
 - **Region exceptions to the copy paths are enumerated rather than summarized.** Cross-Region copy
@@ -3250,8 +3258,8 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     question answered in **under 54 seconds**.
   - **`Status: ACTIVE` from the API is not readiness.** `list-knowledge-bases` reported `ACTIVE`
     after 16.4 s while the console still showed `Syncing / In progress` for another eleven minutes.
-    This is the same shape as `HeadBucket` succeeding on an access point whose data operations fail:
-    the API that reports success and the state you can actually use are different things.
+    A status or metadata operation and a data-path operation can cover different layers, so readiness checks
+    must exercise the path the next step will use.
   - **The answer was verified against ground truth, not just observed.** Quick's per-feature
     breakdown of license failures matched the summary CSV exactly (17 total; 6/5/4/1/1), and it cited
     individual log files. Recorded alongside it: the same data supports two defensible counts of
@@ -3411,7 +3419,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     this repository's terms — they establish that an organization published an account, not a value to
     design against. A seven-point "what to check while reading" table makes that judgement transferable
     instead of asking readers to take it on trust.
-  - Industry-specific *design* material is listed separately from case studies, since an EDA best-practices
+  - Industry-specific *design* material is listed separately from case studies, since an EDA design-guidance
     paper is more use for a decision than an EDA success story. TR-4937 is cited **by report number rather
     than URL**, because that distribution URL moves and a number does not.
   - The directory now separates **three** kinds rather than two: public, field, and verification.
@@ -3455,11 +3463,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     require, so the boundary between observed and cited is visible rather than implied. No note was
     promoted to `verified` wholesale, because no note's central thesis was reproduced end to end — only
     specific values were.
-- Note: [p99 cannot be read from the CloudWatch metrics](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
-  The volume latency metrics expose **total time and total operation count, with `Sum` as the valid
-  statistic** — so dividing them yields an average by construction and **tail latency is not derivable
-  from them at all.** p99 has to be measured at the client; no amount of detail on the storage side
-  produces it.
+- Note: [p99 is not available from volume operation-time metric pairs](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md).
+  The volume read/write/metadata latency pairs expose **total time and total operation count, with `Sum`
+  as the valid statistic** — so dividing each pair yields a period average and does not produce a request
+  distribution. Obtain p99 from client or other request-level telemetry. Other FSx for ONTAP CloudWatch
+  metrics support other statistics and per-dimension series.
   - The reproducibility finding: **burst credits sway a benchmark.** A file system accrues credits while
     below baseline and spends them to exceed it, so the same test run with a depleted balance returns a
     different number. A benchmark that does not record `FileServerDiskThroughputBalance` and
@@ -3472,8 +3480,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 - Note: [the AD dependency lasts the lifetime, not just the join](docs/ja/domains/multiprotocol-identity/notes/ad-dependency-lasts-the-lifetime.md).
   A valid service account is required **for the lifetime of the file system**, because replacing a failed
   file system or SVM and patching ONTAP both require unjoining and rejoining the domain. So an expired
-  credential is **symptomless in normal operation** and surfaces at the next maintenance window — which,
-  per the maintenance note, cannot be deferred past 14 days. "AD integration is working" is a statement
+  credential is **symptomless in normal operation** and surfaces at the next maintenance window. If no
+  maintenance window occurs within 14 days after an ONTAP patch is released, the service proceeds with
+  maintenance. "AD integration is working" is a statement
   about normal operation only.
   - Two AD-side actions silently break things: **moving the computer objects FSx for ONTAP created**, and
     **deleting the directory while an SVM is joined**. Both leave the SVM misconfigured.
@@ -3509,10 +3518,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     catches extension-driven behaviour, detection is not recovery, snapshots live in the same file system
     and die with the volume, and SnapLock Compliance buys immutability at the price of **not being able to
     delete it yourself either**, which is a capacity commitment for the length of the retention period.
-- Note: [maintenance cannot be deferred past 14 days](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
-  ONTAP patching is performed by the service, so the only decision is when. And the deferral has a hard
-  edge: **a maintenance window must occur at least once every 14 days**, and if a patch is released and no
-  window happens in that period, maintenance proceeds anyway.
+- Note: [maintenance proceeds if no window occurs within 14 days after a patch release](docs/ja/playbooks/05-operate/notes/maintenance-cannot-be-deferred.md).
+  ONTAP patching is performed by the service and typically occurs once every several weeks. The 14-day
+  condition applies **after a patch is released**: if no maintenance window occurs in that period,
+  maintenance proceeds. It is not a statement that maintenance occurs every 14 days.
   - Two states make patching materially worse, and both are avoidable in advance. **SSD above 90% causes
     throughput to be throttled for the duration of patching** — a third consequence of that band, on top
     of the caching change already recorded. And on Multi-AZ, **missing routes with no room left in the
@@ -3558,12 +3567,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   - Records an ordering rule the repository had not stated: **try changes in order of reversibility**,
     not expected impact. Tiering policy and storage efficiency are reversible, throughput is reversible
     with a failover, and adding HA pairs is not reversible at all — so it goes last.
-- Note: [at rest is automatic, in transit is off by default](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
-  Encryption at rest cannot be disabled and covers data and metadata, so it is not a design decision.
-  Encryption in transit is the opposite: **not enabled by default**, and Kerberos for NFS and SMB
-  requires the SVM to be joined to Active Directory or LDAP — which makes AD a prerequisite for
-  in-transit encryption, not only for authentication. Requiring SMB encryption also **disconnects
-  clients that do not support it**, so it is a security change and an availability change at once.
+- Note: [at-rest encryption is automatic; in-transit conditions differ by method](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md).
+  Encryption at rest cannot be disabled and covers data and metadata. Key selection remains a creation-time
+  decision: omitting `KmsKeyId` uses the Amazon FSx-managed key, while a KMS key that you manage can be
+  specified. There is no shared in-transit default. Nitro encryption is automatic when its EC2 client,
+  generation, Region and network-path conditions hold; SMB encryption is off when the SVM is created and
+  can be required per SVM or share; NFS Kerberos and IPsec each have their own prerequisites. Requiring SMB
+  encryption also **disconnects clients that do not support it**, so it is a security change and an
+  availability change at once.
   - The finding most likely to surface during an audit: **SMB access auditing records only the first
     read and the first write per object.** Opens, deletes, renames and unlinks are recorded, but
     "how many times did this user read this file" cannot be answered from the log.
@@ -3589,8 +3600,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   it becomes a rebuild and a data migration.
   - Adding HA pairs has consequences the checklist did not cover: the new pair arrives with **matching
     SSD capacity**, so it is a cost decision too; **existing volumes must be moved and clients remounted**
-    before anything gets faster; the pairs **cannot be removed**; and **past six pairs iSCSI and NVMe/TCP
-    stop being available**, which combined with non-removability makes it a one-way door.
+    before anything gets faster; the pairs **cannot be removed**; and **block protocols are supported
+    only on file systems with six or fewer pairs**. The documentation does not establish what happens
+    to existing LUNs or connections while pair seven is added.
   - Covers file-system-level irreversibility, complementing the volume- and SVM-level table already in
     the pre-production checklist rather than restating it.
 - `llms.txt` now carries a **findings section** listing each note with a one-line statement of what it
@@ -3602,14 +3614,14 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     failure mode is silent and worth closing off rather than trusting.
 - Note: [free space does not mean you can still write](docs/ja/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md).
   A volume counts files, directories **and snapshot copies** as inodes, and once inodes are exhausted
-  the volume rejects writes even with capacity left. The trap is in how the default scales: **one inode
-  per 32 KiB only up to 648 GiB.** Past that, every volume gets the same 21,251,126 regardless of size,
-  so a 10 TiB volume has the same default inode budget as a 648 GiB one.
-  - The note publishes the break-even average file size derived from that default — below roughly
-    **505 KiB on a 10 TiB volume, or 2.5 MiB on a 50 TiB volume**, inodes run out before capacity. These
-    are labelled as arithmetic from the documented default, not measurements. Raising the limit helps but
-    is bounded: one inode per 4 KiB, hard-capped at 2 billion per volume, which still leaves ~27 KiB as
-    the break-even on 50 TiB.
+  the volume rejects writes even with capacity left. AWS documents the default as **one inode per
+  32 KiB only up to 648 GiB**, then 21,251,126 regardless of size. A later 2026-08-06 observation did
+  not reproduce that cap and is recorded below; the documented calculation must not be treated as the
+  observed default.
+  - The note originally published break-even average file sizes derived from the documented cap — roughly
+    **505 KiB on a 10 TiB volume, or 2.5 MiB on a 50 TiB volume**. These were documented arithmetic,
+    not measurements, and were later removed after the contrary observation below. Raising the limit is
+    bounded at one inode per 4 KiB and 2 billion per volume.
   - The rest of the inventory is organized by **which later decision consumes each measurement**, on the
     principle that an item is only worth collecting if a decision changes based on its value — and that
     the items skipped are the ones that resurface as irreversible settings. Each row links to the note
@@ -3650,8 +3662,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
     claimed for both.
 - Note: [FSx for ONTAP S3 AP is not "S3 you can use as S3"](docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md).
   Access points attached to an FSx for ONTAP volume carry restrictions that bucket access points do
-  not: ONTAP 9.17.1 or later, same AWS account, same Region. Cross-account designs do not work at all,
-  which is a plan-level constraint rather than a configuration detail.
+  not: ONTAP 9.17.1 or later, same AWS account and same Region for **creation**. The same-account
+  rule does not prohibit cross-account data use; both the access point policy and the caller's
+  identity-based policy must allow that request.
   - Enabling S3 access points **lowers the volume-count ceiling** — 500 to 491, and 1,000 to 975 at
     two HA pairs or 903 at twelve. More pairs means a larger reduction, so "add pairs to get more
     volumes" does not hold.
@@ -3665,10 +3678,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
   reach half the documented IOPS and throughput outside four named regions. Raising the throughput
   setting alone does not reach the ceiling either; it requires a matching SSD capacity and IOPS
   configuration.
-  - The consequence most likely to be designed around wrongly: a FlexVol lives on exactly one
-    aggregate, and each HA pair has one aggregate. So a file system with twelve HA pairs still serves
-    a FlexVol at one pair's performance. Using more than one pair in a single namespace requires a
-    FlexGroup, spanning all aggregates with an even constituent count.
+  - The placement constraint most likely to be designed around wrongly: the Amazon FSx API reports
+    exactly one aggregate for a FlexVol, and each HA pair has one aggregate. A file system can scale to
+    twelve HA pairs, while that FlexVol's path remains on the HA pair owning its aggregate. Using more
+    than one pair in a single namespace requires a FlexGroup.
   - Also recorded that adding HA pairs raises the **minimum** throughput, not just the maximum, so
     it is a cost decision as well as a performance one.
 - Note: [ACL preservation is a privilege problem, not a tool problem](docs/ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md).

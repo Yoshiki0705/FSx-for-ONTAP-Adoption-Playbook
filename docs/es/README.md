@@ -1,38 +1,65 @@
 # Amazon FSx for NetApp ONTAP — Adoption Playbook
 
-![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-8%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+## Público
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../README.md) | [English](../en/README.md) | [한국어](../ko/README.md) | [简体中文](../zh-CN/README.md) | [繁體中文](../zh-TW/README.md) | [Français](../fr/README.md) | [Deutsch](../de/README.md) | [Español](README.md)
-<!-- lang-switcher:end -->
+- Arquitectos que deciden si adoptar FSx for ONTAP y cómo configurarlo
+- Responsables de implementación que planifican migración, construcción y paso a producción
+- Responsables de operación que gestionan rendimiento, protección, seguridad y costes después del lanzamiento
 
----
+## Fuera de alcance
 
-> Una base de conocimiento para migrar a **Amazon FSx for NetApp ONTAP** y para el trabajo de diseño, construcción y operación que viene después.
-> Dos ejes de navegación: el ciclo de vida (evaluar → diseñar → migrar → construir → operar → optimizar) y el tema (protección de datos, aprovechamiento de datos, seguridad, rendimiento, coste, identidad multiprotocolo).
->
-> Los hallazgos obtenidos en el soporte técnico de campo se organizan aquí como material de referencia anonimizado. La estructura está pensada para que la lean tanto personas como agentes de IA y rastreadores web.
+Este repositorio no sustituye:
 
----
+- La elaboración o negociación de contratos
+- La interpretación de licencias
+- Las cotizaciones de precios o estimaciones formales
+- Los procedimientos de migración desde servicios SaaS de intercambio de archivos
+- Las decisiones de adopción o compra específicas de un entorno
+- Las decisiones finales legales, regulatorias o de cumplimiento
+
+Siguen dentro del alcance los datos para decidir basados en fuentes públicas, así como las observaciones de implementación y las perspectivas de diseño claramente separadas de los hechos documentados.
+
+## Estado de las traducciones
+
+![docs](https://img.shields.io/badge/docs-lint%20passing-brightgreen) ![i18n](https://img.shields.io/badge/i18n-Tier%201%3A%208%20languages-blue) ![license](https://img.shields.io/badge/license-MIT-blue) ![region](https://img.shields.io/badge/verified-ap--northeast--1-blue)
+
+La orientación inicial Tier 1 está disponible en ocho idiomas. Los hubs de módulos Tier 2 están disponibles en japonés y English. El cuerpo de `notes/` y `checklists/` está principalmente en japonés, con traducciones seleccionadas al English. La versión japonesa es la referencia para la exactitud técnica.
+
+## Comprobaciones antes de producción
+
+- [Revisión antes de producción](../ja/playbooks/04-build/checklists/pre-production-review.md) (日本語) — ajustes irreversibles y pruebas que deben ejecutarse antes del lanzamiento
+- [El cifrado en reposo es automático; las condiciones del cifrado en tránsito dependen del método](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) — límites de responsabilidad del cifrado en tránsito y la auditoría
 
 ## Empezar
 
 | Lo que quieres hacer | Guía | Tiempo |
 |---|---|---|
+| Decidir si FSx for ONTAP encaja con la carga | [Elegir almacenamiento de archivos de AWS](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | 10 min |
 | Entender cómo recorrer este repositorio | [Guía de navegación](navigation.md) | 3 min |
-| Decidir si migrar y cómo hacerlo | [Árbol de decisión: método de migración](../ja/reference/decision-trees/migration-method.md) | 10 min |
-| Consultar los límites verificados | [Límites y cuotas](../ja/reference/limits/) | 5 min |
-| Entender cómo leer los niveles de confianza | [Política de niveles de evidencia](evidence-policy.md) | 5 min |
-| Encontrar fuentes primarias públicas | [Fuentes públicas y cómo ponderarlas](../ja/case-studies/public-references.md) (日本語) | 5 min |
-| Añadir conocimiento (redacción) | [CONTRIBUTING.md](../../CONTRIBUTING.md) | 10 min |
+| Entender los niveles de evidencia | [Política de niveles de evidencia](evidence-policy.md) | 5 min |
 
-> **Estado de la cobertura**: **los 12 módulos tienen contenido.**
-> El README de cada módulo enumera las preguntas y el documento correspondiente;
-> una pregunta sin respuesta escrita se marca con `_未追加_`. Las notas están por ahora en japonés.
+<details>
+<summary><strong>Más puntos de entrada</strong></summary>
+
+| Situación | Punto de entrada |
+|---|---|
+| Elegir un método de migración | [Árbol de decisión de migración](../ja/reference/decision-trees/migration-method.md) (日本語) |
+| Consultar límites y cuotas | [Límites y cuotas](../ja/reference/limits/) |
+| Comparar compensaciones | [Matrices de comparación](../ja/reference/comparison/) (日本語) |
+| Partir de un sector o carga | [Mapa de recursos por sector](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Contribuir conocimiento | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+
+</details>
+
+> El árbol de decisión de almacenamiento permite parar cuando FSx for ONTAP no encaja.
+> Cada README de módulo enumera sus preguntas y documentos asociados; una respuesta ausente se marca `_未追加_`.
+
+<details>
+<summary><strong>Rutas por síntoma y contenido disponible</strong></summary>
 
 ### Entrar desde un síntoma
 
-**Para cuando el punto de partida es lo que ocurre y no lo que se quiere hacer.** El conjunto completo — 10 árboles de decisión y 9 comparaciones — está en el [índice de árboles de decisión](../ja/reference/decision-trees/) (日本語) y el [índice de comparaciones](../ja/reference/comparison/) (日本語).
+**Para cuando el punto de partida es lo que ocurre y no lo que se quiere hacer.** Consulta el [índice de árboles de decisión](../ja/reference/decision-trees/) (日本語) y el [índice de comparaciones](../ja/reference/comparison/) (日本語).
 
 | Lo que ocurre | A dónde ir |
 |---|---|
@@ -51,6 +78,8 @@
 
 Cada documento trata un solo asunto por archivo y lleva siempre **sus fuentes primarias** y **un procedimiento para comprobarlo en tu propio entorno**.
 El cuerpo del texto está por ahora en japonés. La lista completa está en el README de cada módulo, junto a las preguntas correspondientes — [ciclo de vida](../ja/playbooks/) / [temas](../ja/domains/) / [referencia](../ja/reference/).
+
+</details>
 
 ---
 

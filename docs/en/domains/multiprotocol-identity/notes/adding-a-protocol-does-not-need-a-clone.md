@@ -7,17 +7,37 @@ source: https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effe
 lang: en
 ---
 
-# Adding NFS to a volume already serving SMB needs no clone
+# Does adding NFS to a volume need a clone?
+
+No clone. The four reasons NFS cannot reach it lie outside the security style.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [English](adding-a-protocol-does-not-need-a-clone.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That adding NFS to a volume already serving SMB needs neither a clone nor a rehost
+- That the reasons NFS cannot reach it are four things outside the security style (protocol enablement, junction path, export policy, name mapping)
+
+## What this note does not answer
+
+- Measured numbers, elapsed times, or reproduction in your own environment
+- The recommendation to use the mixed style (AWS calls it advanced-only)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="adding-nfs-to-a-volume-already-serving-smb-needs-no-clone"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **There is no such state in ONTAP as "a volume that only supports SMB".** So adding NFS requires neither cloning the volume with FlexClone nor moving it to another SVM with `volume rehost`.
 
@@ -30,7 +50,7 @@ The vendor's documentation states plainly that a security style **does not decid
 
 ---
 
-## The detour a mistaken premise produces
+### The detour a mistaken premise produces
 
 The mistake arrives in this shape:
 
@@ -44,7 +64,7 @@ Follow that and you arrive at a procedure: make a FlexClone, then `volume rehost
 
 ---
 
-## The four reasons NFS cannot reach it
+### The four reasons NFS cannot reach it
 
 **Check them in order. The cost of checking rises down the list.**
 
@@ -53,13 +73,13 @@ Follow that and you arrive at a procedure: make a FlexClone, then `volume rehost
 | 1 | **Is the NFS protocol enabled on the SVM** | Add the protocol to the SVM. The same structure applies to SMB; enabling is an SVM-level setting | Not needed |
 | 2 | **Does the volume have a junction path** | Mount it into the SVM's namespace. **A volume with no junction path does not appear in the NFS namespace** | Not needed |
 | 3 | **Does the export policy permit the client** | Add a rule. **A default policy may carry no rules, and in that case it denies everything** | Not needed |
-| 4 | **Does name mapping resolve** | Configure the mapping. **On an NTFS-style volume, permission evaluation uses the NTFS ACL, so a win-to-unix mapping is not consulted** ([How a security style maps to permission evaluation](security-style-and-permission-evaluation.md#security-style-and-permission-evaluation)) | Not needed |
+| 4 | **Does name mapping resolve** | Configure the mapping. **On an NTFS-style volume, permission evaluation uses the NTFS ACL, so a Windows-to-UNIX mapping is not consulted** ([How a security style maps to permission evaluation](security-style-and-permission-evaluation.md#security-style-and-permission-evaluation)) | Not needed |
 
 **The security style appears in none of the four.** What the style decides is which permission model evaluates access once the request has arrived.
 
 ---
 
-## How to change a security style
+### How to change a security style
 
 **Even when you do want to change it, an existing volume can be changed directly.**
 
@@ -75,13 +95,13 @@ The vendor's documentation states that where the volume already exists, `volume 
 
 **Do not choose mixed.** AWS documentation states that mixed is **not required for multiprotocol access and is recommended only for advanced users**. Its behaviour is to evaluate against the model of whichever protocol last set the permissions, which means the evaluation model changes during operation.
 
-### The SVM root volume is the exception
+#### The SVM root volume is the exception
 
 **Changing the security style of an SVM root volume is a replacement in CloudFormation.** Managed from a template, changing it later rebuilds the resource ([Where a setting is created](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語)). **It is something to settle first.**
 
 ---
 
-## What FlexClone solves and what it does not
+### What FlexClone solves and what it does not
 
 **Concluding that FlexClone is not needed does not mean FlexClone is useless.** It serves a different purpose.
 
@@ -98,7 +118,47 @@ The vendor's documentation describes FlexClone as a mechanism that references a 
 
 ---
 
-## Verify in your own environment
+### Common misconceptions
+
+| Misconception | Actually |
+|---|---|
+| A volume created for SMB cannot be used from NFS | **No such state exists.** A security style does not decide access |
+| Adding NFS means copying the volume with FlexClone | Not needed. The cause is one of four, and none requires a copy |
+| Just `volume rehost` the clone to an SVM with NAS enabled | **A clone cannot be rehosted.** It has to be split, and splitting ends the block sharing |
+| A security style can only be set at creation | `volume modify -security-style` changes it. **But an SVM root volume is a replacement in CloudFormation** |
+| mixed lets permissions be managed from both NFS and SMB | AWS documents mixed as **not required for multiprotocol access and for advanced users**. The evaluation model changes during operation |
+| If an export policy is assigned, access is permitted | **A policy with zero rules denies everything** |
+
+---
+
+### Primary sources consulted
+
+| Point | Source |
+|---|---|
+| That a security style does not decide which client types can access a volume, and that NFS and SMB can both access it under UNIX, NTFS and mixed | [NetApp: Learn about ONTAP NAS security styles](https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effects-concept.html) |
+| That an existing volume's style is changed with `volume modify -security-style`, that the values are `unix` / `ntfs` / `mixed`, and that it inherits the root volume when unspecified | [NetApp: Configure security styles on ONTAP NFS FlexVol volumes](https://docs.netapp.com/us-en/ontap/nfs-admin/configure-security-styles-task.html) |
+| That mixed is not required for multiprotocol access and is recommended only for advanced users | [AWS: Updating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-volumes.html) |
+| That FlexClone is a writable point-in-time copy consuming no storage until a change is written | [NetApp: Learn about ONTAP FlexClone volumes, files, and LUNs](https://docs.netapp.com/us-en/ontap/concepts/flexclone-volumes-files-luns-concept.html) |
+| That a client can reach the same file over both NFS and SMB | [NetApp: Learn about ONTAP client protocols](https://docs.netapp.com/us-en/ontap/concepts/client-protocols-concept.html) |
+
+---
+
+### Related documents
+
+- [Domain — Multiprotocol identity](../README.md) — this module's hub
+- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **a minimal setup to check these four in your own environment**. One CloudFormation template and an ONTAP REST script
+- [A security style decides the permission-evaluation model](security-style-and-permission-evaluation.md) — what the style actually decides
+- [What `volume rehost` changes and what it does not](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — the exclusivity with a clone, and the price of split
+- [The contents of a LUN do not surface to file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — the boundary adding a protocol does not cross
+- [Comparison of routes to carry block to file (日本語)](../../../../ja/reference/comparison/block-to-file-routes.md) — when crossing the boundary is necessary
+- [Where a setting is created (日本語)](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) — why the root volume's style is a replacement
+- [Preserving ACLs during migration (日本語)](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — carrying permissions across intact
+- [Glossary (日本語)](../../../../ja/reference/glossary/) — the definitions of security style / `volume rehost` / FlexClone
+- [Evidence policy](../../../evidence-policy.md) — the treatment of `documented`
+
+<a id="verify-in-your-own-environment"></a>
+
+## Verify it in your environment
 
 ### 1. Check the SVM's protocol configuration
 
@@ -148,50 +208,20 @@ export-policy rule show -vserver <svm> -policyname <policy>
 
 **Trying to delete the parent after step 5 may not succeed.** A deleted volume stays in the recovery queue for at least 12 hours by default, and the FlexClone relationship persists for that period ([the Volume recovery queue entry in the glossary](../../../../ja/reference/glossary/README.md)).
 
----
+The volume's state can be read with this read-only command.
 
-## Common misconceptions
+```bash
+ssh <svm-management-endpoint> vserver show -vserver <svm> -fields allowed-protocols
+```
 
-| Misconception | Actually |
-|---|---|
-| A volume created for SMB cannot be used from NFS | **No such state exists.** A security style does not decide access |
-| Adding NFS means copying the volume with FlexClone | Not needed. The cause is one of four, and none requires a copy |
-| Just `volume rehost` the clone to an SVM with NAS enabled | **A clone cannot be rehosted.** It has to be split, and splitting ends the block sharing |
-| A security style can only be set at creation | `volume modify -security-style` changes it. **But an SVM root volume is a replacement in CloudFormation** |
-| mixed lets permissions be managed from both NFS and SMB | AWS documents mixed as **not required for multiprotocol access and for advanced users**. The evaluation model changes during operation |
-| If an export policy is assigned, access is permitted | **A policy with zero rules denies everything** |
+### Expected output
 
----
+```text
+Whether allowed-protocols includes nfs and cifs
+```
 
-## Primary sources consulted
+This shows only the protocols enabled on the SVM. The junction path, export policy, and name mapping are checked separately. It changes nothing.
 
-| Point | Source |
-|---|---|
-| That a security style does not decide which client types can access a volume, and that NFS and SMB can both access it under UNIX, NTFS and mixed | [NetApp: Learn about ONTAP NAS security styles](https://docs.netapp.com/us-en/ontap/nfs-admin/security-styles-their-effects-concept.html) |
-| That an existing volume's style is changed with `volume modify -security-style`, that the values are `unix` / `ntfs` / `mixed`, and that it inherits the root volume when unspecified | [NetApp: Configure security styles on ONTAP NFS FlexVol volumes](https://docs.netapp.com/us-en/ontap/nfs-admin/configure-security-styles-task.html) |
-| That mixed is not required for multiprotocol access and is recommended only for advanced users | [AWS: Updating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/updating-volumes.html) |
-| That FlexClone is a writable point-in-time copy consuming no storage until a change is written | [NetApp: Learn about ONTAP FlexClone volumes, files, and LUNs](https://docs.netapp.com/us-en/ontap/concepts/flexclone-volumes-files-luns-concept.html) |
-| That a client can reach the same file over both NFS and SMB | [NetApp: Learn about ONTAP client protocols](https://docs.netapp.com/us-en/ontap/concepts/client-protocols-concept.html) |
+## Read next
 
----
-
-## Related documents
-
-- [Domain — Multiprotocol identity](../README.md) — this module's hub
-- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **the smallest environment in which to check these four yourself**. One CloudFormation template and ONTAP REST scripts
-- [Security style determines the permission model](security-style-and-permission-evaluation.md) — what the style actually decides
-- [What `volume rehost` changes and what it does not](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — the exclusion with clones, and what a split costs
-- [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — the boundary adding a protocol does not cross
-- [Routes for moving block data to files](../../../../ja/reference/comparison/block-to-file-routes.md) (日本語) — when that boundary has to be crossed
-- [Where a setting is created](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — why the root volume's style is a replacement
-- [Preserving ACLs during migration](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — carrying permissions across intact
-- [Glossary](../../../../ja/reference/glossary/) — definitions of security style, `volume rehost` and FlexClone
-- [Evidence Policy](../../../evidence-policy.md) — how `documented` is treated
-
----
-
-[🏠 Repository home](../../../README.md) | [Domain — Multiprotocol identity](../README.md)
-
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | [English](adding-a-protocol-does-not-need-a-clone.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+[Does a volume's security style determine the permission model?](security-style-and-permission-evaluation.md)

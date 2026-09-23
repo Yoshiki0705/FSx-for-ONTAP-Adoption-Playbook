@@ -9,10 +9,6 @@ lang: en
 
 # ISV and SaaS solution map by problem
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../ja/reference/isv-solution-map.md) | [English](isv-solution-map.md) | [🏠 Repository home](../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../README.md) | [Reference](../../ja/reference/README.md)
 
 ---
@@ -102,7 +98,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 **AWS-native options sit beside these for the same problem.** AWS DataSync, and NetApp SnapMirror when the source is ONTAP. **The method is sometimes already settled before any product is considered.**
 
-**And for the goal of spending less, external archiving and the FSx for ONTAP capacity pool tier read as one column and are in fact ordered.** That the published reduction rate is measured against the customer's own legacy environment also needs checking before the figure is used.
+**And for the goal of spending less, external archiving and the FSx for ONTAP capacity pool tier read as one column and are in fact ordered.** That the published reduction rate is measured against the adopting organization's legacy environment also needs checking before the figure is used.
 
 - Design note: [Archiving and the capacity pool tier are ordered, not alternatives](../domains/cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
 - Decision tree: [Choosing a migration method](../../ja/reference/decision-trees/migration-method.md) (日本語)

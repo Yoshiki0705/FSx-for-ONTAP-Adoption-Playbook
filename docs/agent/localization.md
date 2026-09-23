@@ -6,8 +6,15 @@
 
 ## Path model
 
-A document's language is its directory, never a filename suffix. `README.en.md` and friends do not
-exist; the counterpart of `docs/ja/domains/cost/README.md` is `docs/en/domains/cost/README.md`.
+A reader-facing document's language is its directory, never a filename suffix. `README.en.md` and
+friends do not exist; the counterpart of `docs/ja/domains/cost/README.md` is
+`docs/en/domains/cost/README.md`. Contributor-only paired specifications such as
+`docs/style-guide.ja.md` and `docs/style-guide.en.md` stay together under `docs/`; they are tooling
+instructions rather than localized reader content.
+
+This exception applies only to contributor machinery, not to reader content. A new style guide or
+reference document still belongs under `docs/<lang>/` unless the file itself defines a paired
+cross-language specification.
 
 Because the two files sit at the same depth, **a translation is a copy plus text replacement — every
 relative link stays byte-identical**. If you find yourself adjusting `../` counts while translating,
@@ -48,7 +55,7 @@ This is a deliberate stopping point, not a backlog:
 | | English | Why |
 |---|---|---|
 | Hubs, `navigation.md`, `evidence-policy.md` | Required | A reader must be able to find their way and read the confidence signals |
-| Module `README` (12 modules) | Required | The question list is the index. Without it, English readers cannot tell what is covered |
+| Module `README` files | Required | The question list is the index. Without it, English readers cannot tell what is covered |
 | `notes/`, `checklists/` | Optional | These carry numbers, thresholds, and irreversible operations. A mistranslation here does not announce itself |
 | `reference/` | Not split | Written as bilingual single files; Japanese and English prose share the same tables |
 
@@ -207,7 +214,7 @@ Never hand-write or hand-edit a switcher line. Each localized file carries a gen
 
 `python3 tools/sync_lang_switcher.py --write` fills it from the filesystem, listing only languages
 that actually exist. The tool does not insert the marker pair — placement is a layout decision, so a
-new file needs the markers added once, after the H1 and at the end of the file.
+new file needs one marker pair added at the end of the file.
 
 **Never translate**: file paths, commands, badge URLs, anchor IDs, product and technical terms
 (ONTAP, SnapMirror, FlexCache, FlexClone, SnapLock, FabricPool, S3 Access Point, SVM, LIF).

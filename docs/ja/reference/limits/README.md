@@ -23,6 +23,72 @@ premise to design against.
 
 ---
 
+## クォータ調整可否 / Quota adjustability
+
+`Yes` は一次資料が増額可能または `Adjustable: Yes` と明記するものです。`Not established` は、一次資料が上限値を示しても調整可否を明記していないものです。**Service Quotas に無いことを `No` の根拠にはしません。** この表は Amazon FSx for NetApp ONTAP（以降、FSx for ONTAP）の既定値を複製せず、申請前に対象リージョンの現在値を Service Quotas とリンク先で確認するための索引です。
+
+`Yes` means that a primary source explicitly says the quota can be increased or marks it `Adjustable: Yes`. `Not established` means that the primary source gives a ceiling but does not establish adjustability. **Absence from Service Quotas is not evidence for `No`.** This table does not copy defaults; check the current value in the target Region in Service Quotas and at the linked source before planning a request.
+
+| 上限 / Limit | 調整可能 / Adjustable | 一次資料 / Primary source | 範囲・注意 / Scope and notes |
+|---|---|---|---|
+| ONTAP file systems | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | アカウント・リージョン単位 / Per account and Region |
+| ONTAP SSD storage capacity | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 GiB / Aggregate GiB across file systems |
+| ONTAP throughput capacity | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 MBps / Aggregate MBps across file systems |
+| ONTAP SSD IOPS | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | 全ファイルシステムの合計 IOPS / Aggregate IOPS across file systems |
+| ONTAP backups | Yes | [Amazon FSx endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/fsxn.html#limits-fsx) | ユーザー開始バックアップ、アカウント・リージョン単位 / User-initiated backups per account and Region |
+| Amazon S3 access points | Yes | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#soft-limits) | アカウント・リージョン内の対応データソースで共有。同じ上限が 1 ファイルシステム / ボリュームへの添付にも適用 / Shared by supported data sources per account and Region; the same limit applies to attachments per file system or volume |
+| ファイルシステム単位の容量・IOPS・スループット上限 / Per-file-system capacity, IOPS, and throughput ceilings | Not established | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#limits-ontap-resources-file-system) | 構成上限は記載済み。調整可否は同ページで未確立 / Configuration ceilings documented; adjustability not established there |
+| リソース数の上限 / Resource-count ceilings | Not established | [FSx for ONTAP quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html#limits-ontap-resources-file-system) | ボリューム・SVM・ルートは FS 単位、Snapshot・バックアップはボリューム単位、接続数はファイルサーバー単位 / Volumes, SVMs, routes per FS; snapshots, backups per volume; connections per file server |
+
+選び方は、まずアカウント・リージョン合計とリソース単位の上限を分けることです。`Yes` の行は必要量と対象リージョンを決めてから現在値と申請経路を確認します。`Not established` の行は増額を前提に設計せず、現在の上限内で成立する構成または分割方法を用意します。一方、分割すると管理対象、障害範囲、コストが増えるため、増額可否が一次資料で確立した時点で再比較します。
+
+First separate account-and-Region aggregates from resource-local ceilings. For a `Yes` row, determine the required quantity and Region, then check the current value and request path. For a `Not established` row, do not design on the assumption that an increase will be granted; keep a configuration or partitioning option that works within the documented ceiling. Partitioning adds resources, failure domains, and cost, so compare again if a primary source later establishes adjustability.
+
+`No` の行はありません。今回確認した一次資料には、ここで扱う FSx for ONTAP 上限を明示的に調整不可とする記載がありませんでした。確認日 / Checked: 2026-09-20.
+
+There is no `No` row. The primary sources checked for this table did not explicitly mark any included FSx for ONTAP limit as non-adjustable. Checked: 2026-09-20.
+
+---
+
+## 文書化されたスループット上限 / Documented throughput ceilings
+
+The following values are configuration ceilings documented by AWS, not measured throughput. The workload-visible
+rate can bind earlier on SSD capacity and IOPS, cache state, client networking, protocol, and I/O pattern. Region
+availability is intentionally linked rather than copied into this table.
+
+次の値は AWS が記載する**設定上の上限**であり、実測スループットではありません。SSD 容量と IOPS、
+キャッシュ状態、クライアントネットワーク、プロトコル、I/O パターンのいずれかが先に上限となります。
+リージョン別の提供状況は表へ複製せず、現行ページを参照します。
+
+| 世代 / Generation | デプロイタイプ / Deployment | AWS のリージョングループ / AWS Region group | 上限 / Ceiling |
+|---|---|---|---|
+| 第 1 世代 / First | `SINGLE_AZ_1` | [4,096 MBps グループ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) | 4,096 MBps |
+| 第 1 世代 / First | `MULTI_AZ_1` | [4,096 MBps グループ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) | 4,096 MBps |
+| 第 1 世代 / First | `SINGLE_AZ_1` | その他の提供リージョン / Other available Regions | 2,048 MBps |
+| 第 1 世代 / First | `MULTI_AZ_1` | その他の提供リージョン / Other available Regions | 2,048 MBps |
+| 第 2 世代 / Second | `SINGLE_AZ_2` | [当該タイプの提供リージョン](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/available-aws-regions.html) | 73,728 MBps¹ |
+| 第 2 世代 / Second | `MULTI_AZ_2` | [当該タイプの提供リージョン](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/available-aws-regions.html) | 6,144 MBps |
+
+¹ 12 HA ペア × 6,144 MBps。第 2 世代 Single-AZ の 1 HA ペアあたりの上限は 6,144 MBps です。
+
+選び方は可用性要件から Single-AZ / Multi-AZ を決め、次に対象リージョンで使える世代を確認し、必要な
+スループット容量を選ぶ順です。Single-AZ は AZ 障害をまたぐデータ冗長性を持たず、Multi-AZ は 1 HA ペアに
+限られるため、第 2 世代でもファイルシステム上限は 6,144 MBps です。第 1 世代で 4,096 MBps を設定するには、
+AWS が示すリージョングループに加え、SSD 5,120 GiB 以上と 160,000 SSD IOPS が必要です。
+
+Choose Single-AZ or Multi-AZ from the availability requirement first, confirm which generation the target Region
+supports, and then select throughput capacity. Single-AZ does not provide cross-AZ data redundancy. Multi-AZ is
+limited to one HA pair, so its second-generation file-system ceiling is 6,144 MBps. First-generation 4,096 MBps
+also requires the AWS-defined Region group, at least 5,120 GiB of SSD, and 160,000 SSD IOPS.
+
+Primary sources: [performance and throughput](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html),
+[quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html), and
+[deployment types](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html). Values checked
+against those pages on 2026-09-20. Existing measurements remain under measured sections below and do not validate
+these service-wide ceilings.
+
+---
+
 ## ONTAP バージョンの取得経路 / Where the ONTAP version comes from
 
 **AWS CLI では取得できず、ONTAP REST API では取得できました。** バージョン依存の挙動を記録するには
@@ -43,13 +109,14 @@ the version, so the retrieval path is itself worth recording.
 | ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 / 2026-08-17 | 未認証は `401` |
 
 > **記録したバージョンは古くなります。** 同じファイルシステムで 11 日後に再取得したら別の版でした。
-> ONTAP のパッチ適用はサービス側で実施され、14 日ごとに保守が発生するため、**バージョンを前提にした
-> 記述は取得日と一緒に読む必要があります。** 版に依存する挙動を書くときは、取得日を必ず添えてください。
+> ONTAP のパッチ適用はサービス側で実施されます。通常は数週間に 1 回程度で、パッチ公開後 14 日以内に
+> メンテナンスウィンドウが来ない場合はサービスが実施します。**バージョンを前提にした記述は取得日と
+> 一緒に読む必要があります。** 版に依存する挙動を書くときは、取得日を必ず添えてください。
 >
 > **A recorded version goes stale.** Re-reading the same file system 11 days later returned a different
-> release. ONTAP patching is performed by the service and maintenance occurs at least every 14 days, so
-> **any statement premised on a version has to be read together with the date it was read.** Always
-> attach that date when recording version-dependent behaviour.
+> release. ONTAP patching is performed by the service, typically once every several weeks. If no
+> maintenance window occurs within 14 days after a patch is released, the service proceeds with
+> maintenance. **Any statement premised on a version has to be read together with the date it was read.**
 
 > **保存された資格情報は、実際のパスワードと無言で乖離します。** 2026-08-17 の再取得時、Secrets Manager に
 > 保存されていた `fsxadmin` の値は `401 User is not authorized` になりました。過去 3 バージョンを試しても
@@ -368,7 +435,7 @@ Defaults observed read-only in the same environment. **All matched the documenta
 | `NONE` の cooling period | 値なし | 実測 | 2026-08-06 | 階層化しないため |
 | cooling period の設定可能性 | 7 日 / 90 日の実例あり | 実測 | 2026-08-06 | 既定以外の値が設定できることの確認 |
 | 第 1 世代 Single-AZ の HA ペア数 | **1** | 実測 | 2026-08-06 | 2 ファイルシステムとも `HAPairs=1` |
-| デプロイタイプの変更可否 | **変更手段なし** | 実測 | 2026-08-06 | `aws fsx update-file-system` に該当パラメータが存在しません（0 件） |
+| デプロイタイプの変更可否 | **作成後は変更不可** | [AWS: Creating file systems](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-file-systems.html) | — | AWS が明記。新しいファイルシステムへ移行する |
 | メンテナンスウィンドウの形式 | `d:HH:MM`（UTC） | 実測 | 2026-08-06 | `4:16:00` と `6:20:00` を観測 |
 | ボリュームスタイルの既定 | HA ペア 1 組では FlexVol | 実測 | 2026-08-06 | FlexGroup は明示指定したものだけでした |
 | セキュリティスタイル | `UNIX` / `NTFS` / `MIXED` が併存 | 実測 | 2026-08-06 | 同一ファイルシステム内で混在可能 |
@@ -555,7 +622,7 @@ state is refused, **citing volumes that no longer exist.**
 | 残った Amazon FSx 側レコードへの `aws fsx delete-volume` | **成功し、約 1 分で解消** | 実測 | 2026-09-01 | 削除済みボリュームに対しても受理されます |
 
 > **自動化への含意**: **ONTAP CLI で作成し、その ID を Amazon FSx API から取得する処理には待機と
-> 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散に負けます。ボリューム ID を
+> 再試行が必要です。** タイムアウトを固定値で設計すると、待ち時間の分散を吸収できません。ボリューム ID を
 > 直後に必要とする処理（S3 Access Point のアタッチなど）は、**Amazon FSx API 側でボリュームを作る**
 > ほうが確実です。
 >

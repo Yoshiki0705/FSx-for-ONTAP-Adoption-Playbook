@@ -43,7 +43,7 @@ Amazon FSx for NetApp ONTAP の監視経路を決める前に確認する項目�
 - [ ] **Health と Headroom を使っていた場合**、代替の指標を決めた。**この 2 つの不在は運用設計を変えます**
 - [ ] 必要な画面が**既定で無効な 8 種**に含まれるか確認した。含まれる場合は有効化の作業が発生します
 - [ ] サポート対象のダッシュボードで**空欄になるパネル**を記録した（実測）。分類だけでは分かりません
-- [ ] **レイテンシのテール（p99）が要件か**確認した。要件ならクライアント側の測定が別途必要です。[p99 は CloudWatch のメトリクスからは出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md)
+- [ ] **ボリューム操作レイテンシのテール（p99）が要件か**確認した。要件なら、CloudWatch の read/write/metadata operation-time/count ペアとは別に、クライアント側またはリクエスト単位の測定が必要です。[ボリュームの操作時間メトリクスから p99 は出せない](../../performance/notes/what-you-cannot-read-from-cloudwatch.md)
 - [ ] 経路 4 を検討する場合、**欲しい値の数**を数えた。判断の閾値は台数ではなく**保守を続けられるか**です
 
 ---

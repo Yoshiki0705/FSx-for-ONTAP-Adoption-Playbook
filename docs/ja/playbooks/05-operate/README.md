@@ -1,9 +1,5 @@
 # Playbook 05 — 運用 (Operate)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](README.md) | [English](../../../en/playbooks/05-operate/README.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 ---
 
 監視・容量管理・障害対応・変更管理を扱います。「動いている」ことの確認と「壊れたときにどうするか」の両方が必要です。
@@ -29,7 +25,7 @@
 | 1 | 何を監視し、どこに閾値を置くか | [監視は平均値で失敗する](notes/monitoring-fails-on-averages.md) |
 | 2 | 容量の枯渇をどう予兆検知するか | [SSD 利用率の帯域と各点で変わること](notes/monitoring-fails-on-averages.md#ssd-利用率の帯域と各点で変わること) |
 | 3 | 性能劣化の切り分け手順はどうなるか | [切り分け順](notes/monitoring-fails-on-averages.md#性能劣化の切り分け順) |
-| 4 | ONTAP のバージョン更新をどう扱うか | [メンテナンスは 14 日を超えて延期できない](notes/maintenance-cannot-be-deferred.md) |
+| 4 | ONTAP のバージョン更新をどう扱うか | [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](notes/maintenance-cannot-be-deferred.md) |
 | 5 | インシデント時の初動をどう定義するか | [インシデント時の初動](notes/maintenance-cannot-be-deferred.md#インシデント時の初動) |
 | 6 | 管理者アカウントで認証できなくなったとき何を疑うか | [fsxadmin はロックされる。REST では原因が判別できない](notes/admin-account-lockout-and-recovery.md) |
 | 7 | 稼働中の SVM が SMB を提供できなくなったとき何を見るか | [SMB を提供できない SVM がある](../../domains/multiprotocol-identity/notes/smb-service-lost-on-cifs-server-delete.md) |

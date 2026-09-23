@@ -6,27 +6,48 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: SINGLE_AZ_2
 lang: ja
 ---
 
-# ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる
+# ブロックプロトコルの選択肢は世代で先に狭まるか？
+
+狭まります。世代・HA ペア数・ホスト OS の 3 条件が、選ぶ前に iSCSI か NVMe/TCP かを決めます。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- iSCSI と NVMe/TCP の選択が世代（NVMe/TCP は第 2 世代のみ）・HA ペア数（6 組以下）・ホスト OS で先に狭まること
+- 両者が同じ LIF を使い、NVMe/TCP のポート 4420 / 8009 が AWS のセキュリティグループ要件表に載っていないこと
+
+## このノートが答えないこと
+
+- iSCSI と NVMe/TCP の性能比較（含めない）
+- 7 組目の HA ペア追加時に既存 LUN と接続がどうなるか（AWS ドキュメント未記載）
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ブロックプロトコルの選択肢は世代と-ha-ペア数で先に狭まる"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **iSCSI と NVMe/TCP のどちらを使うかは、選ぶ前に 3 つの条件で狭まっています。**
 
 | 条件 | 効き方 |
 |---|---|
 | **世代** | **NVMe/TCP は第 2 世代のみ。** 第 1 世代では作り直し以外に道がありません |
-| **HA ペア数** | **どちらも 6 組以下。** 7 組目を足すと両方使えなくなり、**足した HA ペアは削除できません** |
+| **HA ペア数** | **どちらも 6 組以下のファイルシステムがサポート対象。** 7 組目追加時の遷移動作は文書化されておらず、**足した HA ペアは削除できません** |
 | **ホスト OS** | **Windows Server で NVMe/TCP は ONTAP 側で非対応です。** AWS に手順が無いのはその反映で、AWS 固有の制約ではありません（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)） |
 
 **世代と HA ペア数は作成後に変えられません。** プロトコルの比較を始める前にここを確認してください。
@@ -41,7 +62,7 @@ lang: ja
 
 ---
 
-## 列挙に現れないプロトコル
+### 列挙に現れないプロトコル
 
 **AWS のドキュメントが列挙するブロックプロトコルは iSCSI と NVMe/TCP の 2 つです。**
 [Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) と
@@ -57,24 +78,24 @@ lang: ja
 
 ---
 
-## 世代と HA ペア数
+### 世代と HA ペア数
 
 | 条件 | iSCSI | NVMe/TCP |
 |---|---|---|
 | 第 1 世代（`SINGLE_AZ_1` / `MULTI_AZ_1`） | **使える** | **使えない** |
 | 第 2 世代（`SINGLE_AZ_2` / `MULTI_AZ_2`） | 使える | **使える** |
 | HA ペア 1〜6 組 | 使える | 第 2 世代なら使える |
-| HA ペア 7 組以上 | **使えない** | **使えない** |
+| HA ペア 7 組以上 | **非サポート** | **非サポート** |
 
 **HA ペアを 7 組以上にできるのは第 2 世代の Single-AZ だけです。** つまり「ブロックを使いながらスケールアウトの上限まで伸ばす」ことはできません。**ブロックを使う構成の HA ペア上限は 6 組です。**
 
-**足した HA ペアは削除できません。** 7 組目を足した後にブロックが必要になったら、ファイルシステムを作り直すことになります。デプロイタイプと世代の不可逆性は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
+**足した HA ペアは削除できません。** ブロックが必要なら、6 組をファイルシステムの上限として設計します。デプロイタイプと世代の不可逆性は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
 
-**既存の LUN が 7 組目の追加でどうなるかは、AWS のドキュメントに記載がありません。** 「6 組を超えるファイルシステムではサポートされない」と書かれているだけです。**未記載を「消える」とも「残る」とも読み替えないでください。**
+**7 組目の追加中または追加後に既存 LUN と接続がどうなるかは、AWS のドキュメントに記載がありません。** 「6 組以下のファイルシステムで利用可能」と書かれているだけです。**未記載を「無効になる」「消える」「残る」のいずれにも読み替えないでください。**
 
 ---
 
-## LIF の共有とポートの差
+### LIF の共有とポートの差
 
 検証環境の LIF は次のとおりでした。
 
@@ -100,7 +121,7 @@ lang: ja
 
 ---
 
-## サービスは既定で有効
+### サービスは既定で有効
 
 **新規に作った SVM では、iSCSI サービスも NVMe サービスも既に有効でした。**
 
@@ -113,7 +134,7 @@ lang: ja
 
 ---
 
-## iSCSI と NVMe/TCP のオブジェクトの対応
+### iSCSI と NVMe/TCP のオブジェクトの対応
 
 **構造は同じで、名前が違います。**
 
@@ -139,7 +160,7 @@ lang: ja
 
 ---
 
-## 新しい Windows 向け `os_type` の不在
+### 新しい Windows 向け `os_type` の不在
 
 **AWS は「すべての Windows バージョンで `windows_2008` を使う」と指示しています。** これは慣習ではありませんでした。
 
@@ -155,7 +176,7 @@ Linux 側は `linux` です。igroup の `os_type` は LUN の `os_type` とは�
 
 ---
 
-## Windows の NVMe/TCP
+### Windows の NVMe/TCP
 
 **先に結論を書きます。ONTAP は Windows Server との NVMe/TCP をサポートしていません。** NetApp の KB が明示しており、Windows のサポート範囲はネイティブ NVMe ディスク（JBOD）に限られるとされています。回避策として NVMe/FC が挙げられていますが、**FSx for ONTAP は FC を提供しないので、この回避策は使えません。** Windows Server Insider Builds でのプレビューはあるものの、コマンドラインのみ・マルチパス無しという制約付きです（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)、2026-09-05 に確認）。
 
@@ -173,7 +194,7 @@ Linux 側は `linux` です。igroup の `os_type` は LUN の `os_type` とは�
 
 ---
 
-## Linux 側のカーネル構成という前提
+### Linux 側のカーネル構成という前提
 
 **Amazon Linux 2023 では NVMe/TCP のネイティブ multipath が有効になっていませんでした。** カーネル `6.18.44-99.149.amzn2023.x86_64` は `CONFIG_NVME_MULTIPATH is not set` で、**同じ namespace が 2 つのブロックデバイスとして見えました。**
 
@@ -183,7 +204,7 @@ Linux 側は `linux` です。igroup の `os_type` は LUN の `os_type` とは�
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -207,31 +228,14 @@ graph TD
     WIN --> SG
     NVME --> SG
     K2 --> SG
-    SG{セキュリティグループ}
+    SG[選択したプロトコルの<br/>セキュリティグループ規則]
     SG --> SG1["iSCSI: 3260"]
     SG --> SG2["NVMe-TCP: 4420 と 8009<br/>要件表に載っていない"]
 ```
 
 ---
 
-## 自環境での確認手順
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `aws fsx describe-file-systems --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'` | 世代と HA ペア数。**NVMe/TCP が選べるか** |
-| 2 | HA ペアを 7 組以上に増やす計画があるかを関係者と確認する | **計画があるならブロックは使えません** |
-| 3 | ホスト OS の一覧を作り、Windows が含まれるかを確認する | NVMe/TCP を選べる範囲 |
-| 4 | Linux ホストで `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **NVMe/TCP で multipath が成立するか** |
-| 5 | `network interface show -vserver <svm> -fields service-policy,address` で LIF と service を確認する | **iSCSI と NVMe/TCP が同じ LIF を使うこと** |
-| 6 | セキュリティグループの受信規則に 3260 と、NVMe/TCP を使うなら 4420 があるかを確認する | **要件表に 4420 がないため、iSCSI 用の規則では通りません** |
-| 7 | `vserver iscsi show` と `vserver nvme show` でサービスの状態を確認する | **既に有効なので作成する必要はありません** |
-| 8 | 検証環境で `os_type` に新しい Windows の値を指定して LUN 作成を試す | **拒否されることの確認。`windows_2008` を使う根拠** |
-
-手順 8 は**検証環境で行ってください。** 失敗する API 呼び出しを本番で試す操作です。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -243,12 +247,12 @@ graph TD
 | Windows Server 2022 なら `os_type` に新しい値がある | **`windows_2022` は拒否されました。** `windows_2008` を使います |
 | LUN と igroup の `os_type` は同じ値 | LUN は `windows_2008`、igroup は `windows` でした |
 | Windows で NVMe/TCP は使えない | **ドキュメントが沈黙しているだけです。** ただし手順がないものは本番の前提にできません |
-| HA ペアを増やしてブロックの帯域を伸ばせる | **7 組目から使えなくなります。** 上限は 6 組です |
-| 7 組目を足しても既存の LUN は残る | **記載がありません。** 未記載を「残る」と読み替えないでください |
+| HA ペアを増やしてブロックの帯域を伸ばせる | **ブロック構成は 6 組以下だけがサポート対象です。** 7 組目追加時の遷移動作は文書化されていません |
+| 7 組目の追加中も既存 LUN の接続は維持される | **記載がありません。** 未記載を遷移動作へ読み替えないでください |
 
 ---
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -264,12 +268,12 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
-| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-from-on-premises.html) · [AWS: Supported clients](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
-| 7 組目でブロックプロトコルがサポートされなくなること、追加した HA ペアが削除できないこと | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
+| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
+| 6 組以下がブロックプロトコルのサポート範囲であること、追加した HA ペアが削除できないこと。7 組目追加時の既存 LUN と接続の遷移動作は未記載 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | デプロイタイプと世代が作成後に変更できないこと、世代ごとのスループット選択肢 | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | `os_type` に `windows_2008` を使うこと、`space-allocation` の推奨、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 | NVMe/TCP の namespace → subsystem → map → host NQN の順序、ポート 4420 と discovery 8009、前提クライアントが RHEL 9.3 であること、`iscsi_1` が iSCSI と NVMe/TCP の両方に使われること | [AWS: Provisioning NVMe/TCP for Linux](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/provision-nvme-linux.html) |
@@ -280,7 +284,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
 - [ブロックプロトコルとレイアウトの決定木](../../../reference/decision-trees/block-protocol-and-layout.md) — この判断を 1 枚にしたもの
@@ -295,6 +299,37 @@ graph TD
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+## 自環境での確認手順
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | 世代と HA ペア数を確認する | **NVMe/TCP が選べるか** |
+| 2 | HA ペアを 7 組以上に増やす計画があるかを関係者と確認する | **計画があるならブロックは使えません** |
+| 3 | ホスト OS の一覧を作り、Windows が含まれるかを確認する | NVMe/TCP を選べる範囲 |
+| 4 | Linux ホストで `grep CONFIG_NVME_MULTIPATH /boot/config-$(uname -r)` | **NVMe/TCP で multipath が成立するか** |
+| 5 | `network interface show -vserver <svm> -fields service-policy,address` で LIF と service を確認する | **iSCSI と NVMe/TCP が同じ LIF を使うこと** |
+| 6 | セキュリティグループの受信規則に 3260 と、NVMe/TCP を使うなら 4420 があるかを確認する | **要件表に 4420 がないため、iSCSI 用の規則では通りません** |
+| 7 | `vserver iscsi show` と `vserver nvme show` でサービスの状態を確認する | **既に有効なので作成する必要はありません** |
+| 8 | 検証環境で `os_type` に新しい Windows の値を指定して LUN 作成を試す | **拒否されることの確認。`windows_2008` を使う根拠** |
+
+手順 8 は**検証環境で行ってください。** 失敗する API 呼び出しを本番で試す操作です。
+
+手順 1 の世代と HA ペア数は、次の読み取り専用コマンドで確認できます。
+
+```bash
+aws fsx describe-file-systems \
+  --query 'FileSystems[].OntapConfiguration.[DeploymentType,HAPairs]'
+```
+
+### 期待結果
+
+```text
+DeploymentType が SINGLE_AZ_2 / MULTI_AZ_2 なら第 2 世代で NVMe/TCP が選べる。
+HAPairs が 6 を超える計画があるならブロックは使えない（世代と HA ペア数は作成後に変えられない）
+```
+
+このコマンドはファイルシステムの構成を読むだけで、世代にも HA ペアにも変更を加えません。
+
+## Read next
+
+[LUN の並べ方が決めているのは何か？](lun-layout-decides-recovery-granularity.md)

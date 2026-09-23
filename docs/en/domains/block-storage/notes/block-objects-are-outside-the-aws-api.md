@@ -6,21 +6,42 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 source: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_FSx.html
 lang: en
 ---
 
-# LUNs and igroups are outside the AWS API
+# Can LUNs and igroups be operated through the AWS API?
+
+No. The boundary is between the volume and the LUN, and a block build procedure always crosses the control plane.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [English](block-objects-are-outside-the-aws-api.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That CloudFormation has only six Amazon FSx resource types, and that a LUN, igroup, NVMe subsystem, or namespace does not exist as one
+- That a build procedure moves from the AWS side to the ONTAP side, and that delete order, credentials, and drift detection split by control plane
+
+## What this note does not answer
+
+- A recommendation for a specific automation tool configuration (only the difference in reach is shown)
+- Whether NVMe/TCP can be completed with Terraform alone (check the provider's current version; not possible as of v2.7.1)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="luns-and-igroups-are-outside-the-aws-api"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **A block storage build procedure always moves partway from the AWS control plane to the ONTAP control plane. The boundary is between the volume and the LUN.**
 
@@ -32,11 +53,11 @@ CloudFormation's Amazon FSx resource types are **only six**: `DataRepositoryAsso
 
 > **Tier**: `documented` — the range of resource types and actions, and the resource names each tool provides, are based on official documentation and repositories (confirmed 2026-09-05).
 > **No specific tool configuration is recommended.** The differences in reach are shown.
-> The steps to confirm in your own environment are in [How to confirm in your own environment](#how-to-confirm-in-your-own-environment).
+> The steps to confirm in your own environment are in [Verify it in your environment](#verify-it-in-your-environment).
 
 ---
 
-## The position of the boundary
+### The position of the boundary
 
 | Object | AWS API / CloudFormation | ONTAP CLI / REST |
 |---|---|---|
@@ -54,7 +75,7 @@ CloudFormation's Amazon FSx resource types are **only six**: `DataRepositoryAsso
 
 **This is why AWS's block procedures all start with `ssh fsxadmin@<management endpoint>`.**
 
-### That a volume can be created from both, but how it appears changes with which side created it
+#### That a volume can be created from both, but how it appears changes with which side created it
 
 **The volume row says "reaches from both" in the sense that there is a choice. And which side you create it from changes monitoring and backup.**
 
@@ -77,13 +98,13 @@ This is the result of creating 2 volumes with the AWS API and 2 with the ONTAP C
 
 **A LUN can be created only on the ONTAP side, but its container, the volume, can be created on the AWS side.** If you run monitoring and backup on the AWS side, the split **volume on the AWS API, LUN on ONTAP** fits. **Making it "all ONTAP side because it is block" quietly falls out of monitoring.**
 
-The same point from the monitoring side is in [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md).
-
 > **Tier**: `verified` (verified 2026-09-05, `ap-northeast-1`, `MULTI_AZ_2` second generation, 1 HA pair, ONTAP 9.18.1P5) — the count mismatch and the absence of the `VolumeId` dimension.
+
+The same point from the monitoring side is in [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md).
 
 ---
 
-## The tools that reach the far side of the boundary
+### The tools that reach the far side of the boundary
 
 **There are four options, and their reach is not the same.**
 
@@ -100,7 +121,7 @@ The same point from the monitoring side is in [What block monitoring shows and d
 
 ---
 
-## The consequences of a procedure crossing the control plane
+### The consequences of a procedure crossing the control plane
 
 **The split "IaC up to the volume, a runbook from the LUN on" holds, but there is a price.**
 
@@ -116,7 +137,7 @@ The same point from the monitoring side is in [What block monitoring shows and d
 
 ---
 
-## Published implementation examples
+### Published implementation examples
 
 **Automation for block is gathered more in NetApp-side repositories than in AWS-side samples.**
 
@@ -132,7 +153,7 @@ The same point from the monitoring side is in [What block monitoring shows and d
 
 ---
 
-## The boundary that appears in the security group
+### The boundary that appears in the security group
 
 **The port requirements table is also split by control plane.**
 
@@ -148,7 +169,7 @@ The same point from the monitoring side is in [What block monitoring shows and d
 
 ---
 
-## The build flow
+### The build flow
 
 ```mermaid
 graph TD
@@ -178,23 +199,7 @@ graph TD
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Confirm the output of `aws fsx help` has no LUN or igroup operations | The position of the boundary |
-| 2 | Open the CloudFormation Amazon FSx resource type list and confirm there are six | The range the template can reach |
-| 3 | Connect with `ssh fsxadmin@<management endpoint>` and confirm `lun show` works | The ONTAP-side reach path |
-| 4 | Send `GET /api/storage/luns` to the ONTAP REST API | The path usable for automation |
-| 5 | If using Terraform, confirm whether the **current** NetApp provider's resource list has `nvme_subsystem` | **That NVMe/TCP cannot be completed with Terraform alone in v2.7.1. If it has been added, the premise changes** |
-| 6 | In a test environment, try to delete a volume with a LUN still mapped, and record the error returned | The delete-order dependency, and that the reason is not returned from the AWS side |
-| 7 | Re-read the build runbook and confirm the handoff of the AWS credentials and the `fsxadmin` credentials is written | Whether the runbook can cross the control plane |
-
-Do step 6 **in a test environment.** It is not an operation to try deleting a production volume.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -208,7 +213,7 @@ Do step 6 **in a test environment.** It is not an operation to try deleting a pr
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -224,7 +229,7 @@ Do step 6 **in a test environment.** It is not an operation to try deleting a pr
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [The IaC boundary is decided by the API surface, not by preference (日本語)](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — the general boundary and the reason volume deletion fails
@@ -234,6 +239,36 @@ Do step 6 **in a test environment.** It is not an operation to try deleting a pr
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of published IaC
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [English](block-objects-are-outside-the-aws-api.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Confirm the output of `aws fsx help` has no LUN or igroup operations | The position of the boundary |
+| 2 | Open the CloudFormation Amazon FSx resource type list and confirm there are six | The range the template can reach |
+| 3 | Connect with `ssh fsxadmin@<management endpoint>` and confirm `lun show` works | The ONTAP-side reach path |
+| 4 | Send `GET /api/storage/luns` to the ONTAP REST API | The path usable for automation |
+| 5 | If using Terraform, confirm whether the **current** NetApp provider's resource list has `nvme_subsystem` | **That NVMe/TCP cannot be completed with Terraform alone in v2.7.1. If it has been added, the premise changes** |
+| 6 | In a test environment, try to delete a volume with a LUN still mapped, and record the error returned | The delete-order dependency, and that the reason is not returned from the AWS side |
+| 7 | Re-read the build runbook and confirm the handoff of the AWS credentials and the `fsxadmin` credentials is written | Whether the runbook can cross the control plane |
+
+Do step 6 **in a test environment.** It is not an operation to try deleting a production volume.
+
+The ONTAP REST path in step 4 can be confirmed with this read-only command.
+
+```bash
+curl -sk -u fsxadmin "https://<management-endpoint>/api/storage/luns?return_records=false"
+```
+
+### Expected output
+
+```text
+num_records returns the LUN count (the block objects live in the ONTAP-side control plane).
+aws fsx / CloudFormation has no corresponding resource, so the build procedure crosses the
+control plane.
+```
+
+This command only reads the LUN count; it changes nothing on the LUN or the volume. State the order "remove the LUN map, then the volume" explicitly in the runbook for deletion.
+
+## Read next
+
+[Where is capacity counted?](capacity-is-counted-in-three-places.md)

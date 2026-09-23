@@ -1,5 +1,5 @@
 ---
-title: p99 は CloudWatch のメトリクスからは出せない — ベンチマークはクレジット残高込みで設計する
+title: ボリュームの操作時間メトリクスから p99 は出せない — ベンチマークはクレジット残高込みで設計する
 lifecycle: [optimize, operate]
 domains: [performance, cost]
 evidence: documented
@@ -7,25 +7,46 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html
 lang: ja
 ---
 
-# p99 は CloudWatch のメトリクスからは出せない
+# Amazon FSx for NetApp ONTAP の CloudWatch メトリクスから p99 を読めるか？
+
+ボリュームの操作時間と回数から得られるのは平均で、p99 は別の分布計測が必要です。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](what-you-cannot-read-from-cloudwatch.md) | [English](../../../../en/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
 
+## このノートで学べること
+
+- operation-time と operation-count の Sum から得られるのが期間平均であり、p99 ではないこと。
+- クレジット残高、キャッシュ、共有帯域、統計と次元をベンチマーク条件に含める理由。
+
+## このノートが答えないこと
+
+- CloudWatch 全体でパーセンタイル統計を利用できるかどうか。
+- 自環境の p99 または持続スループットの実測値。
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+<a id="ボリュームの操作時間メトリクスから-p99-は出せない"></a>
+<a id="p99-は-cloudwatch-のメトリクスからは出せない"></a>
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
 ---
 
-## 結論
+### 結論
 
-**ボリュームのレイテンシは、CloudWatch のメトリクスからは平均しか得られません。**
+**FSx for ONTAP のボリューム操作レイテンシは、CloudWatch の operation-time/count メトリクスペアからは平均しか得られません。CloudWatch 全体にパーセンタイルがないという意味ではありません。**
 
-`DataReadOperationTime` は読み取り操作に費やされた**時間の合計**で、有効な統計は `Sum` です。`DataReadOperations` も操作**回数の合計**で、有効な統計は `Sum` です。
+`DataReadOperationTime` / `DataReadOperations`、`DataWriteOperationTime` / `DataWriteOperations`、`MetadataOperationTime` / `MetadataOperations` は、時間と回数の合計で、有効な統計はどちらも `Sum` です。
 
-つまりレイテンシは **合計時間 ÷ 合計回数** で求めることになり、**構造上その期間の平均になります。** テール（p99）は含まれていません。
+各ペアの **合計時間 ÷ 合計回数** で求められるのは、その期間の平均です。これらのペアにはリクエスト分布がなく、テール（p99）は含まれません。
 
-**p99 が必要なら、クライアント側で測るしかありません。** ストレージ側のメトリクスをいくら細かく見ても出てきません。
+**p99 が必要なら、クライアント計測やリクエスト単位の別テレメトリで分布を取得します。** 一方、FSx for ONTAP のファイルシステム・第 2 世代メトリクスには `Average` / `Minimum` / `Maximum` を利用できる系列があり、第 2 世代では `FileServer` や `Aggregate` ごとのデータポイントもあります。飽和監視には、目的に合う統計と次元を選びます。
 
 そしてもう 1 つ。**ベンチマークはバースト用のクレジット残高に影響されます。** ファイルシステムはベースラインを下回っているときにクレジットを蓄積し、それを使ってベースラインを超える速度を出します。**同じ試験を残高が減った状態で再実行すると、違う数値が出ます。**
 
@@ -34,7 +55,7 @@ lang: ja
 
 ---
 
-## 性能を決めている 3 つの要素
+### 性能を決めている 3 つの要素
 
 クライアントは ENI 経由でファイルサーバーにアクセスします。**各ファイルサーバーには高速なインメモリキャッシュと NVMe キャッシュがあります。** その背後に SSD ディスクがあります。
 
@@ -50,7 +71,7 @@ lang: ja
 
 ---
 
-## キャッシュが効く条件
+### キャッシュが効く条件
 
 **キャッシュに載るのはアクティブなワーキングセットです。** したがって条件は 1 つに集約されます。
 
@@ -68,7 +89,7 @@ lang: ja
 
 ---
 
-## プロトコル間での帯域の分け合い方
+### プロトコル間での帯域の分け合い方
 
 **プロトコルごとの割り当てはありません。**
 
@@ -84,7 +105,7 @@ lang: ja
 
 ---
 
-## ベンチマークを壊すバーストとクレジット
+### ベンチマークを壊すバーストとクレジット
 
 **ファイルベースのワークロードはスパイク型です。** 短時間の高い I/O と、その間の待機で構成されます。
 
@@ -92,7 +113,7 @@ lang: ja
 
 **バーストはネットワーク I/O クレジット機構で管理されます。** 平均利用率に基づいて配分され、**ファイルシステムはスループットと IOPS がベースラインを下回っているときにクレジットを蓄積します。**
 
-### ベンチマークへの影響
+#### ベンチマークへの影響
 
 | 状況 | 測れる数値 |
 |---|---|
@@ -102,7 +123,7 @@ lang: ja
 
 **残高は `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` で見られます。** この 2 つは他のメトリクスと違い **5 分間隔**で送信されます。粒度の一覧は [監視の粒度と保持](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#監視の粒度と保持) にあります。
 
-### 段差の大きさと、落ちるまでの時間
+#### 段差の大きさと、落ちるまでの時間
 
 **上の表は機構で、大きさは書いていませんでした。** 実測が [引用元](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) にあります（第二世代 `SINGLE_AZ_2`、指定値 1,536 MBps、1 MiB 逐次読み、1,800 GiB のファイル）。
 
@@ -127,7 +148,7 @@ lang: ja
 
 > **持続時間の 27 分は 1 回の観測です。** 消費と回復の傾きはそれぞれ 4 点以上で線形ですが、**持続時間そのものは 2 回測られていません。** 再現性は傾きについて言えることで、持続時間については言えません。
 
-### 枠が無い構成における残枠メトリクスの不在
+#### 枠が無い構成における残枠メトリクスの不在
 
 **指定値を上げるとバースト枠そのものが無くなります。** 公開仕様のディスクバースト列は 3,072 以上で「—」になり、引用元は 6,144 で**30 分間減衰しないこと**を実測しています（1,536 で見えた段差が無い）。
 
@@ -144,7 +165,7 @@ lang: ja
 
 ---
 
-## 再現できるベンチマークの条件
+### 再現できるベンチマークの条件
 
 **「同じ手順」では足りません。同じ状態から始める必要があります。**
 
@@ -154,24 +175,24 @@ lang: ja
 | 試験の継続時間 | 短い試験はバーストを測ります |
 | リージョン・世代・デプロイタイプ | 上限そのものが変わります |
 | スループット容量と SSD IOPS の設定値 | 3 つの性能特性すべてに効きます |
-| HA ペア数とボリュームスタイル（FlexVol / FlexGroup） | FlexVol は 1 ペアを超えられません |
+| HA ペア数とボリュームスタイル（FlexVol / FlexGroup） | ファイルシステム全体の上限と、FlexVol が配置される 1 HA ペアの aggregate を区別します |
 | 階層化ポリシーと cooling period | 読み取り元が SSD か容量プールかが変わります |
 | 同時に走っていた背景タスク | 同じ帯域を使います |
-| クライアント側の測定値（**テール含む**） | ストレージ側からは平均しか出ません |
-| 統計値（Average / Maximum） | 平均は飽和を隠します |
+| クライアント側またはリクエスト単位の測定値（**テール含む**） | ボリュームの operation-time/count ペアは平均だけなので、分布を別に取得します |
+| 統計値と次元（Average / Minimum / Maximum、`FileServer` / `Aggregate`） | 平均と集約は飽和を隠すため、目的に合わせて選びます |
 
 **最後の 2 行がこのリポジトリで繰り返し出てくる論点です。** 理由は [監視は平均値で失敗する](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) にあります。
 
 ---
 
-## 測定フロー
+### 測定フロー
 
 ```mermaid
 graph TD
     A[性能を評価したい] --> Q{何を知りたいか}
 
     Q -->|平均レイテンシ| AVG["DataReadOperationTime の Sum を<br/>DataReadOperations の Sum で割る"]
-    Q -->|テール p99| TAIL["ストレージ側からは出せない<br/>クライアントで測る"]
+    Q -->|テール p99| TAIL["ボリュームの operation-time/count ペアにはない<br/>リクエスト単位の分布を別に測る"]
     Q -->|持続性能| SUS[クレジット残高を先に確認]
     Q -->|バースト性能| BURST[残高が十分な状態で短時間]
 
@@ -189,32 +210,11 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-**最初に確かめるのは、いま見ている数値が平均なのかテールなのかです。**
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `DataReadOperationTime` ÷ `DataReadOperations` で平均レイテンシを出す | **これが平均であること。** テールは含まれません |
-| 2 | クライアント側でレイテンシ分布を測り、p99 を出す | **ストレージ側の平均との差。** テールの実測です |
-| 3 | 試験前に `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` を記録する | バーストを測るのか持続を測るのか |
-| 4 | 同じ試験を残高が減った状態で再実行し、数値を比べる | **クレジットの影響量。** 再現性の根拠になります |
-| 5 | 試験を段階的に長くし、数値が落ちる点を探す | ベースラインに落ちるまでの時間 |
-| 6 | ワーキングセットのサイズを推定し、スループット容量を変えて比べる | キャッシュに収まっているか |
-| 7 | 片方のプロトコルに負荷をかけ、他方のレイテンシを観測する | **プロトコル間の干渉の実測。** 分離が必要かの判断 |
-| 8 | 背景タスクが走っている時間帯と走っていない時間帯で比べる | 背景タスクの影響量 |
-
-手順 3 と 4 を飛ばしたベンチマークは、**同じ手順を踏んでも再現しません。** ここが最も見落とされます。
-
-手順 2 は「ストレージが遅いのか、経路やクライアントが遅いのか」の切り分けにもなります。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
-| CloudWatch で p99 が見られる | **合計から平均を求める形しか用意されていません。** テールはクライアント側で測ります |
+| CloudWatch で FSx for ONTAP の p99 が一切見られない | **ボリュームの read/write/metadata operation-time/count ペアからは平均だけを算出できます。** CloudWatch 全体や他のメトリクスの統計まで否定するものではありません |
 | レイテンシのメトリクスがある | 時間の**合計**と回数の**合計**があり、割って平均を出します |
 | ベンチマークは手順が同じなら再現する | **クレジット残高が違えば数値が変わります** |
 | 短時間の試験で持続性能が分かる | 短い試験はバーストを測ります。**実測では 2.0 倍ずれ、ずれる向きは常に過大評価です** |
@@ -229,11 +229,13 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
-| `DataReadOperationTime` が時間の合計で有効統計が `Sum` であること、`DataReadOperations` / `DataWriteOperations` / `MetadataOperations` が回数の合計で有効統計が `Sum` であること | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
+| `DataReadOperationTime` / `DataReadOperations`、`DataWriteOperationTime` / `DataWriteOperations`、`MetadataOperationTime` / `MetadataOperations` が合計値で、有効統計が `Sum` であること | [AWS: Volume metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-metrics.html) |
+| ファイルシステムメトリクスの統計とデータポイントの集約方法 | [AWS: File system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-system-metrics.html) |
+| 第 2 世代メトリクスの有効統計と `FileServer` / `Aggregate` 次元 | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
 | 各ファイルサーバーにインメモリキャッシュと NVMe キャッシュがあること、3 つの性能特性、ネットワーク I/O とキャッシュサイズがスループット容量のみで決まりディスク I/O はスループット容量と SSD IOPS の組み合わせで決まること、ファイルベースのワークロードがスパイク型であること、バーストとネットワーク I/O クレジット機構、ベースラインを下回るとクレジットが蓄積されること | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
 | `NetworkThroughputUtilization` が HA ペア 1 組分に対する比率で、背景タスクを含む全トラフィックを対象にすること | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
 | `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` が 5 分間隔で送信されること | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
@@ -243,7 +245,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — 性能](../README.md) — このモジュールのハブ
 - [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md) — 上限の決まり方と HA ペア単位の共有
@@ -257,6 +259,45 @@ graph TD
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — 性能](../README.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](what-you-cannot-read-from-cloudwatch.md) | [English](../../../../en/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+---
+
+## 自環境での確認手順
+
+**最初に確かめるのは、いま見ている数値が平均なのかテールなのかです。**
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `DataReadOperationTime` ÷ `DataReadOperations` で平均レイテンシを出す | **これが平均であること。** テールは含まれません |
+| 2 | クライアント側またはリクエスト単位の別テレメトリでレイテンシ分布を測り、p99 を出す | **ボリュームの operation-time/count ペア平均との差。** テールの実測です |
+| 3 | 試験前に `FileServerDiskThroughputBalance` と `FileServerDiskIopsBalance` を記録する | バーストを測るのか持続を測るのか |
+| 4 | 同じ試験を残高が減った状態で再実行し、数値を比べる | **クレジットの影響量。** 再現性の根拠になります |
+| 5 | 試験を段階的に長くし、数値が落ちる点を探す | ベースラインに落ちるまでの時間 |
+| 6 | ワーキングセットのサイズを推定し、スループット容量を変えて比べる | キャッシュに収まっているか |
+| 7 | 片方のプロトコルに負荷をかけ、他方のレイテンシを観測する | **プロトコル間の干渉の実測。** 分離が必要かの判断 |
+| 8 | 背景タスクが走っている時間帯と走っていない時間帯で比べる | 背景タスクの影響量 |
+
+手順 3 と 4 を飛ばしたベンチマークは、**同じ手順を踏んでも再現しません。** ここが最も見落とされます。
+
+手順 2 は「ストレージが遅いのか、経路やクライアントが遅いのか」の切り分けにもなります。
+
+次のローカル計算は、同一期間・同一ボリュームの operation-time Sum と operation-count Sum から期間平均だけを算出します。
+
+```bash
+python3 -c \
+  'import sys; print(float(sys.argv[1]) / float(sys.argv[2]))' \
+  <operation-time-sum> <operation-count-sum>
+```
+
+### 期待結果
+
+```text
+<入力メトリクスと同じ時間単位の期間平均>
+```
+
+この計算だけでは、入力メトリクスの正しさ、リクエスト分布、p99、クレジット残高、持続性能は確認できません。表の残りの手順を別に実施してください。
+
+---
+
+## Read next
+
+[Domain — 性能](../README.md)

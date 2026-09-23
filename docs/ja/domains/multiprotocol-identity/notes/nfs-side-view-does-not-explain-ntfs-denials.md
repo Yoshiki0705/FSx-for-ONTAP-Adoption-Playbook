@@ -6,18 +6,40 @@ evidence: verified
 verified_on: 2026-09-12
 region: ap-northeast-1
 ontap_version: 9.18.1P6
+deployment_type: SINGLE_AZ_1
 lang: ja
 ---
-# NTFS スタイルのボリュームでは、NFS 側から見える権限表現が実際の可否と一致しない
+# NFS 側の権限表現は実際の可否と一致するか？
+
+一致しません。NTFS スタイルでは NFS 側に Deny も主体名も現れず、答えは ONTAP 側にあります。
+
 <!-- lang-switcher:start -->
 🌐 [日本語](nfs-side-view-does-not-explain-ntfs-denials.md) | [English](../../../../en/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 リポジトリトップ](../../../../../README.md)
 <!-- lang-switcher:end -->
+
+## このノートで学べること
+
+- NTFS スタイルのボリュームで、NFS 側に見える権限表現（mode bits / nfs4_getfacl）が実際の可否と一致しないこと
+- 使える答えが ONTAP の effective-permissions 側にあり、その経路に ONTAP 資格情報が要ること
+
+## このノートが答えないこと
+
+- グループ ACE・サービスアカウント・移行で持ち込んだボリュームでの挙動（未確定）
+- NFSv4 ACL 有効化の性能影響
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="ntfs-スタイルのボリュームではnfs-側から見える権限表現が実際の可否と一致しない"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — マルチプロトコル・ID](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **同じデータに NFS から到達できることと、NFS 側から権限を説明できることは別です。** NTFS
 セキュリティスタイルのボリュームでは、`nfs4_getfacl` が返すのは合成された 3 エントリ
@@ -32,7 +54,7 @@ lang: ja
 トリが、mode bits も NFSv4 ACL も完全に同一でした**。NFS 側の表現だけでは、この 2 つを区別でき
 ません。
 
-### 使える答えの所在
+#### 使える答えの所在
 
 **ONTAP の `effective-permissions` は、実測した全ケースで実際の可否と一致しました。** 拒否された
 ディレクトリでは返る一覧から `write` / `append` / `write_ea` / `write_attributes` が落ち、許可された
@@ -45,7 +67,7 @@ lang: ja
 判定の順序は [プロトコルを変えたあと「誰がこのファイルにアクセスできるか」をどこで確認するか](../../../reference/decision-trees/verifying-permissions-after-a-protocol-change.md)
 にまとめてあります。
 
-### 明日から変えること
+#### 明日から変えること
 
 | # | 対象 | 理由 |
 |---|---|---|
@@ -61,7 +83,7 @@ lang: ja
 > 実在の組織情報は含みません。規制対象のワークロードに適用する場合、ここにあるのは技術的な挙動の
 > 記録であり、**法務・コンプライアンス・プライバシーの評価を代替しません。**
 
-## 背景
+### 背景
 
 モダナイゼーションでプロトコルを SMB から NFS へ変えたあと、運用は Linux 側から権限を確認しよう
 とします。`ls -l` と `nfs4_getfacl` が使える以上、それで説明がつくと考えるのが自然です。
@@ -70,9 +92,9 @@ lang: ja
 あり、NFS クライアントに見える mode bits と NFSv4 ACL は **ONTAP が合成した射影**です。射影は
 Deny を表現できず、主体を名前で持ちません。
 
-## 詳細
+### 詳細
 
-### 3 点セットの記録
+#### 3 点セットの記録
 
 権限の結果は 3 つ揃って初めて使えます。設定した ACE / NFS 側の表現 / 実際の成否です。
 
@@ -106,7 +128,7 @@ UNIX スタイル `/unixvol`（対照群、Windows ACE は一切設定してい�
 | `deny/` | 755 | 同上 | ok | **ok** |
 | `inherited/child` | 755 | 同上 | ok | ok |
 
-### 表現が可否を説明しない 3 つの形
+#### 表現が可否を説明しない 3 つの形
 
 1. **Deny が現れない。** NFSv4 ACL は `A:`（allow）3 件のみで、`D:`（deny）エントリは 1 件も
    ありません。書き込みを止めているのは Windows の Deny ACE です。
@@ -116,7 +138,7 @@ UNIX スタイル `/unixvol`（対照群、Windows ACE は一切設定してい�
    （どちらも 755）も NFSv4 ACL も一致し、結果は拒否と成功に分かれました。**表現が同じで結果が
    違うのだから、表現は判断材料になりません。**
 
-### owner 表示が `nobody` になる別の落とし穴
+#### owner 表示が `nobody` になる別の落とし穴
 
 クライアントは owner を `nobody(65534)` と表示しました。ONTAP は owner を `MPAD\mpadtest` と報告
 しています。原因は NFSv4 の ID ドメイン不一致で、SVM の `v4_id_domain` は既定で
@@ -126,7 +148,7 @@ UNIX スタイル `/unixvol`（対照群、Windows ACE は一切設定してい�
 これが 755 の解釈を壊します。`755` は「owner は書ける」と読めますが、owner が誰なのかをクライア
 ントは解決できていません。**owner を解決できない状態の mode bits は、可否の説明として使えません。**
 
-### name-mapping の replacement でバックスラッシュが消えること
+#### name-mapping の replacement でバックスラッシュが消えること
 
 **測定を始める前に、この 1 文字で全アクセスが拒否されました。** NTFS スタイルのボリュームでは
 UNIX の UID を Windows のアカウントへ対応付ける必要があり、その規則の replacement に
@@ -166,7 +188,7 @@ export policy は正しい状態でした。
 2 つ目は測定にそのまま使う経路なので、**マッピングの確認を別途行う必要がありません。** 先にこれを
 1 回叩けば、この節の失敗は測定前に検出できます。
 
-### NFSv4 ACL は既定で無効
+#### NFSv4 ACL は既定で無効
 
 そもそも `nfs4_getfacl` は最初「Operation to request attribute not supported」を返しました。SVM の
 NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**どちらも既定で false**
@@ -178,7 +200,7 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
 なお `nfs4_getfacl` は「not supported」を出力しながら**終了ステータス 0 を返します**。`$?` だけを
 見る記録は、読めていない表現を「読めた」と記録します。
 
-## 検証環境
+### 検証環境
 
 | 項目 | 値 |
 |---|---|
@@ -194,7 +216,7 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
 > **注意**: 上記はこの環境での実測であり、一般的なサービス上限や本番環境での再現を保証するもの
 > ではありません。
 
-### 結果の限界（測定前に固定した判定に対して）
+#### 結果の限界（測定前に固定した判定に対して）
 
 - `allow/` は識別力がありません。ボリュームルートから継承された `Everyone` full control が
   すでに書き込みを許可しているため、成功が ACE の効果だとは言えません。
@@ -204,7 +226,7 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
   を落として返しました。
 - したがって本ノートの結論は `deny/` と対照群の比較に依拠しており、`allow/` には依拠していません。
 
-## 未確定の項目
+### 未確定の項目
 
 **測っていないことを列挙します。** 本ノートの結論はユーザー 1 名の ACE に対する実測で、以下は
 いずれも同じ挙動になると推測できるだけで、確認していません。
@@ -216,6 +238,24 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
 | 3 | 移行で持ち込んだボリューム | 実測は空のボリュームに作ったディレクトリに対するものです。既存 ACL を持つボリュームを移行した場合を測っていません |
 | 4 | NFSv4 ACL を有効化した際の性能影響 | 有効化は本ノートの測定に必要でしたが、**性能への影響は測っていません。** 無償と仮定しないでください |
 | 5 | ボリュームルートの継承 `Everyone` を外した場合 | 実測では `allow/` の識別力がこれで失われました。除去した状態での再測は未実施です |
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| NFS から見えないなら権限が失われている | 失われていません。評価は Windows ACL で行われ、拒否は実際に効いています。見えないのは表現だけです |
+| `nfs4_getfacl` が空なら ACL がない | 既定で ACL 属性自体が無効です。有効化し、さらに再マウントするまで読めません |
+| `nfs4_getfacl` が終了コード 0 なら読めた | 「not supported」を出力しながら 0 を返します。出力が `# file:` で始まるかで判定してください |
+| mode bits 755 なら owner は書ける | owner を解決できていない場合（`nobody` 表示）その読み方は成立しません。実測では owner 本人の書き込みが拒否されました |
+| セキュリティスタイルを揃えれば表現も揃う | mode bits と NFSv4 ACL は NTFS 拒否と UNIX 許可で同一になりました。揃っているのは表現であって挙動ではありません |
+
+### 関連ドキュメント
+
+- [プロトコルを変えたあと「誰がこのファイルにアクセスできるか」をどこで確認するか](../../../reference/decision-trees/verifying-permissions-after-a-protocol-change.md) — **移行元の構成からの読み替え**。いまの確認手段が移行後も使えるかを判定します
+- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md)
+- [SMB で運用中のボリュームに NFS を足すのに複製は要らない](adding-a-protocol-does-not-need-a-clone.md)
+- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) — 再現環境
+- [エビデンス方針](../../../evidence-policy.md)
 
 ## 自環境での確認手順
 
@@ -233,24 +273,20 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
 再現用の最小環境とスクリプトは
 [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) にあります。
 
-## よくある誤解
+NFS 側の表現が読める状態かは、次の読み取り専用コマンドで確認できます。
 
-| 誤解 | 実際 |
-|---|---|
-| NFS から見えないなら権限が失われている | 失われていません。評価は Windows ACL で行われ、拒否は実際に効いています。見えないのは表現だけです |
-| `nfs4_getfacl` が空なら ACL がない | 既定で ACL 属性自体が無効です。有効化し、さらに再マウントするまで読めません |
-| `nfs4_getfacl` が終了コード 0 なら読めた | 「not supported」を出力しながら 0 を返します。出力が `# file:` で始まるかで判定してください |
-| mode bits 755 なら owner は書ける | owner を解決できていない場合（`nobody` 表示）その読み方は成立しません。実測では owner 本人の書き込みが拒否されました |
-| セキュリティスタイルを揃えれば表現も揃う | mode bits と NFSv4 ACL は NTFS 拒否と UNIX 許可で同一になりました。揃っているのは表現であって挙動ではありません |
+```bash
+curl -X GET -u fsxadmin -k "https://<管理エンドポイント>/api/protocols/nfs/services/<svm-uuid>?fields=v41_features.acl_enabled,v4_id_domain"
+```
 
-## 関連ドキュメント
+### 期待結果
 
-- [プロトコルを変えたあと「誰がこのファイルにアクセスできるか」をどこで確認するか](../../../reference/decision-trees/verifying-permissions-after-a-protocol-change.md) — **移行元の構成からの読み替え**。いまの確認手段が移行後も使えるかを判定します
-- [ボリュームのセキュリティスタイルが権限評価のモデルを決める](security-style-and-permission-evaluation.md)
-- [SMB で運用中のボリュームに NFS を足すのに複製は要らない](adding-a-protocol-does-not-need-a-clone.md)
-- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/README.md) — 再現環境
-- [エビデンス方針](../../../evidence-policy.md)
+```text
+acl_enabled が true か、v4_id_domain が AD ドメインと一致するか
+```
 
-<!-- lang-switcher:start -->
-🌐 [日本語](nfs-side-view-does-not-explain-ntfs-denials.md) | [English](../../../../en/domains/multiprotocol-identity/notes/nfs-side-view-does-not-explain-ntfs-denials.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
+この確認で分かるのは NFS 側の表現が読める前提が整っているかだけです。実際の可否は effective-permissions と実書き込みで確認します。何も変更しません。
+
+## Read next
+
+[SMB のエラー文字列は原因を名指すか？](smb-errors-do-not-name-their-cause.md)

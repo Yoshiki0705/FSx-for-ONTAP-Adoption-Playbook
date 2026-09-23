@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: en
 ---
 
-# NVMe/TCP is thin on the AWS side across the board
+# Is NVMe/TCP thin on the AWS side?
+
+Yes. It is consistently absent from three places: the security-group requirements table, the protocol list, and the API.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [English](nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That the NVMe/TCP ports (data 4420, discovery 8009) are absent from AWS's security-group requirements table, so designing from the table alone leaves NVMe/TCP unable to connect
+- That `describe-storage-virtual-machines`'s `Nvme` returns `null`, so the connection address cannot be obtained from the AWS API alone
+
+## What this note does not answer
+
+- Whether 4420 and 8009 alone are exhaustive for a connection (no negative control was taken; unconfirmed)
+- Public primary sources stating 8009 as a port to open (none found; established by measurement)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="nvmetcp-is-thin-on-the-aws-side-across-the-board"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **The FSx for ONTAP security-group requirements table does not list the NVMe/TCP ports.** It does list iSCSI's TCP 3260. So **if you design a security group from the requirements table alone, NVMe/TCP will not connect.**
 
@@ -37,7 +58,7 @@ lang: en
 
 ---
 
-## The scope searched, and the result
+### The scope searched, and the result
 
 **As of 2026-09-12, the following three pages were read through.**
 
@@ -53,7 +74,7 @@ As for 8009, **no mention could be found in any of the above.** The absence of a
 
 ---
 
-## The procedure to follow when designing a security group
+### The procedure to follow when designing a security group
 
 **Start from the requirements table and add per-protocol from the procedure pages.** Not treating the table as an exhaustive list is this note's practical consequence.
 
@@ -67,17 +88,17 @@ The CloudFormation used by the [30-minute quickstart](../quickstart.md) opens iS
 
 ---
 
-## The consequence of not being able to get the NVMe endpoint from the AWS API
+### The consequence of not being able to get the NVMe endpoint from the AWS API
 
 The `Endpoints` of `describe-storage-virtual-machines` does not include `Nvme`; it returns `null`. This does not change even when NVMe/TCP is actually reachable.
 
 **So the connection address cannot be obtained from the AWS API alone.** It uses the same two addresses as iSCSI, but to learn them you read the `Iscsi` endpoint or look at `network interface show` on the ONTAP side. In our measurement the `services` of `iscsi_1` / `iscsi_2` contained both `data-iscsi` and `data-nvme-tcp`, so **the same two addresses served both protocols.**
 
-This is the same dividing line as [LUNs and igroups are outside the AWS API (日本語)](block-objects-are-outside-the-aws-api.md), but **that one is "cannot be created through the AWS API" and this one is "cannot be read through the AWS API".** It is separated as a matter of reading a running configuration rather than creating one.
+This is the same dividing line as [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md), but **that one is "cannot be created through the AWS API" and this one is "cannot be read through the AWS API".** It is separated as a matter of reading a running configuration rather than creating one.
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -93,20 +114,7 @@ This is the same dividing line as [LUNs and igroups are outside the AWS API (日
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | `network interface show -vserver <svm> -lif <iscsi_lif> -fields services` | Whether that address serves `data-nvme-tcp`. Whether the iSCSI addresses can be used as-is is decided here |
-| 2 | On the client, run `nvme discover -t tcp -a <lif_ip> -s 8009` and `nvme connect-all -t tcp -a <lif_ip>`, then read `trsvcid` with `nvme list-subsys` | Which port discovery and data each used |
-| 3 | **Create a new security group allowing only 4420 and 8009, attach only it, and re-run step 2** | **Exhaustiveness.** If this passes, you can write "two are enough." We have not done this |
-| 4 | `aws fsx describe-storage-virtual-machines --storage-virtual-machine-ids <id> --query 'StorageVirtualMachines[].Endpoints'` | Whether `Nvme` is returned. If it is `null` in your environment too, build the procedure on the premise that the address is taken from the ONTAP side |
-
-For the overall application procedure, see [Before adopting into production](../../../evidence-policy.md#before-adopting-into-production).
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -118,13 +126,40 @@ For the overall application procedure, see [Before adopting into production](../
 
 ---
 
-## Related documents
+### Related documents
 
-- [The block protocol choice is narrowed first by generation and HA pair count (日本語)](protocol-choice-is-bounded-before-you-choose.md) — the decision of which to choose
-- [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — path count and failover after connecting. **NVMe/TCP cannot form native multipath on Amazon Linux 2023**
-- [LUNs and igroups are outside the AWS API (日本語)](block-objects-are-outside-the-aws-api.md) — the dividing line on the creation side
+- [The block protocol choice is narrowed first by generation and HA pair count](protocol-choice-is-bounded-before-you-choose.md) — the decision of which to choose
+- [Paths are the failover mechanism itself](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) — path count and failover after connecting. **NVMe/TCP cannot form native multipath on Amazon Linux 2023**
+- [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — the dividing line on the creation side
 - [The 30-minute block storage quickstart](../quickstart.md) — CloudFormation that opens iSCSI only
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [English](nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | `network interface show -vserver <svm> -lif <iscsi_lif> -fields services` | Whether that address serves `data-nvme-tcp`. Whether the iSCSI addresses can be used as-is is decided here |
+| 2 | On the client, run `nvme discover -t tcp -a <lif_ip> -s 8009` and `nvme connect-all -t tcp -a <lif_ip>`, then read `trsvcid` with `nvme list-subsys` | Which port discovery and data each used |
+| 3 | **Create a new security group allowing only 4420 and 8009, attach only it, and re-run step 2** | **Exhaustiveness.** If this passes, you can write "two are enough." We have not done this |
+| 4 | Read the `Endpoints` of `aws fsx describe-storage-virtual-machines` | Whether `Nvme` is returned. If it is `null` in your environment too, build the procedure on the premise that the address is taken from the ONTAP side |
+
+For the overall application procedure, see [Before adopting into production](../../../evidence-policy.md#before-adopting-into-production).
+
+The service assignment in step 1 can be confirmed with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> network interface show -vserver <svm> -fields services
+```
+
+### Expected output
+
+```text
+The iSCSI LIF's services include data-nvme-tcp (the same two addresses serve both protocols).
+Add 4420 and 8009 to the security group -- they are absent from the requirements table, so the
+procedure pages have to fill the gap.
+```
+
+This command only reads the LIF's services; it changes nothing on the LIF or the security group. The connection address cannot be obtained from the AWS API's `Nvme`, so take it from the `Iscsi` side or the ONTAP side.
+
+## Read next
+
+[Does `volume rehost` change only the owning SVM?](volume-rehost-changes-ownership-not-contents.md)

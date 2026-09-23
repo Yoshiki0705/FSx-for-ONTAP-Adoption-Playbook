@@ -42,6 +42,12 @@ DOMAINS = {
 }
 EVIDENCE = {"verified", "documented", "field-observation", "hypothesis"}
 LANGS = {"ja", "en", "ko", "zh-CN", "zh-TW", "fr", "de", "es"}
+DEPLOYMENT_TYPES = {
+    "MULTI_AZ_1",
+    "MULTI_AZ_2",
+    "SINGLE_AZ_1",
+    "SINGLE_AZ_2",
+}
 
 REQUIRED = ("title", "lifecycle", "domains", "evidence", "lang")
 
@@ -58,6 +64,7 @@ KNOWN_KEYS = frozenset(
         "verified_on",
         "source",
         "ontap_version",
+        "deployment_type",
         "region",
         "industry",
         "scale_band",
@@ -147,7 +154,11 @@ def validate(path: Path) -> tuple[list[str], str | None]:
     if isinstance(title, str) and title.strip().startswith("TODO"):
         errors.append(f"{rel}: title is still a TODO placeholder")
 
-    for name, allowed in (("lifecycle", LIFECYCLE), ("domains", DOMAINS)):
+    for name, allowed in (
+        ("lifecycle", LIFECYCLE),
+        ("domains", DOMAINS),
+        ("deployment_type", DEPLOYMENT_TYPES),
+    ):
         values = _as_list(meta.get(name))
         if name in meta and not values:
             errors.append(f"{rel}: '{name}' must list at least one value")
@@ -220,10 +231,28 @@ def validate(path: Path) -> tuple[list[str], str | None]:
     return errors, tier
 
 
+def missing_verified_metadata(path: Path) -> tuple[str, ...]:
+    """Return future required fields missing from a valid verified document."""
+    try:
+        meta, _ = read(path)
+    except (FrontmatterError, UnicodeDecodeError):
+        return ()
+    if not meta or meta.get("evidence") != "verified":
+        return ()
+    return tuple(
+        key for key in ("ontap_version", "deployment_type") if not meta.get(key)
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--stats", action="store_true", help="print counts by evidence tier"
+    )
+    parser.add_argument(
+        "--report-missing-verified",
+        action="store_true",
+        help="report future verified metadata gaps without failing (not a gate)",
     )
     args = parser.parse_args()
 
@@ -231,16 +260,29 @@ def main() -> int:
 
     all_errors: list[str] = []
     tiers: Counter[str] = Counter()
+    missing: list[tuple[Path, tuple[str, ...]]] = []
     for path in notes:
         errors, tier = validate(path)
         all_errors.extend(errors)
         if tier:
             tiers[tier] += 1
+        if args.report_missing_verified:
+            fields = missing_verified_metadata(path)
+            if fields:
+                missing.append((path, fields))
 
     if args.stats:
         print(f"notes: {len(notes)}")
         for tier in sorted(EVIDENCE):
             print(f"  {tier:<18} {tiers.get(tier, 0)}")
+
+    if args.report_missing_verified:
+        for path, fields in missing:
+            print(f"{path.relative_to(ROOT)}: missing {', '.join(fields)}")
+        print(
+            "frontmatter report (not a gate): "
+            f"{len(missing)} verified document(s) missing future metadata"
+        )
 
     if all_errors:
         print(
@@ -251,7 +293,8 @@ def main() -> int:
             print(f"  {error}", file=sys.stderr)
         return 1
 
-    print(f"frontmatter: {len(notes)} note(s) valid")
+    if not args.report_missing_verified:
+        print(f"frontmatter: {len(notes)} note(s) valid")
     return 0
 
 

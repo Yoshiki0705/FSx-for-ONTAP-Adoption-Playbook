@@ -7,13 +7,33 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html
 lang: ja
 ---
 
-# 学習データセットの版をスケジュール Snapshot に載せると消える
+# 学習データセットの版はスケジュール Snapshot に載せてよいか？
+
+載せると消えます。default は数日でローテーションし、実験ブランチはボリューム数上限に当たります。
+
+## このノートで学べること
+
+- `default` スナップショットポリシーが数日でローテーションし、版管理には別に Snapshot を作る必要があること
+- 実験ブランチの FlexClone が容量ではなくボリューム数上限に当たり、QoS を継承しないこと
+
+## このノートが答えないこと
+
+- クローン作成の所要時間や、自分の画像データでの実際の容量削減率（未測定）
+- 版のロック（SnapLock / tamperproof snapshot）を採るべきかの判断（不可逆なため別途承認）
+
+## 前提レベル
+
+advanced
+
+## 本文
+
+<a id="学習データセットの版をスケジュール-snapshot-に載せると消える"></a>
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ活用](../README.md)
 
 ---
 
-## 結論
+### 結論
 
 **「このモデルはどのデータで学習したか」を後からトレースするために Snapshot を利用したい場合、既定のスケジュールに載せてはいけません。** `default` スナップショットポリシーは 1 時間ごと 6 本・日次 2 本・週次 2 本しか保持せず、順にローテーションします。**数日で消える仕組みの上に版管理を置くことになります。**
 
@@ -31,7 +51,7 @@ lang: ja
 
 ---
 
-## 背景 — モデルより先に増えるデータのコピー
+### 背景 — モデルより先に増えるデータのコピー
 
 半導体の欠陥分類のような画像分類では、扱うデータの種類が最初から多いです。SEM 画像、光学検査画像、ウェハマップ、計測値、装置テレメトリ、テスト・歩留まり結果。**そしてモデルを 1 本学習させるまでに、同じデータのコピーが積み上がります。**
 
@@ -55,7 +75,7 @@ FSx for ONTAP には両方に対応する仕組みがあります。**ただし�
 
 ---
 
-## 版を Snapshot に載せるときの 3 つの落とし穴
+### 版を Snapshot に載せるときの 3 つの落とし穴
 
 | 前提として置きがちなこと | 実際 | 版管理への影響 |
 |---|---|---|
@@ -69,7 +89,7 @@ autodelete については選択肢が 2 つあります。**無効にするか�
 
 そして Snapshot は差分で SSD 容量を消費します。**版を増やすことは容量を増やすことです。** 容量としての現れ方は [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md#容量として現れる-snapshot) にあります。
 
-### 版のロックに必要な別の承認
+#### 版のロックに必要な別の承認
 
 **版を守る方向をさらに進めると、不可逆な設定に到達します。** Snapshot のロック（tamperproof snapshot）や SnapLock は、**保持期間が切れるまで削除できない状態を作ります。**
 
@@ -77,7 +97,7 @@ autodelete については選択肢が 2 つあります。**無効にするか�
 
 ---
 
-## 実験ブランチ — FlexClone の効果と 3 つの制約
+### 実験ブランチ — FlexClone の効果と 3 つの制約
 
 **FlexClone は親ボリュームの Snapshot を起点に、書き込み可能なボリュームを作ります。** 親とデータブロックを共有するため、**共有している部分については容量を消費しません。** 作成直後はポインタのテーブルだけが作られます。
 
@@ -93,7 +113,7 @@ autodelete については選択肢が 2 つあります。**無効にするか�
 
 **作成経路は ONTAP CLI と ONTAP REST API です。** テンプレートからは届きません。境界の考え方は [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) にあります。
 
-### QoS の同時制限
+#### QoS の同時制限
 
 **QoS の継承がないことは、「クローンを配る」設計の前提条件です。** 制限をかける手段は QoS ポリシーグループで、共有・非共有の 2 つの型があります。
 
@@ -108,11 +128,11 @@ autodelete については選択肢が 2 つあります。**無効にするか�
 
 ---
 
-## 画像リポジトリの規模 — FlexGroup と版管理の衝突
+### 画像リポジトリの規模 — FlexGroup と版管理の衝突
 
 **AWS は FlexGroup を、EDA・地震探査・ソフトウェアのビルドとテストのような要求の高いワークロードに適した選択肢として記載しています。** 最大 20 PiB、**1 コンスティチュエントあたり 20 億ファイル**まで格納でき、ONTAP はファイル単位でコンスティチュエントに分散します。**多数の小さいファイルとメタデータ操作が中心になる画像リポジトリは、この形に当てはまります。**
 
-FlexVol が 1 HA ペア分の性能で上限になる理由と、コンスティチュエントを均等に配置する必要は [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) にあります。**ここではリポジトリを「広げたとき」に版管理側で何が起きるかだけを扱います。**
+FlexVol が 1 aggregate に配置され、その aggregate が 1 HA ペアに属することと、コンスティチュエントを均等に配置する必要は [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) にあります。**ここではリポジトリを「広げたとき」に版管理側で何が起きるかだけを扱います。**
 
 | 拡張時に起きること | 内容 |
 |---|---|
@@ -131,7 +151,7 @@ FlexVol が 1 HA ペア分の性能で上限になる理由と、コンスティ
 
 ---
 
-## 容量削減の主張に必要な測定
+### 容量削減の主張に必要な測定
 
 **FlexClone とストレージ効率の削減幅は、環境ごとに違います。** AWS が公開しているワークロード種別ごとの目安は次のとおりです。
 
@@ -160,7 +180,7 @@ FlexClone 側の削減幅を決めるのは次の 4 つです。**いずれも�
 
 ---
 
-## 判断フロー
+### 判断フロー
 
 ```mermaid
 graph TD
@@ -178,9 +198,9 @@ graph TD
     FCL --> LIM["ボリューム数 500 / HA ペア<br/>合計 1,000 を先に数える"]
     FCL --> SSD["SSD 縮小操作と同時に走らせない"]
 
-    A --> C{リポジトリの規模}
-    C -->|多数ファイル / 20 PiB 級| FG[FlexGroup]
-    FG --> EXP{コンスティチュエントを追加するか}
+    A --> C[多数ファイルまたは 20 PiB 級の<br/>リポジトリを FlexGroup に配置]
+    C --> FG[FlexGroup]
+    FG --> EXP{既存 FlexGroup に<br/>コンスティチュエントを追加するか}
     EXP -->|追加する| PART["追加前の Snapshot は partial になる<br/>増分が切れる<br/>削除できない"]
     PART --> BOUND["拡張を版の境界として扱い<br/>必要な版を先に外へ出す"]
 
@@ -202,29 +222,7 @@ graph TD
 
 ---
 
-## 自環境での確認手順
-
-**最初に確かめるのは、版として作った Snapshot が本当に残るかです。** ここが崩れると、他の設計は意味を持ちません。
-
-| # | 手順 | 確認できること |
-|---|---|---|
-| 1 | `default` ポリシーのボリュームで Snapshot の一覧を取り、**同じ一覧を数日後にもう一度取る** | **ローテーションして消えることの実測。** 版管理に使えないことの確認 |
-| 2 | ボリュームの autodelete 設定と発動条件を確認する | 容量が減ったときに版が削除対象になるか |
-| 3 | 現在の Snapshot 本数を数え、1,023 までの残りを出す | 実験ごとに版を切れる回数 |
-| 4 | 親ボリュームに QoS ポリシーグループを設定し、クローンを作って**クローン側の QoS 設定を確認する** | **継承しないことの実測。** 利用者にクローンを作らせる前に必要です |
-| 5 | 共有型 (`-is-shared true`) のポリシーを作り、クローン 2 本に適用して合計が上限で止まることを確認する | 総量を縛れているか |
-| 6 | ファイルシステム全体のボリューム数を数える。FlexGroup があればコンスティチュエント数も含める | 上限までの残り本数 |
-| 7 | **検証環境で** FlexGroup にコンスティチュエントを追加し、追加前の Snapshot が partial になることを確認する | **拡張が版に与える影響の実測** |
-| 8 | 自分の画像データでストレージ効率を有効にし、削減率を測って公開の目安と比べる | エンジニアリングデータの目安が当てはまるか |
-| 9 | データセット規模のボリュームでクローンを作り、所要時間を記録する | 実験開始までの待ち時間 |
-
-**手順 7 は検証環境で行ってください。** コンスティチュエントは削除できず、追加前の Snapshot は partial のまま戻りません。
-
-適用手順の全体像は [本番に取り入れる前の確認](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
-
----
-
-## よくある誤解
+### よくある誤解
 
 | 誤解 | 実際 |
 |---|---|
@@ -244,16 +242,16 @@ graph TD
 
 ---
 
-## 参照した一次情報
+### 参照した一次情報
 
 | 論点 | 出典 |
 |---|---|
 | ボリューム数の上限（1 HA ペア 500、合計 1,000）、**FlexGroup のコンスティチュエントが同じ枠に数えられること**、既定 8 コンスティチュエント / アグリゲート、1 コンスティチュエントあたり 20 億ファイル、コンスティチュエント追加で既存 Snapshot が partial になること、増分性の喪失、削除できないこと、均衡までの書き込みスループット 5〜10% 低下 | [AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html) |
-| コンスティチュエント追加が HA ペア追加時のベストプラクティスであること、8 本 / アグリゲートの推奨、SnapMirror 双方でコンスティチュエント数が一致する必要、partial copy で個別ファイルのみ復元可能なこと | [AWS: Expanding FlexGroup volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/expanding-fg-volumes.html) |
+| コンスティチュエント追加が HA ペア追加時に推奨されること、8 本 / アグリゲートの推奨、SnapMirror 双方でコンスティチュエント数が一致する必要、partial copy で個別ファイルのみ復元可能なこと | [AWS: Expanding FlexGroup volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/expanding-fg-volumes.html) |
 | Snapshot が読み取り専用の時点イメージであること、差分のみ SSD を消費すること、**1 ボリューム 1,023 本の上限**、`default` ポリシーが既定で有効であること、autodelete とポリシー無効化の選択肢 | [AWS: Protecting your data with snapshots](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snapshots-ontap.html) / [Volume storage capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) |
 | `default` の保持本数（時間次 6 / 日次 2 / 週次 2）、`default-1weekly` と `none`、prefix と SnapMirror ラベル、カスタムポリシーが ONTAP CLI / REST API で作られること | [AWS Storage Blog: Increase your recovery point agility with custom snapshot policies](https://aws.amazon.com/blogs/storage/increase-your-recovery-point-agility-with-custom-snapshot-policies-on-amazon-fsx-for-netapp-ontap/) |
 | autodelete を無効化するか `snap_reserve` 基準に設定する選択肢 | [AWS Storage Blog: Protecting data against ransomware with Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
-| FlexClone が親とブロックを共有し共有部分の容量を消費しないこと、作成直後はポインタのテーブルのみであること、クローンと親の変更が相互に影響しないこと | [AWS Storage Blog: Run containerized applications efficiently using Amazon FSx for NetApp ONTAP and Amazon EKS](https://aws.amazon.com/blogs/storage/run-containerized-applications-efficiently-using-amazon-fsx-for-netapp-ontap-and-amazon-eks/) / [AWS Storage Blog: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) |
+| FlexClone が親とブロックを共有し共有部分の容量を消費しないこと、作成直後はポインタのテーブルのみであること、クローンと親の変更が相互に影響しないこと | [AWS Storage Blog: Run containerized applications efficiently using Amazon FSx for NetApp ONTAP and Amazon EKS](https://aws.amazon.com/blogs/storage/run-containerized-applications-efficiently-using-amazon-fsx-for-netapp-ontap-and-amazon-eks/) / [AWS Storage Blog: Best practice configuration of Amazon FSx for NetApp ONTAP for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads/) <!-- allow:sales-vocabulary - exact external title --> |
 | **クローンが親に設定した QoS 制限を継承しないこと**、共有・非共有の QoS ポリシーグループ、`is-shared` を既存ポリシーで変更できないこと | [AWS Storage Blog: Using Quality of Service in Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/using-quality-of-service-in-amazon-fsx-for-netapp-ontap/) |
 | クローンを親の Snapshot を起点に作る手順（`volume clone create`） | [AWS Architecture Blog: S&P Global's disaster recovery strategy using FSx for ONTAP snapshots](https://aws.amazon.com/blogs/architecture/sp-globals-innovative-disaster-recovery-strategy-using-amazon-fsx-for-netapp-ontap-snapshots/) |
 | FlexGroup が最大 20 PiB で、EDA・地震探査・ソフトウェアのビルドとテストのような要求の高いワークロードに適した選択肢として記載されていること | [AWS News Blog: FlexGroup Volume Management for Amazon FSx for NetApp ONTAP is now available](https://aws.amazon.com/blogs/aws/flexgroup-volume-management-for-amazon-fsx-for-netapp-ontap-is-now-available/) |
@@ -262,7 +260,7 @@ graph TD
 
 ---
 
-## 関連ドキュメント
+### 関連ドキュメント
 
 - [Domain — データ活用](../README.md) — このモジュールのハブ
 - [実験ブランチを配るときに縛る対象は権限だけではない](../../security-governance/notes/self-service-without-storage-admin.md) — 誰にこの操作をさせるか
@@ -279,3 +277,40 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — データ活用](../README.md)
+
+## 自環境での確認手順
+
+**最初に確かめるのは、版として作った Snapshot が本当に残るかです。** ここが崩れると、他の設計は意味を持ちません。
+
+| # | 手順 | 確認できること |
+|---|---|---|
+| 1 | `default` ポリシーのボリュームで Snapshot の一覧を取り、**同じ一覧を数日後にもう一度取る** | **ローテーションして消えることの実測。** 版管理に使えないことの確認 |
+| 2 | ボリュームの autodelete 設定と発動条件を確認する | 容量が減ったときに版が削除対象になるか |
+| 3 | 現在の Snapshot 本数を数え、1,023 までの残りを出す | 実験ごとに版を切れる回数 |
+| 4 | 親ボリュームに QoS ポリシーグループを設定し、クローンを作って**クローン側の QoS 設定を確認する** | **継承しないことの実測。** 利用者にクローンを作らせる前に必要です |
+| 5 | 共有型 (`-is-shared true`) のポリシーを作り、クローン 2 本に適用して合計が上限で止まることを確認する | 総量を縛れているか |
+| 6 | ファイルシステム全体のボリューム数を数える。FlexGroup があればコンスティチュエント数も含める | 上限までの残り本数 |
+| 7 | **検証環境で** FlexGroup にコンスティチュエントを追加し、追加前の Snapshot が partial になることを確認する | **拡張が版に与える影響の実測** |
+| 8 | 自分の画像データでストレージ効率を有効にし、削減率を測って公開の目安と比べる | エンジニアリングデータの目安が当てはまるか |
+| 9 | データセット規模のボリュームでクローンを作り、所要時間を記録する | 実験開始までの待ち時間 |
+
+**手順 7 は検証環境で行ってください。** コンスティチュエントは削除できず、追加前の Snapshot は partial のまま戻りません。適用手順の全体像は [本番に取り入れる前の確認](../../../evidence-policy.md#本番に取り入れる前の確認) を参照してください。
+
+手順 3 の Snapshot 本数は、ONTAP REST の読み取り専用クエリで確認できます。
+
+```bash
+curl -sk -u fsxadmin "https://<management-endpoint>/api/storage/volumes/<uuid>/snapshots?return_records=false"
+```
+
+### 期待結果
+
+```text
+num_records に現在の Snapshot 本数が返る。1,023 に近ければ、版として新規に作れる残りが少ない
+(default ポリシーのローテーション分も含まれるため、版として作ったものは prefix で区別する)
+```
+
+このクエリは Snapshot の件数を数えるだけで、Snapshot にもボリュームにも変更を加えません。版のロック（不可逆）を検討する場合は、承認を作業の承認と分けて取ってください。
+
+## Read next
+
+[書いたものが反対側で見えるまでの時間は方向で決まるか？](how-long-until-a-write-is-visible.md)

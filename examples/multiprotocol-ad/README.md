@@ -50,7 +50,7 @@ Nothing here was written from a blank file.
 | The intermediate OU, Domain Admins being what works, the NetBIOS constraints, the SSM-association form of the domain join | Carried-over findings in [`docs/agent/domain-knowledge.md`](../../docs/agent/domain-knowledge.md) |
 | Minimum SSD 1,024 GiB per HA pair, first-generation throughput options starting at 128 MBps | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html), [Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | Ports needed for a working NFS mount and SMB locking, not port 2049 alone | [Multiprotocol access without Active Directory integration](https://www.repost.aws/articles/ARTG4-JD8UQ_igrHwSoxytOA/fsx-for-netapp-ontap-fsxn-multiprotocol-access-without-active-directory-integration) (repost.aws) |
-| The directory's controllers security group accepting AD traffic from the VPC CIDR by default | [AWS Managed Microsoft AD best practices](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_best_practices.html) |
+| The directory's controllers security group accepting AD traffic from the VPC CIDR by default | [AWS Managed Microsoft AD best practices](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_best_practices.html) <!-- allow:sales-vocabulary - exact external title --> |
 | Setting NTFS ACEs without an SMB client, the `acls[]` / `apply_to` / `propagation_mode` shape, `effective-permissions` as an independent signal, ONTAP 9.9.1 as the floor | [Manage file security permissions and audit policies](https://docs.netapp.com/us-en/ontap-restapi-991/manage_file_security_permissions_and_audit_policies.html) (NetApp ONTAP REST reference) |
 | One REST call standing in for six `vserver security file-directory` commands | [Prepare a NAS file system](https://docs.netapp.com/us-en/ontap-automation/workflows/wf_nas_fs_prepare.html) (NetApp ONTAP automation) |
 | The same API on FSx for ONTAP: storage-layer evaluation, SMB bypassed, `OI`/`CI` inheritance flags | [Manage NTFS permissions at scale on Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/manage-ntfs-permissions-at-scale-on-amazon-fsx-for-netapp-ontap/) (AWS Storage Blog) |
@@ -102,6 +102,10 @@ that control-plane boundary, the same one that puts LUNs and igroups outside the
 | `read-effective-permissions.sh` | Records what NFS shows and whether access succeeds. **Parts 2 and 3** | Host, NFSv4.1 |
 | `rehost-probe.sh` | Records the volume before and after a `volume rehost`. Records only, unless `--apply` | ONTAP REST API, AWS API |
 | `teardown.sh` | Removes everything in the order measured to work, refuses to start when something would strand the stack, and proves afterwards that each resource is gone. Reports only, unless `--apply` | AWS API, ONTAP REST API |
+
+The file-system resource intentionally omits `KmsKeyId`. At-rest encryption remains automatic, and
+CloudFormation then uses the Amazon FSx-managed KMS key for the account. A KMS key that you manage can
+be selected by adding `KmsKeyId` before creation; changing it replaces the file system.
 
 ## What a finished run looks like
 
