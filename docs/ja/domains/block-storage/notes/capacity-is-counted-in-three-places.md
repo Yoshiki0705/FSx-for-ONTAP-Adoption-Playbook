@@ -14,6 +14,10 @@ lang: ja
 
 3 か所です。確保した SSD のうち LUN が使えるのは 3 回の差し引き後の量だけです。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - 確保した SSD から LUN が使える容量まで 3 回の差し引き（aggregate 目減り・snapshot 予約・LUN 予約）があること
@@ -31,10 +35,6 @@ advanced
 ## 本文
 
 <a id="容量は-3-か所で数えられる"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

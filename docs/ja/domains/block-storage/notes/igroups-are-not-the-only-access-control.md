@@ -14,6 +14,10 @@ lang: ja
 
 CHAP と portset です。どちらも `fsxadmin` で使え、igroup だけでは IQN の詐称を防げません。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - ブロックのアクセス制御が igroup だけでなく CHAP（IQN 認証）と portset（LIF 制限）を含み、いずれも `fsxadmin` で操作できること
@@ -31,10 +35,6 @@ advanced
 ## 本文
 
 <a id="igroup-の外側にある-2-つの制御"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

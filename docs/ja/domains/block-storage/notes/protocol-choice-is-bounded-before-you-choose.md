@@ -14,6 +14,10 @@ lang: ja
 
 狭まります。世代・HA ペア数・ホスト OS の 3 条件が、選ぶ前に iSCSI か NVMe/TCP かを決めます。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - iSCSI と NVMe/TCP の選択が世代（NVMe/TCP は第 2 世代のみ）・HA ペア数（6 組以下）・ホスト OS で先に狭まること
@@ -31,10 +35,6 @@ intermediate
 ## 本文
 
 <a id="ブロックプロトコルの選択肢は世代と-ha-ペア数で先に狭まる"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

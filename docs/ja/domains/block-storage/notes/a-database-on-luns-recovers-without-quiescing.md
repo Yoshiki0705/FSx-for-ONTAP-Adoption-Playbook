@@ -14,6 +14,10 @@ lang: ja
 
 できました。write fence 付き Snapshot が 0.52 秒で、復旧は DB 自身が WAL 再生で行いました。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - データと WAL を別 LUN に分けた PostgreSQL を、書き込みを止めず consistency group の write fence 付き Snapshot で 1 時点として取れること
@@ -31,10 +35,6 @@ advanced
 ## 本文
 
 <a id="lun-に載せた-db-は静止させずに復旧した"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

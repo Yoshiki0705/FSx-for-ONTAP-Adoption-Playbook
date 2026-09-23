@@ -14,6 +14,10 @@ lang: ja
 
 アドレスではなくルートです。ブロックのアドレスは動かないので Transit Gateway も不要です。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - Multi-AZ のフェイルオーバーが動かすのは VPC ルートテーブルの `/32` ターゲットで、iSCSI / NVMe/TCP のアドレスは動かないこと
@@ -31,10 +35,6 @@ advanced
 ## 本文
 
 <a id="multi-az-が動かすのはアドレスではなくルート"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

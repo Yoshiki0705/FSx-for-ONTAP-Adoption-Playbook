@@ -9,10 +9,6 @@ lang: en
 
 # The migration path to containers or a modernized runtime splits three ways
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/playbooks/03-migrate/notes/migration-paths-to-containers.md) | [English](migration-paths-to-containers.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 Repository home](../../../README.md) | [Playbook 03 — Migration](../README.md)
 
 ---

@@ -7,17 +7,37 @@ source: https://docs.netapp.com/us-en/ontap-restapi/application_applications_app
 lang: en
 ---
 
-# A snapshot of a LUN is crash-consistent by default
+# What does a LUN snapshot guarantee by default?
+
+Crash-consistent. Being able to roll back and the application starting from a consistent state are different things.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [English](a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That a snapshot of a volume containing a LUN is crash-consistent by default, and that the `application_consistent` flag is only for recording
+- That quiescing happens outside storage (SnapCenter or the application side), and that multiple LUNs are unified with a consistency group's write fence
+
+## What this note does not answer
+
+- Whether a database starts from a crash-consistent state (unverified in this note)
+- Whether application-consistent is needed (depends on audit / recovery requirements)
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+<a id="a-snapshot-of-a-lun-is-crash-consistent-by-default"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **A snapshot of a volume containing a LUN is crash-consistent by default.** The same state as the disk at the moment the power was pulled is saved.
 
@@ -32,11 +52,11 @@ And crucially, **ONTAP's application-consistent flag is for recording.** NetApp'
 > **Tier**: `documented` — the definition of consistency, the position of the flag, and SnapCenter's role are based on NetApp / AWS official documentation (confirmed 2026-09-05).
 > **Part is `verified`** (verified 2026-09-05, `ap-northeast-1`, ONTAP 9.18.1P5) — that a snapshot is taken by the default snapshot policy, that the pre-snapshot contents can be read via a clone, and that freed blocks move to the snapshot.
 > **No verification with a database on it was done.** The actual behavior of application consistency is unverified.
-> The steps to confirm in your own environment are in [How to confirm in your own environment](#how-to-confirm-in-your-own-environment).
+> The steps to confirm in your own environment are in [Verify it in your environment](#verify-it-in-your-environment).
 
 ---
 
-## Distinguishing the three kinds of consistency
+### Distinguishing the three kinds of consistency
 
 | Kind | What is guaranteed | What is not guaranteed |
 |---|---|---|
@@ -50,7 +70,7 @@ And crucially, **ONTAP's application-consistent flag is for recording.** NetApp'
 
 ---
 
-## Deciding whether crash-consistent is enough
+### Deciding whether crash-consistent is enough
 
 **There are cases where it is enough and cases where it is not.** It is not "always make it application-consistent."
 
@@ -67,7 +87,7 @@ And crucially, **ONTAP's application-consistent flag is for recording.** NetApp'
 
 ---
 
-## What could be confirmed in the verification environment
+### What could be confirmed in the verification environment
 
 **A LUN cloned from a snapshot retained the pre-snapshot contents.**
 
@@ -85,7 +105,7 @@ And crucially, **ONTAP's application-consistent flag is for recording.** NetApp'
 
 ---
 
-## That a snapshot holds capacity
+### That a snapshot holds capacity
 
 **A snapshot retains deleted data.** This is a separate issue from consistency, but it happens on the same volume at the same time.
 
@@ -97,7 +117,7 @@ In the verification environment, deleting files inside the LUN and running `fstr
 
 ---
 
-## The position of the mechanism that quiesces
+### The position of the mechanism that quiesces
 
 **SnapCenter places an application-specific plugin on the host side and quiesces I/O before the snapshot.**
 
@@ -117,7 +137,7 @@ In the verification environment, deleting files inside the LUN and running `fstr
 
 ---
 
-## The steps needed at the replication destination
+### The steps needed at the replication destination
 
 **Replicating a volume with SnapMirror does not make the LUN immediately usable at the destination.**
 
@@ -127,7 +147,7 @@ After making the destination volume writable, **map the LUN to an igroup, open a
 
 ---
 
-## The recovery flow
+### The recovery flow
 
 ```mermaid
 graph TD
@@ -151,24 +171,7 @@ graph TD
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Check the target volume's policy with `volume show -fields snapshot-policy` | Whether scheduled snapshots are running |
-| 2 | Check existing snapshots and usage with `volume snapshot show` | Whether a snapshot is holding capacity |
-| 3 | In a test environment, write a marker to a LUN and `sync`, take a snapshot, then mount via FlexClone and check the marker | **Confirmation that it can be rolled back** |
-| 4 | At the mount in step 3, check with `dmesg` whether log recovery ran | **The real face of crash-consistent** |
-| 5 | Do the same without `sync` and compare the results | What changes with and without quiescing |
-| 6 | Put an actual application (a database, etc.) on it, do step 3, and check **whether it starts** | **The part unverified in this note. This is the decision material for production** |
-| 7 | If using a quiescing mechanism, check the application's log around the snapshot | Whether quiescing actually occurred |
-| 8 | Check whether the recovery runbook documents the LUN map and rescan at the destination | That the mapping is not replicated |
-
-Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with production-equivalent data, but do not do it against a production volume.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -186,7 +189,7 @@ Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with pr
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -202,7 +205,7 @@ Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with pr
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -211,12 +214,12 @@ Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with pr
 | SnapCenter's configuration (a central server and application-specific plugins), the VMware plugin's consistency kinds | [NetApp: SnapCenter overview](https://docs.netapp.com/us-en/snapcenter/get-started/concept_snapcenter_overview.html) |
 | That the SnapMirror destination needs a LUN map, iSCSI session, and rescan | [NetApp: Destination volume data access](https://docs.netapp.com/us-en/ontap/data-protection/configure-destination-volume-data-access-concept.html) |
 | That a snapshot spanning multiple filesystems needs a coordinating script, and application consistency needs host-side involvement | [AWS Storage Blog: SAN: A million IOPs in AWS from Amazon FSx NetApp ONTAP](https://aws.amazon.com/blogs/storage/san-a-million-iops-in-aws-from-amazon-fsx-netapp-ontap/) <!-- allow:naming - original article title -->|
-| A configuration example of snapshot reserve 0%, snapshot autodelete | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) |
+| A configuration example of snapshot reserve 0%, snapshot autodelete | [AWS: Best practice configuration for Microsoft SQL Server workloads](https://aws.amazon.com/blogs/storage/best-practice-configuration-of-amazon-fsx-for-netapp-ontap-for-microsoft-sql-server-workloads) <!-- allow:sales-vocabulary - exact external title --> |
 | Making the volume at least 5% larger than the LUN | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) — the relation between mutual consistency and layout
@@ -227,6 +230,37 @@ Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with pr
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of primary sources
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [English](a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Check the target volume's policy with `volume show -fields snapshot-policy` | Whether scheduled snapshots are running |
+| 2 | Check existing snapshots and usage with `volume snapshot show` | Whether a snapshot is holding capacity |
+| 3 | In a test environment, write a marker to a LUN and `sync`, take a snapshot, then mount via FlexClone and check the marker | **Confirmation that it can be rolled back** |
+| 4 | At the mount in step 3, check with `dmesg` whether log recovery ran | **The real face of crash-consistent** |
+| 5 | Do the same without `sync` and compare the results | What changes with and without quiescing |
+| 6 | Put an actual application (a database, etc.) on it, do step 3, and check **whether it starts** | **The part unverified in this note. This is the decision material for production** |
+| 7 | If using a quiescing mechanism, check the application's log around the snapshot | Whether quiescing actually occurred |
+| 8 | Check whether the recovery runbook documents the LUN map and rescan at the destination | That the mapping is not replicated |
+
+Do steps 3, 4, 5, and 6 **in a test environment.** Step 6 is worth doing with production-equivalent data, but do not do it against a production volume.
+
+The snapshot policy in step 1 can be confirmed with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> volume show -vserver <svm> -fields snapshot-policy
+```
+
+### Expected output
+
+```text
+The snapshot-policy is returned (if default, scheduled snapshots run, but that is crash-consistent).
+If application-consistent is needed, the design must quiesce via SnapCenter or on the application
+side.
+```
+
+This command only reads the volume's configuration; it changes nothing on the snapshot or the volume. Whether a database starts from a crash-consistent state should be checked in a test environment with production-equivalent data.
+
+## Read next
+
+[What limit does a Kubernetes block PV hit? (日本語)](../../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md)

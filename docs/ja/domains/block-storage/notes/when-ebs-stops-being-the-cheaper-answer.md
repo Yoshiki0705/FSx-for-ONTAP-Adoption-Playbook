@@ -11,6 +11,10 @@ lang: ja
 
 台数ではありません。同じデータの複製数で入れ替わり、最小構成の床は 8 割がスループット容量です。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](when-ebs-stops-being-the-cheaper-answer.md) | [English](../../../../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - FSx for ONTAP が GB 単価では EBS より安くならず、入れ替わりを決めるのが同じデータの複製数であること
@@ -28,10 +32,6 @@ intermediate
 ## 本文
 
 <a id="ebs-が安くなくなる境目は台数ではなく同じデータの複製の数"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](when-ebs-stops-being-the-cheaper-answer.md) | [English](../../../../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

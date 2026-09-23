@@ -15,6 +15,10 @@ lang: ja
 
 中身は変わりません。ただし失われる設定が 7 種あり、Snapshot ポリシーは `default` に戻ります。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - `volume rehost` が所有 SVM だけを変え、LUN と中身は保持され unmapped で残ること
@@ -32,10 +36,6 @@ advanced
 ## 本文
 
 <a id="volume-rehost-が変えるのは所有-svm-だけで中身は変わらない"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

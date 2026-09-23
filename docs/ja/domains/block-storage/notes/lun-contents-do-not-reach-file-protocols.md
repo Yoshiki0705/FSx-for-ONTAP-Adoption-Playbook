@@ -11,6 +11,10 @@ lang: ja
 
 現れません。LUN を解釈するのはホストで、S3 で分析するにはホストを 1 台経由します。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](lun-contents-do-not-reach-file-protocols.md) | [English](../../../../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - LUN の中のファイルは NFS / SMB / S3 Access Points からは読めず、FlexClone も rehost もこの境界を動かさないこと
@@ -28,10 +32,6 @@ intermediate
 ## 本文
 
 <a id="lun-の中身はファイルプロトコルに現れない"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](lun-contents-do-not-reach-file-protocols.md) | [English](../../../../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

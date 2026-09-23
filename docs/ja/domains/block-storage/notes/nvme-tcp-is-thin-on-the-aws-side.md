@@ -14,6 +14,10 @@ lang: ja
 
 抜けています。セキュリティグループ要件表・プロトコル列挙・API の 3 か所で一貫して現れません。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - NVMe/TCP のポート（データ 4420・ディスカバリ 8009）が AWS のセキュリティグループ要件表に載っておらず、要件表だけで設計すると接続できないこと
@@ -31,10 +35,6 @@ intermediate
 ## 本文
 
 <a id="nvmetcp-は-aws-側の面から一貫して抜けている"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

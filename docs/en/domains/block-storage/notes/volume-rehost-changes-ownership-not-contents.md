@@ -6,21 +6,42 @@ evidence: verified
 verified_on: 2026-09-12
 region: ap-northeast-1
 ontap_version: 9.18.1P6
+deployment_type: SINGLE_AZ_1
 source: https://docs.netapp.com/us-en/ontap/volumes/rehost-volume-another-svm-task.html
 lang: en
 ---
 
-# `volume rehost` changes only the owning SVM, not the contents
+# Does `volume rehost` change only the owning SVM?
+
+The contents do not change. But seven settings are lost, and the snapshot policy reverts to `default`.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [English](volume-rehost-changes-ownership-not-contents.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That `volume rehost` changes only the owning SVM, and that the LUN and its contents are kept, remaining unmapped
+- The seven settings lost after rehost, that the snapshot policy reverts to `default`, and that the AWS control plane takes over ten minutes to catch up
+
+## What this note does not answer
+
+- Five of the seven lost settings that remain unobserved, and the basis for it being a supported operation on FSx for ONTAP (not found in AWS's documentation)
+- The behavior of deleting during the ten-plus-minute window where the control planes disagree, and the split time and capacity peak (both unmeasured)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="does-volume-rehost-change-only-the-owning-svm"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **`volume rehost` reassigns a volume from one SVM to another without a SnapMirror copy.** What changes is the owning SVM, and **the volume's contents do not change.** The LUN is kept, left in an unmapped state.
 
@@ -39,7 +60,7 @@ lang: en
 
 ---
 
-## The prerequisites for rehost
+### The prerequisites for rehost
 
 **It cannot run unless they are met. Checking from the top down is cheapest.**
 
@@ -56,7 +77,7 @@ lang: en
 
 **That SnapLock volumes are unsupported matters for another reason too.** SnapLock is irreversible to enable, a [feature that must not be enabled without an explicit human instruction](../../../../../AGENTS.md). There is no need to create a SnapLock volume for rehost verification.
 
-### Additional conditions for SAN volumes
+#### Additional conditions for SAN volumes
 
 | Condition | Note |
 |---|---|
@@ -67,7 +88,7 @@ lang: en
 
 ---
 
-## The settings lost on rehost
+### The settings lost on rehost
 
 **The documentation lists seven that are lost from the source volume after rehost and need to be reconfigured manually on the rehosted volume.**
 
@@ -89,7 +110,7 @@ lang: en
 
 ---
 
-## The exclusivity with FlexClone and the price of split
+### The exclusivity with FlexClone and the price of split
 
 **Split loses only half of FlexClone's benefits. This asymmetry decides the judgment.**
 
@@ -104,7 +125,7 @@ lang: en
 
 ---
 
-## What rehost does not change
+### What rehost does not change
 
 **Mistaking this leads to a design that does not hold.**
 
@@ -116,13 +137,13 @@ lang: en
 
 ---
 
-## The four points confirmed by measurement
+### The four points confirmed by measurement
 
 **This is our measurement, not the documentation's statement.** It is outside the note's `documented` tier.
 
 Environment: `ap-northeast-1`, ONTAP 9.18.1P3D1, `SINGLE_AZ_1` (first generation), SSD 1,024 GiB, throughput 128 MBps, 2026-09-11. Source `subtype: default` / NFS enabled, CIFS disabled, root volume UNIX; destination the same. **The target volume was 1 GiB, created with an explicit security style of `NTFS`** (i.e. moved in a state differing from the destination SVM root's style).
 
-### 1. The REST path is a private CLI passthrough
+#### 1. The REST path is a private CLI passthrough
 
 **The form of rewriting the volume's `svm` is refused.**
 
@@ -147,11 +168,11 @@ POST /api/private/cli/volume/rehost
 > `Invalid string: control characters from U+0000 through U+001F must be escaped`.
 > If you script it, interpose `tr -d '\000-\010\013\014\016-\037'`.
 
-### 2. Security-style retention
+#### 2. Security-style retention
 
 **It moved staying `ntfs`.** The destination SVM's root volume is UNIX, so **the style is a volume attribute and is not dragged to the destination root.** The silence in the statement that the security style is not among the seven lost meant retention in this environment.
 
-### 3. The snapshot policy reverting to `default` — not a loss
+#### 3. The snapshot policy reverting to `default` — not a loss
 
 **This is a sharper observation than the statement of the seven.**
 
@@ -165,7 +186,7 @@ POST /api/private/cli/volume/rehost
 
 **The second run (below, "The second measurement") could observe the export policy loss too.** Because a non-default export policy had been assigned before the move. **That "no difference showed" in the first run was not because nothing was lost, but because it was measured in a state where even a loss was invisible.** The remaining five are unobserved and stand as the documentation states.
 
-### 4. The AWS control plane catch-up, and the time it takes
+#### 4. The AWS control plane catch-up, and the time it takes
 
 | Time (UTC) | ONTAP | AWS API |
 |---|---|---|
@@ -179,7 +200,7 @@ POST /api/private/cli/volume/rehost
 
 **With both control planes agreeing, teardown worked with `aws fsx delete-volume`.** The asymmetry observed on a volume with S3 Access Points attached ([Stalling at teardown (日本語)](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#撤去時の停滞--aws-側からしか消せなくなるボリューム)) did not reproduce on this path. **But the behavior of trying to delete during the 14 minutes before catch-up was not measured.**
 
-## The second measurement — the catch-up time extends beyond 13 minutes 42 seconds, and the export policy loss is observed
+### The second measurement — the catch-up time extends beyond 13 minutes 42 seconds, and the export policy loss is observed
 
 Re-measured on a different file system, with a newer ONTAP. **The security-style retention and the snapshot policy reverting to `default` reproduced.** Meanwhile two points differed from the first run.
 
@@ -193,7 +214,7 @@ Environment: `ap-northeast-1`, **ONTAP 9.18.1P6**, `SINGLE_AZ_1` (first generati
 | Snapshot policy | `none` | `default` | **Changed** (same as the first run; acquiring the default) |
 | **Export policy** | `mpad_clients` | `default` | **Loss observed for the first time.** Reconfiguration needed |
 
-### Treat the snapshot policy change as a data-protection design change
+#### Treat the snapshot policy change as a data-protection design change
 
 Writing the change from `none` to `default` as "acquired the default" makes it look light, but **from a data-protection viewpoint either direction is a design change.**
 
@@ -206,7 +227,7 @@ Writing the change from `none` to `default` as "acquired the default" makes it l
 
 The AWS `JunctionPath` went from `/rehostvol` to `null`, off the namespace.
 
-### The catch-up time varies by environment — do not treat 13 minutes 42 seconds as a rule
+#### The catch-up time varies by environment — do not treat 13 minutes 42 seconds as a rule
 
 The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds or less**. It is written as a range because the ONTAP job's completion time was not recorded. What could be observed was the two points "at 01:40:47 ONTAP already showed the destination" and "at 01:59:48 AWS switched over," with the pre-move snapshot at 01:35:43.
 
@@ -216,7 +237,7 @@ The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds o
 
 ---
 
-## The undetermined that remain
+### The undetermined that remain
 
 | # | Undetermined | Why undetermined | Impact |
 |---|---|---|---|
@@ -229,35 +250,7 @@ The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds o
 
 ---
 
-## How to confirm in your own environment
-
-**rehost is disruptive. Do not try it on a volume holding production-equivalent data.**
-
-### Before running
-
-| # | Step | Reason |
-|---|---|---|
-| 1 | Save the output of `lun mapping show -volume <volume> -vserver <source_svm>` | **Insurance against losing the mapping info on failure.** The documentation lists it as a step |
-| 2 | Save the output of `volume show -volume <volume> -instance` | **A record of the current state including the security style.** Used to judge undetermined 1 |
-| 3 | Save the output of `aws fsx describe-volumes` | **A record of the owning SVM as seen from the AWS side.** Used to judge undetermined 2 |
-| 4 | Save the current export policy and snapshot policy | Of the seven lost, the ones needing reconfiguration |
-
-### Items to judge after running
-
-| # | Confirmation | What it tells you |
-|---|---|---|
-| 1 | Compare the security style with `volume show -volume <volume> -instance` | It was **kept** in this environment. Try it with a style differing from the destination root |
-| 2 | Compare `StorageVirtualMachineId` from `aws fsx describe-volumes`. **Wait 15+ minutes** | In this environment it caught up **13 minutes 42 seconds after job completion**. Cutting off at 10 minutes gives the opposite conclusion |
-| 3 | Confirm the seven lost one by one. **Set the snapshot policy to `none` before moving** | The completeness of the reconfiguration list. The revert-to-`default` behavior cannot be observed if it was `default` before the move |
-| 4 | Confirm the LUN is unmapped, and map it to the destination SVM's igroup | Whether the behavior matches the documentation |
-| 5 | Read/write from NFS as a general user **not in the admin group** | Whether the UID / GID loss actually bears on permissions |
-| 6 | **Try teardown.** Both `aws fsx delete-volume` and ONTAP's `volume delete` | **The consequence of undetermined 2.** If it can be deleted on only one path, the runbook needs to say so |
-
-**Do not skip step 6.** That teardown works on only one path is learned at teardown, not at deployment. **It is a path you hit most when rebuilding a test environment.**
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -275,7 +268,7 @@ The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds o
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -287,12 +280,12 @@ The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds o
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **a minimal setup to measure two of the four undetermined**. `rehost-probe.sh` records only by default and changes nothing unless `--apply` is given twice
 - [The contents of a LUN do not surface to file protocols](lun-contents-do-not-reach-file-protocols.md) — the boundary rehost also does not move
-- [Adding NFS to a volume already serving SMB needs no clone (日本語)](../../multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) — the case where rehost is unnecessary
+- [Adding NFS to a volume already serving SMB needs no clone](../../multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) — the case where rehost is unnecessary
 - [AWS Transform's Finalize is where physical capacity peaks (日本語)](../../../../ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) — the split capacity peak of the same shape
 - [Capacity is counted in three places](capacity-is-counted-in-three-places.md) — the path to filling up mid-split
 - [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — the two control planes
@@ -301,6 +294,39 @@ The second catch-up was **19 minutes 01 seconds or more, 24 minutes 05 seconds o
 - [Glossary (日本語)](../../../../ja/reference/glossary/) — the definitions of `volume rehost` / FlexClone
 - [Evidence policy](../../../evidence-policy.md) — the treatment of `documented` and the undetermined
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [English](volume-rehost-changes-ownership-not-contents.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+**rehost is disruptive. Do not try it on a volume holding production-equivalent data.**
+
+Before running, save the output of `lun mapping show`, `volume show -instance` (including the security style), the owning SVM from `aws fsx describe-volumes`, and the current export policy and snapshot policy. After running, judge the following.
+
+| # | Confirmation | What it tells you |
+|---|---|---|
+| 1 | Compare the security style with `volume show -volume <volume> -instance` | It was **kept** in this environment. Try it with a style differing from the destination root |
+| 2 | Compare `StorageVirtualMachineId` from `aws fsx describe-volumes`. **Wait 15+ minutes** | In this environment it caught up **13 minutes 42 seconds after job completion** (first run) / **longer** (second run). Cutting off at 10 minutes gives the opposite conclusion |
+| 3 | Confirm the seven lost one by one. **Set the snapshot policy to `none` before moving** | The completeness of the reconfiguration list. The revert-to-`default` behavior cannot be observed if it was `default` before the move |
+| 4 | Confirm the LUN is unmapped, and map it to the destination SVM's igroup | Whether the behavior matches the documentation |
+| 5 | Read/write from NFS as a general user **not in the admin group** | Whether the UID / GID loss actually bears on permissions |
+| 6 | **Try teardown.** Both `aws fsx delete-volume` and ONTAP's `volume delete` | **The consequence of undetermined 2.** If it can be deleted on only one path, the runbook needs to say so |
+
+**Do not skip step 6.** That teardown works on only one path is learned at teardown, not at deployment. **It is a path you hit most when rebuilding a test environment.**
+
+The pre-run record can be taken with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> volume show -volume <volume> -instance
+```
+
+### Expected output
+
+```text
+The current state returns, including the security style, snapshot-policy, and owning SVM. Compare
+this against the value after rehost. The snapshot policy reverts to default, and the AWS control
+plane takes ten-plus minutes to catch up (do not cut off the observation at a few minutes).
+```
+
+This command only reads the volume's attributes; it changes nothing on the volume or the SVM. Because rehost itself is disruptive, try it on a disposable test volume.
+
+## Read next
+
+[Under what conditions does shared block change the design? (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md)

@@ -35,11 +35,6 @@ intermediate
 
 This is the English translation. Japanese is authoritative for technical accuracy.
 
-> **Evidence**: `documented` — mutability, ceilings, and protocol constraints rest on AWS
-> documentation. **Price ratios are not included.** Generation-based pricing differences are revised,
-> so refer to the current pricing page. Steps for your own environment are in
-> "[Verify in your own environment](#verify-in-your-own-environment)".
-
 ---
 
 ### Conclusion
@@ -58,7 +53,8 @@ So the approach of "start on Multi-AZ and add HA pairs later if performance runs
 > are unverified. The UI can change, so verify it in your own region before creating a file system.
 > **Price ratios are not included.** Generation-based pricing differences are revised,
 > so refer to the current pricing page. Steps for your own environment are in
-> "[Confirming this in your own environment](#confirming-this-in-your-own-environment)".
+> "[Verify in your own environment](#verify-in-your-own-environment)".
+
 ---
 
 ### The four deployment types and the HA pair counts available

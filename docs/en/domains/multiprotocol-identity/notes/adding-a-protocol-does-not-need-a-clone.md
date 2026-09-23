@@ -143,6 +143,19 @@ The vendor's documentation describes FlexClone as a mechanism that references a 
 
 ---
 
+### Related documents
+
+- [Domain — Multiprotocol identity](../README.md) — this module's hub
+- [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **a minimal setup to check these four in your own environment**. One CloudFormation template and an ONTAP REST script
+- [A security style decides the permission-evaluation model](security-style-and-permission-evaluation.md) — what the style actually decides
+- [What `volume rehost` changes and what it does not](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — the exclusivity with a clone, and the price of split
+- [The contents of a LUN do not surface to file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — the boundary adding a protocol does not cross
+- [Comparison of routes to carry block to file (日本語)](../../../../ja/reference/comparison/block-to-file-routes.md) — when crossing the boundary is necessary
+- [Where a setting is created (日本語)](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) — why the root volume's style is a replacement
+- [Preserving ACLs during migration (日本語)](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) — carrying permissions across intact
+- [Glossary (日本語)](../../../../ja/reference/glossary/) — the definitions of security style / `volume rehost` / FlexClone
+- [Evidence policy](../../../evidence-policy.md) — the treatment of `documented`
+
 <a id="verify-in-your-own-environment"></a>
 
 ## Verify it in your environment

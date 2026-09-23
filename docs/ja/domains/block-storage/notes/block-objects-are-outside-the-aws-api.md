@@ -15,6 +15,10 @@ lang: ja
 
 できません。境界はボリュームと LUN の間で、ブロックの構築手順は制御面を必ずまたぎます。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - CloudFormation の Amazon FSx リソースが 6 種だけで、LUN・igroup・NVMe subsystem・namespace が存在しないこと
@@ -32,10 +36,6 @@ intermediate
 ## 本文
 
 <a id="lun-と-igroup-は-aws-の-api-の外側にある"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

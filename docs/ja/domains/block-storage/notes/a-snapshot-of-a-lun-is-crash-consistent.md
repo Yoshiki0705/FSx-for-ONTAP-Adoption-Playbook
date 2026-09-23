@@ -11,6 +11,10 @@ lang: ja
 
 crash-consistent です。戻せることとアプリが一貫した状態から起動することは別です。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - LUN を含むボリュームの Snapshot が既定で crash-consistent で、`application_consistent` フラグは記録用にすぎないこと
@@ -28,10 +32,6 @@ intermediate
 ## 本文
 
 <a id="lun-の-snapshot-は既定で-crash-consistent"></a>
-
-<!-- lang-switcher:start -->
-🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
-<!-- lang-switcher:end -->
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 

@@ -139,7 +139,7 @@ Two questions to settle.
 - [A backup copy holds no file system until it is restored](../../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) — the AWS-native route and its boundaries
 - [Having snapshots is not the same as being able to recover](snapshots-are-not-a-recovery-plan.md) — verification once the route is settled
 - [Data protection methods compared](../../../../ja/reference/comparison/data-protection-methods.md) (日本語) — the comparison table
-- [LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) — route 3's scope
+- [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — route 3's scope
 - [Approval for an irreversible operation is separate from approval for the task](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) — approval before enabling Vault Lock
 - [Fit conditions — what must not be used as grounds](../../../../ja/reference/fsx-ontap-fit-conditions.md) (日本語) — how an absence from an enumeration is treated
 - [Evidence Policy](../../../evidence-policy.md)

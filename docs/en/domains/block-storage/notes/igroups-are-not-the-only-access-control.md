@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: en
 ---
 
-# Two controls outside the igroup
+# What controls exist outside the igroup?
+
+CHAP and portset. Both are usable with `fsxadmin`, and the igroup alone cannot prevent IQN spoofing.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [English](igroups-are-not-the-only-access-control.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That block access control includes not only the igroup but CHAP (IQN authentication) and portset (LIF restriction), and both can be operated with `fsxadmin`
+- That CHAP's default is no authentication, and that while a portset narrows the path count, it leaves residue on the host side
+
+## What this note does not answer
+
+- Whether CHAP / portset are documented in FSx for ONTAP's official documentation (could not be found; usability was measured)
+- Whether portset is deprecated (no statement of deprecation was found, and non-deprecation was not confirmed either)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="two-controls-outside-the-igroup"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **FSx for ONTAP's block access control is not the igroup alone.** ONTAP has **CHAP** (initiator authentication) and **portset** (restricting the LIFs a LUN is shown through), and **both were operable with `fsxadmin`.**
 
@@ -37,7 +58,7 @@ lang: en
 
 ---
 
-## The commands usable with `fsxadmin`
+### The commands usable with `fsxadmin`
 
 **FSx for ONTAP's `fsxadmin` has restricted privileges.** This is the result of actually running the ones related to block control.
 
@@ -53,7 +74,7 @@ lang: en
 
 ---
 
-## CHAP's default, and how to apply it
+### CHAP's default, and how to apply it
 
 **The default is no authentication.**
 
@@ -95,7 +116,7 @@ The CHAP username is 1–128 bytes. **There is also `-initiator-address-ranges` 
 
 ---
 
-## The symptom when authentication fails
+### The symptom when authentication fails
 
 **CHAP was applied on the target side, and a login was made with nothing configured on the initiator side.**
 
@@ -132,7 +153,7 @@ iscsiadm -m node -L all      # exit code 0, session recovers
 
 ---
 
-## That a portset actually reduces the path count, and the residue
+### That a portset actually reduces the path count, and the residue
 
 **A portset is the restriction "show this igroup only through this LIF."** It is an additional narrowing layered on top of Selective LUN Map.
 
@@ -181,7 +202,7 @@ There are two cautions on unbinding.
 
 ---
 
-## The judgment of which to use
+### The judgment of which to use
 
 **The three can be layered. Their purposes differ.**
 
@@ -198,23 +219,7 @@ There are two cautions on unbinding.
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | `vserver iscsi security show -vserver <svm>` | **Whether `default` is `none`. Whether you operate with no authentication is clear here** |
-| 2 | Whether `vserver iscsi security create` or the REST `credentials` works | **That CHAP can be configured with `fsxadmin`** |
-| 3 | Log in with the initiator side unconfigured, and record the exit code and `journalctl -u iscsid` | **The symptom of authentication failure** (the footing for isolation) |
-| 4 | Whether `lun portset create` and `lun igroup bind` work | **That a portset is usable with `fsxadmin`** |
-| 5 | After binding, confirm the path count and any `faulty` with `multipath -ll` | **That the narrowing took effect, and the residue** |
-| 6 | Delete the residue with `echo 1 > /sys/block/<dev>/device/delete` and confirm `hwhandler` returns | **The cleanup procedure** |
-| 7 | Run `storage failover show` | **If an empty table, the HA state is not visible** |
-
-Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -232,7 +237,7 @@ Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -248,7 +253,7 @@ Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -263,7 +268,7 @@ Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the paths a portset narrows
@@ -271,6 +276,36 @@ Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
 - [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — that the igroup is outside IaC
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [English](igroups-are-not-the-only-access-control.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | `vserver iscsi security show -vserver <svm>` | **Whether `default` is `none`. Whether you operate with no authentication is clear here** |
+| 2 | Whether `vserver iscsi security create` or the REST `credentials` works | **That CHAP can be configured with `fsxadmin`** |
+| 3 | Log in with the initiator side unconfigured, and record the exit code and `journalctl -u iscsid` | **The symptom of authentication failure** (the footing for isolation) |
+| 4 | Whether `lun portset create` and `lun igroup bind` work | **That a portset is usable with `fsxadmin`** |
+| 5 | After binding, confirm the path count and any `faulty` with `multipath -ll` | **That the narrowing took effect, and the residue** |
+| 6 | Delete the residue with `echo 1 > /sys/block/<dev>/device/delete` and confirm `hwhandler` returns | **The cleanup procedure** |
+| 7 | Run `storage failover show` | **If an empty table, the HA state is not visible** |
+
+Do steps 3 and 5 **in a test environment.** Both temporarily lose access.
+
+CHAP's default in step 1 can be confirmed with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> vserver iscsi security show -vserver <svm>
+```
+
+### Expected output
+
+```text
+If the default row's Auth Type is none, there is no authentication. Anyone who claims an IQN on
+the igroup can log in. Whether to apply CHAP is decided by who can reach that subnet (the
+security-group range).
+```
+
+This command only reads the iSCSI security configuration; it changes nothing on authentication or the LUN. If you put a portset into operation, include host-side device deletion for the excluded path in the procedure.
+
+## Read next
+
+[Can a database on LUNs recover without quiescing?](a-database-on-luns-recovers-without-quiescing.md)

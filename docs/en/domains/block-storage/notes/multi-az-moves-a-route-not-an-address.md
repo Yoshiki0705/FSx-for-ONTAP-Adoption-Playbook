@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: en
 ---
 
-# Multi-AZ moves a route, not an address
+# Does Multi-AZ move an address?
+
+No, it moves a route. The block address does not move, so no Transit Gateway is needed either.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [English](multi-az-moves-a-route-not-an-address.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That a Multi-AZ failover moves the `/32` target in the VPC route table, not the iSCSI / NVMe/TCP addresses
+- That the block address is inside the VPC CIDR so no Transit Gateway is needed, and that availability is carried by the host's multipath
+
+## What this note does not answer
+
+- Block performance figures (only address placement, route rewriting, and ALUA direction were measured)
+- A general value for the usable-capacity shrinkage ratio (it differs between Single-AZ and Multi-AZ; count it in your own environment)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="multi-az-moves-a-route-not-an-address"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **A Multi-AZ FSx for ONTAP has addresses that move and addresses that do not. The block address is on the side that does not move.**
 
@@ -40,7 +61,7 @@ There are three consequences.
 
 ---
 
-## The placement of addresses
+### The placement of addresses
 
 The endpoint IP address range was auto-assigned as **`198.19.174.0/24`**. The VPC CIDR is a `10.0.x.x` /16, so **this range is outside the VPC.**
 
@@ -71,7 +92,7 @@ There was one ENI per AZ, **each carrying only two private addresses.**
 
 ---
 
-## What is rewritten on failover
+### What is rewritten on failover
 
 This is the result of inducing a failover by changing the throughput capacity from 384 to 768 MBps and watching the route table at 5-second intervals.
 
@@ -89,7 +110,7 @@ This is the result of inducing a failover by changing the throughput capacity fr
 
 ---
 
-## The condition that requires a Transit Gateway, and why block does not meet it
+### The condition that requires a Transit Gateway, and why block does not meet it
 
 AWS writes the condition that requires additional Transit Gateway configuration as **"a Multi-AZ file system whose endpoint IP address range is outside the VPC CIDR."** If it is inside the VPC CIDR, no additional configuration is needed.
 
@@ -108,7 +129,7 @@ AWS's client requirements table also answers "No" for iSCSI and NVMe/TCP to the 
 
 ---
 
-## The direction of the optimal path
+### The direction of the optimal path
 
 **In a 1 HA pair configuration there is only one aggregate.** The verification environment's `aggr1` was owned by node -01 (the 1a side), and **all volumes were there.** Node -02 owns nothing until failover.
 
@@ -136,7 +157,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 
 ---
 
-## The usable capacity in Multi-AZ
+### The usable capacity in Multi-AZ
 
 This is a measurement with `set -unit B`.
 
@@ -152,22 +173,7 @@ This is a measurement with `set -unit B`.
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | `aws fsx describe-file-systems --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'` | **Whether that range is inside or outside the VPC CIDR. Whether a Transit Gateway is needed is decided here** |
-| 2 | `aws fsx describe-storage-virtual-machines --query 'StorageVirtualMachines[].Endpoints'` | That the iSCSI address is inside the VPC CIDR. **`Nvme` returns `null`** (see below) |
-| 3 | `aws ec2 describe-network-interfaces --network-interface-ids <the fs ENI>` | The distinction between addresses carried on the ENI and those not |
-| 4 | Check the `/32` entries and their target ENI in the associated route table | **The implementation of floating addresses** |
-| 5 | `network interface show -fields address,home-node,failover-policy` | **That iSCSI is `disabled`** |
-| 6 | Connect from the two AZs and compare the `prio` in `multipath -ll` | **Which AZ the optimized side faces** |
-| 7 | `storage aggregate show -fields aggregate,node` | With 1 HA pair there is one aggregate, owned by one of the nodes |
-| 8 | Run `nvme ana-log /dev/nvmeN` per controller | **Telling optimized apart on a kernel with no native multipath** |
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -183,7 +189,7 @@ This is a measurement with `set -unit B`.
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -203,7 +209,7 @@ This is a measurement with `set -unit B`.
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -217,16 +223,46 @@ This is a measurement with `set -unit B`.
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the failover actually measured on top of this placement
-- [The block protocol choice is narrowed first by generation and HA pair count (日本語)](protocol-choice-is-bounded-before-you-choose.md) — the LIF and port premises
+- [The block protocol choice is narrowed first by generation and HA pair count](protocol-choice-is-bounded-before-you-choose.md) — the LIF and port premises
 - [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) — watching the node switch in the `FileServer` dimension
-- [The deployment type is decided only once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md)
+- [The deployment type is decided only once (日本語)](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md)
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md)
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [English](multi-az-moves-a-route-not-an-address.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | `aws fsx describe-file-systems --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'` | **Whether that range is inside or outside the VPC CIDR. Whether a Transit Gateway is needed is decided here** |
+| 2 | `aws fsx describe-storage-virtual-machines --query 'StorageVirtualMachines[].Endpoints'` | That the iSCSI address is inside the VPC CIDR. **`Nvme` returns `null`** |
+| 3 | `aws ec2 describe-network-interfaces --network-interface-ids <the fs ENI>` | The distinction between addresses carried on the ENI and those not |
+| 4 | Check the `/32` entries and their target ENI in the associated route table | **The implementation of floating addresses** |
+| 5 | `network interface show -fields address,home-node,failover-policy` | **That iSCSI is `disabled`** |
+| 6 | Connect from the two AZs and compare the `prio` in `multipath -ll` | **Which AZ the optimized side faces** |
+| 7 | `storage aggregate show -fields aggregate,node` | With 1 HA pair there is one aggregate, owned by one of the nodes |
+| 8 | Run `nvme ana-log /dev/nvmeN` per controller | **Telling optimized apart on a kernel with no native multipath** |
+
+The endpoint range in step 1 can be confirmed with this read-only command.
+
+```bash
+aws fsx describe-file-systems \
+  --query 'FileSystems[0].OntapConfiguration.EndpointIpAddressRange'
+```
+
+### Expected output
+
+```text
+The endpoint range is returned. If it is outside the VPC CIDR, NFS / SMB / management need a
+Transit Gateway. The iSCSI / NVMe-TCP addresses are inside the VPC CIDR, so block alone is
+reachable over peering.
+```
+
+This command only reads the file system's configuration; it changes nothing on the route or the address. Because the block address does not move on failover either, what switches is the host-side multipath.
+
+## Read next
+
+[What controls exist outside the igroup?](igroups-are-not-the-only-access-control.md)

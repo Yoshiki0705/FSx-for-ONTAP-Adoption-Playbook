@@ -6,20 +6,41 @@ evidence: verified
 verified_on: 2026-09-05
 region: ap-northeast-1
 ontap_version: 9.18.1P5
+deployment_type: MULTI_AZ_2
 lang: en
 ---
 
-# A database on LUNs recovered without quiescing
+# Can a database on LUNs recover without quiescing?
+
+Yes. A write-fenced snapshot took 0.52 seconds, and the DB recovered itself through WAL replay.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [English](a-database-on-luns-recovers-without-quiescing.md) | [🏠 Repository home](../../../README.md)
 <!-- lang-switcher:end -->
 
+## What you will learn
+
+- That a PostgreSQL with data and WAL split onto separate LUNs can be captured as one point in time with a consistency group's write-fenced snapshot, without stopping writes
+- That the DB starts from a crash-consistent clone by redoing its own recovery, and no committed row is lost
+
+## What this note does not answer
+
+- The behavior with other DB engines or other settings (one observation with PostgreSQL 16)
+- The conditions, symptoms, or upper time limit under which the write fence fails (not observed; the source for an upper-limit value could not be confirmed either)
+
+## Prerequisite level
+
+advanced
+
+## Body
+
+<a id="a-database-on-luns-recovered-without-quiescing"></a>
+
 [🏠 Repository home](../../../README.md) | [Domain — Block storage](../README.md)
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Against a PostgreSQL with data and WAL split onto separate LUNs, a consistency-group snapshot was taken without stopping writes, and starting from that clone, the DB replayed its own WAL and reached a consistent state.**
 
@@ -35,7 +56,7 @@ lang: en
 
 ---
 
-## The configuration
+### The configuration
 
 | Element | Placement |
 |---|---|
@@ -48,7 +69,7 @@ lang: en
 
 ---
 
-## Why a write fence is needed, and its duration
+### Why a write fence is needed, and its duration
 
 **Snapshotting the two LUNs separately mixes two points in time.** The data could be newer and the WAL older, or vice versa. **The relationship the DB's recovery assumes — "the WAL is ahead of the data" — is broken.**
 
@@ -79,7 +100,7 @@ The measurement.
 
 ---
 
-## The handoff of the clone
+### The handoff of the clone
 
 Cloning the volumes from the snapshot, **they were mapped to a separate host's igroup.**
 
@@ -109,7 +130,7 @@ lun map -vserver <svm> -path /vol/clone_pgdata/pgdata -igroup <the other host's 
 
 ---
 
-## The content of the recovery
+### The content of the recovery
 
 **The PostgreSQL on the clone side started with no preparation.** Only `postmaster.pid` was deleted.
 
@@ -144,7 +165,7 @@ The data check.
 
 ---
 
-## What can and cannot be said
+### What can and cannot be said
 
 **What can be said** (measured in this environment).
 
@@ -165,25 +186,7 @@ The data check.
 
 ---
 
-## How to confirm in your own environment
-
-| # | Step | What it tells you |
-|---|---|---|
-| 1 | Split the data and the WAL / redo onto LUNs on separate volumes | That the configuration is one that needs a fence |
-| 2 | Check that `vserver consistency-group create` works | **That it is usable with `fsxadmin`** |
-| 3 | Under load, run `snapshot create … -write-fence true` and **measure the time to return** | The fence duration in your own environment. **The gap to the limit is unknown until the limit value can be confirmed** |
-| 4 | `volume snapshot show -snapshot <name> -fields volume,create-time` | **That the timestamps of all volumes match** |
-| 5 | Record the maximum committed key immediately before and after | The footing to later judge the lost range |
-| 6 | Map the clone to a **separate host's igroup** and start it | **That `lun map` is needed separately** |
-| 7 | Check `redo starts` / `redo done` in the log after startup | **That the DB actually replayed.** Without this it is not a verification |
-| 8 | Count whether all rows up to the recorded maximum key are present | **That no committed row was lost** |
-| 9 | Do the same with `-write-fence false` and compare the results | **The effect of the fence** (do not do this in production) |
-
-**Do step 9 in a test environment.** It is a procedure that creates a broken state without a fence.
-
----
-
-## Common misconceptions
+### Common misconceptions
 
 | Misconception | Reality |
 |---|---|
@@ -200,7 +203,7 @@ The data check.
 
 ---
 
-## Verification environment
+### Verification environment
 
 | Item | Value |
 |---|---|
@@ -218,7 +221,7 @@ The data check.
 
 ---
 
-## Primary sources referenced
+### Primary sources referenced
 
 | Point | Source |
 |---|---|
@@ -232,7 +235,7 @@ The data check.
 
 ---
 
-## Related documents
+### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md) — the definition of consistency and the judgment on the requirement side
@@ -241,6 +244,38 @@ The data check.
 - [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md)
 - [Evidence policy](../../../evidence-policy.md)
 
-<!-- lang-switcher:start -->
-🌐 [日本語](../../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [English](a-database-on-luns-recovers-without-quiescing.md) | [🏠 Repository home](../../../README.md)
-<!-- lang-switcher:end -->
+## Verify it in your environment
+
+| # | Step | What it tells you |
+|---|---|---|
+| 1 | Split the data and the WAL / redo onto LUNs on separate volumes | That the configuration is one that needs a fence |
+| 2 | Check that `vserver consistency-group create` works | **That it is usable with `fsxadmin`** |
+| 3 | Under load, run `snapshot create … -write-fence true` and **measure the time to return** | The fence duration in your own environment. **The gap to the limit is unknown until the limit value can be confirmed** |
+| 4 | `volume snapshot show -snapshot <name> -fields volume,create-time` | **That the timestamps of all volumes match** |
+| 5 | Record the maximum committed key immediately before and after | The footing to later judge the lost range |
+| 6 | Map the clone to a **separate host's igroup** and start it | **That `lun map` is needed separately** |
+| 7 | Check `redo starts` / `redo done` in the log after startup | **That the DB actually replayed.** Without this it is not a verification |
+| 8 | Count whether all rows up to the recorded maximum key are present | **That no committed row was lost** |
+| 9 | Do the same with `-write-fence false` and compare the results | **The effect of the fence** (do not do this in production) |
+
+**Do step 9 in a test environment.** It is a procedure that creates a broken state without a fence.
+
+The timestamp match in step 4 can be confirmed with this read-only command.
+
+```bash
+ssh <svm-management-endpoint> volume snapshot show -snapshot <name> -fields volume,create-time
+```
+
+### Expected output
+
+```text
+The create-time of every volume in the consistency group matches (the write fence fixed the same
+point in time). If the timestamps mix, the order of dependent writes is broken and the DB's
+recovery loses its premise.
+```
+
+This command only reads the snapshot creation time; it changes nothing on the snapshot or the DB. The fence duration changes with the volume count and load, so measure it with your production configuration.
+
+## Read next
+
+[What does block monitoring not show? (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md)

@@ -9,10 +9,6 @@ lang: ja
 
 # コンテナから FSx for ONTAP をデータストアにできるか
 
-<!-- lang-switcher:start -->
-🌐 [日本語](container-datastore-selection.md) | [English](../../../en/reference/decision-trees/container-datastore-selection.md) | [🏠 リポジトリトップ](../../../../README.md)
-<!-- lang-switcher:end -->
-
 [🏠 リポジトリトップ](../../../../README.md) | [Reference](../README.md) | [決定木](README.md) | [Domain — ブロックストレージ](../../domains/block-storage/README.md)
 
 ---
