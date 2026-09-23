@@ -20,7 +20,7 @@ the table of contents; this is the entry point.
 | What you have | Read first | What it settles |
 |---|---|---|
 | **A number** (a published benchmark, or your own measurement) | [How to read published benchmarks](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) | **How many devices that figure aggregates.** A number that hides the device count cannot be read as one device's performance |
-| **An existing setup** (running on Amazon EBS today) | [Where EBS stops being the cheaper answer](../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | The condition under which its premise breaks. **Per-GB, EBS wins.** The boundary is not the device count |
+| **An existing setup** (running on Amazon EBS today) | [Where EBS stops being the cheaper answer](notes/when-ebs-stops-being-the-cheaper-answer.md) | The condition under which its premise breaks. **Per-GB, EBS wins.** The boundary is not the device count |
 | **A pending decision** (protocol, LUN layout) | [Block protocol and layout decision tree](../../../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | **The constraint that has already narrowed it.** Generation and HA-pair count remove options before any comparison starts |
 
 **If you want to run something first, start from the [30-minute quickstart](quickstart.md) instead.**
@@ -40,14 +40,14 @@ the table of contents; this is the entry point.
 | 7 | Where Amazon EBS is sufficient and where shared block changes the design | [When shared block changes the design](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
 | 8 | What constrains block persistent volumes on Kubernetes | [Kubernetes block volumes meet the volume limit](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) |
 | 9 | How to read and how to measure block performance figures | [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
-| 10 | What changes on Multi-AZ, and whether block reaches across a peering | [Multi-AZ moves a route, not an address](../../../ja/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) (日本語) |
+| 10 | What changes on Multi-AZ, and whether block reaches across a peering | [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
 | 11 | Whether I/O stops during a failover, and whether iSCSI and NVMe/TCP differ | [The measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
 | 12 | Whether there is access control beyond igroups | [igroups are not the only access control](../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) (日本語) |
 | 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) (日本語) |
 | 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
 | 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
 | 16 | How to just run it and see | [Block storage running in about thirty minutes](quickstart.md) |
-| 17 | How the cost compares with an existing Amazon EBS estate | [What stops Amazon EBS being the cheaper answer](../../../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) |
+| 17 | How the cost compares with an existing Amazon EBS estate | [What stops Amazon EBS being the cheaper answer](notes/when-ebs-stops-being-the-cheaper-answer.md) |
 
 ---
 

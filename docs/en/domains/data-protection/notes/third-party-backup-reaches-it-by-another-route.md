@@ -45,7 +45,7 @@ Two questions to settle.
 
 **What route 1's exclusion means is that it stops being visible from the AWS API.** Route 1 creates Amazon FSx backups and backup copies through the AWS Backup service, requiring the Amazon FSx resource type to be opted in on the AWS Backup side. **FSx for ONTAP does not sit in that shape.**
 
-**Route 3 treats it as a file share.** So **what is in scope is what NFS and SMB expose**, not a whole volume or the volume's own configuration. **LUN contents do not reach the file protocols**, so whether data served as block is in scope for this route has to be checked separately ([LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語)). **The material does not address this, and we did not check it.**
+**Route 3 treats it as a file share.** So **what is in scope is what NFS and SMB expose**, not a whole volume or the volume's own configuration. **LUN contents do not reach the file protocols**, so whether data served as block is in scope for this route has to be checked separately ([LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md)). **The material does not address this, and we did not check it.**
 
 ---
 
@@ -137,7 +137,7 @@ Two questions to settle.
 - [A backup copy holds no file system until it is restored](../../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) — the AWS-native route and its boundaries
 - [Having snapshots is not the same as being able to recover](snapshots-are-not-a-recovery-plan.md) — verification once the route is settled
 - [Data protection methods compared](../../../../ja/reference/comparison/data-protection-methods.md) (日本語) — the comparison table
-- [LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) — route 3's scope
+- [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — route 3's scope
 - [Approval for an irreversible operation is separate from approval for the task](../../../../ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md) (日本語) — approval before enabling Vault Lock
 - [Fit conditions — what must not be used as grounds](../../../../ja/reference/fsx-ontap-fit-conditions.md) (日本語) — how an absence from an enumeration is treated
 - [Evidence Policy](../../../evidence-policy.md)

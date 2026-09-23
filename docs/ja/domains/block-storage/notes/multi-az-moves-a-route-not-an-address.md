@@ -11,6 +11,10 @@ lang: ja
 
 # Multi-AZ が動かすのはアドレスではなくルート
 
+<!-- lang-switcher:start -->
+🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -226,3 +230,7 @@ nvme ana-log /dev/nvme2   (traddr=<iscsi-1c>)  ->  state: non-optimized
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](multi-az-moves-a-route-not-an-address.md) | [English](../../../../en/domains/block-storage/notes/multi-az-moves-a-route-not-an-address.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

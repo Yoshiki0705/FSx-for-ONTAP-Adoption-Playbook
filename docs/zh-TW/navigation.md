@@ -53,8 +53,8 @@ graph TD
 | **拿不定 Amazon EFS 是否足夠還是需要 FSx for ONTAP** | [選擇哪種 AWS 檔案儲存的決策樹](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [檔案儲存選項比較](../ja/reference/comparison/file-storage-options.md) (日本語) |
 | **透過 iSCSI / NVMe-oF 提供區塊儲存** | [區塊協定與配置決策樹](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [區塊儲存](../en/domains/block-storage/) (English) |
 | **拿不定該用區塊儲存還是 Amazon EBS 就夠** | [區塊儲存選項比較](../ja/reference/comparison/block-storage-options.md) (日本語) | [共享區塊改變設計的條件](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
-| **想與現有 Amazon EBS 架構的費用做比較** | [EBS 不再更便宜的分界不是台數而是同一份資料的副本數](../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | [30 分鐘跑起區塊儲存的步驟](../en/domains/block-storage/quickstart.md) (English) |
-| **想在不影響生產的前提下用檔案或 S3 API 分析區塊（LUN）上的資料** | [LUN 的內容不會出現在檔案協定上](../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **想與現有 Amazon EBS 架構的費用做比較** | [EBS 不再更便宜的分界不是台數而是同一份資料的副本數](../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (English) | [30 分鐘跑起區塊儲存的步驟](../en/domains/block-storage/quickstart.md) (English) |
+| **想在不影響生產的前提下用檔案或 S3 API 分析區塊（LUN）上的資料** | [LUN 的內容不會出現在檔案協定上](../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (English) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **想把磁碟區搬到另一個 SVM / 想確認 FlexClone 能否搬移** | [`volume rehost` 改變的只有所屬 SVM，內容不變](../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **實測吞吐量低於預期** | [判定手上的吞吐量數值究竟測了什麼](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [提升吞吐量的手段比較](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 已在運行，希望調整效能 | [效能](../en/domains/performance/) (English) | [最佳化](../en/playbooks/06-optimize/) (English) |

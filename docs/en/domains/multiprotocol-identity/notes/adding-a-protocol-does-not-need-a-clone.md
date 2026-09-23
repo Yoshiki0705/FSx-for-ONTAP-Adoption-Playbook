@@ -92,7 +92,7 @@ The vendor's documentation describes FlexClone as a mechanism that references a 
 | Making a volume already serving SMB usable from NFS as well | **No.** Fix one of the four above |
 | **Confirming behaviour before changing a production security style** | **Yes, this works.** Change the style on the clone and try it without touching the parent |
 | Building a test environment without stopping production | Yes |
-| Reading block data as files | **It does not solve that** ([LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語)) |
+| Reading block data as files | **It does not solve that** ([LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md)) |
 
 **The second row is what pairs with this note.** Whether changing the style breaks a means of blocking access in production can be established without trying it in production. The procedure is in the next section.
 
@@ -181,7 +181,7 @@ export-policy rule show -vserver <svm> -policyname <policy>
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **the smallest environment in which to check these four yourself**. One CloudFormation template and ONTAP REST scripts
 - [Security style determines the permission model](security-style-and-permission-evaluation.md) — what the style actually decides
 - [What `volume rehost` changes and what it does not](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) — the exclusion with clones, and what a split costs
-- [LUN contents do not reach the file protocols](../../../../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) — the boundary adding a protocol does not cross
+- [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — the boundary adding a protocol does not cross
 - [Routes for moving block data to files](../../../../ja/reference/comparison/block-to-file-routes.md) (日本語) — when that boundary has to be crossed
 - [Where a setting is created](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — why the root volume's style is a replacement
 - [Preserving ACLs during migration](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) — carrying permissions across intact
