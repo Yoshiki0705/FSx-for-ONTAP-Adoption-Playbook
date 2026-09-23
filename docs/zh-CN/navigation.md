@@ -53,8 +53,8 @@ graph TD
 | **拿不准 Amazon EFS 是否够用还是需要 FSx for ONTAP** | [选择哪种 AWS 文件存储的决策树](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [文件存储选项比较](../ja/reference/comparison/file-storage-options.md) (日本語) |
 | **通过 iSCSI / NVMe-oF 提供块存储** | [块协议与布局决策树](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [块存储](../en/domains/block-storage/) (English) |
 | **拿不准该用块存储还是 Amazon EBS 就够** | [块存储选项比较](../ja/reference/comparison/block-storage-options.md) (日本語) | [共享块改变设计的条件](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
-| **想与现有 Amazon EBS 构成的费用作比较** | [EBS 不再更便宜的分界不是台数而是同一份数据的副本数](../ja/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (日本語) | [30 分钟跑起块存储的步骤](../en/domains/block-storage/quickstart.md) (English) |
-| **想在不影响生产的前提下用文件或 S3 API 分析块（LUN）上的数据** | [LUN 的内容不会出现在文件协议上](../ja/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (日本語) | [把块数据搬成文件的路径比较](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **想与现有 Amazon EBS 构成的费用作比较** | [EBS 不再更便宜的分界不是台数而是同一份数据的副本数](../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (English) | [30 分钟跑起块存储的步骤](../en/domains/block-storage/quickstart.md) (English) |
+| **想在不影响生产的前提下用文件或 S3 API 分析块（LUN）上的数据** | [LUN 的内容不会出现在文件协议上](../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (English) | [把块数据搬成文件的路径比较](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **想把卷迁到另一个 SVM / 想确认 FlexClone 能否迁移** | [`volume rehost` 改变的只是所属 SVM，内容不变](../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) | [把块数据搬成文件的路径比较](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **实测吞吐低于预期** | [判定手上的吞吐数值究竟测了什么](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [提升吞吐的手段比较](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 已在运行，希望优化性能 | [性能](../en/domains/performance/) (English) | [优化](../en/playbooks/06-optimize/) (English) |

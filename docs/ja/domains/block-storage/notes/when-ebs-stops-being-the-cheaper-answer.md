@@ -9,6 +9,10 @@ lang: ja
 
 # EBS が安くなくなる境目は台数ではなく同じデータの複製の数
 
+<!-- lang-switcher:start -->
+🌐 [日本語](when-ebs-stops-being-the-cheaper-answer.md) | [English](../../../../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -190,3 +194,7 @@ FSx for ONTAP 側で複製の追加コストを 0 として計算します（Fle
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](when-ebs-stops-being-the-cheaper-answer.md) | [English](../../../../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

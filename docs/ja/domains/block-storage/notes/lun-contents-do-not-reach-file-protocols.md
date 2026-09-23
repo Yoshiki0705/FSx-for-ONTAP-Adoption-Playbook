@@ -9,6 +9,10 @@ lang: ja
 
 # LUN の中身はファイルプロトコルに現れない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](lun-contents-do-not-reach-file-protocols.md) | [English](../../../../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -153,3 +157,7 @@ lang: ja
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](lun-contents-do-not-reach-file-protocols.md) | [English](../../../../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

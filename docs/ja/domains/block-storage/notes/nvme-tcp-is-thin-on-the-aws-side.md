@@ -11,6 +11,10 @@ lang: ja
 
 # NVMe/TCP は AWS 側の面から一貫して抜けている
 
+<!-- lang-switcher:start -->
+🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -120,3 +124,7 @@ lang: ja
 - [パスはフェイルオーバーの仕組みそのもの](paths-are-the-failover-mechanism.md) — 接続後のパス数とフェイルオーバー。**NVMe/TCP は Amazon Linux 2023 でネイティブマルチパスが構成できません**
 - [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) — 作成側の分界線
 - [ブロックストレージを 30 分で動かす手順](../quickstart.md) — iSCSI のみを開ける CloudFormation
+
+<!-- lang-switcher:start -->
+🌐 [日本語](nvme-tcp-is-thin-on-the-aws-side.md) | [English](../../../../en/domains/block-storage/notes/nvme-tcp-is-thin-on-the-aws-side.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
