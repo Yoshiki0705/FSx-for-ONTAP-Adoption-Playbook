@@ -11,6 +11,10 @@ lang: ja
 
 # LUN に載せた DB は静止させずに復旧した
 
+<!-- lang-switcher:start -->
+🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -240,3 +244,7 @@ LOG:  checkpoint complete: ...
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](a-database-on-luns-recovers-without-quiescing.md) | [English](../../../../en/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

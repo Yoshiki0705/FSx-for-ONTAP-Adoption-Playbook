@@ -11,6 +11,10 @@ lang: ja
 
 # 容量は 3 か所で数えられる
 
+<!-- lang-switcher:start -->
+🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -244,3 +248,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](capacity-is-counted-in-three-places.md) | [English](../../../../en/domains/block-storage/notes/capacity-is-counted-in-three-places.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

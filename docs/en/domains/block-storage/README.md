@@ -34,16 +34,16 @@ the table of contents; this is the entry point.
 | 1 | Whether to use iSCSI or NVMe/TCP, and what narrows the choice first | [The block protocol choice is narrowed before you make it](../../../ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) (日本語) |
 | 2 | How to lay LUNs out across volumes, and whether one LUN per volume is right | [LUN layout decides recovery granularity](../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) (日本語) |
 | 3 | How much of a block deployment infrastructure as code can reach | [LUNs and igroups sit outside the AWS API](../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) (日本語) |
-| 4 | Where capacity is counted more than once, and what happens when writes stop | [Capacity is counted in three places](../../../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) (日本語) |
+| 4 | Where capacity is counted more than once, and what happens when writes stop | [Capacity is counted in three places](notes/capacity-is-counted-in-three-places.md) |
 | 5 | How many paths are needed, and who is responsible for them | [Paths are the failover mechanism](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) |
-| 6 | How far back a snapshot of a LUN can actually recover | [A snapshot of a LUN is crash-consistent by default](../../../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) (日本語) |
+| 6 | How far back a snapshot of a LUN can actually recover | [A snapshot of a LUN is crash-consistent by default](notes/a-snapshot-of-a-lun-is-crash-consistent.md) |
 | 7 | Where Amazon EBS is sufficient and where shared block changes the design | [When shared block changes the design](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
 | 8 | What constrains block persistent volumes on Kubernetes | [Kubernetes block volumes meet the volume limit](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) |
 | 9 | How to read and how to measure block performance figures | [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
 | 10 | What changes on Multi-AZ, and whether block reaches across a peering | [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
 | 11 | Whether I/O stops during a failover, and whether iSCSI and NVMe/TCP differ | [The measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
 | 12 | Whether there is access control beyond igroups | [igroups are not the only access control](../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) (日本語) |
-| 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](../../../ja/domains/block-storage/notes/a-database-on-luns-recovers-without-quiescing.md) (日本語) |
+| 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](notes/a-database-on-luns-recovers-without-quiescing.md) |
 | 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
 | 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
 | 16 | How to just run it and see | [Block storage running in about thirty minutes](quickstart.md) |
