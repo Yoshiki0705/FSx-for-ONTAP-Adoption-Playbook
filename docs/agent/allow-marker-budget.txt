@@ -16,6 +16,7 @@ CONTRIBUTING.md	file:pii	1
 docs/agent/pitfalls.md	naming	2
 docs/agent/support-reply-handling.md	file:support-attribution	1
 docs/en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md	naming	1
+docs/en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md	naming	1
 docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	1
 docs/i18n-terms.md	file:naming	1
 docs/ja/case-studies/public-references.md	naming	1

@@ -11,6 +11,10 @@ lang: ja
 
 # ブロックプロトコルの選択肢は世代と HA ペア数で先に狭まる
 
+<!-- lang-switcher:start -->
+🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -290,3 +294,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](protocol-choice-is-bounded-before-you-choose.md) | [English](../../../../en/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

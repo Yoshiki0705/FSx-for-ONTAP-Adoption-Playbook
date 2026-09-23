@@ -36,7 +36,7 @@ The mistake arrives in this shape:
 
 > This volume was created for SMB, so using it from NFS means rebuilding or copying it
 
-Follow that and you arrive at a procedure: make a FlexClone, then `volume rehost` it to another SVM that has NAS enabled. **That procedure does not work.** `volume rehost` requires as a precondition that the target is neither a clone nor a clone's parent, so **it cannot run until the clone is split first** ([What `volume rehost` changes and what it does not](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語)).
+Follow that and you arrive at a procedure: make a FlexClone, then `volume rehost` it to another SVM that has NAS enabled. **That procedure does not work.** `volume rehost` requires as a precondition that the target is neither a clone nor a clone's parent, so **it cannot run until the clone is split first** ([What `volume rehost` changes and what it does not](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md)).
 
 **And splitting brings back the capacity cost the copy was meant to avoid.** A clone shares blocks with its parent; splitting allocates storage of its own.
 
@@ -180,7 +180,7 @@ export-policy rule show -vserver <svm> -policyname <policy>
 - [Domain — Multiprotocol identity](../README.md) — this module's hub
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **the smallest environment in which to check these four yourself**. One CloudFormation template and ONTAP REST scripts
 - [Security style determines the permission model](security-style-and-permission-evaluation.md) — what the style actually decides
-- [What `volume rehost` changes and what it does not](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) — the exclusion with clones, and what a split costs
+- [What `volume rehost` changes and what it does not](../../block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — the exclusion with clones, and what a split costs
 - [LUN contents do not reach the file protocols](../../block-storage/notes/lun-contents-do-not-reach-file-protocols.md) — the boundary adding a protocol does not cross
 - [Routes for moving block data to files](../../../../ja/reference/comparison/block-to-file-routes.md) (日本語) — when that boundary has to be crossed
 - [Where a setting is created](../../../../ja/reference/decision-trees/where-a-setting-is-created.md) (日本語) — why the root volume's style is a replacement

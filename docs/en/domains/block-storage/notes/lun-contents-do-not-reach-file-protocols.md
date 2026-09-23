@@ -85,7 +85,7 @@ lang: en
 |---|---|---|
 | `volume modify -security-style` | The model used for permission evaluation | **Stays a LUN** |
 | FlexClone | Getting a replica without touching the parent | **Is replicated, still a LUN** |
-| `volume rehost` | Which SVM owns the volume | **Kept, and becomes unmapped** ([What `volume rehost` changes and does not (日本語)](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md)) |
+| `volume rehost` | Which SVM owns the volume | **Kept, and becomes unmapped** ([What `volume rehost` changes and does not (日本語)](volume-rehost-changes-ownership-not-contents.md)) |
 | **Mapping the clone LUN to another host and writing it out** | **From block to file** | This is the only place that crosses the boundary |
 
 **"Move to a NAS-enabled SVM and it will be visible as a file" does not hold.** An SVM's protocol setting addresses one of the four causes of NFS not arriving ([Adding NFS to a volume already serving SMB needs no clone](../../multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md#the-four-reasons-nfs-cannot-reach-it)). **The block-file boundary is outside those four.**
@@ -146,10 +146,10 @@ lang: en
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **a minimal setup to run the "how to confirm in your own environment" steps**. It includes the NFS-side recording script with the control
-- [What `volume rehost` changes and does not (日本語)](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — why moving the owning SVM does not move the boundary
+- [What `volume rehost` changes and does not (日本語)](volume-rehost-changes-ownership-not-contents.md) — why moving the owning SVM does not move the boundary
 - [Comparison of routes to carry block to file (日本語)](../../../../ja/reference/comparison/block-to-file-routes.md) — options for stage 3
 - [A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md) — consistency at stage 2
-- [LUNs and igroups are outside the AWS API (日本語)](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) — the two control planes
+- [LUNs and igroups are outside the AWS API (日本語)](block-objects-are-outside-the-aws-api.md) — the two control planes
 - [Prerequisites for FSx for ONTAP S3 Access Points (日本語)](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) — constraints at stage 4
 - [Adding NFS to a volume already serving SMB needs no clone](../../multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) — the four causes on the NAS side
 - [Evidence policy](../../../evidence-policy.md) — the treatment of `documented` and `open`

@@ -12,6 +12,10 @@ lang: ja
 
 # LUN と igroup は AWS の API の外側にある
 
+<!-- lang-switcher:start -->
+🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -233,3 +237,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](block-objects-are-outside-the-aws-api.md) | [English](../../../../en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

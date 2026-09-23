@@ -127,7 +127,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 | The time to make a copy | FlexClone does not copy actual data. Creating a volume from an EBS Snapshot involves a copy |
 | Deduplication / compression | FSx for ONTAP can enable it per volume and reduce the GB provisioned. **The reduction rate depends on the data and is not guaranteed** |
 | Building and operating host-side multipath | **A burden on the FSx for ONTAP side.** Unnecessary for a single EBS attachment |
-| Two control planes | LUNs and igroups are outside the AWS API ([the note (日本語)](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md)) |
+| Two control planes | LUNs and igroups are outside the AWS API ([the note (日本語)](block-objects-are-outside-the-aws-api.md)) |
 | Boot disk | **An FSx for ONTAP LUN cannot boot.** EBS is required |
 | Inter-AZ data transfer | There are Multi-AZ configurations where the optimal path faces another AZ ([the note](multi-az-moves-a-route-not-an-address.md)) |
 | The ceiling of 6 HA pairs | Block goes up to 6 pairs |
