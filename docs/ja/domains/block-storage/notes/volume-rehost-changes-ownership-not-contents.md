@@ -12,6 +12,10 @@ lang: ja
 
 # `volume rehost` が変えるのは所有 SVM だけで、中身は変わらない
 
+<!-- lang-switcher:start -->
+🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -312,3 +316,7 @@ UNIX**。対象ボリュームはセキュリティスタイルを明示的に `
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](volume-rehost-changes-ownership-not-contents.md) | [English](../../../../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

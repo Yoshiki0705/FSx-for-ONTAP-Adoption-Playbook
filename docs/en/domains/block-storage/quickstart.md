@@ -44,7 +44,7 @@ The artifacts are in [`examples/block-storage/`](../../../../examples/block-stor
 **A LUN, an igroup and a LUN map have no Amazon FSx API action and no CloudFormation resource type.**
 Provisioning therefore crosses from the AWS control plane to ONTAP, and **the crossing falls between
 the volume and the LUN.** This split is that boundary, not a packaging preference. See
-[LUNs and igroups sit outside the AWS API](../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) (日本語).
+[LUNs and igroups sit outside the AWS API](notes/block-objects-are-outside-the-aws-api.md).
 
 **The volume is created by the template on purpose.** A volume created on the ONTAP side receives no
 `fsvol` identifier and is therefore absent from Amazon CloudWatch, from AWS API tagging and from AWS
@@ -304,7 +304,7 @@ makes **the parent volume, its SVM and the entire file system undeletable.**
 | Multi-AZ | Address layout and failover behaviour both change — see [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
 | More than one HA pair | Block protocols are limited to six pairs and are disabled above that |
 | Performance figures | A `t3.medium` cannot sustain 384 MBps, which is 3.07 Gbps. Methodology is in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
-| CHAP and portsets | Authentication defaults to none. Configuration and failure symptoms are in [igroups are not the only access control](../../../ja/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) (日本語) |
+| CHAP and portsets | Authentication defaults to none. Configuration and failure symptoms are in [igroups are not the only access control](notes/igroups-are-not-the-only-access-control.md) |
 
 ---
 

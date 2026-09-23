@@ -73,7 +73,7 @@ The `Endpoints` of `describe-storage-virtual-machines` does not include `Nvme`; 
 
 **So the connection address cannot be obtained from the AWS API alone.** It uses the same two addresses as iSCSI, but to learn them you read the `Iscsi` endpoint or look at `network interface show` on the ONTAP side. In our measurement the `services` of `iscsi_1` / `iscsi_2` contained both `data-iscsi` and `data-nvme-tcp`, so **the same two addresses served both protocols.**
 
-This is the same dividing line as [LUNs and igroups are outside the AWS API (日本語)](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md), but **that one is "cannot be created through the AWS API" and this one is "cannot be read through the AWS API".** It is separated as a matter of reading a running configuration rather than creating one.
+This is the same dividing line as [LUNs and igroups are outside the AWS API (日本語)](block-objects-are-outside-the-aws-api.md), but **that one is "cannot be created through the AWS API" and this one is "cannot be read through the AWS API".** It is separated as a matter of reading a running configuration rather than creating one.
 
 ---
 
@@ -120,9 +120,9 @@ For the overall application procedure, see [Before adopting into production](../
 
 ## Related documents
 
-- [The block protocol choice is narrowed first by generation and HA pair count (日本語)](../../../../ja/domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) — the decision of which to choose
+- [The block protocol choice is narrowed first by generation and HA pair count (日本語)](protocol-choice-is-bounded-before-you-choose.md) — the decision of which to choose
 - [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — path count and failover after connecting. **NVMe/TCP cannot form native multipath on Amazon Linux 2023**
-- [LUNs and igroups are outside the AWS API (日本語)](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) — the dividing line on the creation side
+- [LUNs and igroups are outside the AWS API (日本語)](block-objects-are-outside-the-aws-api.md) — the dividing line on the creation side
 - [The 30-minute block storage quickstart](../quickstart.md) — CloudFormation that opens iSCSI only
 
 <!-- lang-switcher:start -->

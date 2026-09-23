@@ -11,6 +11,10 @@ lang: ja
 
 # igroup の外側にある 2 つの制御
 
+<!-- lang-switcher:start -->
+🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -270,3 +274,7 @@ multipath -r
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](igroups-are-not-the-only-access-control.md) | [English](../../../../en/domains/block-storage/notes/igroups-are-not-the-only-access-control.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

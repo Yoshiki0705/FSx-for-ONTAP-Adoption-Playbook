@@ -55,7 +55,7 @@ graph TD
 | **블록으로 갈지 Amazon EBS로 충분한지 판단이 서지 않는다** | [블록 스토리지 선택지 비교](../ja/reference/comparison/block-storage-options.md) (日本語) | [공유 블록이 설계를 바꾸는 조건](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
 | **EBS로 운영 중인 구성의 비용과 비교하고 싶다** | [EBS가 더 저렴하지 않게 되는 경계는 대수가 아니라 같은 데이터의 복제 수](../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (English) | [블록 스토리지를 30분에 움직이는 절차](../en/domains/block-storage/quickstart.md) (English) |
 | **블록(LUN)의 데이터를 운영에 영향을 주지 않고 파일이나 S3 API로 분석하고 싶다** | [LUN의 내용은 파일 프로토콜에 나타나지 않는다](../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (English) | [블록에서 파일로 옮기는 경로 비교](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
-| **볼륨을 다른 SVM으로 옮기고 싶다 / FlexClone을 옮길 수 있는지 알고 싶다** | [`volume rehost`가 바꾸는 것은 소유 SVM뿐이며 내용은 바뀌지 않는다](../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (日本語) | [블록에서 파일로 옮기는 경로 비교](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
+| **볼륨을 다른 SVM으로 옮기고 싶다 / FlexClone을 옮길 수 있는지 알고 싶다** | [`volume rehost`가 바꾸는 것은 소유 SVM뿐이며 내용은 바뀌지 않는다](../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (English) | [블록에서 파일로 옮기는 경로 비교](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **측정한 스루풋이 예상보다 낮다** | [손에 있는 스루풋 값이 무엇을 측정한 것인지 판정한다](../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | [스루풋을 올리는 수단 비교](../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 이미 운영 중이며 성능을 개선하고 싶다 | [성능](../en/domains/performance/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
 | 이미 운영 중이며 비용을 재검토하고 싶다 | [비용](../en/domains/cost/) (English) | [최적화](../en/playbooks/06-optimize/) (English) |
