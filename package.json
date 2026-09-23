@@ -1,5 +1,5 @@
 {
-  "name": "fsxn-adoption-playbook-editorial-tools",
+  "name": "fsxn-adoption-playbook-tools",
   "private": true,
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "11.17.0"

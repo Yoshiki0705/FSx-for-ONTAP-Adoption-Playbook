@@ -183,9 +183,28 @@ def render(block: Block, cli: Path) -> str | None:
     with tempfile.TemporaryDirectory(prefix="mermaid-report-") as directory:
         source = Path(directory) / "block.mmd"
         output = Path(directory) / "block.svg"
+        # mmdc launches Chromium through Puppeteer. A sandboxed CI runner (no setuid root,
+        # unprivileged user namespaces) makes Chromium's own sandbox fail to initialize, and
+        # the failure surfaces as a bare Node.js child-process exit rather than a mermaid parse
+        # error -- every render call failed this way in CI even for syntactically valid input,
+        # which a local machine with a normal desktop Chromium install never reproduces.
+        # --no-sandbox is mmdc's own documented workaround for exactly this environment.
+        puppeteer_config = Path(directory) / "puppeteer-config.json"
+        puppeteer_config.write_text(
+            '{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}', encoding="utf-8"
+        )
         source.write_text(block.source, encoding="utf-8")
         result = subprocess.run(
-            [str(cli), "--input", str(source), "--output", str(output), "--quiet"],
+            [
+                str(cli),
+                "--input",
+                str(source),
+                "--output",
+                str(output),
+                "--quiet",
+                "--puppeteerConfigFile",
+                str(puppeteer_config),
+            ],
             capture_output=True,
             text=True,
             check=False,
