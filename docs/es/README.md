@@ -220,6 +220,7 @@ Se agradecen Issues y Pull Requests. Consulta [CONTRIBUTING.md](../../CONTRIBUTI
 | **La ruta de supervisión ya está elegida** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Métricas, alertas y respuesta automatizada |
 | **Llevar los datos a una plataforma analítica** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Integraciones con Databricks / Snowflake / Athena / Glue / EMR |
 | **Migrar desde VMware** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migración a Amazon EC2 con FSx for ONTAP |
+| **Usarlo como almacén de datos para contenedores ECS / EKS** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Cinco configuraciones con plantillas de CloudFormation: montajes NFS/SMB en ECS on EC2, volúmenes persistentes de NetApp Trident en EKS on EC2 y puntos de acceso de S3 desde Fargate. **El conocimiento general de ONTAP — elección de controlador, el límite de número de volúmenes — remite a este Hub** |
 
 ---
 

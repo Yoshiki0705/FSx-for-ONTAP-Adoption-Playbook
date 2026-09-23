@@ -220,6 +220,7 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 | **모니터링 경로를 결정** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 메트릭, 알림, 자동 대응 |
 | **분석 플랫폼에 올리기** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 통합 |
 | **VMware에서 이전** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2와 FSx for ONTAP로의 마이그레이션 |
+| **ECS / EKS 컨테이너의 데이터스토어로 사용** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2의 NFS/SMB 마운트, EKS on EC2의 NetApp Trident 영구 볼륨, Fargate의 S3 액세스 포인트 경유 등 5가지 구성과 CloudFormation 템플릿. **드라이버 선택과 볼륨 수 상한 같은 일반적인 ONTAP 지식은 이 리포지토리를 참조합니다** |
 
 ---
 

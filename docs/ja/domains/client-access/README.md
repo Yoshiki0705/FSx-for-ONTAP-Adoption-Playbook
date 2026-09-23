@@ -60,7 +60,7 @@
 | EC2 Mac インスタンス | 標準機能 | 同梱されていません | AWS CLI / SDK | **対象外。** AWS の macOS 手順はこちらを前提にしています（[出典](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/attach-mac-client.html)）。Dedicated Host の費用が実機での検証と釣り合いません |
 | シンクライアント（VDI 専用端末） | VDI 内から | VDI 内から | VDI 内から | **要望受付中。** WorkSpaces の行と同じ構図になる見込みですが未確認です |
 | オンプレミスの Windows Server | 標準機能 | 標準機能 | AWS CLI / SDK | **要望受付中。** 端末ではなくサーバーなので、経路の設計が Site-to-Site VPN / Direct Connect に寄ります |
-| Kubernetes ノード / CI ランナー | — | — | — | **対象外。** 端末ではなくワークロードです。[Kubernetes のブロック PV はボリューム数の上限に当たる](../block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) を参照 |
+| Kubernetes ノード / CI ランナー | — | — | — | **対象外。** 端末ではなくワークロードです。判断は [コンテナから FSx for ONTAP をデータストアにできるか](../../reference/decision-trees/container-datastore-selection.md)、実装は [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) を参照 |
 
 > **オブジェクト側の補足**: この表の「オブジェクト」列は **FSx for ONTAP S3 Access Points** を指します。
 > マウント系の手段（rclone、Mountpoint for Amazon S3）は端末からの選択肢として挙がりますが、

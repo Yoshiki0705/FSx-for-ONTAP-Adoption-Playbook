@@ -65,7 +65,7 @@ with the `client-access` domain selected. **A row moves when a request arrives.*
 | EC2 Mac instance | Built in | Not included | AWS CLI / SDK | **Out of scope.** AWS's macOS procedure assumes this ([source](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/attach-mac-client.html)). The Dedicated Host cost does not pay for itself against a physical Mac |
 | Thin client (VDI-only device) | From inside the desktop | From inside the desktop | From inside the desktop | **Accepting requests.** Expected to match the WorkSpaces row, unconfirmed |
 | On-premises Windows Server | Built in | Built in | AWS CLI / SDK | **Accepting requests.** A server rather than an endpoint, so the route leans to Site-to-Site VPN or Direct Connect |
-| Kubernetes node / CI runner | — | — | — | **Out of scope.** A workload, not an endpoint. See [Kubernetes block volumes and the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| Kubernetes node / CI runner | — | — | — | **Out of scope.** A workload, not an endpoint. For the decision, see [Whether a container can use FSx for ONTAP as a datastore](../../reference/decision-trees/container-datastore-selection.md); for the implementation, [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) |
 
 > **On the object column**: it means **FSx for ONTAP S3 Access Points**. Mount-style options
 > (rclone, Mountpoint for Amazon S3) come up as endpoint choices, but **Mountpoint is Linux only and

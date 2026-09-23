@@ -129,12 +129,14 @@ Trident の SAN ドライバは **RWO / ROX / RWX / RWOP** に対応していま
 ## 関連ドキュメント
 
 - [Domain — ブロックストレージ](../README.md) — このモジュールのハブ
+- [コンテナから FSx for ONTAP をデータストアにできるか](../../../reference/decision-trees/container-datastore-selection.md) — このノートのドライバ選択を含む上位の判断フロー。実行環境（Fargate / EC2）から入ります
 - [共有ブロックが設計を変える条件](when-shared-block-changes-the-design.md) — RWX と書き込み調停の責任
 - [LUN の並べ方が決めているのは復旧の粒度](lun-layout-decides-recovery-granularity.md) — Selective LUN Map の挙動
 - [LUN と igroup は AWS の API の外側にある](block-objects-are-outside-the-aws-api.md) — Trident が使う制御面
 - [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — HA ペア 6 組の天井
 - [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
 - [ブロックストレージ横断リソースマップ](../../../reference/block-storage-resource-map.md) — Trident 関連の公開 IaC
+- [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) — EKS on EC2 の Trident 永続ボリュームを含む 5 構成の CloudFormation テンプレート。**このノートはドライバ選択とボリューム上限という判断を持ち、その実装はこちらにある分担**です
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---
