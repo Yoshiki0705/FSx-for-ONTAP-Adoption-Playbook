@@ -272,10 +272,13 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 | **監視の経路を決めた** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | メトリクス、アラート、自動対応の実装（[経路の比較](docs/ja/reference/comparison/observability-routes.md)で選んでから） |
 | **分析基盤に載せる** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR との統合 |
 | **VMware から移す** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2 と FSx for ONTAP への移行手順 |
+| **ECS / EKS のコンテナのデータストアにする** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2 の NFS/SMB マウント、EKS on EC2 の NetApp Trident 永続ボリューム、Fargate の S3 Access Points 経由の 5 構成と CloudFormation テンプレート。**ドライバ選択やボリューム数の上限といった一般的な ONTAP 知見はこのリポジトリを参照する分担**です |
 
 **両方を通す順序がある場合は、決定ツリー側に書いてあります。**
 例として [ファイルストレージの決定木](docs/ja/reference/decision-trees/file-storage-selection.md#この決定木が送り出す先) は、
 終端 5 から先を扱わないことと、sibling 側の決定木へ渡す順序を明示しています。
+[コンテナから FSx for ONTAP をデータストアにできるか](docs/ja/reference/decision-trees/container-datastore-selection.md) も同様に、
+実行環境とドライバを決めたうえで、5 構成の実装を持つ sibling へ渡します。
 
 ---
 

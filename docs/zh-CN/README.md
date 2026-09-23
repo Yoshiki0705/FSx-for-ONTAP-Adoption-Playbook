@@ -220,6 +220,7 @@ make all           # 以上全部
 | **已确定监控路径** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 指标、告警与自动响应 |
 | **接入分析平台** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 集成 |
 | **从 VMware 迁移** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 迁移到 Amazon EC2 与 FSx for ONTAP |
+| **用作 ECS / EKS 容器的数据存储** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 五种配置及 CloudFormation 模板：ECS on EC2 的 NFS/SMB 挂载、EKS on EC2 的 NetApp Trident 持久卷、Fargate 经由 S3 接入点。**驱动选择与卷数量上限等通用 ONTAP 知识以本仓库为准** |
 
 ---
 

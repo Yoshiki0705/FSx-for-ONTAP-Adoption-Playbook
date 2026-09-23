@@ -19,6 +19,7 @@
 | **移行方式が未決** | [移行方式の選択](../../reference/decision-trees/migration-method.md) | 移行元の種類、ACL 保持要件、許容停止時間で先に狭まります |
 | **方式は決まっていて、切り替えが不安** | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](notes/where-the-rollback-window-closes.md) | **「切り替えを戻す」操作は存在しません。** 差分同期は共通 Snapshot に依存します |
 | **移行元が SaaS / クラウドストレージ** | [SaaS からの移行は転送方式より先に移行元の群を確定させる](notes/saas-source-migration-scoping.md) | **転送方式より先に決めることがあります。** 順序を逆にすると採取をやり直します |
+| **コンテナ / モダナイズ後の環境へ移す** | [コンテナ / モダナイゼーションへの移行経路は 3 つに分かれる](notes/migration-paths-to-containers.md) | **経路は入力（ソースコード / VM / 専用ツール）で分かれ**、コンテナのデータストア判断は同じ決定木に合流します |
 
 ---
 
@@ -33,6 +34,7 @@
 | 5 | どの時点まで、どうやって戻せるか | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](notes/where-the-rollback-window-closes.md) |
 | 6 | 移行元が SaaS / クラウドストレージの場合、方式の前に何を確定させるか | [SaaS からの移行は転送方式より先に移行元の群を確定させる](notes/saas-source-migration-scoping.md) |
 | 7 | AWS Transform で移行するとき、どの工程で容量がいくら要るか | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](notes/atx-finalize-flexclone-capacity.md) |
+| 8 | コンテナ / モダナイズ後の環境へ移す経路が複数あるとき、どう仕分けるか | [コンテナ / モダナイゼーションへの移行経路は 3 つに分かれる](notes/migration-paths-to-containers.md) |
 
 ---
 

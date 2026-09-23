@@ -20,6 +20,7 @@ the table of contents; this is the entry point.
 | **No migration method chosen yet** | [Choosing a migration method](../../../ja/reference/decision-trees/migration-method.md) (日本語) | source type, ACL requirements and tolerable downtime narrow it first |
 | **A method chosen, and the cutover is the worry** | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) | **there is no operation that undoes a cutover.** Incremental sync depends on a common Snapshot |
 | **A SaaS or cloud-storage source** | [Settle the source set before the transfer method](notes/saas-source-migration-scoping.md) | **some decisions come before the transfer method.** Reversing the order means collecting again |
+| **Moving into containers or a modernized runtime** | [The migration path to containers or a modernized runtime splits three ways](notes/migration-paths-to-containers.md) | **the path splits on the input (source code / VM / dedicated tool)**, and the container datastore decision converges on one tree |
 
 ---
 
@@ -34,6 +35,7 @@ the table of contents; this is the entry point.
 | 5 | Up to what point, and how, you can roll back | [The rollback window closes when clients start writing](notes/where-the-rollback-window-closes.md) |
 | 6 | What to settle before choosing a method when the source is SaaS / cloud storage | [Migrating from SaaS starts with classifying the source](notes/saas-source-migration-scoping.md) |
 | 7 | With AWS Transform, which step needs how much capacity | [AWS Transform's Finalize is not cleanup - it is where physical capacity peaks](../../../ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) (日本語) |
+| 8 | How to sort multiple paths into containers or a modernized runtime | [The migration path to containers or a modernized runtime splits three ways](notes/migration-paths-to-containers.md) |
 
 ---
 
