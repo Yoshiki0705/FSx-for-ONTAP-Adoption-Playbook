@@ -258,7 +258,7 @@ different problem. Parse the short listing, without `-p`, instead.
 | A space-reserved LUN consumes volume capacity immediately | **A LUN created through the REST API is not reserved by default** (`space.guarantee.requested` is `false`). The volume showed 352,256 bytes used against a 40 GiB LUN. `verify-block.sh` now prints the reservation flag next to the size |
 
 The three-level capacity accounting itself is in
-[Capacity is counted in three places](../../../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) (日本語).
+[Capacity is counted in three places](notes/capacity-is-counted-in-three-places.md).
 **The aggregate here reported 907.03 GiB, matching a separately created Single-AZ file system
 exactly.**
 

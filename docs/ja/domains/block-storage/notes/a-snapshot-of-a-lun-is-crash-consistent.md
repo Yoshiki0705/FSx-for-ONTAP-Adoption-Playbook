@@ -9,6 +9,10 @@ lang: ja
 
 # LUN の Snapshot は既定で crash-consistent
 
+<!-- lang-switcher:start -->
+🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
 
 ---
@@ -226,3 +230,7 @@ graph TD
 ---
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Domain — ブロックストレージ](../README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](a-snapshot-of-a-lun-is-crash-consistent.md) | [English](../../../../en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->

@@ -188,7 +188,7 @@ On the FSx for ONTAP side, the added cost per copy is calculated as 0 (on the pr
 - [When shared block changes the design (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) — the part that changes by structure, not rate
 - [The 30-minute block storage quickstart](../quickstart.md) — build the floor configuration as-is and check it
 - [Provisioned capacity versus consumed capacity](../../cost/notes/provisioned-versus-consumed.md) — the difference between provisioned and consumed
-- [Capacity is counted in three places (日本語)](../../../../ja/domains/block-storage/notes/capacity-is-counted-in-three-places.md) — how much of the provisioned GB can be placed
+- [Capacity is counted in three places](capacity-is-counted-in-three-places.md) — how much of the provisioned GB can be placed
 - [Evidence policy](../../../evidence-policy.md)
 
 <!-- lang-switcher:start -->

@@ -68,7 +68,7 @@ lang: en
 
 **Because FlexClone derives from a Snapshot, the filesystem in the LUN inside is crash-consistent.**
 
-`fsck` or `chkdsk` may run at the moment the clone is mounted, and **files copied from there have not received the application-side consistency guarantee** ([A snapshot of a LUN is crash-consistent by default (日本語)](../../../../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md)).
+`fsck` or `chkdsk` may run at the moment the clone is mounted, and **files copied from there have not received the application-side consistency guarantee** ([A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md)).
 
 | Use | Acceptable |
 |---|---|
@@ -148,7 +148,7 @@ lang: en
 - [`examples/multiprotocol-ad/`](../../../../../examples/multiprotocol-ad/) — **a minimal setup to run the "how to confirm in your own environment" steps**. It includes the NFS-side recording script with the control
 - [What `volume rehost` changes and does not (日本語)](../../../../ja/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) — why moving the owning SVM does not move the boundary
 - [Comparison of routes to carry block to file (日本語)](../../../../ja/reference/comparison/block-to-file-routes.md) — options for stage 3
-- [A snapshot of a LUN is crash-consistent by default (日本語)](../../../../ja/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md) — consistency at stage 2
+- [A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md) — consistency at stage 2
 - [LUNs and igroups are outside the AWS API (日本語)](../../../../ja/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md) — the two control planes
 - [Prerequisites for FSx for ONTAP S3 Access Points (日本語)](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) — constraints at stage 4
 - [Adding NFS to a volume already serving SMB needs no clone](../../multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) — the four causes on the NAS side
