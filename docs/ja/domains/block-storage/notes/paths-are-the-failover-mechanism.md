@@ -14,6 +14,10 @@ lang: ja
 
 そのものです。I/O の継続はホスト側の multipath が担い、セッション数は既定ではなく実測で決めます。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](paths-are-the-failover-mechanism.md) | [English](../../../../en/domains/block-storage/notes/paths-are-the-failover-mechanism.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - ブロックのフェイルオーバーはホスト側 multipath が担い、パス数は LIF 本数 × セッション数で 2〜24 本に変わること

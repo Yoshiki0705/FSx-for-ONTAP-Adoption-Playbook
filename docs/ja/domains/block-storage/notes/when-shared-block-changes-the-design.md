@@ -11,6 +11,10 @@ lang: ja
 
 単独接続で足りるなら持ち込む理由はありません。効くのは構造が要る 4 条件のときです。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](when-shared-block-changes-the-design.md) | [English](../../../../en/domains/block-storage/notes/when-shared-block-changes-the-design.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - FSx for ONTAP をブロックに選ぶ理由が速さではなく構造で、単独接続なら Amazon EBS が素直なこと

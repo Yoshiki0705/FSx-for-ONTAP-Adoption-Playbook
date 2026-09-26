@@ -28,7 +28,7 @@ Whether a container on Amazon ECS / Amazon EKS can use FSx for ONTAP as a persis
 | 1 | Is the runtime Fargate or EC2 | **On Fargate, FSx for ONTAP cannot be attached.** The option disappears before performance or sharing requirements are considered |
 | 2 | ECS or EKS | The reachability form differs. ECS on EC2 is a **host mount bind-mounted in**, EKS on EC2 is the **Trident CSI driver** |
 | 3 | Shared across Pods or single writer | On EKS, shared uses `ontap-nas` (NFS/SMB, RWX), single writer uses `ontap-san` (iSCSI, RWO) |
-| 4 | Does the expected PV count exceed the volume limit | If it does, `ontap-san-economy`. The decision is in [Kubernetes block volumes meet the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| 4 | Does the expected PV count exceed the volume limit | If it does, `ontap-san-economy`. The decision is in [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | 5 | Windows / SMB dependent | The SMB PV is `ontap-nas` and **Windows nodes only**. The Trident EKS add-on does not support it |
 
 > **Tier**: `documented` — the branch conditions are based on AWS / NetApp official documentation (confirmed 2026-09-22).
@@ -103,7 +103,7 @@ graph TD
 | ECS on EC2 goes through a host mount | AWS documents the procedure as mounting NFS on EC2 Linux and bind-mounting it, and creating an SMB global mapping on EC2 Windows and bind-mounting it. **The container runtime does not mount FSx for ONTAP directly** |
 | EKS on EC2 uses Trident | The AWS EKS User Guide points to NetApp Trident (a CSI-compliant driver) as the means to use FSx for ONTAP from EKS. There is no separate AWS-native CSI driver for FSx for ONTAP |
 | Shared vs single writer splits the driver | NetApp's integration guide makes "NAS driver if multiple Pods share one PVC, iSCSI block driver if not" the default choice |
-| PV count selects `ontap-san-economy` | `ontap-san` creates a FlexVol plus a LUN per PV, so the PV count lands directly on the volume-count limit. NetApp states that `ontap-san-economy` should be used only when the expected PV count exceeds the volume limit. Details in [Kubernetes block volumes meet the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| PV count selects `ontap-san-economy` | `ontap-san` creates a FlexVol plus a LUN per PV, so the PV count lands directly on the volume-count limit. NetApp states that `ontap-san-economy` should be used only when the expected PV count exceeds the volume limit. Details in [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | The SMB PV is Windows nodes only | SMB volumes are `ontap-nas` only, Windows nodes only, and not supported by the Trident EKS add-on |
 | AWS Transform containerization does not configure persistent storage | The scope of containerization is Dockerizing and deploying; the output (Helm chart / Terraform module) does not include PV / PVC / StorageClass configuration |
 
@@ -122,7 +122,7 @@ The source URLs and the measured / unconfirmed tiers for every item are in the i
 | Step | Which decision tree | What it decides |
 |---|---|---|
 | 1 | This decision tree | The runtime, the reachability form, and which driver |
-| 2 | [Kubernetes block volumes meet the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | Whether `ontap-san` or `ontap-san-economy`. **It depends on whether the PV count hits the volume limit** |
+| 2 | [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | Whether `ontap-san` or `ontap-san-economy`. **It depends on whether the PV count hits the volume limit** |
 | 3 | The sibling's CloudFormation templates | Running the chosen configuration at minimal scale: Trident on EKS on EC2, the host mount on ECS on EC2, S3 Access Points on Fargate |
 
 **If you chose Fargate and landed on object access via S3 Access Points**, [how a request through an S3 Access Point is judged (日本語)](../../../ja/reference/decision-trees/access-point-authorization.md) and data-utilization's [reaching data without copies (日本語)](../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) cover authorization and the access path.
@@ -133,7 +133,7 @@ The source URLs and the measured / unconfirmed tiers for every item are in the i
 
 | Question | Where it lives |
 |---|---|
-| The detailed difference between `ontap-san` and `ontap-san-economy`, and the volume-limit figures | [Kubernetes block volumes meet the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| The detailed difference between `ontap-san` and `ontap-san-economy`, and the volume-limit figures | [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | The earlier decision of which AWS file storage | [Choosing an AWS file storage (日本語)](../../../ja/reference/decision-trees/file-storage-selection.md) |
 | Sorting the migration path (source code / VM / dedicated tool) that led here | [The migration path to containers or a modernized runtime splits three ways](../../playbooks/03-migrate/notes/migration-paths-to-containers.md) |
 | The block layout after FSx for ONTAP is chosen | [Choosing a block protocol and layout (日本語)](../../../ja/reference/decision-trees/block-protocol-and-layout.md) |
@@ -164,7 +164,7 @@ The source URLs and the measured / unconfirmed tiers for every item are in the i
 - [Decision trees index (日本語)](../../../ja/reference/decision-trees/README.md) — the other decision trees
 - [The migration path to containers or a modernized runtime splits three ways](../../playbooks/03-migrate/notes/migration-paths-to-containers.md) — sorting the migration path before it converges here
 - [Choosing an AWS file storage (日本語)](../../../ja/reference/decision-trees/file-storage-selection.md) — before entering containers, which file storage at all
-- [Kubernetes block volumes meet the volume limit (日本語)](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) — Trident driver choice and the volume limit
+- [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) — Trident driver choice and the volume limit
 - [Choosing a block protocol and layout (日本語)](../../../ja/reference/decision-trees/block-protocol-and-layout.md) — the block decision after FSx for ONTAP is chosen
 - [How a request through an S3 Access Point is judged (日本語)](../../../ja/reference/decision-trees/access-point-authorization.md) — authorization when Fargate lands on S3 Access Points
 - [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) — the five configurations as CloudFormation templates (implementation)

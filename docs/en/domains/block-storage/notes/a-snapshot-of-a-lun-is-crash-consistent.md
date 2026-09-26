@@ -83,7 +83,7 @@ And crucially, **ONTAP's application-consistent flag is for recording.** NetApp'
 
 **The third row was originally written as "not enough," but a measurement overturned it.** It is true that snapshotting volumes individually mixes the timestamps, but **`vserver consistency-group snapshot create -write-fence true` fixes multiple volumes as one point in time.** In the verification environment, a fenced snapshot was taken **without stopping writes** against a PostgreSQL with data and WAL on separate LUNs, and starting from that clone **recovered without losing committed rows**. **The measured values are not placed in this note** — what was measured is in [A database on LUNs recovered without quiescing](a-database-on-luns-recovers-without-quiescing.md) (`verified`), and the fence and redo seconds are there. This note's tier stays `documented`.
 
-**So "put them on the same volume if mutual consistency is needed" is not the only option.** The layout decision is in [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md).
+**So "put them on the same volume if mutual consistency is needed" is not the only option.** The layout decision is in [The LUN layout decides the recovery granularity (日本語)](lun-layout-decides-recovery-granularity.md).
 
 ---
 
@@ -222,11 +222,11 @@ graph TD
 ### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
-- [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) — the relation between mutual consistency and layout
+- [The LUN layout decides the recovery granularity (日本語)](lun-layout-decides-recovery-granularity.md) — the relation between mutual consistency and layout
 - [Comparison of routes to carry block to file (日本語)](../../../../ja/reference/comparison/block-to-file-routes.md) — **that data carried from a clone inherits this tier**, and the option of ensuring it on the application side
 - [Capacity is counted in three places](capacity-is-counted-in-three-places.md) — the capacity a snapshot holds
 - [A snapshot is not a recovery plan](../../data-protection/notes/snapshots-are-not-a-recovery-plan.md) — the same point on the file side
-- [When shared block changes the design (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) — that a snapshot is not a separate charge
+- [When shared block changes the design (日本語)](when-shared-block-changes-the-design.md) — that a snapshot is not a separate charge
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of primary sources
 - [Evidence policy](../../../evidence-policy.md)
 
@@ -263,4 +263,4 @@ This command only reads the volume's configuration; it changes nothing on the sn
 
 ## Read next
 
-[What limit does a Kubernetes block PV hit? (日本語)](../../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md)
+[What limit does a Kubernetes block PV hit? (日本語)](kubernetes-block-volumes-and-the-volume-limit.md)

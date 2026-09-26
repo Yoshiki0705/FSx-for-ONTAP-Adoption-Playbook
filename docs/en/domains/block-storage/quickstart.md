@@ -45,7 +45,7 @@ the volume and the LUN.** This split is that boundary, not a packaging preferenc
 
 **The volume is created by the template on purpose.** A volume created on the ONTAP side receives no
 `fsvol` identifier and is therefore absent from Amazon CloudWatch, from AWS API tagging and from AWS
-Backup — see [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語).
+Backup — see [What block monitoring shows](notes/what-block-monitoring-shows.md).
 
 ---
 
@@ -161,7 +161,7 @@ size=40G features='3 queue_if_no_path pg_init_retries 50' hwhandler='1 alua' wp=
 
 **The documented connection procedure is not idempotent.** Re-running its per-portal login loop adds
 sessions, and on a Windows host that took a measured 16 paths to 24 with no warning — see
-[Paths are the failover mechanism](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語).
+[Paths are the failover mechanism](notes/paths-are-the-failover-mechanism.md).
 
 These scripts read current state first and create only what is missing. **Three consecutive passes in
 the same environment left all five counts identical.**
@@ -296,11 +296,11 @@ makes **the parent volume, its SVM and the entire file system undeletable.**
 
 | Not covered | Why, and where to go next |
 |---|---|
-| NVMe/TCP | It depends on the kernel, which is too much for a first pass. **`verify-block.sh` reports `CONFIG_NVME_MULTIPATH`**; it is not set on Amazon Linux 2023, and failover does not work in that state — see [the measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
-| Windows and MPIO | A separate set of PowerShell steps. Host-side defaults are in [Paths are the failover mechanism](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) |
+| NVMe/TCP | It depends on the kernel, which is too much for a first pass. **`verify-block.sh` reports `CONFIG_NVME_MULTIPATH`**; it is not set on Amazon Linux 2023, and failover does not work in that state — see [the measured failover](notes/paths-are-the-failover-mechanism.md#the-measured-failover) |
+| Windows and MPIO | A separate set of PowerShell steps. Host-side defaults are in [Paths are the failover mechanism](notes/paths-are-the-failover-mechanism.md) |
 | Multi-AZ | Address layout and failover behaviour both change — see [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
 | More than one HA pair | Block protocols are supported only on file systems with 6 or fewer pairs; transition behaviour while adding pair 7 is not documented |
-| Performance figures | A `t3.medium` cannot sustain 384 MBps, which is 3.07 Gbps. Methodology is in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
+| Performance figures | A `t3.medium` cannot sustain 384 MBps, which is 3.07 Gbps. Methodology is in [Reading a published benchmark](notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark) |
 | CHAP and portsets | Authentication defaults to none. Configuration and failure symptoms are in [igroups are not the only access control](notes/igroups-are-not-the-only-access-control.md) |
 
 ---

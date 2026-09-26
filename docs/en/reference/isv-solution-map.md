@@ -84,7 +84,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 **The design note is not about the product.** The principle comes first — when several hosts write to the same LUN, arbitration is the host's responsibility — and this product is one implementation that takes it on. **Read the principle before looking at the product.**
 
-- Design note: [When shared block changes the design — the write-arbitration responsibility](../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#ホスト側のクラスタ機能を担う製品) (日本語)
+- Design note: [When shared block changes the design — the write-arbitration responsibility](../domains/block-storage/notes/when-shared-block-changes-the-design.md#products-that-carry-the-host-side-clustering-function)
 - Decision tree: [Block protocol and layout](../../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語)
 
 ---
@@ -196,7 +196,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 | 1 | Whether transfer to and from an FSx for ONTAP NFS volume succeeds, and whether the result is intact | The smallest question of whether the combination holds at all |
 | 2 | How a transfer behaves during a file system failover (continues / retries / fails) | **The interaction between a managed failover and file-transfer middleware.** No public material covers it, and it bears on a design decision |
 
-**Throughput will not be measured.** The figure would be governed by the client instance type and placement rather than by the product. The same reasoning is in [Reading a published benchmark](../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語).
+**Throughput will not be measured.** The figure would be governed by the client instance type and placement rather than by the product. The same reasoning is in [Reading a published benchmark](../domains/block-storage/notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark).
 
 **The verification environment will be deleted within 24 hours.** No irreversible retention setting (SnapLock, snapshot locking) will be used.
 

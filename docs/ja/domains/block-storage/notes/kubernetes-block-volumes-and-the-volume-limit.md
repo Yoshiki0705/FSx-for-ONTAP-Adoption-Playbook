@@ -11,6 +11,10 @@ lang: ja
 
 容量ではなくボリューム数です。Trident のドライバ選択がその天井を決めます。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](kubernetes-block-volumes-and-the-volume-limit.md) | [English](../../../../en/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - `ontap-san` は PV 1 つが FlexVol 1 つを消費し、詰まるのが容量ではなくボリューム数（500 / 1,000）であること
