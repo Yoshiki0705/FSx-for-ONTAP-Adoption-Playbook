@@ -150,6 +150,8 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | [`observability/`](docs/ja/domains/observability/) | 監視経路の選定・Harvest / Prometheus・データの所在 |
 | [`client-access/`](docs/ja/domains/client-access/) | Windows / WSL2 / Mac 端末からの到達経路・マウント・端末側の資格情報 |
 
+**AWS の AI エージェント（AWS DevOps Agent ほか）を運用に重ねる観点は [AI エージェントのジャンル](docs/ja/ai-agents/) にまとめています。**
+
 ### 横断リファレンス — `reference/`
 
 | ディレクトリ | 概要 |
