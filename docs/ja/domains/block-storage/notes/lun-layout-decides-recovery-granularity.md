@@ -14,6 +14,10 @@ lang: ja
 
 復旧の粒度です。1 LUN 1 ボリュームは一律の推奨ではなく、後から並べ替えられます。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](lun-layout-decides-recovery-granularity.md) | [English](../../../../en/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - Snapshot / SnapMirror がボリューム単位で動くため、LUN のレイアウトが復旧の粒度（相互整合か個別復旧か）を決めること

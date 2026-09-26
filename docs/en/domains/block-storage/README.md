@@ -15,7 +15,7 @@ the table of contents; this is the entry point.
 
 | What you have | Read first | What it settles |
 |---|---|---|
-| **A number** (a published benchmark, or your own measurement) | [How to read published benchmarks](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) | **How many devices that figure aggregates.** A number that hides the device count cannot be read as one device's performance |
+| **A number** (a published benchmark, or your own measurement) | [How to read published benchmarks](notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark) | **How many devices that figure aggregates.** A number that hides the device count cannot be read as one device's performance |
 | **An existing setup** (running on Amazon EBS today) | [Where EBS stops being the cheaper answer](notes/when-ebs-stops-being-the-cheaper-answer.md) | The condition under which its premise breaks. **Per-GB, EBS has the lower price.** The boundary is not the device count |
 | **A pending decision** (protocol, LUN layout) | [Block protocol and layout decision tree](../../../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | **The constraint that has already narrowed it.** Generation and HA-pair count remove options before any comparison starts |
 
@@ -28,19 +28,19 @@ the table of contents; this is the entry point.
 | # | Question | Notes |
 |---|---|---|
 | 1 | Whether to use iSCSI or NVMe/TCP, and what narrows the choice first | [The block protocol choice is narrowed before you make it](notes/protocol-choice-is-bounded-before-you-choose.md) |
-| 2 | How to lay LUNs out across volumes, and whether one LUN per volume is right | [LUN layout decides recovery granularity](../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) (日本語) |
+| 2 | How to lay LUNs out across volumes, and whether one LUN per volume is right | [LUN layout decides recovery granularity](notes/lun-layout-decides-recovery-granularity.md) |
 | 3 | How much of a block deployment infrastructure as code can reach | [LUNs and igroups sit outside the AWS API](notes/block-objects-are-outside-the-aws-api.md) |
 | 4 | Where capacity is counted more than once, and what happens when writes stop | [Capacity is counted in three places](notes/capacity-is-counted-in-three-places.md) |
-| 5 | How many paths are needed, and who is responsible for them | [Paths are the failover mechanism](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) |
+| 5 | How many paths are needed, and who is responsible for them | [Paths are the failover mechanism](notes/paths-are-the-failover-mechanism.md) |
 | 6 | How far back a snapshot of a LUN can actually recover | [A snapshot of a LUN is crash-consistent by default](notes/a-snapshot-of-a-lun-is-crash-consistent.md) |
-| 7 | Where Amazon EBS is sufficient and where shared block changes the design | [When shared block changes the design](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
-| 8 | What constrains block persistent volumes on Kubernetes | [Kubernetes block volumes meet the volume limit](../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) (日本語) |
-| 9 | How to read and how to measure block performance figures | [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) |
+| 7 | Where Amazon EBS is sufficient and where shared block changes the design | [When shared block changes the design](notes/when-shared-block-changes-the-design.md) |
+| 8 | What constrains block persistent volumes on Kubernetes | [Kubernetes block volumes meet the volume limit](notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| 9 | How to read and how to measure block performance figures | [Reading a published benchmark](notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark) |
 | 10 | What changes on Multi-AZ, and whether block reaches across a peering | [Multi-AZ moves a route, not an address](notes/multi-az-moves-a-route-not-an-address.md) |
-| 11 | Whether I/O stops during a failover, and whether iSCSI and NVMe/TCP differ | [The measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語) |
+| 11 | Whether I/O stops during a failover, and whether iSCSI and NVMe/TCP differ | [The measured failover](notes/paths-are-the-failover-mechanism.md#the-measured-failover) |
 | 12 | Whether there is access control beyond igroups | [igroups are not the only access control](notes/igroups-are-not-the-only-access-control.md) |
 | 13 | Whether a database spanning several LUNs can be backed up without quiescing it | [A database on LUNs recovers without quiescing](notes/a-database-on-luns-recovers-without-quiescing.md) |
-| 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) (日本語) |
+| 14 | What block monitoring shows, and whether per-LUN visibility exists | [What block monitoring shows](notes/what-block-monitoring-shows.md) |
 | 15 | Whether Fibre Channel can be used | _not yet written_ (the [glossary FC entry](../../../ja/reference/glossary/README.md) states what is documented) |
 | 16 | How to just run it and see | [Block storage running in about thirty minutes](quickstart.md) |
 | 17 | How the cost compares with an existing Amazon EBS estate | [What stops Amazon EBS being the cheaper answer](notes/when-ebs-stops-being-the-cheaper-answer.md) |
@@ -70,9 +70,9 @@ Always check the `evidence` field in each note's frontmatter.
 
 See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 
-**A `verified` tier in this module means observed behavior, not a performance figure.** The verification ran on minimum 384 MBps configurations — one Single-AZ and one Multi-AZ — and recorded no throughput or IOPS numbers. How to read published performance figures is covered in [Reading a published benchmark](../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語).
+**A `verified` tier in this module means observed behavior, not a performance figure.** The verification ran on minimum 384 MBps configurations — one Single-AZ and one Multi-AZ — and recorded no throughput or IOPS numbers. How to read published performance figures is covered in [Reading a published benchmark](notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark).
 
-**Failover timings are the one exception.** Those describe availability behaviour rather than performance, so they were measured; the conditions are stated in full inside [the measured failover](../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#実測したフェイルオーバー) (日本語).
+**Failover timings are the one exception.** Those describe availability behaviour rather than performance, so they were measured; the conditions are stated in full inside [the measured failover](notes/paths-are-the-failover-mechanism.md#the-measured-failover).
 
 ---
 

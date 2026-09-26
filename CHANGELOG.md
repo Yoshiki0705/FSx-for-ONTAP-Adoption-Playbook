@@ -556,6 +556,29 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The block-storage domain's English translation batches (#279–#281) left one note out of the plan
+  without deferring it, and this closes that gap alongside the four notes those batches did defer.**
+  Batch 1's body said the remaining eight settled notes would land in batches 2–3, but 3 + 4 = 7, not
+  8; `lun-layout-decides-recovery-granularity.md` fell out silently, met none of the stated deferral
+  criteria, and had been stable since 2026-09-05. Filed and closed as
+  [#284](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/284).
+  - **`docs/en/` gains** `lun-layout-decides-recovery-granularity.md`,
+    `paths-are-the-failover-mechanism.md`, `what-block-monitoring-shows.md`,
+    `when-shared-block-changes-the-design.md`, and `kubernetes-block-volumes-and-the-volume-limit.md`,
+    completing English coverage for all sixteen block-storage notes.
+  - Every link into these five that previously fell back to the Japanese copy with a `(日本語)` marker
+    — across both READMEs, the quickstart, `navigation.md` in all 8 languages, the container-datastore
+    decision tree, and two sibling-domain notes — is repointed to the new English page.
+  - `docs/ja/reference/cross-repo-index.md` gains five rows: citation registration is keyed per citing
+    file, so each sibling-repository claim the Japanese source cites needed its own row once an English
+    citing file existed alongside it.
+  - Two `allow:naming` / `allow:sales-vocabulary` markers carry over from the Japanese sources (an
+    external article title quoted verbatim, and a source label naming an AWS configuration-example
+    guide); the budget is updated. Two English phrasings tripped detectors that had nothing to match
+    in the Japanese original: a `-to-` construction between two digits read as a region code by the
+    i18n-parity literal check, and a sentence naming which side has the lower unit price used a word
+    the sales-vocabulary rule treats as promotional. Both reworded rather than suppressed.
+
 - **FlexCache had only one write mode here, and it was the default one.** The note described writes as
   acknowledged by the origin without naming that as write-around behaviour, so **write-back — and the
   constraints that swap in when you choose it — was absent.**

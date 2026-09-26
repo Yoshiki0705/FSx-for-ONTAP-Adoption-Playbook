@@ -100,7 +100,7 @@ This is the result of creating 2 volumes with the AWS API and 2 with the ONTAP C
 
 > **Tier**: `verified` (verified 2026-09-05, `ap-northeast-1`, `MULTI_AZ_2` second generation, 1 HA pair, ONTAP 9.18.1P5) — the count mismatch and the absence of the `VolumeId` dimension.
 
-The same point from the monitoring side is in [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md).
+The same point from the monitoring side is in [What block monitoring shows and does not (日本語)](what-block-monitoring-shows.md).
 
 ---
 
@@ -195,7 +195,7 @@ graph TD
     H2 --> H3[Create filesystem and mount]
 ```
 
-**There are not two control planes but three.** The host side comes last. The host-side scope is in [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md).
+**There are not two control planes but three.** The host side comes last. The host-side scope is in [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md).
 
 ---
 
@@ -234,8 +234,8 @@ graph TD
 - [Domain — Block storage](../README.md) — this module's hub
 - [The IaC boundary is decided by the API surface, not by preference (日本語)](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — the general boundary and the reason volume deletion fails
 - [The block protocol choice is narrowed first by generation and HA pair count](protocol-choice-is-bounded-before-you-choose.md) — the port pitfall
-- [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the third control plane
-- [Kubernetes block volumes meet the volume limit (日本語)](../../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) — the control plane Trident uses
+- [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md) — the third control plane
+- [Kubernetes block volumes meet the volume limit (日本語)](kubernetes-block-volumes-and-the-volume-limit.md) — the control plane Trident uses
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of published IaC
 - [Evidence policy](../../../evidence-policy.md)
 

@@ -70,7 +70,7 @@ advanced
 | `statistics lun show` | **Worked** |
 | `storage failover show` | **Returned an empty table** |
 
-**That `storage failover show` returned "This table is currently empty" is not a permission error.** **FSx for ONTAP does not show the HA state to `fsxadmin`.** As a consequence, **there is no path to induce a failover with `storage failover takeover`.** The only means to induce one is changing the throughput capacity (see [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md)).
+**That `storage failover show` returned "This table is currently empty" is not a permission error.** **FSx for ONTAP does not show the HA state to `fsxadmin`.** As a consequence, **there is no path to induce a failover with `storage failover takeover`.** The only means to induce one is changing the throughput capacity (see [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md)).
 
 ---
 
@@ -215,7 +215,7 @@ There are two cautions on unbinding.
 
 **Whether to apply CHAP is decided by who can get onto that subnet.** Because the block address is an ordinary address inside the VPC CIDR (see [Multi-AZ moves a route, not an address](multi-az-moves-a-route-not-an-address.md)), **narrowing the reachable range with the security group is the first control.** CHAP is the layer above it. **It is not one or the other.**
 
-**A portset is ONTAP's answer to the problem of too many paths.** There is also a way to adjust with the host-side session count, and **unless you record which one you narrowed with, the reason is not clear afterward.** The point that the path-count guidance conflicts between documents is in [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md).
+**A portset is ONTAP's answer to the problem of too many paths.** There is also a way to adjust with the host-side session count, and **unless you record which one you narrowed with, the reason is not clear afterward.** The point that the path-count guidance conflicts between documents is in [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md).
 
 ---
 
@@ -271,7 +271,7 @@ There are two cautions on unbinding.
 ### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
-- [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the paths a portset narrows
+- [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md) — the paths a portset narrows
 - [Multi-AZ moves a route, not an address](multi-az-moves-a-route-not-an-address.md) — that the block address is inside the VPC
 - [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — that the igroup is outside IaC
 - [Evidence policy](../../../evidence-policy.md)

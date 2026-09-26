@@ -329,4 +329,4 @@ This command only reads the volume's attributes; it changes nothing on the volum
 
 ## Read next
 
-[Under what conditions does shared block change the design? (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md)
+[Under what conditions does shared block change the design? (日本語)](when-shared-block-changes-the-design.md)

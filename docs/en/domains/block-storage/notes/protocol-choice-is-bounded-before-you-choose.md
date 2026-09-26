@@ -196,7 +196,7 @@ The Linux side is `linux`. The igroup's `os_type` is specified separately from t
 
 **On Amazon Linux 2023, native NVMe/TCP multipath was not enabled.** Kernel `6.18.44-99.149.amzn2023.x86_64` is `CONFIG_NVME_MULTIPATH is not set`, and **the same namespace appeared as two block devices.**
 
-**AWS's procedure assumes RHEL 9.3.** The details and observations are in [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#nvmetcp-のパスがカーネル構成に依存すること).
+**AWS's procedure assumes RHEL 9.3.** The details and observations are in [Paths are the failover mechanism itself](paths-are-the-failover-mechanism.md#that-nvmetcps-path-depends-on-kernel-configuration).
 
 **From the protocol-choice viewpoint, read it this way.** If you choose NVMe/TCP, **whether multipath is enabled in the host's kernel becomes a premise of the same weight as generation and HA pair count.**
 
@@ -286,10 +286,10 @@ graph TD
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [Choosing a block protocol and layout (日本語)](../../../../ja/reference/decision-trees/block-protocol-and-layout.md) — this judgment on a single page
-- [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the LIF count and path count, and NVMe multipath on AL2023
+- [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md) — the LIF count and path count, and NVMe multipath on AL2023
 - [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — the boundary of ports and control planes
 - [The deployment type is decided only once (日本語)](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — the irreversibility of generation and HA pairs
-- [When shared block changes the design (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) — whether to make it block in the first place
+- [When shared block changes the design (日本語)](when-shared-block-changes-the-design.md) — whether to make it block in the first place
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md) — the index of primary sources
 - [Evidence policy](../../../evidence-policy.md)
 
@@ -327,4 +327,4 @@ This command only reads the file system's configuration; it changes nothing on t
 
 ## Read next
 
-[What does the LUN layout decide? (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md)
+[What does the LUN layout decide? (日本語)](lun-layout-decides-recovery-granularity.md)

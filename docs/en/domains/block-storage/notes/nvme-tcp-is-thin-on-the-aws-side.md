@@ -129,7 +129,7 @@ This is the same dividing line as [LUNs and igroups are outside the AWS API](blo
 ### Related documents
 
 - [The block protocol choice is narrowed first by generation and HA pair count](protocol-choice-is-bounded-before-you-choose.md) — the decision of which to choose
-- [Paths are the failover mechanism itself](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) (日本語) — path count and failover after connecting. **NVMe/TCP cannot form native multipath on Amazon Linux 2023**
+- [Paths are the failover mechanism itself](paths-are-the-failover-mechanism.md) — path count and failover after connecting. **NVMe/TCP cannot form native multipath on Amazon Linux 2023**
 - [LUNs and igroups are outside the AWS API](block-objects-are-outside-the-aws-api.md) — the dividing line on the creation side
 - [The 30-minute block storage quickstart](../quickstart.md) — CloudFormation that opens iSCSI only
 

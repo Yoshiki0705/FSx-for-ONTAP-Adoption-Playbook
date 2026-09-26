@@ -48,7 +48,7 @@ graph TD
 | 全新建置（無遷移來源） | [設計](../en/playbooks/02-design/) (English) | [建置](../en/playbooks/04-build/) → [運維](../en/playbooks/05-operate/) (English) |
 | **拿不定 Amazon EFS 是否足夠還是需要 FSx for ONTAP** | [選擇哪種 AWS 檔案儲存的決策樹](../ja/reference/decision-trees/file-storage-selection.md) (日本語) | [檔案儲存選項比較](../ja/reference/comparison/file-storage-options.md) (日本語) |
 | **透過 iSCSI / NVMe-oF 提供區塊儲存** | [區塊協定與配置決策樹](../ja/reference/decision-trees/block-protocol-and-layout.md) (日本語) | [區塊儲存](../en/domains/block-storage/) (English) |
-| **拿不定該用區塊儲存還是 Amazon EBS 就夠** | [區塊儲存選項比較](../ja/reference/comparison/block-storage-options.md) (日本語) | [共享區塊改變設計的條件](../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) (日本語) |
+| **拿不定該用區塊儲存還是 Amazon EBS 就夠** | [區塊儲存選項比較](../ja/reference/comparison/block-storage-options.md) (日本語) | [共享區塊改變設計的條件](../en/domains/block-storage/notes/when-shared-block-changes-the-design.md) (English) |
 | **想與現有 Amazon EBS 架構的費用做比較** | [EBS 不再更便宜的分界不是台數而是同一份資料的副本數](../en/domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) (English) | [30 分鐘跑起區塊儲存的步驟](../en/domains/block-storage/quickstart.md) (English) |
 | **想在不影響生產的前提下用檔案或 S3 API 分析區塊（LUN）上的資料** | [LUN 的內容不會出現在檔案協定上](../en/domains/block-storage/notes/lun-contents-do-not-reach-file-protocols.md) (English) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |
 | **想把磁碟區搬到另一個 SVM / 想確認 FlexClone 能否搬移** | [`volume rehost` 改變的只有所屬 SVM，內容不變](../en/domains/block-storage/notes/volume-rehost-changes-ownership-not-contents.md) (English) | [將區塊資料搬成檔案的路徑比較](../ja/reference/comparison/block-to-file-routes.md) (日本語) |

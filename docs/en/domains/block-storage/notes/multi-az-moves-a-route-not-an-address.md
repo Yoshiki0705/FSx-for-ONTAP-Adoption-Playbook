@@ -226,9 +226,9 @@ This is a measurement with `set -unit B`.
 ### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
-- [Paths are the failover mechanism itself (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md) — the failover actually measured on top of this placement
+- [Paths are the failover mechanism itself (日本語)](paths-are-the-failover-mechanism.md) — the failover actually measured on top of this placement
 - [The block protocol choice is narrowed first by generation and HA pair count](protocol-choice-is-bounded-before-you-choose.md) — the LIF and port premises
-- [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md) — watching the node switch in the `FileServer` dimension
+- [What block monitoring shows and does not (日本語)](what-block-monitoring-shows.md) — watching the node switch in the `FileServer` dimension
 - [The deployment type is decided only once (日本語)](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md)
 - [Block storage cross resource map (日本語)](../../../../ja/reference/block-storage-resource-map.md)
 - [Evidence policy](../../../evidence-policy.md)

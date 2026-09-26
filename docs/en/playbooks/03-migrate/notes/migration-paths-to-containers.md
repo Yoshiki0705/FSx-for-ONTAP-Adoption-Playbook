@@ -65,7 +65,7 @@ Path 2 (EC2 rehost) does not converge, because it mounts iSCSI inside the guest 
 | Question | Where it lives |
 |---|---|
 | Which reachability form a container uses for FSx for ONTAP | [Whether a container can use FSx for ONTAP as a datastore](../../../reference/decision-trees/container-datastore-selection.md) |
-| Trident driver choice and the volume limit | [Kubernetes block volumes meet the volume limit (日本語)](../../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
+| Trident driver choice and the volume limit | [Kubernetes block volumes meet the volume limit (日本語)](../../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | The block layout on EC2 rehost | [Choosing a block protocol and layout (日本語)](../../../../ja/reference/decision-trees/block-protocol-and-layout.md) |
 | Finalize's capacity peak and irreversibility | [AWS Transform's Finalize is where physical capacity peaks (日本語)](../../../../ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) |
 | Which migration method (SnapMirror / DataSync / host copy) to choose | [Choosing a migration method (日本語)](../../../../ja/reference/decision-trees/migration-method.md) |
@@ -92,7 +92,7 @@ Path 2 (EC2 rehost) does not converge, because it mounts iSCSI inside the guest 
 - [Whether a container can use FSx for ONTAP as a datastore](../../../reference/decision-trees/container-datastore-selection.md) — the decision tree paths 1 and 3 converge on
 - [AWS Transform's Finalize is where physical capacity peaks (日本語)](../../../../ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) — capacity planning for path 2
 - [Choosing a block protocol and layout (日本語)](../../../../ja/reference/decision-trees/block-protocol-and-layout.md) — the block layout for path 2
-- [Kubernetes block volumes meet the volume limit (日本語)](../../../../ja/domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) — Trident driver choice
+- [Kubernetes block volumes meet the volume limit (日本語)](../../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) — Trident driver choice
 - [Choosing a migration method (日本語)](../../../../ja/reference/decision-trees/migration-method.md) — the migration method for the data itself
 - [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) — path 1 implementation (five configurations as CloudFormation templates)
 - [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) — path 2 implementation and measurements

@@ -19,6 +19,8 @@ docs/en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md	n
 docs/en/domains/block-storage/notes/a-snapshot-of-a-lun-is-crash-consistent.md	sales-vocabulary	1
 docs/en/domains/block-storage/notes/block-objects-are-outside-the-aws-api.md	naming	1
 docs/en/domains/block-storage/notes/capacity-is-counted-in-three-places.md	sales-vocabulary	1
+docs/en/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md	sales-vocabulary	1
+docs/en/domains/block-storage/notes/when-shared-block-changes-the-design.md	naming	2
 docs/en/playbooks/02-design/notes/deployment-type-is-decided-once.md	sales-vocabulary	1
 docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	1
 docs/i18n-terms.md	file:naming	1

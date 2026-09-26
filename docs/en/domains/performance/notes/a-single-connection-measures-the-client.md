@@ -191,7 +191,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ### What a block figure would need before it joins this table
 
-**The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, iSCSI reached 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s ([Paths are the failover mechanism](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと) (日本語)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
+**The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, iSCSI reached 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s ([Paths are the failover mechanism](../../block-storage/notes/paths-are-the-failover-mechanism.md#block-not-landing-at-the-same-position)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
 
 | Condition | In the file-side measurement | What to expect for block |
 |---|---|---|
@@ -242,7 +242,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 - [Throughput is not set by one value](where-throughput-is-determined-and-shared.md) — what the throughput capacity setting determines, and sharing per HA pair
 - [p99 is not available from volume operation-time metric pairs](what-you-cannot-read-from-cloudwatch.md) — the measuring instrument's limits, and burst credits
 - [Cross-repository citation index](../../../../ja/reference/cross-repo-index.md) (日本語) — where these figures are cited from, and the division of labour
-- [Reading a published benchmark](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md#公開ベンチマークの読み方) (日本語) — checking the conditions behind a published figure
+- [Reading a published benchmark](../../block-storage/notes/when-shared-block-changes-the-design.md#reading-a-published-benchmark) — checking the conditions behind a published figure
 - [Evidence Policy](../../../evidence-policy.md)
 
 ---

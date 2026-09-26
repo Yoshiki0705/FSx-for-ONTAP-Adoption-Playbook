@@ -241,9 +241,9 @@ graph TD
 ### Related documents
 
 - [Domain — Block storage](../README.md) — this module's hub
-- [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) — the relation between snapshot reserve and layout
+- [The LUN layout decides the recovery granularity (日本語)](lun-layout-decides-recovery-granularity.md) — the relation between snapshot reserve and layout
 - [A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md) — the side where a snapshot holds capacity
-- [When shared block changes the design (日本語)](../../../../ja/domains/block-storage/notes/when-shared-block-changes-the-design.md) — the flip side of a snapshot not being a separate charge
+- [When shared block changes the design (日本語)](when-shared-block-changes-the-design.md) — the flip side of a snapshot not being a separate charge
 - [Running out of writes with capacity to spare](../../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) — the same structure on the file side
 - [Comparison of block storage options (日本語)](../../../../ja/reference/comparison/block-storage-options.md) — the cost of the minimum configuration
 - [Limits and quotas (日本語)](../../../../ja/reference/limits/) — limits with sources and verification dates
@@ -282,4 +282,4 @@ This command only reads the aggregate size; it changes nothing on the capacity o
 
 ## Read next
 
-[Are paths the failover mechanism itself? (日本語)](../../../../ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md)
+[Are paths the failover mechanism itself? (日本語)](paths-are-the-failover-mechanism.md)

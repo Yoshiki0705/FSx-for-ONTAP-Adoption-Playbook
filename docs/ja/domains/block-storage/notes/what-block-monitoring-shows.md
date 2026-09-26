@@ -14,6 +14,10 @@ lang: ja
 
 LUN の次元もプロトコルの次元もありません。だから 1 ボリューム 1 LUN が監視の設計判断になります。
 
+<!-- lang-switcher:start -->
+🌐 [日本語](what-block-monitoring-shows.md) | [English](../../../../en/domains/block-storage/notes/what-block-monitoring-shows.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
+
 ## このノートで学べること
 
 - CloudWatch の `AWS/FSx` に LUN 次元もプロトコル次元もなく、1 ボリューム 1 LUN でボリューム次元が LUN 次元の代わりになること

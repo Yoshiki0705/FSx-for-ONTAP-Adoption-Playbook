@@ -239,9 +239,9 @@ The data check.
 
 - [Domain — Block storage](../README.md) — this module's hub
 - [A snapshot of a LUN is crash-consistent by default](a-snapshot-of-a-lun-is-crash-consistent.md) — the definition of consistency and the judgment on the requirement side
-- [The LUN layout decides the recovery granularity (日本語)](../../../../ja/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md) — why data and WAL are split
+- [The LUN layout decides the recovery granularity (日本語)](lun-layout-decides-recovery-granularity.md) — why data and WAL are split
 - [Capacity is counted in three places](capacity-is-counted-in-three-places.md) — the path by which clones and snapshots bear on capacity
-- [What block monitoring shows and does not (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md)
+- [What block monitoring shows and does not (日本語)](what-block-monitoring-shows.md)
 - [Evidence policy](../../../evidence-policy.md)
 
 ## Verify it in your environment
@@ -278,4 +278,4 @@ This command only reads the snapshot creation time; it changes nothing on the sn
 
 ## Read next
 
-[What does block monitoring not show? (日本語)](../../../../ja/domains/block-storage/notes/what-block-monitoring-shows.md)
+[What does block monitoring not show? (日本語)](what-block-monitoring-shows.md)
