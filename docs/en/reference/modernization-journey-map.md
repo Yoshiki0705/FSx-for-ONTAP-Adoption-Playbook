@@ -39,7 +39,7 @@ lang: en
 | 0. Assess | Inventory the migration targets and their shape | [Assess](../playbooks/01-assess/) | — | Counting files. You can run out of write capacity even with capacity to spare |
 | 1. Migrate (entry) | VMware → EC2 + FSx for ONTAP | [Migrate](../playbooks/03-migrate/) / [migration-method decision tree](../../ja/reference/decision-trees/migration-method.md) | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | When the rollback window closes. Boot is always on Amazon EBS |
 | 2. Containerize | Replatform to ECS / EKS, keep the data layer | [datastore-selection decision tree](decision-trees/container-datastore-selection.md) / [block storage](../domains/block-storage/) | [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | The runtime (EC2 / Fargate) decides how you reach the data. The Trident PV volume-count limit |
-| 3. Serverless / analytics / AI | Use the data via S3 Access Points | [client-access-route decision tree](../../ja/reference/decision-trees/client-access-route.md) / [data utilization](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points are not "S3 you can use as S3." The original ACLs do not carry over |
+| 3. Serverless / analytics / AI | Use the data via S3 Access Points | [client-access-route decision tree](../../ja/reference/decision-trees/client-access-route.md) / [data utilization](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points do not behave like a full S3 bucket. The original ACLs do not carry over |
 | 4. DR / resilience | Replication, Snapshot, ransomware readiness | [data protection](../domains/data-protection/) / [security governance](../domains/security-governance/) | [Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | Enabling and locking are separate. Three irreversible choices |
 | 5. Operate / observability / optimize | Monitoring, capacity, tiering, cost | [Operate](../playbooks/05-operate/) / [Optimize](../playbooks/06-optimize/) / [cost-higher-than-expected decision tree](../../ja/reference/decision-trees/cost-higher-than-expected.md) | [Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Monitoring fails on averages. Billing splits between provisioned and consumed |
 
@@ -68,7 +68,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 
 | Type | Resource | Point |
 |------|----------|------|
-| Pattern | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Both VMware → EC2 + FSx for ONTAP paths, verified on real hardware |
+| Pattern | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Both VMware → EC2 + FSx for ONTAP paths, verified hands-on |
 | Decision tree | [Migration method selection](../../ja/reference/decision-trees/migration-method.md) | Which migration method to choose |
 | Note | [Where the rollback window closes](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | The cutover decision |
 | Note | [Preserving ACLs during migration](../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Permission preservation during migration |
@@ -90,7 +90,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Pattern | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Collect via S3 → serve as NFS / SMB through FlexCache |
 | Pattern | [Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Access-control-aware Agentic RAG |
 | Decision tree | [Client access route selection](../../ja/reference/decision-trees/client-access-route.md) | Which route reaches the data |
-| Note | [S3 Access Points are not "S3 you can use as S3"](../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account, same-region and other constraints |
+| Note | [S3 Access Points do not behave like a full S3 bucket](../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account, same-region and other constraints |
 | Note | [S3 Access Points authorize every request as one identity](../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry over into the AI pipeline |
 
 ### 4. DR / resilience
@@ -118,8 +118,8 @@ The correspondence between each stage and a blog post. **The blog is unpublished
 
 | Stage | Blog post (linked after publication) |
 |---|---|
-| 1. Migrate | Part 1 (designing the entry) / Part 2 (AWS Transform on real hardware) |
-| 2-4. Modernization | Part 3 (outline: containerization, S3 Access Points, DR) |
+| 1. Migrate | Part 1 (designing the entry) / Part 2 (AWS Transform, hands-on) |
+| 2-4. Modernization | Part 3 (containerization, S3 Access Points, DR) |
 | 1. Migrate (existing assets) | Part 4 (Shift Toolkit) |
 
 ---
@@ -138,8 +138,8 @@ The correspondence between each stage and a blog post. **The blog is unpublished
 
 | Repository | Contents | Format |
 |---|---|---|
-| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | The migration entry. Both paths verified on real hardware | CFn |
-| [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Datastores for ECS / EKS | Implementation patterns |
+| [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | The migration entry. Both paths verified hands-on | CFn |
+| [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Datastores for ECS / EKS | Implementation patterns |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Industry use cases + OPS + GenAI + file portal UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark integration | S3 Access Points |
 | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Collect via S3 → serve as NFS / SMB through FlexCache | CFn + SAM |

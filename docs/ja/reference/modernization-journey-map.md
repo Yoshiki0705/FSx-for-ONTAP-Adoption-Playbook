@@ -119,7 +119,7 @@ lang: ja
 | 段階 | ブログ回（公開後にリンク） |
 |---|---|
 | 1. 移行 | 第 1 回（入口の設計）/ 第 2 回（AWS Transform の実機） |
-| 2-4. モダナイゼーション | 第 3 回（骨子。コンテナ化・S3 Access Points・DR） |
+| 2-4. モダナイゼーション | 第 3 回（コンテナ化・S3 Access Points・DR） |
 | 1. 移行（既存資産） | 第 4 回（Shift Toolkit） |
 
 ---
@@ -139,7 +139,7 @@ lang: ja
 | リポジトリ | 内容 | 形式 |
 |---|---|---|
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware 移行の入口。2 経路を実機検証 | CFn |
-| [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS / EKS のデータストア | 実装パターン |
+| [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS / EKS のデータストア | 実装パターン |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 業種別 UC + OPS + GenAI + ファイルポータル UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 連携 | S3 Access Points |
 | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS / SMB で利用 | CFn + SAM |
