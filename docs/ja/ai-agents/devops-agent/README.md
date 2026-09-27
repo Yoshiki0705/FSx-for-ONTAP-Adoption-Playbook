@@ -1,5 +1,7 @@
 # AWS DevOps Agent を FSx for ONTAP 運用に使う
 
+> 本番運用のインシデントを調査・予防するエージェント。FSx for ONTAP は **CloudWatch 経由の監視対象**として重ねる（ONTAP 管理面は MCP を自作して届かせる）。
+
 [🏠 リポジトリトップ](../../../../README.md)
 
 ---
@@ -21,33 +23,61 @@ AWS DevOps Agent を Amazon FSx for NetApp ONTAP の運用に重ねられるか�
 
 ## DevOps Agent とは（documented）
 
-AWS DevOps Agent は、**本番運用のインシデント解決と予防**に軸足を置くエージェントです。公式の説明では「インシデントを解決し、事前に予防し、信頼性と性能を継続的に改善する」ものとされています。
+AWS DevOps Agent は、**本番運用のインシデントを解決・予防し、信頼性と性能を継続的に改善する**フロンティアエージェントです。AWS・マルチクラウド・オンプレミスの環境を対象とします。用途は次の 4 つです。
 
-動作の骨格は次のとおりです。
+| 用途 | 何をするか |
+|---|---|
+| インシデント対応 | アラームやサポートチケットを起点に自動で調査を開始する。メトリクス・ログ・デプロイ履歴を相関させ、根本原因と緩和策を Slack / Jira などへ返す |
+| 予防的なインシデント防止 | 過去のインシデント調査からパターンを分析し、可観測性・インフラ・パイプライン・アプリ回復性の改善点を出す |
+| オンデマンドの SRE タスク | 自然言語でアーキテクチャの照会・健全性の分析・調査知見の参照を行う。定期実行するカスタムエージェントも作れる |
+| リリース管理（プレビュー） | PR やチャットからリリース前レビューを実行する。依存関係・アクセス制御・組織標準への準拠を確認する |
 
-1. CloudWatch アラームなどの発火を webhook で受け取る
-2. メトリクス・ログ・ネットワークフロー・API 変更履歴を突き合わせる
-3. 根本原因の分析と、実行可能な修正案を出す
+動作の骨格（インシデント対応）は次のとおりです。
 
-見る信号源は、Amazon CloudWatch のほか Datadog / Dynatrace / New Relic / Splunk などの可観測性データと、GitHub Actions / GitLab CI/CD のデプロイ履歴です。デプロイとインシデントの相関を取れるのはこのためです。
+1. CloudWatch アラームやサポートチケットの発火を起点に自動起動する
+2. メトリクス・ログ・ネットワークフロー・デプロイ履歴を突き合わせる
+3. 根本原因の分析と、実行可能な緩和策を出す
+
+見る信号源は、Amazon CloudWatch のほか Datadog / Dynatrace / New Relic / Splunk などの可観測性データと、GitHub / GitLab のデプロイ履歴です。デプロイとインシデントの相関を取れるのはこのためです。
 
 ---
 
-## FSx for ONTAP のどのフェーズに効くか（適合判断・未検証）
+## フェーズごとの使いどころ（適合判断・未検証）
 
 **この節は著者の判断で、実測ではありません。** DevOps Agent の用途（運用）と FSx for ONTAP の管理面の構造から導いたものです。
 
-| フェーズ | 見込み | 根拠（未検証） |
+| フェーズ | FSx for ONTAP 運用で何ができるか | 根拠（未検証） |
 |---|---|---|
-| 運用（05-operate / 06-optimize） | 効きやすい | インシデント検知・原因分析・予防が用途そのもの。FSx for ONTAP は CloudWatch にメトリクスを出すので、そのアラームを起点にできる |
-| 構築（04-build） | 部分的 | GitHub Actions / GitLab CI/CD のデプロイ追跡と連携し、デプロイとインシデントの相関は取れる。ただし IaC を書く・デプロイするのが主目的のエージェントではない |
-| 設計（01-assess / 02-design） | 効きにくい | 設計そのものを生成する用途ではない。既存構成の読み取り評価は後述の Well-Architected レビュー型 Skill で可能 |
+| 運用（05-operate / 06-optimize） | インシデント調査・原因分析・予防に重ねられる | インシデント検知・原因分析・予防が用途そのもの。FSx for ONTAP は CloudWatch にメトリクスを出すので、そのアラームを起点にできる |
+| 構築（04-build） | デプロイとインシデントの相関に使える | GitHub / GitLab のデプロイ追跡と連携し、デプロイとインシデントの相関を取れる。ただし IaC を書く・デプロイするのが主目的のエージェントではない |
+| 設計（01-assess / 02-design） | 既存構成の読み取り評価に限られる | 設計そのものを生成する用途ではない。既存構成の評価は後述の Well-Architected レビュー型 Skill で可能 |
 
-### 2 つの管理面による効き方の分岐
+### 2 つの管理面で分かれる届く範囲
 
 FSx for ONTAP には AWS 管理面（CloudWatch メトリクス、Amazon FSx の API）と ONTAP 管理面（ONTAP REST API）という 2 つの真実の源があります。これは [ONTAP 側の設定に届く経路の比較](../../reference/comparison/ontap-configuration-routes.md) や [この設定はどこから作るか](../../reference/decision-trees/where-a-setting-is-created.md) で扱っている通りです。
 
 DevOps Agent が既定で見るのは **AWS 管理面（CloudWatch）側**です。ONTAP 管理面の指標（アグリゲート使用率、SnapMirror の遅延、qtree quota、CIFS セッションなど）を取りに行くには、**ONTAP REST API を叩くカスタム MCP サーバと、それを呼ぶ Skill を自作する**必要があります。DevOps Agent が ONTAP REST を直接叩く組み込み機能を持つかは、公式ドキュメントでは確認できていません。
+
+---
+
+## スキルとメモリの分担（documented）
+
+**DevOps Agent に外から知識を与える口は 2 系統あります。** スキルは「どう調べるか（手続き的知識）」、メモリは「判断に使う知識（情報的知識）」で、公式ドキュメントでも役割が分けられています。FSx for ONTAP の運用知識をどちらに載せるかで、書き方と更新の仕方が変わります。
+
+| 系統 | 与える知識 | FSx for ONTAP での例 |
+|---|---|---|
+| スキル | 調査手順・判断分岐・出力形式（手続き的知識） | 「容量逼迫の調査手順」「SnapMirror 遅延の切り分け」を決定木で書く |
+| メモリ | 構成・依存・過去の原因（情報的知識） | 「このボリュームは SnapMirror の宛先」「このアラームは夜間バッチで無視」を判断材料として持たせる |
+
+スキルは 3 種類あります。
+
+| スキルの種類 | 作成者 | 編集 | 位置づけ |
+|---|---|---|---|
+| AWS 提供スキル | AWS | 不可（内部・非公開） | 標準的な調査の土台。カスタムスキルが 1 つも無くても常に効く |
+| カスタムスキル | ユーザー | 可 | 組織固有の手順を教える。この後の節で扱う |
+| 学習済みスキル | DevOps Agent | 自動更新（メモリへ移行中） | 環境を自動で学ぶ。Agent Space Understanding / Code Dependencies / Pipeline Topology / ツールの使い方の蓄積（Tool Use）の 4 種 |
+
+**FSx for ONTAP 向けに人が書くのはカスタムスキルです。** 学習済みスキルは自動で育つもので、AWS 提供スキルは触れません。以下、カスタムスキルの仕様を扱います。
 
 ---
 
@@ -96,6 +126,8 @@ DevOps Agent の Skills は、エージェントに調査手順とドメイン�
 ## 参考資料（一次情報）
 
 - [DevOps Agent Skills（AWS 公式）](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-devops-agent-skills.html) — Skill 構造、frontmatter、agent type、6 MB 制約、RDS 調査の完全例
+- [DevOps Agent Memories（AWS 公式）](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-devops-agent-memories.html) — スキル（手続き的知識）とメモリ（情報的知識）の区別
+- [Learned skills（AWS 公式）](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-learned-skills.html) — 学習済みスキル 4 種とメモリへの移行
 - [aws-samples/sample-skills-for-AWS-Devops-agent](https://github.com/aws-samples/sample-skills-for-AWS-Devops-agent) — EKS resilience / Well-Architected review / マルチアカウントの実例。FSx for ONTAP 向け Skill の雛形に使える
 - [Custom agents（AWS 公式）](https://docs.aws.amazon.com/devopsagent/latest/userguide/working-with-devops-agent-custom-agents-index.html) — system prompt・ツール・Skill・memory を束ねた専用エージェント定義
 - [Production operations（AWS 公式）](https://docs.aws.amazon.com/devopsagent/latest/userguide/working-with-devops-agent-production-operations-index.html) — インシデントライフサイクル全体での位置づけ
