@@ -31,7 +31,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 |---|---|---|---|---|
 | AWS DevOps Agent | 本番運用のインシデント解決・予防 | GA | 近い（運用に直接。CloudWatch 起点） | [AWS DevOps Agent を FSx for ONTAP 運用に使う](devops-agent/README.md) |
 | AWS FinOps Agent | コストの継続監視・異常調査・最適化 | Public Preview | 近い（コスト運用） | [AWS FinOps Agent を FSx for ONTAP のコスト運用に使う](finops-agent/README.md) |
-| AWS Security Agent | アプリのオンデマンド侵入テスト・継続検証（現在は AWS Continuum の一部） | GA | 間接（アプリ層のセキュリティ。ストレージ運用とは距離あり） | _未追加_ |
+| AWS Security Agent | アプリのオンデマンド侵入テスト・継続検証（現在は AWS Continuum の一部） | GA | 間接（アプリ層のセキュリティ。ストレージ運用とは距離あり） | [AWS Security Agent と FSx for ONTAP の距離](security-agent/README.md) |
 | Amazon Quick | AI アシスタント / エージェント型デジタルワークスペース | GA | **近い（S3 Access Points 経由で FSx for ONTAP をデータソース化できる）** | [Amazon Quick を FSx for ONTAP のデータソースにする](quick/README.md) |
 | AWS Transform | コード・ワークロードの移行と変換 | GA | 近い（移行先に FSx for ONTAP を選択可） | [移行の項へ](#aws-transform-の既存ページへの集約) |
 | Amazon Bedrock Managed Agents (OpenAI) | OpenAI harness ベースのマネージドエージェント runtime | Limited Preview | 間接（AgentCore 上の runtime） | _対象外_ |
@@ -57,7 +57,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 | **コストの異常を追い、最適化したい** | [AWS FinOps Agent](finops-agent/README.md) | コストの継続監視と異常調査が用途 |
 | **FSx for ONTAP 上のファイルをレポート・分析に使いたい** | [Amazon Quick](quick/README.md) | S3 Access Points 経由でファイルをナレッジベース化できる |
 | **VMware / サーバーを移行し、移行先を FSx for ONTAP にしたい** | [移行ドキュメント](#aws-transform-の既存ページへの集約) | 移行の知見は既存ページにある |
-| **アプリのセキュリティを継続検証したい** | AWS Security Agent（_未追加_） | オンデマンド侵入テストが用途。ストレージ運用とは距離あり |
+| **アプリのセキュリティを継続検証したい** | [AWS Security Agent](security-agent/README.md) | オンデマンド侵入テストが用途。ストレージ運用とは距離あり |
 
 各エージェントの詳細な適合判断は、それぞれのページにあります。
 
