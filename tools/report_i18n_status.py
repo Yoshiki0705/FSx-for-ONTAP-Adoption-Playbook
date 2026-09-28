@@ -23,6 +23,7 @@ Run:  make i18n-status
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -41,6 +42,9 @@ def git_facts(path: Path) -> tuple[int, str]:
         capture_output=True,
         text=True,
         check=False,
+        # An inherited GIT_DIR outranks cwd, so under a pre-commit hook this would read commit
+        # history from the hook's repository rather than ROOT — a silent wrong count. Scrub GIT_*.
+        env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
     ).stdout.split()
     return len(log), (log[0] if log else "-")
 

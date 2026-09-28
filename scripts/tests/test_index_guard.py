@@ -116,13 +116,30 @@ class TheIndexAssertion(unittest.TestCase):
         """The failure this exists for: a check writing to the real repository."""
         result = run_with_make("echo leaked > leaked.txt\ngit add leaked.txt\nexit 0")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("changed the git index", result.stderr)
+        self.assertIn("changed the git state", result.stderr)
 
     def test_staging_a_modification_to_a_tracked_file_is_refused(self) -> None:
         """The shape of the incident: an edit that reaches the index and not the working tree."""
         result = run_with_make("echo two > tracked.txt\ngit add tracked.txt\nexit 0")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("changed the git index", result.stderr)
+        self.assertIn("changed the git state", result.stderr)
+
+    def test_a_config_write_is_refused(self) -> None:
+        """A sibling leak rewrote `.git/config` (`user.*`, `core.bare`); an index diff never saw
+        it. The snapshot now covers `git config --local --list`, so a gate that writes a local
+        config value is caught the same way a stray `git add` is."""
+        result = run_with_make("git config --local user.name leaked\nexit 0")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("changed the git state", result.stderr)
+
+    def test_a_stray_commit_is_refused(self) -> None:
+        """The other half of the sibling leak: commits pushed onto the branch. HEAD moves, which
+        the rev-parse line in the snapshot records, so a gate that commits is caught."""
+        result = run_with_make(
+            "git -c user.email=t@e -c user.name=t commit -qm leaked --allow-empty\nexit 0"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("changed the git state", result.stderr)
 
     def test_a_stat_refresh_and_a_touch_do_not_fire(self) -> None:
         """The false-positive direction, and the reason `.git/index` is not hashed.
@@ -141,7 +158,7 @@ class TheIndexAssertion(unittest.TestCase):
         result = run_with_make("exit 1")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("make all failed", result.stderr)
-        self.assertNotIn("changed the git index", result.stderr)
+        self.assertNotIn("changed the git state", result.stderr)
 
     def test_the_first_commit_is_handled(self) -> None:
         """Before any commit HEAD does not resolve. The comparison has to fall back to the empty
@@ -155,7 +172,7 @@ class TheIndexAssertion(unittest.TestCase):
             "echo leaked > leaked.txt\ngit add leaked.txt\nexit 0", commit=False
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("changed the git index", result.stderr)
+        self.assertIn("changed the git state", result.stderr)
 
     def test_the_recovery_instructions_are_present(self) -> None:
         """A verdict with no way to act on it costs the reader the same diagnosis twice — and here
