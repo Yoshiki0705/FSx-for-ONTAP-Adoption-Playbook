@@ -36,6 +36,7 @@ Run:  python3 tools/audit_public_output.py [--path DIR]
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -568,6 +569,9 @@ def _git_ignored(root: Path, candidates: list[Path]) -> set[Path]:
             text=True,
             cwd=root,
             check=False,
+            # An inherited GIT_DIR outranks cwd, so under a pre-commit hook this would test
+            # ignore rules against the hook's repository rather than `root`. Scrub GIT_*.
+            env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
         )
     except (OSError, ValueError):
         return set()

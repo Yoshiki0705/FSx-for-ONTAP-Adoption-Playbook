@@ -28,6 +28,7 @@ Run:  python3 scripts/check_agent_context_budget.py
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -80,8 +81,16 @@ def front_matter(path: Path) -> dict[str, str]:
 
 
 def tracked_paths() -> set[str]:
+    # GIT_* is scrubbed because an inherited GIT_DIR outranks cwd, so under a pre-commit hook
+    # this would read whichever repository the hook points at rather than ROOT — a silent wrong
+    # answer. The same inheritance already fabricated a committed file in a sibling repository.
     done = subprocess.run(
-        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=False
+        ["git", "ls-files"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
     )
     return set(done.stdout.split())
 
