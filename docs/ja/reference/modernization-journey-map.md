@@ -23,7 +23,7 @@ lang: ja
 
 **業種から入りたい場合は別のマップです。** 同じ spoke 群を業種で並べたものが[業種別リソースマップ](industry-resource-map.md)、課題別の ISV / SaaS 選択肢が[ISV / SaaS 選択肢マップ](isv-solution-map.md)です。このマップはそれらを「モダナイゼーションの段階」で並べ替えた導線です。
 
-**弧の中心は 1 つです。** VMware から EC2 + Amazon FSx for NetApp ONTAP への移行を入口に、コンテナ化・サーバーレス化・分析 / AI・DR / レジリエンス・運用最適化へと進むあいだ、FSx for ONTAP をデータ基盤の中核に据え続ける、という前提でつないでいます。姉妹のブログシリーズと連動しますが、ブログは未公開のため URL はまだ載せていません（[ブログ関連記事](#ブログ関連記事)）。
+**弧の中心は 1 つです。** VMware から EC2 + Amazon FSx for NetApp ONTAP への移行を入口に、コンテナ化・サーバーレス化・分析 / AI・DR / レジリエンス・運用最適化へと進むあいだ、FSx for ONTAP をデータ基盤の中核に据え続ける、という前提でつないでいます。姉妹のブログシリーズと連動し、第 1 回・第 2 回は公開済みです。第 3 回・第 4 回は未公開です（[ブログ関連記事](#ブログ関連記事)）。
 
 > **区分**: `documented` — 各 spoke リポジトリへのリンクの所在と、Hub 内モジュールの所在を記載しています。段階ごとの「判断が集中する所」は、リンク先のノートで扱う論点の要約であって、このマップで新たに検証した結果ではありません。
 ---
@@ -114,13 +114,13 @@ lang: ja
 
 ## ブログ関連記事
 
-各段階に対応するブログ回の対応です。**ブログは未公開のため URL はまだ載せていません。** 公開後にこの表へリンクを足します。
+各段階に対応するブログ回の対応です。**第 1 回・第 2 回は公開済みで、下の表にリンクを張っています。第 3 回・第 4 回は未公開です。** 第 3 回・第 4 回は公開後にこの表へリンクを足します。日本語記事を主に、英語記事を併記します。
 
-| 段階 | ブログ回（公開後にリンク） |
+| 段階 | ブログ回 |
 |---|---|
-| 1. 移行 | 第 1 回（入口の設計）/ 第 2 回（AWS Transform の実機） |
-| 2-4. モダナイゼーション | 第 3 回（コンテナ化・S3 Access Points・DR） |
-| 1. 移行（既存資産） | 第 4 回（Shift Toolkit） |
+| 1. 移行 | [第 1 回（入口の設計）](https://hakobiya.hatenablog.com/entry/fsxn-vmware-migration-options-ec2)（[English](https://dev.to/aws-builders/designing-aws-modernization-with-vmware-migration-as-the-entry-point-why-fsx-for-ontap-as-the-3k24)）/ [第 2 回（AWS Transform の実機）](https://hakobiya.hatenablog.com/entry/fsxn-aws-transform-mgn-migration-target)（[English](https://dev.to/aws-builders/aws-transform-now-supports-block-storage-migration-to-fsx-for-ontap-benefits-and-pitfalls-from-a-1hhe)） |
+| 2-4. モダナイゼーション | 第 3 回（コンテナ化・S3 Access Points・DR）— 未公開 |
+| 1. 移行（既存資産） | 第 4 回（Shift Toolkit）— 未公開 |
 
 ---
 

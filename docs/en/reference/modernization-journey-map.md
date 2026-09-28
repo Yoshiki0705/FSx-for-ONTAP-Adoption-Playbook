@@ -23,7 +23,7 @@ lang: en
 
 **To enter from an industry, use a different map.** The same set of spokes arranged by industry is the [industry resource map](../../ja/reference/industry-resource-map.md); problem-first ISV and SaaS options are the [ISV / SaaS solution map](isv-solution-map.md). This map rearranges those same spokes along the stages of modernization.
 
-**There is one center to the arc.** With the migration from VMware to EC2 + Amazon FSx for NetApp ONTAP as the entry, the journey proceeds through containerization, going serverless, analytics / AI, DR / resilience, and operational optimization, keeping FSx for ONTAP as the core of the data foundation throughout. It pairs with a sibling blog series, but the blog is unpublished, so no URLs are listed yet ([related blog posts](#related-blog-posts)).
+**There is one center to the arc.** With the migration from VMware to EC2 + Amazon FSx for NetApp ONTAP as the entry, the journey proceeds through containerization, going serverless, analytics / AI, DR / resilience, and operational optimization, keeping FSx for ONTAP as the core of the data foundation throughout. It pairs with a sibling blog series; Part 1 and Part 2 are published. Part 3 and Part 4 are not yet published ([related blog posts](#related-blog-posts)).
 
 > **Tier**: `documented` — records where each spoke repository link and each in-repository module lives. The "where decisions concentrate" column for each stage summarizes the concern the linked note covers; it is not a result verified in this map.
 ---
@@ -114,13 +114,13 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 
 ## Related blog posts
 
-The correspondence between each stage and a blog post. **The blog is unpublished, so no URLs are listed yet.** Links will be added to this table after publication.
+The correspondence between each stage and a blog post. **Part 1 and Part 2 are published and linked in the table below. Part 3 and Part 4 are not yet published.** Links to Part 3 and Part 4 will be added after publication. The English post is the primary link, with the Japanese post alongside it.
 
-| Stage | Blog post (linked after publication) |
+| Stage | Blog post |
 |---|---|
-| 1. Migrate | Part 1 (designing the entry) / Part 2 (AWS Transform, hands-on) |
-| 2-4. Modernization | Part 3 (containerization, S3 Access Points, DR) |
-| 1. Migrate (existing assets) | Part 4 (Shift Toolkit) |
+| 1. Migrate | [Part 1 (designing the entry)](https://dev.to/aws-builders/designing-aws-modernization-with-vmware-migration-as-the-entry-point-why-fsx-for-ontap-as-the-3k24) ([日本語](https://hakobiya.hatenablog.com/entry/fsxn-vmware-migration-options-ec2)) / [Part 2 (AWS Transform, hands-on)](https://dev.to/aws-builders/aws-transform-now-supports-block-storage-migration-to-fsx-for-ontap-benefits-and-pitfalls-from-a-1hhe) ([日本語](https://hakobiya.hatenablog.com/entry/fsxn-aws-transform-mgn-migration-target)) |
+| 2-4. Modernization | Part 3 (containerization, S3 Access Points, DR) — not yet published |
+| 1. Migrate (existing assets) | Part 4 (Shift Toolkit) — not yet published |
 
 ---
 
