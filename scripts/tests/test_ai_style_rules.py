@@ -242,5 +242,37 @@ class AuditStagesTheCategory(unittest.TestCase):
         )
 
 
+CRITERIA = ROOT / "docs" / "agent" / "writing-quality.md"
+
+
+class TheCriteriaDocumentFollowsItsOwnRules(unittest.TestCase):
+    def test_no_findings(self) -> None:
+        findings = rules.scan_markdown(CRITERIA.read_text(encoding="utf-8"), "ja")
+        self.assertEqual(
+            [(f.line, f.rule) for f in findings],
+            [],
+            "the criteria document breaks the rules it defines",
+        )
+
+    def test_the_rule_table_matches_the_rule_definitions(self) -> None:
+        """The table restates each rule's level, languages and defect; they must not drift."""
+        rows = {}
+        for line in CRITERIA.read_text(encoding="utf-8").splitlines():
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if len(cells) == 6 and cells[0] in rules.RULE_BY_ID:
+                rows[cells[0]] = cells
+        self.assertEqual(
+            set(rows), set(rules.RULE_BY_ID), "a rule is missing from the table"
+        )
+        for rule in rules.RULES:
+            with self.subTest(rule=rule.id):
+                _id, _what, level, langs, defect, _views = rows[rule.id]
+                self.assertEqual(
+                    level, "fail 予定" if rule.level == "fail" else "warning"
+                )
+                self.assertEqual(langs, ", ".join(rule.langs))
+                self.assertEqual(defect, rule.defect)
+
+
 if __name__ == "__main__":
     unittest.main()
