@@ -230,6 +230,31 @@ graph TD
 - 観測したチャネル数は 4 で、`max_connections_per_session` を 32 にしても 4 で止まりました。**なぜ 4 なのかは確認されていません。4 が製品の上限だと読まないでください**
 - NFS 16 接続の列と SMB Multichannel の列は `キャッシュの温度が揃っていない` と記録されています。**この 2 列から SMB と NFS の優劣を取れません**
 
+### Multichannel・CA 共有・oplock の ONTAP 一般の前提
+
+**この節は NetApp の文書の記載で、ONTAP 一般の前提です。** 上の測定済みの節とは別に読んでください。FSx for ONTAP で同じかは、各行に書いた範囲を除いて未確認です。
+
+| 項目 | 記載（ONTAP 一般） | 出典 |
+|---|---|---|
+| Multichannel の前提 | ONTAP 9.4 以降、Windows Server 2012 / Windows 8 以降、SMB 3.0。加えて、複数の NIC、RSS 対応の NIC、NIC チーミング、RDMA 対応の NIC のいずれかが必要です | [TR-4740: SMB 3.0 Multichannel](https://www.netapp.com/pdf.html?item=/media/17136-tr4740.pdf)（2019 年 1 月）§5「Setting up Multichannel」 |
+| ONTAP 側の設定 | `is-multichannel-enabled` で有効・無効を切り替え、既定は無効です。`-max-connections-per-session` の最大は 32、`-max-lifs-per-session` の最大は 256 です | TR-4740 §5.1「Enabling Multichannel on ONTAP」 |
+| RSS の扱い | NIC が RSS に対応していなくても ONTAP はソフトウェアのハッシュで RSS を模擬するため、**すべてのインターフェイスを RSS 対応として報告します** | TR-4740 §2.2「Session Binding and Interface Discovery」 |
+| Windows クライアントの既定値 | `ConnectionCountPerRssNetworkInterface` の既定は 4、`MaximumConnectionCountPerServer` の既定は 32 です。Multichannel はクライアント主導で、チャネルを増やすかはクライアントが判断するとしています | TR-4740 §7.2 |
+| 併用できる機能 | 署名、暗号化、Witness、continuously available（CA）共有などが Multichannel と併用できます | TR-4740 §3 の Table 1 |
+
+**既定で無効であることと、有効化が確立済みの接続に届かないことは、上の「[すべての SMB 数値の前提](#すべての-smb-数値の前提)」が隣のリポジトリの実測へリンクしています。** ここでは繰り返しません。
+
+**TR-4740 の Windows の既定値 4 と、隣のリポジトリが観測した 4 チャネルの関係は、このリポジトリでは判定しません。** 観測の側でも理由は未確認と記録されています（[S3-Burst-on-ONTAP-Files の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)、[プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)）。値が同じであることは、原因が同じことの根拠になりません。
+
+| 項目 | 記載（ONTAP 一般） | 出典 |
+|---|---|---|
+| CA 共有の前提（SQL Server over SMB の構成） | SQL Server over SMB の構成について、NetApp は次を前提にしています。共有を含むボリュームは NTFS で、**最初から NTFS であり続けたボリューム**である必要があります。共有に continuously available のプロパティを設定すると、アプリケーションサーバーは persistent handle を受け取り、テイクオーバーやギブバックの後に再接続してロックを取り戻せます | NetApp [Continuously available share requirements and considerations for SQL Server over SMB](https://docs.netapp.com/us-en/ontap/smb-hyper-v-sql/continuously-available-share-sql-concept.html)（2022-08-05 更新） |
+| CA 共有に設定しないもの（SQL Server over SMB の構成） | 同じページが CA 共有の対象外として挙げるのは、ホームディレクトリ、属性キャッシュ、BranchCache です。同じ構成では監査と FPolicy が非対応で、CA の共有ではウイルススキャンが行われません | 同ページ |
+| oplock と lease | lease oplock は SMB 2.1 以降で使える拡張版です。oplock は共有のプロパティか qtree のプロパティで制御します | NetApp [Improve ONTAP SMB client performance with traditional and lease oplocks](https://docs.netapp.com/us-en/ontap/smb-admin/client-performance-traditional-lease-oplocks-concept.html)（2026-04-16 更新） |
+| oplock の種類と無効化 | Batch、Level 1（排他）、Level 2、Filter の 4 種類。不安定な経路（WAN や NAT 越し）で SMB 1.0 などの古い版を使う場合に、oplock を使わない共有にする例を挙げています | [TR-4887: Multiprotocol NAS in NetApp ONTAP](https://www.netapp.com/pdf.html?item=/media/27436-tr-4887.pdf)（2021 年 4 月）「SMB locking」 |
+
+**CA 共有が FSx for ONTAP で同じ前提で使えるかは未確認です。** FSx for ONTAP ユーザーガイドに CA 共有を扱う記載は見つかりませんでした（2026-10-02 に検索）。検索で出てくる CA 共有のページは FSx for Windows File Server のもので、FSx for ONTAP の根拠には使えません。FlexCache の write-back で書き込みの SMB oplock が使えない点は [コピーを増やさずにデータへ届けるには](../../domains/data-utilization/notes/reaching-data-without-copies.md#ファイルが-cache-から追い出される-3-つの操作) にあります。
+
 ---
 
 ## 判断していない論点
@@ -256,6 +281,8 @@ graph TD
 | Amazon S3 Files はバケットをそのままマウントする | **リンク先バケットに S3 バージョニングが必須**で、同時更新時はバケットが正本になります。未使用データはファイルシステムから削除されます |
 | FSx for ONTAP を選べば性能で有利 | **上限の形が違うだけです。** 同じデータに複数プロトコルで届く必要がなく最小構成が過剰なら、他の選択肢のほうが素直です |
 | SMB Multichannel のチャネル数は設定で増やせる | 観測では設定値を上げても 4 で止まりました。**ただし 4 が製品の上限である根拠は確認されていません** |
+| 4 チャネルは Windows の既定値で説明できる | TR-4740 は Windows の `ConnectionCountPerRssNetworkInterface` の既定を 4 と書いていますが、**観測との関係はこのリポジトリでは未確認です** |
+| CA 共有はどのボリュームにも設定できる | SQL Server over SMB の構成について、NetApp は最初から NTFS であり続けたボリュームを前提にしています。ほかの用途の CA 共有に同じ前提がかかるかは、このページからは読めません。FSx for ONTAP での扱いは未確認です |
 
 ---
 
@@ -280,6 +307,11 @@ graph TD
 | EFS のクライアント単位クォータに一致した実測値、マウントヘルパー使用時の倍率 2.97、ONTAP 物理ポートの累積カウンタ差分 102 Gbps、SMB Multichannel のチャネル数と理由の未確認、NFS 16 接続列とのキャッシュ温度の不揃い | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
 | Amazon EFS の非対応プロトコルの実測確認、`nconnect` を実効オプションではなく接続数で判定したこと | [S3-Burst-on-ONTAP-Files: プロトコル可否の実測](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/protocol-matrix-efs-vs-ontap.md) |
 | 容量使用率の上昇による書き込み低下と、`rm` では空きが戻らないこと | [S3-Burst-on-ONTAP-Files: 性能測定のガイド](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/performance-testing-guide.md) |
+| SMB Multichannel の前提（ONTAP 9.4 以降、SMB 3.0、NIC の条件）、`is-multichannel-enabled` が既定で無効なこと、セッションあたりの接続数と LIF 数の最大、ONTAP がすべてのインターフェイスを RSS 対応と報告すること、Windows クライアントの既定値、併用できる機能（ONTAP 一般） | [TR-4740: SMB 3.0 Multichannel](https://www.netapp.com/pdf.html?item=/media/17136-tr4740.pdf)（2019 年 1 月）§2.2、§3、§5、§5.1、§7.2（2026-10-02 に確認） |
+| CA 共有の前提と設定しないもの（ONTAP 一般、SQL Server over SMB の構成） | [NetApp: Continuously available share requirements and considerations for SQL Server over SMB](https://docs.netapp.com/us-en/ontap/smb-hyper-v-sql/continuously-available-share-sql-concept.html)（2022-08-05 更新） |
+| lease oplock が SMB 2.1 以降であること、oplock の制御単位（ONTAP 一般） | [NetApp: Improve ONTAP SMB client performance with traditional and lease oplocks](https://docs.netapp.com/us-en/ontap/smb-admin/client-performance-traditional-lease-oplocks-concept.html)（2026-04-16 更新） |
+| oplock の 4 種類と、oplock を使わない共有にする例（ONTAP 一般） | [TR-4887: Multiprotocol NAS in NetApp ONTAP](https://www.netapp.com/pdf.html?item=/media/27436-tr-4887.pdf)（2021 年 4 月）「SMB locking」 |
+| SMB Multichannel のチャネル数が 4 である理由が未確認であること | [S3-Burst-on-ONTAP-Files: 検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md) |
 | Amazon S3 Files がストリーム数 8 で約 450 MB/s に頭打ちすること、止めているのが `efs-proxy` の CPU であること、マウントの相手が `127.0.0.1` であること、`nconnect` の指定でマウントがハングすること、購入した容量が読み手で分割される実測（1 台 585.3 → 2 台合計 592.5） | [S3-Burst-on-ONTAP-Files: S3 Files と本構成の比較検証](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) |
 
 ---
