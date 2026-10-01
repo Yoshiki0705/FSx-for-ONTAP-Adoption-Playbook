@@ -187,7 +187,7 @@ Search scope (2026-10-01): AWS documentation searched for "maxdir-size" and "max
 
 ### Where the configuration-specific behavior is tracked
 
-This note does not cover metadata operations and enumeration in a configuration that collects data through the S3 API into an origin and distributes it with FlexCache. That is tracked as a not-yet-measured item in [S3-Burst-on-ONTAP-Files issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235).
+This note does not cover metadata operations and enumeration in a configuration that collects data through the S3 API into an origin and distributes it with FlexCache. What this TR's findings delegated to this note, and what stayed with that configuration, is recorded in the [S3-Burst-on-ONTAP-Files delegation ledger](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/tr-integration/delegation-ledger.md) (日本語); the not-yet-measured items are tracked in that repository's [issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235).
 
 ---
 

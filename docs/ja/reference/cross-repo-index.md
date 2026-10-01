@@ -221,6 +221,10 @@ lang: ja
 | `docs/en/domains/block-storage/notes/what-block-monitoring-shows.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `600 GiB を NVMe/TCP で書いたあとでも 0 件で` | `retraction` | 同じ主張の EN 版からの引用。`nvmf_lif` が行を返さないこと |
 | `docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-capacity-burst-and-baseline.md` | `この 1,024 という数字が何を指しているのかは確認できていない` | `retraction` | 第 2 世代の書き込みで例外表の 1,024 MBps が何を指すか未確定であること。**引用元が判断を保留していることが、こちらが片方の記述だけで見積もらないよう書ける根拠**です |
 | `docs/en/domains/performance/notes/where-throughput-is-determined-and-shared.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-capacity-burst-and-baseline.md` | `この 1,024 という数字が何を指しているのかは確認できていない` | `retraction` | 同上（EN 版）|
+| `docs/ja/domains/performance/notes/directory-size-is-capped-separately-from-file-count.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/delegation-ledger.md` | `単一ディレクトリの最大サイズ（maxdir-size）の上限と、超過時の列挙コストの増大` | `retraction` | maxdir-size の知見が Hub 側の本体としてこのノートへ委ねられていること。**台帳がこの行を Spoke 側へ戻すか消せば、「委ねられた」というこちらの記述が古くなります** |
+| `docs/en/domains/performance/notes/directory-size-is-capped-separately-from-file-count.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/delegation-ledger.md` | `単一ディレクトリの最大サイズ（maxdir-size）の上限と、超過時の列挙コストの増大` | `retraction` | 同上（EN 版）|
+| `docs/ja/playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/delegation-ledger.md` | `高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料` | `retraction` | 高ファイル数の採用判断材料が Hub 側の本体としてこのノートへ委ねられていること。**台帳がこの行を Spoke 側へ戻すか消せば、「委ねられた」というこちらの記述が古くなります** |
+| `docs/en/playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/delegation-ledger.md` | `高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料` | `retraction` | 同上（EN 版）|
 <!-- cross-repo-table:end -->
 
 ---

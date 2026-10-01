@@ -153,7 +153,7 @@ This repository has no FSx for ONTAP measurement of metadata operations or enume
 > "Sequential bandwidth tests do not predict high-file-count behavior."
 > — TR, the recommendations page, same section
 
-Metadata operations and enumeration in a configuration that collects data through the S3 API into an origin and distributes it with FlexCache are tracked as a not-yet-measured item in [S3-Burst-on-ONTAP-Files issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235).
+Metadata operations and enumeration in a configuration that collects data through the S3 API into an origin and distributes it with FlexCache are tracked as a not-yet-measured item in [S3-Burst-on-ONTAP-Files issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235). What this TR's findings delegated to this note, and what stayed with that configuration, is recorded in that repository's [delegation ledger](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/tr-integration/delegation-ledger.md) (日本語).
 
 ---
 

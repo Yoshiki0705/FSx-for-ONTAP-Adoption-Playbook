@@ -185,7 +185,7 @@ TR によれば（ONTAP 一般）、FlexGroup の maxdir-size は FlexGroup 単�
 
 ### この構成固有の挙動の追跡先
 
-S3 API で収集したデータを origin に置き FlexCache で配布する構成での、メタデータ操作と列挙の挙動はこのノートでは扱いません。未計測の項目として [S3-Burst-on-ONTAP-Files の Issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235) で追跡されています。
+S3 API で収集したデータを origin に置き FlexCache で配布する構成での、メタデータ操作と列挙の挙動はこのノートでは扱いません。この TR から何をこのノートへ委ね、何をその構成側に残したかは [S3-Burst-on-ONTAP-Files の委任台帳](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/tr-integration/delegation-ledger.md) にあり、未計測の項目は同リポジトリの [Issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235) で追跡されています。
 
 ---
 

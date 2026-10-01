@@ -151,7 +151,7 @@ graph TD
 > "Sequential bandwidth tests do not predict high-file-count behavior."
 > — TR、推奨事項のページ、同節
 
-S3 API で収集したデータを origin に置き FlexCache で配布する構成でのメタデータ操作と列挙の挙動は、未計測の項目として [S3-Burst-on-ONTAP-Files の Issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235) で追跡されています。
+S3 API で収集したデータを origin に置き FlexCache で配布する構成でのメタデータ操作と列挙の挙動は、未計測の項目として [S3-Burst-on-ONTAP-Files の Issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235) で追跡されています。この TR の知見のうち何をこのノートへ委ね、何をその構成側に残したかは、同リポジトリの[委任台帳](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/tr-integration/delegation-ledger.md)にあります。
 
 ---
 
