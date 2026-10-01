@@ -74,6 +74,8 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-readin
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	既定 ACL は Everyone / Full Control である
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	単一ディレクトリの最大サイズ（maxdir-size）の上限と、超過時の列挙コストの増大
+S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない

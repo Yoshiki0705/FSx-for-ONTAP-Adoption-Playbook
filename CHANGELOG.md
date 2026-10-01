@@ -9,6 +9,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The two High-file-count notes now link the sibling's TR delegation ledger, not only its tracking issue.**
+  `directory-size-is-capped-separately-from-file-count.md` and `file-count-fit-depends-on-namespace-shape.md` (JA and EN) pointed only at S3-Burst-on-ONTAP-Files issue #235, because the ledger was not yet on that repository's `main`. It now is, so the ledger is linked as the record of what was delegated here and what stayed there. The issue link stays, since it is where the unmeasured items are tracked.
+
 - **Performance notes now use the fixed question-to-verification reading structure without changing their benchmark evidence.**
   - Existing substantive heading text remains unchanged at a lower heading level, so its generated fragments stay stable.
   - The CloudWatch note keeps the former H1 fragments as explicit aliases. The external-anchor snapshot adds the new structural headings; it removes no existing fragment.
