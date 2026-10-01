@@ -100,6 +100,28 @@ SMB 暗号化は SVM 作成時点で無効です。有効化は 2 段階で選�
 
 これは「セキュリティを上げる変更」が「接続断を起こす変更」でもあるということです。**対応状況を把握してから有効化してください。** 設定は ONTAP CLI の `vserver cifs security modify` で行い、`vserver cifs security show` で現在値を確認できます。
 
+#### NFS over TLS の位置づけと FSx for ONTAP での未確認の範囲
+
+**NFS over TLS は ONTAP 9.19.1 で入った機能で、FSx for ONTAP で使えるかは未確認です。** 上の表に行を足していないのはこのためです。表は AWS が FSx for ONTAP について挙げている方式の一覧で、ここに並べると対応しているように読めてしまいます。
+
+NetApp の記載（ONTAP 一般）は次のとおりです。
+
+| 項目 | 記載 |
+|---|---|
+| 位置づけ | ONTAP 9.19.1 で導入。RFC 9289 に基づき、NFSv3 と NFSv4.x の RPC を TLS 1.3 で暗号化します。Kerberos も IPsec も要りません |
+| 変えないこと | **ユーザーの認証は変えません。** 引き続き `auth_sys` か `krb5` が必要です。`krb5i` / `krb5p` も使えますが、TLS と保護が重なり、性能の負担は残ります |
+| 強制の単位 | エクスポートポリシーのルールに `-allow-nfs-tls-only` が加わり、ルールごとに TLS を必須にできます。必須のルールに一致したクライアントの TLS でない接続は拒否され、既存の TLS 接続は影響を受けません |
+| 併用できないもの | 同じ LIF で NFS over RDMA と排他です |
+| HA テイクオーバー | TLS セッションはテイクオーバーをまたいで残らず、すべてのクライアントが新たにハンドシェイクします |
+| クライアント | RFC 9289 を実装した NFS クライアントが必要です。Linux では `xprtsec=tls` などのマウントオプションと `tlshd` を使います |
+
+出典: NetApp [NFS over TLS overview](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-overview.html)（2026-08-06 更新）の「Prerequisites」「What it doesn't do」、[Interoperability and limits](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-reference.html)（2026-08-06 更新）の「Interoperability」「Limitations and caveats」「Soft limits and recommendations」。
+
+**FSx for ONTAP での扱いについて、2 つの事実を並べます。結論は出しません。**
+
+- NetApp の overview ページは前提条件に「ONTAP cloud personalities are not supported at this time」と書き、Interoperability and limits のページは Cloud Volumes ONTAP とその他のクラウドでホストされる ONTAP を 9.19.1 では非対応としています。**FSx for ONTAP を名指しした記載はありません**
+- AWS の [Encrypting data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html) が FSx for ONTAP について挙げる方式は、Nitro ベース、Kerberos ベース、IPsec の 3 つです（2026-10-02 に確認）
+
 ---
 
 ### 監査の 2 つの面と、片方の穴の存在
@@ -222,6 +244,7 @@ graph TD
 | CloudTrail でファイルアクセスも追える | CloudTrail は API 呼び出しです。ファイルアクセスは別の仕組みです |
 | 運用担当者には `fsxadmin` が必要 | SVM 単位の作業は `vsadmin` で足ります |
 | SnapLock を有効にすれば即座にロックされる | 有効化とロックは別です。ロックは保持期間の設定で発生します |
+| NFS over TLS で転送時の暗号化を足せる | ONTAP 9.19.1 の機能で、**FSx for ONTAP で使えるかは未確認です。** AWS が挙げる方式は Nitro、Kerberos、IPsec です |
 
 ---
 
@@ -237,6 +260,9 @@ graph TD
 | `KmsKeyId` を省略すると Amazon FSx 管理キーが使われ、変更には置換が必要なこと | [AWS CloudFormation: AWS::FSx::FileSystem](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-filesystem.html) |
 | 監査可能な SMB イベントの一覧、4663 で最初の読み取りと最初の書き込みのみが記録されること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
 | 全 API 呼び出しが CloudTrail に記録されること、呼び出し元の識別情報 | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
+| NFS over TLS が ONTAP 9.19.1 で入ったこと、RFC 9289 と TLS 1.3、ユーザー認証を変えないこと、クラウド向けの ONTAP が前提条件で非対応とされていること（ONTAP 一般） | [NetApp: NFS over TLS overview](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-overview.html)（2026-08-06 更新、2026-10-02 に確認） |
+| `-allow-nfs-tls-only`、NFS over RDMA との排他、テイクオーバー後の再ハンドシェイク、Cloud Volumes ONTAP とその他のクラウドでホストされる ONTAP が 9.19.1 で非対応であること（ONTAP 一般） | [NetApp: NFS over TLS — Interoperability and limits](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-reference.html)（2026-08-06 更新、2026-10-02 に確認） |
+| FSx for ONTAP がすべての SMB の版（2.0、3.0、3.1.1 を含む）と NFS v3 / v4.0 / v4.1 / v4.2 に対応すること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html)（2026-10-02 に確認） |
 
 ---
 

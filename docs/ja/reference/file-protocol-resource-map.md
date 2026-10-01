@@ -208,6 +208,7 @@ graph TD
 | [NetApp: NAS data requirements for client access](https://docs.netapp.com/us-en/ontap/s3-multiprotocol/nas-data-requirements-client-access-reference.html) | **任意のオブジェクト名は使えません。** S3 名は 1,024 バイト、ファイル名とディレクトリ名の制約が効きます |
 | [NetApp: ONTAP S3 interoperability](https://docs.netapp.com/us-en/ontap/s3-config/ontap-s3-interoperability-concept.html) | 他機能との併用可否 |
 | [NetApp: NAS バケット構成の削除手順](https://docs.netapp.com/us-en/ontap/revert/remove-nas-bucket-task.html) | 戻すときの手順 |
+| [NetApp: Learn about ONTAP S3 configuration](https://docs.netapp.com/us-en/ontap/s3-config/index.html) | ONTAP S3 の構成の入口（2025-02-25 更新）。**TR-4814 の内容は 2024 年 7 月にここへ統合されたとページ自身が書いています。** 2026-10 の TR 委任で追加した行で、供出された 119 件には含まれません |
 | [NetApp: Cloud Volumes ONTAP の対応クライアントプロトコル](https://docs.netapp.com/us-en/bluexp-cloud-volumes-ontap/concept-client-protocols.html) | ONTAP S3 が対応プロトコルとして載っていること |
 
 ### クローンと容量
@@ -231,6 +232,23 @@ graph TD
 |----------|------|
 | [NetApp: IPsec の準備](https://docs.netapp.com/us-en/ontap/networking/ipsec-prepare.html) | **ONTAP 9.8 以降。** クライアントと SVM の間の IP トラフィックが対象 |
 | [NetApp: データ複製の暗号化](https://docs.netapp.com/us-en/ontap-technical-reports/ontap-security-hardening/data-replication-encryption.html) | cluster peering encryption。**ONTAP 9.6 以降、TLS 1.2 AES-256 GCM** |
+| [NetApp: NFS over TLS overview](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-overview.html) | **ONTAP 9.19.1 で導入。** NetApp はクラウド向けの ONTAP を前提条件で非対応としており、FSx for ONTAP で使えるかは未確認です（[整理](../domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md#nfs-over-tls-の位置づけと-fsx-for-ontap-での未確認の範囲)）。2026-10 の TR 委任で追加した行で、供出された 119 件には含まれません |
+
+### NFSv4.x の版と機能差
+
+**この節の行は 2026-10 の TR 委任で追加したもので、供出された 119 件には含まれません。** 上の件数はそのままです。TR の記載は ONTAP 一般で、FSx for ONTAP で同じかは下の最後の行のとおりです。
+
+| リソース | 論点 |
+|----------|------|
+| [TR-4067: NFS in NetApp ONTAP](https://www.netapp.com/pdf.html?item=/media/10720-tr-4067.pdf)（2023 年 6 月）「NFSv4.x considerations」 | NFSv4.x を有効にする手順（ID ドメイン、版ごとの ACL のオプション `-v4.0-acl` / `-v4.1-acl`）。**クライアントは NFS サーバーが対応する最も高い版で交渉します** |
+| TR-4067「NFSv4 delegations」 | 版ごとの委任のオプションは**既定で無効**です。**委任はメタデータをキャッシュしないため、ファイル数の多いワークロードでは効果が小さい**と TR は書いています |
+| TR-4067「NFSv4.1 features」 | NFSv4.1 では委任のコールバックが通常の要求と同じ TCP 接続を使います（NFSv4.0 は別の接続） |
+| TR-4067「NFSv4.2」 | NFSv4.2 に単独の有効化オプションはなく、`-v4.1` と一緒に有効・無効になります。**TR は NFSv4.1 と NFSv4.2 で性能に差はないと書いています。** labeled NFS は ONTAP 9.9.1 以降 |
+| [TR-4962: NFSv4.2 extended attributes](https://www.netapp.com/pdf.html?item=/media/84595-tr-4962.pdf)（ONTAP 9.12.1、2023 年 4 月） | 拡張属性（xattr）には NFSv4.1 と `v4.2-xattrs` の両方が必要で、どちらも既定で有効、SVM 単位です。**xattr は NFSv4 の named attributes とは別物です** |
+| TR-4067 のクライアント側の推奨の節にある「Wsize/rsize」 | クライアントはマウント時に `-tcp-max-xfer-size` の値へ rsize / wsize を合わせます。**ONTAP の既定は 64K で、最大 1MB に設定できます。既定値であって上限ではありません。** 実測で 65536 になった理由は [S3-Burst-on-ONTAP-Files の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md) にあります |
+| [S3-Burst-on-ONTAP-Files: perf-matrix-results.md](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) | NFS の版がスループットを決めなかったという実測と、NFSv4.0 + `nconnect` が動いたことを本番構成の根拠にしないという留保。値はこちらに転記しません |
+| [S3-Burst-on-ONTAP-Files: protocol-matrix-efs-vs-ontap.md](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/protocol-matrix-efs-vs-ontap.md) | NFSv4.0 でも `nconnect` の接続が開いたという観測。**サポートの記載ではありません** |
+| [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) | FSx for ONTAP は NFS v3、v4.0、v4.1、v4.2 に対応します。**委任、NFSv4 ACL、xattr、labeled NFS のそれぞれが FSx for ONTAP で使えるかは未確認です**（AWS の記載を 2026-10-02 に探して見つけていません） |
 
 ### コマンドの存在確認
 
