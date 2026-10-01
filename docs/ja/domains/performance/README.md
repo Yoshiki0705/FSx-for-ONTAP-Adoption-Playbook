@@ -32,6 +32,7 @@
 | 6 | 手元で測った値は何を測っているのか | [単一接続で測った値はストレージの性能ではない](notes/a-single-connection-measures-the-client.md) |
 | 7 | 同じ構成で測った値が振れるのはなぜか | [45% の幅の正体](notes/a-single-connection-measures-the-client.md#45-の幅の正体) |
 | 8 | スループットを上げる手段はどれを先に試すか | [スループットを上げる手段の比較](../../reference/comparison/throughput-levers.md) |
+| 9 | 1 ディレクトリに置けるファイル数と、大きいディレクトリの列挙コストはどう決まるか | [ディレクトリ 1 つの大きさにはファイル数と別の上限がある](notes/directory-size-is-capped-separately-from-file-count.md) |
 
 ---
 

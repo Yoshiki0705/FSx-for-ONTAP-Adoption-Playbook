@@ -30,6 +30,7 @@
 | 6 | 移行元が SaaS / クラウドストレージの場合、追加で採取すべき数値は何か | [Assess フェーズで採取すべき数値](../03-migrate/notes/saas-source-migration-scoping.md#3-assess-フェーズで採取すべき数値) |
 | 7 | その値をどこから取れば判断に使えるか | [棚卸しの値をどこから取るかの比較](../../reference/comparison/inventory-sources.md) |
 | 8 | 評価と PoC はどう違い、どちらを今やっているのか | 本 README の[評価と PoC の別](#評価と-poc-の別) |
+| 9 | 高ファイル数のワークロードに FSx for ONTAP が合うかをどう判断するか | [高ファイル数のワークロードに合うかは名前空間の形で決まる](notes/file-count-fit-depends-on-namespace-shape.md) |
 
 ---
 

@@ -29,6 +29,7 @@ the table of contents; this is the entry point.
 | 4 | Which feature dependencies could block the migration | [Migration method decision tree](../../../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 5 | How to measure a baseline for performance requirements | [Record it so it stays comparable](../../playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md#capturing-a-performance-baseline-in-comparable-form) |
 | 6 | What additional numbers to collect when the source is SaaS / cloud storage | [Numbers to collect during Assess](../03-migrate/notes/saas-source-migration-scoping.md#3-numbers-to-collect-during-assess) |
+| 7 | How to judge whether FSx for ONTAP suits a high-file-count workload | [Fit depends on the shape of the namespace](../../playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md) |
 
 ---
 

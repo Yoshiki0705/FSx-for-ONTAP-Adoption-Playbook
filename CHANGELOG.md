@@ -556,6 +556,28 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Findings on high-file-count NAS workloads from a NetApp ONTAP Technical Report, delegated by the
+  S3-Burst-on-ONTAP-Files repository as ONTAP-general material that belongs here.** The source is
+  "High-file-count NAS workloads : ONTAP Technical Reports" (PDF generated 2026-09-30; it carries no
+  version number or revision history), cited per page and section, together with AWS Prescriptive
+  Guidance (PDF, initial publication 2023-08-29) for the FSx for ONTAP maxdir-size default.
+  - **Two new notes in Japanese and English**:
+    `domains/performance/notes/directory-size-is-capped-separately-from-file-count.md` (maxdir-size as a
+    per-directory cap separate from inodes, names per directory, behavior at the cap, enumeration cost)
+    and `playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md` (four separate
+    estimates, and symmetric conditions for when FSx for ONTAP suits the workload and when other
+    options deserve a look; other services are linked without figures).
+  - **`counting-bytes-is-not-counting-files.md` gains a section in both languages** placing the AWS
+    statement, the 2026-08-06 observation, and the TR side by side. The note keeps its `documented`
+    tier. The TR's statement that the default inode plateau ended in ONTAP 9.13.1 is recorded only as
+    untested reasoning about the observation, since the observation did not capture the ONTAP version.
+  - Every TR value without an AWS statement — 288 bytes per inode, 2,040,109,451, the 4 GB cap, the
+    about 2 MiB index threshold, enumeration cost, the FlexGroup ratio — is marked as not verified on
+    FSx for ONTAP. No FSx for ONTAP User Guide page documenting maxdir-size was found (2026-10-01).
+  - The configuration-specific behavior stays with the delegating repository and is linked as
+    [its issue #235](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/issues/235). Links to its
+    delegation and scope ledgers follow in a separate change once those are on its `main`.
+
 - **The block-storage domain's English translation batches (#279–#281) left one note out of the plan
   without deferring it, and this closes that gap alongside the four notes those batches did defer.**
   Batch 1's body said the remaining eight settled notes would land in batches 2–3, but 3 + 4 = 7, not

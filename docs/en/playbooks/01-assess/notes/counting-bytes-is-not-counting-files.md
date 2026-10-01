@@ -102,6 +102,39 @@ Raising it is done with ONTAP CLI `volume modify`. The setting that always uses 
 
 ---
 
+### Three sources side by side
+
+The AWS documentation, the 2026-08-06 observation, and a NetApp Technical Report (the TR below, a document about ONTAP in general) do not state inode values in the same form. Whichever you take, the value on FSx for ONTAP is not settled until you [read `FilesCapacity` in your own environment](#verify-in-your-own-environment).
+
+| Aspect | AWS documentation (FSx for ONTAP) | 2026-08-06 observation (FSx for ONTAP) | TR (ONTAP in general) |
+|---|---|---|---|
+| Default inode count | One per 32 KiB; volumes of 648 GiB and above all get 21,251,126 | Proportional to size (34,493 B/inode; 63,753,417 at 2 TiB) | About one per 32 KiB (subject to a usable-capacity factor and release behavior). The plateau at 21,251,126 was the default-sizing behavior of earlier releases and stopped at about 680 GB; from ONTAP 9.13.1 the default grows past it |
+| Ratio it can be raised to | One per 4 KiB | Not measured | About one per 4 KiB. Query `files-maximum-possible` rather than treating it as an exact formula |
+| Per-volume ceiling | 2 billion | Not measured | 2,040,109,451 on a FlexVol, configurable only on volumes of about 7.8 TB or larger |
+| Capacity one inode occupies | No statement found | Not measured | 288 bytes in ONTAP 9. One million take about 288,000,000 bytes (274.7 MiB). The inode file does not shrink after deletes |
+
+The TR values come from NetApp, "High-file-count NAS workloads : ONTAP Technical Reports" (docs.netapp.com; PDF generated 2026-09-30; no version number or revision history), as follows.
+
+| TR value | Page and section |
+|---|---|
+| 288 bytes; 274.7 MiB per million | Page "[High file counts and inode capacity in ONTAP](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-08-maxfiles-high-file-counts.html)", section "Capacity impact" |
+| The inode file does not shrink after deletes | Page "[NetApp ONTAP High File Count Workloads for NAS volumes](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-01-overview.html)", section "High-file-count challenges" |
+| About one per 32 KiB / 4 KiB; 2,040,109,451; about 7.8 TB | Page "[Maxfiles and ONTAP inode information](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-10-maxfiles-limits.html)", section "Maxfiles limits" |
+| The 21,251,126 plateau at about 680 GB; the change in ONTAP 9.13.1 | Page "[Monitor maxfiles, EMS events, and ONTAP enhancements](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-12-maxfiles-monitoring.html)", section "ONTAP functionality and enhancements related to maxfiles" |
+
+According to the TR, each inode occupies a fixed amount of space in the inode file (288 bytes in ONTAP 9), and the number of files a volume can hold is set by its size (about one per 4 KiB) and the FlexVol absolute ceiling. **Whether these values hold on FSx for ONTAP is not verified.** No AWS statement of 288 bytes or of 2,040,109,451 was found, and AWS states the ceiling as 2 billion (searched: the FSx for ONTAP User Guide pages "Volume storage capacity", "Your volume has insufficient storage capacity", "Updating the maximum number of files on a volume", and "Monitoring a volume's file capacity", 2026-10-01).
+
+> **Status of this reasoning**: `hypothesis` — untested reasoning, not verified.
+> The TR's statement that the default stops plateauing from ONTAP 9.13.1 could explain the disagreement between the AWS documentation and the 2026-08-06 observation.
+> But the ONTAP version was not captured at the time of the observation, and the AWS documentation still states 648 GiB, so this correspondence has not been confirmed.
+> The gap between AWS's 648 GiB and the TR's about 680 GB is not reconciled either.
+
+The design conclusion does not change: read `FilesCapacity` in your own environment, and `files-maximum-possible` through the ONTAP CLI.
+
+> **Tier of this section**: `documented` — statements in the AWS documentation and the TR (ONTAP in general). The observed values repeat the `verified` section above (2026-08-06).
+
+---
+
 ### What happens when they run out
 
 **This was measured.** A 20 MiB volume (the FlexVol minimum) was mounted over NFSv3 and files were created until it stopped.
@@ -137,7 +170,7 @@ What inodes count is **files, directories, and Snapshot copies**. Raising Snapsh
 
 A retention design decided on capacity alone misses this share. The relationship between the retention ceiling and capacity is in [Having Snapshots and being able to recover are different things](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#limits-and-retention-periods).
 
-**There is also a ceiling on files per directory.** A layout that puts a large number of files in one directory hits that ceiling separately from inodes. Migration tools sometimes fail there.
+**There is also a ceiling on files per directory.** A layout that puts a large number of files in one directory hits that ceiling separately from inodes. Migration tools sometimes fail there. How that ceiling is set, and what listing a large directory costs, is in [What limits how many files fit in one directory?](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md)
 
 ---
 
@@ -150,7 +183,7 @@ Put the other way round, **the items you did not measure show up as settings you
 | Inventory item | The decision it settles | Reference |
 |---|---|---|
 | File count and average file size | Whether the inode default suffices, or the volume must be split | Above in this note |
-| Files per directory | Whether the migration tool runs to completion | Above in this note |
+| Files per directory | Whether the migration tool runs to completion | [How many files fit in one directory](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) |
 | Protocols actually in use | **The volume's security style.** It changes how permissions are evaluated | [Security style and permission evaluation](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
 | Whether the migration account can read ACLs | Whether ACLs go missing while the job reports "success" | [ACL preservation is a permissions problem](../../../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md#必要な特権) (日本語) |
 | Source ONTAP version | Whether SnapMirror is usable, or an upgrade comes first | [Migration method decision tree](../../../../ja/reference/decision-trees/migration-method.md#バージョン互換性の確認移行元が-ontap-の場合) |
@@ -222,6 +255,7 @@ graph TD
 | Making the volume bigger increases inodes | **The documentation says it caps at 648 GiB; measurement grew in proportion.** Do not assume — read it in your own environment |
 | Inodes can be raised without limit later | One per 4 KiB is the ratio ceiling and **2 billion** per volume is absolute |
 | Inodes are a count of files | They count files, directories, **and Snapshot copies** |
+| Inodes are only a count and take no capacity | In the TR (ONTAP in general) each one occupies 288 bytes in the inode file, which does not shrink after deletes. Not verified on FSx for ONTAP |
 | Always-use-maximum inodes is the default | It is not. It is set explicitly with ONTAP CLI (advanced mode) |
 | Configuration data is enough for a protocol inventory | It produces both enabled-but-unused shares and paths missing from the register |
 | Setting the tiering policy to `All` removes the need to size SSD | Metadata always stays on SSD |
@@ -241,6 +275,10 @@ graph TD
 | The `FilesCapacity` / `FilesUsed` metrics and how to check them in the console | [AWS: Monitoring a volume's file capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/view-volume-file-capacity.html) |
 | That migration tools hit the per-directory file ceiling | [AWS: Troubleshooting issues with DataSync tasks](https://docs.aws.amazon.com/datasync/latest/userguide/troubleshooting-tasks.html) |
 | That metadata stays on SSD regardless of the tiering policy | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| That each ONTAP 9 inode occupies 288 bytes, and the inode-file size at one million, 100 million and one billion inodes (ONTAP in general) | NetApp, "High-file-count NAS workloads : ONTAP Technical Reports" (docs.netapp.com; PDF generated 2026-09-30; no version number or revision history), page "[High file counts and inode capacity in ONTAP](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-08-maxfiles-high-file-counts.html)", section "Capacity impact" |
+| That deleting frees inodes for reuse but the inode file does not shrink (ONTAP in general) | Same TR, page "[NetApp ONTAP High File Count Workloads for NAS volumes](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-01-overview.html)", section "High-file-count challenges" |
+| The default of about one per 32 KiB, `files-maximum-possible` at about one per 4 KiB, and the FlexVol absolute ceiling of 2,040,109,451 with its about 7.8 TB condition (ONTAP in general) | Same TR, page "[Maxfiles and ONTAP inode information](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-10-maxfiles-limits.html)", section "Maxfiles limits" |
+| That the 21,251,126 plateau at about 680 GB was the default behavior of earlier releases, and the change in ONTAP 9.13.1 (ONTAP in general) | Same TR, page "[Monitor maxfiles, EMS events, and ONTAP enhancements](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-12-maxfiles-monitoring.html)", section "ONTAP functionality and enhancements related to maxfiles" |
 
 ---
 
@@ -253,6 +291,8 @@ graph TD
 - [Throughput is not determined by a single value](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — region and generation change the ceilings
 - [Monitoring fails on averages](../../05-operate/notes/monitoring-fails-on-averages.md) — why the baseline is taken as maximums
 - [Limits and quotas](../../../../ja/reference/limits/) — limits with sources and verification dates
+- [What limits how many files fit in one directory?](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) — the per-directory cap that applies separately from inodes
+- [Does FSx for ONTAP suit a high-file-count workload?](file-count-fit-depends-on-namespace-shape.md) — judging by the shape of the namespace, not the total
 - [Evidence classification policy](../../../evidence-policy.md)
 
 [🏠 Repository Top](../../../README.md) | [Playbook 01 — Assess](../README.md)
