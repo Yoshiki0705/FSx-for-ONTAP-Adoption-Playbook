@@ -30,6 +30,19 @@ from check_links import anchors_of
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "docs" / "agent" / "external-anchor-contract.txt"
 
+# Cited without a fragment from `S3-Burst-on-ONTAP-Files`' TR delegation ledger and its handoff
+# contract, as the Hub-side body of the High-file-count NAS workloads findings it delegated. JA and
+# EN are both cited, so both are listed. Named once because both PATH_ONLY and tracked_files() need it.
+HIGH_FILE_COUNT_NOTES = tuple(
+    f"docs/{lang}/{rel}"
+    for lang in ("ja", "en")
+    for rel in (
+        "playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md",
+        "domains/performance/notes/directory-size-is-capped-separately-from-file-count.md",
+        "playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md",
+    )
+)
+
 # Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
 # cannot see the citing side, so only the citing repository knows which form it uses.
 PATH_ONLY = frozenset(
@@ -43,6 +56,7 @@ PATH_ONLY = frozenset(
         # break for that side is the file moving, not a heading being renamed inside it.
         "docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md",
         "docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md",
+        *HIGH_FILE_COUNT_NOTES,
     }
 )
 
@@ -130,6 +144,10 @@ def tracked_files() -> list[Path]:
     produced entries in both buckets is the distinction doing its job: what the citing side needs
     protected is whichever of path or heading its link actually depends on, and it differs per link
     rather than per document.
+
+    The six High-file-count notes (three documents, JA and EN) came by declaration from the same
+    sibling. Its TR delegation ledger and handoff contract cite them **without a fragment**, so all
+    six are path-only: what breaks for that side is a file moving.
     """
     return [
         ROOT
@@ -191,6 +209,7 @@ def tracked_files() -> list[Path]:
         / "performance"
         / "notes"
         / "where-throughput-is-determined-and-shared.md",
+        *(ROOT / rel for rel in HIGH_FILE_COUNT_NOTES),
     ]
 
 
