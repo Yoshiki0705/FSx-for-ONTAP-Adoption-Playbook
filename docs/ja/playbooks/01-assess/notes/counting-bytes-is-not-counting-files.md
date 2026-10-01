@@ -100,6 +100,39 @@ inode は手動で増やせますが、上限があります。
 
 ---
 
+### 3 つの出典による inode の値の並置
+
+AWS 文書、2026-08-06 の観測、NetApp の Technical Report（以下 TR、ONTAP 一般の文書）の 3 つは、inode の値を同じ形では書いていません。どれを採っても、FSx for ONTAP での値は[自環境の `FilesCapacity`](#自環境での確認手順) を読むまで確定しません。
+
+| 観点 | AWS 文書（FSx for ONTAP） | 2026-08-06 の観測（FSx for ONTAP） | TR（ONTAP 一般） |
+|---|---|---|---|
+| 既定の inode 数 | 32 KiB に 1 個。648 GiB 以上はいずれも 21,251,126 個 | サイズに比例（34,493 B/inode、2 TiB で 63,753,417 個） | 約 32 KiB に 1 個（使用可能容量の係数とリリースの挙動に従う）。21,251,126 個での頭打ちは以前のリリースの既定値の挙動で、約 680 GB で止まっていた。ONTAP 9.13.1 からは頭打ちを越えて増える |
+| 引き上げ可能な比率 | 4 KiB に 1 個 | 未測定 | 約 4 KiB に 1 個。正確な式ではなく `files-maximum-possible` を照会する |
+| 1 ボリュームの上限 | 20 億個 | 未測定 | FlexVol で 2,040,109,451 個。設定できるのは約 7.8 TB 以上のボリュームから |
+| inode 1 個が占める容量 | 記載を見つけていない | 未測定 | ONTAP 9 で 288 バイト。100 万個で約 288,000,000 バイト（274.7 MiB）。削除しても inode ファイルは縮まない |
+
+TR の各値の出典は次のとおりです。いずれも NetApp「High-file-count NAS workloads : ONTAP Technical Reports」（docs.netapp.com、PDF 生成日 2026-09-30、版番号・改訂履歴の記載なし）です。
+
+| TR の値 | ページと節 |
+|---|---|
+| 288 バイト、100 万個で 274.7 MiB | ページ「[High file counts and inode capacity in ONTAP](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-08-maxfiles-high-file-counts.html)」の節「Capacity impact」 |
+| 削除しても inode ファイルは縮まない | ページ「[NetApp ONTAP High File Count Workloads for NAS volumes](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-01-overview.html)」の節「High-file-count challenges」 |
+| 約 32 KiB / 約 4 KiB に 1 個、2,040,109,451 個、約 7.8 TB | ページ「[Maxfiles and ONTAP inode information](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-10-maxfiles-limits.html)」の節「Maxfiles limits」 |
+| 約 680 GB での 21,251,126 個の頭打ち、ONTAP 9.13.1 での変更 | ページ「[Monitor maxfiles, EMS events, and ONTAP enhancements](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-12-maxfiles-monitoring.html)」の節「ONTAP functionality and enhancements related to maxfiles」 |
+
+TR によれば、inode は 1 個あたり一定の容量（ONTAP 9 で 288 バイト）を inode ファイルに占めます。作れるファイル数の上限は、ボリュームサイズ（約 4 KiB に 1 個）と FlexVol の絶対上限で決まります。**この値が FSx for ONTAP でも同じかは未確認です。** AWS 文書に 288 バイトと 2,040,109,451 個の記載は見つけておらず、AWS は上限を 20 億個と書いています（探索範囲は FSx for ONTAP ユーザーガイドの「Volume storage capacity」「Your volume has insufficient storage capacity」「Updating the maximum number of files on a volume」「Monitoring a volume's file capacity」の 4 ページ、2026-10-01）。
+
+> **この推論の区分**: `hypothesis` — 未検証の推論です。
+> TR の「ONTAP 9.13.1 から既定値が頭打ちしない」という記載は、AWS 文書と 2026-08-06 の観測の食い違いを説明しうるものです。
+> ただし観測時の ONTAP バージョンは取得しておらず、AWS 文書は現在も 648 GiB と記載しているため、この対応は確認していません。
+> AWS の 648 GiB と TR の約 680 GB の差も解消していません。
+
+設計上の結論は変わりません。自環境の `FilesCapacity` と、ONTAP CLI の `files-maximum-possible` を読んでください。
+
+> **この節の区分**: `documented` — AWS 文書と TR（ONTAP 一般）の記載です。観測値は上の節の `verified`（2026-08-06）を再掲したものです。
+
+---
+
 ### 使い切ったときの挙動
 
 **実測しました。** 20 MiB（FlexVol の最小サイズ）のボリュームを NFSv3 でマウントし、ファイルを作り続けました。
@@ -135,7 +168,7 @@ inode が数えるのは**ファイル・ディレクトリ・Snapshot コピー
 
 保持設計を容量だけで決めていると、この分が見落とされます。保持数の上限と容量の関係は [Snapshot があることと復旧できることは別](../../../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md#上限と保持期間) にあります。
 
-**ディレクトリあたりのファイル数にも上限があります。** 1 つのディレクトリに大量のファイルを置く構成では、inode とは別にこの上限に当たります。移行ツールがここで失敗することがあります。
+**ディレクトリあたりのファイル数にも上限があります。** 1 つのディレクトリに大量のファイルを置く構成では、inode とは別にこの上限に当たります。移行ツールがここで失敗することがあります。上限の決まり方と大きいディレクトリの列挙コストは [ディレクトリ 1 つに置けるファイル数はどこで決まるのか](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) にあります。
 
 ---
 
@@ -148,7 +181,7 @@ inode が数えるのは**ファイル・ディレクトリ・Snapshot コピー
 | 棚卸し項目 | これが決める判断 | 参照 |
 |---|---|---|
 | ファイル数と平均ファイルサイズ | inode の既定値で足りるか、ボリュームを分割するか | 本ノート上記 |
-| 1 ディレクトリあたりのファイル数 | 移行ツールが完走するか | 本ノート上記 |
+| 1 ディレクトリあたりのファイル数 | 移行ツールが完走するか | [ディレクトリ 1 つに置けるファイル数](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) |
 | 実際に使われているプロトコル | **ボリュームのセキュリティスタイル。** 権限評価の仕組みが変わります | [セキュリティスタイルと権限評価](../../../domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) |
 | 移行アカウントが ACL を読めるか | ACL が欠けたまま「成功」で終わらないか | [ACL 保持は権限の問題](../../03-migrate/notes/preserving-acls-during-migration.md#必要な特権) |
 | 移行元の ONTAP バージョン | SnapMirror が使えるか、先にアップグレードが必要か | [移行方式の決定木](../../../reference/decision-trees/migration-method.md#バージョン互換性の確認移行元が-ontap-の場合) |
@@ -220,6 +253,7 @@ graph TD
 | ボリュームを大きくすれば inode も増える | **ドキュメントは 648 GiB で頭打ちと記載し、実測は比例して増えました。** 仮定せず自環境で読んでください |
 | inode は後からいくらでも増やせる | 4 KiB あたり 1 個が上限、1 ボリューム **20 億個**が絶対上限です |
 | inode はファイルの数 | ファイル・ディレクトリ・**Snapshot コピー**を数えます |
+| inode は数だけで容量を使わない | TR（ONTAP 一般）では 1 個 288 バイトを inode ファイルに占め、削除しても縮みません。FSx for ONTAP では未確認です |
 | 常に最大 inode を使う設定が既定 | 既定ではありません。ONTAP CLI で明示的に設定します（advanced モード） |
 | プロトコルの棚卸しは設定情報で足りる | 有効だが未使用の共有と、台帳にない経路の両方が出ます |
 | 階層化ポリシーを `All` にすれば SSD の見積もりは不要 | メタデータは常に SSD に残ります |
@@ -239,6 +273,10 @@ graph TD
 | `FilesCapacity` / `FilesUsed` メトリクスとコンソールでの確認方法 | [AWS: Monitoring a volume's file capacity](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/view-volume-file-capacity.html) |
 | ディレクトリあたりのファイル数上限に移行ツールが当たること | [AWS: Troubleshooting issues with DataSync tasks](https://docs.aws.amazon.com/datasync/latest/userguide/troubleshooting-tasks.html) |
 | メタデータが階層化ポリシーに関係なく SSD に残ること | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| ONTAP 9 の inode 1 個が 288 バイトを占めること、100 万個・1 億個・10 億個での inode ファイルの大きさ（ONTAP 一般） | NetApp「High-file-count NAS workloads : ONTAP Technical Reports」（docs.netapp.com、PDF 生成日 2026-09-30、版番号・改訂履歴の記載なし）、ページ「[High file counts and inode capacity in ONTAP](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-08-maxfiles-high-file-counts.html)」の節「Capacity impact」 |
+| 削除で inode は再利用できるが inode ファイルは縮まないこと（ONTAP 一般） | 同 TR、ページ「[NetApp ONTAP High File Count Workloads for NAS volumes](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-01-overview.html)」の節「High-file-count challenges」 |
+| 既定の約 32 KiB に 1 個、`files-maximum-possible` の約 4 KiB に 1 個、FlexVol の絶対上限 2,040,109,451 個と約 7.8 TB の条件（ONTAP 一般） | 同 TR、ページ「[Maxfiles and ONTAP inode information](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-10-maxfiles-limits.html)」の節「Maxfiles limits」 |
+| 約 680 GB での 21,251,126 個の頭打ちが以前のリリースの既定値の挙動であること、ONTAP 9.13.1 での変更（ONTAP 一般） | 同 TR、ページ「[Monitor maxfiles, EMS events, and ONTAP enhancements](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-12-maxfiles-monitoring.html)」の節「ONTAP functionality and enhancements related to maxfiles」 |
 
 ---
 
@@ -251,6 +289,8 @@ graph TD
 - [スループットは 1 つの値で決まらない](../../../domains/performance/notes/where-throughput-is-determined-and-shared.md) — リージョンと世代が上限を変える
 - [監視は平均値で失敗する](../../05-operate/notes/monitoring-fails-on-averages.md) — ベースラインを最大値で取る理由
 - [上限値・クォータ](../../../reference/limits/) — 出典と検証日付きの上限値
+- [ディレクトリ 1 つに置けるファイル数はどこで決まるのか](../../../domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) — inode とは別に効くディレクトリごとの上限
+- [高ファイル数のワークロードに FSx for ONTAP は合うか](file-count-fit-depends-on-namespace-shape.md) — 総数ではなく名前空間の形で判断する
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 [🏠 リポジトリトップ](../../../../../README.md) | [Playbook 01 — 現状把握](../README.md)

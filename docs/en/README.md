@@ -82,6 +82,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | Finding | What it answers |
 |---|---|
 | [Free space does not mean you can still write](playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md) | AWS documents a default inode cap at 648 GiB, but the 2026-08-06 observation scaled with capacity. Check the value in your environment |
+| [Fit for a high-file-count workload depends on the shape of the namespace](playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md) | The total file count does not decide it. Estimate inodes, the largest directory, and operation concentration separately |
 | [Deployment type is decided once](playbooks/02-design/notes/deployment-type-is-decided-once.md) | The availability choice also sets the scale-out ceiling. Multi-AZ is fixed at one HA pair |
 | [ACL preservation is a privilege problem, not a tool problem](../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Run with the defaults and ACLs are dropped silently, while the job still reports success |
 | [The rollback window closes when clients start writing](playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | There is no operation that undoes a cutover, and incremental sync depends on the common snapshot |
@@ -96,6 +97,7 @@ Each note is one concern per file, and always carries **its primary sources** an
 | [An S3 access point authorizes every request as one identity](../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry into an AI or RAG pipeline reading through it |
 | [At-rest encryption is automatic; in-transit conditions differ by method](../ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) (日本語) | The audit trail does not record every read — only the first per object |
 | [Throughput is not set by one value](domains/performance/notes/where-throughput-is-determined-and-shared.md) | Second-generation Single-AZ supports up to 12 HA pairs, block configurations up to 6; a FlexVol is placed on one HA pair's aggregate |
+| [A single directory has its own size cap](domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) | The ONTAP-general TR states 4,341,758 ordinary names at the 320 MB default, and 2,129,918 for Japanese names. Not verified on FSx for ONTAP |
 | [p99 is not available from volume operation-time metric pairs](domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | Read/write/metadata total time divided by total count is an average; other series expose different statistics and dimensions |
 | [Billing splits into provisioned and consumed](domains/cost/notes/provisioned-versus-consumed.md) | Tiering carries per-request charges, and deduplication does not lower the bill |
 | [Volume security style decides the permission model](domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | Blocking ID mapping does not block SMB access on an NTFS-style volume |
