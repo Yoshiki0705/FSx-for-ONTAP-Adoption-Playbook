@@ -823,9 +823,9 @@ def main() -> int:
     args = parser.parse_args()
 
     only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
-    # A category may be staged here only while its corpus backlog is being removed. The empty set
-    # means every category is required by an unscoped run; a behavioral test and mutation pin that
-    # default so removing one cannot silently narrow `make audit`.
+    # An unscoped run requires every category except two sets. REPORT_ONLY_CATEGORIES holds a
+    # category only while its corpus backlog is being removed; WARNING_CATEGORIES never gates. A
+    # behavioral test and mutation pin that default so neither set can silently narrow `make audit`.
     active = only or (
         frozenset(CATEGORIES) - REPORT_ONLY_CATEGORIES - WARNING_CATEGORIES
     )
