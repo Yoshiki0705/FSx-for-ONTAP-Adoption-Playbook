@@ -44,7 +44,7 @@ intermediate
 
 **maxdir-size はディレクトリごとの上限で、ボリュームの inode 上限とは別に効きます。** TR は、空き inode が十分にあっても 1 つのディレクトリが maxdir-size に達しうること、その逆も起きることを書いています。
 
-上限に達すると、空き容量と inode が残っていても、**そのディレクトリへの作成と改名だけが失敗します。** 他のディレクトリと読み取りは影響を受けません。
+上限に達すると、空き容量と inode が残っていても、**そのディレクトリへの作成と改名だけが失敗します。** 他のディレクトリは、容量と inode が残っていればエントリを追加できます。既存ファイルの読み取りは、通常は影響を受けません。
 
 大きいディレクトリでは、名前を指定した検索は index で速く済みますが、**全件の列挙とワイルドカード検索は名前の数に応じて重くなります。**
 
@@ -93,7 +93,8 @@ FSx for ONTAP の既定値 320 MB は AWS の記載があります。それ以�
 TR は次のように書いています（ONTAP 一般）。
 
 - そのディレクトリに名前を追加する操作（作成・改名）が拒否されます。クライアントには `ENOSPC`、`file too large`、NFS のエラー 27、`STATUS_CANNOT_MAKE` などが返ります
-- 他のディレクトリへの操作と、既存ファイルの読み取りは影響を受けません
+- 他のディレクトリは、容量と inode が残っていればエントリを追加できます
+- 既存ファイルの読み取りは、名前の追加とは別の操作で、通常は影響を受けません
 - ボリュームには容量と inode が残っていることがあります
 
 出典: TR、ページ「[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)」の節「What happens when maxdir-size is exceeded?」。
@@ -141,7 +142,7 @@ TR は次のように書いています（ONTAP 一般）。
 
 FSx for ONTAP は FlexVol と FlexGroup を提供します（[AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html)）。
 
-TR によれば（ONTAP 一般）、FlexGroup の maxdir-size は FlexGroup 単位で設定し、構成要素の数を掛けた値にはなりません。1 つのディレクトリのファイルは 1 つの構成要素にあり、別の構成要素に置かれたエントリ（remote entry）はより多くの領域を使います。大きく平坦なディレクトリでは最大で約 2 倍を見込み、320 MB の既定で通常の名前が約 200 万〜260 万個になります。FlexVol の約 430 万個より少ない値です。
+TR によれば（ONTAP 一般）、FlexGroup の maxdir-size は FlexGroup 単位で設定し、構成要素の数を掛けた値にはなりません。ディレクトリファイル（ディレクトリ自身のメタデータのファイル）は 1 つの構成要素に置かれたままで、そこに並ぶ名前が指すファイルは別の構成要素に置かれることがあります。別の構成要素にあるファイルを指すエントリ（remote entry）はより多くの領域を使います。大きく平坦なディレクトリでは最大で約 2 倍を見込み、320 MB の既定で通常の名前が約 200 万〜260 万個になります。FlexVol の約 430 万個より少ない値です。
 
 > "lowers the practical ceiling to about 2 to 2.6 million ordinary names at the 320 MB default"
 > — TR、ページ「Volume considerations」の節「FlexGroup volumes」
@@ -160,7 +161,7 @@ TR によれば（ONTAP 一般）、FlexGroup の maxdir-size は FlexGroup 単�
 | 下げられるか | 後で下げられる。ただし最大のディレクトリファイルの最高到達点より下には下げられない | 一度上げると、ディレクトリを作り直さない限り下げられない |
 | 大きさと性能 | 上の「ディレクトリが大きくなると重くなる列挙」 | ディレクトリはメモリに読み込まれるため、大きさと性能が引き換えになる |
 
-出典: TR、ページ「[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)」の節「What happens when maxdir-size is exceeded?」。AWS Prescriptive Guidance「[Deploying Amazon FSx for NetApp ONTAP in an enterprise environment](https://docs.aws.amazon.com/pdfs/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/fsx-ontap-enterprise-deployment.pdf)」（PDF、文書履歴の初版 2023-08-29）の maximum directory size の節（p.15）。
+出典: TR、ページ「[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)」の節「What happens when maxdir-size is exceeded?」、TR の推奨事項のページ（[high-file-count-workloads-14](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-14-best-practices.html)）の節「Size maxfiles and maxdir-size independently」（引き上げの方針の行）。AWS Prescriptive Guidance「[Deploying Amazon FSx for NetApp ONTAP in an enterprise environment](https://docs.aws.amazon.com/pdfs/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/fsx-ontap-enterprise-deployment.pdf)」（PDF、文書履歴の初版 2023-08-29）の maximum directory size の節（p.15）。
 
 > "After the value has been increased, it cannot be decreased without recreating the directory."
 > — AWS Prescriptive Guidance、同節

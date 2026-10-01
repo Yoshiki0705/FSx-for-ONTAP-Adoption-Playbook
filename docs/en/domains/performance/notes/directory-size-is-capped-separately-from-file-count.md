@@ -46,7 +46,7 @@ This is the English translation. Japanese is authoritative for technical accurac
 
 **maxdir-size is a per-directory cap, and it applies separately from the volume's inode ceiling.** The TR states that one directory can reach maxdir-size while the volume still has ample free inodes, and that the reverse also happens.
 
-At the cap, **only creates and renames into that directory fail**, even with capacity and inodes left. Other directories and reads are unaffected.
+At the cap, **only creates and renames into that directory fail**, even with capacity and inodes left. Other directories can keep accepting entries if they have capacity and inodes available. Reads of existing files are generally unaffected.
 
 In a large directory, a lookup by name is served quickly through the index, but **full enumeration and wildcard search grow more expensive with the number of names.**
 
@@ -95,7 +95,8 @@ Source: TR, page "[Maxdir-size and large ONTAP directories](https://docs.netapp.
 The TR states the following (ONTAP in general).
 
 - Operations that add a name to that directory (creates and renames) are rejected. Clients see `ENOSPC`, `file too large`, NFS error 27, `STATUS_CANNOT_MAKE`, or similar
-- Operations on other directories, and reads of existing files, are unaffected
+- Other directories can keep accepting entries if they have capacity and inodes available
+- Reading an existing file is a different operation from adding a name, and is generally unaffected
 - The volume may still have capacity and inodes
 
 Source: TR, page "[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)", section "What happens when maxdir-size is exceeded?".
@@ -143,7 +144,7 @@ Source: TR, page "[Maxdir-size and large ONTAP directories](https://docs.netapp.
 
 FSx for ONTAP offers both FlexVol and FlexGroup volumes ([AWS: Managing FSx for ONTAP volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html)).
 
-According to the TR (ONTAP in general), a FlexGroup's maxdir-size is set on the FlexGroup and is not multiplied by the number of constituents. One directory's file lives on one constituent, and entries placed on another constituent (remote entries) take more space. For large, flat directories, plan for up to about 2×, which puts the 320 MB default at about 2 to 2.6 million ordinary names, fewer than the about 4.3 million on a FlexVol.
+According to the TR (ONTAP in general), a FlexGroup's maxdir-size is set on the FlexGroup and is not multiplied by the number of constituents. The directory file (the directory's own metadata file) stays on one constituent, while the files it names can reside on other constituents. Entries pointing to files on another constituent (remote entries) take more space. For large, flat directories, plan for up to about 2×, which puts the 320 MB default at about 2 to 2.6 million ordinary names, fewer than the about 4.3 million on a FlexVol.
 
 > "lowers the practical ceiling to about 2 to 2.6 million ordinary names at the 320 MB default"
 > — TR, page "Volume considerations", section "FlexGroup volumes"
@@ -162,7 +163,7 @@ The two documents word differently whether the cap can be lowered after raising 
 | Can it be lowered | It can be lowered later, but not below the largest directory file's high-water mark | Once increased, it cannot be decreased without recreating the directory |
 | Size and performance | See "Listing cost grows with the directory" above | Directories are loaded into memory, so size trades against performance |
 
-Source: TR, page "[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)", section "What happens when maxdir-size is exceeded?". AWS Prescriptive Guidance, "[Deploying Amazon FSx for NetApp ONTAP in an enterprise environment](https://docs.aws.amazon.com/pdfs/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/fsx-ontap-enterprise-deployment.pdf)" (PDF; document history initial publication 2023-08-29), the maximum directory size section (p.15).
+Source: TR, page "[Impact of maxdir-size](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-05-maxdirsize-impact.html)", section "What happens when maxdir-size is exceeded?"; the TR's recommendations page ([high-file-count-workloads-14](https://docs.netapp.com/us-en/ontap-technical-reports/high-file-count-workloads/high-file-count-workloads-14-best-practices.html)), section "Size maxfiles and maxdir-size independently" (the raising-policy row). AWS Prescriptive Guidance, "[Deploying Amazon FSx for NetApp ONTAP in an enterprise environment](https://docs.aws.amazon.com/pdfs/prescriptive-guidance/latest/fsx-ontap-enterprise-deployment/fsx-ontap-enterprise-deployment.pdf)" (PDF; document history initial publication 2023-08-29), the maximum directory size section (p.15).
 
 > "After the value has been increased, it cannot be decreased without recreating the directory."
 > — AWS Prescriptive Guidance, same section
