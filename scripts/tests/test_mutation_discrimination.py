@@ -213,8 +213,8 @@ MUTATIONS: list[dict] = [
         "edits": [
             (
                 "tools/audit_public_output.py",
-                "REPORT_ONLY_CATEGORIES = frozenset()",
-                'REPORT_ONLY_CATEGORIES = frozenset({"sales-vocabulary"})',
+                'REPORT_ONLY_CATEGORIES = frozenset({"ai-style"})',
+                'REPORT_ONLY_CATEGORIES = frozenset({"ai-style", "sales-vocabulary"})',
             ),
         ],
         "must_fail": ["test_default_audit_rejects_sales_vocabulary"],

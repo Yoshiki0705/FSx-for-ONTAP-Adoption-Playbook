@@ -33,6 +33,7 @@ COPY_SETS = {
     "guard_irreversible_ops.py": ("scripts/guard_irreversible_ops.py",),
     "check_i18n_parity.py": ("tools/check_i18n_parity.py",),
     "check_diagram_fonts.py": ("tools/check_diagram_fonts.py",),
+    "ai_style_rules.py": ("tools/ai_style_rules.py",),
     "check_anchor_contract.py": (
         "tools/check_anchor_contract.py",
         "tools/check_links.py",
@@ -86,6 +87,19 @@ class CopyabilityClaims(unittest.TestCase):
                 result.returncode,
                 0,
                 f"the diagram font gate does not run outside this repository:\n"
+                f"{result.stdout}{result.stderr}",
+            )
+
+    def test_ai_style_rules_run_outside_the_repository(self) -> None:
+        """Spoke repositories copy this one file; its selftest must pass where it lands."""
+        with tempfile.TemporaryDirectory() as name:
+            target = Path(name)
+            stage(target, COPY_SETS["ai_style_rules.py"])
+            result = run_in(target, "ai_style_rules.py", "--selftest")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"the writing-style rules do not run outside this repository:\n"
                 f"{result.stdout}{result.stderr}",
             )
 
