@@ -10,7 +10,7 @@ PY ?= python3
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
         inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
         knowledge-quality-status-ci editorial-report sentence-report glossary-report \
-        structure-report mermaid-report frontmatter-report vocabulary-report
+        structure-report mermaid-report frontmatter-report vocabulary-report ai-style-report
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
@@ -169,11 +169,13 @@ structure-report: ## Report future note/checklist structure findings (not a gate
 
 vocabulary-report: ## Report sales-vocabulary findings (not a gate)
 	@$(PY) tools/audit_public_output.py --only sales-vocabulary --report
+ai-style-report: ## Report ai-style writing findings (not a gate)
+	@$(PY) tools/audit_public_output.py --only ai-style,ai-style-warn --report
 
 mermaid-report: ## Parse/render every Mermaid block with mmdc (not a gate; run npm ci first)
 	@$(PY) tools/check_mermaid.py
 
-editorial-report: frontmatter-report sentence-report glossary-report structure-report vocabulary-report mermaid-report ## Run all staged editorial reports (not a gate)
+editorial-report: frontmatter-report sentence-report glossary-report structure-report vocabulary-report ai-style-report mermaid-report ## Run all staged editorial reports (not a gate)
 
 # Single definition of the lint scope. Ignores live in .markdownlint-cli2.jsonc so the
 # CI action and this target apply the same exclusions; scripts/tests/test_gate_integrity.py

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-publication audit for a public repository.
 
-Seven independent concerns, all of which have historically been caught late or not at all:
+Eight independent concerns, all of which have historically been caught late or not at all:
 
   1. naming      - "Amazon FSx for NetApp ONTAP" / "FSx for ONTAP" are the only accepted forms,
                    and three products must never be proposed.
@@ -14,6 +14,8 @@ Seven independent concerns, all of which have historically been caught late or n
                    cannot be the published basis for a claim, however it is worded.
   7. sales-vocabulary - promotional adjectives and unsupported outcomes are rejected from public
                    prose unless a verbatim external title carries a line-level allowance.
+  8. ai-style / ai-style-warn - writing-style signals from tools/ai_style_rules.py, Markdown only.
+                   Counted, not gated: see REPORT_ONLY_CATEGORIES and WARNING_CATEGORIES.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -44,6 +46,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ai_style_rules
 from frontmatter import IGNORED_DIRS
 
 # `tools` is added on top of the shared list: these validators necessarily contain the
@@ -63,6 +66,8 @@ CATEGORIES = (
     "support-referral",
     "support-attribution",
     "sales-vocabulary",
+    "ai-style",
+    "ai-style-warn",
 )
 # The HTML comment wrapper is required, not decoration. Without it, **a line that merely mentions
 # `allow:naming` in prose suppresses the detector on that line** - inside backticks too, so every
@@ -72,7 +77,8 @@ CATEGORIES = (
 # half of the same defect.
 ALLOW = re.compile(
     r"<!--[^>]*?allow:"
-    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|sales-vocabulary|all)"
+    r"(naming|neutrality|pii|role-label|support-referral|support-attribution|sales-vocabulary"
+    r"|ai-style-warn|ai-style|all)"
     r"[^>]*?-->"
 )
 # Bounded so the trailing "-->" of the HTML comment is not swallowed into the category list.
@@ -178,10 +184,17 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
     ),
 ]
 
-# Every registered category is required by the default audit. Keep the named empty set so a future
-# migration can stage a category without changing the selection mechanism; any non-empty value must
-# be temporary and is mutation-tested against the default gate.
-REPORT_ONLY_CATEGORIES = frozenset()
+# Every registered category is required by the default audit. Keep the named set so a migration can
+# stage a category without changing the selection mechanism; any member must be temporary and is
+# mutation-tested against the default gate.
+#
+# STAGED: the pull request that fixes the Hub's existing D1 / D2 / D5 / D14 findings removes
+# "ai-style" from this set, which makes those four rules fail the default audit. Until then the
+# default audit only prints their count.
+REPORT_ONLY_CATEGORIES = frozenset({"ai-style"})
+# Never gating, even when named in --only: the warning-level rules are symptoms counted for review,
+# and a false positive there must not be able to stop a commit.
+WARNING_CATEGORIES = frozenset({"ai-style-warn"})
 
 SALES_VOCABULARY_RULES: list[tuple[re.Pattern[str], str]] = [
     (
@@ -810,10 +823,12 @@ def main() -> int:
     args = parser.parse_args()
 
     only = frozenset(c.strip() for c in args.only.split(",") if c.strip())
-    # A category may be staged here only while its corpus backlog is being removed. The empty set
-    # means every category is required by an unscoped run; a behavioral test and mutation pin that
-    # default so removing one cannot silently narrow `make audit`.
-    active = only or (frozenset(CATEGORIES) - REPORT_ONLY_CATEGORIES)
+    # An unscoped run requires every category except two sets. REPORT_ONLY_CATEGORIES holds a
+    # category only while its corpus backlog is being removed; WARNING_CATEGORIES never gates. A
+    # behavioral test and mutation pin that default so neither set can silently narrow `make audit`.
+    active = only or (
+        frozenset(CATEGORIES) - REPORT_ONLY_CATEGORIES - WARNING_CATEGORIES
+    )
     unknown = only - frozenset(CATEGORIES)
     if unknown:
         # Raising beats reporting nothing: a typo in --only would otherwise make the gate
@@ -825,6 +840,8 @@ def main() -> int:
 
     root = Path(args.path).resolve()
     findings: list[str] = []
+    warnings: list[str] = []
+    style_counts = {"ai-style": 0, "ai-style-warn": 0}
     fatal_errors: list[str] = []
     scanned = 0
 
@@ -880,12 +897,36 @@ def main() -> int:
                 if category not in active:
                     continue
                 findings.append(f"{rel}:{lineno}: [{category}] {message}")
+        if path.suffix.lower() == ".md":
+            text = "\n".join(lines)
+            language = ai_style_rules.language_of(rel.as_posix(), text)
+            for found in ai_style_rules.scan_markdown(text, language):
+                category = ai_style_rules.CATEGORY_FOR_LEVEL[found.level]
+                marked = marker_categories(lines[found.line - 1])
+                if category in file_allowed or category in marked or "all" in marked:
+                    continue
+                style_counts[category] += 1
+                if category not in active:
+                    continue
+                entry = f"{rel}:{found.line}: [{category}] {found.rule} {found.message}"
+                (warnings if category in WARNING_CATEGORIES else findings).append(entry)
 
     if fatal_errors:
         print(f"Audit could not inspect {len(fatal_errors)} file(s):", file=sys.stderr)
         for error in fatal_errors:
             print(f"  {error}", file=sys.stderr)
         return 2
+
+    if warnings:
+        print(f"Audit warnings (not a gate) ({len(warnings)} finding(s)):")
+        for warning in warnings:
+            print(f"  {warning}")
+    if not only:
+        print(
+            f"audit: report-only ai-style findings: {style_counts['ai-style']} staged "
+            f"fail-tier, {style_counts['ai-style-warn']} warning "
+            "(details: make ai-style-report)"
+        )
 
     if findings:
         label = "Audit report" if args.report else "Audit failed"

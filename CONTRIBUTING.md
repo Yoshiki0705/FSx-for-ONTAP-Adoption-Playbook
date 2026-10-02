@@ -472,6 +472,7 @@ git tag --list -n1 'kept/*'   # 何がなぜ残っているか
 - [ナビゲーションガイド](docs/ja/navigation.md) — リポジトリの歩き方
 - [AGENTS.md](AGENTS.md) — AI エージェント向けの規約（人間が読んでも有用）
 - [case-studies/README.md](docs/ja/case-studies/README.md) — 事例の匿名化ポリシー
+- [文書品質の判定基準](docs/agent/writing-quality.md) — 機械検出の規則と目視の観点
 
 ---
 
