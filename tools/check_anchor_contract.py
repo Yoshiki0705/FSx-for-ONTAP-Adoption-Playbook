@@ -43,10 +43,28 @@ HIGH_FILE_COUNT_NOTES = tuple(
     )
 )
 
+# Cited without a fragment from `S3-Burst-on-ONTAP-Files`' TR delegation ledger and its five handoff
+# contracts, as the Hub-side bodies of the five TRs it delegated (FlexCache/FlexGroup, NFS, SMB, S3,
+# Tiering). The ledger rows point at whole notes, not sections, so every citation is path-only: a
+# heading rename breaks nothing for that side, a file move breaks it. Six existing JA notes received
+# additions and the FlexGroup note is new in JA and EN, giving eight paths. Named once because both
+# PATH_ONLY and tracked_files() need it.
+PROTOCOL_TIERING_NOTES = (
+    "docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md",
+    "docs/ja/domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md",
+    "docs/en/domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md",
+    "docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md",
+    "docs/ja/reference/file-protocol-resource-map.md",
+    "docs/ja/reference/comparison/file-storage-options.md",
+    "docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md",
+    "docs/ja/reference/comparison/tiering-policies.md",
+)
+
 # Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
 # cannot see the citing side, so only the citing repository knows which form it uses.
 PATH_ONLY = frozenset(
     {
+        *PROTOCOL_TIERING_NOTES,
         "docs/ja/reference/decision-trees/access-point-authorization.md",
         "docs/ja/navigation.md",
         "docs/en/README.md",
@@ -148,6 +166,10 @@ def tracked_files() -> list[Path]:
     The six High-file-count notes (three documents, JA and EN) came by declaration from the same
     sibling. Its TR delegation ledger and handoff contract cite them **without a fragment**, so all
     six are path-only: what breaks for that side is a file moving.
+
+    The eight protocol/tiering notes arrived the same way, from the next round of five delegated TRs.
+    The sibling's ledger rows and five handoff contracts cite them **without a fragment** too, so
+    they are path-only in `PROTOCOL_TIERING_NOTES`.
     """
     return [
         ROOT
@@ -210,6 +232,7 @@ def tracked_files() -> list[Path]:
         / "notes"
         / "where-throughput-is-determined-and-shared.md",
         *(ROOT / rel for rel in HIGH_FILE_COUNT_NOTES),
+        *(ROOT / rel for rel in PROTOCOL_TIERING_NOTES),
     ]
 
 
