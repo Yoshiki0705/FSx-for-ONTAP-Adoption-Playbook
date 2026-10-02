@@ -112,11 +112,11 @@ ENI は AZ ごとに 1 本、**それぞれプライベートアドレスを 2 �
 
 ### Transit Gateway が要る条件と、ブロックが当たらない理由
 
-AWS は Transit Gateway の追加設定が必要な条件を、**「エンドポイント IP アドレス範囲が VPC の CIDR の外側にある Multi-AZ ファイルシステム」**と書いています。VPC CIDR 内なら追加設定は不要です。
+AWS は Transit Gateway の追加設定が必要な条件を、「エンドポイント IP アドレス範囲が VPC の CIDR の外側にある Multi-AZ ファイルシステム」と書いています。VPC CIDR 内なら追加設定は不要です。
 
 **検証環境ではエンドポイント範囲が VPC の外側でした**（`198.19.174.0/24`）。つまり **NFS / SMB / 管理はこの条件に当たります。** 一方 **iSCSI と NVMe/TCP のアドレスは VPC CIDR 内なので当たりません。**
 
-AWS のクライアント要件の表も、Transit Gateway が必要かという問いに対して **iSCSI と NVMe/TCP を「No」**としています。
+AWS のクライアント要件の表も、Transit Gateway が必要かという問いに対して iSCSI と NVMe/TCP を「No」としています。
 
 **ピアリング先から使う設計では、この区別が構成を変えます。**
 

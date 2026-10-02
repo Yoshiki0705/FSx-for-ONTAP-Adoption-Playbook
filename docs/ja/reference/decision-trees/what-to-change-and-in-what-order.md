@@ -54,7 +54,7 @@ lang: ja
 | スループット容量 | **6 時間** |
 | **HA ペアの追加** | **共通しません。** ただし上の 3 つの進行中は実行できません |
 
-出典は [File system storage capacity and IOPS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/storage-capacity-and-IOPS.html) の Considerations（2026-09-08 に確認）で、**「SSD 確保容量、プロビジョンド IOPS、スループット容量のいずれかを増やしたあと、同じファイルシステムでこれらのいずれかを変更するには最低 6 時間待つ必要がある」**とあります。
+出典は [File system storage capacity and IOPS](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/storage-capacity-and-IOPS.html) の Considerations（2026-09-08 に確認）で、「SSD 確保容量、プロビジョンド IOPS、スループット容量のいずれかを増やしたあと、同じファイルシステムでこれらのいずれかを変更するには最低 6 時間待つ必要がある」とあります。
 
 **世代で挙動が違い、そこは文書間で精度が揃っていません。**
 

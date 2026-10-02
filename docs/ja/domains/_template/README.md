@@ -54,7 +54,7 @@ the frontmatter vocabulary should always be updated together.
 |---|---|
 | `README.md` | モジュールのハブ。`docs/<lang>/` 配下に言語ごとに 1 つ。Tier 2（ja + en）/ Module hub, one per language directory. Tier 2 (ja + en) |
 | `notes/` | 知見の最小単位。1 ファイル = 1 論点 / Smallest unit of knowledge. One file = one concern |
-| `checklists/` | 現場で使うチェックリスト。**中身ができてから作ってください。**空のディレクトリへのリンクは、読者に無い期待を持たせます / Checklists for field use. **Create this directory once a checklist exists** — a link to an empty directory promises something that is not there |
+| `checklists/` | 現場で使うチェックリスト。中身ができてから作ってください。空のディレクトリへのリンクは、読者に無い期待を持たせます / Checklists for field use. Create this directory once a checklist exists; a link to an empty directory promises something that is not there |
 
 ---
 

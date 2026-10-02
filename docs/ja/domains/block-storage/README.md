@@ -42,7 +42,7 @@ iSCSI と NVMe/TCP で LUN・namespace を提供するときの設計・構築�
 | 13 | 複数 LUN にまたがる DB を止めずにバックアップできるか | [LUN に載せた DB は静止させずに復旧した](notes/a-database-on-luns-recovers-without-quiescing.md) |
 | 14 | ブロックの監視で何が見えるか。LUN 単位で見られるか | [ブロックの監視で見えるものと見えないもの](notes/what-block-monitoring-shows.md) |
 | 15 | セキュリティグループはどのポートを開ければよいか。要件表で足りるか | [NVMe/TCP は AWS 側の面から一貫して抜けている](notes/nvme-tcp-is-thin-on-the-aws-side.md) |
-| 16 | Fibre Channel は使えるか | **AWS のドキュメントが列挙するブロックプロトコルは iSCSI と NVMe/TCP の 2 つで、FC は列挙に現れません。**使えないと明記されているのではなく、記載がない状態です（[用語集の FC の項](../../reference/glossary/README.md)、[プロトコルの選択](notes/protocol-choice-is-bounded-before-you-choose.md#結論)） |
+| 16 | Fibre Channel は使えるか | AWS のドキュメントが列挙するブロックプロトコルは iSCSI と NVMe/TCP の 2 つで、FC は列挙に現れません。使えないと明記されているのではなく、記載がない状態です（[用語集の FC の項](../../reference/glossary/README.md)、[プロトコルの選択](notes/protocol-choice-is-bounded-before-you-choose.md#結論)） |
 | 17 | とりあえず動かして確かめたい | [ブロックストレージを 30 分で動かす手順](quickstart.md) |
 | 18 | いま EBS で回している構成と費用を比べたい | [EBS が安くなくなる境目は台数ではなく同じデータの複製の数](notes/when-ebs-stops-being-the-cheaper-answer.md) |
 | 19 | LUN の中身を NFS / SMB / S3 API から読めるか | [LUN の中身はファイルプロトコルに現れない](notes/lun-contents-do-not-reach-file-protocols.md) |

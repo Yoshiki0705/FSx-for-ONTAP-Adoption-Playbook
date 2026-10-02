@@ -69,7 +69,7 @@ intermediate
 [How Amazon FSx for NetApp ONTAP works](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-it-works-fsx-ontap.html)
 のいずれも、この 2 つを挙げています（2026-09-08 に確認）。
 
-**Fibre Channel はどちらの列挙にも現れません。** ただし**「非対応」と明記した記述は見つけていません。**
+**Fibre Channel はどちらの列挙にも現れません。** ただし「非対応」と明記した記述は見つけていません。
 複数の列挙に不在であることと、明示的に否定されていることは別で、**前者を後者として引用すると、
 出典にない主張になります。**
 

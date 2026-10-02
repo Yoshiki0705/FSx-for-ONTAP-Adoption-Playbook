@@ -87,7 +87,7 @@ Amazon FSx for NetApp ONTAP の情報は、**AWS 側と NetApp 側の 2 系統�
 | ONTAP の機能・挙動に関する Q&A | [NetApp Community](https://community.netapp.com/) |
 | ONTAP のナレッジベース記事 | [NetApp Knowledge Base](https://kb.netapp.com/) |
 
-NetApp Knowledge Base は**「ドキュメントには書かれていない挙動」が載ることがあります。** マルチプロトコルの権限評価のように、仕様の組み合わせで決まる挙動を調べるときに有効です。
+NetApp Knowledge Base は「ドキュメントには書かれていない挙動」が載ることがあります。マルチプロトコルの権限評価のように、仕様の組み合わせで決まる挙動を調べるときに有効です。
 
 ---
 
