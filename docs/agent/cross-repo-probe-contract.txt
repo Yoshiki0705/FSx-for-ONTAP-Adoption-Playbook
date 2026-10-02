@@ -28,6 +28,8 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	no break and no clone
+FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	キャッシュミス時の Origin 問い合わせが多段に
+FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	同一 FlexGroup constituent にファイルが集中
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
@@ -50,6 +52,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migra
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	はいずれも二進表記でした
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
@@ -57,6 +60,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに�
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	片方にあって他方にない項目が、そのまま設計上の制約になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要
+S3-Burst-on-ONTAP-Files	docs/ja/reference/glossary/object-access-on-ontap.md	retraction	ONTAP 自身が S3 オブジェクトサーバとして専用バケットを提供する
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	50 GiB を超えるファイルは、ファイル側で作れば S3 側から読める
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	所要時間をディスク読み取りの性能として引用してはいけない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	経路が生きていることを示さずに大きい側だけ測ると
@@ -76,16 +80,23 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retractio
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	単一ディレクトリの最大サイズ（maxdir-size）の上限と、超過時の列挙コストの増大
 S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料
+S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 作成自体は 9.7 以降で可
+S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 自体は階層化できない
+S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	の行を、S3 Access Point の根拠に使わないこと。
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	これは既定値での上限で、ファイルシステムの上限ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	上限が 4 である理由は未確認
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	範囲に入ったことを原因が同じ証拠にしない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	Origin への往復が不要になります
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	代表値として引くなら 8 ms です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	代表値として引くなら 8 ms です。
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	差の 6 ms がすべて起動コストである、とまでは言えません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	Modification of the following fields is not allowed for FlexCache volumes: security-style.
+S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	作成時に渡せず、作成後に変えられない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-security-style-inheritance.md	retraction	値は Origin から来ています
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551〜5,149 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
@@ -99,7 +110,9 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	8
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	EC2 の 1 フローあたり全二重 5 Gbps
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	SMB は NFS の 72.1%
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	iSCSI の 1 本はその約 2 倍を運んだ
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	この 1 点を根拠に本番構成を
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	そうなったのかは**確認していない**
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	つまりこの幅からバージョンの優劣は読めない。
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	を設定したのは私ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	キャッシュの温度が揃っていない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	クライアントを 4.5 倍の型に変えても 0.6% しか動かない
@@ -118,6 +131,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	ret
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv2 と NFSv3 は非対応
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	NFSv4.2 は対応プロトコルとして挙げられていない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	Windows を実行する EC2 インスタンスからの EFS のマウントは非対応
+S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	v4.0 でも 16 本開き
 S3-Burst-on-ONTAP-Files	docs/ja/verification/protocol-matrix-efs-vs-ontap.md	retraction	実効オプションではなく接続数で判定した
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7 ms 対 2,171 ms
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません

@@ -79,6 +79,21 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 
 **`StorageClass` を条件分岐に使っている既存コードは、そのままでは動きません。** 分析基盤やデータパイプラインを繋ぐ前に確認してください。
 
+### TR-4814 の上限値と挙動が S3 Access Points に当てはまらないこと
+
+**NetApp の TR-4814（ONTAP の S3 の推奨事項をまとめた TR）は ONTAP S3 サーバの文書です。** そこに書かれた上限値と挙動を、FSx for ONTAP S3 Access Points の設計に持ち込まないでください。TR-4814 の内容は 2024 年 7 月から ONTAP の製品ドキュメントに統合されていると NetApp は書いています（[Learn about ONTAP S3 configuration](https://docs.netapp.com/us-en/ontap/s3-config/index.html)、2025-02-25 更新）。
+
+**各行で 2 つの別の機構を並べます。**
+
+| 観点 | ONTAP S3 サーバ（TR-4814 / NetApp の ONTAP S3 ドキュメントが対象） | FSx for ONTAP S3 Access Points（このノートが対象） |
+|---|---|---|
+| 何か | ONTAP 9.8 以降、ONTAP のクラスタ上で動くオブジェクトストレージのサーバ。バケット、ユーザー、ポリシーを ONTAP 側で持ちます。NetApp の TR 索引は、TR-4814 の範囲にネイティブの S3 アプリケーション向けのオブジェクトストアと FabricPool の階層先の両方を挙げています | AWS 側のアクセスポイントを FSx for ONTAP のボリュームに取り付け、S3 API でファイルを読み書きする機構。ONTAP 9.17.1 以降が必要です（上の「[結論](#結論)」） |
+| 上限値 | ONTAP S3 の文書の値は、この機構についての値です | **アップロードの上限は二進表記で、単一 `PutObject` と `UploadPart` が 5 GiB、オブジェクト全体が 50 GiB です。** 読み取り側は縛られません（下の「[方向で非対称なサイズ上限](#方向で非対称なサイズ上限)」）。二進表記であることの実測は [Serverless-Patterns の検証記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-object-size-limits-verification.md) と [S3-Burst-on-ONTAP-Files の収集層の上限値](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/limits/s3-access-point.md) にあります |
+| 認可と API の範囲 | ONTAP S3 のユーザーとバケットポリシーで判定します | IAM と Access Point ポリシー、そして Access Point に設定した 1 つのファイルシステム ID で判定します。対応する API はバケット向け Access Point と同一ではありません（上の表） |
+| 同じ SVM での併存 | — | **同じ SVM に別のオブジェクトストアサーバーがあると、Access Point の取り付けが失敗します**（下の「[オブジェクトストアサーバーとの併存不可](#オブジェクトストアサーバーとの併存不可)」） |
+
+用語の整理は隣のリポジトリの [ONTAP 上のオブジェクトアクセスの用語集](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/glossary/object-access-on-ontap.md) にあります。**ONTAP の版と S3 Access Points の機能を結びつけているのは、AWS が記載する ONTAP 9.17.1 以降という前提だけです。** ONTAP S3 の版ごとの機能追加を、S3 Access Points の機能の根拠にしないでください。
+
 ---
 
 ### 対応表を読むときに効く差分
@@ -425,6 +440,7 @@ graph TD
 | 論点 | 出典 |
 |---|---|
 | ONTAP 9.17.1 以降、同一アカウント、同一リージョンの各要件 | [AWS: Access points naming rules, restrictions, and limitations](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-restrictions-limitations-naming-rules.html) |
+| TR-4814 が ONTAP S3 サーバ（ネイティブの S3 アプリケーション向けと FabricPool の階層先）の文書であること、その内容が 2024 年 7 月から ONTAP の製品ドキュメントに統合されたこと、ONTAP S3 が ONTAP 9.8 以降であること（ONTAP 一般） | [NetApp: ONTAP technical reports — S3](https://docs.netapp.com/us-en/ontap-technical-reports/s3.html)（PDF 生成日 2026-09-30）、[NetApp: Learn about ONTAP S3 configuration](https://docs.netapp.com/us-en/ontap/s3-config/index.html)（2025-02-25 更新、2026-10-02 に確認） |
 | S3 AP 使用時のボリューム数上限、AP 数のクォータ | [AWS: Quotas](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | `StorageClass` が `FSX_ONTAP`、対応 API 操作の一覧の所在 | [AWS: Using access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-usage-examples.html) |
 | **`Presign` が Supported であること**、条件付き書き込み / Object Versioning / Object Lifecycle / Object Lock / Object Annotations / Requester Pays / Static Website Hosting / MFA delete / `RestoreObject` / バケット設定の読み取り系が非対応であること、`CopyObject` と `UploadPartCopy` が同一 Access Point 内の同一リージョンコピーに限られること、ETag が MD5 ダイジェストでないこと、チェックサムが保存も返却もされずダウンロード時の検証に使われないこと、50 GiB がアップロードの上限でダウンロードには上限がないこと、表が partial list であること | [AWS: Access point compatibility](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)（**2026-09-14 に全文確認**） |

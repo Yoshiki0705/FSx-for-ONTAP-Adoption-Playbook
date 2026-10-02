@@ -100,6 +100,56 @@ SMB 暗号化は SVM 作成時点で無効です。有効化は 2 段階で選�
 
 これは「セキュリティを上げる変更」が「接続断を起こす変更」でもあるということです。**対応状況を把握してから有効化してください。** 設定は ONTAP CLI の `vserver cifs security modify` で行い、`vserver cifs security show` で現在値を確認できます。
 
+#### NFS over TLS の位置づけと FSx for ONTAP での未確認の範囲
+
+**NFS over TLS は ONTAP 9.19.1 で入った機能で、FSx for ONTAP で使えるかは未確認です。** 上の表に行を足していないのはこのためです。表は AWS が FSx for ONTAP について挙げている方式の一覧で、ここに並べると対応しているように読めてしまいます。
+
+NetApp の記載（ONTAP 一般）は次のとおりです。
+
+| 項目 | 記載 |
+|---|---|
+| 位置づけ | ONTAP 9.19.1 で導入。RFC 9289 に基づき、NFSv3 と NFSv4.x の RPC を TLS 1.3 で暗号化します。Kerberos も IPsec も要りません |
+| 変えないこと | **ユーザーの認証は変えません。** 引き続き `auth_sys` か `krb5` が必要です。`krb5i` / `krb5p` も使えますが、TLS と保護が重なり、性能の負担は残ります |
+| 強制の単位 | エクスポートポリシーのルールに `-allow-nfs-tls-only` が加わり、ルールごとに TLS を必須にできます。必須のルールに一致したクライアントの TLS でない接続は拒否され、既存の TLS 接続は影響を受けません |
+| 併用できないもの | 同じ LIF で NFS over RDMA と排他です |
+| HA テイクオーバー | TLS セッションはテイクオーバーをまたいで残らず、すべてのクライアントが新たにハンドシェイクします |
+| クライアント | RFC 9289 を実装した NFS クライアントが必要です。Linux では `xprtsec=tls` などのマウントオプションと `tlshd` を使います |
+
+出典: NetApp [NFS over TLS overview](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-overview.html)（2026-08-06 更新）の「Prerequisites」「What it doesn't do」、[Interoperability and limits](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-reference.html)（2026-08-06 更新）の「Interoperability」「Limitations and caveats」「Soft limits and recommendations」。
+
+**FSx for ONTAP での扱いについて、2 つの事実を並べます。結論は出しません。**
+
+- NetApp の overview ページは前提条件に「ONTAP cloud personalities are not supported at this time」と書き、Interoperability and limits のページは Cloud Volumes ONTAP とその他のクラウドでホストされる ONTAP を 9.19.1 では非対応としています。**FSx for ONTAP を名指しした記載はありません**
+- AWS の [Encrypting data in transit](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-in-transit.html) が FSx for ONTAP について挙げる方式は、Nitro ベース、Kerberos ベース、IPsec の 3 つです（2026-10-02 に確認）
+
+#### SMB 署名と sealing の既定値と性能への影響
+
+**ONTAP の SMB 署名は既定で無効です。** NetApp のセキュリティ強化ガイドは、性能のために既定で無効になっていると書いたうえで、有効にすることを強く推奨しています。**sealing は SMB 暗号化のことで、上の「[SMB 暗号化の強制による、クライアント接続の不可](#smb-暗号化の強制によるクライアント接続の不可)」と同じ設定です。** ここでは署名だけを扱います。
+
+| 項目 | 記載（ONTAP 一般） | 出典 |
+|---|---|---|
+| 既定値と推奨 | 署名は既定で無効。有効化を強く推奨。`vserver cifs security modify` の `-is-signing-required` を `true` にします | NetApp Security hardening「[Configure and enable CIFS SMB signing and sealing](https://docs.netapp.com/us-en/ontap-technical-reports/ontap-security-hardening/configure-smb-signing-sealing.html)」 |
+| 性能への影響 | クライアントとサーバーの両方で CPU 使用率が上がり、ネットワークの通信量は変わりません。ONTAP 9.7 以降は暗号処理のオフロードで改善し、SMB 3.1.1 では GCM でさらに改善しうるとしています。影響の大きさは環境で試験しないと分からないとも書いています | NetApp [Performance impact of SMB signing](https://docs.netapp.com/us-en/ontap/smb-admin/performance-impact-signing-concept.html)（2026-04-16 更新） |
+| 必須にする側 | クライアント側で必須にするか、SVM 側で必須にして、その SVM への全通信を署名させます | NetApp [Recommendations for configuring SMB signing](https://docs.netapp.com/us-en/ontap/smb-admin/recommendations-configure-signing-concept.html)（2025-05-07 更新） |
+
+**FSx for ONTAP の既定値は、AWS の業界別ブログが「既定で有効になっていない」と書いています**（[FSI Services Spotlight: Featuring Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/industries/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/)、2022-06-20）。FSx for ONTAP ユーザーガイドに署名の既定値を書いたページは見つかりませんでした（2026-10-02 に検索）。**このブログは同じ段落で Kerberos と IPsec を AWS 非対応と書いており、現在のユーザーガイドとは食い違います。** 発行時点の記載として読んでください。
+
+**署名を必須にする変更も、暗号化の必須化と同じく接続断を起こしうる変更です。** 対応していないクライアントの有無と、CPU への影響を検証環境で確かめてから有効にしてください。
+
+#### SMB 1.0 の無効化と最小版の扱い
+
+| 項目 | 記載 | 出典 |
+|---|---|---|
+| 既定で有効な版（ONTAP 一般） | SMB 2.0 以降は既定で有効で、必要に応じて有効・無効を切り替えられます。SMB 1.0 も有効・無効を切り替えられます。ドメインコントローラーへの SMB 1.0 / 2.0 接続の既定値は ONTAP の版で変わります | NetApp [Supported ONTAP SMB versions and functionality](https://docs.netapp.com/us-en/ontap/smb-admin/supported-versions-functionality-concept.html)（2026-04-16 更新） |
+| SMB 1.0 からの移行（ONTAP 一般） | SMB 1.0 を使っている環境は、できるだけ早く新しい版へ移行するよう NetApp は書いています | 同ページ |
+| SMB 1.0 での書き込みキャッシュの消失（ONTAP 一般） | SMB 1.0 の接続で排他 oplock を持つアプリケーションが、oplock の解除やクローズを求められて書き込みキャッシュを流している最中にネットワークや相手側でエラーが起きると、キャッシュされた書き込みが失われる場合があります | NetApp [Write cache data-loss considerations when using oplocks](https://docs.netapp.com/us-en/ontap/smb-admin/write-cache-data-loss-oplocks-concept.html)（2025-05-09 更新） |
+| FSx for ONTAP で使える版 | 2.0、3.0、3.1.1 を含むすべての SMB の版にアクセスできると AWS は書いています | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
+| FSx for ONTAP で既定で有効な版 | 上の AWS のブログは SMB 2 と 3 が既定で有効と書き、advanced 権限で `vserver cifs options modify -vserver fsx -smb1-enabled false` などにより不要な版を無効にする例を載せています | AWS FSI Services Spotlight（2022-06-20） |
+
+**未確認の範囲**: FSx for ONTAP の SVM で SMB 1.0 が既定で無効かは、ユーザーガイドに記載を見つけていません。上のブログも SMB 2 と 3 を挙げるだけで、SMB 1.0 の状態は明記していません。**「受け付ける最小の版」を 1 つの値で指定する設定は、TR-4740、TR-4887、NetApp のセキュリティ強化ガイド、上の NetApp のページ（いずれも 2026-10-02 に確認）のどれにも記載がありませんでした。** 版ごとの有効・無効で表す前提で設計してください。
+
+**版を無効にする変更も、接続断を起こしうる変更です。** SMB 1.0 しか話さないクライアントや機器が残っていないかを先に確認してください。
+
 ---
 
 ### 監査の 2 つの面と、片方の穴の存在
@@ -222,6 +272,10 @@ graph TD
 | CloudTrail でファイルアクセスも追える | CloudTrail は API 呼び出しです。ファイルアクセスは別の仕組みです |
 | 運用担当者には `fsxadmin` が必要 | SVM 単位の作業は `vsadmin` で足ります |
 | SnapLock を有効にすれば即座にロックされる | 有効化とロックは別です。ロックは保持期間の設定で発生します |
+| SMB 署名は既定で有効 | **ONTAP の既定は無効です**（NetApp のセキュリティ強化ガイド）。FSx for ONTAP でも既定で有効になっていないと AWS のブログ（2022 年）は書いています |
+| sealing は署名と別に設定する機能 | **sealing は SMB 暗号化のことです。** 設定は `-is-smb-encryption-required` で、上の SMB 暗号化と同じものです |
+| NFS over TLS で転送時の暗号化を足せる | ONTAP 9.19.1 の機能で、**FSx for ONTAP で使えるかは未確認です。** AWS が挙げる方式は Nitro、Kerberos、IPsec です |
+| SMB の最小版を 1 つの値で指定できる | 確認した NetApp の文書には、そうした設定の記載がありません。版ごとに有効・無効を切り替えます |
 
 ---
 
@@ -237,6 +291,15 @@ graph TD
 | `KmsKeyId` を省略すると Amazon FSx 管理キーが使われ、変更には置換が必要なこと | [AWS CloudFormation: AWS::FSx::FileSystem](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-fsx-filesystem.html) |
 | 監査可能な SMB イベントの一覧、4663 で最初の読み取りと最初の書き込みのみが記録されること | [AWS: Auditing file access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/file-access-auditing.html) |
 | 全 API 呼び出しが CloudTrail に記録されること、呼び出し元の識別情報 | [AWS: Monitoring FSx for ONTAP API Calls with AWS CloudTrail](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/logging-using-cloudtrail-win.html) |
+| NFS over TLS が ONTAP 9.19.1 で入ったこと、RFC 9289 と TLS 1.3、ユーザー認証を変えないこと、クラウド向けの ONTAP が前提条件で非対応とされていること（ONTAP 一般） | [NetApp: NFS over TLS overview](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-overview.html)（2026-08-06 更新、2026-10-02 に確認） |
+| `-allow-nfs-tls-only`、NFS over RDMA との排他、テイクオーバー後の再ハンドシェイク、Cloud Volumes ONTAP とその他のクラウドでホストされる ONTAP が 9.19.1 で非対応であること（ONTAP 一般） | [NetApp: NFS over TLS — Interoperability and limits](https://docs.netapp.com/us-en/ontap-technical-reports/nfs-tls/nfs-tls-reference.html)（2026-08-06 更新、2026-10-02 に確認） |
+| SMB 署名が既定で無効で有効化が推奨されること、`-is-signing-required`、sealing が SMB 暗号化であること（ONTAP 一般） | [NetApp Security hardening: Configure and enable CIFS SMB signing and sealing](https://docs.netapp.com/us-en/ontap-technical-reports/ontap-security-hardening/configure-smb-signing-sealing.html)（PDF 生成日 2026-09-30） |
+| SMB 署名の CPU への影響、9.7 のオフロード、SMB 3.1.1 の GCM（ONTAP 一般） | [NetApp: Performance impact of SMB signing](https://docs.netapp.com/us-en/ontap/smb-admin/performance-impact-signing-concept.html)（2026-04-16 更新） |
+| 署名をクライアント側と SVM 側のどちらで必須にするか（ONTAP 一般） | [NetApp: Recommendations for configuring SMB signing](https://docs.netapp.com/us-en/ontap/smb-admin/recommendations-configure-signing-concept.html)（2025-05-07 更新） |
+| SMB 2.0 以降が既定で有効なこと、SMB 1.0 の切り替え、SMB 1.0 からの移行の推奨（ONTAP 一般） | [NetApp: Supported ONTAP SMB versions and functionality](https://docs.netapp.com/us-en/ontap/smb-admin/supported-versions-functionality-concept.html)（2026-04-16 更新） |
+| SMB 1.0 と排他 oplock での書き込みキャッシュの消失条件（ONTAP 一般） | [NetApp: Write cache data-loss considerations when using oplocks](https://docs.netapp.com/us-en/ontap/smb-admin/write-cache-data-loss-oplocks-concept.html)（2025-05-09 更新） |
+| FSx for ONTAP がすべての SMB の版（2.0、3.0、3.1.1 を含む）と NFS v3 / v4.0 / v4.1 / v4.2 に対応すること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html)（2026-10-02 に確認） |
+| FSx for ONTAP で SMB 署名が既定で有効になっていないこと、SMB 2 と 3 が既定で有効なこと、版を無効にする CLI の例 | [AWS for Industries: FSI Services Spotlight: Featuring Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/industries/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/)（2022-06-20。Kerberos と IPsec についての記述は現在のユーザーガイドと食い違う） |
 
 ---
 
@@ -264,6 +327,7 @@ graph TD
 | 5 | ファイルの削除・リネームを行い、対応するイベントを確認する | どの操作が追跡できるか |
 | 6 | CloudTrail でボリューム作成イベントを検索する | 管理面の記録が取れているか |
 | 7 | `vsadmin` のパスワードが設定済みかを確認する | `fsxadmin` を配らずに運用できるか |
+| 8 | 手順 1 と同じ `vserver cifs security show` の出力で `Is Signing Required` を読む | SMB 署名が必須になっているか。ONTAP の既定は無効です |
 
 手順 4 が最も重要です。**「監査ログを有効にした」ことと「監査で問われることに答えられる」ことは別です。**
 

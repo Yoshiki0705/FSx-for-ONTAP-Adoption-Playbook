@@ -559,6 +559,16 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **ONTAP-general findings from five NetApp Technical Report areas (FlexCache / FlexGroup, NFS, SMB, S3, Tiering), delegated by S3-Burst-on-ONTAP-Files.**
+  Each value is `documented` as ONTAP in general; FSx for ONTAP behavior is stated only where an AWS page says it or a sibling measurement is linked, and is marked unverified otherwise. Sibling measurements are linked, not restated.
+  - New note (JA and EN): `domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md` — placement at creation, conversion from FlexVol without redistribution, enforced versus tested/recommended limits, SnapMirror member counts (TR-4571 and TR-4678, both October 2021; AWS volume pages).
+  - `reaching-data-without-copies.md`: a section on FlexCache invalidation and consistency — delegations, locks, negative lookup cache, disconnected mode, sizing, and the difference between placing a Cache on a tiered aggregate and the Cache being tiered (TR-4743, ONTAP 9.11.1, August 2022).
+  - `what-the-platform-gives-and-what-stays-yours.md`: NFS over TLS (ONTAP 9.19.1; not verified on FSx for ONTAP), SMB signing defaults and cost, SMB 1.0 and version handling (NetApp product docs and the Security hardening guide).
+  - `file-protocol-resource-map.md`: NFSv4.x versions and feature differences (TR-4067, June 2023; TR-4962, April 2023). These rows are outside the 119 supplied URLs and the count is unchanged.
+  - `file-storage-options.md`: ONTAP-general prerequisites for SMB Multichannel, CA shares, and oplocks (TR-4740, January 2019; TR-4887, April 2021). The relationship between the TR's Windows default of 4 and the observed 4 channels is not judged.
+  - `s3-access-point-constraints.md`: TR-4814 describes the ONTAP S3 server, and its limits do not carry over to FSx for ONTAP S3 Access Points.
+  - `tiering-policies.md`: Cache volumes and tiering, cooling period and read-back, storage efficiency, SnapMirror destinations, workloads `AUTO` does not suit (TR-4598, ONTAP 9.14.1, January 2024; TR-4695, April 2021). TR-4598 and the AWS page disagree on whether reading cold Snapshot-Only blocks brings them back; the existing table keeps the AWS statement.
+
 - **Findings on high-file-count NAS workloads from a NetApp ONTAP Technical Report, delegated by the
   S3-Burst-on-ONTAP-Files repository as ONTAP-general material that belongs here.** The source is
   "High-file-count NAS workloads : ONTAP Technical Reports" (PDF generated 2026-09-30; it carries no

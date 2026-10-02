@@ -240,6 +240,94 @@ Windows の `FileSystemIdentity` は参加済み Active Directory ドメイン�
 
 ---
 
+### FlexCache の無効化と整合
+
+**Cache が古いデータを返さない仕組みは、Origin が Cache ごとに渡した「委任」を取り消すことです。** 時間で期限切れにする方式ではありません（切断時を除く。下記）。
+
+> **Evidence**: `documented` — この節は [TR-4743: FlexCache in ONTAP](https://www.netapp.com/pdf.html?item=/media/7336-tr4743.pdf)（表紙は ONTAP 9.11.1、2022 年 8 月）の記載に基づく **ONTAP 一般の仕組み**です。2026-10-02 に全文を確認しました。
+> **FSx for ONTAP で同じに動くかは、AWS の記載か実測へのリンクを添えた箇所を除いて未確認です。** このリポジトリでは測っていません。
+
+#### 委任による無効化の仕組み
+
+| 項目 | TR-4743 の記載（ONTAP 一般） |
+|---|---|
+| 管理する層 | Remote Access Layer（RAL）が、データの委任とロックの委任を Origin と Cache の間で同期します |
+| 記録する場所 | データの委任は Origin 側の REM、Cache 側の RIM というメタファイルに記録されます。ロックの委任は両側の RLEM に記録されます。**いずれも管理者からは見えず、照会もできません** |
+| 読み取りの分岐 | Cache に無いファイルは Origin へ転送されます。Cache にあれば RIM で委任が生きているかを確かめ、取り消されていれば Origin から読み直します |
+| 無効化の契機 | Cache または Origin での書き込み。Origin 側で `atime-update` が有効だと、**Origin での読み取りも atime の更新という書き込みになり、Cache を無効化します** |
+| 無効化の粒度 | ONTAP 9.8 より前はファイル単位です。9.8 でブロック単位の無効化が選べるようになりました |
+
+**atime の扱いは版で推奨が変わります。** TR は ONTAP 9.10.1 以前では Origin の atime 更新を無効にすること（TR の推奨事項 2a）、9.11 以降では有効のまま `-atime-update-period` を設定すること（推奨事項 2b）を推奨しています。Cache 側は作成時点で atime 更新が無効です。出典は TR-4743 の「RAL overview」「Read processing」「Last access time」の各節です。
+
+#### キャッシュミスと存在しない名前の往復
+
+**キャッシュミスは Origin への 1 往復です。** 存在しない名前の問い合わせも往復を要しましたが、ONTAP 9.9.1 で negative lookup cache が入り、Origin が返した「存在しない」を Cache が覚えるようになりました。**Origin で親ディレクトリが変わるまで有効で、9.9.1 以降は既定で有効です**（TR-4743「Negative lookup cache」）。
+
+**往復を増やす設定もあります。** ONTAP 9.10.1 の global file locking は、deny-read と排他的なバイト範囲ロックをすべての Cache と Origin で守らせる代わりに、**Cache での読み取りのたびに Origin へ問い合わせます**（TR-4743「Locking」）。
+
+帯域と遅延がこの往復をどう律速するかは、上の「[計画と監視で見るもの](#計画と監視で見るもの)」に書いた内容と同じなので繰り返しません。ディレクトリ階層を深くするとキャッシュミス時の Origin 問い合わせが多段になる点は、隣のリポジトリの [S3 Access Points + FlexCache / SnapMirror の設計考慮事項](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/ja/s3ap-flexcache-snapmirror-considerations.md) の §1 にあります（このノートが引くのは §1 だけです）。
+
+#### ロック委任とプロトコルごとの差
+
+| 項目 | TR-4743 の記載（ONTAP 一般） |
+|---|---|
+| 初回の読み取り | データと一緒に、読み取り・deny none・ハンドルキャッシュのロック委任も取得します。以後これらのロック要求は Origin に問い合わせずに Cache が許可します |
+| NLM（NFSv3）の書き込みロック | Origin へ転送され、Origin でだけ保持されます。Cache 側にはロックがありません |
+| SMB / NFSv4.x の書き込みロック | 書き込みの委任が **一度に 1 つの Cache にだけ**渡されます。別の Cache か Origin が書き込みロックを求めると、Origin 経由で取り消されます |
+| データの委任とロックの委任 | 互いに独立です。片方が無効で片方が有効という状態がありえます |
+
+出典は TR-4743「Locking」です。write-back で書き込みの SMB oplock が使えない点は、上の「[ファイルが Cache から追い出される 3 つの操作](#ファイルが-cache-から追い出される-3-つの操作)」の最後に書いたとおりです。
+
+#### 属性キャッシュの扱いと未確認の範囲
+
+**クライアント側の属性キャッシュが Cache の整合とどう重なるかは未確認です。** TR-4743 の全文を 2026-10-02 に "attribute" で検索しましたが、該当したのはカウンタ名（`fc_bulk_attr_latency` など）だけで、クライアントの属性キャッシュを扱う節はありませんでした。
+
+隣のリポジトリが S3 Access Points 経由の書き込みが Cache 側の NFS から見えるまでを測った記録は、**クライアントの属性キャッシュを外す `actimeo=0` の条件で取られています**。値はこちらに転記しません。条件と結果は [FlexCache と S3 Access Points の可視性の検証](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/flexcache-s3ap-visibility.md) にあります。
+
+#### 切断時に止まる操作と続く操作
+
+**Cache と Origin の接続が切れると、止まるのは Cache 側だけではありません。** 以下は TR-4743「Disconnected mode」の記載で、TR の推奨設定をすべて満たしている前提です。
+
+| 場所 | 続く操作 | 止まる操作 |
+|---|---|---|
+| Origin | 読み取り、新規ファイルへの書き込み、どの Cache にもキャッシュされていない既存ファイルへの書き込み | **切断された Cache にデータの委任が残っているファイルへの書き込み**はハングします。ONTAP 9.6 以降は TTL 経過後に通ります |
+| 切断された Cache | キャッシュ済みデータの読み取り。ただし開くときに書き込みロックや排他ロックを求めるアプリケーションは失敗しうる | キャッシュされていないデータの読み取りと、**Cache への書き込みはハングします。** `ls` は切断前にその Cache で一覧したディレクトリだけ通ります |
+| 切断されていない他の Cache | Origin と同じ制約で通常どおり | — |
+
+| 項目 | TR-4743 の記載（ONTAP 一般） |
+|---|---|
+| TTL | ONTAP 9.6 以降、約 120 秒。状態は `volume flexcache connection-status show`（advanced）で `connected` から `disconnected` に変わります |
+| 切断の判定 | Origin は約 2 分、Cache は約 1 分で相手を切断と判定します |
+| 再接続後 | Cache は RIM に載っているファイルを soft-evict し、Origin の確認が取れるまで返しません。ONTAP 9.8 以降は Origin が変更されたファイルの一覧を渡すため、往復が減ります |
+
+**FSx for ONTAP で TTL と判定時間が同じかは未確認です。**
+
+#### サイジングと上限の目安
+
+| 項目 | TR-4743 の記載（ONTAP 一般） |
+|---|---|
+| 容量の決め方 | ワーキングセットに約 25% を足すか、ワーキングセットが分からなければ Origin の 10〜15% から始めて統計で調整します。作成時は必ず `-size` を指定します（TR の推奨事項 8） |
+| 大きいファイル | Cache は FlexGroup なので、**どのコンスティチュエントよりも大きいファイルはキャッシュされず、常に Origin から返されます。** ONTAP 9.6 以降の elastic sizing で救える場合がありますが、TR はそれに頼らず適切に分けることを推奨しています |
+| 追い出し | いずれかのコンスティチュエントが 90% を超えると、scrubber がファイルを追い出し始めます |
+| ファンアウト（1 つの Origin に付く Cache の数） | **TR-4743 は用語を定義していますが、数値は示していません。** FSx for ONTAP での本数の目安は、上の「[ファンアウト数が write-back の可否に効くこと](#ファンアウト数が-write-back-の可否に効くこと)」に書いた AWS の記載（10 を超える場合）だけです |
+
+出典は TR-4743「Cache volume size」と同節の scrubber の記述です。**Cache の属性の一部は作成時に Origin から決まり、後から変えられません。** セキュリティスタイルがその例で、隣のリポジトリの [FlexCache のセキュリティスタイル継承の検証](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/flexcache-security-style-inheritance.md) に記録があります。
+
+#### 階層化アグリゲートへの配置と Cache 自体の階層化の別
+
+**この 2 つは別の事実で、出典も別です。**
+
+- **配置**: FSx for ONTAP では、Cache を FabricPool が有効なアグリゲートに置くために `use_tiered_aggregate` を有効にする必要があります。上の「[作成経路で成否が変わること](#作成経路で成否が変わること)」に書いた観測です。
+- **階層化**: Cache ボリューム自体は階層化できません。NetApp の [Supported and unsupported features for ONTAP FlexCache volumes](https://docs.netapp.com/us-en/ontap/flexcache/supported-unsupported-features-concept.html)（2026-07-02 更新、FabricPool の行）と、隣のリポジトリの [対応表](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/support-matrix.md) が同じことを記録しています。**階層化アグリゲートに置かれていても、Cache が階層化されるわけではありません。**
+
+| 機構 | FlexCache の Cache 側での可否 |
+|---|---|
+| ONTAP ネイティブの S3 NAS バケット（duality）と FSx for ONTAP S3 Access Points | **別の機構で、可否も別です。** NetApp は NAS バケットの Cache 側対応を ONTAP 9.18.1 以降と記載しています（上と同じ NetApp のページ）。S3 Access Points は Amazon FSx 側がボリューム種別で拒否します（上の FC-002 の段落）。隣のリポジトリの [対応表](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/support-matrix.md) も、NAS バケットの行を S3 Access Points の根拠に使わないよう注記しています |
+
+階層化ポリシーの側から見た同じ関係は [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md#cache-ボリュームと階層化の関係) にあります。
+
+---
+
 ### 設計フロー
 
 ```mermaid
@@ -286,6 +374,10 @@ graph TD
 | キャッシュサイズは元ボリュームと同じにする | 小さくできます。**ヒット率を見て決めます** |
 | FlexCache と FlexClone はテンプレートで作れる | **ONTAP CLI で作成・管理します** |
 | コピーを作れば管理は単純になる | コピーの権限・保持・削除を別に管理することになります |
+| Cache は一定時間ごとに Origin を見直して整合を取る | **接続中は Origin が委任を取り消して無効化します**（TR-4743）。TTL が出てくるのは切断時です |
+| 切断中も Cache からは書ける | **Cache への書き込みはハングします**（TR-4743「Disconnected mode」）。Origin 側でも、切断された Cache に委任が残るファイルへの書き込みは TTL まで止まります |
+| Cache を階層化アグリゲートに置けば、Cache も階層化される | **配置と階層化は別です。** Cache ボリューム自体は階層化できません（NetApp の FlexCache 対応表） |
+| Cache を大きくすればどのファイルもキャッシュされる | **コンスティチュエントより大きいファイルはキャッシュされず、Origin から返されます**（TR-4743「Cache volume size」） |
 
 ---
 
@@ -301,6 +393,12 @@ graph TD
 | write-around が既定であること、write-back が 9.15.1 で導入されたこと、write-around を選ぶ条件に「Origin ファイルシステムの FlexCache Origin ボリュームが 10 を超える場合」が含まれること | [AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html)（2026-09-14 に確認） |
 | 20% での write-around への自動切り替えと、閾値がボリュームの報告値とアグリゲートの物理容量の両方で評価されること、オーバープロビジョニングで早く切り替わること、Origin でのスナップショットが全 write-back Cache からダーティデータを回収すること、リネームと SMB 代替データストリームへの書き込みがファイルを退避させること、設定できる属性が 6 つに限られること、書き込みの SMB oplock が非対応であること、9.17.1P1 以降を両側で強く推奨し 9.15.1 が本番向けでないこと、単一コンスティチュエントの推奨、検証範囲が 100 GB 未満と WAN 往復 200 ms 以内であること | [NetApp: FlexCache write-back guidelines](https://docs.netapp.com/us-en/ontap/flexcache-writeback/flexcache-write-back-guidelines.html)（2026-09-14 に全文確認） |
 | FlexCache ボリュームが FlexGroup であることの要求 | [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
+| RAL・REM・RIM・RLEM による委任の管理、読み取りの分岐、atime 更新による無効化と推奨事項 2a / 2b、9.8 のブロック単位の無効化（ONTAP 一般） | [TR-4743: FlexCache in ONTAP](https://www.netapp.com/pdf.html?item=/media/7336-tr4743.pdf)（ONTAP 9.11.1、2022 年 8 月）「RAL overview」「Read processing」「Last access time」（2026-10-02 に確認） |
+| negative lookup cache（9.9.1、既定で有効）と global file locking（9.10.1）が往復に与える影響（ONTAP 一般） | TR-4743「Negative lookup cache」「Locking」 |
+| 初回読み取りでのロック委任、NLM と SMB / NFSv4.x の書き込みロックの扱いの差、データとロックの委任の独立（ONTAP 一般） | TR-4743「Locking」 |
+| 切断時に続く操作と止まる操作、TTL 約 120 秒（9.6 以降）、判定時間、soft-evict と 9.8 のファイル単位の再検証（ONTAP 一般） | TR-4743「Disconnected mode」 |
+| ワーキングセット + 約 25% / Origin の 10〜15%、`-size` の指定、コンスティチュエントより大きいファイル、90% での scrubber（ONTAP 一般） | TR-4743「Cache volume size」 |
+| Cache ボリューム自体は階層化できないこと、FabricPool が有効な Origin を Cache できること（9.7 以降）、ONTAP S3 NAS バケットの Cache 側対応が 9.18.1 以降であること | [NetApp: Supported and unsupported features for ONTAP FlexCache volumes](https://docs.netapp.com/us-en/ontap/flexcache/supported-unsupported-features-concept.html)（2026-07-02 更新、2026-10-02 に確認） |
 
 ---
 
@@ -312,6 +410,8 @@ graph TD
 - [Domain — マルチプロトコル・ID](../../multiprotocol-identity/) — AD 参加済み SVM の前提
 - [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — FlexCache / FlexClone が届かない理由
 - [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md) — コピーを作らない設計のコスト面
+- [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](../../performance/notes/flexgroup-balances-at-file-creation-not-afterward.md) — Cache も FlexGroup であることの前提になる配置の性質
+- [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md) — Cache が階層化の対象外であることと、Origin 側の階層化
 - [知見の分類ポリシー](../../../evidence-policy.md)
 
 ---

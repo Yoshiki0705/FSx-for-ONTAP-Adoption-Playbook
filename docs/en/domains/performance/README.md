@@ -33,6 +33,7 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 | 7 | Why the same configuration returns different numbers | [Where the 45% spread comes from](notes/a-single-connection-measures-the-client.md#what-the-45-range-actually-is) |
 | 8 | Which lever to try first | [Levers for raising throughput](../../../ja/reference/comparison/throughput-levers.md) (日本語) |
 | 9 | What limits the files in one directory, and what listing a large directory costs | [A single directory has its own size cap](notes/directory-size-is-capped-separately-from-file-count.md) |
+| 10 | Where a FlexGroup spreads load, and what stays put after creation | [A FlexGroup balances when files are created, not afterward](notes/flexgroup-balances-at-file-creation-not-afterward.md) |
 
 ---
 

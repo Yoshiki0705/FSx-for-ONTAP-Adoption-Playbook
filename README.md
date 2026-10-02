@@ -100,6 +100,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
 | [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 第 2 世代 Single-AZ は最大 12 HA ペア、ブロック構成は最大 6。FlexVol は 1 HA ペアの aggregate に配置されます |
 | [ディレクトリ 1 つの大きさにはファイル数と別の上限がある](docs/ja/domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) | ONTAP 一般の TR は既定 320 MB で通常の名前 4,341,758 個、日本語名で 2,129,918 個と記載します。FSx for ONTAP での挙動は未確認です |
+| [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](docs/ja/domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md) | ONTAP 一般の TR は、置き場所が作成時に決まり、FlexVol から変換しても既存データは再配置されないと記載します。AWS は AWS DataSync での移行を推奨しています。TR の値は FSx for ONTAP では一部未確認です |
 | [ボリュームの操作時間メトリクスから p99 は出せない](docs/ja/domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) | read/write/metadata の時間合計 ÷ 回数合計は平均です。ほかの系列には別の統計と次元があります |
 | [課金は「確保した量」と「使った量」に分かれる](docs/ja/domains/cost/notes/provisioned-versus-consumed.md) | 階層化には読み書きのリクエスト課金が伴います。重複排除は請求を下げません |
 | [ボリュームのセキュリティスタイルが権限評価のモデルを決める](docs/ja/domains/multiprotocol-identity/notes/security-style-and-permission-evaluation.md) | ID マッピングを止めても NTFS スタイルの SMB アクセスは止まりません |
