@@ -214,11 +214,20 @@ ONTAP CLI は有効化時に確認を求めます。**文面が示す構造は�
 | 最も広い影響範囲 | **ボリューム**です。未期限のロック済み Snapshot があるとそのボリュームは削除できません（上の表）。SVM・ファイルシステムへの波及は、ブログにも NetApp のドキュメントにも範囲の記載が見当たらないため **未確認** とします |
 | 早期解除の documented な経路 | **ありません。** 全ロック済み Snapshot が失効するまで無効化もボリューム削除もできません |
 
-> **ライセンスの扱いは未確認です。** Tamperproof Snapshot は FSx for ONTAP で別のライセンスなしに設定できる、と
-> このリポジトリの所有者が確認していますが、**ライセンスの扱いを書いた AWS の公式記載は見つけていません。** TR-4572 は
-> 「tamperproof にするには SnapLock Compliance ライセンスが要る」と記していますが、FSx for ONTAP での扱いと一致するかは
-> 確認できていないため、ここでは**未確認**として扱い、断定しません。姉妹リポジトリの「SnapLock Compliance ライセンスが
-> 必要」という記載も、この相違があるため根拠に使いません。
+> **ライセンス料は追加でかかりません。ただし 2 つの記載をつないだ結論です。**
+>
+> - AWS は 2025-03-05 から、FSx for ONTAP で SnapLock のライセンス料を請求していません。対象は全リージョンの
+>   FSx for ONTAP ファイルシステムで、新規と既存の SnapLock ボリュームの両方に自動で適用されます
+>   （[What's New: Amazon FSx for NetApp ONTAP no longer charges for SnapLock licensing](https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-fsx-netapp-ontap-no-charges-snaplock-licensing/)、2025-03-05）
+> - TR-4572 は、Snapshot を tamperproof にするのに必要なライセンスを SnapLock Compliance ライセンスとしています（ONTAP 一般）
+>
+> **What's New の本文は SnapLock ボリュームのデータを対象に書かれていて、Tamperproof Snapshot を名指ししていません。**
+> 上の結論は、この 2 つの記載をつないだものです。FSx for ONTAP で別のライセンスなしに設定できることは、このリポジトリの
+> 所有者も確認しています。姉妹リポジトリにある「SnapLock Compliance ライセンスが必要」という記載は、料金の扱いを
+> 示す根拠として使いません。
+>
+> **料金がかからないことは、戻せないことを変えません。** 保持期間と影響範囲は上の表のとおりで、満了まで Snapshot を
+> 削除できず、未期限のロック済み Snapshot があるボリュームは削除できず、早期解除の documented な経路はありません。
 
 > **この節は `documented` です。** 有効化すると同種の削除ロックを新たに作るため、**検証していません。**
 > 記載の出典は [参照した一次情報](#参照した一次情報) にあります。
@@ -513,6 +522,7 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 | FPolicy の Native / External モードによる拡張子ベースの保護、検知の位置づけ、復旧手段としての Snapshot、Snapshot が同一ファイルシステム内にあること | [AWS Storage Blog: Protecting data against ransomware with FSx for ONTAP](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
 | ARP が 9.10.1 以降であること、9.15.1 以前が学習モードを持ちほとんどの環境で約 7 日かかること、ARP/AI が学習モードを持たず有効化直後から能動であること、論理エアギャップ（cyber vault）が SnapLock Compliance による参照アーキテクチャであること、一次 Snapshot を SnapVault で SnapLock ボリュームへ Vault すること | [NetApp: ONTAP 技術レポート — Security](https://docs.netapp.com/us-en/ontap-technical-reports/security.html)（2026-09-30 生成） |
 | Tamperproof Snapshot の設定コマンド（`volume modify -snapshot-locking-enabled`、`volume snapshot modify-snaplock-expiry-time`）と、保持期間が保持数より優先され日次・保持数 5・保持期間 1 か月で 30〜31 個残ること | [AWS ブログ: イミュータブルバックアップの利用でランサムウェア対策の強化](https://aws.amazon.com/jp/blogs/news/immutable-backup-written-by-netapp-2024/) |
+| FSx for ONTAP が 2025-03-05 から SnapLock のライセンス料を請求しないこと（全リージョン、新規・既存の SnapLock ボリューム）。Tamperproof Snapshot は名指ししていない | [What's New: Amazon FSx for NetApp ONTAP no longer charges for SnapLock licensing](https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-fsx-netapp-ontap-no-charges-snaplock-licensing/)（2025-03-05） |
 
 ---
 

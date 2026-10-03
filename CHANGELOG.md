@@ -9,6 +9,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **Tamperproof Snapshot licensing is no longer marked unverified: the cost side now has an AWS source.**
+  `snaplock-and-layered-ransomware-readiness.md` said no AWS statement on licensing had been found. AWS announced on 2025-03-05 that FSx for ONTAP no longer charges SnapLock licensing fees, across all Regions and for new and existing SnapLock volumes. The note now cites that What's New entry, states that it names SnapLock volume data rather than Tamperproof Snapshot (so "no additional charge" joins two statements), lists the repository owner's confirmation beside it, and keeps the retention and blast-radius statements in the same callout because no charge does not make locked Snapshots reversible.
+
 - **The two High-file-count notes now link the sibling's TR delegation ledger, not only its tracking issue.**
   `directory-size-is-capped-separately-from-file-count.md` and `file-count-fit-depends-on-namespace-shape.md` (JA and EN) pointed only at S3-Burst-on-ONTAP-Files issue #235, because the ledger was not yet on that repository's `main`. It now is, so the ledger is linked as the record of what was delegated here and what stayed there. The issue link stays, since it is where the unmeasured items are tracked.
 
