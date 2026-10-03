@@ -52,6 +52,7 @@ docs/en/domains/security-governance/notes/access-point-authorization-layers.md#w
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#which-of-the-two-layers-narrows-an-s3-access-point
 docs/en/domains/security-governance/notes/access-point-authorization-layers.md#who-appears-in-the-audit-log
 docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md
+docs/en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md
 docs/en/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md
 docs/en/playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md
 docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md
