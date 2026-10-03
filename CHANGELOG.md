@@ -562,6 +562,8 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`docs/agent/writing-quality.md` records the CodeQL `py/bad-tag-filter` false positive on the ai-style detector.**
+  CodeQL reports a high alert on the detector's CommonMark comment-end regex (`-->`), assuming an HTML-sanitizer context. The detector classifies Markdown block boundaries over trusted repository docs, not untrusted HTML, so the alert does not apply. The note states that each repository dismisses it rather than editing the detector, which is kept byte-identical across the Hub and spokes; where no dismissable alert object exists, the pull request body carries the note. Recorded once at the source so each spoke does not re-decide.
 - **`docs/agent/writing-quality.md` is now a registered external-anchor citation target (path-only).**
   S3-Burst-on-ONTAP-Files links the writing-quality criteria from its AGENTS.md as the shared source its documents follow. The citation is to the file, not a section, so the path is pinned and heading renames inside it are unaffected. Registered here first because the sibling's gate refuses a citation into a document this repository does not list as tracked.
 - **New note (JA and EN) on ONTAP admin-plane hardening, from the security hardening TR (TR-4569).**
