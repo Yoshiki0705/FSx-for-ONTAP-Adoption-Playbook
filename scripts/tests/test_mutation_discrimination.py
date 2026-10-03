@@ -832,6 +832,28 @@ MUTATIONS: list[dict] = [
         "must_fail": ["test_evidence_metadata_negative_fires"],
         "must_pass": ["test_evidence_metadata_valid_control_passes"],
     },
+    {
+        # The reachability benchmark's verdict. An unreached target has no hop count, and letting
+        # "no count" through the comparison is a one-token edit that reads as a None guard.
+        "name": "an unreachable question counts as within budget",
+        "why": (
+            "Treating a missing hop count as passing is the shortest way to turn a failing "
+            "baseline green, and it makes every orphaned answer look reachable"
+        ),
+        "module": "scripts.tests.test_reachability",
+        "edits": [
+            (
+                "tools/check_reachability.py",
+                "    if hops is not None and hops <= max_hops:",
+                "    if hops is None or hops <= max_hops:",
+            ),
+        ],
+        "must_fail": [
+            "test_an_unreachable_question_fails_the_gate",
+            "test_an_unreachable_target_fails_with_no_hop_count",
+        ],
+        "must_pass": ["test_a_target_within_budget_passes"],
+    },
 ]
 
 

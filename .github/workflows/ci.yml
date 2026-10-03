@@ -122,6 +122,12 @@ jobs:
       - name: Check cross-repository citations are registered
         run: make cross-repo
 
+      # Offline only: each benchmark question must reach its answer from llms.txt within the hop
+      # budget, over the Hub's own links. Cross-repo questions need the network and stay in
+      # `make reachability-external`, which no workflow runs.
+      - name: Check benchmark questions reach their answers
+        run: make reachability
+
       # The inbound direction, which needs no network: the pinned files are in this tree. Another
       # repository's gate depends on exact strings here, and it cannot warn us first -- its check
       # runs against a tree it does not have. A duplicated string fails too, because that leaves
