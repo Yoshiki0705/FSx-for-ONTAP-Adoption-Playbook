@@ -28,9 +28,13 @@ below and nowhere else; `--max-hops` overrides it for a run.
 
 What PASS means, and what it does not
 -------------------------------------
-PASS means **a link path exists within the budget**. It does not mean an agent will choose that
-path: this is a measurement of link structure, a sample over the questions in the file, not a run
-of any model. A FAIL is a finding about navigation, and this tool does not fix navigation.
+PASS means **a link path exists within the budget and ends on a document that exists**. A Hub
+target exists when it is on disk. With `--external`, every reached sibling target within the budget
+is fetched, including one linked at exactly the budget that the crawl would not otherwise open, so a
+link to a sibling page that answers 404 is a FAIL rather than a PASS. PASS does not mean an agent
+will choose that path: this is a measurement of link structure, a sample over the questions in the
+file, not a run of any model. A FAIL is a finding about navigation, and this tool does not fix
+navigation.
 
 Modes and verdicts
 ------------------
@@ -41,11 +45,16 @@ skipped.
 
 `--external` (opt-in, network): cross-repo questions are evaluated too. A sibling document is
 fetched from `raw.githubusercontent.com` only when it is popped at a distance below the budget, so
-the crawl depth equals the hop budget, every fetch is cached for the run, and `MAX_FETCHES` caps the
-total. A fetch that answers 404 is a dead end. A 403, 429, any other HTTP error, a network error or a
-timeout teaches nothing about the link, so it is INCONCLUSIVE rather than FAIL, the same third
-verdict `check_links.py` and `check_cross_repo.py --external` use. INCONCLUSIVE alone exits 0; it is
-listed under `undetermined:` so it is not read as a pass.
+the crawl depth equals the hop budget, every fetch is cached for the run, and `MAX_FETCHES`
+(`--max-fetches`) caps the total. A fetch that answers 404 is a dead end. A 403, 429, any other HTTP
+error, a network error or a timeout teaches nothing about the link, and neither does a fetch the cap
+skipped. Such a node is *blocked*. An unreached cross-repo question is INCONCLUSIVE only when its own
+crawl, the nodes reached from its entry points below the budget, contains a blocked node, or when the
+existence fetch of one of its targets was blocked: those are the only places the missing link could
+be. A blocked node elsewhere in the run says nothing about this question, so it stays FAIL. This is
+the same third verdict `check_links.py` and `check_cross_repo.py --external` use. INCONCLUSIVE alone
+exits 0; it is listed under `undetermined:` so it is not read as a pass. The cap is sized so a normal
+run stays under it, and the report records whether it was reached.
 
 Parser limits
 -------------
@@ -57,7 +66,8 @@ as that directory's `README.md`, because a directory cannot be distinguished fro
 listing the tree. That node is a guess, so a 404 on it is an absence rather than a dead link, the
 same treatment a repository root's `llms.txt` gets.
 
-Run:  python3 tools/check_reachability.py [--external] [--max-hops N] [--report PATH]
+Run:  python3 tools/check_reachability.py [--external] [--max-hops N] [--max-fetches N]
+                                          [--report PATH]
       python3 tools/check_reachability.py --selftest
 """
 
@@ -89,7 +99,9 @@ ROOT = Path(__file__).resolve().parent.parent
 QUESTIONS = ROOT / "docs/agent/reachability-questions.json"
 
 MAX_HOPS = 3
-MAX_FETCHES = 150
+# About twice what a full external run of the question set needed when last sized (274 fetches),
+# so a normal run stays under it. A run that reaches it says so in its report (`cap_reached`).
+MAX_FETCHES = 550
 FETCH_TIMEOUT = 30
 OWNER = "Yoshiki0705"
 THIS_REPO = "FSx-for-ONTAP-Adoption-Playbook"
@@ -494,6 +506,7 @@ def _text_anchors(text: str) -> set[str]:
 @dataclass
 class _Fetcher:
     opener: Callable
+    max_fetches: int
     attempted: int = 0
     cached_hits: int = 0
     cap_reached: bool = False
@@ -501,6 +514,9 @@ class _Fetcher:
     inconclusive: list[dict] = field(default_factory=list)
     dead: list[str] = field(default_factory=list)
     absent: set[str] = field(default_factory=set)
+    # Nodes whose content is unknown: the cap skipped them or the server did not answer. Kept per
+    # node so a verdict can ask whether *its own* crawl was blocked, not whether anything was.
+    blocked: dict[str, str] = field(default_factory=dict)
 
     def get(self, node: str, ref: str, speculative: bool) -> str | None:
         """Return the document text, or None for a dead end or an undetermined fetch."""
@@ -509,9 +525,9 @@ class _Fetcher:
         if url in self.cache:
             self.cached_hits += 1
             return self.cache[url]
-        # A module global is looked up at call time, so a test can lower the cap.
-        if self.attempted >= MAX_FETCHES:
+        if self.attempted >= self.max_fetches:
             self.cap_reached = True
+            self.blocked.setdefault(node, "skipped by the fetch cap")
             return None
         self.attempted += 1
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -528,8 +544,10 @@ class _Fetcher:
                     self.dead.append(node)
             else:
                 self.inconclusive.append({"node": node, "reason": f"HTTP {exc.code}"})
+                self.blocked[node] = f"HTTP {exc.code}"
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             self.inconclusive.append({"node": node, "reason": f"unreachable ({exc})"})
+            self.blocked[node] = "unreachable"
         self.cache[url] = text
         return text
 
@@ -545,6 +563,7 @@ class Result:
     max_hops: int
     results: list[dict]
     counts: dict[str, int]
+    max_fetches: int = MAX_FETCHES
     fetch: dict | None = None
 
 
@@ -577,9 +596,15 @@ def evaluate(
     *,
     external: bool = False,
     max_hops: int = MAX_HOPS,
+    max_fetches: int | None = None,
     opener: Callable = urllib.request.urlopen,
 ) -> Result:
-    """Evaluate every question in scope for the mode. Hub questions always use the Hub graph only."""
+    """Evaluate every question in scope for the mode. Hub questions always use the Hub graph only.
+
+    `max_fetches=None` means `MAX_FETCHES`, read at call time so a test can lower the module value.
+    """
+    if max_fetches is None:
+        max_fetches = MAX_FETCHES
     root = Path(root).resolve()
     known = [
         split_sibling(t["path"])[0]  # type: ignore[index]
@@ -589,7 +614,7 @@ def evaluate(
     ]
     names = _Names(known)
     graph, refs, guessed = _build(root, names)
-    fetcher = _Fetcher(opener) if external else None
+    fetcher = _Fetcher(opener, max_fetches) if external else None
     fetched: dict[str, set[str]] = {}
     texts: dict[str, str | None] = {}
 
@@ -650,6 +675,7 @@ def evaluate(
 
         best: tuple[int, str] | None = None
         reasons: list[str] = []
+        blocked_targets: list[str] = []
         for target in q["targets"]:
             node = target["path"]
             if split_sibling(node) is not None:
@@ -659,21 +685,32 @@ def evaluate(
                 reasons.append(f"{target['path']}: not reached")
                 continue
             hops = seen[node][0]
-            if fetcher is not None and node in fetcher.dead:
-                reasons.append(f"{target['path']}: link leads to a 404")
-                continue
+            text: str | None = None
+            if (
+                fetcher is not None
+                and split_sibling(node) is not None
+                and hops <= max_hops
+            ):
+                # Reaching a link is not reaching a document. A target below the budget was
+                # fetched when the crawl expanded it; one at exactly the budget is fetched here,
+                # so "reached" always means "exists" and never only "linked".
+                text = sibling_text(node)
+                if text is None:
+                    if node in fetcher.blocked:
+                        blocked_targets.append(node)
+                        reasons.append(
+                            f"{target['path']}: existence not determined "
+                            f"({fetcher.blocked[node]})"
+                        )
+                    else:
+                        reasons.append(f"{target['path']}: link leads to a 404")
+                    continue
             anchor = target.get("anchor")
             if anchor and hops <= max_hops:
                 if split_sibling(node) is None:
                     anchors = anchors_of(root / node)
                 else:
-                    text = sibling_text(node)
-                    if text is None:
-                        reasons.append(
-                            f"{target['path']}: anchor not checkable (fetch)"
-                        )
-                        continue
-                    anchors = _text_anchors(text)
+                    anchors = _text_anchors(text or "")
                 if slugify(anchor) not in anchors:
                     reasons.append(f"{target['path']}: anchor #{anchor} not found")
                     continue
@@ -681,17 +718,22 @@ def evaluate(
                 best = (hops, node)
         hops = best[0] if best else None
         verdict = verdict_for(hops, max_hops)
-        if (
-            verdict == "FAIL"
-            and q["scope"] == "cross-repo"
-            and fetcher is not None
-            and (fetcher.inconclusive or fetcher.cap_reached)
-        ):
-            verdict = "INCONCLUSIVE"
-            reasons.append(
-                "a fetch was undetermined or the fetch cap was reached, so the unreached "
-                "branch was not measured"
+        if verdict == "FAIL" and q["scope"] == "cross-repo" and fetcher is not None:
+            # Only this question's own crawl can hide its missing link: a node it reached below
+            # the budget whose links are unknown, or a target whose existence is unknown. A cap
+            # hit or an unanswered fetch anywhere else in the run teaches nothing about it.
+            frontier = sorted(
+                n for n, (h, _) in seen.items() if h < max_hops and n in fetcher.blocked
             )
+            if frontier or blocked_targets:
+                verdict = "INCONCLUSIVE"
+                shown = ", ".join(f"{n} ({fetcher.blocked[n]})" for n in frontier[:3])
+                more = f" and {len(frontier) - 3} more" if len(frontier) > 3 else ""
+                if frontier:
+                    reasons.append(
+                        f"crawl blocked at {shown}{more}, so the unreached branch was not "
+                        "measured"
+                    )
         entry = {
             "id": q["id"],
             "category": q["category"],
@@ -725,6 +767,7 @@ def evaluate(
         max_hops=max_hops,
         results=results,
         counts=counts,
+        max_fetches=max_fetches,
         fetch=fetch,
     )
 
@@ -763,7 +806,7 @@ def format_result(result: Result) -> str:
         f = result.fetch
         cap = ", cap reached" if f["cap_reached"] else ""
         lines.append(
-            f"fetch: {f['attempted']} attempted (cap {MAX_FETCHES}{cap}), "
+            f"fetch: {f['attempted']} attempted (cap {result.max_fetches}{cap}), "
             f"{f['cached_hits']} cached, {len(f['dead_nodes'])} dead link(s), "
             f"{len(f['inconclusive'])} undetermined"
         )
@@ -808,7 +851,7 @@ def build_report(result: Result, root: Path, questions_file: Path) -> dict:
         "git_sha": _git_sha(root),
         "mode": result.mode,
         "max_hops": result.max_hops,
-        "max_fetches": MAX_FETCHES,
+        "max_fetches": result.max_fetches,
         "questions_file": shown,
         "questions_sha256": hashlib.sha256(questions_file.read_bytes()).hexdigest(),
         "counts": result.counts,
@@ -859,6 +902,18 @@ def _fake_opener(status: int, body: str = "") -> Callable:
         if status == 200:
             return _FakeResponse(body)
         raise urllib.error.HTTPError(request.full_url, status, "fake", None, None)  # type: ignore[arg-type]
+
+    return opener
+
+
+def _paths_opener(bodies: dict[str, str]) -> Callable:
+    """200 with the body for a path ending in a key of `bodies`, 404 for anything else."""
+
+    def opener(request: urllib.request.Request, timeout: float = 0) -> _FakeResponse:
+        for suffix, body in bodies.items():
+            if request.full_url.endswith("/" + suffix):
+                return _FakeResponse(body)
+        raise urllib.error.HTTPError(request.full_url, 404, "fake", None, None)  # type: ignore[arg-type]
 
     return opener
 
@@ -928,6 +983,40 @@ def selftest() -> int:
                 f"external {status} -> {expected}",
                 ext.results[0]["verdict"] == expected,
             )
+        # docs/y.md sits at hop 2; with a budget of 2 the crawl never opens it, so only the
+        # existence fetch can tell a link from a document.
+        for bodies, expected in (
+            ({"docs/x.md": "[y](y.md)\n", "docs/y.md": "y\n"}, "PASS"),
+            ({"docs/x.md": "[y](y.md)\n"}, "FAIL"),
+        ):
+            ext = evaluate(
+                [sib], root, external=True, max_hops=2, opener=_paths_opener(bodies)
+            )
+            check(
+                f"target at the budget, {'present' if 'docs/y.md' in bodies else '404'} "
+                f"-> {expected}",
+                ext.results[0]["verdict"] == expected,
+            )
+        # The cap is hit by another entry point's crawl after this question's own crawl was
+        # fully fetched (x.md is cached), so the unreached target is a FAIL.
+        (root / "other.md").write_text(
+            f"[s](https://github.com/{OWNER}/Sib/blob/main/docs/x.md)\n"
+            f"[u](https://github.com/{OWNER}/Sib/blob/main/docs/z1.md)\n"
+            f"[v](https://github.com/{OWNER}/Sib/blob/main/docs/z2.md)\n",
+            encoding="utf-8",
+        )
+        capped = evaluate(
+            [{**sib, "id": "sm-o", "entry_points": ["other.md"]}, sib],
+            root,
+            external=True,
+            max_fetches=2,
+            opener=_paths_opener({"docs/x.md": "x\n", "docs/z1.md": "z\n"}),
+        )
+        verdicts = [r["verdict"] for r in capped.results]
+        check(
+            "cap on another crawl -> FAIL; cap on own crawl -> INCONCLUSIVE",
+            verdicts == ["INCONCLUSIVE", "FAIL"] and capped.fetch["cap_reached"],  # type: ignore[index]
+        )
 
     for name in failures:
         print(f"selftest FAILED: {name}", file=sys.stderr)
@@ -965,6 +1054,12 @@ def main(argv: list[str] | None = None) -> int:
         help=f"hop budget (default {MAX_HOPS})",
     )
     parser.add_argument(
+        "--max-fetches",
+        type=_positive,
+        default=None,
+        help=f"cap on sibling fetches with --external (default {MAX_FETCHES})",
+    )
+    parser.add_argument(
         "--questions",
         type=Path,
         help="question set (default docs/agent/reachability-questions.json under --root)",
@@ -985,7 +1080,13 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    result = evaluate(questions, root, external=args.external, max_hops=args.max_hops)
+    result = evaluate(
+        questions,
+        root,
+        external=args.external,
+        max_hops=args.max_hops,
+        max_fetches=args.max_fetches,
+    )
     print(format_result(result))
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)

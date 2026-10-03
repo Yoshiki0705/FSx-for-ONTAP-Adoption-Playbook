@@ -409,9 +409,15 @@ class _Response:
 class Opener:
     """A fake `urlopen`: a body per path, or an exception, with a log of what was requested."""
 
-    def __init__(self, bodies: dict[str, str], error: BaseException | None = None):
+    def __init__(
+        self,
+        bodies: dict[str, str],
+        error: BaseException | None = None,
+        errors: dict[str, BaseException] | None = None,
+    ):
         self.bodies = bodies
         self.error = error
+        self.errors = errors or {}
         self.calls: list[str] = []
 
     def __call__(
@@ -423,6 +429,8 @@ class Opener:
             raise self.error
         # Any ref: a link carries its own, and a repository root is fetched at HEAD.
         path = re.sub(r"^.*?/Sib/[^/]+/", "", url)
+        if path in self.errors:
+            raise self.errors[path]
         if path in self.bodies:
             return _Response(self.bodies[path])
         raise urllib.error.HTTPError(url, 404, "not found", None, None)  # type: ignore[arg-type]
@@ -432,6 +440,21 @@ EXT_FILES = {
     "llms.txt": f"[s](https://github.com/{cr.OWNER}/Sib/blob/main/docs/x.md)\n",
 }
 EXT_Q = question("sm-y", f"{SIB}:docs/y.md", scope="cross-repo")
+
+# Two crawls in one run. other.md's crawl opens x.md and z1.md (the BFS visits node ids in sorted
+# order), then the cap skips z2.md. The llms.txt crawl needs only x.md, already fetched and cached,
+# so it is complete even though the run reached the cap.
+CAP_FILES = {
+    **EXT_FILES,
+    "other.md": "".join(
+        f"[{n}](https://github.com/{cr.OWNER}/Sib/blob/main/docs/{n}.md)\n"
+        for n in ("x", "z1", "z2")
+    ),
+}
+CAP_BODIES = {"docs/x.md": "no links\n", "docs/z1.md": "z\n", "docs/z2.md": "z\n"}
+CAP_OTHER = question(
+    "sm-other", f"{SIB}:docs/t.md", scope="cross-repo", entry_points=["other.md"]
+)
 
 
 class ExternalVerdicts(unittest.TestCase):
@@ -515,6 +538,85 @@ class ExternalVerdicts(unittest.TestCase):
         self.assertEqual(result.results[0]["verdict"], "INCONCLUSIVE")
         self.assertTrue(result.fetch["cap_reached"])
         self.assertEqual(result.fetch["attempted"], 1)
+
+    @staticmethod
+    def _capped() -> cr.Result:
+        with (
+            mock.patch.object(cr, "MAX_FETCHES", 2),
+            Tree(CAP_FILES, [CAP_OTHER, EXT_Q]) as tree,
+        ):
+            return cr.evaluate(
+                tree.load(), tree.root, external=True, opener=Opener(CAP_BODIES)
+            )
+
+    def test_a_cap_hit_on_another_crawl_does_not_mask_a_failure(self) -> None:
+        """The cap was reached, but not where this question's link could be: FAIL, exit 1."""
+        result = self._capped()
+        self.assertTrue(result.fetch["cap_reached"])
+        r = {r["id"]: r for r in result.results}["sm-y"]
+        self.assertEqual((r["verdict"], r["hops"]), ("FAIL", None))
+        self.assertEqual(result.counts["fail"], 1)
+
+    def test_a_cap_skipped_node_in_the_own_crawl_is_inconclusive(self) -> None:
+        result = self._capped()
+        r = {r["id"]: r for r in result.results}["sm-other"]
+        self.assertEqual(r["verdict"], "INCONCLUSIVE")
+        self.assertIn(f"{SIB}:docs/z2.md (skipped by the fetch cap)", r["reason"])
+
+    def test_a_target_linked_at_the_budget_that_answers_404_fails(self) -> None:
+        """y.md is linked at exactly the budget, so the crawl never opens it; existence must."""
+        opener = Opener({"docs/x.md": "[z](z.md)\n", "docs/z.md": "[y](y.md)\n"})
+        with Tree(EXT_FILES, [EXT_Q]) as tree:
+            r = tree.evaluate(external=True, opener=opener)["sm-y"]
+        self.assertEqual(r["verdict"], "FAIL")
+        self.assertIn("link leads to a 404", r["reason"])
+        self.assertTrue(opener.calls[-1].endswith("/docs/y.md"))
+
+    def test_a_target_linked_at_the_budget_that_exists_passes(self) -> None:
+        opener = Opener(
+            {"docs/x.md": "[z](z.md)\n", "docs/z.md": "[y](y.md)\n", "docs/y.md": "y\n"}
+        )
+        with Tree(EXT_FILES, [EXT_Q]) as tree:
+            r = tree.evaluate(external=True, opener=opener)["sm-y"]
+        self.assertEqual((r["verdict"], r["hops"]), ("PASS", cr.MAX_HOPS))
+
+    def test_an_unanswered_existence_fetch_at_the_budget_is_inconclusive(self) -> None:
+        opener = Opener(
+            {"docs/x.md": "[z](z.md)\n", "docs/z.md": "[y](y.md)\n"},
+            errors={"docs/y.md": urllib.error.HTTPError("u", 503, "down", None, None)},  # type: ignore[arg-type]
+        )
+        with Tree(EXT_FILES, [EXT_Q]) as tree:
+            r = tree.evaluate(external=True, opener=opener)["sm-y"]
+        self.assertEqual(r["verdict"], "INCONCLUSIVE")
+        self.assertIn("existence not determined (HTTP 503)", r["reason"])
+
+    def test_the_fetch_cap_flag_overrides_the_constant(self) -> None:
+        opener = Opener({"docs/x.md": "[z](z.md)\n", "docs/z.md": "[y](y.md)\n"})
+        with Tree(EXT_FILES, [EXT_Q]) as tree:
+            report = tree.root / "r.json"
+            out = io.StringIO()
+            patched = functools.partial(cr.evaluate, opener=opener)
+            with (
+                mock.patch.object(cr, "evaluate", patched),
+                contextlib.redirect_stdout(out),
+            ):
+                cr.main(
+                    [
+                        "--root",
+                        str(tree.root),
+                        "--questions",
+                        str(tree.qfile),
+                        "--external",
+                        "--max-fetches",
+                        "1",
+                        "--report",
+                        str(report),
+                    ]
+                )
+            data = json.loads(report.read_text(encoding="utf-8"))
+        self.assertIn("fetch: 1 attempted (cap 1, cap reached)", out.getvalue())
+        self.assertEqual(data["max_fetches"], 1)
+        self.assertTrue(data["fetch"]["cap_reached"])
 
     def test_a_sibling_node_at_the_budget_is_never_fetched(self) -> None:
         opener = Opener(
