@@ -46,7 +46,8 @@ Tier 1 首次访问指南提供 8 种语言。Tier 2 模块枢纽提供日语与
 | 选择迁移方式 | [迁移方式决策树](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 查看上限值与配额 | [上限值与配额](../ja/reference/limits/) |
 | 比较选项的权衡 | [比较矩阵](../ja/reference/comparison/) (日本語) |
-| 从行业或工作负载开始 | [行业资源地图](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 从行业开始 | [行业资源地图](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 从工作负载开始 | [按工作负载的入口地图](../en/reference/workload-entry-map.md) (English) |
 | 贡献知识 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

@@ -59,6 +59,7 @@ graph TD
 | **手元の Windows / Mac / WSL2 から使いたい** | [端末からデータに届く経路の決定木](reference/decision-trees/client-access-route.md) | [クライアントアクセス](domains/client-access/) |
 | **端末からマウントできない / VPN は繋がっているのに届かない** | [端末の到達経路の比較](reference/comparison/endpoint-reachability-options.md) | [端末別にできることの比較](reference/comparison/client-endpoint-capabilities.md) |
 | **自分の業種から、何を決めればよいか調べたい** | [業種別リソースマップ — 読む順序](reference/industry-resource-map.md#業種から入ったときの読む順序) | [業種別索引](reference/industry-resource-map.md#業種別索引) |
+| **自分のワークロードから、最初に読むノートを決めたい** | [ワークロード別の入口マップ](reference/workload-entry-map.md) | [ワークロード別の入口](reference/workload-entry-map.md#ワークロード別の入口) |
 | **既存の製品を FSx for ONTAP と組み合わせたい** | [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | [掲載基準を満たさないもの](reference/isv-solution-map.md#掲載基準を満たさないもの) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
@@ -109,6 +110,7 @@ graph TD
 | [比較マトリクス](reference/comparison/) | 他の選択肢とのトレードオフを整理したい |
 | [業種別リソースマップ](reference/industry-resource-map.md) | 業種を入口に、読むモジュールと公開リソースを引きたい |
 | [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | 課題を入口に、組み合わせが公表されている製品と判断ノートの有無を引きたい |
+| [ワークロード別の入口マップ](reference/workload-entry-map.md) | ワークロードを入口に、最初に読むノートの節と、それが防ぐ問題を引きたい |
 | [プロジェクト間の引用索引](reference/cross-repo-index.md) | ある数値をどのリポジトリから引いているか確かめたい |
 | [上限値・クォータ](reference/limits/) | 設計が上限に当たらないか確認したい |
 | [用語集](reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |

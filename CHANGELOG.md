@@ -562,6 +562,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **A workload entry map now leads from the workload to the note sections to read first, in Japanese and English.**
+  `reference/workload-entry-map.md` (JA and EN) lists ten workloads in three groups — data shape and placement, protocols and access routes, protection and governance — and for each gives the note sections to read first, what to read next, and the problem it prevents.
+  - Links only: no number, limit, or version is restated, and the page states once, near the top, that most linked findings are ONTAP-general `documented` with an FSx for ONTAP scope each note marks unverified. The EN page links an English note where one exists and the Japanese note with `(日本語)` otherwise.
+  - Linked from the other-entry table in all eight hubs, the situation table in all eight navigation guides, the reference hub, `llms.txt` (Entry points), and the industry and modernization journey maps. The hub row that read "industry or workload" now says industry only, since it pointed at the industry map.
+  - Not added to `docs/i18n-manifest.txt`: like the other maps it is a Tier 3 pair (ja + en) rather than first-touch material, so the six secondary languages link the English page with `(English)`.
 - **`docs/agent/writing-quality.md` is now a registered external-anchor citation target (path-only).**
   S3-Burst-on-ONTAP-Files links the writing-quality criteria from its AGENTS.md as the shared source its documents follow. The citation is to the file, not a section, so the path is pinned and heading renames inside it are unaffected. Registered here first because the sibling's gate refuses a citation into a document this repository does not list as tracked.
 - **New note (JA and EN) on ONTAP admin-plane hardening, from the security hardening TR (TR-4569).**

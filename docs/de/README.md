@@ -46,7 +46,8 @@ Tier-1-Einstiegsinformationen gibt es in acht Sprachen. Tier-2-Modul-Hubs gibt e
 | Migrationsmethode auswählen | [Entscheidungsbaum zur Migration](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | Grenzwerte und Kontingente prüfen | [Grenzwerte und Kontingente](../ja/reference/limits/) |
 | Abwägungen vergleichen | [Vergleichsmatrizen](../ja/reference/comparison/) (日本語) |
-| Von Branche oder Arbeitslast ausgehen | [Branchen-Ressourcenkarte](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Von einer Branche ausgehen | [Branchen-Ressourcenkarte](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Von einer Arbeitslast ausgehen | [Einstiegskarte nach Arbeitslast](../en/reference/workload-entry-map.md) (English) |
 | Wissen beitragen | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

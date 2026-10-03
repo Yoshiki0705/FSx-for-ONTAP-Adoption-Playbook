@@ -21,7 +21,7 @@ lang: en
 
 **This map does not answer selection questions. It answers ordering.** Which path to take, which protocol to serve over, which datastore to use — those branches live in the existing [decision trees](../../ja/reference/decision-trees/). This map only covers "where am I in the journey, and what do I read next," and hands selection itself off to the decision trees.
 
-**To enter from an industry, use a different map.** The same set of spokes arranged by industry is the [industry resource map](../../ja/reference/industry-resource-map.md); problem-first ISV and SaaS options are the [ISV / SaaS solution map](isv-solution-map.md). This map rearranges those same spokes along the stages of modernization.
+**To enter from an industry, use a different map.** The same set of spokes arranged by industry is the [industry resource map](../../ja/reference/industry-resource-map.md); problem-first ISV and SaaS options are the [ISV / SaaS solution map](isv-solution-map.md). This map rearranges those same spokes along the stages of modernization. To go from the shape of a workload straight to the note sections to read first, use the [workload entry map](workload-entry-map.md).
 
 **There is one center to the arc.** With the migration from VMware to EC2 + Amazon FSx for NetApp ONTAP as the entry, the journey proceeds through containerization, going serverless, analytics / AI, DR / resilience, and operational optimization, keeping FSx for ONTAP as the core of the data foundation throughout. It pairs with a sibling blog series; Part 1 and Part 2 are published. Part 3 and Part 4 are not yet published ([related blog posts](#related-blog-posts)).
 

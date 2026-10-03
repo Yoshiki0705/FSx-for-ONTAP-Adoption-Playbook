@@ -46,7 +46,8 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | 移行方式を選ぶ | [移行方式 決定ツリー](docs/ja/reference/decision-trees/migration-method.md) |
 | 上限値やクォータを確認する | [上限値・クォータ](docs/ja/reference/limits/) |
 | 選択肢のトレードオフを比べる | [比較マトリクス](docs/ja/reference/comparison/) |
-| 業種やワークロードから読む順序を決める | [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) |
+| 業種から読む順序を決める | [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) |
+| ワークロードから最初に読むノートを決める | [ワークロード別の入口マップ](docs/ja/reference/workload-entry-map.md) |
 | 知見を追加する | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 </details>

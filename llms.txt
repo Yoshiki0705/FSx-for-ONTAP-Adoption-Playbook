@@ -26,6 +26,7 @@ thereafter.
 - [README (Japanese)](README.md): Primary hub with the two-axis navigation.
 - [README (English)](docs/en/README.md): English hub, same structure.
 - [Navigation guide](docs/en/navigation.md): How to pick an entry point for your question.
+- [Workload entry map](docs/en/reference/workload-entry-map.md): Start from the workload you run — many small files on NAS, large parallel ingest, reads through FlexCache, cold-data tiering, SMB, NFS, S3 Access Points, analytics on SnapMirror destinations, ransomware readiness, admin-plane governance — and get the note sections to read first and the problem each prevents. Links only; most linked findings are ONTAP-general documented, with the FSx for ONTAP scope each note marks unverified. Japanese and English.
 - [Evidence policy](docs/en/evidence-policy.md): Definition of the four evidence tiers and what each requires.
 - [AGENTS.md](AGENTS.md): Conventions, prohibitions, and verification steps for coding agents.
 - [docs/agent/localization.md](docs/agent/localization.md): Path model, tiers, and switcher generation for the 8-language tree.

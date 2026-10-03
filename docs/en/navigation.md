@@ -59,6 +59,7 @@ rest gives a reading order.
 | Already running, reviewing cost | [Cost](domains/cost/) | [Optimize](playbooks/06-optimize/) |
 | **Deciding how to set up monitoring** | [Monitoring route decision tree](../ja/reference/decision-trees/observability-route.md) (日本語) | [Observability](domains/observability/) |
 | **Working out what to decide, starting from your industry** | [Industry resource map — reading order](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) | [Industry index](../ja/reference/industry-resource-map.md#業種別索引) (日本語) |
+| **Picking the notes to read first, starting from your workload** | [Workload entry map](reference/workload-entry-map.md) | [Entry points by workload](reference/workload-entry-map.md#entry-points-by-workload) |
 | **Combining a product you already run with FSx for ONTAP** | [ISV and SaaS solution map by problem](reference/isv-solution-map.md) | [Candidates that did not meet the bar](reference/isv-solution-map.md#candidates-that-did-not-meet-the-bar) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
 | Reaching the data over the S3 API or from an analytics platform | [Prerequisites for FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Writing the access point policy](domains/security-governance/notes/access-point-authorization-layers.md) |
@@ -119,6 +120,7 @@ The entry point that starts from a concern. Referenced across all lifecycle phas
 | [Comparison matrices](../ja/reference/comparison/) | You need the trade-offs against other options laid out |
 | [Industry resource map](../ja/reference/industry-resource-map.md) (日本語) | You want to enter from an industry and be told which modules to read |
 | [ISV and SaaS solution map by problem](reference/isv-solution-map.md) | You want to enter from a problem and see which products have a published combination, and which of them this repository has a design note for |
+| [Workload entry map](reference/workload-entry-map.md) | You want to enter from your workload and find the note sections to read first, and the problem each prevents |
 | [Cross-repository citation index](../ja/reference/cross-repo-index.md) (日本語) | You want to check which repository a given figure is cited from |
 | [Limits and quotas](../ja/reference/limits/) | You need to confirm a design will not hit a limit |
 | [Glossary](../ja/reference/glossary/) | You need the definition of an ONTAP or AWS term |
