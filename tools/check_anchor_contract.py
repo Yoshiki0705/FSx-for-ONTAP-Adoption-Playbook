@@ -60,11 +60,29 @@ PROTOCOL_TIERING_NOTES = (
     "docs/ja/reference/comparison/tiering-policies.md",
 )
 
+# Cited without a fragment from `S3-Burst-on-ONTAP-Files`' TR delegation ledger and the second-round
+# three-TR handoff contracts (Data protection, Security hardening, Security), as the Hub-side bodies
+# of the TRs it delegated. The contracts' reference_requirements cite each of these by path, not by
+# section, so all are path-only: a heading rename breaks nothing for that side, a file move breaks
+# it. One note is new in JA and EN (admin-plane protection); the other five are existing JA notes
+# the second-round contracts cite path-only and that were not previously registered. Named once
+# because both PATH_ONLY and tracked_files() need it.
+DP_SECURITY_NOTES = (
+    "docs/ja/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md",
+    "docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md",
+    "docs/ja/reference/comparison/data-protection-methods.md",
+    "docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md",
+    "docs/ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md",
+    "docs/ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md",
+    "docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md",
+)
+
 # Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
 # cannot see the citing side, so only the citing repository knows which form it uses.
 PATH_ONLY = frozenset(
     {
         *PROTOCOL_TIERING_NOTES,
+        *DP_SECURITY_NOTES,
         "docs/ja/reference/decision-trees/access-point-authorization.md",
         "docs/ja/navigation.md",
         "docs/en/README.md",
@@ -176,6 +194,11 @@ def tracked_files() -> list[Path]:
     The eight protocol/tiering notes arrived the same way, from the next round of five delegated TRs.
     The sibling's ledger rows and five handoff contracts cite them **without a fragment** too, so
     they are path-only in `PROTOCOL_TIERING_NOTES`.
+
+    The seven in `DP_SECURITY_NOTES` are the second-round three-TR handoff (Data protection, Security
+    hardening, Security). The contracts' reference_requirements cite each by path, so all seven are
+    path-only: one note is new in JA and EN, and five are existing JA notes the second-round
+    contracts cite but that were not registered before.
     """
     return [
         ROOT
@@ -240,6 +263,7 @@ def tracked_files() -> list[Path]:
         / "where-throughput-is-determined-and-shared.md",
         *(ROOT / rel for rel in HIGH_FILE_COUNT_NOTES),
         *(ROOT / rel for rel in PROTOCOL_TIERING_NOTES),
+        *(ROOT / rel for rel in DP_SECURITY_NOTES),
     ]
 
 

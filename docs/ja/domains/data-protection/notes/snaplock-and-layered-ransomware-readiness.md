@@ -195,6 +195,31 @@ ONTAP CLI は有効化時に確認を求めます。**文面が示す構造は�
 [Snapshot があることと復旧できることは別](snapshots-are-not-a-recovery-plan.md#snapshot-のロックによる世代数上限の無効化)
 にあります。
 
+#### 設定コマンドと容量の見積り
+
+**設定の形と、容量に効く帰結を書き出します。設定の実行はしません。** AWS のブログ
+[イミュータブルバックアップの利用でランサムウェア対策の強化](https://aws.amazon.com/jp/blogs/news/immutable-backup-written-by-netapp-2024/)
+が、FSx for ONTAP での設定例を次のように示しています（`documented`）。
+
+- ボリュームへの有効化: `volume modify -vserver <svm> -volume <vol> -snapshot-locking-enabled`（新規は `volume create` でも指定可）
+- 保持期限の付与: `volume snapshot modify-snaplock-expiry-time -vserver <svm> -volume <vol> -snapshot <snap> -expiry-time "mm/dd/yyyy HH:MM:SS"`
+
+**容量の見積りで効くのは、保持期間が保持数より優先されることです。** 同じブログは、日次取得・保持数 5・保持期間
+1 か月のポリシーでは、1 か月後に残る Snapshot が保持数 5 を超えて **30〜31 個**になると示しています。**保持期間が
+満了するまで削除されないので、容量計画は保持数ではなく保持期間で決まります。**
+
+| この節で名指しする値 | 内容 |
+|---|---|
+| 保持期間（retention） | `-expiry-time` で付与。満了まで Snapshot を削除できません。満了日時までが削除不能の期間です |
+| 最も広い影響範囲 | **ボリューム**です。未期限のロック済み Snapshot があるとそのボリュームは削除できません（上の表）。SVM・ファイルシステムへの波及は、ブログにも NetApp のドキュメントにも範囲の記載が見当たらないため **未確認** とします |
+| 早期解除の documented な経路 | **ありません。** 全ロック済み Snapshot が失効するまで無効化もボリューム削除もできません |
+
+> **ライセンスの扱いは未確認です。** Tamperproof Snapshot は FSx for ONTAP で別のライセンスなしに設定できる、と
+> このリポジトリの所有者が確認していますが、**ライセンスの扱いを書いた AWS の公式記載は見つけていません。** TR-4572 は
+> 「tamperproof にするには SnapLock Compliance ライセンスが要る」と記していますが、FSx for ONTAP での扱いと一致するかは
+> 確認できていないため、ここでは**未確認**として扱い、断定しません。姉妹リポジトリの「SnapLock Compliance ライセンスが
+> 必要」という記載も、この相違があるため根拠に使いません。
+
 > **この節は `documented` です。** 有効化すると同種の削除ロックを新たに作るため、**検証していません。**
 > 記載の出典は [参照した一次情報](#参照した一次情報) にあります。
 
@@ -243,6 +268,34 @@ graph TD
 | 検知 | 疑わしいユーザー・ストレージの振る舞いを監視 | **検知は復旧でも遮断でもありません。** ARP の応答手順は警告・Snapshot・管理者による分類で、**書き込みを拒否する段がありません**（[ベンダーのドキュメント](https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html)、2026-09-07 に全文確認）。**検知の閾値はサージ判定です** — 下記「暗号化を伴わない攻撃」を参照 |
 | 復旧 | Snapshot からの復元。高速で、データ移動を伴いません | **同一ファイルシステム内にあります。** ボリュームやファイルシステムが失われると一緒に失われます |
 | 不変性 | **SnapLock Compliance** | 保持期間中は削除できません。**その代わり自分でも消せません** |
+
+#### ARP の世代と学習期間の、版とボリューム種別による違い
+
+**ARP の学習期間は「30 日」と一言では書けません。** 学習期間はモデルの世代に紐づき、世代は ONTAP の版と
+ボリューム種別の 2 軸で決まります。**条件を付けずに「30 日」とだけ書くと、学習期間のない世代でも 30 日待つ
+設計になります。**
+
+| モデル | ONTAP の版とボリューム種別 | 学習期間 |
+|---|---|---|
+| 旧世代 ARP | FlexVol は 9.10.1〜9.15.1、FlexGroup は 9.13.1〜9.17.1 | **NAS FlexVol で 30 日。** 9.13.1 以降はアクティブへ自動切替 |
+| ARP/AI | FlexVol は 9.16.1 以降、FlexGroup は 9.18.1 以降 | **なし。有効化した直後から能動的に保護します** |
+| ARP/AI + SAN | 9.17.1 以降 | 2〜4 週間の評価期間 |
+
+**版だけでは決まりません。** たとえば 9.16.1 と 9.17.1 の FlexGroup は旧世代 ARP に当たり、学習期間が必要です。
+世代の区別、各値の出典（NetApp の ARP ドキュメントを全文確認した記録）、`dry-run` を要求した ARP/AI が無言で
+`enabled` になる罠は、姉妹リポジトリの
+[ARP の設定](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/arp-configuration.md)
+に `documented` としてまとまっています（再掲せずリンクで引きます）。TR-4572 は版・ボリューム種別を分けずに
+「ほとんどの環境で 7 日」と一般的に記しているので、設計には上の 2 軸の表のほうを使ってください。
+
+> **この節の区分**: `documented`。学習期間の値と世代の境界は NetApp の ARP ドキュメントと上記の姉妹リポジトリの
+> 記録に基づきます。**本リポジトリでの実測ではありません。** 稼働中のモデルは `security anti-ransomware` の
+> `version` で確認します。
+
+> **Cache 側に関する補足**: この構成で FlexCache を使う場合、**ARP は Cache 側では非対応で、検知は Origin 側
+> だけです。SnapLock は Origin / Cache のどちらにも置けません。** 対応可否の一覧は Spoke の
+> [サポート状況 — 収集層と配布層](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/support-matrix.md)
+> にあり、ここでは再掲しません。Cache 側で FPolicy や監査が発火するかも Spoke の行です。
 
 #### 暗号化を伴わない攻撃
 
@@ -391,6 +444,34 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 
 ---
 
+### 論理エアギャップ（cyber vault）という不変性層の置き方
+
+**不変性層は、同じファイルシステムの中に置くか、論理的に隔離した先に置くかで役割が変わります。** NetApp の
+技術レポートは、SnapLock Compliance を使った**論理エアギャップ**（logical air gap / cyber vault）を参照
+アーキテクチャとして示しています（`documented`、ONTAP 技術レポート Security、docs.netapp.com から 2026-09-30
+生成）。要点は次のとおりです。
+
+- **物理エアギャップ（テープ・オフライン媒体）はリストア時間を押し上げます。** 接続を一時的に開く運用も、開いて
+  いる間に攻撃を受ける余地があります。論理エアギャップは、バックアップをオンラインに保ったまま同等の保護原則を
+  得る代替として位置づけられています
+- 一次側の Snapshot を SnapVault で**別の SnapLock ボリュームへ Vault し、WORM にコミットして削除を防ぎます。**
+  ランサムウェア対策の文脈では、保持期間中は ONTAP 管理者や NetApp サポートでも削除できない SnapLock Compliance が
+  推奨されています
+
+**WORM の条件はこの層でも同じです。** 保持期間（retention）と、最も広い影響範囲を同じ節に書きます。
+
+| この層で名指しする値 | 内容 |
+|---|---|
+| 保持期間 | Vault 先の SnapLock ボリュームの保持期間。満了まで WORM の Snapshot を削除できません |
+| 最も広い影響範囲 | Vault 先が **SnapLock ボリューム**であること自体が、[監査ログボリュームによるファイルシステム全体の 6 か月固定](#監査ログボリュームによるファイルシステム全体の-6-か月固定)で述べた削除不能範囲（ボリューム・SVM・ファイルシステム）を Vault 先にも持ち込みます。Vault 先固有の波及範囲は、引用した技術レポートに記載が見当たらないため **未確認** です |
+| 早期解除の documented な経路 | SnapLock Compliance 側は保持期間満了まで削除できません。この不可逆性の全体像は本ノートの既出の節（上記）を参照してください。ここで再び断定しません |
+
+> **この節は `documented` です。** 論理エアギャップの概念は上記の技術レポートに基づきます。**構成を有効化・検証した
+> ものではありません。** Vault 先の影響範囲（削除不能がどこまで及ぶか）で技術レポートに記載がない部分は **未確認**
+> として扱います。SnapLock を無条件に作る IaC は実装例として挙げません。
+
+---
+
 ### よくある誤解
 
 | 誤解 | 実際 |
@@ -430,6 +511,8 @@ SnapLock ボリュームも容量プールへ階層化できます。**種別に
 | Tamperproof Snapshot が SnapLock 技術を用い、非 SnapLock ボリュームでも Snapshot の削除を防ぐこと | [NetApp: SnapLock and tamperproof snapshots for ransomware protection](https://docs.netapp.com/us-en/ontap-technical-reports/ransomware-solutions/ransomware-snaplock-tamperproof-snapshots.html) |
 | **監査ログボリュームの保持期間が満了するまで、ボリューム・SVM・ファイルシステムのいずれも削除できないこと**（Enterprise モードでも同じ）、Enterprise ボリュームの削除に `fsx:BypassSnapLockEnterpriseRetention` 権限が必要であること | [AWS: Deleting SnapLock volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/snaplock-delete-volume.html) |
 | FPolicy の Native / External モードによる拡張子ベースの保護、検知の位置づけ、復旧手段としての Snapshot、Snapshot が同一ファイルシステム内にあること | [AWS Storage Blog: Protecting data against ransomware with FSx for ONTAP](https://aws.amazon.com/blogs/storage/protecting-data-against-ransomware-with-amazon-fsx-for-netapp-ontap/) |
+| ARP が 9.10.1 以降であること、9.15.1 以前が学習モードを持ちほとんどの環境で約 7 日かかること、ARP/AI が学習モードを持たず有効化直後から能動であること、論理エアギャップ（cyber vault）が SnapLock Compliance による参照アーキテクチャであること、一次 Snapshot を SnapVault で SnapLock ボリュームへ Vault すること | [NetApp: ONTAP 技術レポート — Security](https://docs.netapp.com/us-en/ontap-technical-reports/security.html)（2026-09-30 生成） |
+| Tamperproof Snapshot の設定コマンド（`volume modify -snapshot-locking-enabled`、`volume snapshot modify-snaplock-expiry-time`）と、保持期間が保持数より優先され日次・保持数 5・保持期間 1 か月で 30〜31 個残ること | [AWS ブログ: イミュータブルバックアップの利用でランサムウェア対策の強化](https://aws.amazon.com/jp/blogs/news/immutable-backup-written-by-netapp-2024/) |
 
 ---
 

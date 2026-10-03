@@ -35,6 +35,7 @@ the table of contents; this is the entry point.
 | 10 | What happens to availability when auditing is enabled | [An exhausted audit destination stops access, but not at the moment it fills](notes/audit-log-space-and-client-access.md) |
 | 11 | How far antivirus can be applied, and what is settled before the product | [The antivirus choice is settled before the vendor](notes/vscan-scope-is-bounded-before-the-vendor.md) |
 | 12 | In what order to decide how far antivirus scanning applies | [How far antivirus scanning applies](../../reference/decision-trees/vscan-antivirus-scope.md) |
+| 13 | Which controls protect the admin plane, and how far they are configurable on FSx for ONTAP | [Admin-plane protection is not one setting but a combination of several controls](notes/admin-plane-protection-depends-on-several-controls.md) |
 
 ---
 
