@@ -5,6 +5,7 @@
 # top of the page. Renaming is allowed; doing it without noticing is what this file prevents.
 #
 # Format: one "<path>#<anchor>" per line, sorted. A path with no anchors records the path alone.
+docs/agent/writing-quality.md
 docs/en/README.md
 docs/en/domains/performance/notes/directory-size-is-capped-separately-from-file-count.md
 docs/en/domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md
