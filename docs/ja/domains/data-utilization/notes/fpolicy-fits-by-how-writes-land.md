@@ -51,6 +51,10 @@ advanced
 > **保留していた 1 点は解消しました。** KeepAlive の間隔は引用先の 2 文書が桁の違う値を持っていた間、
 > 桁でも書いていませんでした。訂正が入り、**旧値は撤回として明示されています。**
 
+#### S3 Access Point 経由の書き込みが監査ログに残す識別情報
+
+**FPolicy が不発でも、ONTAP ネイティブ監査には記録が残ります。** ただし残る識別情報は呼び出し元ではありません。S3 Access Point 経由（`Source=HTTP`）の監査レコードでは、名前の欄である `SubjectUserName` と `SubjectDomainName` が `Not Present` になり、`SubjectUserSid` はアクセスポイントに固定した identity にマップされた SID であって呼び出し元の IAM プリンシパルではありません（引用先の [記録される識別情報の違い](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/verification-results-fpolicy-s3ap-and-session.md) に測定表があります。再掲せずリンクで引きます）。**つまり監査ログは操作されたファイルと操作種別までで、「誰が」「どこから」には辿れません。**
+
 ---
 
 ### NFS / SMB 経由の書き込みに対する動作

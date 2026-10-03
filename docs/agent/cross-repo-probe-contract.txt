@@ -84,6 +84,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	re
 S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 作成自体は 9.7 以降で可
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 自体は階層化できない
+S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	どちらの側でも使えない
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	の行を、S3 Access Point の根拠に使わないこと。
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	3 回一致しないため上限値ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
