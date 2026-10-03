@@ -241,6 +241,9 @@ lang: ja
 | `docs/ja/domains/data-utilization/notes/s3-access-point-constraints.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/s3ap-object-size-limits-verification.md` | `はいずれも二進表記でした` | `retraction` | S3 Access Points のアップロード上限が二進表記（5 GiB / 50 GiB）であること |
 | `docs/ja/reference/comparison/tiering-policies.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/support-matrix.md` | `Cache 自体は階層化できない` | `retraction` | Cache ボリューム自体が階層化できないこと。**下の行と別の主張で、1 文に縮めない** |
 | `docs/ja/reference/comparison/tiering-policies.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/support-matrix.md` | `Cache 作成自体は 9.7 以降で可` | `retraction` | FabricPool 上の Origin に対して Cache を作れること（9.7 以降）。**上の行と別の主張**です |
+| `docs/ja/reference/comparison/data-protection-methods.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/ja/s3ap-flexcache-snapmirror-considerations.md` | `稼働中の SnapMirror 宛先は、break もクローンもなしに S3 AP 経由で読める。` | `retraction` | 稼働中の SnapMirror 宛先が break もクローンもなしに S3 Access Points 経由で読めること。**「読むには break が要る」という古い前提を否定する主張**で、これが消えると宛先の読み取り提供を break なしで設計する根拠が失われます |
+| `docs/ja/reference/comparison/data-protection-methods.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification-status.md` | `3 回一致しないため上限値ではない` | `retraction` | ONTAP で作ったボリュームが AWS の API に現れるまでの時間に既知の上限が無いこと。**特定の秒数を設計に見込まない根拠**で、3 回の観測が一致しないという所見そのものを指します |
+| `docs/ja/reference/comparison/data-protection-methods.md` | `VMware-Migration-EC2-ONTAP` | `docs/ja/dr-snapmirror-runbook.md` | `destination volume を break して RW 化` | `retraction` | break と昇格が DR フェイルオーバー（本番サービスの引き継ぎ）の手順であること。**この手順書を「読むのに break が要る」の根拠として引かないための位置づけ**です |
 <!-- cross-repo-table:end -->
 
 ---

@@ -106,6 +106,66 @@ lang: ja
 
 ---
 
+## SnapMirror のポリシー種別と保持・ラグ・扇形展開の上限
+
+**SnapMirror のポリシー種別は、宛先に何を転送し、宛先側でどれだけ保持するかを決めます。** ここは AWS ドキュメントではなく ONTAP 一般の挙動なので、FSx for ONTAP で同じ値が通るかは、公式記載か実測がない限り未確認として扱ってください。FSx for ONTAP は volume-level の非同期レプリケーションのみに対応しており（この範囲は AWS 記載。表の [AWS][R] 参照）、SVM-DR や同期レプリケーションの可否はこの比較の対象外です。
+
+| ポリシー種別 | 宛先に残るもの | 向いている状況 | トレードオフ |
+|---|---|---|---|
+| MirrorAllSnapshots（async-mirror 系） | ソースのアクティブファイルシステムと、ソース側 Snapshot を全転送 | ソースと同じ Snapshot 構成をそのまま宛先に持ちたい | 宛先の保持はソースの Snapshot ポリシーに従属し、**宛先独自の長期保持を持ちません** |
+| Vault（vault 系・旧 SnapVault） | ラベル付き Snapshot を宛先の保持ルールで残す | 宛先で長期の世代保持（アーカイブ）をしたい | **アクティブファイルシステムの即時フェイルオーバー用途ではありません。** 復旧には宛先 Snapshot からのリストアが要ります |
+| MirrorAndVault（mirror-vault 系） | アクティブファイルシステムの複製と、宛先独自の長期保持を 1 関係に同居 | DR と長期保持を 1 本の関係でまとめたい | 保持ルールの設計が増え、宛先容量もその保持ぶん要ります |
+
+**システム定義のポリシー名**（`MirrorAllSnapshots` / `MirrorAndVault` / `MirrorLatest` ほか）は ONTAP の [snapmirror policy create](https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-create.html)（2026-09-20 に確認）に、種別ごとの意味（`async-mirror` / `vault` / `mirror-vault`）は NetApp KB [What are the SnapMirror policy types](https://kb.netapp.com/onprem/ontap/dp/SnapMirror/What_are_the_SnapMirror_policy_types_and_what_do_they_mean)（2026-09-20 に確認）に記載があります。カスタム保持ルールの定義は ONTAP の [Create a custom SnapMirror replication policy](https://docs.netapp.com/us-en/ontap/data-protection/create-custom-replication-policy-concept.html) にあります。この整理の出典 TR は **TR-4015（SnapMirror Asynchronous の構成ガイド）** です（NetApp ONTAP Technical Reports の「Data protection and disaster recovery」索引、2026-09-30 版の SnapMirror › SnapMirror Asynchronous 節に収録）。
+
+### 保持の選び方
+
+- **宛先で独自に世代を長く残す必要があるか** — 要るなら Vault か MirrorAndVault。宛先の保持はソース Snapshot ポリシーとは別に、ラベル付き保持ルールで決めます。
+- **即時にフェイルオーバーできる最新のアクティブファイルシステムが要るか** — 要るなら MirrorAllSnapshots か MirrorAndVault。Vault 単独はアーカイブ寄りで、フェイルオーバー用途には別の宛先 Snapshot リストアが挟まります。
+- **両方要るか** — MirrorAndVault を 1 本で使うか、用途別に関係を分けます。どちらも保持ルールと宛先容量の設計が前提です。
+
+### 転送スケジュールとラグの監視
+
+SnapMirror Async は転送スケジュールで更新間隔を決め、更新と更新の間はラグ（最終転送からの経過）が RPO に直結します。FSx for ONTAP では SnapMirror のラグ・転送時間・健全性を Amazon CloudWatch のメトリクス（`SnapMirrorLagTime` / `SnapMirrorTransferDuration` / `SnapMirrorHealthy`）で監視できます（この監視経路の実測は [Lakehouse 連携の設計考慮](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/ja/s3ap-flexcache-snapmirror-considerations.md) にあります。SnapMirror Async の最短スケジュールが 5 分であることも同記録にあります）。
+
+### カスケードと扇形展開（fan-out）の上限
+
+- **扇形展開（fan-out）** は 1 本のソース volume から複数の宛先へ、**カスケード**は宛先からさらに三次先へ保護を広げる構成です（[ONTAP data protection fan-out and cascade deployments](https://docs.netapp.com/us-en/ontap/data-protection/supported-deployment-config-concept.html)、2026-09-20 に確認）。
+- 1 本のソース volume から扇形展開できる宛先 volume 数の上限は、**アレイのモデルによって 8 または 16** です（[ONTAP SnapMirror limitations](https://docs.netapp.com/us-en/ontap/data-protection/limitations-mirror-relationships-concept.html)、2026-09-20 に確認）。**これは ONTAP 一般の上限で、FSx for ONTAP で同じ値が適用されるかは未確認です**（AWS の該当記載を確認できていません）。
+
+> **区分** — この節は ONTAP 一般の `documented` です。TR-4015 と上記 docs.netapp.com の各ページに基づきます。**FSx for ONTAP で同じ挙動・同じ上限になるかは、AWS の公式記載または実測がない限り未確認**として扱ってください。
+
+### break なしで読める稼働中の宛先
+
+**稼働中の SnapMirror 宛先の volume は、関係を break することも、クローンを作ることもなく、FSx for ONTAP S3 Access Points 経由で読めます**（[Lakehouse 連携の 2026-09-13 実測](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/ja/s3ap-flexcache-snapmirror-considerations.md)）。ONTAP 側で宛先 DP volume を mount して S3 Access Points をアタッチすると、読み取りは通り、書き込みは拒否され、各転送の新規データが同一アクセスポイント経由で見えます。書き込みが要る場合は宛先 Snapshot のクローンを使います。**「宛先を読むには break が要る」という古い前提では設計しないでください。**
+
+break と昇格が要るのは、宛先で本番サービスを引き継ぐ DR フェイルオーバーのときです。その手順は [VMware → EC2/FSx for ONTAP の DR runbook](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/dr-snapmirror-runbook.md) にあります（この runbook は break/昇格の手順書であって、「読むのに break が要る」という意味ではありません）。
+
+> **DR 手順の順序に関する補足**: 読み取り提供（mount またはクローン）とフェイルオーバー（break → 昇格）は別の要件です。読むためだけに break すると、宛先がソースから切り離され、以後の転送が止まります。
+
+### ONTAP で作ったボリュームが AWS の API に現れるまでの時間
+
+ONTAP REST API でボリュームを作ると、それが Amazon FSx の API（`describe-volumes` など）に現れるまでに時間がかかり、**この時間の上限は分かっていません。** 姉妹プロジェクトの実測では 20 秒間隔・ギャップ無しの観測で数百秒から千数百秒を要し、別の回では千数百秒経ってもまだ未出現でした。**3 回の観測が一致しないため上限値として扱えません**（[S3-Burst の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)）。AWS の記載は「数分」ですが、**特定の秒数を見込んだ設計にはせず、こちら側で制御できない反映待ちとしてポーリングで扱ってください。**
+
+---
+
+## リストアテスト
+
+**取得の成功とリストアの可否は別物です。** バックアップのログが成功していても、業務に耐える水準で復旧できるかは、実際に戻してみるまで分かりません。FSx for ONTAP は Snapshot のポインタ管理により、データブロックを動かさずに FlexClone で複製できるため、本番に影響を与えずにリストアテストを実施できます（[AWS ブログ「そのデータ復旧できますか？」](https://aws.amazon.com/jp/blogs/news/feasibility-of-data-recovery-written-by-netapp-2024/)、サイバーレジリエンスシリーズ第 3 回。内容は引用の都合で要約しています）。
+
+ランサムウェア被害を想定したリストアシナリオの要点は次のとおりです。
+
+| 手順 | 内容 | 理由 |
+|---|---|---|
+| 1 | 被害前の Snapshot を特定する | 被害後の Snapshot から戻すと暗号化済みデータを復旧してしまう |
+| 2 | その Snapshot から FlexClone で**別の場所に**復旧する | 被害を受けたボリュームは攻撃の調査対象なので、**上書きリストアはしない** |
+| 3 | 恒久的に使うなら、split 前に必要容量を確認してから split する | クローンは親 Snapshot を共有するため、split で独立させると親ぶんの実容量が要る。見積りは ONTAP の `volume clone show -estimate` で取る |
+| 4 | 一時的な確認だけなら、クローンを offline にして delete する | 残置するとクローンが親 Snapshot を保持し続け、親側の削除や保持を縛る |
+
+> **これは手順の記載であって、実行ではありません。** 本リポジトリでこのリストアテストを実行してはいません。手順 3・4 の `volume clone show -estimate` / split / offline / delete は ONTAP 一般の操作で、FSx for ONTAP での所要時間や容量挙動は自環境での確認が要ります。
+
+---
+
 ## 選び方
 
 **上から順に確認してください。** 答えが決まった時点で必要な方式が決まります。
