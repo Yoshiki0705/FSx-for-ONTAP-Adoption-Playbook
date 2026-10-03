@@ -46,7 +46,8 @@ La orientación inicial Tier 1 está disponible en ocho idiomas. Los hubs de mó
 | Elegir un método de migración | [Árbol de decisión de migración](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | Consultar límites y cuotas | [Límites y cuotas](../ja/reference/limits/) |
 | Comparar compensaciones | [Matrices de comparación](../ja/reference/comparison/) (日本語) |
-| Partir de un sector o carga | [Mapa de recursos por sector](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Partir de un sector | [Mapa de recursos por sector](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Partir de una carga de trabajo | [Mapa de entrada por carga de trabajo](../en/reference/workload-entry-map.md) (English) |
 | Contribuir conocimiento | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

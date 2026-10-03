@@ -46,7 +46,8 @@ Tier 1 首次造訪指南提供 8 種語言。Tier 2 模組樞紐提供日語與
 | 選擇遷移方式 | [遷移方式決策樹](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 查看上限值與配額 | [上限值與配額](../ja/reference/limits/) |
 | 比較選項的取捨 | [比較矩陣](../ja/reference/comparison/) (日本語) |
-| 從產業或工作負載開始 | [產業資源地圖](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 從產業開始 | [產業資源地圖](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 從工作負載開始 | [依工作負載的入口地圖](../en/reference/workload-entry-map.md) (English) |
 | 貢獻知識 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

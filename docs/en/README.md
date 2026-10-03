@@ -46,7 +46,8 @@ Tier 1 first-touch guidance is available in eight languages. Tier 2 module hubs 
 | Choose a migration method | [Migration Method Decision Tree](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | Check limits and quotas | [Limits and Quotas](../ja/reference/limits/) |
 | Compare option trade-offs | [Comparison Matrices](../ja/reference/comparison/) (日本語) |
-| Start from an industry or workload | [Industry resource map](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Start from an industry | [Industry resource map](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Start from a workload | [Workload entry map](reference/workload-entry-map.md) |
 | Contribute knowledge | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

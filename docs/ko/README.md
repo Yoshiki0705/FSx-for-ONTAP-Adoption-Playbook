@@ -46,7 +46,8 @@ Tier 1 첫 안내는 8개 언어로, Tier 2 모듈 허브는 일본어와 Englis
 | 마이그레이션 방식 선택 | [마이그레이션 방식 결정 트리](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | 상한값과 쿼터 확인 | [상한값·쿼터](../ja/reference/limits/) |
 | 선택지의 트레이드오프 비교 | [비교 매트릭스](../ja/reference/comparison/) (日本語) |
-| 업종이나 워크로드에서 시작 | [업종별 리소스 맵](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 업종에서 시작 | [업종별 리소스 맵](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| 워크로드에서 시작 | [워크로드별 진입 맵](../en/reference/workload-entry-map.md) (English) |
 | 지식 기여 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>

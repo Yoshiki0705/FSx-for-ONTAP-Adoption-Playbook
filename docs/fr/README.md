@@ -46,7 +46,8 @@ Les guides de premier accès Tier 1 sont disponibles en huit langues. Les hubs d
 | Choisir une méthode de migration | [Arbre de décision de migration](../ja/reference/decision-trees/migration-method.md) (日本語) |
 | Vérifier limites et quotas | [Limites et quotas](../ja/reference/limits/) |
 | Comparer les compromis | [Matrices de comparaison](../ja/reference/comparison/) (日本語) |
-| Partir d'un secteur ou d'une charge | [Carte des ressources par secteur](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Partir d'un secteur | [Carte des ressources par secteur](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
+| Partir d'une charge de travail | [Carte d'entrée par charge de travail](../en/reference/workload-entry-map.md) (English) |
 | Contribuer | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>
