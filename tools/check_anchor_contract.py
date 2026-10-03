@@ -64,9 +64,11 @@ PROTOCOL_TIERING_NOTES = (
 # three-TR handoff contracts (Data protection, Security hardening, Security), as the Hub-side bodies
 # of the TRs it delegated. The contracts' reference_requirements cite each of these by path, not by
 # section, so all are path-only: a heading rename breaks nothing for that side, a file move breaks
-# it. One note is new in JA and EN (admin-plane protection); the other five are existing JA notes
-# the second-round contracts cite path-only and that were not previously registered. Named once
-# because both PATH_ONLY and tracked_files() need it.
+# it. One note is new in JA and EN (admin-plane protection); the others are existing notes the
+# second-round contracts cite path-only and that were not previously registered. The Vscan note is
+# registered in both JA and EN: a sibling cites the scope framing from an English-side integration
+# page, so leaving EN out would put that citation outside the contract. Named once because both
+# PATH_ONLY and tracked_files() need it.
 DP_SECURITY_NOTES = (
     "docs/ja/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md",
     "docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md",
@@ -74,6 +76,7 @@ DP_SECURITY_NOTES = (
     "docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md",
     "docs/ja/domains/security-governance/notes/irreversible-operations-need-separate-approval.md",
     "docs/ja/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md",
+    "docs/en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md",
     "docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md",
 )
 
