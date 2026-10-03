@@ -37,6 +37,7 @@
 | 12 | S3 Access Point 経由のリクエストが落ちた段をどう逆引きするか | [S3 Access Point 経由のリクエストはどう判定されるか](../../reference/decision-trees/access-point-authorization.md) |
 | 13 | ウイルス対策をどの範囲に適用できるか。製品を選ぶ前に何が決まるか | [ウイルス対策の選択はベンダーより前に決まる](notes/vscan-scope-is-bounded-before-the-vendor.md) |
 | 14 | ウイルス対策の適用範囲をどの順で決めるか | [ウイルス対策の適用範囲をどこまでにするか](../../reference/decision-trees/vscan-antivirus-scope.md) |
+| 15 | 管理面はどの制御で守られ、FSx for ONTAP でどこまで設定できるか | [管理面の保護は 1 つの設定ではなく複数の制御の組み合わせで決まる](notes/admin-plane-protection-depends-on-several-controls.md) |
 
 ---
 

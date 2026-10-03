@@ -24,6 +24,7 @@
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	require metadata operations that fail on S3 AP
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
@@ -88,6 +89,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	3 回一致し
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	これは既定値での上限で、ファイルシステムの上限ではない
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	シークレットの値と実際のパスワードが一致しなかった
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	上限が 4 である理由は未確認
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
