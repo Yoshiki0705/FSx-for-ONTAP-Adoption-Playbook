@@ -559,6 +559,9 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`docs/agent/writing-quality.md` is now a registered external-anchor citation target (path-only).**
+  S3-Burst-on-ONTAP-Files links the writing-quality criteria from its AGENTS.md as the shared source its documents follow. The citation is to the file, not a section, so the path is pinned and heading renames inside it are unaffected. Registered here first because the sibling's gate refuses a citation into a document this repository does not list as tracked.
+
 - **New note (JA and EN) on ONTAP admin-plane hardening, from the security hardening TR (TR-4569).**
   `domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md` treats admin-plane protection as a set of independent controls — MAV, SSH key / MFA / login banner / account lockout, certificates (CA-signed, OCSP) and FIPS / TLS, LDAP signing and sealing, admin-action auditing, LIF roles and ports, and NTP — each `documented` as ONTAP-general and split per item into documented versus unverified for FSx for ONTAP's delegated `fsxadmin` admin. The MAV section states the teardown impact in place: because MAV gates volume and snapshot deletes behind designated approvers, a verification environment cannot be deleted unless the approvers convene. Sibling MAV configuration material is linked as documented, not verified, and the `fsxadmin` password generation finding is linked rather than restated. Data-path encryption (NFS over TLS, SMB signing) is cross-linked, not repeated. Linked from both security-governance module READMEs.
 

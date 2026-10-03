@@ -93,6 +93,12 @@ PATH_ONLY = frozenset(
         "docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md",
         "docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md",
         *HIGH_FILE_COUNT_NOTES,
+        # Cited without a fragment from `S3-Burst-on-ONTAP-Files`' AGENTS.md, which links to this
+        # repository's writing-quality criteria as the shared source the spoke follows. The link is
+        # to the file, not a section, so a heading rename inside it breaks nothing for that side and
+        # a file move breaks the link. The spoke's gate refuses an unlisted citation target, so the
+        # path is registered here before the citation is written there.
+        "docs/agent/writing-quality.md",
     }
 )
 
@@ -226,6 +232,7 @@ def tracked_files() -> list[Path]:
         ROOT / "docs" / "ja" / "reference" / "industry-resource-map.md",
         ROOT / "docs" / "ja" / "navigation.md",
         ROOT / "docs" / "en" / "README.md",
+        ROOT / "docs" / "agent" / "writing-quality.md",
         ROOT
         / "docs"
         / "ja"
