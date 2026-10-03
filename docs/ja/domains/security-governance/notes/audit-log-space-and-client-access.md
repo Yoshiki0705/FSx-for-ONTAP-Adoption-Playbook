@@ -296,7 +296,7 @@ Error: Field "-retention-duration" cannot be used with field "-rotate-limit".
 
 **同時に指定できません。** 期間だけを指定すると本数に上限が無く、**設計時に容量の上界を押さえられません。** 逆に本数だけを指定すると、アクセス量が増えた期間は保持期間が短くなります。
 
-**この排他は CLI の引数解析ではなく REST でも起きます。** `POST /api/protocols/audit` と `PATCH /api/protocols/audit` のいずれも、`retention.count` と `retention.duration` を同時に指定すると **400 Bad Request** になります（`verified`、2026-09-02）。**CLI 固有の制約ではないので、REST に切り替えても回避できません。**NetApp の CLI リファレンスでも、この 2 つは波括弧と縦棒で囲まれた択一のオプションとして記載されています。
+**この排他は CLI の引数解析ではなく REST でも起きます。** `POST /api/protocols/audit` と `PATCH /api/protocols/audit` のいずれも、`retention.count` と `retention.duration` を同時に指定すると **400 Bad Request** になります（`verified`、2026-09-02）。**CLI 固有の制約ではないので、REST に切り替えても回避できません**。NetApp の CLI リファレンスでも、この 2 つは波括弧と縦棒で囲まれた択一のオプションとして記載されています。
 
 > **設定変更に関する注意**: **`retention.duration` を設定した状態から `retention.count` だけを指定すると、
 > `retention.duration` は `PT0S` に戻ります**（`verified`、2026-09-02）。

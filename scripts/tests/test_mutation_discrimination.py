@@ -213,11 +213,33 @@ MUTATIONS: list[dict] = [
         "edits": [
             (
                 "tools/audit_public_output.py",
-                'REPORT_ONLY_CATEGORIES = frozenset({"ai-style"})',
-                'REPORT_ONLY_CATEGORIES = frozenset({"ai-style", "sales-vocabulary"})',
+                "REPORT_ONLY_CATEGORIES: frozenset[str] = frozenset()",
+                'REPORT_ONLY_CATEGORIES: frozenset[str] = frozenset({"sales-vocabulary"})',
             ),
         ],
         "must_fail": ["test_default_audit_rejects_sales_vocabulary"],
+        "must_pass": ["test_report_succeeds_while_check_mode_fails"],
+    },
+    {
+        # ai-style was gated by emptying REPORT_ONLY_CATEGORIES once the Hub's D1 / D2 / D5 / D14
+        # findings were fixed. Putting it back is the exact rollback that would re-open the silent
+        # gap: a broken `**「x」**で` would stop failing the default audit while the explicit report
+        # still shows it. Only the default-gate fixture can tell the narrowed required scope apart.
+        "name": "ai-style returned to the report-only set",
+        "why": (
+            "Re-staging ai-style as report-only is a plausible future edit, and it makes the four "
+            "fail-tier rules informational again. The scoped report is unchanged by the mutation, "
+            "so only the default-gate fixture distinguishes the narrowed required scope."
+        ),
+        "module": "scripts.tests.test_editorial_report_boundaries",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "REPORT_ONLY_CATEGORIES: frozenset[str] = frozenset()",
+                'REPORT_ONLY_CATEGORIES: frozenset[str] = frozenset({"ai-style"})',
+            ),
+        ],
+        "must_fail": ["test_default_audit_rejects_ai_style"],
         "must_pass": ["test_report_succeeds_while_check_mode_fails"],
     },
     {

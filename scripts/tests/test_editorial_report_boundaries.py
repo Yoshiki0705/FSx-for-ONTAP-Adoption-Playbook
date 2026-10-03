@@ -154,6 +154,26 @@ class VocabularySurface(TemporaryTree):
         self.assertEqual(result.returncode, 1)
         self.assertIn("note.md:1: [sales-vocabulary]", result.stderr)
 
+    def test_default_audit_rejects_ai_style(self) -> None:
+        # A broken `**「x」**で` renders with the asterisks visible: the opener and closer both sit
+        # against the bracket, so CommonMark leaves them literal. D1 is fail-tier, so the default
+        # audit must reject it now that ai-style is no longer in REPORT_ONLY_CATEGORIES.
+        self.write("docs/ja/note.md", "本文は**「壊れた強調」**で終わります。\n")
+        result = self.run_tool("audit_public_output.py")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("[ai-style]", result.stderr)
+        self.assertIn("D1", result.stderr)
+
+    def test_default_audit_reports_ai_style_warn_without_failing(self) -> None:
+        # An em dash (D18) is ai-style-warn: counted, never gated. On a tree with no fail-tier
+        # finding the default audit stays green and the warning is reflected in the summary count
+        # only — the per-line listing is reached through `make ai-style-report`.
+        self.write("docs/ja/note.md", "# 見出し\n\n本文 — 補足。\n")
+        result = self.run_tool("audit_public_output.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("1 warning", result.stdout)
+        self.assertNotIn("[ai-style]", result.stderr)
+
     def test_full_clean_tree_passes_default_audit(self) -> None:
         result = subprocess.run(
             [sys.executable, str(ROOT / "tools" / "audit_public_output.py")],

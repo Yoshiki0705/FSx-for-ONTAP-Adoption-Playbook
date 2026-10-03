@@ -15,7 +15,8 @@ Eight independent concerns, all of which have historically been caught late or n
   7. sales-vocabulary - promotional adjectives and unsupported outcomes are rejected from public
                    prose unless a verbatim external title carries a line-level allowance.
   8. ai-style / ai-style-warn - writing-style signals from tools/ai_style_rules.py, Markdown only.
-                   Counted, not gated: see REPORT_ONLY_CATEGORIES and WARNING_CATEGORIES.
+                   ai-style (D1 / D2 / D5 / D14) is gated; ai-style-warn is counted, not gated.
+                   See REPORT_ONLY_CATEGORIES and WARNING_CATEGORIES.
 
 Two escape hatches, because there are two genuinely different reasons for a false positive.
 
@@ -188,10 +189,10 @@ NEUTRALITY_RULES: list[tuple[re.Pattern[str], str]] = [
 # stage a category without changing the selection mechanism; any member must be temporary and is
 # mutation-tested against the default gate.
 #
-# STAGED: the pull request that fixes the Hub's existing D1 / D2 / D5 / D14 findings removes
-# "ai-style" from this set, which makes those four rules fail the default audit. Until then the
-# default audit only prints their count.
-REPORT_ONLY_CATEGORIES = frozenset({"ai-style"})
+# ai-style was staged here while the Hub's existing D1 / D2 / D5 / D14 findings were fixed. Those
+# findings are now zero, so the category is gated: a fail-tier D1 / D2 / D5 / D14 finding fails the
+# default audit. The warning-level rules stay in WARNING_CATEGORIES and are only counted.
+REPORT_ONLY_CATEGORIES: frozenset[str] = frozenset()
 # Never gating, even when named in --only: the warning-level rules are symptoms counted for review,
 # and a false positive there must not be able to stop a commit.
 WARNING_CATEGORIES = frozenset({"ai-style-warn"})
@@ -923,8 +924,8 @@ def main() -> int:
             print(f"  {warning}")
     if not only:
         print(
-            f"audit: report-only ai-style findings: {style_counts['ai-style']} staged "
-            f"fail-tier, {style_counts['ai-style-warn']} warning "
+            f"audit: ai-style findings: {style_counts['ai-style']} fail-tier (gated), "
+            f"{style_counts['ai-style-warn']} warning "
             "(details: make ai-style-report)"
         )
 

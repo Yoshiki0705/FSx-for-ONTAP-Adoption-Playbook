@@ -184,7 +184,9 @@ class AuditStagesTheCategory(unittest.TestCase):
             timeout=180,
         )
 
-    def test_default_audit_counts_without_failing(self) -> None:
+    def test_default_audit_gates_on_fail_tier_and_counts_warnings(self) -> None:
+        # ai-style is no longer report-only, so the four fail-tier rules (here D1, D2, D5, D14)
+        # fail the default audit. The one ai-style-warn finding (D18) stays a count in the summary.
         self.write(
             "note.md",
             BROKEN
@@ -192,14 +194,15 @@ class AuditStagesTheCategory(unittest.TestCase):
             "転送 — 差分のみ\n",
         )
         result = self.run_audit()
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("[ai-style] D1", result.stderr)
         self.assertIn(
-            "audit: report-only ai-style findings: 5 staged fail-tier, 1 warning",
-            result.stdout,
+            "audit: ai-style findings: 5 fail-tier (gated), 1 warning",
+            result.stderr + result.stdout,
         )
 
     def test_naming_the_fail_tier_gates_on_it(self) -> None:
-        """What removing it from REPORT_ONLY_CATEGORIES will do to the default run."""
+        """A scoped --only ai-style run gates on a fail-tier finding, as the default run now does."""
         self.write("note.md", BROKEN)
         result = self.run_audit("--only", "ai-style")
         self.assertEqual(result.returncode, 1)
@@ -235,7 +238,10 @@ class AuditStagesTheCategory(unittest.TestCase):
         )
 
     def test_the_staging_constants(self) -> None:
-        self.assertIn("ai-style", audit.REPORT_ONLY_CATEGORIES)
+        # ai-style is gated now that the Hub corpus is clean: it is no longer report-only, so a
+        # fail-tier finding fails the default audit. ai-style-warn stays counted, never gated.
+        self.assertNotIn("ai-style", audit.REPORT_ONLY_CATEGORIES)
+        self.assertEqual(audit.REPORT_ONLY_CATEGORIES, frozenset())
         self.assertIn("ai-style-warn", audit.WARNING_CATEGORIES)
         self.assertEqual(
             set(rules.CATEGORY_FOR_LEVEL.values()), {"ai-style", "ai-style-warn"}
