@@ -8,7 +8,7 @@ PY ?= python3
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
-        reachability reachability-external \
+        reachability reachability-external reachability-signposted reachability-signposted-external \
         inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
         knowledge-quality-status-ci editorial-report sentence-report glossary-report \
         structure-report mermaid-report frontmatter-report vocabulary-report ai-style-report
@@ -258,6 +258,12 @@ reachability: ## Check that each benchmark question reaches its answer from llms
 	@$(PY) tools/check_reachability.py
 reachability-external: ## Also fetch sibling llms.txt and documents to measure cross-repo questions (network; INCONCLUSIVE on rate limits)
 	@$(PY) tools/check_reachability.py --external
+# Linked says a path exists; signposted says every hop's surrounding text names the question's
+# subject. Measure-only and outside `all` until a baseline shows what it costs to keep green.
+reachability-signposted: ## Also require every hop's surrounding text to name the question's subject (Hub-internal)
+	@$(PY) tools/check_reachability.py --signposted
+reachability-signposted-external: ## Signposted, including cross-repo questions (network; INCONCLUSIVE on rate limits)
+	@$(PY) tools/check_reachability.py --external --signposted
 # The mirror image of the two above, and the half that was missing. Those guard what this repository
 # cites; this guards what other repositories cite *from* here. The offline direction is ours to
 # check, because the pinned files are in this tree — so it belongs in the commit gate, unlike

@@ -49,12 +49,23 @@ def question(qid: str, *targets: str, scope: str = "hub", **extra: object) -> di
     return {
         "id": qid,
         "question": f"Where is the answer for {qid}?",
+        "keywords": [{"en": ["answer", "reply"], "ja": ["回答", "答え"]}],
         "category": category,
         "scope": scope,
         "targets": [{"path": t} for t in targets],
         "rationale": "fixture",
         **extra,
     }
+
+
+def keywords(en: list[str], ja: list[str] | None = None) -> list[dict]:
+    """One keyword group: a question with a single subject."""
+    return [{"en": en, "ja": ja or ["回答", "答え"]}]
+
+
+def groups(*pairs: tuple[list[str], list[str]]) -> list[dict]:
+    """Several keyword groups: a hop must name one word from each."""
+    return [{"en": en, "ja": ja} for en, ja in pairs]
 
 
 class Tree:
@@ -248,12 +259,76 @@ class TheSchemaIsEnforced(unittest.TestCase):
             "unknown target key": [{**ok, "targets": [{"path": "a.md", "x": 1}]}],
             "missing entry point": [{**ok, "entry_points": ["absent.md"]}],
             "missing rationale": [{k: v for k, v in ok.items() if k != "rationale"}],
+            "missing keywords": [{k: v for k, v in ok.items() if k != "keywords"}],
+            "empty en keywords": [{**ok, "keywords": keywords([])}],
+            "ja keywords with only ASCII": [
+                {**ok, "keywords": keywords(["answer", "reply"], ["TR", "NFS"])}
+            ],
+            "keyword duplicated up to case": [
+                {**ok, "keywords": keywords(["Cache", "cache"])}
+            ],
+            "one-character ASCII keyword": [
+                {**ok, "keywords": keywords(["a", "answer"])}
+            ],
+            "unknown key in a keyword group": [
+                {
+                    **ok,
+                    "keywords": [
+                        {**keywords(["answer", "reply"])[0], "fr": ["réponse"]}
+                    ],
+                }
+            ],
+            "keywords as a v2 object rather than groups": [
+                {**ok, "keywords": {"en": ["answer", "reply"], "ja": ["回答", "答え"]}}
+            ],
+            "keywords as bare words": [{**ok, "keywords": ["answer", "reply"]}],
+            "no keyword groups": [{**ok, "keywords": []}],
+            "too many keyword groups": [
+                {
+                    **ok,
+                    "keywords": groups(
+                        *[
+                            ([f"en{i}"], [f"語{i}"])
+                            for i in range(cr.KEYWORD_GROUPS[1] + 1)
+                        ]
+                    ),
+                }
+            ],
+            "a group without Japanese": [
+                {
+                    **ok,
+                    "keywords": groups((["answer"], ["回答"]), (["reply"], [])),
+                }
+            ],
+            "one keyword in two groups": [
+                {
+                    **ok,
+                    "keywords": groups(
+                        (["answer", "reply"], ["回答"]), (["Reply"], ["答え"])
+                    ),
+                }
+            ],
         }
         for name, questions in cases.items():
             with self.subTest(name):
                 self._rejects(questions)
         with self.subTest("wrong schema"):
             self._rejects([ok], schema="reachability-questions/v0")
+        with self.subTest("a v1 file, which has no keywords"):
+            self._rejects(
+                [{k: v for k, v in ok.items() if k != "keywords"}],
+                schema="reachability-questions/v1",
+            )
+        with self.subTest("a v2 file, whose keywords are one ungrouped union"):
+            self._rejects(
+                [
+                    {
+                        **ok,
+                        "keywords": {"en": ["answer", "reply"], "ja": ["回答", "答え"]},
+                    }
+                ],
+                schema="reachability-questions/v2",
+            )
 
 
 class HopsAreCountedCorrectly(unittest.TestCase):
@@ -647,6 +722,308 @@ class ExternalVerdicts(unittest.TestCase):
         self.assertEqual(len(opener.calls), len(set(opener.calls)))
 
 
+def _main(argv: list[str], opener: Opener | None = None) -> tuple[int, str]:
+    out = io.StringIO()
+    with contextlib.ExitStack() as stack:
+        if opener is not None:
+            patched = functools.partial(cr.evaluate, opener=opener)
+            stack.enter_context(mock.patch.object(cr, "evaluate", patched))
+        stack.enter_context(contextlib.redirect_stdout(out))
+        status = cr.main(argv)
+    return status, out.getvalue()
+
+
+FLEXCACHE = keywords(["FlexCache", "cache"], ["キャッシュ", "整合性"])
+
+
+class SignpostsAreRequiredOnEveryHop(unittest.TestCase):
+    """A linked path proves a route exists; a signposted path proves every hop names the subject.
+
+    The linked verdict passed at hop 1 for every Hub question, because llms.txt links almost
+    everything, so it could not show a navigation change improving anything. These cases pin the
+    second verdict: what text counts as attached to a link, how keywords match, and that the
+    external INCONCLUSIVE rule still asks only about the question's own crawl.
+    """
+
+    def test_a_signposted_hop_via_the_llms_txt_description_passes(self) -> None:
+        files = {
+            "llms.txt": "- [Note](a.md): how FlexCache stays consistent\n",
+            "a.md": "answer\n",
+        }
+        with Tree(files, [question("wl-a", "a.md", keywords=FLEXCACHE)]) as tree:
+            r = tree.evaluate()["wl-a"]
+        self.assertEqual((r["verdict"], r["hops"]), ("PASS", 1))
+        s = r["signposted"]
+        self.assertEqual((s["verdict"], s["hops"]), ("PASS", 1))
+        self.assertEqual(s["path"], ["llms.txt", "a.md"])
+        self.assertIsNone(s["missing"])
+
+    def test_a_signposted_hop_via_table_row_text_passes(self) -> None:
+        """The row names the subject, not the link text; the neighboring row does not count."""
+        files = {
+            "llms.txt": "- [Index](idx.md): cache index\n",
+            "idx.md": (
+                "| Topic | Read |\n|---|---|\n"
+                "| FlexCache consistency | [read](a.md) |\n"
+                "| Volume sizing | [read](b.md) |\n"
+            ),
+            "a.md": "x\n",
+            "b.md": "x\n",
+        }
+        questions = [
+            question("wl-row", "a.md", keywords=FLEXCACHE),
+            question("wl-other-row", "b.md", keywords=FLEXCACHE),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        s = results["wl-row"]["signposted"]
+        self.assertEqual((s["verdict"], s["hops"]), ("PASS", 2))
+        self.assertEqual(s["path"], ["llms.txt", "idx.md", "a.md"])
+        control = results["wl-other-row"]
+        self.assertEqual(control["verdict"], "PASS")
+        self.assertEqual(control["signposted"]["verdict"], "FAIL")
+        self.assertEqual(control["signposted"]["missing"]["hop"], 2)
+
+    def test_a_linked_hop_without_keywords_fails_signposted(self) -> None:
+        files = {
+            "llms.txt": "- [Docs](idx.md): everything\n",
+            "idx.md": "FlexCache is covered below.\n\n[x](a.md)\n",
+            "a.md": "x\n",
+        }
+        with Tree(files, [question("wl-a", "a.md", keywords=FLEXCACHE)]) as tree:
+            r = tree.evaluate()["wl-a"]
+            argv = ["--root", str(tree.root), "--questions", str(tree.qfile)]
+            plain_status, plain_out = _main(argv)
+            gated_status, gated_out = _main([*argv, "--signposted"])
+        self.assertEqual((r["verdict"], r["hops"]), ("PASS", 2))
+        s = r["signposted"]
+        self.assertEqual((s["verdict"], s["hops"]), ("FAIL", None))
+        missing = s["missing"]
+        self.assertEqual(
+            (missing["hop"], missing["from"], missing["to"]), (1, "llms.txt", "idx.md")
+        )
+        self.assertIn("everything", missing["excerpt"])
+        self.assertEqual(plain_status, 0, plain_out)
+        self.assertEqual(gated_status, 1, gated_out)
+        self.assertRegex(
+            gated_out,
+            r"(?m)^  signposted FAIL  hops=none  missing at hop 1: llms\.txt -> idx\.md$",
+        )
+        self.assertRegex(gated_out, r"(?m)^signposted: 0 pass, 1 fail, 0 inconclusive")
+        self.assertIn("1 pass, 0 fail", gated_out.strip().splitlines()[-1])
+
+    def test_japanese_keywords_match_as_substrings(self) -> None:
+        small = keywords(
+            ["small files", "file count"], ["小さなファイル", "ファイル数"]
+        )
+        files = {
+            "llms.txt": (
+                "- [ノート](a.md): 大量の小さなファイルで容量が残っていても\n"
+                "- [索引](m.md): ファイル数の索引\n"
+            ),
+            "a.md": "x\n",
+            # The phrase wraps across two source lines, which renders as one paragraph.
+            "m.md": "大量の小さな\nファイルは [ここ](b.md) にある。\n",
+            "b.md": "x\n",
+        }
+        questions = [
+            question("wl-ja", "a.md", keywords=small),
+            question("wl-ja-wrapped", "b.md", keywords=small),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        self.assertEqual(results["wl-ja"]["signposted"]["verdict"], "PASS")
+        wrapped = results["wl-ja-wrapped"]["signposted"]
+        self.assertEqual((wrapped["verdict"], wrapped["hops"]), ("PASS", 2))
+
+    def test_an_ascii_keyword_does_not_match_inside_a_word(self) -> None:
+        tr = keywords(
+            ["TR", "technical report"], ["テクニカルレポート", "技術レポート"]
+        )
+        files = {
+            "llms.txt": "- [s](s.md): STRUCTURE overview\n- [t](t.md): see TR-4572\n",
+            "s.md": "x\n",
+            "t.md": "x\n",
+        }
+        questions = [
+            question("tr-inside-a-word", "s.md", keywords=tr),
+            question("tr-standalone", "t.md", keywords=tr),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        self.assertEqual(results["tr-inside-a-word"]["signposted"]["verdict"], "FAIL")
+        self.assertEqual(results["tr-standalone"]["signposted"]["verdict"], "PASS")
+        match = cr.matcher(tr)
+        for text in ("a string value", "TRANSFER rates", "an attribute"):
+            with self.subTest(inside=text):
+                self.assertFalse(match(text))
+        for text in ("TR-4572", "see TR for details", "the tr guide", "(TR)"):
+            with self.subTest(standalone=text):
+                self.assertTrue(match(text))
+
+    def test_every_keyword_group_must_match_on_a_hop(self) -> None:
+        """One word from each subject, inside one block; one subject alone is not a signpost."""
+        cache_and_fpolicy = groups(
+            (["FlexCache", "cache"], ["キャッシュ"]),
+            (["FPolicy"], ["FPolicy", "ポリシー"]),
+        )
+        files = {
+            "llms.txt": (
+                "- [Both](a.md): FPolicy on a FlexCache cache\n"
+                "- [One](b.md): FPolicy on an origin volume\n"
+                "- [Idx](idx.md): FlexCache and FPolicy index\n"
+            ),
+            "idx.md": "FlexCache: [c](c.md)\n\nFPolicy: [c](c.md)\n",
+            "a.md": "x\n",
+            "b.md": "x\n",
+            "c.md": "x\n",
+        }
+        questions = [
+            question("wl-both", "a.md", keywords=cache_and_fpolicy),
+            question("wl-one", "b.md", keywords=cache_and_fpolicy),
+            question("wl-split", "c.md", keywords=cache_and_fpolicy),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        self.assertEqual(results["wl-both"]["signposted"]["verdict"], "PASS")
+        one = results["wl-one"]
+        self.assertEqual(one["verdict"], "PASS")
+        self.assertEqual(one["signposted"]["verdict"], "FAIL")
+        self.assertEqual(one["signposted"]["missing"]["unmatched"], ["FlexCache"])
+        # Each subject is named beside a different occurrence of the same link: two halves.
+        split = results["wl-split"]
+        self.assertEqual(split["verdict"], "PASS")
+        self.assertEqual(split["signposted"]["verdict"], "FAIL")
+        self.assertEqual(split["signposted"]["missing"]["hop"], 2)
+
+    def test_a_markdown_list_item_carries_its_continuation_lines(self) -> None:
+        """Outside llms.txt, a wrapped list item is one block; a blank line still ends it."""
+        files = {
+            "llms.txt": "- [Idx](idx.md): FlexCache index\n",
+            "idx.md": (
+                "- [a](a.md) is the note\n  on FlexCache consistency\n"
+                "- [b](b.md) is another note\n\nFlexCache follows a blank line.\n"
+            ),
+            "a.md": "x\n",
+            "b.md": "x\n",
+        }
+        questions = [
+            question("wl-wrapped", "a.md", keywords=FLEXCACHE),
+            question("wl-next-item", "b.md", keywords=FLEXCACHE),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        self.assertEqual(results["wl-wrapped"]["signposted"]["verdict"], "PASS")
+        self.assertEqual(results["wl-next-item"]["signposted"]["verdict"], "FAIL")
+
+    def test_a_heading_is_its_own_block(self) -> None:
+        """A heading neither lends its words to the line under it nor borrows that line's."""
+        files = {
+            "llms.txt": "- [Idx](idx.md): FlexCache index\n",
+            "idx.md": (
+                "## FlexCache\n[a](a.md) is here\n\n"
+                "## Overview [b](b.md)\nFlexCache is described here.\n\n"
+                "## FlexCache [c](c.md)\n"
+            ),
+            "a.md": "x\n",
+            "b.md": "x\n",
+            "c.md": "x\n",
+        }
+        questions = [
+            question("wl-under", "a.md", keywords=FLEXCACHE),
+            question("wl-in-heading", "b.md", keywords=FLEXCACHE),
+            question("wl-named-heading", "c.md", keywords=FLEXCACHE),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate()
+        self.assertEqual(results["wl-under"]["signposted"]["verdict"], "FAIL")
+        self.assertEqual(results["wl-in-heading"]["signposted"]["verdict"], "FAIL")
+        self.assertEqual(results["wl-named-heading"]["signposted"]["verdict"], "PASS")
+
+    def test_external_signposted_inconclusive_is_per_question(self) -> None:
+        """A blocked node only makes a signposted FAIL undetermined if a signposted path reached it."""
+        files = {
+            "llms.txt": (
+                f"- [Sib x](https://github.com/{cr.OWNER}/Sib/blob/main/docs/x.md): "
+                "alpha topics\n"
+            ),
+        }
+        down = urllib.error.HTTPError("u", 503, "down", None, None)  # type: ignore[arg-type]
+        questions = [
+            question(
+                "sm-alpha",
+                f"{SIB}:docs/y.md",
+                scope="cross-repo",
+                keywords=keywords(["alpha", "alphas"]),
+            ),
+            question(
+                "sm-beta",
+                f"{SIB}:docs/y.md",
+                scope="cross-repo",
+                keywords=keywords(["beta", "betas"]),
+            ),
+        ]
+        with Tree(files, questions) as tree:
+            results = tree.evaluate(
+                external=True, opener=Opener({}, errors={"docs/x.md": down})
+            )
+            argv = [
+                "--root",
+                str(tree.root),
+                "--questions",
+                str(tree.qfile),
+                "--external",
+            ]
+            plain_status, plain_out = _main(
+                argv, Opener({}, errors={"docs/x.md": down})
+            )
+            gated_status, gated_out = _main(
+                [*argv, "--signposted"], Opener({}, errors={"docs/x.md": down})
+            )
+        alpha, beta = results["sm-alpha"], results["sm-beta"]
+        self.assertEqual(alpha["verdict"], "INCONCLUSIVE")
+        self.assertEqual(alpha["signposted"]["verdict"], "INCONCLUSIVE")
+        self.assertIn("HTTP 503", alpha["signposted"]["reason"])
+        self.assertEqual(beta["verdict"], "INCONCLUSIVE")
+        self.assertEqual(beta["signposted"]["verdict"], "FAIL")
+        self.assertEqual(plain_status, 0, plain_out)
+        self.assertEqual(gated_status, 1, gated_out)
+        self.assertRegex(gated_out, r"(?m)^  \? sm-alpha \(signposted\): ")
+
+    def test_signposted_adds_no_fetches(self) -> None:
+        opener = Opener({"docs/x.md": "[y](y.md)\n", "docs/y.md": "a\n"})
+        with Tree(EXT_FILES, [EXT_Q]) as tree:
+            r = tree.evaluate(external=True, opener=opener)["sm-y"]
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertEqual(r["signposted"]["verdict"], "FAIL")
+        self.assertEqual([u.rsplit("/", 1)[1] for u in opener.calls], ["x.md", "y.md"])
+
+    def test_signpost_parsing_agrees_with_the_link_gate(self) -> None:
+        from check_links import iter_links
+
+        text = (
+            "# Title\n\n[a](a.md) and ![img](i.png)\n\n```text\n[f](f.md)\n```\n\n"
+            "| x | [b](b.md) |\n|---|---|\n\n- [c](c.md#frag): item\n> [d](d.md)\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "doc.md"
+            path.write_text(text, encoding="utf-8")
+            expected = [target for _, target in iter_links(path)]
+        found = [target for target, _ in cr.iter_signposts(text, llms=False)]
+        self.assertEqual(found, expected)
+        self.assertEqual(found, ["a.md", "b.md", "c.md#frag", "d.md"])
+
+    def test_llms_txt_items_do_not_absorb_the_next_paragraph(self) -> None:
+        files = {
+            "llms.txt": "- [Docs](a.md): overview\nFlexCache is described here.\n",
+            "a.md": "x\n",
+        }
+        with Tree(files, [question("wl-a", "a.md", keywords=FLEXCACHE)]) as tree:
+            r = tree.evaluate()["wl-a"]
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertEqual(r["signposted"]["verdict"], "FAIL")
+
+
 class TheReportCarriesItsEnvironment(unittest.TestCase):
     KEYS = frozenset(
         {
@@ -659,6 +1036,9 @@ class TheReportCarriesItsEnvironment(unittest.TestCase):
             "questions_file",
             "questions_sha256",
             "counts",
+            "signposted_counts",
+            "gate",
+            "fetch",
             "results",
         }
     )
@@ -689,9 +1069,30 @@ class TheReportCarriesItsEnvironment(unittest.TestCase):
         self.assertEqual(
             data["counts"], {"pass": 1, "fail": 1, "inconclusive": 0, "skipped": 0}
         )
-        result_keys = {"id", "category", "scope", "verdict", "hops", "path", "reason"}
+        # CHAIN's link texts are single letters, so no hop names the fixture's subject.
+        self.assertEqual(
+            data["signposted_counts"],
+            {"pass": 0, "fail": 2, "inconclusive": 0, "skipped": 0},
+        )
+        self.assertEqual(data["gate"], "linked")
+        # Hub mode fetches nothing, and the report says so rather than leaving it out.
+        self.assertEqual(data["fetch"]["attempted"], 0)
+        result_keys = {
+            "id",
+            "category",
+            "scope",
+            "verdict",
+            "hops",
+            "path",
+            "reason",
+            "signposted",
+        }
         for entry in data["results"]:
             self.assertLessEqual(result_keys, set(entry))
+            self.assertEqual(
+                set(entry["signposted"]),
+                {"verdict", "hops", "path", "missing", "reason"},
+            )
 
     def test_an_external_report_carries_fetch_statistics(self) -> None:
         opener = Opener({"docs/x.md": "[y](y.md)\n"})

@@ -562,6 +562,11 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **The reachability benchmark now reports a second verdict per question: whether the path is signposted.**
+  A linked path only proves that a route exists, and `llms.txt` links nearly every note, so the linked verdict could not show a navigation change improving anything. A hop is signposted when the text attached to the link (the `llms.txt` item line, or the Markdown table row, heading, list item or paragraph holding it) contains a keyword from each of the question's keyword groups, one group per subject the question names; a question passes when some path within the hop budget is signposted on every hop.
+  - Each question in `docs/agent/reachability-questions.json` now carries English and Japanese keywords, grouped by subject, written from the question's wording and a reader's vocabulary, not from current link text or the answer's file names. A group holds only names for its subject (synonyms, translations, singular and plural), not the subject's parts or properties, so a generic word such as read or destination cannot stand in for it. Requiring every subject keeps a line about another topic that shares a generic word (audit, technical report) from counting as a signpost. For a failing question the report names the first hop that lacks a signpost.
+  - `make reachability-signposted` and `make reachability-signposted-external` run it. The commit gate (`make all`) is unchanged, and the baseline is measured before any navigation change.
+
 - **A workload entry map now leads from the workload to the note sections to read first, in Japanese and English.**
   `reference/workload-entry-map.md` (JA and EN) lists ten workloads in three groups — data shape and placement, protocols and access routes, protection and governance — and for each gives the note sections to read first, what to read next, and the problem it prevents.
   - Links only: no number, limit, or version is restated, and the page states once, near the top, that most linked findings are ONTAP-general `documented` with an FSx for ONTAP scope each note marks unverified. The EN page links an English note where one exists and the Japanese note with `(日本語)` otherwise.
