@@ -559,6 +559,8 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **`docs/agent/writing-quality.md` is now a registered external-anchor citation target (path-only).**
+  S3-Burst-on-ONTAP-Files links the writing-quality criteria from its AGENTS.md as the shared source its documents follow. The citation is to the file, not a section, so the path is pinned and heading renames inside it are unaffected. Registered here first because the sibling's gate refuses a citation into a document this repository does not list as tracked.
 - **ONTAP-general findings from five NetApp Technical Report areas (FlexCache / FlexGroup, NFS, SMB, S3, Tiering), delegated by S3-Burst-on-ONTAP-Files.**
   Each value is `documented` as ONTAP in general; FSx for ONTAP behavior is stated only where an AWS page says it or a sibling measurement is linked, and is marked unverified otherwise. Sibling measurements are linked, not restated.
   - New note (JA and EN): `domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md` — placement at creation, conversion from FlexVol without redistribution, enforced versus tested/recommended limits, SnapMirror member counts (TR-4571 and TR-4678, both October 2021; AWS volume pages).
