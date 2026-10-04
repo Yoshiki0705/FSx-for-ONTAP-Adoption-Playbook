@@ -267,6 +267,7 @@ lang: ja
 | `docs/ja/reference/decision-trees/observability-route.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/monitoring-design.md` | `収集経路の選択は行いません。` | `retraction` | 経路 1 の出口から実装インデックスへ送ること。決定木は複製せず、こちらに 1 本だけ置く分担です |
 | `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `llms.txt` | `this repository is where a chosen route is implemented.` | `retraction` | 選ばれた経路を実装する側であり、経路の選択はこちらに委ねていること。**分担が変われば、こちらの紹介文が古くなります** |
 | `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/monitoring-design.md` | `It does not choose the collection route.` | `retraction` | CloudWatch を選んだあとの実装インデックスであること |
+| `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/native-alternative-matrix.md` | `to its AWS-native equivalent implementation in this repository` | `retraction` | System Manager の各監視ビューを AWS ネイティブ実装に対応づけた表であること。llms.txt から入口で辿れること |
 <!-- cross-repo-table:end -->
 
 ---

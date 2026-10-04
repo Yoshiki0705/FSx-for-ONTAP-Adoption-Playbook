@@ -503,6 +503,48 @@
         {"path": "Yoshiki0705/S3-Burst-on-ONTAP-Files:docs/ja/reference/tr-integration/delegation-ledger.md"}
       ],
       "rationale": "The scope and delegation ledgers are kept by the S3-Burst repository."
+    },
+    {
+      "id": "sm-observability-collection-routes-impl",
+      "question": "Where are the FSx for ONTAP monitoring collection routes actually implemented, given the Hub only chooses between them?",
+      "keywords": [
+        {
+          "en": ["monitoring", "observability", "collection route", "metrics collection", "CloudWatch"],
+          "ja": ["監視", "可観測性", "収集経路", "メトリクス収集", "モニタリング"]
+        },
+        {
+          "en": ["implementation", "implemented", "design", "how to build"],
+          "ja": ["実装", "設計", "どう作る"]
+        }
+      ],
+      "category": "spoke-measurement",
+      "scope": "cross-repo",
+      "targets": [
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/ja/monitoring-design.md"},
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/en/monitoring-design.md"}
+      ],
+      "rationale": "The Hub observability module chooses a collection route; the implementation of each route is published by the observability integrations repository."
+    },
+    {
+      "id": "sm-observability-native-alternative-mapping",
+      "question": "Where does each ONTAP System Manager monitoring view map to an AWS-native implementation?",
+      "keywords": [
+        {
+          "en": ["System Manager", "monitoring view", "ONTAP"],
+          "ja": ["System Manager", "監視ビュー", "画面"]
+        },
+        {
+          "en": ["native", "AWS-native", "mapping", "alternative", "equivalent"],
+          "ja": ["ネイティブ", "マッピング", "対応付け", "代替"]
+        }
+      ],
+      "category": "spoke-measurement",
+      "scope": "cross-repo",
+      "targets": [
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/ja/native-alternative-matrix.md"},
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/en/native-alternative-matrix.md"}
+      ],
+      "rationale": "The mapping from each ONTAP System Manager view to an AWS-native implementation is published by the observability integrations repository, which the Hub cites rather than restating."
     }
   ]
 }
