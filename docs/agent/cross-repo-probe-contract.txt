@@ -22,6 +22,7 @@
 # An absence claim ("the column is not in the table", "not stated in public documentation") is a
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
+FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
@@ -33,6 +34,7 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considera
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	同一 FlexGroup constituent にファイルが集中
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	稼働中の SnapMirror 宛先は、break もクローンもなしに S3 AP 経由で読める。
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
+FSx-for-ONTAP-Lakehouse-Integrations	llms.txt	retraction	which parts work, which do not, and what each claim rests on.
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
@@ -57,6 +59,8 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.m
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	はいずれも二進表記でした
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
+S3-Burst-on-ONTAP-Files	docs/ja/deployment/onprem-terraform.md	retraction	クラスタピアと SVM ピアが先に必要です。
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
 S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに合否を決めると、出た数値が合格になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
@@ -80,9 +84,12 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-readin
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-share-and-identifier-reading.md	retraction	既定 ACL は Everyone / Full Control である
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	2,200 MB/s → 267 MB/s
 S3-Burst-on-ONTAP-Files	docs/ja/reference/performance-testing-guide.md	retraction	測定ファイルを `rm` しても空きは戻らない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	クラスタ / SVM ピアリングの到達性要件と、FlexCache 配布に必要なネットワーク前提
 S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	単一ディレクトリの最大サイズ（maxdir-size）の上限と、超過時の列挙コストの増大
 S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/delegation-ledger.md	retraction	高ファイル数ワークロードで FSx for ONTAP を選ぶ/選ばないの採用判断材料
+S3-Burst-on-ONTAP-Files	docs/ja/reference/tr-integration/scope-ledger.md	retraction	FlexCache 配布にクラスタ / SVM ピアリング到達性と NAS 名前サービスが要る
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 作成自体は 9.7 以降で可
+S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 側のアクセスも監査できる
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	Cache 自体は階層化できない
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	どちらの側でも使えない
 S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	の行を、S3 Access Point の根拠に使わないこと。
@@ -157,6 +164,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-basel
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-protocol-matrix-plan.md	retraction	コマンドラインでは渡せない
+S3-Burst-on-ONTAP-Files	llms.txt	retraction	**origin volume only**, writes always go through it
 VMware-Migration-EC2-ONTAP	docs/ja/atx-fsxn-ga-verification.md	retraction	約 3 分後に開始し 60 秒未満で完了
 VMware-Migration-EC2-ONTAP	docs/ja/dr-snapmirror-runbook.md	retraction	destination volume を break して RW 化
 VMware-Migration-EC2-ONTAP	docs/ja/tco-comparison.md	retraction	逆転点はスループット容量に比例します。

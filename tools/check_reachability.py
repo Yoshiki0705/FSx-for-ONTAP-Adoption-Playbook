@@ -36,6 +36,37 @@ will choose that path: this is a measurement of link structure, a sample over th
 file, not a run of any model. A FAIL is a finding about navigation, and this tool does not fix
 navigation.
 
+What SIGNPOSTED means
+---------------------
+A linked PASS only says some path exists, and `llms.txt` links nearly every note, so nearly every
+Hub question passes at hop 1 whether or not anything on the way names its subject. The second
+verdict, reported for every question beside the linked one, asks for more: **a path within the
+budget on which every hop is signposted**. A question's `keywords` are a list of groups, one per
+subject the question names (FlexCache *and* FPolicy, a technical report *and* its topic), each
+holding that subject's words in English and Japanese. A hop is signposted when one block attached
+to the link contains at least one word **from every group**; one word from a broad union would let
+a line about any other subject that shares a generic word (`audit`, `TR`) signpost the question.
+A question with one subject has one group. The attached text is the block holding the link, which
+always includes the link's visible text:
+
+- in an `llms.txt` (the Hub's or a sibling's), the list item's own line, never the line after it;
+- in Markdown, the containing table row, heading, list item with its continuation lines, or
+  paragraph. A blank line ends a block; fenced code belongs to none.
+
+Inline links inside the block count by their visible text only; a URL slug is not something a
+reader sees. Matching is case-insensitive. An ASCII keyword must stand as a word (`TR` matches
+`TR-4572`, not `string` or `TRANSFER`); a keyword with any non-ASCII character is a substring match with
+whitespace removed, so a Japanese phrase that wraps across two source lines still matches.
+
+Keywords and their grouping are written from each question's wording and the words a reader would
+type, never from the current link text: deriving them from what the pages already say would make
+the verdict pass by construction, and grouping them by which paths would then fail is the same
+mistake in the other direction. This is still a property of link text, not a run of any model. For a signposted FAIL
+whose linked verdict passes, the report names the first unsignposted hop of the reported shortest
+linked path; another route may be the easier fix. The signposted crawl only follows hops the linked
+crawl already followed, so it fetches nothing of its own, and the same INCONCLUSIVE rule applies to
+its own crawl. Without `--signposted` it is reported and does not change the exit status.
+
 Modes and verdicts
 ------------------
 Default (offline, the gate): only `scope == "hub"` questions are evaluated, over the graph of every
@@ -58,16 +89,17 @@ run stays under it, and the report records whether it was reached.
 
 Parser limits
 -------------
-Links are parsed with `check_links.iter_links`, so this tool and the link gate agree on what a link
-is: inline `[text](target)` outside fenced code; image embeds are not edges. Reference-style links
+Links are parsed with the line loop and the `LINK` / `FENCE` patterns of `check_links.iter_links`,
+so this tool and the link gate agree on what a link is: inline `[text](target)` outside fenced code;
+image embeds are not edges. Reference-style links
 and HTML `<a href>` are not parsed, which is the same limit `check_links.py` has. In a fetched
 sibling document, a relative link ending in `/` or without a file suffix, and a `tree/` URL, are read
 as that directory's `README.md`, because a directory cannot be distinguished from a file without
 listing the tree. That node is a guess, so a 404 on it is an absence rather than a dead link, the
 same treatment a repository root's `llms.txt` gets.
 
-Run:  python3 tools/check_reachability.py [--external] [--max-hops N] [--max-fetches N]
-                                          [--report PATH]
+Run:  python3 tools/check_reachability.py [--external] [--signposted] [--max-hops N]
+                                          [--max-fetches N] [--report PATH]
       python3 tools/check_reachability.py --selftest
 """
 
@@ -88,11 +120,12 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from itertools import pairwise
 from pathlib import Path
 from typing import Self
 from urllib.parse import quote, unquote, urlparse
 
-from check_links import ANCHOR, FENCE, LINK, anchors_of, iter_links, slugify
+from check_links import ANCHOR, FENCE, LINK, anchors_of, slugify
 from frontmatter import iter_markdown
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -106,13 +139,25 @@ FETCH_TIMEOUT = 30
 OWNER = "Yoshiki0705"
 THIS_REPO = "FSx-for-ONTAP-Adoption-Playbook"
 
-SCHEMA = "reachability-questions/v1"
-REPORT_SCHEMA = "reachability-report/v1"
+SCHEMA = "reachability-questions/v3"
+REPORT_SCHEMA = "reachability-report/v2"
 USER_AGENT = "adoption-playbook-reachability-check"
 
 CATEGORY_PREFIX = {"workload": "wl", "tr": "tr", "spoke-measurement": "sm"}
 SCOPES = ("hub", "cross-repo")
-QUESTION_REQUIRED = ("id", "question", "category", "scope", "targets", "rationale")
+QUESTION_REQUIRED = (
+    "id",
+    "question",
+    "keywords",
+    "category",
+    "scope",
+    "targets",
+    "rationale",
+)
+KEYWORD_LANGS = ("en", "ja")
+KEYWORD_GROUPS = (1, 4)
+KEYWORDS_PER_LANG = (2, 12)
+EXCERPT_CHARS = 160
 QUESTION_OPTIONAL = ("question_ja", "entry_points")
 TARGET_KEYS = ("path", "anchor")
 MAX_TARGETS = 8
@@ -174,6 +219,66 @@ def _target_problems(qid: str, scope: str, target: object, entries: list) -> lis
     return problems
 
 
+def _keyword_problems(qid: str, keywords: object) -> list[str]:
+    """A short list of groups, each with both languages, and Japanese really Japanese.
+
+    One group per subject of the question: a hop must name every subject, not just one. Counts and
+    duplicates are checked per language across all groups, so a keyword sits in exactly one group.
+    Duplicates are not checked across languages: a product name such as `FlexCache` is what a reader
+    types in either language, so it legitimately appears in both.
+    """
+    g_low, g_high = KEYWORD_GROUPS
+    if (
+        not isinstance(keywords, list)
+        or not g_low <= len(keywords) <= g_high
+        or not all(isinstance(g, dict) for g in keywords)
+    ):
+        shape = f"each an object with {list(KEYWORD_LANGS)}"
+        return [
+            f"{qid}: keywords must be a list of {g_low} to {g_high} groups, {shape}"
+        ]
+    problems: list[str] = []
+    flat: dict[str, list[str]] = {lang: [] for lang in KEYWORD_LANGS}
+    for n, group in enumerate(keywords, start=1):
+        problems += [
+            f"{qid}: unknown keywords key {key!r} in group {n}"
+            for key in group
+            if key not in KEYWORD_LANGS
+        ]
+        for lang in KEYWORD_LANGS:
+            words = group.get(lang)
+            if (
+                not isinstance(words, list)
+                or not words
+                or not all(isinstance(w, str) and w.strip() for w in words)
+            ):
+                problems.append(
+                    f"{qid}: group {n} keywords.{lang} must be a non-empty list of "
+                    "non-empty strings"
+                )
+                continue
+            flat[lang] += words
+    if problems:
+        return problems
+    low, high = KEYWORDS_PER_LANG
+    for lang, words in flat.items():
+        if not low <= len(words) <= high:
+            problems.append(
+                f"{qid}: keywords.{lang} must hold {low} to {high} keywords across groups"
+            )
+        folded = [w.strip().casefold() for w in words]
+        if len(set(folded)) != len(folded):
+            problems.append(f"{qid}: keywords.{lang} repeats a keyword (ignoring case)")
+        for word in words:
+            if word.isascii() and len(word.strip()) < 2:
+                problems.append(
+                    f"{qid}: ASCII keyword {word!r} is too short to mean anything"
+                )
+        if lang == "ja" and all(w.isascii() for w in words):
+            problems.append(f"{qid}: keywords.ja needs at least one Japanese keyword")
+    return problems
+
+
 def load_questions(path: Path, root: Path | None = None) -> list[dict]:
     """Load and validate the question set. Raise ValueError listing every problem found.
 
@@ -208,6 +313,8 @@ def load_questions(path: Path, root: Path | None = None) -> list[dict]:
         for key in ("question", "rationale", "question_ja"):
             if key in q and (not isinstance(q[key], str) or not q[key].strip()):
                 problems.append(f"{qid}: {key!r} must be a non-empty string")
+        if "keywords" in q:
+            problems += _keyword_problems(qid, q["keywords"])
         if not isinstance(qid, str) or not ID_RE.match(qid):
             problems.append(f"{qid}: id must match {ID_RE.pattern}")
         elif qid in seen:
@@ -254,6 +361,162 @@ def load_questions(path: Path, root: Path | None = None) -> list[dict]:
     for q in questions:
         q.setdefault("entry_points", ["llms.txt"])
     return questions
+
+
+# --------------------------------------------------------------------------------------------
+# Signposts
+# --------------------------------------------------------------------------------------------
+
+TABLE_ROW = re.compile(r"^\s*\|")
+HEADING = re.compile(r"^\s*#{1,6}\s")
+LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+QUOTE = re.compile(r"^\s*(?:>\s?)+")
+# Inline links and image embeds, replaced by their visible text. The URL is not shown in rendered
+# Markdown, and a slug such as `counting-bytes-is-not-counting-files.md` would otherwise signpost
+# "files" for free.
+INLINE_LINK = re.compile(r"!?\[([^\]]*)\]\([^)\s]+(?:\s+\"[^\"]*\")?\)")
+
+
+def _clean(lines: list[str]) -> str:
+    text = " ".join(lines)
+    text = INLINE_LINK.sub(r"\1", text).replace("`", "")
+    return " ".join(text.split())
+
+
+def blocks(text: str, *, llms: bool) -> dict[int, str]:
+    """Map each 1-based line number to the cleaned text of the block that contains it.
+
+    A block is what a reader sees around a link: a table row, a heading, a list item (with its lazy
+    continuation lines), or a paragraph. A blank line ends any block, and a fence line or a line
+    inside a fence belongs to none. In an `llms.txt`, a list item is exactly its own line, because
+    llms.txt items are one line each and the paragraph after a list must not be read as part of its
+    last item.
+    """
+    out: dict[int, str] = {}
+    current: list[int] = []
+    bodies: dict[int, str] = {}
+    kind: str | None = None
+    in_fence = False
+
+    def flush() -> None:
+        if current:
+            joined = _clean([bodies[i] for i in current])
+            for i in current:
+                out[i] = joined
+            current.clear()
+
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        if FENCE.match(line):
+            flush()
+            kind = None
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        body = QUOTE.sub("", line)
+        if not body.strip():
+            flush()
+            kind = None
+            continue
+        bodies[lineno] = body
+        if TABLE_ROW.match(body) or HEADING.match(body):
+            flush()
+            kind = None
+            out[lineno] = _clean([body])
+            continue
+        if LIST_ITEM.match(body):
+            flush()
+            current.append(lineno)
+            kind = "item"
+            if llms:
+                flush()
+                kind = None
+            continue
+        if kind is None:
+            kind = "paragraph"
+        current.append(lineno)
+    flush()
+    return out
+
+
+def iter_signposts(text: str, *, llms: bool) -> Iterable[tuple[str, str]]:
+    """Yield (target, attached block text) for every inline link outside fenced code.
+
+    The line loop and the two regexes are the ones `check_links.iter_links` uses, so this tool and
+    the link gate agree on what a link is; only the attached text is added.
+    """
+    attached = blocks(text, llms=llms)
+    in_fence = False
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        for match in LINK.finditer(line):
+            yield match.group(1), attached.get(lineno, "")
+
+
+def _is_llms(node: str) -> bool:
+    """True for the Hub's llms.txt or a sibling's (`Owner/Repo:llms.txt`)."""
+    return posixpath.basename(node.rpartition(":")[2]) == "llms.txt"
+
+
+def group_matchers(keywords: list[dict]) -> list[Callable[[str], bool]]:
+    """One predicate per keyword group, each true when a text contains one of the group's words.
+
+    Case-insensitive. An ASCII keyword must stand as a word, so `TR` matches `TR-4572` and `TR `
+    but not `string`, `TRANSFER` or `STRUCTURE`, and its spaces match any whitespace. A keyword
+    with any non-ASCII character is a plain substring with all whitespace removed on both sides,
+    because Japanese has no word boundaries and a phrase may wrap across two source lines.
+    """
+    return [_group_matcher(group) for group in keywords]
+
+
+def matcher(keywords: list[dict]) -> Callable[[str], bool]:
+    """A predicate that is true when a text names every subject: one word from each group."""
+    groups = group_matchers(keywords)
+
+    def match(text: str) -> bool:
+        return all(group(text) for group in groups)
+
+    return match
+
+
+def _group_matcher(group: dict) -> Callable[[str], bool]:
+    patterns: list[re.Pattern[str]] = []
+    phrases: list[str] = []
+    for word in (*group["en"], *group["ja"]):
+        word = word.strip().casefold()
+        if word.isascii():
+            body = r"\s+".join(re.escape(part) for part in word.split())
+            pattern = rf"(?<![a-z0-9]){body}(?![a-z0-9])"
+            patterns.append(re.compile(pattern))
+        else:
+            phrases.append("".join(word.split()))
+
+    def match(text: str) -> bool:
+        folded = text.casefold()
+        if any(p.search(folded) for p in patterns):
+            return True
+        squeezed = "".join(folded.split())
+        return any(phrase in squeezed for phrase in phrases)
+
+    return match
+
+
+def _hop_signposted(
+    signs: dict[tuple[str, str], list[str]],
+    match: Callable[[str], bool],
+    source: str,
+    target: str,
+) -> bool:
+    """A hop is signposted when one occurrence of the link sits in a block naming every subject.
+
+    The groups must all match within one block: one subject named beside one occurrence of the link
+    and another beside a different occurrence is two half-signposts, not one.
+    """
+    return any(match(block) for block in signs.get((source, target), ()))
 
 
 # --------------------------------------------------------------------------------------------
@@ -402,27 +665,34 @@ def _hub_sources(root: Path) -> list[Path]:
     return [*iter_markdown(root), *extra]
 
 
+Signs = dict[tuple[str, str], list[str]]
+
+
 def _build(
     root: Path, names: _Names
-) -> tuple[dict[str, set[str]], dict[str, str], dict[str, bool]]:
-    """The Hub graph, the ref each sibling node was first linked at, and which nodes were only
-    ever guessed (a 404 on those is an absence, not a dead link)."""
+) -> tuple[dict[str, set[str]], dict[str, str], dict[str, bool], Signs]:
+    """The Hub graph, the ref each sibling node was first linked at, which nodes were only ever
+    guessed (a 404 on those is an absence, not a dead link), and the block text attached to every
+    occurrence of every edge."""
     root = root.resolve()
     graph: dict[str, set[str]] = {}
     refs: dict[str, str] = {}
     guessed: dict[str, bool] = {}
+    signs: Signs = {}
     for path in _hub_sources(root):
         source = path.relative_to(root).as_posix()
         edges = graph.setdefault(source, set())
-        for _, target in iter_links(path):
+        text = path.read_text(encoding="utf-8")
+        for target, block in iter_signposts(text, llms=_is_llms(source)):
             for node, ref, spec in _normalize(source, target, root, names):
                 if node == source:
                     continue
                 edges.add(node)
+                signs.setdefault((source, node), []).append(block)
                 if ref is not None:
                     refs.setdefault(node, ref)
                 guessed[node] = guessed.get(node, True) and spec
-    return graph, refs, guessed
+    return graph, refs, guessed, signs
 
 
 def build_hub_graph(root: Path) -> dict[str, set[str]]:
@@ -472,18 +742,6 @@ def verdict_for(hops: int | None, max_hops: int) -> str:
 # --------------------------------------------------------------------------------------------
 # External fetching
 # --------------------------------------------------------------------------------------------
-
-
-def _text_links(text: str) -> Iterable[str]:
-    in_fence = False
-    for line in text.splitlines():
-        if FENCE.match(line):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        for match in LINK.finditer(line):
-            yield match.group(1)
 
 
 def _text_anchors(text: str) -> set[str]:
@@ -565,6 +823,9 @@ class Result:
     counts: dict[str, int]
     max_fetches: int = MAX_FETCHES
     fetch: dict | None = None
+    signposted_counts: dict[str, int] = field(
+        default_factory=lambda: {"pass": 0, "fail": 0, "inconclusive": 0, "skipped": 0}
+    )
 
 
 def _path_to(seen: dict[str, tuple[int, str | None]], node: str) -> list[str]:
@@ -613,7 +874,7 @@ def evaluate(
         for t in q["targets"]
     ]
     names = _Names(known)
-    graph, refs, guessed = _build(root, names)
+    graph, refs, guessed, signs = _build(root, names)
     fetcher = _Fetcher(opener, max_fetches) if external else None
     fetched: dict[str, set[str]] = {}
     texts: dict[str, str | None] = {}
@@ -636,43 +897,25 @@ def evaluate(
             return fetched[node]
         text = sibling_text(node)
         edges: set[str] = set()
-        for target in _text_links(text or ""):
+        for target, block in iter_signposts(text or "", llms=_is_llms(node)):
             for nxt, ref, spec in _normalize(node, target, root, names):
                 if nxt == node:
                     continue
                 edges.add(nxt)
+                signs.setdefault((node, nxt), []).append(block)
                 refs.setdefault(nxt, ref if ref is not None else refs.get(node, "HEAD"))
                 guessed[nxt] = guessed.get(nxt, True) and spec
         fetched[node] = edges
         return edges
 
-    hub_runs: dict[tuple[str, ...], dict] = {}
-    ext_runs: dict[tuple[str, ...], dict] = {}
-    results: list[dict] = []
-    counts = {"pass": 0, "fail": 0, "inconclusive": 0, "skipped": 0}
+    def judge(
+        q: dict, seen: dict[str, tuple[int, str | None]]
+    ) -> tuple[str, int | None, tuple[int, str] | None, list[str]]:
+        """Verdict, hop count, best target and reasons for one crawl of one question.
 
-    for q in questions:
-        entries = tuple(q["entry_points"])
-        if q["scope"] == "cross-repo" and not external:
-            counts["skipped"] += 1
-            continue
-        if q["scope"] == "hub":
-            if entries not in hub_runs:
-                hub_runs[entries] = bfs(entries, hub_neighbors, None, lambda n, h: True)
-            seen = hub_runs[entries]
-        else:
-            if entries not in ext_runs:
-                assert fetcher is not None
-                # Hub nodes expand without bound so a distance beyond the budget is still
-                # reported; a sibling node is fetched only below the budget.
-                ext_runs[entries] = bfs(
-                    entries,
-                    ext_neighbors,
-                    None,
-                    lambda n, h: split_sibling(n) is None or h < max_hops,
-                )
-            seen = ext_runs[entries]
-
+        The linked and the signposted crawl go through the same target checks and the same
+        INCONCLUSIVE rule; only `seen` differs.
+        """
         best: tuple[int, str] | None = None
         reasons: list[str] = []
         blocked_targets: list[str] = []
@@ -734,6 +977,41 @@ def evaluate(
                         f"crawl blocked at {shown}{more}, so the unreached branch was not "
                         "measured"
                     )
+        return verdict, hops, best, reasons
+
+    hub_runs: dict[tuple[str, ...], dict] = {}
+    ext_runs: dict[tuple[str, ...], dict] = {}
+    results: list[dict] = []
+    counts = {"pass": 0, "fail": 0, "inconclusive": 0, "skipped": 0}
+    signposted_counts = dict.fromkeys(counts, 0)
+
+    def hub_expand(node: str, hops: int) -> bool:
+        return True
+
+    def ext_expand(node: str, hops: int) -> bool:
+        # Hub nodes expand without bound so a distance beyond the budget is still reported; a
+        # sibling node is fetched only below the budget.
+        return split_sibling(node) is None or hops < max_hops
+
+    for q in questions:
+        entries = tuple(q["entry_points"])
+        if q["scope"] == "cross-repo" and not external:
+            counts["skipped"] += 1
+            signposted_counts["skipped"] += 1
+            continue
+        if q["scope"] == "hub":
+            neighbors, expand = hub_neighbors, hub_expand
+            if entries not in hub_runs:
+                hub_runs[entries] = bfs(entries, neighbors, None, expand)
+            seen = hub_runs[entries]
+        else:
+            assert fetcher is not None
+            neighbors, expand = ext_neighbors, ext_expand
+            if entries not in ext_runs:
+                ext_runs[entries] = bfs(entries, neighbors, None, expand)
+            seen = ext_runs[entries]
+
+        verdict, hops, best, reasons = judge(q, seen)
         entry = {
             "id": q["id"],
             "category": q["category"],
@@ -750,8 +1028,10 @@ def evaluate(
             entry["nearest"] = (
                 min(nearest, key=lambda n: n["hops"]) if nearest else None
             )
+        entry["signposted"] = _signposted_run(q, entry, judge, neighbors, expand, signs)
         results.append(entry)
         counts[verdict.lower()] += 1
+        signposted_counts[entry["signposted"]["verdict"].lower()] += 1
 
     fetch = None
     if fetcher is not None:
@@ -769,7 +1049,81 @@ def evaluate(
         counts=counts,
         max_fetches=max_fetches,
         fetch=fetch,
+        signposted_counts=signposted_counts,
     )
+
+
+def _first_unsignposted(
+    path: list[str], signs: Signs, keywords: list[dict]
+) -> dict | None:
+    """The first hop of `path` whose attached text does not name every subject.
+
+    `unmatched` lists, by the first English keyword of each, the groups the hop's first block does
+    not name. This is a pointer along the one shortest linked path reported, not the only place a
+    fix could go: another route may be easier to signpost.
+    """
+    match = matcher(keywords)
+    groups = group_matchers(keywords)
+    for hop, (source, target) in enumerate(pairwise(path), start=1):
+        if not _hop_signposted(signs, match, source, target):
+            first = signs.get((source, target), [""])[0]
+            return {
+                "hop": hop,
+                "from": source,
+                "to": target,
+                "unmatched": [
+                    g["en"][0]
+                    for g, ok in zip(keywords, groups, strict=True)
+                    if not ok(first)
+                ],
+                "excerpt": first[:EXCERPT_CHARS],
+            }
+    return None
+
+
+def _signposted_run(
+    q: dict,
+    linked: dict,
+    judge: Callable,
+    neighbors: Callable[[str], Iterable[str]],
+    expand: Callable[[str, int], bool],
+    signs: Signs,
+) -> dict:
+    """The same crawl as the linked one, following only hops whose attached text names the subject.
+
+    Every node this crawl expands was reached at least as early by the linked crawl, so its
+    document was already fetched: the signposted verdict costs no fetch of its own.
+    """
+    match = matcher(q["keywords"])
+
+    def signposted_neighbors(node: str) -> set[str]:
+        return {
+            nxt for nxt in neighbors(node) if _hop_signposted(signs, match, node, nxt)
+        }
+
+    seen = bfs(q["entry_points"], signposted_neighbors, None, expand)
+    verdict, hops, best, reasons = judge(q, seen)
+    if verdict == "PASS" and linked["verdict"] != "PASS":
+        raise AssertionError(
+            f"{q['id']}: signposted PASS without a linked PASS; the crawls disagree"
+        )
+    missing = None
+    if verdict != "PASS" and linked["verdict"] == "PASS":
+        missing = _first_unsignposted(linked["path"], signs, q["keywords"])
+    lead: list[str] = []
+    if missing:
+        lead.append(
+            f"missing at hop {missing['hop']}: {missing['from']} -> {missing['to']}"
+        )
+    elif verdict != "PASS" and linked["verdict"] != "PASS":
+        lead.append("target not linked within the budget")
+    return {
+        "verdict": verdict,
+        "hops": hops,
+        "path": _path_to(seen, best[1]) if best else [],
+        "missing": missing,
+        "reason": "; ".join(lead + reasons) if verdict != "PASS" else "",
+    }
 
 
 # --------------------------------------------------------------------------------------------
@@ -794,6 +1148,23 @@ def format_result(result: Result) -> str:
         lines.append(f"{label}  {r['id']}  hops={hops}  {where}")
         if r["verdict"] == "INCONCLUSIVE":
             undetermined.append(f"  ? {r['id']}: {r['reason']}")
+        s = r["signposted"]
+        s_hops = "none" if s["hops"] is None else str(s["hops"])
+        s_label = {"PASS": "PASS", "FAIL": "FAIL", "INCONCLUSIVE": "? INCONCLUSIVE"}[
+            s["verdict"]
+        ]
+        if s["verdict"] == "PASS":
+            s_where = " -> ".join(s["path"])
+        elif s["missing"]:
+            m = s["missing"]
+            s_where = f"missing at hop {m['hop']}: {m['from']} -> {m['to']}"
+        elif s["verdict"] == "INCONCLUSIVE":
+            s_where = s["reason"]
+        else:
+            s_where = "target not linked within the budget"
+        lines.append(f"  signposted {s_label}  hops={s_hops}  {s_where}")
+        if s["verdict"] == "INCONCLUSIVE":
+            undetermined.append(f"  ? {r['id']} (signposted): {s['reason']}")
     if result.fetch and result.fetch["inconclusive"]:
         for item in result.fetch["inconclusive"]:
             undetermined.append(f"  ? fetch {item['node']}: {item['reason']}")
@@ -814,6 +1185,11 @@ def format_result(result: Result) -> str:
             lines.append(f"  dead: {node}")
     c = result.counts
     hint = " (cross-repo; run with --external)" if result.mode == "hub" else ""
+    sc = result.signposted_counts
+    lines.append(
+        f"signposted: {sc['pass']} pass, {sc['fail']} fail, "
+        f"{sc['inconclusive']} inconclusive, {sc['skipped']} skipped"
+    )
     lines.append(
         f"reachability: {c['pass']} pass, {c['fail']} fail, {c['inconclusive']} inconclusive, "
         f"{c['skipped']} skipped{hint}, "
@@ -838,7 +1214,10 @@ def _git_sha(root: Path) -> str:
     return out.stdout.strip() or "unknown"
 
 
-def build_report(result: Result, root: Path, questions_file: Path) -> dict:
+def build_report(
+    result: Result, root: Path, questions_file: Path, *, gate: str = "linked"
+) -> dict:
+    """The run as JSON. `gate` records which verdict decided the exit status (`--signposted`)."""
     root = Path(root).resolve()
     questions_file = Path(questions_file).resolve()
     try:
@@ -855,6 +1234,18 @@ def build_report(result: Result, root: Path, questions_file: Path) -> dict:
         "questions_file": shown,
         "questions_sha256": hashlib.sha256(questions_file.read_bytes()).hexdigest(),
         "counts": result.counts,
+        "signposted_counts": result.signposted_counts,
+        "gate": gate,
+        # Present in every mode, so a reader never has to infer the count from an absent key:
+        # the offline mode fetches nothing.
+        "fetch": result.fetch
+        or {
+            "attempted": 0,
+            "cached_hits": 0,
+            "inconclusive": [],
+            "dead_nodes": [],
+            "cap_reached": False,
+        },
         "results": [
             {
                 k: r[k]
@@ -869,11 +1260,10 @@ def build_report(result: Result, root: Path, questions_file: Path) -> dict:
                 )
             }
             | ({"nearest": r["nearest"]} if "nearest" in r else {})
+            | {"signposted": r["signposted"]}
             for r in result.results
         ],
     }
-    if result.fetch is not None:
-        report["fetch"] = result.fetch
     return report
 
 
@@ -933,6 +1323,9 @@ def selftest() -> int:
         return {
             "id": qid,
             "question": "q",
+            "keywords": [
+                {"en": ["FlexCache", "cache"], "ja": ["キャッシュ", "整合性"]}
+            ],
             "category": "workload" if scope == "hub" else "spoke-measurement",
             "scope": scope,
             "targets": [{"path": target}],
@@ -1018,6 +1411,41 @@ def selftest() -> int:
             verdicts == ["INCONCLUSIVE", "FAIL"] and capped.fetch["cap_reached"],  # type: ignore[index]
         )
 
+    # Signposted: the same link, once with its llms.txt description naming the subject and once
+    # with the subject only in a neighboring paragraph.
+    for llms, expected in (
+        ("- [Note](a.md): how FlexCache stays consistent\n", "PASS"),
+        ("- [Note](a.md): overview\nFlexCache is described here.\n", "FAIL"),
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "llms.txt").write_text(llms, encoding="utf-8")
+            (root / "a.md").write_text("a\n", encoding="utf-8")
+            r = evaluate([q("wl-a", "a.md")], root).results[0]
+            check(
+                f"linked PASS, signposted {expected}",
+                r["verdict"] == "PASS" and r["signposted"]["verdict"] == expected,
+            )
+
+    # Two subjects: a line naming only one of them is not a signpost for the question.
+    two = [
+        {"en": ["FlexCache", "cache"], "ja": ["キャッシュ"]},
+        {"en": ["FPolicy"], "ja": ["FPolicy", "ポリシー"]},
+    ]
+    for llms, expected in (
+        ("- [Note](a.md): FPolicy on a FlexCache cache\n", "PASS"),
+        ("- [Note](a.md): FPolicy on an origin volume\n", "FAIL"),
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "llms.txt").write_text(llms, encoding="utf-8")
+            (root / "a.md").write_text("a\n", encoding="utf-8")
+            r = evaluate([{**q("wl-a", "a.md"), "keywords": two}], root).results[0]
+            check(
+                f"two groups, signposted {expected}",
+                r["signposted"]["verdict"] == expected,
+            )
+
     for name in failures:
         print(f"selftest FAILED: {name}", file=sys.stderr)
     if failures:
@@ -1065,6 +1493,11 @@ def main(argv: list[str] | None = None) -> int:
         help="question set (default docs/agent/reachability-questions.json under --root)",
     )
     parser.add_argument("--root", type=Path, default=ROOT, help="repository root")
+    parser.add_argument(
+        "--signposted",
+        action="store_true",
+        help="exit non-zero when any question in scope is not signposted",
+    )
     parser.add_argument("--report", type=Path, help="write a JSON report here")
     parser.add_argument(
         "--selftest", action="store_true", help="run the built-in truth table"
@@ -1092,12 +1525,21 @@ def main(argv: list[str] | None = None) -> int:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(
             json.dumps(
-                build_report(result, root, questions_file), indent=2, ensure_ascii=False
+                build_report(
+                    result,
+                    root,
+                    questions_file,
+                    gate="signposted" if args.signposted else "linked",
+                ),
+                indent=2,
+                ensure_ascii=False,
             )
             + "\n",
             encoding="utf-8",
         )
-    return 1 if result.counts["fail"] else 0
+    if result.counts["fail"]:
+        return 1
+    return 1 if args.signposted and result.signposted_counts["fail"] else 0
 
 
 if __name__ == "__main__":
