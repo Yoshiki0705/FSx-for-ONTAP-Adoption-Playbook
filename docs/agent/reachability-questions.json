@@ -1,9 +1,15 @@
 {
-  "schema": "reachability-questions/v1",
+  "schema": "reachability-questions/v3",
   "questions": [
     {
       "id": "wl-many-small-files",
       "question": "My NAS holds very many small files. Why can new files fail to be created while capacity remains?",
+      "keywords": [
+        {
+          "en": ["small files", "many files", "file count", "inode", "inodes", "maxfiles", "out of files"],
+          "ja": ["小さなファイル", "小さいファイル", "ファイル数", "大量のファイル", "inode", "容量が残っ"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -15,6 +21,12 @@
     {
       "id": "wl-large-parallel-writes",
       "question": "I ingest large parallel writes into a FlexGroup volume. Why do some members fill up before the others?",
+      "keywords": [
+        {
+          "en": ["FlexGroup", "parallel write", "parallel ingest", "ingest", "member volume", "constituent", "imbalance", "unbalanced"],
+          "ja": ["FlexGroup", "並列書き込み", "並列", "取り込み", "メンバー", "偏り", "不均衡"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -26,6 +38,12 @@
     {
       "id": "wl-many-clients-or-sites",
       "question": "Many clients and sites read the same data. When does a FlexCache volume help, and how does it stay consistent with the origin?",
+      "keywords": [
+        {
+          "en": ["FlexCache", "cache", "many clients", "multiple sites", "remote site", "origin", "consistency"],
+          "ja": ["FlexCache", "キャッシュ", "多数のクライアント", "複数拠点", "拠点", "オリジン", "整合性"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -36,6 +54,12 @@
     {
       "id": "wl-cold-data-tiering",
       "question": "I want to cut the capacity cost of cold data with tiering. Which tiering policy fits, and when does data come back on read?",
+      "keywords": [
+        {
+          "en": ["tiering", "tiering policy", "cold data", "capacity pool", "FabricPool", "capacity cost", "auto", "snapshot-only"],
+          "ja": ["階層化", "ティアリング", "階層化ポリシー", "コールドデータ", "容量プール", "容量コスト", "FabricPool"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -46,6 +70,12 @@
     {
       "id": "wl-smb-file-servers",
       "question": "I run SMB file servers and SQL Server over SMB on FSx for ONTAP. What do SMB signing and encryption defaults do to performance and client connectivity?",
+      "keywords": [
+        {
+          "en": ["SMB", "CIFS", "file server", "SMB signing", "signing", "SMB encryption", "sealing", "SQL Server"],
+          "ja": ["SMB", "CIFS", "ファイルサーバー", "署名", "暗号化", "SQL Server"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -56,6 +86,12 @@
     {
       "id": "wl-linux-nfs",
       "question": "My Linux workloads mount over NFS. Which features differ by NFSv4.x version, and how is traffic encrypted in transit?",
+      "keywords": [
+        {
+          "en": ["NFS", "NFSv4", "NFSv4.1", "NFS version", "Linux", "mount", "Kerberos", "encryption in transit", "TLS"],
+          "ja": ["NFS", "NFSv4", "Linux", "マウント", "版", "バージョン", "転送中の暗号化", "Kerberos"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -66,6 +102,16 @@
     {
       "id": "wl-s3-access-points",
       "question": "I read and write files through the S3 API using S3 Access Points. Do the limits in the ONTAP S3 technical report apply?",
+      "keywords": [
+        {
+          "en": ["S3 Access Points", "S3 Access Point", "S3 API"],
+          "ja": ["S3 Access Points", "S3 アクセスポイント", "S3 API"]
+        },
+        {
+          "en": ["ONTAP S3"],
+          "ja": ["ONTAP S3"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -76,6 +122,12 @@
     {
       "id": "wl-dr-destination-analytics",
       "question": "I want to run analytics on a SnapMirror DR destination. Can it be read without breaking the relationship, and which policy type sets retention and lag?",
+      "keywords": [
+        {
+          "en": ["SnapMirror", "DR", "disaster recovery", "destination", "replica", "analytics", "policy type", "retention", "lag"],
+          "ja": ["SnapMirror", "DR", "災害対策", "宛先", "レプリカ", "分析", "保持", "ラグ", "ポリシー種別"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -86,6 +138,16 @@
     {
       "id": "wl-ransomware-regulatory",
       "question": "For ransomware readiness and regulatory retention, when does Autonomous Ransomware Protection start protecting, and what does snapshot locking do to volumes that are not SnapLock volumes?",
+      "keywords": [
+        {
+          "en": ["ARP", "Autonomous Ransomware Protection"],
+          "ja": ["ARP"]
+        },
+        {
+          "en": ["snapshot locking", "tamperproof"],
+          "ja": ["スナップショットロック", "Snapshot ロック", "改ざん防止"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -96,6 +158,12 @@
     {
       "id": "wl-admin-plane-governance",
       "question": "How do I govern and audit the FSx for ONTAP admin plane, and which control should I start with?",
+      "keywords": [
+        {
+          "en": ["admin", "administrator", "management plane", "admin plane", "governance", "audit", "IAM", "fsxadmin", "access control"],
+          "ja": ["管理", "管理者", "管理面", "管理プレーン", "ガバナンス", "監査", "統制", "IAM", "fsxadmin"]
+        }
+      ],
       "category": "workload",
       "scope": "hub",
       "targets": [
@@ -107,6 +175,16 @@
     {
       "id": "tr-high-file-count",
       "question": "Where are the Hub's findings from the NetApp technical report on high file count NAS workloads?",
+      "keywords": [
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["high file count", "file count", "many files", "small files"],
+          "ja": ["ファイル数", "大量のファイル", "小さなファイル"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -122,6 +200,16 @@
     {
       "id": "tr-flexcache-flexgroup",
       "question": "Where are the Hub's findings from the NetApp technical report on FlexCache and FlexGroup volumes?",
+      "keywords": [
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["FlexCache", "FlexGroup", "cache"],
+          "ja": ["FlexCache", "FlexGroup", "キャッシュ"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -134,6 +222,16 @@
     {
       "id": "tr-nfs",
       "question": "Where are the Hub's findings from the NetApp NFS technical report on mounting, versions, and encryption?",
+      "keywords": [
+        {
+          "en": ["NFS", "NFSv4", "mount", "encryption"],
+          "ja": ["NFS", "マウント", "暗号化"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -145,6 +243,16 @@
     {
       "id": "tr-smb",
       "question": "Where are the Hub's findings from the NetApp SMB technical report on signing, minimum version, Multichannel, and CA shares?",
+      "keywords": [
+        {
+          "en": ["SMB", "CIFS", "signing", "Multichannel", "continuously available", "CA share", "SMB version"],
+          "ja": ["SMB", "CIFS", "署名", "マルチチャネル", "Multichannel", "継続的可用性", "CA 共有"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -156,6 +264,20 @@
     {
       "id": "tr-s3",
       "question": "Where are the Hub's findings from the NetApp ONTAP S3 technical report, and how do they relate to S3 Access Points?",
+      "keywords": [
+        {
+          "en": ["ONTAP S3"],
+          "ja": ["ONTAP S3"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["S3 Access Points", "S3 Access Point"],
+          "ja": ["S3 Access Points", "S3 アクセスポイント"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -166,6 +288,16 @@
     {
       "id": "tr-tiering",
       "question": "Where are the Hub's findings from the NetApp technical report on FabricPool tiering?",
+      "keywords": [
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["FabricPool", "tiering", "tiering policy"],
+          "ja": ["FabricPool", "階層化", "ティアリング"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -176,6 +308,16 @@
     {
       "id": "tr-data-protection",
       "question": "Where are the Hub's findings from the NetApp technical report on data protection and disaster recovery?",
+      "keywords": [
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["data protection", "disaster recovery", "DR"],
+          "ja": ["データ保護", "災害対策", "DR"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -187,6 +329,16 @@
     {
       "id": "tr-security-hardening",
       "question": "Where are the Hub's findings from the NetApp security hardening guide on admin accounts and encryption?",
+      "keywords": [
+        {
+          "en": ["security hardening", "hardening", "admin account", "administrator", "encryption", "fsxadmin"],
+          "ja": ["セキュリティ強化", "ハードニング", "管理者", "管理アカウント", "暗号化"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -198,6 +350,16 @@
     {
       "id": "tr-security",
       "question": "Where are the Hub's findings from the NetApp security technical reports on ransomware protection, SnapLock, snapshot locking, FPolicy, and Vscan?",
+      "keywords": [
+        {
+          "en": ["security", "ransomware", "ARP", "SnapLock", "snapshot locking", "tamperproof", "FPolicy", "Vscan", "antivirus"],
+          "ja": ["セキュリティ", "ランサムウェア", "SnapLock", "スナップショットロック", "FPolicy", "Vscan", "ウイルス"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        }
+      ],
       "category": "tr",
       "scope": "hub",
       "targets": [
@@ -212,6 +374,20 @@
     {
       "id": "tr-networking",
       "question": "Where are the cluster and SVM peering reachability requirements for distributing data with FlexCache, from the NetApp networking technical report?",
+      "keywords": [
+        {
+          "en": ["networking", "network", "peering", "cluster peering", "SVM peering", "peer"],
+          "ja": ["ネットワーク", "ピアリング", "クラスタピア", "SVM ピア"]
+        },
+        {
+          "en": ["FlexCache"],
+          "ja": ["FlexCache"]
+        },
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        }
+      ],
       "category": "tr",
       "scope": "cross-repo",
       "targets": [
@@ -223,6 +399,16 @@
     {
       "id": "sm-smb-multichannel-four-channels",
       "question": "SMB Multichannel stopped at four channels in a measurement. Where is that measured?",
+      "keywords": [
+        {
+          "en": ["SMB Multichannel", "Multichannel"],
+          "ja": ["SMB Multichannel", "マルチチャネル"]
+        },
+        {
+          "en": ["measurement", "benchmark"],
+          "ja": ["測定", "計測", "ベンチマーク"]
+        }
+      ],
       "category": "spoke-measurement",
       "scope": "cross-repo",
       "targets": [
@@ -233,6 +419,20 @@
     {
       "id": "sm-s3ap-writes-fpolicy",
       "question": "Do writes through S3 Access Points trigger FPolicy, and what does the audit record keep?",
+      "keywords": [
+        {
+          "en": ["S3 Access Points", "S3 Access Point"],
+          "ja": ["S3 Access Points", "S3 アクセスポイント"]
+        },
+        {
+          "en": ["FPolicy"],
+          "ja": ["FPolicy"]
+        },
+        {
+          "en": ["audit", "auditing", "audit log"],
+          "ja": ["監査", "監査ログ"]
+        }
+      ],
       "category": "spoke-measurement",
       "scope": "cross-repo",
       "targets": [
@@ -244,6 +444,16 @@
     {
       "id": "sm-snapmirror-destination-s3ap",
       "question": "Can a SnapMirror destination be read through S3 Access Points without breaking the relationship?",
+      "keywords": [
+        {
+          "en": ["SnapMirror"],
+          "ja": ["SnapMirror"]
+        },
+        {
+          "en": ["S3 Access Points", "S3 Access Point"],
+          "ja": ["S3 Access Points", "S3 アクセスポイント"]
+        }
+      ],
       "category": "spoke-measurement",
       "scope": "cross-repo",
       "targets": [
@@ -255,6 +465,16 @@
     {
       "id": "sm-cache-side-fpolicy-audit",
       "question": "Do FPolicy and auditing fire on the FlexCache cache side, or only on the origin?",
+      "keywords": [
+        {
+          "en": ["FPolicy", "audit", "auditing"],
+          "ja": ["FPolicy", "監査"]
+        },
+        {
+          "en": ["FlexCache", "cache"],
+          "ja": ["FlexCache", "キャッシュ"]
+        }
+      ],
       "category": "spoke-measurement",
       "scope": "cross-repo",
       "targets": [
@@ -266,6 +486,16 @@
     {
       "id": "sm-tr-workload-mapping",
       "question": "Which NetApp technical reports map to which workloads, and which were judged out of scope?",
+      "keywords": [
+        {
+          "en": ["technical report", "TR"],
+          "ja": ["テクニカルレポート", "TR"]
+        },
+        {
+          "en": ["workload", "mapping", "scope", "out of scope"],
+          "ja": ["ワークロード", "対応付け", "マッピング", "対象外", "スコープ"]
+        }
+      ],
       "category": "spoke-measurement",
       "scope": "cross-repo",
       "targets": [

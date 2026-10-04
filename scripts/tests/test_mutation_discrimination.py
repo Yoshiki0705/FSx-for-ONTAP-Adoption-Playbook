@@ -854,6 +854,88 @@ MUTATIONS: list[dict] = [
         ],
         "must_pass": ["test_a_target_within_budget_passes"],
     },
+    {
+        # The signposted verdict exists because the linked one passes almost everything. Letting
+        # every linked hop count as signposted collapses the two back into one.
+        "name": "every linked hop counts as signposted",
+        "why": (
+            "Returning True from the hop filter turns every signposted FAIL green without touching "
+            "a page, and the signposted count then silently equals the linked one"
+        ),
+        "module": "scripts.tests.test_reachability",
+        "edits": [
+            (
+                "tools/check_reachability.py",
+                "    return any(match(block) for block in signs.get((source, target), ()))",
+                "    return True",
+            ),
+        ],
+        "must_fail": [
+            "test_a_linked_hop_without_keywords_fails_signposted",
+            "test_llms_txt_items_do_not_absorb_the_next_paragraph",
+        ],
+        "must_pass": ["test_a_signposted_hop_via_the_llms_txt_description_passes"],
+    },
+    {
+        # Short keywords such as TR and DR are why the word boundary exists: without it they
+        # match inside STRUCTURE and drawio, and nearly every line is signposted.
+        "name": "ASCII keywords match inside words",
+        "why": (
+            "Dropping the boundary reads as a simplification and keeps every Japanese case green, "
+            "while TR, DR and S3 start matching inside unrelated words"
+        ),
+        "module": "scripts.tests.test_reachability",
+        "edits": [
+            (
+                "tools/check_reachability.py",
+                '            pattern = rf"(?<![a-z0-9]){body}(?![a-z0-9])"',
+                "            pattern = body",
+            ),
+        ],
+        "must_fail": ["test_an_ascii_keyword_does_not_match_inside_a_word"],
+        "must_pass": ["test_japanese_keywords_match_as_substrings"],
+    },
+    {
+        # An llms.txt item is one line. Reading it like a Markdown list item lets the paragraph
+        # after a list lend its words to the last item.
+        "name": "llms.txt items take lazy continuation lines",
+        "why": (
+            "Segmenting every file the same way looks like a simplification, and then the line "
+            "after the last llms.txt item signposts a link it does not describe"
+        ),
+        "module": "scripts.tests.test_reachability",
+        "edits": [
+            (
+                "tools/check_reachability.py",
+                "    attached = blocks(text, llms=llms)",
+                "    attached = blocks(text, llms=False)",
+            ),
+        ],
+        "must_fail": ["test_llms_txt_items_do_not_absorb_the_next_paragraph"],
+        "must_pass": [
+            "test_a_signposted_hop_via_the_llms_txt_description_passes",
+            "test_a_markdown_list_item_carries_its_continuation_lines",
+        ],
+    },
+    {
+        # Groups exist because one word from a broad union let a line about another subject
+        # signpost the question. Accepting any group restores the union.
+        "name": "one keyword group is enough",
+        "why": (
+            "Switching all to any keeps every single-subject question unchanged, so only a "
+            "multi-subject case notices that a line naming one subject passes again"
+        ),
+        "module": "scripts.tests.test_reachability",
+        "edits": [
+            (
+                "tools/check_reachability.py",
+                "        return all(group(text) for group in groups)",
+                "        return any(group(text) for group in groups)",
+            ),
+        ],
+        "must_fail": ["test_every_keyword_group_must_match_on_a_hop"],
+        "must_pass": ["test_a_signposted_hop_via_the_llms_txt_description_passes"],
+    },
 ]
 
 
