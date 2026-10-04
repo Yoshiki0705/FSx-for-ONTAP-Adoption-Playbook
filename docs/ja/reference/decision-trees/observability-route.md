@@ -171,6 +171,7 @@ graph TD
 - [クロスアカウントは IAM ではなくネットワークの問題](../../domains/observability/notes/cross-account-is-a-network-problem.md) — 段階 3・4 の根拠
 - [経路は認証とアクセス経路で先に狭まる](../../domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md) — 条件 6 とサイジング
 - [監視は平均値で失敗する](../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 経路を選んだ後の閾値設計
+- [監視設計（FSx-for-ONTAP-Observability-integrations）](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md) — 経路 1（CloudWatch）を選んだ後の実装インデックス
 - [知見の分類ポリシー](../../evidence-policy.md)
 
 ---

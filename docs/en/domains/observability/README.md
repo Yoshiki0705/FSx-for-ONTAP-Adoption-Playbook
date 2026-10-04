@@ -4,7 +4,7 @@
 
 Covers **how to choose a collection route** when monitoring Amazon FSx for NetApp ONTAP. What to monitor and where to set thresholds belongs to [Operate](../../playbooks/05-operate/); how throughput and latency are determined belongs to [Performance](../performance/). This module only covers which route the values come through.
 
-Implementation of each route (templates, per-vendor integrations, building the collection stack) lives in [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations). **This module answers "which one to choose", not "how to build it".**
+Implementation of each route (templates, per-vendor integrations, building the collection stack) lives in [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations). Once Route 1 (CloudWatch) is chosen, start from its [monitoring design](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/monitoring-design.md) page (the CloudFormation monitoring templates, where each one's scope ends, and the Terraform direction) and its [AWS-native alternative matrix](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/native-alternative-matrix.md) (System Manager view → CloudWatch metric → template). **This module answers "which one to choose", not "how to build it".**
 
 ---
 

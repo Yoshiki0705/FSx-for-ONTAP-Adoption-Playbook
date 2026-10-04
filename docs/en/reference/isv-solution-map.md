@@ -78,7 +78,7 @@ Personal blogs and community articles are outside the criteria. **Not because th
 
 | Option | Form | Source |
 |---|---|---|
-| SIOS LifeKeeper | Software hosted on Amazon EC2 | [AWS Prescriptive Guidance blog](https://aws.amazon.com/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/) · [Vendor announcement (2024-11-28)](https://sios.jp/news/info/2024/20241128_lk-fsx.html) |
+| SIOS LifeKeeper | Software hosted on Amazon EC2 | [AWS Prescriptive Guidance blog](https://aws.amazon.com/jp/blogs/psa/high-availability-solution-with-sios-lifekeeper-and-amazon-fsx-for-netapp-ontap/) · [Vendor announcement (2024-11-28)](https://sios.jp/news/info/2024/20241128_lk-fsx.html) |
 
 **The scope stated in the vendor announcement** is iSCSI and NFS on Linux and iSCSI on Windows (LifeKeeper for Linux ver.9.9.0 / LifeKeeper for Windows ver.8.10.1, available from 2024-11-28).
 

@@ -148,7 +148,7 @@ graph TD
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| 事例 | [AWS: Deploying VDI for subsurface oil and gas](https://docs.aws.amazon.com/solutions/latest/deploying-vdi-for-subsurface-oil-and-gas-on-aws/index.html) | 地震探査データを S3 に置き、解釈ワークステーションから NFS でマウントする構成 |
+| 事例 | [AWS: Deploying VDI for subsurface oil and gas](https://docs.aws.amazon.com/solutions/deploying-vdi-for-subsurface-oil-and-gas-on-aws/index.html) | 地震探査データを S3 に置き、解釈ワークステーションから NFS でマウントする構成 |
 
 ---
 

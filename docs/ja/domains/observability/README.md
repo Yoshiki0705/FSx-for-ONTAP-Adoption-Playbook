@@ -4,7 +4,7 @@
 
 Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を扱います。何を監視し閾値をどこに置くかは [運用](../../playbooks/05-operate/) 側、スループットやレイテンシがどう決まるかは [性能](../performance/) 側です。ここは「どの経路で値を取るか」だけを扱います。
 
-各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
+各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。経路 1（CloudWatch）を選んだあとの入口は、[監視設計](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md)（CloudFormation の監視テンプレート、各テンプレートの範囲の境界、Terraform の方針）と [AWS ネイティブ代替マトリクス](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/native-alternative-matrix.md)（System Manager の画面 → CloudWatch メトリクス → テンプレートの対応）です。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
 
 ---
 

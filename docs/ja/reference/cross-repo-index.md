@@ -260,6 +260,13 @@ lang: ja
 | `llms.txt` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `llms.txt` | `This repository holds **implementations**.` | `retraction` | 実装を持つ側であり、仕様と上限はこちらへ委ねていること。**分担が変われば、こちらの紹介文が古くなります** |
 | `llms.txt` | `FSx-for-ONTAP-Agentic-Access-Aware-RAG` | `llms.txt` | `matched against the user's SID / UID / GID **at query time**` | `retraction` | 文書ごとの権限メタデータを検索後に照合する構成であること |
 | `llms.txt` | `FSx-for-ONTAP-Lakehouse-Integrations` | `llms.txt` | `which parts work, which do not, and what each claim rests on.` | `retraction` | 動く部分と動かない部分、その根拠を分けて持つリポジトリであること |
+| `docs/ja/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/monitoring-design.md` | `収集経路の選択は行いません。` | `retraction` | 経路 1（CloudWatch）を選んだあとの実装インデックスであり、経路の選択はこちらに委ねていること。**分担が変われば、こちらの案内が古くなります** |
+| `docs/ja/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/native-alternative-matrix.md` | `本リポジトリの AWS ネイティブ実装にマッピングしたもの` | `retraction` | System Manager の画面を CloudWatch メトリクスとテンプレートに対応づけた表であること |
+| `docs/en/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/monitoring-design.md` | `It does not choose the collection route.` | `retraction` | 同上（EN 版）。経路 1 の実装インデックスであり、経路の選択はこちらに委ねていること |
+| `docs/en/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/native-alternative-matrix.md` | `to its AWS-native equivalent implementation in this repository` | `retraction` | 同上（EN 版）。System Manager の画面と CloudWatch メトリクスとテンプレートの対応表であること |
+| `docs/ja/reference/decision-trees/observability-route.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/monitoring-design.md` | `収集経路の選択は行いません。` | `retraction` | 経路 1 の出口から実装インデックスへ送ること。決定木は複製せず、こちらに 1 本だけ置く分担です |
+| `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `llms.txt` | `this repository is where a chosen route is implemented.` | `retraction` | 選ばれた経路を実装する側であり、経路の選択はこちらに委ねていること。**分担が変われば、こちらの紹介文が古くなります** |
+| `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/monitoring-design.md` | `It does not choose the collection route.` | `retraction` | CloudWatch を選んだあとの実装インデックスであること |
 <!-- cross-repo-table:end -->
 
 ---
