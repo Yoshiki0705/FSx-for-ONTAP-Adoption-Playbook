@@ -38,6 +38,8 @@ FSx-for-ONTAP-Lakehouse-Integrations	llms.txt	retraction	which parts work, which
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
+FSx-for-ONTAP-Observability-integrations	docs/en/monitoring-design.md	retraction	It does not choose the collection route.
+FSx-for-ONTAP-Observability-integrations	docs/en/native-alternative-matrix.md	retraction	to its AWS-native equivalent implementation in this repository
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	KeepAlive messages to the FPolicy server every 120 seconds
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	NOT used for routing FPolicy traffic
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	The query window has to be wider than
@@ -47,6 +49,9 @@ FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3
 FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	raised no FPolicy notification
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
+FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	収集経路の選択は行いません。
+FSx-for-ONTAP-Observability-integrations	docs/ja/native-alternative-matrix.md	retraction	本リポジトリの AWS ネイティブ実装にマッピングしたもの
+FSx-for-ONTAP-Observability-integrations	llms.txt	retraction	this repository is where a chosen route is implemented.
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
