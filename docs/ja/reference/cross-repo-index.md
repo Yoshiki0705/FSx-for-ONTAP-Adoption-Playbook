@@ -251,6 +251,15 @@ lang: ja
 | `docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/mav-configuration.md` | `破壊的な管理操作に対して複数の管理者の承認を要求する機能` | `retraction` | 同上（EN 版）。MAV が破壊的操作に複数管理者の承認を要求する機能であること |
 | `docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/fsxadmin-limitations.md` | `一部の操作は AWS サポートへの連絡が必要` | `retraction` | 同上（EN 版）。委任された管理者で実行できない操作の存在 |
 | `docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-several-controls.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification-status.md` | `シークレットの値と実際のパスワードが一致しなかった` | `retraction` | 同上（EN 版）。テンプレートが生成した `fsxadmin` パスワードが実効パスワードにならなかった実測 |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `llms.txt` | `**origin volume only**, writes always go through it` | `retraction` | エージェント向けの案内として、S3 Access Point を origin ボリュームにだけ付け、Cache 側は NFS / SMB だけで使う構成であること。**この前提が変われば、こちらの紹介文が古くなります** |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/perf-matrix-results.md` | `観測したチャネル数は 4 であり` | `retraction` | プロトコル別測定の結果に SMB Multichannel の測定が含まれること。**値はこちらに転記せず、所在だけを案内します** |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `docs/ja/support-matrix.md` | `Cache 側のアクセスも監査できる` | `retraction` | Origin と Cache の機能対応を 1 機能 1 行で比べる表に、FPolicy と監査の行があること |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/scope-ledger.md` | `FlexCache 配布にクラスタ / SVM ピアリング到達性と NAS 名前サービスが要る` | `retraction` | TR ごとのスコープ判定と、その構成への関連根拠の所在。Networking の行を probe にしています |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/tr-integration/delegation-ledger.md` | `クラスタ / SVM ピアリングの到達性要件と、FlexCache 配布に必要なネットワーク前提` | `retraction` | Networking TR の知見が S3-Burst 側に委ねられていること。**台帳がこの行を Hub 側へ移せば、こちらの案内が古くなります** |
+| `llms.txt` | `S3-Burst-on-ONTAP-Files` | `docs/ja/deployment/onprem-terraform.md` | `クラスタピアと SVM ピアが先に必要です。` | `retraction` | FlexCache 配布の前提としてクラスタピアと SVM ピアが要ること。委任台帳の Networking 行が参照する節です |
+| `llms.txt` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `llms.txt` | `This repository holds **implementations**.` | `retraction` | 実装を持つ側であり、仕様と上限はこちらへ委ねていること。**分担が変われば、こちらの紹介文が古くなります** |
+| `llms.txt` | `FSx-for-ONTAP-Agentic-Access-Aware-RAG` | `llms.txt` | `matched against the user's SID / UID / GID **at query time**` | `retraction` | 文書ごとの権限メタデータを検索後に照合する構成であること |
+| `llms.txt` | `FSx-for-ONTAP-Lakehouse-Integrations` | `llms.txt` | `which parts work, which do not, and what each claim rests on.` | `retraction` | 動く部分と動かない部分、その根拠を分けて持つリポジトリであること |
 <!-- cross-repo-table:end -->
 
 ---

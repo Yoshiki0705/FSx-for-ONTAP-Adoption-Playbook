@@ -259,7 +259,7 @@ reachability: ## Check that each benchmark question reaches its answer from llms
 reachability-external: ## Also fetch sibling llms.txt and documents to measure cross-repo questions (network; INCONCLUSIVE on rate limits)
 	@$(PY) tools/check_reachability.py --external
 # Linked says a path exists; signposted says every hop's surrounding text names the question's
-# subject. Measure-only and outside `all` until a baseline shows what it costs to keep green.
+# subject. The Hub-internal half is in `all`; the external half stays opt-in, like the linked one.
 reachability-signposted: ## Also require every hop's surrounding text to name the question's subject (Hub-internal)
 	@$(PY) tools/check_reachability.py --signposted
 reachability-signposted-external: ## Signposted, including cross-repo questions (network; INCONCLUSIVE on rate limits)
@@ -308,7 +308,7 @@ links-external: ## Check internal + external links (network required)
 gate: ## Run `all` and assert it did not change the git index (what the hooks run)
 	@scripts/run_gate.sh /tmp/gate.log
 
-all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo reachability inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo reachability reachability-signposted inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

@@ -128,6 +128,11 @@ jobs:
       - name: Check benchmark questions reach their answers
         run: make reachability
 
+      # The same questions, but every hop's attached text must name the question's subject, so a
+      # route that exists only through a line about something else fails. Offline, like the above.
+      - name: Check every hop to an answer is signposted
+        run: make reachability-signposted
+
       # The inbound direction, which needs no network: the pinned files are in this tree. Another
       # repository's gate depends on exact strings here, and it cannot warn us first -- its check
       # runs against a tree it does not have. A duplicated string fails too, because that leaves
