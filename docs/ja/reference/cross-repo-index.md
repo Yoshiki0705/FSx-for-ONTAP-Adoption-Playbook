@@ -268,6 +268,15 @@ lang: ja
 | `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `llms.txt` | `this repository is where a chosen route is implemented.` | `retraction` | 選ばれた経路を実装する側であり、経路の選択はこちらに委ねていること。**分担が変われば、こちらの紹介文が古くなります** |
 | `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/monitoring-design.md` | `It does not choose the collection route.` | `retraction` | CloudWatch を選んだあとの実装インデックスであること |
 | `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/native-alternative-matrix.md` | `to its AWS-native equivalent implementation in this repository` | `retraction` | System Manager の各監視ビューを AWS ネイティブ実装に対応づけた表であること。llms.txt から入口で辿れること |
+| `docs/ja/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/README.ja.md` | `作成、変更のない plan、タグの値の変更、すべてのタグの削除、削除（destroy）がすべて成功しました。` | `retraction` | 経路 1 の Terraform モジュールが実装済みで、公開した最小 IAM ポリシーだけを持つロールで作成から削除まで通ったこと。本文は版として v0.1.1 のタグと Release を示し、リンクは `main` で引いています |
+| `docs/ja/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json` | `alarm:fsxn-monitoring-*` | `retraction` | 最小 IAM ポリシーが、モジュールの名前で ARN を絞った形で公開されていること |
+| `docs/ja/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/verification-results-cloudwatch-monitoring.md` | `確認項目を伴う検証の実行ではなく、1 つの環境でのサンプルです。` | `retraction` | ダッシュボードとアラーム一覧の画面が 1 環境のサンプルであること |
+| `docs/en/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/README.md` | `Create, a plan with no changes, a tag value change, removal of all tags, and destroy all succeeded.` | `retraction` | 同上（EN 版）。Terraform モジュールが最小 IAM ポリシーで作成から削除まで通ったこと |
+| `docs/en/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json` | `alarm:fsxn-monitoring-*` | `retraction` | 同上（EN 版）。最小 IAM ポリシーが ARN を絞った形で公開されていること |
+| `docs/en/domains/observability/README.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/verification-results-cloudwatch-monitoring.md` | `This is a sample from one environment, not a verification run with checks` | `retraction` | 同上（EN 版）。画面が 1 環境のサンプルであること |
+| `docs/ja/reference/decision-trees/observability-route.md` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/README.ja.md` | `作成、変更のない plan、タグの値の変更、すべてのタグの削除、削除（destroy）がすべて成功しました。` | `retraction` | 経路 1 の出口から Terraform モジュールの日本語 README へ送ること |
+| `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/README.md` | `Create, a plan with no changes, a tag value change, removal of all tags, and destroy all succeeded.` | `retraction` | 経路 1 の Terraform モジュールが実装済みで、最小 IAM ポリシーでの作成から削除までが確認されていること |
+| `llms.txt` | `FSx-for-ONTAP-Observability-integrations` | `terraform/fsxn-monitoring-dashboard/README.ja.md` | `作成、変更のない plan、タグの値の変更、すべてのタグの削除、削除（destroy）がすべて成功しました。` | `retraction` | 同上の日本語 README。日本語の読者を 1 ホップで送るためのリンク |
 <!-- cross-repo-table:end -->
 
 ---

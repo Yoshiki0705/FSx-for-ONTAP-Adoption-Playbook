@@ -4,7 +4,11 @@
 
 Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を扱います。何を監視し閾値をどこに置くかは [運用](../../playbooks/05-operate/) 側、スループットやレイテンシがどう決まるかは [性能](../performance/) 側です。ここは「どの経路で値を取るか」だけを扱います。
 
-各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。経路 1（CloudWatch）を選んだあとの入口は、[監視設計](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md)（CloudFormation の監視テンプレート、各テンプレートの範囲の境界、Terraform の方針）と [AWS ネイティブ代替マトリクス](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/native-alternative-matrix.md)（System Manager の画面 → CloudWatch メトリクス → テンプレートの対応）です。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
+各経路の実装（テンプレート、ベンダー別 integration、収集基盤の構築手順）は [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) にあります。経路 1（CloudWatch）を選んだあとの入口は、[監視設計](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md)（CloudFormation の監視テンプレート、各テンプレートの範囲の境界、Terraform モジュールの位置付け）と [AWS ネイティブ代替マトリクス](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/native-alternative-matrix.md)（System Manager の画面 → CloudWatch メトリクス → テンプレートの対応）です。**このモジュールの役目は「どれを選ぶか」で、「どう作るか」ではありません。**
+
+**Terraform で構成を管理している環境向けに、経路 1 のダッシュボードとアラームを作る Terraform モジュールが同リポジトリで実装・検証済みです**。`terraform/fsxn-monitoring-dashboard/` が、CloudWatch ダッシュボード、容量とネットワークスループット利用率のアラーム、任意で有効にする CPU・ディスク・ボリューム単位のアラーム、任意の SNS メール通知を作ります。取得方法、必要な IAM 権限、デプロイから削除までの手順は [モジュールの README（日本語、最新）](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/terraform/fsxn-monitoring-dashboard/README.ja.md) にあります。取得するときは、モジュールをリリースタグ `terraform-fsxn-monitoring-dashboard-v0.1.1` に `?ref=terraform-fsxn-monitoring-dashboard-v0.1.1` で固定します（Release: [terraform-fsxn-monitoring-dashboard-v0.1.1](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/releases/tag/terraform-fsxn-monitoring-dashboard-v0.1.1)）。AWS ネイティブ経路の主な実装は CloudFormation のままで、このモジュールは同じ構成を Terraform のワークフローで管理するための選択肢です。環境で既に使っている IaC ツールに合わせて選んでください。
+
+検証は同リポジトリが記録したサンプル実行で、本番での見積りではありません。2026-10-05〜2026-10-07（UTC）に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`・HA ペア 1 つのファイルシステム 1 台で、オフラインの `terraform fmt` / `validate` / `terraform test`、ダッシュボードの全系列のデータ取得、アラームの OK → ALARM → OK の遷移（ファイルシステムの容量アラームは実データを書き込んで確認）、[公開された最小 IAM ポリシー](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json)（ARN で絞った形）だけを持つロールでの作成・タグの変更・plan・削除を確認しています。IAM の確認は v0.1.0 で行い、v0.1.1 で変わったのはダッシュボードの本文だけです。ポリシーのリンク先は最新版です。第 2 世代と複数 HA ペアのファイルシステム、SNS 通知の配信は未検証です。AWS プロバイダーは `>= 6.67.0` を宣言しており、検証に使った版は 6.67.0 です。マスク済みのダッシュボードとアラーム一覧の画面は [検証記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/verification-results-cloudwatch-monitoring.md#2026-10-07-のダッシュボードとアラームの画面) にあります。
 
 ---
 
@@ -17,6 +21,7 @@ Amazon FSx for NetApp ONTAP を監視するときの**収集経路の選定**を
 | **まだ監視を組んでいない** | [監視経路の選択 決定木](../../reference/decision-trees/observability-route.md) | **経路は 1 つではなく、認証とデータ所在で先に狭まります** |
 | **オンプレの Grafana を持ち込みたい** | [オンプレのダッシュボードはそのまま移らない](notes/on-prem-dashboards-do-not-transfer.md) | 移らない理由と、移すために必要になるもの |
 | **複数アカウント・複数拠点に広げたい** | [クロスアカウントは IAM ではなくネットワークの問題](notes/cross-account-is-a-network-problem.md) | **IAM を直しても届きません。** 詰まる場所が違います |
+| **経路 1（CloudWatch）を選び、構成を Terraform で管理している** | [Terraform モジュール fsxn-monitoring-dashboard の README](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/terraform/fsxn-monitoring-dashboard/README.ja.md)（最新） | 取得方法、必要な IAM 権限、デプロイから削除までの手順。取得時はリリースタグ `terraform-fsxn-monitoring-dashboard-v0.1.1` に固定します。**検証済みの範囲は第 1 世代・HA ペア 1 つのファイルシステムです** |
 
 ---
 
