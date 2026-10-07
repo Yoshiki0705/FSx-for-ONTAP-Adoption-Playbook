@@ -9,6 +9,10 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The observability module no longer calls the sibling's Terraform monitoring a direction: the module is released and verified**.
+  The JA and EN observability READMEs and `llms.txt` said the sibling's monitoring design page described "the Terraform direction". The sibling has since released `terraform-fsxn-monitoring-dashboard-v0.1.1`, a Terraform module for the CloudWatch dashboard and alarms. Both READMEs now state it with the verified scope (sample runs on one first-generation file system with one HA pair in `ap-northeast-1`) and what stays unverified, name the tag to pin, and link the Release page, the module README, the published minimum IAM policy and the screenshot record. Both also gain a Read first row, the JA decision tree lists the Japanese README beside the monitoring design index, and `llms.txt` gains a module entry. CloudFormation stays the primary AWS-native path.
+  - The links to the module README, the IAM policy and the verification record use `blob/main`, following the cross-repo index convention, so a later change on the sibling's `main` still fires the probes. The prose labels those links as the current version and names the tag to pin separately; the Release page is the only tag-pinned link.
+
 - **Tamperproof Snapshot licensing is no longer marked unverified: the cost side now has an AWS source.**
   `snaplock-and-layered-ransomware-readiness.md` said no AWS statement on licensing had been found. AWS announced on 2025-03-05 that FSx for ONTAP no longer charges SnapLock licensing fees, across all Regions and for new and existing SnapLock volumes. The note now cites that What's New entry, states that it names SnapLock volume data rather than Tamperproof Snapshot (so "no additional charge" joins two statements), lists the repository owner's confirmation beside it, and keeps the retention and blast-radius statements in the same callout because no charge does not make locked Snapshots reversible.
 

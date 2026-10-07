@@ -172,6 +172,7 @@ graph TD
 - [経路は認証とアクセス経路で先に狭まる](../../domains/observability/notes/route-choice-is-bounded-by-access-and-auth.md) — 条件 6 とサイジング
 - [監視は平均値で失敗する](../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — 経路を選んだ後の閾値設計
 - [監視設計（FSx-for-ONTAP-Observability-integrations）](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md) — 経路 1（CloudWatch）を選んだ後の実装インデックス
+- [Terraform モジュール fsxn-monitoring-dashboard（FSx-for-ONTAP-Observability-integrations）](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/terraform/fsxn-monitoring-dashboard/README.ja.md) — 経路 1 のダッシュボードとアラームを Terraform で作る場合の入口（リンク先は最新の README）。取得時はリリースタグ `terraform-fsxn-monitoring-dashboard-v0.1.1` に固定します。検証済みの範囲は第 1 世代・HA ペア 1 つのファイルシステムです
 - [知見の分類ポリシー](../../evidence-policy.md)
 
 ---

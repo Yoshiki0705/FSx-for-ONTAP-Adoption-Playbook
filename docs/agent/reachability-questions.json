@@ -545,6 +545,27 @@
         {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/en/native-alternative-matrix.md"}
       ],
       "rationale": "The mapping from each ONTAP System Manager view to an AWS-native implementation is published by the observability integrations repository, which the Hub cites rather than restating."
+    },
+    {
+      "id": "sm-observability-terraform-monitoring-module",
+      "question": "Is there a Terraform module that builds the CloudWatch dashboard and alarms for an FSx for ONTAP file system, and what was it verified on?",
+      "keywords": [
+        {
+          "en": ["Terraform"],
+          "ja": ["Terraform"]
+        },
+        {
+          "en": ["CloudWatch", "dashboard", "alarm", "alarms"],
+          "ja": ["CloudWatch", "ダッシュボード", "アラーム"]
+        }
+      ],
+      "category": "spoke-measurement",
+      "scope": "cross-repo",
+      "targets": [
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:terraform/fsxn-monitoring-dashboard/README.ja.md"},
+        {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/en/verification-results-cloudwatch-monitoring.md"}
+      ],
+      "rationale": "The Terraform module and its verification record are published by the observability integrations repository; the Hub states the verified scope and links the release rather than restating the module. The English module README is a README.md, which this gate treats as a route, so the English answer is the verification record."
     }
   ]
 }
