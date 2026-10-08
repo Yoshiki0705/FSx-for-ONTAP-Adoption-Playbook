@@ -48,6 +48,7 @@
     "node_modules/**",
     ".private/**", // gitleaks:allow - path pattern, not committed content
     ".kiro/**", // gitleaks:allow - path pattern, not committed content
+    ".agents/**", // task/workflow agent scratch; gitignored, not committed content
     "semantic-review/**" // review-agent output; the findings live in .private/reviews/
   ]
 }

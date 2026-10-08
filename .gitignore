@@ -14,6 +14,13 @@
 semantic-review
 **/semantic-review
 
+# --- Agent task scratch (same reason for the missing trailing slash) ---
+# Workflow and task agents write intermediate notes, reviews and run state here. Like
+# semantic-review above, it is work-in-progress that must not reach a commit, and keeping it out
+# of the worktree's lint/audit scope stops another branch's scratch from failing the gate.
+.agents
+**/.agents
+
 # --- Kiro local configuration (same reason for the missing trailing slash) ---
 .kiro
 
