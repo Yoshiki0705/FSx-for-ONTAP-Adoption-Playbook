@@ -30,7 +30,7 @@ lang: ja
 
 ## 旅程の段階表
 
-**段階は 0 から 5 の 6 つです。** 移行を入口（段階 1）に置き、その前に評価（段階 0）、その先にモダナイゼーションの各局面を並べています。
+**段階は 0 から 6 の 7 つです。** 移行を入口（段階 1）に置き、その前に評価（段階 0）、その先にモダナイゼーションの各局面を並べています。
 
 **先に 1 つ断っておきます。段階は「順番に全部通る」ことを強制しません。** コンテナ化を経ずにサーバーレスへ進む経路もあれば、移行と同時に DR を設計する経路もあります。この表は代表的な弧を 1 本描いたものです。自分の経路に無い段階は飛ばし、必要な段階だけ読んでください。
 
@@ -38,10 +38,11 @@ lang: ja
 |---|---|---|---|---|
 | 0. 評価 | 移行対象と形の棚卸し | [評価](../playbooks/01-assess/) | — | ファイル数の棚卸し。容量が余っていても書けなくなります |
 | 1. 移行（入口） | VMware → EC2 + FSx for ONTAP | [移行](../playbooks/03-migrate/) / [移行方式の決定木](decision-trees/migration-method.md) | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 切り戻せる時点がいつ閉じるか。ブートは常に Amazon EBS |
-| 2. コンテナ化 | ECS / EKS へ replatform、データ層を継続 | [データストア選択の決定木](decision-trees/container-datastore-selection.md) / [ブロックストレージ](../domains/block-storage/) | [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 実行環境（EC2 / Fargate）で到達形態が決まること。Trident PV のボリューム数上限 |
-| 3. サーバーレス / 分析 / AI | S3 Access Points 経由でデータを活用 | [クライアント到達経路の決定木](decision-trees/client-access-route.md) / [データ活用](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points は「S3 として使える」わけではないこと。元の ACL は引き継がれません |
-| 4. DR / レジリエンス | 複製・Snapshot・ランサムウェア対策 | [データ保護](../domains/data-protection/) / [セキュリティ・ガバナンス](../domains/security-governance/) | [Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | 有効化とロックが別だという点。不可逆な選択が 3 段あります |
-| 5. 運用 / 可観測性 / 最適化 | 監視・容量・階層化・コスト | [運用](../playbooks/05-operate/) / [最適化](../playbooks/06-optimize/) / [請求が想定より高いときの決定木](decision-trees/cost-higher-than-expected.md) | [Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 監視が平均値で失敗すること。確保した量と使った量で課金が分かれます |
+| 2. アプリケーションのモダナイゼーション | データを FSx for ONTAP に置いたまま、アプリケーションの実行環境とプロトコルを変える | [マルチプロトコル・ID](../domains/multiprotocol-identity/) | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | SMB で使っているボリュームに NFS を足すのに複製は要らないこと。届かない原因はセキュリティスタイルの外側にあります |
+| 3. コンテナ化 | ECS / EKS へ replatform、データ層を継続 | [データストア選択の決定木](decision-trees/container-datastore-selection.md) / [ブロックストレージ](../domains/block-storage/) | [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 実行環境（EC2 / Fargate）で到達形態が決まること。Trident PV のボリューム数上限 |
+| 4. サーバーレス / 分析 / AI | S3 Access Points 経由でデータを活用 | [クライアント到達経路の決定木](decision-trees/client-access-route.md) / [データ活用](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points は「S3 として使える」わけではないこと。元の ACL は引き継がれません |
+| 5. DR / レジリエンス | 複製・Snapshot・ランサムウェア対策 | [データ保護](../domains/data-protection/) / [セキュリティ・ガバナンス](../domains/security-governance/) | [Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | 有効化とロックが別だという点。不可逆な選択が 3 段あります |
+| 6. 運用 / 可観測性 / 最適化 | 監視・容量・階層化・コスト | [運用](../playbooks/05-operate/) / [最適化](../playbooks/06-optimize/) / [請求が想定より高いときの決定木](decision-trees/cost-higher-than-expected.md) | [Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 監視が平均値で失敗すること。確保した量と使った量で課金が分かれます |
 
 **どの段階でも先に通すもの**があります。段階の行より優先してください。
 
@@ -73,7 +74,14 @@ lang: ja
 | ノート | [切り戻せる時点はクライアントが書き始めた瞬間に閉じる](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | 移行の切り替え判断 |
 | ノート | [ACL 保持は権限の問題であってツールの問題ではない](../playbooks/03-migrate/notes/preserving-acls-during-migration.md) | 移行時の権限保持 |
 
-### 2. コンテナ化
+### 2. アプリケーションのモダナイゼーション
+
+| 種類 | リソース | 論点 |
+|------|----------|------|
+| パターン | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを同じボリュームに置いたまま、アプリケーションを段階的に移す |
+| ノート | [SMB で運用中のボリュームに NFS を足すのに複製は要らない](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | 届かない原因はセキュリティスタイルの外側にあります |
+
+### 3. コンテナ化
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
@@ -81,7 +89,7 @@ lang: ja
 | 決定木 | [コンテナデータストアの選択](decision-trees/container-datastore-selection.md) | 実行環境で到達形態が決まる |
 | ノート | [Kubernetes のブロック PV はボリューム数の上限に当たる](../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | `ontap-san` と `ontap-san-economy` の分岐点。詰まるのは容量ではありません |
 
-### 3. サーバーレス / 分析 / AI
+### 4. サーバーレス / 分析 / AI
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
@@ -93,7 +101,7 @@ lang: ja
 | ノート | [S3 Access Points は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 同一アカウント・リージョン等の制約 |
 | ノート | [S3 Access Points は全リクエストを 1 つの ID で認可する](../domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI パイプラインに引き継がれません |
 
-### 4. DR / レジリエンス
+### 5. DR / レジリエンス
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
@@ -101,7 +109,7 @@ lang: ja
 | ノート | [SnapLock は有効化とロックが別](../domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) | 不可逆な選択が 3 段あります |
 | ノート | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | データ保護設計 |
 
-### 5. 運用 / 可観測性 / 最適化
+### 6. 運用 / 可観測性 / 最適化
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
@@ -119,7 +127,7 @@ lang: ja
 | 段階 | ブログ回 |
 |---|---|
 | 1. 移行 | [第 1 回（入口の設計）](https://hakobiya.hatenablog.com/entry/fsxn-vmware-migration-options-ec2)（[English](https://dev.to/aws-builders/designing-aws-modernization-with-vmware-migration-as-the-entry-point-why-fsx-for-ontap-as-the-3k24)）/ [第 2 回（AWS Transform の実機）](https://hakobiya.hatenablog.com/entry/fsxn-aws-transform-mgn-migration-target)（[English](https://dev.to/aws-builders/aws-transform-now-supports-block-storage-migration-to-fsx-for-ontap-benefits-and-pitfalls-from-a-1hhe)） |
-| 2-4. モダナイゼーション | 第 3 回（コンテナ化・S3 Access Points・DR）— 未公開 |
+| 3-5. モダナイゼーション | 第 3 回（コンテナ化・S3 Access Points・DR）— 未公開 |
 | 1. 移行（既存資産） | 第 4 回（Shift Toolkit）— 未公開 |
 
 ---
@@ -139,6 +147,7 @@ lang: ja
 | リポジトリ | 内容 | 形式 |
 |---|---|---|
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware 移行の入口。2 経路を実機検証 | CFn |
+| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを置いたままのアプリケーション移行 | CFn |
 | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS / EKS のデータストア | 実装パターン |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 業種別 UC + OPS + GenAI + ファイルポータル UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 連携 | S3 Access Points |

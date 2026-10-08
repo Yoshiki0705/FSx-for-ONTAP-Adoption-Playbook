@@ -251,6 +251,7 @@ make all           # 以上全部
 | **接入分析平台** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 整合 |
 | **從 VMware 遷移** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 遷移到 Amazon EC2 與 FSx for ONTAP |
 | **用作 ECS / EKS 容器的資料存放區** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 五種配置及 CloudFormation 範本：ECS on EC2 的 NFS/SMB 掛載、EKS on EC2 的 NetApp Trident 持久卷、Fargate 經由 S3 存取點。**驅動程式選擇與磁碟區數量上限等通用 ONTAP 知識以本儲存庫為準** |
+| **資料保留在 FSx for ONTAP 上，遷移應用程式** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | 在持續使用同一磁碟區的前提下，將 Windows 上的 .NET Framework 應用程式分階段遷移到 Linux 上的 .NET，再將部分處理遷移到無伺服器的步驟及 CloudFormation 範本 |
 
 ---
 

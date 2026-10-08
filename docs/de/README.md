@@ -251,6 +251,7 @@ Issues und Pull Requests sind willkommen. Konventionen zum Verfassen in [CONTRIB
 | **Die Daten auf eine Analyseplattform bringen** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Integrationen mit Databricks / Snowflake / Athena / Glue / EMR |
 | **Von VMware migrieren** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration zu Amazon EC2 mit FSx for ONTAP |
 | **Als Datastore für ECS-/EKS-Container nutzen** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Fünf Konfigurationen mit CloudFormation-Vorlagen: NFS/SMB-Mounts bei ECS on EC2, persistente NetApp-Trident-Volumes bei EKS on EC2 und S3-Zugriffspunkte von Fargate aus. **Das allgemeine ONTAP-Wissen — Treiberwahl, die Obergrenze der Volume-Anzahl — verweist zurück auf dieses Hub** |
+| **Eine Anwendung migrieren, während die Daten auf FSx for ONTAP bleiben** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Schrittweise Migration einer .NET-Framework-Anwendung unter Windows zu .NET unter Linux und teilweise zu Serverless, mit CloudFormation-Vorlagen. Das Volume bleibt dabei dasselbe |
 
 ---
 
