@@ -180,7 +180,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 |---|---|
 | Re-measurement with cache state equalised | **Unmeasured. Named there as the most valuable thing for collapsing the 45% range above** |
 | The generational difference between first and second (NFSv4.1 held constant) | Unmeasured |
-| Comparing the same data over the S3 API and over NFS | Unmeasured |
+| Comparing the same data over the S3 API and over NFS | **Write direction only, in a separate configuration (below). The read direction, and a comparison in the same configuration as this cited source, remain unmeasured** |
 | One and six clients in the non-overlapping-region client-count test | Unmeasured (2, 4 and 8 were measured) |
 | The conditions for raising the SMB Multichannel channel count above 4 | Unmeasured (it was still 4 with `max_connections_per_session=32`) |
 | Why 64 KiB sequential reads are slower than 64 KiB random reads | Unmeasured |
@@ -207,6 +207,23 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 **The decision not to add a row was made before the measurement ran.** The cited source split the possible outcomes for a single flow four ways and tabulated, **in advance,** how the table above would be rewritten in each case ([Block protocol measurement plan](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/block-protocol-matrix-plan.md) (日本語)). **Deciding after measuring allows the wording to be chosen to suit whatever number came out.**
 
 > **Do not treat landing in the same range as evidence of the same cause.** The point of the table above is not the range but that similar values arise from different ceilings. **The cited source got this wrong once, for EFS, and corrected it** ([Conclusion](#conclusion)). If a block figure lands in the same range, whether the EC2 single-flow ceiling is the cause has to be confirmed separately.
+
+### A write through an S3 access point is throttled by a different ceiling
+
+**"The ceiling being hit differs" holds here too.** There is a record comparing writes only, over NFS directly and through an S3 access point, on the same file system, the same client and the same data (10 GiB, incompressible) (2026-10-07, `ap-northeast-1`, `SINGLE_AZ_1` / 128 MBps / UNIX, `c5n.2xlarge`, the S3 access point with `NetworkOrigin=Internet`; one configuration, a limited number of runs. **Not re-measured in this repository.**)
+
+| Path | Effective | Ratio to NFS direct |
+|---|---|---|
+| NFS direct write (`dd conv=fsync`, 2 runs) | 124.4–125.5 MiB/s | — |
+| Through the S3 access point (`aws s3 cp`, concurrency 1 / 8 / 32, one run each) | 37.9 / 16.4 / 49.1 MiB/s | **30% / 13% / 39%** |
+
+**NFS direct reaches this configuration's 128 MBps (throughput capacity) and holds steady** (131–132 MB/s by dd's report, under 1% between the two runs). **Through the S3 access point it does not get there, and raising concurrency does not raise it monotonically** (concurrency 8 was the lowest).
+
+**This difference is not "the S3 access point protocol is slow."** NFS direct is hitting the throughput capacity while the S3-access-point path stops short of it, so the throttle is **inferred** to be on the path side (the round trip over the internet route, S3 protocol processing, multipart overhead), **not** the file system's capacity. As with the block section, **the difference is misread as a protocol difference unless the conditions are held level** — the condition not held here is NetworkOrigin (Internet versus VPC) and the route (over the internet versus direct inside the VPC), and **VPC origin was not measured.**
+
+**Even within the same record, the figure disagrees by how it was measured.** The `aws s3 cp` figure above peaked at 49.1 MiB/s, but a separate test that uploaded 50 GiB as 5 GiB × 10 parts sequentially (cited under [the asymmetric size ceiling](../../../../ja/domains/data-utilization/notes/s3-access-point-constraints.md#方向で非対称なサイズ上限) (日本語)) ran at 539 seconds = about 95 MiB/s, which is **faster.** The concurrency, part size and tool differ, so **a write through an S3 access point cannot be written as a single number either.** The S3 access point was measured only once per concurrency, and the re-measurement that would collapse this into a range (the same discipline the cited perf-matrix follows, reporting multiple runs as a range) has not been done.
+
+The source is [the difference between an NFS direct write and a write through an S3 access point](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-multipart-internet-origin.md#nfs-直書き込みと-s3-access-point-経由の書き込みの差) (日本語).
 
 ### Common misconceptions
 

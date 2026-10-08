@@ -172,6 +172,23 @@ S3 Access Point 自体の数は、リージョンあたりアカウントあた�
 
 出典は [収集層の上限値](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/limits/s3-access-point.md) です。**このリポジトリでは再測定していません。**
 
+**書き込み側の境界も、別の構成で測られています。** 上の読み取り側（`NetworkOrigin=VPC`）とは別に、`NetworkOrigin=Internet` の S3 Access Point に対して書き込み方向を測った記録があります（2026-10-07、`ap-northeast-1`、`SINGLE_AZ_1` / 128 MBps / UNIX、クライアントは同一リージョンの `c5n.2xlarge`、1 構成・限られた回数のサンプル実行。**このリポジトリでは再測定していません**）。
+
+| 試験 | 結果 |
+|---|---|
+| 単一パート 5 GiB ちょうど | 成功 |
+| 単一パート 5 GiB + 1 MiB | **失敗。ただし `EntityTooLarge` ではなく、クライアント側に接続エラー（SSL validation failed）として現れた** |
+| 全体 50 GiB ちょうど（5 GiB × 10 パート） | 成功。**`CompleteMultipartUpload` が 2,513 秒（約 42 分）戻らず、接続は切れないまま最後に成功** |
+| 全体 50 GiB + 1 バイト | **パート上限で先に拒否され、`CompleteMultipartUpload` には到達していない**（全体超過の判定は未観測） |
+
+**設計に効くのは次の 3 点です。**
+
+- **5 GiB 超のパート拒否が接続エラーの形で現れうる。** エラーコードで分岐する処理は、これをサイズ超過ではなく通信障害と誤認して再試行する可能性があります。**パートサイズは送信前にクライアント側で 5 GiB 以下に抑えてください。**（1 回観測、再現未確認）
+- **50 GiB に近いオブジェクトの `CompleteMultipartUpload` は長時間戻らない。** 上の記録では 42 分でした。収集を S3 API に寄せる設計では、**完了待ちの所要を呼び出し側の上限（Lambda の実行時間、プロキシ / ロードバランサーのアイドルタイムアウト）と比べてください。** 所要時間がサイズやスループットキャパシティとどう関係するかは測られていません。
+- **「全体 50 GiB 超過が `CompleteMultipartUpload` で拒否される」ことは、この測定では観測されていません。** パート 10 を 5 GiB 超にした設計のため、パート上限で手前で弾かれました。全体超過の判定を見るには、どのパートも 5 GiB 以下に保ったまま合計を 50 GiB 超にする必要があります。上の表の `CompleteMultipartUpload` で失敗する行の段階は、ドキュメント記載と姉妹リポジトリの別実測に基づくもので、変えていません。
+
+出典は [S3 Access Point マルチパートアップロード（Internet origin）](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-multipart-internet-origin.md#マルチパートアップロードのサイズ境界) です。**値はすべて Internet origin・この構成のもので、S3 Access Point 一般の性質としては読めません。VPC origin は未測定です。**
+
 #### ONTAP の機能と併用したときに測られたこと
 
 **AP を付けたボリュームで ONTAP の機能が使えるかは、対照付きで測られています。** 以下は隣のリポジトリの実測（UNIX スタイル、identity は UNIX / `root`）で、**このリポジトリでは再測定していません**（[S3 Access Point 経路で ONTAP の機能は使えるか](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/limits/s3ap-interoperability.md)）。
