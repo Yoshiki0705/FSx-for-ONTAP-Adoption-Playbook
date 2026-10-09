@@ -42,6 +42,8 @@ lang: ja
 
 **sibling repo 側の規約をここから一方的に変えることはしません。** 変更案は Issue で出します。逆方向の変更依頼も同じで、[cross-repo finding](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/new?template=cross-repo-finding.yml) のテンプレートがあります。
 
+機能の分担をサイバーレジリエンスの軸で 1 枚にまとめたものは、[サイバーレジリエンス機能マップ](cyber-resilience-capability-map.md)にあります。どの Spoke が NIST CSF 2.0 のどの機能を担うかを示し、詳細は各 Spoke のドキュメントへ送ります。
+
 ---
 
 ## 引用表
@@ -283,6 +285,10 @@ lang: ja
 | `docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-iops-concurrency.md` | `1 MiB で 131.2 MB/s、8 MiB で 129.5 MB/s で止まりました` | `retraction` | VPC origin の書き込みが指定値付近へ達したこと。**今回の差を NetworkOrigin に帰せない、という留保を支える別条件の記録**です |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/s3ap-multipart-internet-origin.md` | `接続の層の失敗に見えます` | `retraction` | 同上（EN 版）。5 GiB 超パートの拒否が接続エラーとして現れること |
 | `docs/en/domains/performance/notes/a-single-connection-measures-the-client.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification/throughput-iops-concurrency.md` | `1 MiB で 131.2 MB/s、8 MiB で 129.5 MB/s で止まりました` | `retraction` | 同上（EN 版）。VPC origin の書き込みが指定値付近へ達したこと |
+| `docs/ja/reference/cyber-resilience-capability-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ja/cyber-resilience-framework-mapping.md` | `保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない` | `retraction` | 機能マップが Protect の持ち場として引く、機能別の単一マッピング。**復旧点の保護が可用性・完全性であって機密性ではないという主張を指します。** 機能別の詳細はそちらが持ち、こちらは機能と Spoke の対応だけを置きます |
+| `docs/ja/reference/cyber-resilience-capability-map.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/cyber-resilience-capability-map.md` | `NIST CSF 2.0 の 6 機能それぞれについて、本リポジトリは FSx for ONTAP ワークロードに対して何を提供しているのか` | `retraction` | 6 機能すべての実装レベルの詳細を持つ既存の機能マップ。**この文書が CSF 2.0 の 6 機能を骨格に据えているという位置づけの文を指します。** こちらは指すだけで内容は写しません |
+| `docs/en/reference/cyber-resilience-capability-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/en/cyber-resilience-framework-mapping.md` | `Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads` | `retraction` | 同上（EN 版）。機能マップが Protect の持ち場として引く、機能別の単一マッピング。復旧点の保護が可用性・完全性であって機密性ではないという主張を指します |
+| `docs/en/reference/cyber-resilience-capability-map.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/en/cyber-resilience-capability-map.md` | `for each of the six NIST CSF 2.0 functions, what does this repository provide for FSx for ONTAP workloads` | `retraction` | 同上（EN 版）。6 機能すべての実装レベルの詳細を持つ既存の機能マップ。CSF 2.0 の 6 機能を骨格に据えているという位置づけの文を指します |
 <!-- cross-repo-table:end -->
 
 ---
