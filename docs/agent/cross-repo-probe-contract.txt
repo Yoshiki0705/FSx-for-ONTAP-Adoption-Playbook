@@ -23,6 +23,8 @@
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
@@ -36,6 +38,7 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considera
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
 FSx-for-ONTAP-Lakehouse-Integrations	llms.txt	retraction	which parts work, which do not, and what each claim rests on.
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
+FSx-for-ONTAP-Observability-integrations	docs/en/cyber-resilience-capability-map.md	retraction	for each of the six NIST CSF 2.0 functions, what does this repository provide for FSx for ONTAP workloads
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
 FSx-for-ONTAP-Observability-integrations	docs/en/monitoring-design.md	retraction	It does not choose the collection route.
@@ -50,6 +53,7 @@ FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3
 FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3ap-and-session.md	retraction	raised no FPolicy notification
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
+FSx-for-ONTAP-Observability-integrations	docs/ja/cyber-resilience-capability-map.md	retraction	NIST CSF 2.0 の 6 機能それぞれについて、本リポジトリは FSx for ONTAP ワークロードに対して何を提供しているのか
 FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	収集経路の選択は行いません。
 FSx-for-ONTAP-Observability-integrations	docs/ja/native-alternative-matrix.md	retraction	本リポジトリの AWS ネイティブ実装にマッピングしたもの
 FSx-for-ONTAP-Observability-integrations	docs/ja/verification-results-cloudwatch-monitoring.md	retraction	確認項目を伴う検証の実行ではなく、1 つの環境でのサンプルです。

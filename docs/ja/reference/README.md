@@ -29,6 +29,7 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | [`block-storage-resource-map.md`](block-storage-resource-map.md) | ブロックの一次情報・公開 IaC の索引と、資料間の食い違い / Index of block primary sources and public infrastructure as code, and where they disagree |
 | [`recent-updates.md`](recent-updates.md) | 直近のアップデートと設計への影響。四半期ごとに更新 / Recent updates and their design implications, refreshed quarterly |
 | [`cross-repo-index.md`](cross-repo-index.md) | プロジェクト間の引用索引。どの主張をどのリポジトリから引いているかと、分担の原則 / Index of cross-repository citations: which claim is cited from where, and the division of labour |
+| [`cyber-resilience-capability-map.md`](cyber-resilience-capability-map.md) | サイバーレジリエンス機能マップ。どの Spoke が NIST CSF 2.0 のどの機能を担うかの 1 枚。詳細は各 Spoke のドキュメントへ送る / Cyber resilience capability map: a one-page view of which Spoke covers which NIST CSF 2.0 function, sending you to each Spoke's documentation for detail。**英語版あり / [English version](../../en/reference/cyber-resilience-capability-map.md)** |
 
 ---
 
