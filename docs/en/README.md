@@ -289,6 +289,7 @@ Issues and Pull Requests are welcome. See [CONTRIBUTING.md](../../CONTRIBUTING.m
 | **Putting the data on an analytics platform** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR integrations |
 | **Migrating from VMware** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration to Amazon EC2 with FSx for ONTAP |
 | **Using it as a datastore for ECS / EKS containers** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Five configurations with CloudFormation templates: NFS/SMB mounts on ECS on EC2, NetApp Trident persistent volumes on EKS on EC2, and S3 Access Points from Fargate. **The general ONTAP knowledge — driver choice, the volume-count ceiling — is referenced back to this Hub** |
+| **Migrating an application while keeping its data on FSx for ONTAP** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Staged moves of a .NET Framework application on Windows to modern .NET on Linux, and partly to serverless, with CloudFormation templates. The volume stays the same throughout |
 
 ---
 

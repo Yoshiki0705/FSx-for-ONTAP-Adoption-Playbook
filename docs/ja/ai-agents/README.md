@@ -25,7 +25,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 
 ## 収録エージェント
 
-現時点で AWS が提供するマネージド AI エージェントを網羅した一覧です。**提供状態は変わるので、各エージェントの状態は 2026-09 時点の公式ドキュメント調査に基づきます。** 本番採用前に最新の提供状態を確認してください。
+現時点で AWS が提供するマネージド AI エージェントを網羅した一覧です。AI Modernization Flow だけは aws-samples のサンプルで、マネージドサービスではありません。**提供状態は変わるので、各エージェントの状態は 2026-09 時点の公式ドキュメント調査に基づきます。** 本番採用前に最新の提供状態を確認してください。
 
 読み方は 2 つの軸で決めます。「そのエージェントが何をするか（役割）」と、「FSx for ONTAP がそのエージェントにどう関わるか（関わり方）」です。役割は AWS 全体に対するもので、関わり方は FSx for ONTAP との接点の種類を表します。
 
@@ -37,6 +37,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 | Amazon Bedrock Knowledge Base | RAG・生成 AI にナレッジを供給する | **データソース**（S3 Access Points 経由。実装で検証済み） | GA | [Bedrock Knowledge Base のデータソースに FSx for ONTAP を使う](bedrock-knowledge-base/README.md) |
 | AWS Security Agent | アプリのセキュリティを検証する（現在は AWS Continuum の一部） | **アプリ経由**（FSx for ONTAP を使うアプリのコードのみ。管理面は見ない） | GA | [AWS Security Agent はアプリを検証し、FSx for ONTAP の設定は検証しない](security-agent/README.md) |
 | AWS Transform | コード・ワークロードを移行・変換する | **移行先**（移行先ストレージに FSx for ONTAP を選択可） | GA | [移行の項へ](#aws-transform-の既存ページへの集約) |
+| AI Modernization Flow | AI エージェントに決められた段階でアプリケーションを移行させるワークフロー | **アプリ経由**（エージェントが移すのはアプリのコードで、データは FSx for ONTAP に置いたまま） | サンプル（aws-samples、2026-10 確認） | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns)（本体は [sample-ai-modernization-flow](https://github.com/aws-samples/sample-ai-modernization-flow)） |
 | Amazon Bedrock Managed Agents (OpenAI) | OpenAI harness ベースのエージェント runtime | 直接の接点は薄い（AgentCore 上の runtime） | Limited Preview | _対象外_ |
 | Kiro | 仕様駆動のソフトウェア開発エージェント | 直接の接点は薄い（現時点でデータソース連携なし） | GA | _対象外_ |
 

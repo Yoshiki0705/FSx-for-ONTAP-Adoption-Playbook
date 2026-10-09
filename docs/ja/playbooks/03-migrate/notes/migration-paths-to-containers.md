@@ -30,7 +30,7 @@ lang: ja
 
 | # | 経路 | 入力 | 動かす先 | FSx for ONTAP の到達形態 | 実装・検証の所在 |
 |---|---|---|---|---|---|
-| 1 | ソースコードからのモダナイゼーション | ソースコード | Amazon ECS / Amazon EKS 上のコンテナ | Trident の PV（EKS on EC2）、ホストマウント（ECS on EC2）、S3 Access Points 経由（Fargate） | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) |
+| 1 | ソースコードからのモダナイゼーション | ソースコード | Amazon ECS / Amazon EKS 上のコンテナ | Trident の PV（EKS on EC2）、ホストマウント（ECS on EC2）、S3 Access Points 経由（Fargate） | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns)。コンテナ化の前に、データを置いたままアプリケーションを移す段階は [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) |
 | 2 | リホストでブロックを疎結合にする | 実行中の VM / サーバー | Amazon EC2 | ゲスト OS 内の iSCSI マウント（ブロックを EC2 から切り離して FSx for ONTAP 側に置く） | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) と [AWS Transform の Finalize は物理容量が最大になる工程](atx-finalize-flexclone-capacity.md) |
 | 3 | サードパーティの VM 変換ツール経由（NetApp Shift Toolkit v8.0 など） | 実行中の VM / 仮想ディスク | Amazon EC2 + FSx for ONTAP | OS ディスクは Amazon EBS、データディスクは FSx for ONTAP。後からコンテナが iSCSI / NFS で到達 | **EC2 対応は Early Preview（2026-09 時点）。** GA の経路 1・2 と成熟度が異なります。一般提供の条件は各実装リポジトリを参照 |
 

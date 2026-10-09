@@ -30,7 +30,7 @@ lang: en
 
 ## The journey stage table
 
-**There are six stages, 0 through 5.** Migration is the entry (stage 1), with assessment before it (stage 0) and the stages of modernization laid out after it.
+**There are seven stages, 0 through 6.** Migration is the entry (stage 1), with assessment before it (stage 0) and the stages of modernization laid out after it.
 
 **One caveat first: the stages do not force you to pass through all of them in order.** Some paths reach serverless without containerizing; some design DR alongside the migration itself. This table draws one representative arc. Skip the stages your path does not include, and read only the ones you need.
 
@@ -38,10 +38,11 @@ lang: en
 |---|---|---|---|---|
 | 0. Assess | Inventory the migration targets and their shape | [Assess](../playbooks/01-assess/) | — | Counting files. You can run out of write capacity even with capacity to spare |
 | 1. Migrate (entry) | VMware → EC2 + FSx for ONTAP | [Migrate](../playbooks/03-migrate/) / [migration-method decision tree](../../ja/reference/decision-trees/migration-method.md) | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | When the rollback window closes. Boot is always on Amazon EBS |
-| 2. Containerize | Replatform to ECS / EKS, keep the data layer | [datastore-selection decision tree](decision-trees/container-datastore-selection.md) / [block storage](../domains/block-storage/) | [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | The runtime (EC2 / Fargate) decides how you reach the data. The Trident PV volume-count limit |
-| 3. Serverless / analytics / AI | Use the data via S3 Access Points | [client-access-route decision tree](../../ja/reference/decision-trees/client-access-route.md) / [data utilization](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points do not behave like a full S3 bucket. The original ACLs do not carry over |
-| 4. DR / resilience | Replication, Snapshot, ransomware readiness | [data protection](../domains/data-protection/) / [security governance](../domains/security-governance/) | [Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | Enabling and locking are separate. Three irreversible choices |
-| 5. Operate / observability / optimize | Monitoring, capacity, tiering, cost | [Operate](../playbooks/05-operate/) / [Optimize](../playbooks/06-optimize/) / [cost-higher-than-expected decision tree](../../ja/reference/decision-trees/cost-higher-than-expected.md) | [Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Monitoring fails on averages. Billing splits between provisioned and consumed |
+| 2. Modernize the application | Change the application runtime and protocol while the data stays on FSx for ONTAP | [multiprotocol & identity](../domains/multiprotocol-identity/) | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Adding NFS to a volume already serving SMB needs no clone. The reason it is unreachable lies outside the security style |
+| 3. Containerize | Replatform to ECS / EKS, keep the data layer | [datastore-selection decision tree](decision-trees/container-datastore-selection.md) / [block storage](../domains/block-storage/) | [Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | The runtime (EC2 / Fargate) decides how you reach the data. The Trident PV volume-count limit |
+| 4. Serverless / analytics / AI | Use the data via S3 Access Points | [client-access-route decision tree](../../ja/reference/decision-trees/client-access-route.md) / [data utilization](../domains/data-utilization/) | [Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) / [Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) / [S3-Burst](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) / [Agentic-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | S3 Access Points do not behave like a full S3 bucket. The original ACLs do not carry over |
+| 5. DR / resilience | Replication, Snapshot, ransomware readiness | [data protection](../domains/data-protection/) / [security governance](../domains/security-governance/) | [Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | Enabling and locking are separate. Three irreversible choices |
+| 6. Operate / observability / optimize | Monitoring, capacity, tiering, cost | [Operate](../playbooks/05-operate/) / [Optimize](../playbooks/06-optimize/) / [cost-higher-than-expected decision tree](../../ja/reference/decision-trees/cost-higher-than-expected.md) | [Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Monitoring fails on averages. Billing splits between provisioned and consumed |
 
 Some things you **run through first**, at every stage. Give them priority over the stage rows.
 
@@ -73,7 +74,14 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Note | [Where the rollback window closes](../playbooks/03-migrate/notes/where-the-rollback-window-closes.md) | The cutover decision |
 | Note | [Preserving ACLs during migration](../../ja/playbooks/03-migrate/notes/preserving-acls-during-migration.md) (日本語) | Permission preservation during migration |
 
-### 2. Containerize
+### 2. Modernize the application
+
+| Type | Resource | Point |
+|------|----------|------|
+| Pattern | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Move the application in stages while the data stays on the same volume |
+| Note | [Adding NFS to a volume already serving SMB needs no clone](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | The reason it is unreachable lies outside the security style |
+
+### 3. Containerize
 
 | Type | Resource | Point |
 |------|----------|------|
@@ -81,7 +89,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Decision tree | [Container datastore selection](decision-trees/container-datastore-selection.md) | The runtime decides how you reach the data |
 | Note | [Kubernetes block volumes and the volume limit](../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) | The split between `ontap-san` and `ontap-san-economy`. What you run out of is not capacity |
 
-### 3. Serverless / analytics / AI
+### 4. Serverless / analytics / AI
 
 | Type | Resource | Point |
 |------|----------|------|
@@ -93,7 +101,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Note | [S3 Access Points do not behave like a full S3 bucket](../../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | Same-account, same-region and other constraints |
 | Note | [S3 Access Points authorize every request as one identity](../../ja/domains/data-utilization/notes/reaching-data-without-copies.md) (日本語) | The original ACLs do not carry over into the AI pipeline |
 
-### 4. DR / resilience
+### 5. DR / resilience
 
 | Type | Resource | Point |
 |------|----------|------|
@@ -101,7 +109,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Note | [SnapLock separates enabling from locking](../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | Three irreversible choices |
 | Note | [Having a Snapshot is not the same as being able to recover](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | Data protection design |
 
-### 5. Operate / observability / optimize
+### 6. Operate / observability / optimize
 
 | Type | Resource | Point |
 |------|----------|------|
@@ -119,7 +127,7 @@ The correspondence between each stage and a blog post. **Part 1 and Part 2 are p
 | Stage | Blog post |
 |---|---|
 | 1. Migrate | [Part 1 (designing the entry)](https://dev.to/aws-builders/designing-aws-modernization-with-vmware-migration-as-the-entry-point-why-fsx-for-ontap-as-the-3k24) ([日本語](https://hakobiya.hatenablog.com/entry/fsxn-vmware-migration-options-ec2)) / [Part 2 (AWS Transform, hands-on)](https://dev.to/aws-builders/aws-transform-now-supports-block-storage-migration-to-fsx-for-ontap-benefits-and-pitfalls-from-a-1hhe) ([日本語](https://hakobiya.hatenablog.com/entry/fsxn-aws-transform-mgn-migration-target)) |
-| 2-4. Modernization | Part 3 (containerization, S3 Access Points, DR) — not yet published |
+| 3-5. Modernization | Part 3 (containerization, S3 Access Points, DR) — not yet published |
 | 1. Migrate (existing assets) | Part 4 (Shift Toolkit) — not yet published |
 
 ---
@@ -139,6 +147,7 @@ The correspondence between each stage and a blog post. **Part 1 and Part 2 are p
 | Repository | Contents | Format |
 |---|---|---|
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | The migration entry. Both paths verified hands-on | CFn |
+| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Moving an application with the data left in place | CFn |
 | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Datastores for ECS / EKS | Implementation patterns |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Industry use cases + OPS + GenAI + file portal UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark integration | S3 Access Points |
