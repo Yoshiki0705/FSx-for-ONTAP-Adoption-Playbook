@@ -182,7 +182,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 | The generational difference between first and second (NFSv4.1 held constant) | Unmeasured |
 | Comparing the same data over the S3 API and over NFS | **Write direction only, in a separate configuration (below). The read direction, and a comparison in the same configuration as this cited source, remain unmeasured** |
 | One and six clients in the non-overlapping-region client-count test | Unmeasured (2, 4 and 8 were measured) |
-| The conditions for raising the SMB Multichannel channel count above 4 | Unmeasured (it was still 4 with `max_connections_per_session=32`) |
+| The conditions for raising the SMB Multichannel channel count above 4 | **Unmeasured.** In its 2026-09-20 entry the cited source gives the client-side `ConnectionCountPerRssNetworkInterface` (value 4) as where the 4 comes from. The cited source has tried neither adding NICs nor raising that value |
 | Why 64 KiB sequential reads are slower than 64 KiB random reads | Unmeasured |
 
 **The test environment has been deleted.** The procedure for rebuilding it is in the cited repository.

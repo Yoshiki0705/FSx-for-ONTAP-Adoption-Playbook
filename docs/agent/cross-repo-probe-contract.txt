@@ -120,7 +120,6 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.37
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	これは既定値での上限で、ファイルシステムの上限ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	シークレットの値と実際のパスワードが一致しなかった
-S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	上限が 4 である理由は未確認
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	実環境で再現した。環境（ONTAP バージョン、リージョン、構成）を併記する
 S3-Burst-on-ONTAP-Files	docs/ja/verification/README.md	retraction	どちらもファイル名からは区別できないので、下の表の「段階」で見てください
@@ -139,21 +138,24 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	3,551
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	reread	500〜592 MB/s に収まる
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 → 2 では逐次スループットが 1 バイトも動かない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 接続でのプロトコル差は再現しなかった
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	1 接続の値はプロトコルではなくデプロイの性質である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	12,173 MiB/s = **102 Gbps**
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	4 の出どころが分かった
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	4 台と 8 台で止まった
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	500 MiBps に一致する
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	600 GiB を NVMe/TCP で書いたあとでも 0 件で
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	8 台の 11,194.7 MiB/s は 94 Gbps である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	EC2 の 1 フローあたり全二重 5 Gbps
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	NIC を増やすかこの値を上げる試験は未実施
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	SMB は NFS の 72.1%
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	iSCSI の 1 本はその約 2 倍を運んだ
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	この 1 点を根拠に本番構成を
-S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	そうなったのかは**確認していない**
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	つまりこの幅からバージョンの優劣は読めない。
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	を設定したのは私ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	キャッシュの温度が揃っていない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	クライアントを 4.5 倍の型に変えても 0.6% しか動かない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	セッション数を帯域の割り算で決める形そのものが成立していない
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	何がどちらになるかは確認していない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	倍率 2.97 は **1,500 ÷ 500 = 3.0** に一致しており
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	別の上限である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	同一ファイル側の伸びは、ONTAP のメモリが重なりを供給した結果である

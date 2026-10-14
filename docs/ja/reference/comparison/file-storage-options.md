@@ -227,7 +227,7 @@ graph TD
 
 ### 残る留保 2 点
 
-- 観測したチャネル数は 4 で、`max_connections_per_session` を 32 にしても 4 で止まりました。**なぜ 4 なのかは確認されていません。4 が製品の上限だと読まないでください**
+- 観測したチャネル数は 4 でした。引用元は 2026-09-20 の記載で、出どころをクライアント側の設定としています。設定は `ConnectionCountPerRssNetworkInterface` で、値は 4 です。サーバー側の `max_connections_per_session` は既定の 32 のままで、増やす側の律速ではないとされています。**チャネル数を 4 より増やす条件は未測定です。** NIC を増やす試験も、この値を上げる試験も未実施です。値を変えて確かめた測定がないので、原因が確定したとは読まないでください。引用元の SMB の節の本文と検証状況の表には、この記載と食い違う「確認していない」「未確認」が残っています（2026-10-14 に確認）
 - NFS 16 接続の列と SMB Multichannel の列は `キャッシュの温度が揃っていない` と記録されています。**この 2 列から SMB と NFS の優劣を取れません**
 
 ### Multichannel・CA 共有・oplock の ONTAP 一般の前提
@@ -244,7 +244,7 @@ graph TD
 
 **既定で無効であることと、有効化が確立済みの接続に届かないことは、上の「[すべての SMB 数値の前提](#すべての-smb-数値の前提)」が隣のリポジトリの実測へリンクしています。** ここでは繰り返しません。
 
-**TR-4740 の Windows の既定値 4 と、隣のリポジトリが観測した 4 チャネルの関係は、このリポジトリでは判定しません。** 観測の側でも理由は未確認と記録されています（[S3-Burst-on-ONTAP-Files の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)、[プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)）。値が同じであることは、原因が同じことの根拠になりません。
+**TR-4740 が Windows の既定値とする `ConnectionCountPerRssNetworkInterface` の 4 は、隣のリポジトリが 4 チャネルの出どころとして記録したクライアント側の設定と、パラメータ名も値も同じです。** ただし隣のリポジトリは、この値を上げる試験も NIC を増やす試験もまだしていません（[プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)の未測定の表、2026-09-20 の記載）。値が同じであることは、原因が同じことの根拠になりません。このリポジトリは、それ以上の関係を判定しません。
 
 | 項目 | 記載（ONTAP 一般） | 出典 |
 |---|---|---|
@@ -280,8 +280,8 @@ graph TD
 | S3 File Gateway は NAS の置き換えになる | **AWS が「エンタープライズ NAS の完全な置き換えを意図していない」と明記しています。** ファイルシステムのように振る舞いますが、ファイルシステムではありません |
 | Amazon S3 Files はバケットをそのままマウントする | **リンク先バケットに S3 バージョニングが必須**で、同時更新時はバケットが正本になります。未使用データはファイルシステムから削除されます |
 | FSx for ONTAP を選べば性能で有利 | **上限の形が違うだけです。** 同じデータに複数プロトコルで届く必要がなく最小構成が過剰なら、他の選択肢のほうが素直です |
-| SMB Multichannel のチャネル数は設定で増やせる | 観測では設定値を上げても 4 で止まりました。**ただし 4 が製品の上限である根拠は確認されていません** |
-| 4 チャネルは Windows の既定値で説明できる | TR-4740 は Windows の `ConnectionCountPerRssNetworkInterface` の既定を 4 と書いていますが、**観測との関係はこのリポジトリでは未確認です** |
+| SMB Multichannel のチャネル数は設定で増やせる | **増やせるかは未測定です。** 観測されたチャネル数は 4 で、引用元は出どころをクライアント側の `ConnectionCountPerRssNetworkInterface`（値 4）としていますが、この値を上げる試験も NIC を増やす試験も未実施です。サーバー側の `max_connections_per_session` は既定の 32 のままの観測です |
+| 4 チャネルは Windows の既定値で説明できる | TR-4740 は `ConnectionCountPerRssNetworkInterface` の既定を 4 と書き、引用元が出どころとして記録したクライアント側の設定も 4 です。**ただしその値を変えて確かめた測定はなく、説明が確定したとは書けません** |
 | CA 共有はどのボリュームにも設定できる | SQL Server over SMB の構成について、NetApp は最初から NTFS であり続けたボリュームを前提にしています。ほかの用途の CA 共有に同じ前提がかかるかは、このページからは読めません。FSx for ONTAP での扱いは未確認です |
 
 ---
@@ -304,14 +304,13 @@ graph TD
 | Mountpoint for Amazon S3 が既存ファイルの更新・ディレクトリ削除・シンボリックリンク・ファイルロックに非対応で、POSIX スタイルのパーミッションを持たず Linux 限定であること、完全な POSIX には FSx for Lustre が案内されること | [AWS: Mount an Amazon S3 bucket as a local file system](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mountpoint.html) |
 | S3 File Gateway が NFSv3 / NFSv4.1 と SMBv2 / SMBv3 に対応すること | [AWS: File Gateway setup requirements](https://docs.aws.amazon.com/filegateway/latest/files3/Requirements.html) |
 | S3 File Gateway が NFS / SMB でファイルとオブジェクトを 1:1 に対応させること、エンタープライズ NAS の完全な置き換えを意図していないこと、ファイルシステムのように振る舞うがファイルシステムではないこと | [AWS: Maximizing S3 File Gateway throughput](https://docs.aws.amazon.com/filegateway/latest/files3/Performance-Throughput.html) |
-| EFS のクライアント単位クォータに一致した実測値、マウントヘルパー使用時の倍率 2.97、ONTAP 物理ポートの累積カウンタ差分 102 Gbps、SMB Multichannel のチャネル数と理由の未確認、NFS 16 接続列とのキャッシュ温度の不揃い | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
+| EFS のクライアント単位クォータに一致した実測値、マウントヘルパー使用時の倍率 2.97、ONTAP 物理ポートの累積カウンタ差分 102 Gbps、SMB Multichannel のチャネル数 4 の出どころ（クライアント側の設定値）と 4 より増やす試験が未実施であること（未測定の表、2026-09-20）、NFS 16 接続列とのキャッシュ温度の不揃い | [S3-Burst-on-ONTAP-Files: プロトコル別測定の結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) |
 | Amazon EFS の非対応プロトコルの実測確認、`nconnect` を実効オプションではなく接続数で判定したこと | [S3-Burst-on-ONTAP-Files: プロトコル可否の実測](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/protocol-matrix-efs-vs-ontap.md) |
 | 容量使用率の上昇による書き込み低下と、`rm` では空きが戻らないこと | [S3-Burst-on-ONTAP-Files: 性能測定のガイド](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/performance-testing-guide.md) |
 | SMB Multichannel の前提（ONTAP 9.4 以降、SMB 3.0、NIC の条件）、`is-multichannel-enabled` が既定で無効なこと、セッションあたりの接続数と LIF 数の最大、ONTAP がすべてのインターフェイスを RSS 対応と報告すること、Windows クライアントの既定値、併用できる機能（ONTAP 一般） | [TR-4740: SMB 3.0 Multichannel](https://www.netapp.com/pdf.html?item=/media/17136-tr4740.pdf)（2019 年 1 月）§2.2、§3、§5、§5.1、§7.2（2026-10-02 に確認） |
 | CA 共有の前提と設定しないもの（ONTAP 一般、SQL Server over SMB の構成） | [NetApp: Continuously available share requirements and considerations for SQL Server over SMB](https://docs.netapp.com/us-en/ontap/smb-hyper-v-sql/continuously-available-share-sql-concept.html)（2022-08-05 更新） |
 | lease oplock が SMB 2.1 以降であること、oplock の制御単位（ONTAP 一般） | [NetApp: Improve ONTAP SMB client performance with traditional and lease oplocks](https://docs.netapp.com/us-en/ontap/smb-admin/client-performance-traditional-lease-oplocks-concept.html)（2026-04-16 更新） |
 | oplock の 4 種類と、oplock を使わない共有にする例（ONTAP 一般） | [TR-4887: Multiprotocol NAS in NetApp ONTAP](https://www.netapp.com/pdf.html?item=/media/27436-tr-4887.pdf)（2021 年 4 月）「SMB locking」 |
-| SMB Multichannel のチャネル数が 4 である理由が未確認であること | [S3-Burst-on-ONTAP-Files: 検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md) |
 | Amazon S3 Files がストリーム数 8 で約 450 MB/s に頭打ちすること、止めているのが `efs-proxy` の CPU であること、マウントの相手が `127.0.0.1` であること、`nconnect` の指定でマウントがハングすること、購入した容量が読み手で分割される実測（1 台 585.3 → 2 台合計 592.5） | [S3-Burst-on-ONTAP-Files: S3 Files と本構成の比較検証](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-vs-flexcache.md) |
 
 ---
