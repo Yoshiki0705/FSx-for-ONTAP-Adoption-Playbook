@@ -48,6 +48,7 @@ Tier 1 首次造訪指南提供 8 種語言。Tier 2 模組樞紐提供日語與
 | 比較選項的取捨 | [比較矩陣](../ja/reference/comparison/) (日本語) |
 | 從產業開始 | [產業資源地圖](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
 | 從工作負載開始 | [依工作負載的入口地圖](../en/reference/workload-entry-map.md) (English) |
+| 查找效能實測結果在哪個儲存庫的哪份文件中 | [效能實測位置地圖](../en/reference/performance-evidence-map.md) (English) |
 | 貢獻知識 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>
@@ -242,12 +243,12 @@ make all           # 以上全部
 
 | 在此已決定 | 前往 | 那裡有什麼 |
 |---|---|---|
-| **正本在 Amazon S3，以讀取為主** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 判斷是否採用該架構的決策樹，以及**檔案協定實測值** |
-| **透過 S3 存取點提供資料並以無伺服器方式處理** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 處理模式實作，以及檔案系統運維模式 |
+| **正本在 Amazon S3，以讀取為主** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 判斷是否採用該架構的決策樹、**檔案協定實測值**，以及區塊儲存（iSCSI / NVMe/TCP）與 S3 Access Points 的實測值 |
+| **透過 S3 存取點提供資料並以無伺服器方式處理** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 處理模式實作、檔案系統運維模式，以及經由 S3 Access Points 的延遲實測值 |
 | **用於 AI / RAG，並保留原有權限** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | 基於 Amazon Bedrock 與 AWS CDK 的實作。**權限被重建為獨立索引，在檢索時判定** |
 | **匯聚分散的邊緣 / IoT 資料後再分析** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | 匯聚到 ONTAP，再經 S3 存取點交給 Bedrock / Athena / SageMaker。**僅包含 IoT 特有差異，儲存層選擇以本儲存庫為準** |
 | **勒索軟體防護置於哪一層** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP、基於 FPolicy 的事件驅動回應、第三方整合 |
-| **已確定監控路徑** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 指標、告警與自動回應 |
+| **已確定監控路徑** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 指標、告警與自動回應，以及依儲存層級的 S3 Access Points 讀取實測值 |
 | **接入分析平台** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 整合 |
 | **從 VMware 遷移** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 遷移到 Amazon EC2 與 FSx for ONTAP |
 | **用作 ECS / EKS 容器的資料存放區** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 五種配置及 CloudFormation 範本：ECS on EC2 的 NFS/SMB 掛載、EKS on EC2 的 NetApp Trident 持久卷、Fargate 經由 S3 存取點。**驅動程式選擇與磁碟區數量上限等通用 ONTAP 知識以本儲存庫為準** |

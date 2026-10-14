@@ -48,6 +48,7 @@ Les guides de premier accès Tier 1 sont disponibles en huit langues. Les hubs d
 | Comparer les compromis | [Matrices de comparaison](../ja/reference/comparison/) (日本語) |
 | Partir d'un secteur | [Carte des ressources par secteur](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
 | Partir d'une charge de travail | [Carte d'entrée par charge de travail](../en/reference/workload-entry-map.md) (English) |
+| Trouver quel dépôt et quel document contiennent une mesure de performance | [Carte des mesures de performance](../en/reference/performance-evidence-map.md) (English) |
 | Contribuer | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>
@@ -242,12 +243,12 @@ Les Issues et Pull Requests sont bienvenues. Voir [CONTRIBUTING.md](../../CONTRI
 
 | Décidé ici | Aller vers | Ce qu'on y trouve |
 |---|---|---|
-| **La source de vérité est Amazon S3, usage principalement en lecture** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Un arbre de décision sur l'adoption de cette architecture et **les mesures des protocoles de fichiers** |
-| **Exposer les données via un point d'accès S3 et les traiter en serverless** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Implémentations de motifs de traitement et motifs d'exploitation du système de fichiers |
+| **La source de vérité est Amazon S3, usage principalement en lecture** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | Un arbre de décision sur l'adoption de cette architecture, **les mesures des protocoles de fichiers**, et les mesures du bloc (iSCSI / NVMe/TCP) et de S3 Access Points |
+| **Exposer les données via un point d'accès S3 et les traiter en serverless** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Implémentations de motifs de traitement, motifs d'exploitation du système de fichiers et mesures de latence via S3 Access Points |
 | **Alimenter une chaîne IA / RAG en respectant les permissions d'origine** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Une implémentation sur Amazon Bedrock et AWS CDK. **Les permissions sont reconstruites dans un index distinct et évaluées à la recherche** |
 | **Agréger des données edge / IoT dispersées avant analyse** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | Agrégation dans ONTAP puis Bedrock / Athena / SageMaker via des points d'accès S3. **Uniquement les écarts propres à l'IoT ; le choix de la couche de stockage vient d'ici** |
 | **À quelle couche placer la défense contre les rançongiciels** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP, réponse événementielle via FPolicy, intégrations tierces |
-| **La route de supervision est choisie** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Métriques, alertes et réponse automatisée |
+| **La route de supervision est choisie** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | Métriques, alertes et réponse automatisée, et mesures de lecture via S3 Access Points par niveau de stockage |
 | **Poser les données sur une plateforme analytique** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Intégrations Databricks / Snowflake / Athena / Glue / EMR |
 | **Migrer depuis VMware** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Migration vers Amazon EC2 avec FSx for ONTAP |
 | **L'utiliser comme datastore pour des conteneurs ECS / EKS** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Cinq configurations avec des modèles CloudFormation : montages NFS/SMB sur ECS on EC2, volumes persistants NetApp Trident sur EKS on EC2 et points d'accès S3 depuis Fargate. **Les connaissances ONTAP générales — choix du pilote, plafond du nombre de volumes — renvoient à ce Hub** |
