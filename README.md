@@ -48,6 +48,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | 選択肢のトレードオフを比べる | [比較マトリクス](docs/ja/reference/comparison/) |
 | 業種から読む順序を決める | [業種別リソースマップ](docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序) |
 | ワークロードから最初に読むノートを決める | [ワークロード別の入口マップ](docs/ja/reference/workload-entry-map.md) |
+| 性能の実測結果がどのリポジトリのどの文書にあるかを探す | [性能実測の所在マップ](docs/ja/reference/performance-evidence-map.md) |
 | 知見を追加する | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 </details>
@@ -99,6 +100,7 @@ Tier 1 の初回案内は 8 言語、Tier 2 のモジュールハブは日本語
 | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](docs/ja/playbooks/03-migrate/notes/atx-finalize-flexclone-capacity.md) | FlexClone のスプリットで移行データ 1 本分の物理容量が一時的に必要になります |
 | [S3 Access Point は全リクエストを 1 つの ID で認可する](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI / RAG のパイプラインに引き継がれません |
 | [保存時の暗号化は自動、転送時は方式ごとに条件が異なる](docs/ja/domains/security-governance/notes/what-the-platform-gives-and-what-stays-yours.md) | 監査ログには記録されない読み取りがあります。1 オブジェクトにつき最初の 1 回だけです |
+| [単一接続で測った値はストレージの性能ではない](docs/ja/domains/performance/notes/a-single-connection-measures-the-client.md) | 近い値でも、当たっている上限は別物です。EC2 のフロー単位の上限と、サービス側のクライアント単位のクォータを区別します。値は S3-Burst-on-ONTAP-Files の実測からの引用で、このリポジトリでは再測定していません |
 | [スループットは 1 つの設定値では決まらない](docs/ja/domains/performance/notes/where-throughput-is-determined-and-shared.md) | 第 2 世代 Single-AZ は最大 12 HA ペア、ブロック構成は最大 6。FlexVol は 1 HA ペアの aggregate に配置されます |
 | [ディレクトリ 1 つの大きさにはファイル数と別の上限がある](docs/ja/domains/performance/notes/directory-size-is-capped-separately-from-file-count.md) | ONTAP 一般の TR は既定 320 MB で通常の名前 4,341,758 個、日本語名で 2,129,918 個と記載します。FSx for ONTAP での挙動は未確認です |
 | [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](docs/ja/domains/performance/notes/flexgroup-balances-at-file-creation-not-afterward.md) | ONTAP 一般の TR は、置き場所が作成時に決まり、FlexVol から変換しても既存データは再配置されないと記載します。AWS は AWS DataSync での移行を推奨しています。TR の値は FSx for ONTAP では一部未確認です |
@@ -289,12 +291,12 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 
 | ここで決まったこと | 移る先 | そちらにあるもの |
 |---|---|---|
-| **正本は Amazon S3、利用は読み取り中心** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | この構成を採るかの決定木（5 分岐）と、**ファイルプロトコルの性能実測**。このリポジトリの性能記述の多くはここからの引用です（[引用索引](docs/ja/reference/cross-repo-index.md)） |
-| **S3 Access Point でデータを出し、サーバーレスで処理する** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 処理パターンの実装（45+）と、ファイルシステムに対する運用パターン |
+| **正本は Amazon S3、利用は読み取り中心** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | この構成を採るかの決定木（5 分岐）と、**ファイルプロトコルの性能実測**、ブロック（iSCSI / NVMe/TCP）と S3 Access Points の実測。このリポジトリの性能記述の多くはここからの引用です（[引用索引](docs/ja/reference/cross-repo-index.md)） |
+| **S3 Access Point でデータを出し、サーバーレスで処理する** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 処理パターンの実装（45+）と、ファイルシステムに対する運用パターン、S3 Access Points 経由のレイテンシ実測 |
 | **AI / RAG で使い、元の ACL を効かせたい** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Amazon Bedrock と AWS CDK による実装。**権限を別の索引に再構成して検索時に判定する**形です（[単一 ID 認可の制約](docs/ja/domains/data-utilization/notes/reaching-data-without-copies.md)を読んでから） |
 | **散在するエッジ / IoT のデータを集めてから分析したい** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | ONTAP に集約してから S3 Access Point 経由で Bedrock / Athena / SageMaker。**IoT 固有の差分だけを持ち、ストレージ層の選択はこちらを参照する分担**です |
 | **ランサムウェア対策をどの層で持つか** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP、FPolicy による事象駆動の対応、サードパーティ製品との統合 |
-| **監視の経路を決めた** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | メトリクス、アラート、自動対応の実装（[経路の比較](docs/ja/reference/comparison/observability-routes.md)で選んでから） |
+| **監視の経路を決めた** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | メトリクス、アラート、自動対応の実装と、S3 Access Points 読み取りの階層別実測（[経路の比較](docs/ja/reference/comparison/observability-routes.md)で選んでから） |
 | **分析基盤に載せる** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR との統合 |
 | **VMware から移す** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2 と FSx for ONTAP への移行手順 |
 | **ECS / EKS のコンテナのデータストアにする** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2 の NFS/SMB マウント、EKS on EC2 の NetApp Trident 永続ボリューム、Fargate の S3 Access Points 経由の 5 構成と CloudFormation テンプレート。**ドライバ選択やボリューム数の上限といった一般的な ONTAP 知見はこのリポジトリを参照する分担**です |

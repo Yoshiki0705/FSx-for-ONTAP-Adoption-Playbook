@@ -48,6 +48,7 @@ Tier 1 첫 안내는 8개 언어로, Tier 2 모듈 허브는 일본어와 Englis
 | 선택지의 트레이드오프 비교 | [비교 매트릭스](../ja/reference/comparison/) (日本語) |
 | 업종에서 시작 | [업종별 리소스 맵](../ja/reference/industry-resource-map.md#業種から入ったときの読む順序) (日本語) |
 | 워크로드에서 시작 | [워크로드별 진입 맵](../en/reference/workload-entry-map.md) (English) |
+| 성능 실측 결과가 어느 리포지토리의 어느 문서에 있는지 찾기 | [성능 실측 위치 맵](../en/reference/performance-evidence-map.md) (English) |
 | 지식 기여 | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 
 </details>
@@ -242,12 +243,12 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 
 | 여기서 결정한 것 | 이동할 곳 | 그곳에 있는 것 |
 |---|---|---|
-| **정본은 Amazon S3이고 읽기 중심으로 사용** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 이 구성을 채택할지 판단하는 결정 트리와 **파일 프로토콜 실측값** |
-| **S3 액세스 포인트로 데이터를 내보내 서버리스로 처리** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 처리 패턴 구현과 파일 시스템 운영 패턴 |
+| **정본은 Amazon S3이고 읽기 중심으로 사용** | [S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | 이 구성을 채택할지 판단하는 결정 트리, **파일 프로토콜 실측값**, 블록(iSCSI / NVMe/TCP)과 S3 Access Points 실측값 |
+| **S3 액세스 포인트로 데이터를 내보내 서버리스로 처리** | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 처리 패턴 구현과 파일 시스템 운영 패턴, S3 Access Points 경유 레이턴시 실측값 |
 | **AI / RAG에서 사용하며 원래 권한을 적용** | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | Amazon Bedrock과 AWS CDK 구현. **권한을 별도 인덱스로 재구성해 검색 시점에 판정합니다** |
 | **흩어진 엣지 / IoT 데이터를 모아 분석** | [ONTAP-Edge-to-Cloud-AI](https://github.com/Yoshiki0705/ONTAP-Edge-to-Cloud-AI) | ONTAP로 집계한 뒤 S3 액세스 포인트를 통해 Bedrock / Athena / SageMaker. **IoT 고유의 차이만 다루며 스토리지 계층 선택은 이곳 기준입니다** |
 | **랜섬웨어 대응을 어느 계층에서 가질지** | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) | ONTAP ARP, FPolicy 기반 이벤트 대응, 서드파티 통합 |
-| **모니터링 경로를 결정** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 메트릭, 알림, 자동 대응 |
+| **모니터링 경로를 결정** | [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) | 메트릭, 알림, 자동 대응, 스토리지 티어별 S3 Access Points 읽기 실측값 |
 | **분석 플랫폼에 올리기** | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Databricks / Snowflake / Athena / Glue / EMR 통합 |
 | **VMware에서 이전** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2와 FSx for ONTAP로의 마이그레이션 |
 | **ECS / EKS 컨테이너의 데이터스토어로 사용** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2의 NFS/SMB 마운트, EKS on EC2의 NetApp Trident 영구 볼륨, Fargate의 S3 액세스 포인트 경유 등 5가지 구성과 CloudFormation 템플릿. **드라이버 선택과 볼륨 수 상한 같은 일반적인 ONTAP 지식은 이 리포지토리를 참조합니다** |
