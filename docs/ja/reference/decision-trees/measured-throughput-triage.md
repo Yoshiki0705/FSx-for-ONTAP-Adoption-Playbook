@@ -43,8 +43,9 @@ graph TD
     CONN -->|未計測| COUNT["まず数える<br/>NFS: nconnect の値<br/>SMB: Get-SmbMultichannelConnection"]
     COUNT --> CONN
 
-    CONN -->|1 接続| WHICH{どのサービスを測っているか}
-    WHICH -->|FSx for ONTAP| FLOW["上限 1: クライアント 1 フローの帯域<br/>約 5 Gbps で止まります<br/>接続数を増やせば超えられます"]
+    CONN -->|1 接続| WHICH{どのサービスとプロトコルを測っているか}
+    WHICH -->|FSx for ONTAP のファイル NFS / SMB| FLOW["上限 1: クライアント 1 フローの帯域<br/>約 5 Gbps で止まります<br/>接続数を増やせば超えられます"]
+    WHICH -->|FSx for ONTAP のブロック iSCSI / NVMe/TCP| BLOCK["単一接続の値は 1 つの上限として読めません<br/>引用元で 2 つの位置が観測されています<br/>どちらの位置かの理由は引用元に書かれていません<br/>下の表とブロックのノートを読む"]
     WHICH -->|他のストレージサービス| QUOTA["サービス側のクライアント単位クォータを先に確認<br/>接続数では超えられません<br/>例: EFS は 500 MiBps"]
     FLOW --> RAISE["nconnect / SMB Multichannel で<br/>接続数を増やしてから測り直す"]
 
@@ -88,7 +89,8 @@ graph TD
 
 | 分岐 | 何に基づくか |
 |---|---|
-| FSx for ONTAP の単一接続で約 5 Gbps | AWS は 1 ネットワークフローあたり全二重 5 Gbps の上限を明記しています。実測では NFS 591.62 MB/s（4.7 Gbps）、SMB 574.24 MB/s（4.6 Gbps） |
+| FSx for ONTAP のファイルプロトコル（NFS / SMB）の単一接続で約 5 Gbps | AWS は 1 ネットワークフローあたり全二重 5 Gbps の上限を明記しています。実測では NFS 591.62 MB/s（4.7 Gbps）、SMB 574.24 MB/s（4.6 Gbps）。**この分岐に根拠を与えているのはファイルプロトコルの測定だけです** |
+| FSx for ONTAP のブロック（iSCSI / NVMe/TCP）の単一接続は、1 つの上限として読めないこと | 引用元の多重度 1 の値は、デプロイごとに約 591 MB/s（4.73 Gbps）と約 1,135 MB/s（9.08 Gbps）の 2 つの位置に出ています。引用元が両プロトコルを測った 2 つのデプロイでは、同じデプロイの中で iSCSI と NVMe/TCP が同じ位置に来ていて、NVMe/TCP で接続を 4 回やり直しても変わりませんでした（[引用元の測定結果](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md#1-接続の値がデプロイごとに-2-つの位置に出ること)）。**どちらの位置になるかを決める要因を、引用元は確認していません**（配置・インスタンス・ENA の構成のいずれも切り分けていない）。**どちらの位置になるかの理由は、引用元に書かれていません。** 上の 5 Gbps の記載とこの 2 つの位置を結びつける説明は、この決定木にはありません。値は raw device の測定で、窓は 300 秒（バーストを含みます）です。ファイル側との差と設計上の扱いは [パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと) にあります。引用元は 2026-10-14 に `main` で確認しました |
 | 他サービスは別の上限に当たりうること | 同じ測定で Amazon EFS の素マウントは 499.79 MB/s でした。**これは 5 Gbps ではなく EFS のクライアント単位クォータ 500 MiBps に一致します。** 引用元は当初この 3 行を同じ上限として説明し、あとで訂正しています |
 | `tcp-max-xfer-size` の既定値 | 既定 65,536 のままだとクライアントの `rsize` が 64 KiB に切り下がります。65,536 未満は既定値未満の設定として意図を確認します |
 | クライアントの保証値とバーストの違い | インスタンス型によってネットワーク性能が保証値かバーストかが違います。バースト型では測定対象がクライアントになります |
@@ -109,7 +111,9 @@ graph TD
 | 接続数を増やす手段の選び方 | [スループットを上げる手段の比較](../comparison/throughput-levers.md) |
 | スループット容量の設定値が何を決めているか | [スループットは 1 つの設定値では決まらない](../../domains/performance/notes/where-throughput-is-determined-and-shared.md) |
 | p99 レイテンシをどう見るか | [ボリュームの操作時間メトリクスから p99 は出せない](../../domains/performance/notes/what-you-cannot-read-from-cloudwatch.md) |
-| 世代差・S3 API との比較 | **未測定です。** 引用元が未測定として挙げている範囲は [引用元が未測定としている範囲](../../domains/performance/notes/a-single-connection-measures-the-client.md#引用元が未測定としている範囲) にあります |
+| ブロック（iSCSI / NVMe/TCP）の単一接続の値をどう読むか | **この決定木の「約 5 Gbps」の分岐に根拠を与えているのはファイルプロトコルの測定だけで、ブロックには当てはめません。** ブロックの単一接続の値は引用元で 2 つの位置に出ていて、1 つの上限として読めません。ファイル側との差と設計上の扱いは [パスはフェイルオーバーの仕組みそのもの](../../domains/block-storage/notes/paths-are-the-failover-mechanism.md#ブロックが同じ位置に来なかったこと) にあります |
+| 世代差 | **未測定です。** 引用元が未測定として挙げている範囲は [引用元が未測定としている範囲](../../domains/performance/notes/a-single-connection-measures-the-client.md#引用元が未測定としている範囲) にあります |
+| S3 API との比較、S3 Access Points の測定がどこにあるか | 同一データでの比較の状況は [引用元が未測定としている範囲](../../domains/performance/notes/a-single-connection-measures-the-client.md#引用元が未測定としている範囲) にあります。S3 Access Points の結果文書の所在は [性能結果の所在マップ](../performance-evidence-map.md) にあります |
 | コストとの兼ね合い | [EBS が安くなくなる境目](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md) |
 
 ---
