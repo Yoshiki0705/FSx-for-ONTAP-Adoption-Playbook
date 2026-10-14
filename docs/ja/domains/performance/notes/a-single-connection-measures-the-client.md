@@ -262,6 +262,8 @@ origin の種別・エンドポイント・クライアントのツールとイ�
 
 出典は [NFS 直書き込みと S3 Access Point 経由の書き込みの差](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-multipart-internet-origin.md#nfs-直書き込みと-s3-access-point-経由の書き込みの差) です。
 
+**読み取り・ListObjectsV2・階層別の S3 Access Points の測定は、別の Spoke にあります。** 世代（第 1 世代）や origin（Internet）がこの節の書き込みと同じ記録もありますが、操作（読み取り対書き込み）、クライアントの置き場所（VPC 外の Lambda やローカル端末対、同一リージョンの EC2 `c5n`）、測定ツール、オブジェクトサイズが違います。構成も条件も違うので、同じ土俵の値として読まないでください。所在は [性能実測の所在マップ](../../../reference/performance-evidence-map.md) にプロトコル・論点ごとに並べてあります。
+
 ### よくある誤解
 
 | 誤解 | 実際 |
