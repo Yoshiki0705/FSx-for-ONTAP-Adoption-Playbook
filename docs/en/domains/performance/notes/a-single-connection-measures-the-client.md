@@ -227,6 +227,8 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 The source is [the difference between an NFS direct write and a write through an S3 access point](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-multipart-internet-origin.md#nfs-直書き込みと-s3-access-point-経由の書き込みの差) (日本語).
 
+**The read, ListObjectsV2 and per-tier S3 Access Points measurements live in other Spokes.** Some of those records share this section's generation (first generation) and origin (Internet), but the operation (read versus write), where the client runs (a Lambda outside the VPC or a local workstation, versus an EC2 `c5n` in the same region), the measurement tool, and the object size differ. Their construction and conditions differ, so do not read them as values on the same footing. Their locations are laid out per protocol and topic in [the performance evidence map](../../../reference/performance-evidence-map.md).
+
 ### Common misconceptions
 
 | Misconception | Actually |

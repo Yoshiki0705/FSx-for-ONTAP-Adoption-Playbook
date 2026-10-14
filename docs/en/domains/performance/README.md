@@ -15,6 +15,7 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 | 1 | [Working out what a measured throughput figure actually measured](../../../ja/reference/decision-trees/measured-throughput-triage.md) (日本語) | Which of four ceilings the figure hit. **The remedy for one is a no-op for the others** |
 | 2 | [Levers for raising throughput](../../../ja/reference/comparison/throughput-levers.md) (日本語) | Six levers against the ceiling each one moves. **The two that moved the measured figure most carry no additional charge** |
 | 3 | [A figure from a single connection measures the client, not the storage](notes/a-single-connection-measures-the-client.md) | The measured figures and every condition behind them |
+| 4 | [Performance evidence map](../../reference/performance-evidence-map.md) | Which Spoke document holds the result, per protocol and topic. An index of locations, carrying no performance values |
 
 **If you are about to write a throughput requirement, read 3 first.** A requirement stated only in MB/s does not settle anything.
 
@@ -63,6 +64,7 @@ See the [Evidence Policy](../../evidence-policy.md) for the full criteria.
 ## Related
 
 - [Browse by lifecycle](../../navigation.md#lifecycle-axis--playbooks)
+- [Performance evidence map](../../reference/performance-evidence-map.md) — an index of where results live, across Spokes, by protocol and topic
 - [Observability](../observability/) — choosing the route the performance numbers come through
 - [Comparison Matrices](../../../ja/reference/comparison/)
 - [Navigation Guide](../../navigation.md)

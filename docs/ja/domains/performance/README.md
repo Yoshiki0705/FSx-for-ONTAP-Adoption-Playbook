@@ -15,6 +15,7 @@
 | 1 | [手元のスループット値は何を測ったのかを判定する](../../reference/decision-trees/measured-throughput-triage.md) | 4 か所ある上限のどこに当たっているか。**当たっている場所によって打つ手が正反対になります** |
 | 2 | [スループットを上げる手段の比較](../../reference/comparison/throughput-levers.md) | 6 つの手段の効く量とコストの向き。**最も大きく動いたのは追加料金のない手段でした** |
 | 3 | [単一接続で測った値はストレージの性能ではない](notes/a-single-connection-measures-the-client.md) | 実測値と、その全測定条件 |
+| 4 | [性能実測の所在マップ](../../reference/performance-evidence-map.md) | プロトコル・論点ごとに、どの Spoke のどの文書に結果があるか。性能値は書かず所在だけを索引 |
 
 **性能要件をこれから書くなら、3 を先に読んでください。** 「MB/s」だけの要件は決まりません。
 
@@ -63,6 +64,7 @@
 ## 関連
 
 - [ライフサイクル軸で探す](../../navigation.md#ライフサイクル軸--playbooks)
+- [性能実測の所在マップ](../../reference/performance-evidence-map.md) — プロトコル・論点別に Spoke 横断で結果の所在を引く索引
 - [可観測性](../observability/) — 性能の数値をどの経路で取るかの選定
 - [比較マトリクス](../../reference/comparison/)
 - [ナビゲーションガイド](../../navigation.md)
