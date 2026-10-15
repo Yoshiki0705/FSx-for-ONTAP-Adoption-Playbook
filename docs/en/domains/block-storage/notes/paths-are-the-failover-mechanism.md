@@ -182,7 +182,7 @@ Required session count = required bandwidth ÷ 625 MBps
 Ceiling            = min(8 paths per node, client bandwidth ÷ 625 MBps)
 ```
 
-**This form is wrong in both directions.** This was settled once block was measured (below). **At 1 session, it overestimates the required session count; at 16 sessions, it comes out to only a fifth of the expectation.** So **this formula cannot be used as a tool to decide the count.** The ceiling side (8 paths per node) is a configuration constraint and remains as-is, but the required-count side comes down to measuring in your own configuration.
+**This form is wrong, and the direction it is wrong in depends on the deployment.** This was confirmed once the cited source measured block (below). In a deployment that landed at the 1,135 MB/s position, **at 1 session it overestimates the required session count, and at 16 sessions it comes out to only a fifth of the expectation.** In a deployment that landed at the 591 MB/s position, 1 session reached 94.6–94.7% of the divisor and 16 sessions reached about 4 tenths of the expectation (the ratio is against 16 × 625 MBps, and 8 of the 16 paths carried I/O). What decides which position a deployment lands at is, as [below](#block-not-landing-at-the-same-position), not confirmed by the cited source either. So **this formula cannot be used as a tool to decide the count.** The ceiling side (8 paths per node) is a configuration constraint and remains as-is, but the required-count side comes down to measuring in your own configuration.
 
 You also cannot assume a single client will exhaust the capacity. This relationship is in [A single connection measures the client, not the storage](../../performance/notes/a-single-connection-measures-the-client.md).
 
@@ -196,9 +196,9 @@ You also cannot assume a single client will exhaust the capacity. This relations
 
 | Premise | State |
 |---|---|
-| **Linearity** — does n sessions become n times a single session | **Does not hold** (measured). For iSCSI, **1 → 2 moved sequential throughput by not one byte**, while 2 → 16 gave 1.74× reads and 2.17× writes |
-| **Does the divisor match measurement** | **It does not, for either protocol group.** File falls short of the divisor, and **block was 1.82× over it in the most recent measurement** (below) |
-| **Does re-measuring the same configuration give the same value** | **No** (measured). NVMe/TCP's multiplicity-1 case moved **from 591.64 to 1,135.88, a 1.92× swing.** **Environmental difference is ruled out by control, and the cause is unconfirmed** (below) |
+| **Linearity** — does n sessions become n times a single session | **Does not hold** (measured). For iSCSI, **1 → 2 moved sequential throughput by not one byte**, while 2 → 16 gave 1.74× reads and 2.17× writes. These are values from a deployment at the 1,135 MB/s position (1 → 2 was measured in two deployments, and both were at the 1,135 MB/s position). 1 → 2 was not measured in a deployment at the 591 MB/s position |
+| **Does the divisor match measurement** | **It does not, for either protocol group.** File falls short of the divisor, and **block was 1.82× over it in a deployment at the 1,135 MB/s position and fell short of it in a deployment at the 591 MB/s position** (below) |
+| **Does re-measuring the same configuration on another deployment give the same value** | **No** (measured). NVMe/TCP's multiplicity-1 case moved **from 591.64 to 1,135.88, a 1.92× swing.** **Within one deployment it did not move when the NVMe/TCP connection was redone 4 times, and across deployments it lands at one of two positions. What decides which one is not confirmed by the cited source** (below) |
 
 **"AWS states 625 MBps" and "625 MBps was measured" are different claims.** The former is `documented`,
 **the latter is false.**
@@ -215,33 +215,39 @@ You also cannot assume a single client will exhaust the capacity. This relations
 ##### Block not landing at the same position
 
 **This note previously stated that if block landed at the same position, dividing by 625 would underestimate the required session count by about 5%,** and instructed adding 1 to the `nr_sessions` derived from the division.
-**Block has since been measured and the premise was false, so this is withdrawn. The instruction's direction was backwards.**
+**Block has since been measured, and the premise held in some deployments and not in others, so the instruction is withdrawn.**
 
-There are two multiplicity-1 measurements on the same file system.
+The cited source measured multiplicity 1 in four deployments, and the values land at two positions, about 591 MB/s (4.73 Gbps) and about 1,135 MB/s (9.08 Gbps) ([the cited source's summary](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md#1-接続の値がデプロイごとに-2-つの位置に出ること) (日本語)).
 
-| Multiplicity-1 measurement (1 MiB sequential read) | Against 625 MBps |
-|---|---|
-| iSCSI, 1 session, 1,135.19 MB/s (= 9.08 Gbps) | **181.6%** |
-| NVMe/TCP, 1 I/O queue, 1,135.88 MB/s (= 9.08 Gbps) | **181.7%** |
-| File side's NFSv4.1 single connection, 591.62 MB/s (= 4.73 Gbps) | 94.7% |
+| Section of the cited source (date, protocol measured) | iSCSI, 1 session | NVMe/TCP, 1 I/O queue | Position | Against 625 MBps |
+|---|---|---|---|---|
+| F-1 (2026-09-12, iSCSI only) | 1,135.18 | not measured | 9.08 Gbps | **181.6%** |
+| F-2 (2026-09-13, NVMe/TCP only) | not measured | 591.64 | 4.73 Gbps | 94.7% |
+| F-4 (2026-09-15, both) | 1,135.19 | 1,135.88 | both 9.08 Gbps | **181.6% / 181.7%** |
+| F-5 (2026-09-15, both) | 591.27 | 591.65 | both 4.73 Gbps | 94.6% / 94.7% |
 
-**They did not land at the same position. Roughly double.** So adding a session on top of the divided figure **means provisioning 2 or more where the measured value shows 1 is enough.** Because the error runs the opposite direction, do not use the earlier instruction.
+Units are MB/s, 1 MiB sequential read. **Block values landed at the same position as the file side's single connection in some deployments, and at roughly double that position in others.** The file side's NFSv4.1 single connection, 591.62 MB/s (= 4.73 Gbps, 94.7% of 625 MBps), sits at the lower position. Within one deployment iSCSI and NVMe/TCP came out at the same position (both 9.08 Gbps in F-4, both 4.73 Gbps in F-5), and in the F-5 deployment redoing the NVMe/TCP connection 4 times still gave 591.65 MB/s.
 
-**And "then reduce it" does not follow either.** The cited source records the arithmetic itself as wrong in both directions, and **at 16 sessions it produces only a fifth of the expectation.** Because the divisor overshoots and undershoots, **applying a ratio to construct a different divisor does not hold either.**
+So do not use the earlier instruction. Its premise holds only in deployments at the 591 MB/s position; in a deployment at the 1,135 MB/s position, **adding a session on top of the divided figure means provisioning 2 or more where the measured value shows 1 is enough.**
 
-**The protocol difference at 1 connection did not reproduce.** The gap between the two rows above is 0.06%.
-**Protocol choice does not move single-connection throughput.** Place the reason for choosing on a different axis.
+**And "then reduce it" does not follow either.** In the F-1 deployment the cited source records the arithmetic itself as wrong in both directions. At 16 sessions the value was a fifth of the expectation in the F-1 deployment and about 4 tenths in the F-5 deployment (4,025.39 MB/s, 2.04× F-1's 1,970.43 MB/s). In F-5 only the 8 paths of the optimized group, of the 16, carried I/O (the cited source's record), and the 4 tenths is the ratio against 16 × 625 MBps. Because the divisor overshoots and undershoots, **applying a ratio to construct a different divisor does not hold either.**
 
-**Why the file side comes out at roughly double, the cited source itself has not confirmed.** The candidates raised are the single-flow limit of a newer-generation instance and the applicability conditions of the 5 Gbps figure. **Which applies has not been verified, so do not design around either as a premise.**
+**Within one deployment, the protocol difference did not reproduce.** The difference is 0.06% in F-4, and F-5's 591.27 against 591.65 is also 0.06%. **In the cited source's two deployments, protocol choice did not move single-connection throughput.** Place the reason for choosing on a different axis.
+
+**What decides which position a deployment lands at is not confirmed by the cited source.** It records that placement, instance and ENA configuration have not been separated. Its F-5 section writes that 4.73 Gbps and 9.08 Gbps sit at the documented single-flow 5 Gbps and 10 Gbps positions (this repository has not checked the AWS statement behind the 10 Gbps side). What decides which of the two positions a deployment gets is a separate question. The candidates its F-1 section named for the higher position, the single-flow limit of a newer-generation instance and the applicability conditions of the 5 Gbps figure, have not been verified either. **Do not design around a cause.**
 
 ##### That the same configuration's multiplicity-1 swung 1.92× on remeasurement
 
-**The second row of the table above was 591.64 MB/s in the earlier measurement.** At 4.73 Gbps, it sat at the documented 5 Gbps position and **matched the same environment's NFS single connection (591.62) too.** All four of the 1 MiB / 64 KiB read/write combinations landed in the 591.5–591.7 range, **a shape that looked like hitting a single ceiling somewhere on the path.**
+**NVMe/TCP in F-2 of the table above was 591.64 MB/s.** At 4.73 Gbps, it sat at the documented 5 Gbps position and **matched the same environment's NFS single connection (591.62) too.** All four of the 1 MiB / 64 KiB read/write combinations landed in the 591.5–591.7 range, **a shape that looked like hitting a single ceiling somewhere on the path.**
 
-**On remeasurement it came out at 1,135.88 — a 1.92× swing.** The requested parameters and the negotiated outcome were the same
-(`--nr-io-queues=1`, NCQA/NSQA both 1, 1 controller), and **the cited source ruled out environmental difference with a control** — 4 KiB random reads agreed within 4% across all 3 configurations, and `connect-all` sequential reads agreed to within 0.007%. **The cause is unconfirmed.** The candidates raised are EC2-side flow placement, whether the connected portal is on the optimized side, and kernel-version differences. **This is a separate question from the "roughly double" above, with separate candidates too.** Both are unconfirmed, so **do not explain the two with a single cause.**
+**Remeasured on another deployment in F-4, it came out at 1,135.88, a 1.92× swing.** The requested parameters and the negotiated outcome were the same
+(`--nr-io-queues=1`, NCQA/NSQA both 1, 1 controller), and at the time the cited source gave as its control that 4 KiB random reads agreed to within about 4% across 3 configurations and `connect-all` sequential reads agreed to within 0.007%.
 
-**The design implication is the larger one here.** "Block's multiplicity 1 lands at the divisor's position" was consistent with the value available at the time. **And yet the next measurement swung 1.92×.** In other words, **a single-connection block value is not an input to planning from a single measurement.** Both landing on the divisor and exceeding the divisor **can each move on the next measurement.**
+**The cited source's reading then changed in F-5.** On yet another deployment, NVMe/TCP with 1 I/O queue gave 591.65 MB/s, and iSCSI with 1 session on the same deployment gave 591.27 MB/s. The cited source now describes 591.64 as a single-flow tier rather than a property of NVMe/TCP, and **records that a single-connection value is a property of the deployment, not of the protocol.** The 1.92× was a high-position deployment set beside a low-position one. That iSCSI's single session carried about double the file side is also the ratio between the same two positions (9.08 Gbps against 4.73 Gbps). For this difference the cited source narrowed its earlier statement that why is not confirmed to a statement that what decides which tier is not confirmed.
+
+**The cause is unconfirmed.** What the cited source has not separated is placement, instance and ENA configuration. "Whether the connected portal is on the optimized side," a candidate named in its F-4 section, did not move the 1 MiB sequential-read value inside the F-5 low-position deployment (591.66 through the optimized-side LIF and 591.65 MB/s through the non-optimized-side LIF). That control does not show whether it decided the position across deployments.
+
+**The design implication is the larger one here.** "Block's multiplicity 1 lands at the divisor's position" was consistent with the value available from F-2. **And yet another deployment landed at the 1.92× position.** Within one deployment it did not move, so a single measured value only shows the position of the deployment it came from. In other words, **a single-connection block value measured on another deployment is not an input to planning for yours.** Both landing on the divisor and exceeding the divisor **can swap on another deployment.**
 
 > **A range not moving is not evidence of not having measured.** The cited source's 3 single-connection rows
 > (500–592 MB/s) are a table that only answers "similar values arising from different causes," and **a measurement that does not fit the point does not go into the same table.** The block value's absence from it is not because it was not measured, but because **there is a judgment not to include it there.** **This side has placed a probe on that judgment** — placing it on the range itself would go silent if the judgment were withdrawn
@@ -251,8 +257,9 @@ There are two multiplicity-1 measurements on the same file system.
 
 > **There is a range this measurement cannot be used as-is for.** Transcribing the conditions the cited source raises:
 > **it is a raw-device value**, not a measurement of a configuration with a filesystem on the LUN.
-> **The window is 300 seconds and includes a burst; it is not a baseline.** So 1,135 MB/s cannot be
-> treated as a sustained value either. **"It came out above the divisor" is as far as this goes.**
+> **The window is 300 seconds and includes a burst; it is not a baseline.** So neither position's value
+> can be treated as a sustained value. For the 1,135 MB/s position, **"a deployment came out above the divisor"**
+> is as far as this goes.
 >
 > **This gap is not small.** In the file-side measurement, a **2.0× step** appears once burst credit runs out,
 > and it took about 27 minutes to fall. **The drop is a step, not a gradual slope.**
@@ -262,9 +269,13 @@ There are two multiplicity-1 measurements on the same file system.
 > **Which side a value taken in a 300-second window falls on is not judged in this section.**
 
 > **Evidence**: the divisor is `documented` (the 2 pages above, 2026-09-07). **Both the file side's 5–8% gap and
-> block's 1.82× are transcriptions of
-> [the cited source's measurement results](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)**
-> (measurement conditions are in the box above and in the cited source). **No remeasurement in this repository is included.**
+> block's two positions (1.82× at the 1,135 MB/s position, 94.6–94.7% at the 591 MB/s position) are transcriptions of
+> [the cited source's measurement results](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md) (日本語).**
+> The cited source's `main` was checked on 2026-10-15. The percentages and multiples are arithmetic over the transcribed values divided by 625 MBps.
+> Measurement conditions are in the box above and in the cited source (second generation `SINGLE_AZ_2`, 6,144 MBps × 1 HA pair, `c5n.9xlarge`,
+> `ap-northeast-1`, raw device, 300-second window; ONTAP 9.18.1P5 in F-1 and 9.18.1P6 in F-4 and F-5, with no version stated in the F-2 section). **No remeasurement in this repository is included.**
+> What decides the two positions is recorded in the cited source's F-5 section as not confirmed (it is not an item in the cited source's unmeasured table).
+> Four deployments were observed, so this note's own judgment is that how often each position occurs is not known.
 
 **And write down the count you decided, and why, in your design document.** Writing "8" as a fixed value in a runbook leaves the next reader unable to judge why it is 8.
 

@@ -142,7 +142,7 @@ graph TD
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| 上限 | [AWS: Amazon EC2 instance network bandwidth](https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-network-bandwidth.html) | **1 ネットワークフローあたり全二重 5 Gbps。** FSx for ONTAP の単一接続が当たっているのはこの上限で、EFS のクライアント単位クォータとは別物です |
+| 上限 | [AWS: Amazon EC2 instance network bandwidth](https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-network-bandwidth.html) | **1 ネットワークフローあたり全二重 5 Gbps。** FSx for ONTAP のファイルプロトコル（NFS・SMB）の単一接続が当たっているのはこの上限で、EFS のクライアント単位クォータとは別物です |
 
 ### 業種別の構成例
 
