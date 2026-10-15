@@ -182,7 +182,7 @@ Required session count = required bandwidth ÷ 625 MBps
 Ceiling            = min(8 paths per node, client bandwidth ÷ 625 MBps)
 ```
 
-**This form is wrong, and the direction it is wrong in depends on the deployment.** This was confirmed once the cited source measured block (below). In a deployment that landed at the 1,135 MB/s position, **at 1 session it overestimates the required session count, and at 16 sessions it comes out to only a fifth of the expectation.** In a deployment that landed at the 591 MB/s position, 1 session reached 94.6–94.7% of the divisor and 16 sessions reached about 4 tenths of the expectation (the ratio is against 16 × 625 MBps, and 8 of the 16 paths carried I/O). What decides which position a deployment lands at is, as [below](#block-not-landing-at-the-same-position), not confirmed by the cited source either. So **this formula cannot be used as a tool to decide the count.** The ceiling side (8 paths per node) is a configuration constraint and remains as-is, but the required-count side comes down to measuring in your own configuration.
+**This form is wrong, and the direction it is wrong in depends on the deployment.** This was confirmed once the cited source measured block (below). In a deployment that landed at the 1,135 MB/s position, **at 1 session it overestimates the required session count, and at 16 sessions it comes out to only a fifth of the expectation.** In a deployment that landed at the 591 MB/s position, 1 session reached 94.6–94.7% of the divisor and 16 sessions reached about 4 tenths of the expectation (the ratio is against 16 × 625 MBps, and 8 of the 16 paths carried I/O). What decides which position a deployment lands at is, as [below](#block-values-landing-at-two-positions-across-deployments), not confirmed by the cited source either. So **this formula cannot be used as a tool to decide the count.** The ceiling side (8 paths per node) is a configuration constraint and remains as-is, but the required-count side comes down to measuring in your own configuration.
 
 You also cannot assume a single client will exhaust the capacity. This relationship is in [A single connection measures the client, not the storage](../../performance/notes/a-single-connection-measures-the-client.md).
 
@@ -212,7 +212,7 @@ You also cannot assume a single client will exhaust the capacity. This relations
 | NFSv4.1 single connection, 591.62 MB/s | **94.7%** |
 | SMB 3.1.1 single channel, 574.24 MB/s | **91.9%** |
 
-##### Block not landing at the same position
+##### Block values landing at two positions across deployments
 
 **This note previously stated that if block landed at the same position, dividing by 625 would underestimate the required session count by about 5%,** and instructed adding 1 to the `nr_sessions` derived from the division.
 **Block has since been measured, and the premise held in some deployments and not in others, so the instruction is withdrawn.**
@@ -236,7 +236,7 @@ So do not use the earlier instruction. Its premise holds only in deployments at 
 
 **What decides which position a deployment lands at is not confirmed by the cited source.** It records that placement, instance and ENA configuration have not been separated. Its F-5 section writes that 4.73 Gbps and 9.08 Gbps sit at the documented single-flow 5 Gbps and 10 Gbps positions (this repository has not checked the AWS statement behind the 10 Gbps side). What decides which of the two positions a deployment gets is a separate question. The candidates its F-1 section named for the higher position, the single-flow limit of a newer-generation instance and the applicability conditions of the 5 Gbps figure, have not been verified either. **Do not design around a cause.**
 
-##### That the same configuration's multiplicity-1 swung 1.92× on remeasurement
+##### That the same configuration's multiplicity-1 landed at a different position when remeasured on another deployment
 
 **NVMe/TCP in F-2 of the table above was 591.64 MB/s.** At 4.73 Gbps, it sat at the documented 5 Gbps position and **matched the same environment's NFS single connection (591.62) too.** All four of the 1 MiB / 64 KiB read/write combinations landed in the 591.5–591.7 range, **a shape that looked like hitting a single ceiling somewhere on the path.**
 
