@@ -84,8 +84,8 @@ YYYY-MM-DD 時点の情報です。
 | [階層化ポリシーの比較](tiering-policies.md) | `NONE` / `SNAPSHOT_ONLY` / `AUTO` / `ALL` | 2026-08-06 |
 | [ブロックストレージの選択肢の比較](block-storage-options.md) | Amazon EBS / EBS Multi-Attach / FSx for ONTAP の iSCSI と NVMe/TCP | 2026-09-05 |
 | [監視経路の比較](observability-routes.md) | Amazon CloudWatch / NetApp Harvest + Prometheus + Grafana / SaaS / ONTAP REST 直叩き | 2026-09-05 |
-| [スループットを上げる手段の比較](throughput-levers.md) | `nconnect` / SMB Multichannel / `tcp-max-xfer-size` / 台数 / SSD と IOPS / スループット容量 | 2026-09-05 |
-| [ファイルストレージの選択肢の比較](file-storage-options.md) | Amazon EFS / Amazon S3 Files / FSx for ONTAP / FSx for Windows File Server / FSx for Lustre / Amazon S3 + Mountpoint / S3 File Gateway | 2026-09-06 |
+| [スループットを上げる手段の比較](throughput-levers.md) | `nconnect` / SMB Multichannel / `tcp-max-xfer-size` / 台数 / SSD と IOPS / スループット容量 | 2026-09-05（引用した実測 / cited measurements: 2026-10-15） |
+| [ファイルストレージの選択肢の比較](file-storage-options.md) | Amazon EFS / Amazon S3 Files / FSx for ONTAP / FSx for Windows File Server / FSx for Lustre / Amazon S3 + Mountpoint / S3 File Gateway | 2026-09-06（SMB の記述 / SMB statements: 2026-10-14） |
 | [ブロックからファイルへ運ぶ経路の比較](block-to-file-routes.md) | ホスト上のファイルコピー / AWS DataSync / コード変換を持つ転送の仕組み（+ 変換の置き方 3 通り） | 2026-09-11 |
 | [端末別にできることの比較](client-endpoint-capabilities.md) | Windows / WSL2 の Linux / Mac / ネイティブ Linux / WorkSpaces・AppStream / Chromebook・iPad × ブロック・ファイル・オブジェクト | 2026-09-13 |
 | [端末の到達経路の比較](endpoint-reachability-options.md) | Client VPN / Site-to-Site VPN / Direct Connect / VDI / ブラウザ（+ Verified Access） | 2026-09-13 |

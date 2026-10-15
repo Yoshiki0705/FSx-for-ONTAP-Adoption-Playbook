@@ -161,7 +161,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 | To decide | What happens if you do not |
 |---|---|
-| The connection count (`nconnect`, or the SMB Multichannel channel count) | **On FSx for ONTAP a single connection stops at around 5 Gbps.** Change product and the ceiling changes too |
+| The connection count (`nconnect`, or the SMB Multichannel channel count) | **On FSx for ONTAP file protocols (NFS and SMB) a single connection stops at around 5 Gbps.** A block single connection cannot be read as one ceiling ([what a block figure would need before it joins this table](#what-a-block-figure-would-need-before-it-joins-this-table)). Change product and the ceiling changes too |
 | Whether data is shared, or each host reads its own region | **5.5x under the same conditions** |
 | The working set against the cache | It changes which ceiling stage binds |
 | Block size and parallelism | The cited source measured at 1 MiB with 512 threads |
@@ -174,7 +174,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ### What the cited source records as unmeasured
 
-**A citation can take only the convenient part.** What the cited source lists as unmeasured, transcribed.
+**A citation can take only the convenient part.** What the cited source lists as unmeasured, transcribed. The last row is the one exception: it is not in the cited source's unmeasured table, but a record in its F-5 section, added here as a range that has not been confirmed.
 
 | Case | State |
 |---|---|
@@ -184,6 +184,7 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 | One and six clients in the non-overlapping-region client-count test | Unmeasured (2, 4 and 8 were measured) |
 | The conditions for raising the SMB Multichannel channel count above 4 | **Unmeasured.** In its 2026-09-20 entry the cited source gives the client-side `ConnectionCountPerRssNetworkInterface` (value 4) as where the 4 comes from. The cited source has tried neither adding NICs nor raising that value |
 | Why 64 KiB sequential reads are slower than 64 KiB random reads | Unmeasured |
+| What decides whether a block single connection lands at the 591 MB/s or the 1,135 MB/s position | **Not an item in the cited source's unmeasured table; a record in its F-5 section.** It writes that placement, instance and ENA configuration have not been separated ([what a block figure would need before it joins this table](#what-a-block-figure-would-need-before-it-joins-this-table)) |
 
 **The test environment has been deleted.** The procedure for rebuilding it is in the cited repository.
 
@@ -191,22 +192,25 @@ On Amazon EFS's `nconnect=16` being unmeasurable, **the cited source reproduced 
 
 ### What a block figure would need before it joins this table
 
-**The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, iSCSI reached 1,135.19 MB/s and NVMe/TCP 1,135.88 MB/s ([Paths are the failover mechanism](../../block-storage/notes/paths-are-the-failover-mechanism.md#block-not-landing-at-the-same-position)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
+**The block protocol figures (iSCSI, NVMe/TCP) have since been measured.** At a multiplicity of one, the cited source's four deployments put the values at two positions, about 591 MB/s (4.73 Gbps) and about 1,135 MB/s (9.08 Gbps). Within one deployment iSCSI and NVMe/TCP came out at the same position (1,135.19 and 1,135.88; 591.27 and 591.65). What decides which position a deployment lands at is not confirmed by the cited source ([Paths are the failover mechanism](../../block-storage/notes/paths-are-the-failover-mechanism.md#block-not-landing-at-the-same-position)). **They are still not placed in the table above.** Placing one there requires **two conditions to travel with it,** and both are expected to work in block's favour, so **dropping them invites the difference being misread as a protocol difference.**
 
 | Condition | In the file-side measurement | What to expect for block |
 |---|---|---|
 | **The number of paths** | Every byte went through one port (the other measured zero) | Both nodes' LIFs are used, so **it spreads across two nodes by default** |
 | **Whether a file system layer is present** | It goes through the page cache and the metadata path | A raw device with `o_direct` goes through **neither** |
 
-**So reading it as "block is faster" includes the effect of twice the paths and no file system layer.** That is not a protocol difference.
+**"It spreads across two nodes" was an expectation set before the measurement.** The cited source later counted bytes per path on an ANA-capable kernel's NVMe/TCP and recorded almost nothing flowing to the non-optimized path ([F-8](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md#f-8-経路別の内訳と2-つの階層の原因) (日本語)). In the configuration F-8 measured (NVMe/TCP on an ANA-capable kernel), the expectation is not supported. The cited source still lists the data LIFs sitting on different ports of different nodes as one of its reasons for not adding the block rows to its side-by-side table. "Not supported" is this note's reading of F-8's per-path byte counts.
+
+**So reading it as "block is faster" includes the expectation of twice the paths and the effect of having no file system layer.** That is not a protocol difference.
 
 **A comparison between iSCSI and NVMe/TCP, on the other hand, holds cleanly.** The same host, the same OS, the same `openflag` and the same LIF leave a single parameter line as the difference.
 
-**The measurement did not land where that expectation put it.** 1,135 MB/s is roughly 1.8× the EC2 single-flow ceiling of 625 MB/s, so **it does not belong in a comparison premised on landing in the same place.** The table above therefore still has three rows, and **the position that the protocol choice is settled by generation and HA pair count before performance enters is unchanged.**
+**Depending on the deployment, the measurement landed at the file side's position or did not.** The 1,135 MB/s position is roughly 1.8× the EC2 single-flow ceiling of 625 MB/s, and the 591 MB/s position is 94.6–94.7% of it, at the same position as the file side's single connection (591.62 MB/s). **What decides the position is not known, so it does not belong in a comparison premised on landing in the same place.** The table above therefore still has three rows, and **the position that the protocol choice is settled by generation and HA pair count before performance enters is unchanged.**
 
 **The decision not to add a row was made before the measurement ran.** The cited source split the possible outcomes for a single flow four ways and tabulated, **in advance,** how the table above would be rewritten in each case ([Block protocol measurement plan](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/block-protocol-matrix-plan.md) (日本語)). **Deciding after measuring allows the wording to be chosen to suit whatever number came out.**
+For a value inside 500–592 MB/s, though, the rewrite was to change "three rows" to "four rows" and leave the range alone. The 1,135 MB/s position's values fall under "does not stick to a single flow," where no row is added. The 591 MB/s position's values fall inside the range, but as of 2026-10-15 the cited source's current text leaves the table at three rows and does not record how that case was applied. This note adds no row either. Putting either position in a row would present a value that changes by deployment as one ceiling.
 
-> **Do not treat landing in the same range as evidence of the same cause.** The point of the table above is not the range but that similar values arise from different ceilings. **The cited source got this wrong once, for EFS, and corrected it** ([Conclusion](#conclusion)). If a block figure lands in the same range, whether the EC2 single-flow ceiling is the cause has to be confirmed separately.
+> **Do not treat landing in the same range as evidence of the same cause.** The point of the table above is not the range but that similar values arise from different ceilings. **The cited source got this wrong once, for EFS, and corrected it** ([Conclusion](#conclusion)). Block values at the 591 MB/s position are in the same range, but whether the EC2 single-flow ceiling is the cause has to be confirmed separately.
 
 ### A write through an S3 access point is throttled by a different ceiling
 
@@ -280,7 +284,7 @@ The source is [the difference between an NFS direct write and a write through an
 
 | # | Step | What it establishes |
 |---|---|---|
-| 1 | Count the mount's connections (the `nconnect` value; for SMB, `Get-SmbMultichannelConnection`) | **On FSx for ONTAP a single connection stops at around 5 Gbps.** On other services a service-side quota can bind first |
+| 1 | Count the mount's connections (the `nconnect` value; for SMB, `Get-SmbMultichannelConnection`) | **On FSx for ONTAP file protocols (NFS and SMB) a single connection stops at around 5 Gbps.** On other services a service-side quota can bind first |
 | 2 | `nfs show -vserver <svm> -fields tcp-max-xfer-size` | **At the default 65,536, `rsize` is cut back** |
 | 3 | Compare the working set size against the file server's cache | Which ceiling binds |
 | 4 | Run the same measurement twice back to back and look at the difference | **The range from cache warmth. One run does not show it** |
