@@ -236,7 +236,7 @@ So do not use the earlier instruction. Its premise holds only in deployments at 
 
 **What decides which position a deployment lands at is not confirmed by the cited source.** It records that placement, instance and ENA configuration have not been separated. Its F-5 section writes that 4.73 Gbps and 9.08 Gbps sit at the documented single-flow 5 Gbps and 10 Gbps positions (this repository has not checked the AWS statement behind the 10 Gbps side). What decides which of the two positions a deployment gets is a separate question. The candidates its F-1 section named for the higher position, the single-flow limit of a newer-generation instance and the applicability conditions of the 5 Gbps figure, have not been verified either. **Do not design around a cause.**
 
-##### That the same configuration's multiplicity-1 landed at a different position when remeasured on another deployment
+##### That multiplicity-1 with the same requested parameters and negotiated outcome landed at a different position when remeasured on another deployment
 
 **NVMe/TCP in F-2 of the table above was 591.64 MB/s.** At 4.73 Gbps, it sat at the documented 5 Gbps position and **matched the same environment's NFS single connection (591.62) too.** All four of the 1 MiB / 64 KiB read/write combinations landed in the 591.5–591.7 range, **a shape that looked like hitting a single ceiling somewhere on the path.**
 
