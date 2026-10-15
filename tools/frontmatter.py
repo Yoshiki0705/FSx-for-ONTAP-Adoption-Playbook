@@ -94,6 +94,7 @@ IGNORED_DIRS: tuple[str, ...] = (
     ".git",
     ".private",
     ".kiro",
+    ".agents",
     "semantic-review",
     "node_modules",
     ".venv",
