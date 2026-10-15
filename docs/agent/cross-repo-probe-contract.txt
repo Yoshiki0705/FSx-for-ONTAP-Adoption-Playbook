@@ -151,6 +151,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	8
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	EC2 の 1 フローあたり全二重 5 Gbps
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	NIC を増やすかこの値を上げる試験は未実施
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	SMB は NFS の 72.1%
+S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	documented な単一フローの 5 Gbps と 10 Gbps の位置にある
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	iSCSI の 1 本はその約 2 倍を運んだ
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	この 1 点を根拠に本番構成を
 S3-Burst-on-ONTAP-Files	docs/ja/verification/perf-matrix-results.md	retraction	つまりこの幅からバージョンの優劣は読めない。
