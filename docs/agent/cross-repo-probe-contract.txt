@@ -186,6 +186,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	�
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-throughput-measured.md	retraction	8 台で 8.01 倍、1 台あたりは 785〜802 MB/s でほぼ一定
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-throughput-measured.md	retraction	S-3 の clean な warm/cold 比較は未完了とする。
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-throughput-measured.md	retraction	プロセスが 1 コアを使い切っている
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	8 ストリームで約 450 MB/s に達し、16 では伸びません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	warm と cold の差は存在しませんでした
