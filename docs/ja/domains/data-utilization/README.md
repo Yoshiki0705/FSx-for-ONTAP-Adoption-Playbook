@@ -43,7 +43,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 
 | プロジェクト | 何ができるか | 技術スタック |
 |---|---|---|
-| [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 API でデータを収集し、FlexCache の NFS/SMB で利用する。コピージョブなし、反映 p50 8 ms。HiL テストベンチ・EDA・レンダリング・IoT に向く | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 API でデータを収集し、FlexCache の NFS/SMB で利用する。コピージョブなし、反映 p50 8 ms。HiL テストベンチ・EDA・レンダリング・IoT に向く | CFn + SAM。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files)。続編: [Part 2（3 つの経路の天井）](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-throughput-ceilings-three-paths)、[S3 Files の速さと月額の実測](https://hakobiya.hatenablog.com/entry/fsxn-s3files-value-measured)（English: [dev.to](https://dev.to/aws-builders/i-measured-the-speed-and-monthly-cost-of-amazon-s3-files-which-lets-you-use-s3-as-files-and-how-1970)） |
 | [ファイルポータル UI (Amplify Gen2)](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal) | NAS 上のファイルに VPN なしでブラウザアクセス + AI 処理（分類・異常検知・セマンティック検索）。Nextcloud との併用も可能 | Amplify Gen2 + Bedrock。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-file-portal-1-browser-access) |
 | [Lakehouse 連携](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark から S3 AP 経由でファイルを分析。データは NAS に残したまま | S3 AP + Glue / Athena |
 | [Agentic RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | 権限を意識した RAG。**元の ACL が引き継がれるのではなく、権限を別の索引に再構成して検索時に判定**します（[平坦化の意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味)を読んでから） | CDK + Bedrock |

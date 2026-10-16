@@ -51,7 +51,7 @@ lang: ja
 | **ファイルロック** | **advisory のみ**（mandatory locking 非対応） | 同左 | **対応** | 対応 | 対応 | **非対応** | 対応 |
 | **既存ファイルの更新** | 可 | 可 | 可 | 可 | 可 | **不可**（新規作成と読み取りのみ。ディレクトリ削除も不可） | 可 |
 | **AZ の範囲** | リージョン内（Standard）/ 1 AZ（One Zone） | リージョン内 | **Single-AZ / Multi-AZ を作成時に決定**（[変更不可](../../playbooks/02-design/notes/deployment-type-is-decided-once.md)） | Single-AZ / Multi-AZ | 1 AZ | リージョン内 | ゲートウェイの設置場所 |
-| **最小構成** | **なし**（保管量に対する課金） | 保管は S3 側 | **SSD 1,024 GiB × HA ペア数 + スループット 384 MBps** | **SSD 32 GiB / HDD 2,000 GiB** | **SSD 1.2 TiB / HDD 6 TiB** | **なし** | ゲートウェイ 1 台（VM または EC2） |
+| **最小構成** | **なし**（保管量に対する課金） | 保管は S3 側 | **SSD 1,024 GiB × HA ペア数 + スループット 384 MBps**（第 2 世代・1 HA ペアの場合。第 1 世代は 128 MBps、第 2 世代の 2 HA ペア以上は 1 ペアあたり 1,536 MBps） | **SSD 32 GiB / HDD 2,000 GiB** | **SSD 1.2 TiB / HDD 6 TiB** | **なし** | ゲートウェイ 1 台（VM または EC2） |
 | **スナップショットと複製** | AWS Backup / レプリケーション | S3 のバージョニング（**有効化が必須**） | **Snapshot / SnapMirror / FlexClone がストレージ側**。確保済み容量を消費し別建ての課金項目にはなりません | シャドウコピー / バックアップ | バックアップ / S3 へのエクスポート | S3 のバージョニングとレプリケーション | S3 側 |
 | **オンプレミスからの利用** | Direct Connect / VPN | 同左 | 同左 | 同左 | 同左 | 同左 | **ゲートウェイをオンプレミスに置く形が本来の用途** |
 | **主なトレードオフ** | **NFSv3・SMB・Windows・ACL・`nconnect` がいずれも使えません。** 移行元がこれらに依存していると、そこが移行の作業になります | **リンク先バケットに S3 バージョニングが必須**で、同時更新時はバケットが正本になります。未使用データはファイルシステムから削除されます | **最小構成のコストが立ち、制御面が AWS と ONTAP の 2 つになります。** マルチプロトコルが不要なら過剰です | **NFS が出せません。** Linux からは `cifs-utils` 経由になります | **Lustre クライアントが必要**で、カーネル版の対応表に縛られます。Windows は選択肢に入りません | **ファイルシステムではありません。** 既存ファイルの更新・ディレクトリ削除・ロック・POSIX パーミッションがありません | **AWS が「エンタープライズ NAS の完全な置き換えを意図していない」と明記しています。** ファイルシステムのように振る舞いますが、ファイルシステムではありません |
@@ -72,14 +72,14 @@ lang: ja
 | **保管量に比例するベースライン** | Amazon EFS の Bursting スループット（EFS Standard / One Zone 1 TiB あたり 50 MB/s） | 保管量かスループットモードの問題です |
 | **保管量に比例する単位スループット** | FSx for Lustre（SSD で 1 TiB あたり 50〜1,000 MBps を選択） | 容量か単位スループットの問題です |
 | **ファイルシステムのスループット容量** | FSx for ONTAP。ネットワークとキャッシュサイズを決めます | 設定値の問題です |
-| **クライアント上のローカルプロキシの CPU** | Amazon S3 Files。**マウントの相手は `127.0.0.1` で、同じホスト上の `efs-proxy` です** | **超えられません。** 対処はホストを太くする方向で、マウントオプションではありません |
-| **購入した容量を読み手で分け合う形** | FSx for ONTAP。**読み手を増やしても合計は増えません**（[実測](../../domains/performance/notes/where-throughput-is-determined-and-shared.md#読み手を増やしたときの伸び方)） | 台数ではなく容量の問題です |
+| **クライアント上のローカルプロキシの CPU** | Amazon S3 Files。**マウントの相手は `127.0.0.1` で、同じホスト上の `efs-proxy` です** | **16 ストリームまでの測定では、1 台のクライアントは超えられませんでした。** 対処はホストを太くする方向で、マウントオプションではありません。クライアントを増やしたときの合計は別の問いで、[隣のリポジトリが 1 → 8 台で測っています](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-throughput-measured.md#s-4--クライアント台数の集約1--8-台)（`c5n.2xlarge`、全台が同じファイルを読む条件、1 回のサンプル、9 台以上は未測定） |
+| **購入した容量を読み手で分け合う形** | FSx for ONTAP の S3 Access Points 経由の読み取り（128 MBps 構成、1 → 2 台の 1 点）。**読み手を増やしても合計は増えませんでした**（[実測](../../domains/performance/notes/where-throughput-is-determined-and-shared.md#読み手を増やしたときの伸び方)） | この測定の範囲では、台数ではなく購入した容量の問題でした |
 
 **実測で最も紛らわしいのが最初の 2 行です。** sibling プロジェクトの測定では、EFS の素マウントが 3 条件すべてで 499.79 MB/s に張り付き、これは 1 フロー上限ではなく documented なクライアント単位クォータに一致しました。マウントヘルパー使用時の倍率は 2.97 で、`倍率 2.97 は **1,500 ÷ 500 = 3.0** に一致しており` とあるとおり、フロー数には比例していません。
 
 **FSx for ONTAP 側の上限は 1 本のデータ LIF ではありません。** 8 台 128 接続で同じファイルを共有した測定では ONTAP 物理ポートの累積カウンタ差分が `12,173 MiB/s = **102 Gbps**` に達しています。単一接続の数字からファイルシステムの上限を外挿できません。
 
-**Amazon S3 Files の行は「遅い」ではなく「止まる場所が違う」です。** ストリーム数を上げた実測は 1 本 67.9、4 本 264.3、8 本 451.3 MB/s で、**16 本では伸びません**（404.8 / 450.0）。450 MB/s は 3.6 Gbps なので、**1 フロー上限（約 5 Gbps）には当たっていません。** 16 ストリーム読み取り中の CPU が `efs-proxy` に 67.3% + 18.1% + 14.9%（8 vCPU）で、マウントの相手が `127.0.0.1` であることと整合します。**`nconnect` が効かないのは非対応だからというより、増えるのがローカルプロセスへの接続だからです** — FSx for ONTAP のマウントは相手がファイルシステム自身なので、そこが構造的に違います（出典は下の[参照した一次情報](#参照した一次情報)、c5n.2xlarge、非圧縮、`O_DIRECT`）。
+**Amazon S3 Files の行は「遅い」ではなく「止まる場所が違う」です。** ストリーム数を上げた実測は 1 本 67.9、4 本 264.3、8 本 451.3 MB/s で、**16 本では伸びません**（404.8 / 450.0）。450 MB/s は 3.6 Gbps なので、**1 フロー上限（約 5 Gbps）には当たっていません。** 16 ストリーム読み取り中の CPU が `efs-proxy` に 67.3% + 18.1% + 14.9%（8 vCPU）で、マウントの相手が `127.0.0.1` であることと整合します。**`nconnect` が効かないのは非対応だからというより、増えるのがローカルプロセスへの接続だからです** — FSx for ONTAP のマウントは相手がファイルシステム自身なので、そこが構造的に違います（出典は下の[参照した一次情報](#参照した一次情報)、c5n.2xlarge、非圧縮、`O_DIRECT`）。約 450 MB/s の頭打ちを測った日は 2026-09-02 です（[隣のリポジトリの記録の F 項目](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-iops-concurrency.md#残していた-9-件を測ったこの記録の数値を-5-つ訂正します)）。リージョンは隣のリポジトリの記録の該当節に明記がないため、ここには書きません。**同じ `c5n.2xlarge` の 1 台でも、別の日の別の測定（2026-10-10、`ap-northeast-1`、単一 AZ、VDBENCH、1 MiB 逐次読み、64 スレッド、全台が同じ 600 GiB のファイルを読む条件）では 784.4 MB/s の記録があります**（[隣のリポジトリの S-4](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-throughput-measured.md#s-4--クライアント台数の集約1--8-台)）。測定日とデータ量が違う別々の値です。負荷条件（ストリーム 16 本と 64 スレッド）も違い、ここでは同じ条件で並べていないので、一方が他方を否定するものではなく、優劣を言うものでもありません。
 
 切り分けの順序は [手元のスループット値は何を測ったのかを判定する](../decision-trees/measured-throughput-triage.md) にあります。
 
@@ -297,7 +297,7 @@ graph TD
 | Amazon S3 Files が ACL・Kerberos・`nconnect`・NFSv4.2 の任意機能に非対応であること | [AWS: Unsupported features, limits, and quotas（S3 Files）](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-quotas.html) |
 | FSx for ONTAP が NFS v3 / v4 / v4.1 / v4.2 と SMB、iSCSI、NVMe/TCP に対応すること | [AWS: How Amazon FSx for NetApp ONTAP works](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/how-it-works-fsx-ontap.html) |
 | FSx for ONTAP の最小 SSD 容量が 1,024 GiB × HA ペア数であること、FSx for Windows File Server の最小が SSD 32 GiB / HDD 2,000 GiB であること、FSx for Lustre の容量刻み | [AWS: CreateFileSystem storageCapacity](https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/fsx/aws.sdk.kotlin.services.fsx.model/-create-file-system-request/storage-capacity.html) |
-| FSx for ONTAP 1 HA ペアの最小スループット 384 MBps | [AWS: Quotas（FSx for ONTAP）](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
+| FSx for ONTAP の最小スループット容量が、第 2 世代の 1 HA ペアで 384 MBps、第 2 世代の 2 HA ペア以上で 1 ペアあたり 1,536 MBps、第 1 世代で 128 MBps であること | [AWS: Quotas（FSx for ONTAP）](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limits.html) |
 | FSx for Windows File Server が SMB 2.0〜3.1.1 に対応し、Linux からは `cifs-utils` で接続すること | [AWS: Accessing your data（FSx for Windows File Server）](https://docs.aws.amazon.com/fsx/latest/WindowsGuide/supported-fsx-clients.html) |
 | FSx for Lustre の最小容量が SSD 1.2 TiB / HDD 6 TiB で、単位スループットが SSD 50〜1,000 MBps であること、リンク先 S3 バケットからのファイル更新が月 1,000 万件であること | [AWS: Service quotas for Amazon FSx for Lustre](https://docs.aws.amazon.com/fsx/latest/LustreGuide/limits.html) |
 | FSx for Lustre のクライアントがカーネル版の対応表に縛られること | [AWS: Lustre file system and client kernel compatibility](https://docs.aws.amazon.com/fsx/latest/LustreGuide/lustre-client-matrix.html) |

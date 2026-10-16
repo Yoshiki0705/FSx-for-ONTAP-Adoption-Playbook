@@ -185,6 +185,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	7
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-nfs-visibility.md	retraction	この記録は FlexCache の検証ではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3ap-operations.md	retraction	同一実行内の対照がすべて成功しているため、手順の誤りではありません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-measured.md	retraction	削除と上書きは、新規作成と同じ桁です
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-throughput-measured.md	retraction	8 台で 8.01 倍、1 台あたりは 785〜802 MB/s でほぼ一定
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-throughput-measured.md	retraction	プロセスが 1 コアを使い切っている
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	8 ストリームで約 450 MB/s に達し、16 では伸びません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	warm と cold の差は存在しませんでした
@@ -200,6 +201,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-basel
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	枠が無い構成では、残枠のメトリクスが 0 ではなく不在である
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	満タンから 27 分バーストでき、30 分の無負荷で満タンに戻る
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	1 MiB で 131.2 MB/s、8 MiB で 129.5 MB/s で止まりました
+S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	2026-09-02、専用の環境をもう一度立てて
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	ONTAP に直接聞いて決着させました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	この 2 つのスループットは 1 つの列に並べてはいけません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-iops-concurrency.md	retraction	性能仕様表には NVMe キャッシュの列が**ありません**
