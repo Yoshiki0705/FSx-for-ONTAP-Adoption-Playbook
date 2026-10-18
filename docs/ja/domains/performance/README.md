@@ -35,6 +35,7 @@
 | 8 | スループットを上げる手段はどれを先に試すか | [スループットを上げる手段の比較](../../reference/comparison/throughput-levers.md) |
 | 9 | 1 ディレクトリに置けるファイル数と、大きいディレクトリの列挙コストはどう決まるか | [ディレクトリ 1 つの大きさにはファイル数と別の上限がある](notes/directory-size-is-capped-separately-from-file-count.md) |
 | 10 | FlexGroup はどこで負荷を分散し、作成後に何が動かないか | [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](notes/flexgroup-balances-at-file-creation-not-afterward.md) |
+| 11 | QoS バーストのデフォルト値は FSx for ONTAP で変更できるか | [QoS バーストのデフォルト値はユーザーが変更できる](notes/qos-burst-defaults-are-user-modifiable.md) |
 
 ---
 
