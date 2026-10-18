@@ -1,0 +1,198 @@
+---
+title: On FSx for ONTAP 9.19.1 the QoS burst defaults are user-modifiable — confirmed in both configuration and real I/O
+lifecycle: [design, operate, optimize]
+domains: [performance]
+evidence: verified
+verified_on: 2026-10-18
+region: ap-northeast-1
+ontap_version: 9.19.1P2
+deployment_type: SINGLE_AZ_1
+lang: en
+---
+
+# Can the QoS burst defaults be changed on FSx for ONTAP 9.19.1?
+
+Yes. The change is accepted through the ONTAP management plane (REST private CLI / CLI), and it is reflected in real I/O behavior.
+
+## What you will learn
+
+- That the defaults of the three QoS burst options added in ONTAP 9.19.1 (burst-percent / burst-duration / burst-iops) are user-modifiable on Amazon FSx for NetApp ONTAP as well.
+- Not only that the configuration is accepted (HTTP 201/200 plus read-back), but the result of confirming, in real I/O, that a burst exceeding the ceiling occurs exactly as configured.
+- That this option applies to a regular throughput-ceiling policy group, not to adaptive QoS.
+- The split between the plane you can change it from (ONTAP REST / CLI) and the plane you cannot (the AWS Management Console / the FSx for ONTAP AWS API).
+
+## What this note does not answer
+
+- Whether a downgrade (revert) is operationally possible on FSx for ONTAP (unverified).
+- How burst settings interact with other features such as SnapMirror / MetroCluster.
+- The effect of each burst value on overall workload cost or billing.
+
+## Prerequisite level
+
+intermediate
+
+## Body
+
+[🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
+
+---
+
+### Conclusion
+
+**The three QoS burst options added in ONTAP 9.19.1 have user-modifiable defaults on FSx for ONTAP as well.** The route is the ONTAP management plane (REST private CLI / CLI). create / modify are accepted, read-back confirms the values, and real I/O showed that a burst exceeding the ceiling occurs exactly as configured.
+
+**The AWS Management Console and the FSx for ONTAP AWS API have no parameter corresponding to these burst options.** As in the long-standing two-plane structure, the configuration is done on the ONTAP side.
+
+> **Tier**: `verified` — confirmed against a verification FSx for ONTAP file system in ap-northeast-1 (ONTAP 9.19.1P2, SINGLE_AZ_1), from a Linux client inside the VPC using ONTAP REST / CLI and fio (2026-10-18). A different configuration will hit different ceilings and show different behavior.
+
+---
+
+### Clarifying the target
+
+**These burst options apply to a regular throughput-ceiling QoS policy group, not to adaptive QoS.** Even if the original question had adaptive QoS in mind, the precise target is the former.
+
+This was confirmed both in documentation (throughput ceiling configuration, throughput guarantee) and on a live system. On the live system, the burst fields did not appear in the REST schema of an adaptive-policy-group; burst_percent / burst_duration / burst_iops existed only on a regular policy-group.
+
+---
+
+### Definitions and defaults of the three options
+
+| Option | Default | Meaning |
+|---|---|---|
+| burst-percent | 50% | The percentage over the ceiling (how far the peak exceeds it) |
+| burst-duration | 1 second | How many seconds the excess is sustained |
+| burst-iops | 0 | The absolute IOPS cap during the excess (0 means unused) |
+
+**burst-percent and burst-iops are mutually exclusive.** Use burst-percent to specify the excess as a percentage, or burst-iops to specify it as an absolute IOPS value.
+
+---
+
+### Measuring that the configuration is accepted
+
+create / modify against `qos/policy-group` on the ONTAP REST private CLI were accepted, and read-back confirmed the values.
+
+| Operation | Result |
+|---|---|
+| create (burst-percent=25) | HTTP 201, read-back shows burst_percent:25 |
+| modify (burst-duration=5) | HTTP 200, read-back shows burst_duration:5 |
+| create (burst-iops=3000, ceiling 2000 IOPS) | HTTP 201, read-back shows burst_iops:3000 |
+
+---
+
+### Measuring real I/O behavior
+
+With the ceiling set to 2000 IOPS, load was applied from a Linux client inside the VPC using fio (4k random read, NFSv3), and per-second IOPS were observed while varying the settings. The baseline with no QoS is 24,400 IOPS. In every pattern, an idle period was placed before applying the ceiling so that burst credit accumulated before the load started.
+
+| Pattern | Settings | t=1s peak | Steady | Dominant aspect |
+|---|---|---|---|---|
+| 2 | Default (percent=50, duration=1) | 3017 | 2000 | Excess width. Exceeds ceiling+50% for 1 second only, converges by the 2nd second |
+| 3 | percent=25, duration=1 | 2507 | 2000 | Excess width. percent maps directly to the peak excess width, narrowed to +25% |
+| 4 | percent=50, duration=5 | ~3000 held across t=1..5s | 2000 | Duration. duration determines how many seconds the excess continues |
+| 5 | burst-iops=3000, duration=5 (percent=0) | ~3000 held across t=1..5s | 2000 | Absolute value. The excess IOPS pin at 3000 |
+| 6 | Disabled (0/0/0) | 2020 (about +1%) | 2000 | Disappearance. The excess spike is gone, roughly within the ceiling |
+
+**percent governs the peak excess width, duration governs how long the excess is sustained, and burst-iops governs the absolute IOPS during the excess; at 0/0/0 the burst itself disappears.** For each setting, it was possible to observe in isolation which aspect of the behavior moved.
+
+The documentation (the load balancing explanation) states that the ceiling may be exceeded by up to 10%, that a burst may exceed it by up to 50%, and that a burst occurs when tokens accumulate up to 150% on a single node. The +50% peak in pattern 2 and the roughly +1% in pattern 6 are consistent with this description.
+
+---
+
+### Value constraints on the ONTAP side
+
+The following two are constraints of ONTAP itself, not constraints specific to FSx for ONTAP. On the live system, ONTAP also rejected these combinations.
+
+- **burst-iops and burst-percent are mutually exclusive.** Specifying both at once causes ONTAP to reject them. When switching an existing policy to burst-iops while burst_percent is still set, resetting burst-percent to 0 first and then setting burst-iops is accepted.
+- **burst-iops must be greater than max-throughput (the ceiling IOPS).** Against a ceiling of 2000 IOPS, ONTAP rejected burst-iops=500, while burst-iops=3000 was accepted. The command reference states that if burst-iops is below max-throughput, max-throughput is used.
+
+> **Note**: The error code numbers obtained on the live system are omitted from this note. What matters for the behavior is which combinations ONTAP rejects, and the numbers can vary by environment.
+
+---
+
+### A caution before downgrading
+
+> **Tier**: `documented` — a QoS policy group whose burst was changed on 9.19.1 requires the three values (burst-percent / burst-iops / burst-duration) to be reset to 0 before reverting to 9.18.1. The source is [ONTAP revert: Modify QoS policy groups](https://docs.netapp.com/us-en/ontap/revert/modify-qos-policy-groups.html).
+
+**Whether a downgrade (revert) is operationally possible on FSx for ONTAP is a separate question and is unverified in this note.** The procedure for resetting burst settings to 0 is documented, but whether revert can be executed in the managed FSx for ONTAP environment has not been confirmed.
+
+---
+
+### The plane you can change and the plane you cannot
+
+**What was confirmed is only the ONTAP REST / CLI route.** On this route the burst defaults can be changed, and the change is reflected in real I/O.
+
+**They cannot be set from the AWS Management Console or the FSx for ONTAP AWS API.** These have no parameter corresponding to the burst options. On FSx for ONTAP, QoS policy groups in general are the domain of the ONTAP management plane, and changing the burst defaults is part of that.
+
+---
+
+### Common misconceptions
+
+| Misconception | Reality |
+|---|---|
+| The burst defaults cannot be changed on FSx for ONTAP | **They can be changed on ONTAP 9.19.1P2, and the change is reflected in real I/O.** The route is ONTAP REST / CLI |
+| This option is for adaptive QoS | **It applies to a regular throughput-ceiling policy group.** The burst fields did not appear in the REST schema of an adaptive-policy-group |
+| It can be set from the AWS Console or the FSx for ONTAP AWS API | **There is no corresponding parameter.** It is set from the ONTAP management plane |
+| burst-percent and burst-iops can be used together | **They are mutually exclusive.** To specify it as an absolute IOPS value, reset burst-percent to 0 first |
+| burst-iops can take any value | **It must be greater than max-throughput (the ceiling IOPS).** ONTAP rejects a value below the ceiling |
+| The mutual exclusivity and the value floor are FSx for ONTAP constraints | **They are constraints of ONTAP itself.** FSx for ONTAP is not what blocks them |
+| If the configuration is accepted, there is no need to confirm the behavior | **Acceptance of the configuration and the real I/O behavior are separate confirmations.** This note confirms both |
+
+---
+
+### Primary sources referenced
+
+| Point | Source |
+|---|---|
+| The procedure for setting a throughput ceiling with a QoS policy group, and that the burst defaults can be changed on 9.19.1 and later | [NetApp: Set a throughput ceiling with QoS](https://docs.netapp.com/us-en/ontap/performance-admin/set-throughput-ceiling-qos-task.html) |
+| The procedure for setting a throughput floor (guarantee), the context in which the burst options relate to a regular policy-group | [NetApp: Set a throughput floor (guarantee) with QoS](https://docs.netapp.com/us-en/ontap/performance-admin/guarantee-throughput-qos-task.html) |
+| The definitions and defaults of burst-percent / burst-iops / burst-duration, their mutual exclusivity, and that max-throughput is used when burst-iops is below max-throughput | [NetApp: qos policy-group create](https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html) |
+| The behavior that the ceiling may be exceeded by up to 10%, that a burst may reach up to 50%, and that a burst occurs when tokens accumulate up to 150% | [NetApp: Load balancing concept](https://docs.netapp.com/us-en/ontap/concepts/load-balancing-concept.html) |
+| That the three burst values must be reset to 0 before reverting to 9.18.1 | [NetApp: Modify QoS policy groups before reverting](https://docs.netapp.com/us-en/ontap/revert/modify-qos-policy-groups.html) |
+
+---
+
+### Related documents
+
+- [Domain — Performance](../README.md) — the hub for this module
+- [A figure from a single connection measures the client, not the storage](a-single-connection-measures-the-client.md) — a record of the conditions when measuring performance figures
+- [Evidence Policy](../../../evidence-policy.md)
+
+---
+
+[🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
+
+---
+
+## Confirming this in your own environment
+
+**First, check the current burst settings read-only.** The following steps do not touch any existing QoS policy group.
+
+An example of reading the current burst settings on the ONTAP REST private CLI.
+
+```console
+GET /api/private/cli/qos/policy-group?fields=policy_group,max_throughput,burst_percent,burst_duration,burst_iops
+```
+
+The equivalent CLI command is as follows.
+
+```console
+qos policy-group show -instance
+```
+
+### Expected result
+
+Each policy group returns its `max_throughput` (ceiling) and the three burst values. If burst has not been changed, burst_percent shows 50, burst_duration shows 1, and burst_iops shows 0.
+
+**If you actually change and try it, do so within a reversible scope: create a verification policy group, apply it, confirm, and delete it.** Directly changing the values of a policy group applied to a production volume immediately changes that volume's I/O behavior.
+
+| # | Step | What it confirms |
+|---|---|---|
+| 1 | Create a verification QoS policy group with a ceiling (max-throughput) | That create is accepted with HTTP 201 |
+| 2 | Change burst-percent / burst-duration / burst-iops | That modify is accepted with HTTP 200 and read-back confirms the values |
+| 3 | Apply the policy group to a verification volume and apply I/O after an idle period | That a burst exceeding the ceiling occurs exactly as configured |
+| 4 | Detach the policy group from the volume and delete it | That read-back shows the target is gone (returning to a reversible state) |
+
+Observing the behavior in step 3 requires a load tool that can record per-second IOPS (for example, fio's per-second log). A single average value alone cannot separate the peak excess width from its duration.
+
+<!-- lang-switcher:start -->
+🌐 [日本語](../../../../ja/domains/performance/notes/qos-burst-defaults-are-user-modifiable.md) | [English](qos-burst-defaults-are-user-modifiable.md) | [🏠 Repository home](../../../README.md)
+<!-- lang-switcher:end -->
