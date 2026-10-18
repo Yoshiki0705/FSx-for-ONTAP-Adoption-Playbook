@@ -192,3 +192,7 @@ qos policy-group show -instance
 | 4 | ポリシーグループをボリュームから detach し削除する | 読み戻しで対象が消えること（可逆な状態に戻す） |
 
 手順 3 で挙動を観測するには、per-second の IOPS を記録できる負荷ツール（例: fio の per-second ログ）が必要です。1 回の平均値だけでは、ピークの超過幅と持続時間を分離できません。
+
+<!-- lang-switcher:start -->
+🌐 [日本語](qos-burst-defaults-are-user-modifiable.md) | [English](../../../../en/domains/performance/notes/qos-burst-defaults-are-user-modifiable.md) | [🏠 リポジトリトップ](../../../../../README.md)
+<!-- lang-switcher:end -->
