@@ -336,14 +336,14 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": (
             "<b>補足</b><br>"
             "※1 QoS ポリシーグループと burst（ceiling / adaptive）は ONTAP 管理面の管轄。"
-            "AWS 管理面（コンソール / FSx API）には対応するパラメータがない。<br>"
+            "AWS 管理面（コンソール / FSx for ONTAP API）には対応するパラメータがない。<br>"
             "※2 分岐点: AWS 管理面はファイルシステムと SVM を作る。"
             "QoS の設定・変更は VPC 内から ONTAP REST / CLI で行う。"
         ),
         "en": (
             "<b>Notes</b><br>"
             "*1 QoS policy groups and burst (ceiling / adaptive) live in the ONTAP management "
-            "plane. The AWS plane (console / FSx API) has no matching parameter.<br>"
+            "plane. The AWS plane (console / FSx for ONTAP API) has no matching parameter.<br>"
             "*2 Split point: the AWS plane creates the file system and SVM. QoS is set and "
             "changed from inside the VPC via ONTAP REST / CLI."
         ),
@@ -738,9 +738,12 @@ def _qos_use_cases() -> Diagram:
         name="qos-ceiling-use-cases",
         diagram_id="qos-ceiling-use-cases",
         width=960,
-        height=900,
-        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 900, 710),),
-        notes=(Note("notes", "use_case_notes", 30, 760, 900, 120),),
+        height=940,
+        # The group reaches y=790 (30 + 760) so the CloudWatch icon's bottom-positioned label,
+        # which lands just under the icon at ~y=730-760, clears the frame's bottom border instead
+        # of riding on it. The notes box is pushed below the deeper frame.
+        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 900, 760),),
+        notes=(Note("notes", "use_case_notes", 30, 810, 900, 120),),
         nodes=(
             # EC2 nudged right so the wide Japanese qualifier line clears the x=30 frame border.
             Node("ec2", "ec2", "ec2_workload", 190, 110),
