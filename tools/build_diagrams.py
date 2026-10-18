@@ -335,14 +335,14 @@ LABELS: dict[str, dict[str, str]] = {
     "two_plane_notes": {
         "ja": (
             "<b>補足</b><br>"
-            "※1 QoS ポリシーグループと burst（ceiling / adaptive）は ONTAP 管理面の管轄。"
+            "※1 QoS ポリシーグループとそのバースト設定は ONTAP 管理面の管轄。"
             "AWS 管理面（コンソール / FSx for ONTAP API）には対応するパラメータがない。<br>"
             "※2 分岐点: AWS 管理面はファイルシステムと SVM を作る。"
             "QoS の設定・変更は VPC 内から ONTAP REST / CLI で行う。"
         ),
         "en": (
             "<b>Notes</b><br>"
-            "*1 QoS policy groups and burst (ceiling / adaptive) live in the ONTAP management "
+            "*1 QoS policy groups and their burst settings live in the ONTAP management "
             "plane. The AWS plane (console / FSx for ONTAP API) has no matching parameter.<br>"
             "*2 Split point: the AWS plane creates the file system and SVM. QoS is set and "
             "changed from inside the VPC via ONTAP REST / CLI."
@@ -665,7 +665,7 @@ def _qos_two_plane() -> Diagram:
 
     The correction this figure makes is that burst is not an AWS-plane knob. The AWS console and the
     FSx for ONTAP AWS API create the file system and the SVM, but they expose no parameter for a QoS
-    policy group or its burst (ceiling / adaptive) behaviour. That lives in the ONTAP management
+    policy group or its burst settings. That lives in the ONTAP management
     plane and is reached from inside the VPC over ONTAP REST / CLI.
 
     Both planes point at one shared FSx for ONTAP mark on the right, and the FSx icon sits below
