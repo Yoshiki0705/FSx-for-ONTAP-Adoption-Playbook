@@ -36,6 +36,7 @@
 | 9 | 1 ディレクトリに置けるファイル数と、大きいディレクトリの列挙コストはどう決まるか | [ディレクトリ 1 つの大きさにはファイル数と別の上限がある](notes/directory-size-is-capped-separately-from-file-count.md) |
 | 10 | FlexGroup はどこで負荷を分散し、作成後に何が動かないか | [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](notes/flexgroup-balances-at-file-creation-not-afterward.md) |
 | 11 | QoS バーストのデフォルト値は FSx for ONTAP で変更できるか | [QoS バーストのデフォルト値はユーザーが変更できる](notes/qos-burst-defaults-are-user-modifiable.md) |
+| 12 | QoS の上限とバーストはどのワークロードに効き、上限を設ける他の手段とどう選び分けるか | [QoS の上限とバーストは、どのワークロードに効くのか](notes/qos-ceiling-burst-use-cases.md) |
 
 ---
 
