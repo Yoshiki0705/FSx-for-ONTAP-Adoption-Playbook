@@ -80,6 +80,16 @@ ICONS = {
         "Architecture-Service-Icons_{d}/Arch_Storage/64/Arch_AWS-Backup_64.svg"
     ),
     "disk": "Resource-Icons_{d}/Res_General-Icons/Res_48_{v}/Res_Disk_48_{v}.svg",
+    "ec2": "Architecture-Service-Icons_{d}/Arch_Compute/64/Arch_Amazon-EC2_64.svg",
+    "lambda": "Architecture-Service-Icons_{d}/Arch_Compute/64/Arch_AWS-Lambda_64.svg",
+    "cloudwatch": (
+        "Architecture-Service-Icons_{d}/Arch_Management-Tools/64/"
+        "Arch_Amazon-CloudWatch_64.svg"
+    ),
+    "eventbridge": (
+        "Architecture-Service-Icons_{d}/Arch_Application-Integration/64/"
+        "Arch_Amazon-EventBridge_64.svg"
+    ),
 }
 
 # Native sizes. Rescaling is what the AWS icon guidelines forbid, so the size follows the asset:
@@ -88,6 +98,10 @@ ICON_SIZE = {
     "fsx_ontap": 80,
     "aws_backup": 80,
     "disk": 48,
+    "ec2": 80,
+    "lambda": 80,
+    "cloudwatch": 80,
+    "eventbridge": 80,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -198,6 +212,22 @@ def frame_style(stroke: str, ink: str) -> str:
     )
 
 
+def note_style(stroke: str, ink: str) -> str:
+    """A 補足 / Notes box: left-aligned, top-aligned, so ※ items read as a list.
+
+    A notes box carries ※-marked items with a bold noun-phrase headline each, not prose. It is the
+    one box whose text is meant to be read left to right as lines rather than centred as a caption,
+    so it aligns left and to the top rather than inheriting `box_style`'s centring. No edge touches
+    it: a note annotates the figure, it is not a step in the flow, so the direction gate never sees
+    it.
+    """
+    return (
+        f"rounded=1;whiteSpace=wrap;html=1;strokeColor={stroke};fillColor=none;"
+        f"fontColor={ink};fontSize={FONT_BODY};verticalAlign=top;align=left;"
+        "spacingLeft=10;spacingRight=10;spacingTop=8;"
+    )
+
+
 def edge_style(ink: str, background: str) -> str:
     """An edge and its label.
 
@@ -274,6 +304,85 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "AWS Backup のリストア",
         "en": "Restore via AWS Backup",
     },
+    # --- qos-burst-two-plane ---------------------------------------------------------------------
+    # The shared service mark. Folded to two lines for the same column-width reason as fsx_source.
+    "fsx_shared": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
+    },
+    # The AWS management plane. Two lines: the console and the AWS API are one plane, and the single
+    # line runs wider than the box without buying anything.
+    "aws_plane": {
+        "ja": "AWS Management Console /<br>FSx for ONTAP AWS API",
+        "en": "AWS Management Console /<br>FSx for ONTAP AWS API",
+    },
+    # The in-VPC client. The service name leads; the role is a second-line qualifier, never the
+    # label on its own.
+    "ec2_client": {
+        "ja": "Amazon EC2<br>（VPC 内クライアント / 踏み台）",
+        "en": "Amazon EC2<br>(in-VPC client / bastion)",
+    },
+    "ontap_api": {"ja": "ONTAP REST / CLI", "en": "ONTAP REST / CLI"},
+    # The claim the whole figure makes: the AWS plane has no parameter for burst.
+    "no_burst": {
+        "ja": "burst 設定パラメータなし",
+        "en": "no burst parameter",
+    },
+    "burst_settable": {
+        "ja": "burst 設定可（REST / CLI）",
+        "en": "burst settable (REST / CLI)",
+    },
+    "two_plane_notes": {
+        "ja": (
+            "<b>補足</b><br>"
+            "※1 QoS ポリシーグループと burst（ceiling / adaptive）は ONTAP 管理面の管轄。"
+            "AWS 管理面（コンソール / FSx API）には対応するパラメータがない。<br>"
+            "※2 分岐点: AWS 管理面はファイルシステムと SVM を作る。"
+            "QoS の設定・変更は VPC 内から ONTAP REST / CLI で行う。"
+        ),
+        "en": (
+            "<b>Notes</b><br>"
+            "*1 QoS policy groups and burst (ceiling / adaptive) live in the ONTAP management "
+            "plane. The AWS plane (console / FSx API) has no matching parameter.<br>"
+            "*2 Split point: the AWS plane creates the file system and SVM. QoS is set and "
+            "changed from inside the VPC via ONTAP REST / CLI."
+        ),
+    },
+    # --- qos-ceiling-use-cases -------------------------------------------------------------------
+    "ec2_workload": {
+        "ja": "Amazon EC2<br>（Oracle / SAP / SQL Server）",
+        "en": "Amazon EC2<br>(Oracle / SAP / SQL Server)",
+    },
+    "cloudwatch": {"ja": "Amazon CloudWatch", "en": "Amazon CloudWatch"},
+    "lambda": {"ja": "AWS Lambda", "en": "AWS Lambda"},
+    "eventbridge": {"ja": "Amazon EventBridge", "en": "Amazon EventBridge"},
+    "protocols": {"ja": "NFS / iSCSI / SMB", "en": "NFS / iSCSI / SMB"},
+    "throughput_metrics": {
+        "ja": "スループット監視",
+        "en": "throughput metrics",
+    },
+    # Folded to two lines: the horizontal gap between the Lambda icon and the FSx icon is narrower
+    # than the single line, which otherwise rode over one icon or the other.
+    "qos_automation": {
+        "ja": "QoS 自動設定<br>（ONTAP REST）",
+        "en": "QoS automation<br>(ONTAP REST)",
+    },
+    "use_case_notes": {
+        "ja": (
+            "<b>補足</b><br>"
+            "※1 マルチテナント SaaS: QoS を入れ子で適用する（SVM → ボリューム → qtree）。"
+            "テナント境界ごとに ceiling と burst を分けて割り当てる。<br>"
+            "※2 ユースケースの対応付けは設計パターン（hypothesis）であり、"
+            "出典のある導入事例ではない。"
+        ),
+        "en": (
+            "<b>Notes</b><br>"
+            "*1 Multi-tenant SaaS: apply QoS nested (SVM -&gt; volume -&gt; qtree), assigning "
+            "ceiling and burst per tenant boundary.<br>"
+            "*2 The use-case mappings are design patterns (hypothesis), not cited field "
+            "deployments."
+        ),
+    },
 }
 
 # There is deliberately no `note` label, and no Note shape below. The figure used to carry a nine
@@ -340,6 +449,16 @@ class Box:
 
 
 @dataclass(frozen=True)
+class Note:
+    cid: str
+    label: str
+    x: int
+    y: int
+    width: int
+    height: int
+
+
+@dataclass(frozen=True)
 class Frame:
     cid: str
     label: str
@@ -394,6 +513,7 @@ class Diagram:
     groups: tuple[Group, ...] = ()
     frames: tuple[Frame, ...] = ()
     boxes: tuple[Box, ...] = ()
+    notes: tuple[Note, ...] = ()
     nodes: tuple[Node, ...] = ()
     edges: tuple[Edge, ...] = ()
 
@@ -540,7 +660,146 @@ def _backup_copy() -> Diagram:
     )
 
 
-DIAGRAMS = (_backup_copy(),)
+def _qos_two_plane() -> Diagram:
+    """Which management plane changes a QoS burst setting, and which one cannot.
+
+    The correction this figure makes is that burst is not an AWS-plane knob. The AWS console and the
+    FSx for ONTAP AWS API create the file system and the SVM, but they expose no parameter for a QoS
+    policy group or its burst (ceiling / adaptive) behaviour. That lives in the ONTAP management
+    plane and is reached from inside the VPC over ONTAP REST / CLI.
+
+    Both planes point at one shared FSx for ONTAP mark on the right, and the FSx icon sits below
+    both source rows so every edge advances rightwards and downwards: the AWS plane enters the top
+    of the icon, the ONTAP chain enters its left. The width is held near 900px so FONT_BODY clears
+    the readability floor without folding every label.
+    """
+    return Diagram(
+        name="qos-burst-two-plane",
+        diagram_id="qos-burst-two-plane",
+        width=940,
+        height=620,
+        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 880, 400),),
+        boxes=(
+            Box("aws_plane", "aws_plane", 70, 110, 300, 70),
+            Box("ontap_api", "ontap_api", 320, 300, 200, 56),
+        ),
+        notes=(Note("notes", "two_plane_notes", 30, 450, 880, 140),),
+        nodes=(
+            # The shared mark sits below both source rows, so the AWS plane enters its top going
+            # down and the ONTAP chain enters its left going level-to-down -- neither runs upwards.
+            Node("fsx", "fsx_ontap", "fsx_shared", 740, 300),
+            # Nudged right of the boundary's left edge: the Japanese qualifier line is wider than
+            # the 80px icon, and centred under it at x=90 it crossed the x=30 frame border. Its
+            # y centres on the ONTAP box (328) so the EC2 -> box edge is a straight horizontal.
+            Node("ec2", "ec2", "ec2_client", 190, 288),
+        ),
+        edges=(
+            # AWS plane -> FSx: leaves the box's right edge, enters the top of the icon. Right and
+            # down, and the "no burst parameter" label rides the horizontal run.
+            Edge(
+                "e1",
+                "aws_plane",
+                "fsx",
+                "no_burst",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.3, 0.0),
+                label_offset=(0, -14),
+            ),
+            # The ONTAP chain. EC2 -> ONTAP REST / CLI box -> FSx. All rightwards; the burst label
+            # sits on the box -> FSx run.
+            Edge("e2", "ec2", "ontap_api", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "e3",
+                "ontap_api",
+                "fsx",
+                "burst_settable",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -14),
+            ),
+        ),
+    )
+
+
+def _qos_use_cases() -> Diagram:
+    """Where a tuned QoS ceiling and burst sit among AWS workloads.
+
+    A hub figure: EC2 workloads reach FSx for ONTAP over NFS / iSCSI / SMB, CloudWatch watches the
+    throughput below it, and an EventBridge -> Lambda chain sets QoS over ONTAP REST. FSx is the hub
+    on the right; the workload and the automation chain enter it from the left, CloudWatch hangs
+    beneath it. Every edge advances rightwards or downwards.
+
+    The multi-tenant SaaS pattern is stated as text in the notes box, not drawn as icons -- nested
+    QoS (SVM -> volume -> qtree) is a configuration shape, not an architecture of services. The same
+    box records that the mappings are design patterns, not cited deployments. Width is held near
+    900px so FONT_BODY clears the floor.
+    """
+    return Diagram(
+        name="qos-ceiling-use-cases",
+        diagram_id="qos-ceiling-use-cases",
+        width=960,
+        height=900,
+        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 900, 710),),
+        notes=(Note("notes", "use_case_notes", 30, 760, 900, 120),),
+        nodes=(
+            # EC2 nudged right so the wide Japanese qualifier line clears the x=30 frame border.
+            Node("ec2", "ec2", "ec2_workload", 190, 110),
+            Node("eventbridge", "eventbridge", "eventbridge", 110, 360),
+            Node("lambda", "lambda", "lambda", 380, 360),
+            # The hub sits below both left-hand source rows and well above CloudWatch, so the
+            # workload and the automation chain enter from the left going down, and the throughput
+            # edge drops into a gap deep enough that its label clears the FSx two-line label.
+            Node("fsx", "fsx_ontap", "fsx_shared", 680, 470),
+            Node("cloudwatch", "cloudwatch", "cloudwatch", 680, 650),
+        ),
+        edges=(
+            # Workload -> FSx: right and down, protocols on the run.
+            Edge(
+                "e1",
+                "ec2",
+                "fsx",
+                "protocols",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.2),
+                label_offset=(0, -14),
+            ),
+            # Automation chain: EventBridge -> Lambda -> FSx, all rightwards and downwards.
+            Edge(
+                "e2",
+                "eventbridge",
+                "lambda",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+            Edge(
+                "e3",
+                "lambda",
+                "fsx",
+                "qos_automation",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.6),
+                # The two-line label sits on the horizontal run between the two icons; a small pull
+                # toward the source keeps it centred in the gap rather than drifting onto FSx.
+                label_at=-0.15,
+                label_offset=(0, -8),
+            ),
+            # FSx -> CloudWatch: straight down. The label is pushed down toward CloudWatch so it
+            # lands in the gap below the FSx label rather than on top of it.
+            Edge(
+                "e4",
+                "fsx",
+                "cloudwatch",
+                "throughput_metrics",
+                exit_at=(0.5, 1.0),
+                entry_at=(0.5, 0.0),
+                label_at=0.45,
+                label_offset=(0, 0),
+            ),
+        ),
+    )
+
+
+DIAGRAMS = (_backup_copy(), _qos_two_plane(), _qos_use_cases())
 
 
 # --- rendering -----------------------------------------------------------------------------------
@@ -694,6 +953,16 @@ def render(
             box.y,
             box.width,
             box.height,
+        )
+    for note in diagram.notes:
+        vertex(
+            note.cid,
+            label(note.label, lang),
+            note_style(p.box_stroke, p.ink),
+            note.x,
+            note.y,
+            note.width,
+            note.height,
         )
     for node in diagram.nodes:
         size = ICON_SIZE[node.icon]
