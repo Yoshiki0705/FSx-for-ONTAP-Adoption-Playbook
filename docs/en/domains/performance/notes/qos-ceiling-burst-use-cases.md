@@ -53,7 +53,7 @@ Figure 1: The AWS integration patterns where the QoS ceiling and burst apply (th
 
 **Burst takes effect for workloads that stay within the ceiling in steady state but spike at the moment of startup or switchover.** `documented`: NetApp explains that absorbing a temporary spike such as a database startup or the boot of many VMs, without a permanent capacity increase, is the role of burst ([ONTAP QoS throughput guarantee](https://docs.netapp.com/us-en/ontap/performance-admin/guarantee-throughput-qos-task.html)).
 
-**For multi-tenant setups, nested QoS allocates ceilings hierarchically.** `documented`: Since ONTAP 9.18.1, a policy can be assigned to both an SVM and the volumes / qtrees beneath it, and the most restrictive one applies ([QoS policy group assignment restrictions](https://docs.netapp.com/us-en/ontap/performance-admin/policy-group-assignment-restrictions.html)). It can be used in a design that subdivides an SVM-wide ceiling down to a tenant's volumes.
+**For multi-tenant setups, nested QoS allocates ceilings hierarchically.** `documented`: Since ONTAP 9.18.1, a policy can be assigned to both an SVM and the volumes / qtrees beneath it, and the most restrictive one applies ([QoS policy group assignment restrictions](https://docs.netapp.com/us-en/ontap/performance-admin/policy-group-assignment-restrictions.html)). It can be used in a design that subdivides an SVM-wide ceiling down to a tenant's volumes. Wherever burst is set in the hierarchy, the effective excess is bounded by the tightest ceiling.
 
 ---
 
@@ -100,7 +100,7 @@ Figure 2: The two-plane management of burst configuration (the AWS management pl
 | Separate file systems | Full physical isolation between tenants | More fixed cost and more to operate. Loses the benefits of data sharing and cloning |
 | Separate throughput-capacity allocation | Securing guaranteed bandwidth | Can be divided only at the granularity of the capacity setting, coarser than per-workload. Raises cost |
 
-**How to choose**: First, split on "is the storage layer enough, or do you need to see the meaning of the requests?" If you want to control by request type, choose the application layer; if you only want to suppress storage contention, choose QoS. If full isolation is a requirement, consider separate file systems; if guaranteed bandwidth is a requirement, consider separate capacity. QoS is not mutually exclusive with these — they can be combined.
+**How to choose**: First, split on "is the storage layer enough, or do you need to see the meaning of the requests?" If you want to control by request type, choose the application layer; if you only want to suppress storage contention, choose QoS. If full isolation is a requirement, consider separate file systems; if guaranteed bandwidth is a requirement, consider separate capacity. QoS is not mutually exclusive with these — they can be combined. Note that a file system with only one workload and no contention does not need a ceiling at all.
 
 ---
 

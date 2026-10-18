@@ -53,7 +53,7 @@ intermediate
 
 **バーストが効くのは、定常は上限内で足りるが、起動・切り替えの瞬間だけ跳ねるワークロードです。** `documented`: データベースの起動や多数の VM のブートのような一時的なスパイクを、恒久的な容量増設なしに吸収するのがバーストの役割だと NetApp は説明しています（[ONTAP QoS throughput guarantee](https://docs.netapp.com/us-en/ontap/performance-admin/guarantee-throughput-qos-task.html)）。
 
-**マルチテナントでは、ネストした QoS で階層的に上限を割り振れます。** `documented`: ONTAP 9.18.1 以降、SVM とその配下のボリューム・qtree の両方にポリシーを割り当てられ、最も厳しいものが適用されます（[QoS policy group assignment restrictions](https://docs.netapp.com/us-en/ontap/performance-admin/policy-group-assignment-restrictions.html)）。SVM 全体の上限をテナントのボリュームへ細分する設計に使えます。
+**マルチテナントでは、ネストした QoS で階層的に上限を割り振れます。** `documented`: ONTAP 9.18.1 以降、SVM とその配下のボリューム・qtree の両方にポリシーを割り当てられ、最も厳しいものが適用されます（[QoS policy group assignment restrictions](https://docs.netapp.com/us-en/ontap/performance-admin/policy-group-assignment-restrictions.html)）。SVM 全体の上限をテナントのボリュームへ細分する設計に使えます。階層のどこにバーストを設定しても、実効の超過は最も厳しい ceiling に縛られます。
 
 ---
 
@@ -100,7 +100,7 @@ intermediate
 | ファイルシステムを分ける | テナント間を物理的に完全分離したい | 固定費と運用対象が増える。データ共有やクローンの利点を失う |
 | スループットキャパシティを分けて割り当てる | 保証された帯域を確保したい | キャパシティの設定単位でのみ分けられ、ワークロード単位より粗い。コストが上がる |
 
-**選び方**: まず「ストレージ層で足りるか、要求の意味まで見る必要があるか」で分かれます。要求の種類で制御したいならアプリケーション層、ストレージの競合を抑えたいだけなら QoS です。完全分離が要件ならファイルシステム分割、保証帯域が要件ならキャパシティ分割を検討します。QoS はこれらと排他ではなく、組み合わせられます。
+**選び方**: まず「ストレージ層で足りるか、要求の意味まで見る必要があるか」で分かれます。要求の種類で制御したいならアプリケーション層、ストレージの競合を抑えたいだけなら QoS です。完全分離が要件ならファイルシステム分割、保証帯域が要件ならキャパシティ分割を検討します。QoS はこれらと排他ではなく、組み合わせられます。なお、ワークロードが 1 つだけで競合がないファイルシステムには、上限を設ける必要はありません。
 
 ---
 
