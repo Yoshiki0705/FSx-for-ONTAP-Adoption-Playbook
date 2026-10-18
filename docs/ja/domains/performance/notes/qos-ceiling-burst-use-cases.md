@@ -37,7 +37,7 @@ intermediate
 
 **QoS の上限は「あるワークロードが他を圧迫しないようにする」ための手段で、バーストは「短時間のスパイクを恒久増設なしに吸収する」ための緩衝です。** どちらも、複数のワークロードやテナントが 1 つのファイルシステムを共有するときに効きます。
 
-**バーストのデフォルト値を変えられるようになった（ONTAP 9.19.1 以降、FSx for ONTAP でも可。[検証録](qos-burst-defaults-are-user-modifiable.md)）ことで、「上限の超え方」を用途に合わせて調整できます。** 上限そのものに加えて、超過の幅・持続時間・絶対量という緩衝の形を選べます。
+**バーストのデフォルト値を変えられるようになった（ONTAP 9.19.1 以降、Amazon FSx for NetApp ONTAP でも可。[検証録](qos-burst-defaults-are-user-modifiable.md)）ことで、「上限の超え方」を用途に合わせて調整できます。** 上限そのものに加えて、超過の幅・持続時間・絶対量という緩衝の形を選べます。
 
 > **区分**: この節の QoS の役割（ノイジーネイバーの隔離、競合がなくても一定量を超えさせない用途）は `documented` です。出典は [AWS: Using Quality of Service in Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/using-quality-of-service-in-amazon-fsx-for-netapp-ontap/)。用途への当てはめ（どのワークロードにどう効くか）の多くは `hypothesis`（設計上の想定、未検証）で、本文で都度明示します。
 

@@ -37,7 +37,7 @@ intermediate
 
 **The QoS ceiling is a way to stop one workload from crowding out the others, and burst is a buffer for absorbing short spikes without a permanent capacity increase.** Both apply when several workloads or tenants share a single file system.
 
-**Now that the burst defaults can be changed (ONTAP 9.19.1 and later, available on FSx for ONTAP too; [verification record](qos-burst-defaults-are-user-modifiable.md)), the way the ceiling is exceeded can be tuned per use case.** Beyond the ceiling itself, you can choose the shape of the buffer — the width, duration, and absolute magnitude of the excess.
+**Now that the burst defaults can be changed (ONTAP 9.19.1 and later, available on Amazon FSx for NetApp ONTAP too; [verification record](qos-burst-defaults-are-user-modifiable.md)), the way the ceiling is exceeded can be tuned per use case.** Beyond the ceiling itself, you can choose the shape of the buffer — the width, duration, and absolute magnitude of the excess.
 
 > **Tier**: The role of QoS in this section (isolating noisy neighbors, keeping a workload below a set amount even when there is no contention) is `documented`. The source is [AWS: Using Quality of Service in Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/using-quality-of-service-in-amazon-fsx-for-netapp-ontap/). Much of the mapping to use cases (which workload it helps and how) is `hypothesis` (a design-level expectation, untested), stated explicitly as such throughout the body.
 
