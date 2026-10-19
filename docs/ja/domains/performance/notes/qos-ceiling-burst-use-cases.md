@@ -83,7 +83,7 @@ intermediate
 | ONTAP REST API 自動化（AWS Lambda / Amazon EventBridge） | プロビジョニング時にテナントごとの上限・バーストを自動設定。設定経路は ONTAP REST（[検証録](qos-burst-defaults-are-user-modifiable.md)） |
 | AWS DataSync / SnapMirror によるデータ取り込み | 取り込み・複製が本番の読みを圧迫しないよう上限を設け、追いつきの時間帯だけバーストで緩める |
 
-**ネイティブの CloudWatch メトリクスには QoS ポリシーグループを名指しする次元がありません。** ポリシーグループ単位・ワークロード単位で QoS を監視したい場合の経路は、[FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md#ポリシーグループ単位の-qos-監視) が提供する counter manager → Lambda → CloudWatch のカスタムメトリクス収集です。ONTAP の counter manager をポーリングし、ワークロード単位の `FSxONTAP/QoS` メトリクスを公開します。実装の詳細（収集するカウンター、累積生値からレートを出す扱い）は Spoke 側が持ちます。ここでは「誰に効くか・いつ効くか」を扱い、実装は Spoke を引きます。
+**ネイティブの CloudWatch メトリクスで指定できる最も細かい単位はボリューム（`VolumeId`）で、その上にファイルシステム（`FileSystemId`）があり、QoS ポリシーグループやワークロードを識別する次元はありません。** 監視したい単位がボリューム単位・ファイルシステム単位で足りるならネイティブで完結し、QoS ポリシーグループ単位・ワークロード単位で監視したい場合の経路が、[FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/monitoring-design.md#ポリシーグループ単位の-qos-監視) が提供する counter manager → Lambda → CloudWatch のカスタムメトリクス収集です。ONTAP の counter manager をポーリングし、ワークロード単位の `FSxONTAP/QoS` メトリクスを公開します。実装の詳細（収集するカウンター、累積生値からレートを出す扱い）は Spoke 側が持ちます。ここでは「誰に効くか・いつ効くか」を扱い、実装は Spoke を引きます。
 
 > **監視に関する補足**: バースト専用のカウンターは ONTAP になく、収集するのは実効スループット / IOPS です。「上限に張り付いている」は見えますが、「いま実際にバーストしている」は時系列から推定するもので、直接は測れません（Spoke のライブ検証、ONTAP 9.19.1P2）。
 
