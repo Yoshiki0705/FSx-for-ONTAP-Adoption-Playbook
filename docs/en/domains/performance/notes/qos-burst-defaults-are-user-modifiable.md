@@ -182,14 +182,97 @@ qos policy-group show -instance
 
 Each policy group returns its `max_throughput` (ceiling) and the three burst values. If burst has not been changed, burst_percent shows 50, burst_duration shows 1, and burst_iops shows 0.
 
+### Reaching the ONTAP management plane from AWS
+
+> **Tier**: `verified` — confirmed the `aws fsx describe-file-systems` management-endpoint retrieval on a verification FSx for ONTAP file system in ap-northeast-1 (ONTAP 9.19.1P2) on 2026-10-19.
+
+The ONTAP management plane (REST private CLI / CLI) is reached **from inside the VPC only**. As stated in "The plane you can change and the plane you cannot" above, these burst fields have no corresponding parameter on the AWS API side, so the configuration route is the ONTAP management plane.
+
+Get the management endpoint's DNS name and IP with the AWS CLI.
+
+```console
+aws fsx describe-file-systems --file-system-id <file-system-id> \
+  --query 'FileSystems[0].OntapConfiguration.Endpoints.Management'
+```
+
+This returns `DNSName` and `IpAddresses` (the management endpoint). Reach it over HTTPS 443 from a host inside the VPC (for example, an Amazon EC2 instance or a bastion). The security group on that path must allow 443 to the endpoint.
+
+Authenticate as the ONTAP admin user (`fsxadmin`). Keep its credentials in AWS Secrets Manager and read them at call time. Do not hardcode them. The commands below use the ONTAP REST private CLI (`/api/private/cli/...`), reaching this management endpoint with HTTP Basic auth.
+
+### Create / modify / read-back / delete on a verification policy group
+
+> **Tier**: `verified` — confirmed on a live FSx for ONTAP file system (ONTAP 9.19.1P2, ap-northeast-1, 2026-10-19) that the REST private-CLI requests below return the stated HTTP status and read-back values.
+
 **If you actually change and try it, do so within a reversible scope: create a verification policy group, apply it, confirm, and delete it.** Directly changing the values of a policy group applied to a production volume immediately changes that volume's I/O behavior.
+
+The commands matching each step of the 4-step table below. `<name>` / `<svm>` / `<volume>` are placeholders.
+
+Steps 1-2 (create a verification policy group with a ceiling and burst set) — REST private CLI POST:
+
+```console
+POST /api/private/cli/qos/policy-group
+{"policy_group":"<name>","vserver":"<svm>","max_throughput":"2000IOPS","burst_percent":25,"burst_duration":5}
+```
+
+Returns HTTP 201 (read-back: `max_throughput:2000IOPS, burst_percent:25, burst_duration:5`).
+
+Read back:
+
+```console
+GET /api/private/cli/qos/policy-group?policy_group=<name>&fields=policy_group,max_throughput,burst_percent,burst_duration,burst_iops
+```
+
+Switch from burst_percent to burst_iops (they are mutually exclusive, so reset percent to 0 first, then set iops) — two PATCH calls:
+
+```console
+PATCH /api/private/cli/qos/policy-group?policy_group=<name>
+{"burst_percent":0}
+```
+
+then:
+
+```console
+PATCH /api/private/cli/qos/policy-group?policy_group=<name>
+{"burst_iops":3000}
+```
+
+Each returns HTTP 200 (read-back: `burst_iops:3000`, and `burst_percent` no longer present — the live confirmation of the mutual-exclusion constraint this note describes, and why the reset-to-0 ordering is needed).
+
+Step 4 (delete; return to a reversible state):
+
+```console
+DELETE /api/private/cli/qos/policy-group?policy_group=<name>
+```
+
+Returns HTTP 200 (read-back `num_records: 0`).
+
+> **Tier**: `documented` — the equivalent commands for readers who use the ONTAP CLI rather than REST. Since this note's verification executed only the REST private-CLI path above, the bare CLI strings below are treated as `documented`, per the NetApp `qos policy-group create` reference (<https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html>).
+
+```console
+qos policy-group create -policy-group <name> -vserver <svm> -max-throughput 2000IOPS -burst-percent 25 -burst-duration 5
+qos policy-group modify -policy-group <name> -burst-percent 0
+qos policy-group modify -policy-group <name> -burst-iops 3000
+qos policy-group delete -policy-group <name>
+```
+
+### Applying to a verification volume (step 3)
+
+> **Tier**: `documented` — the volume-apply step was not executed on the live file system in this note's verification (existing volumes belong to other verification work and were left untouched). The create / modify / read-back / delete path is proven, but the volume-apply form is from the docs.
+
+The command form for applying the policy group to a volume.
+
+```console
+volume modify -vserver <svm> -volume <volume> -qos-policy-group <name>
+```
+
+The REST private CLI equivalent sends `PATCH /api/private/cli/volume?vserver=<svm>&volume=<volume>` with body `{"qos_policy_group":"<name>"}`. Detach specifies `none` on the policy group (`volume modify ... -qos-policy-group none`; both `documented`).
 
 | # | Step | What it confirms |
 |---|---|---|
-| 1 | Create a verification QoS policy group with a ceiling (max-throughput) | That create is accepted with HTTP 201 |
-| 2 | Change burst-percent / burst-duration / burst-iops | That modify is accepted with HTTP 200 and read-back confirms the values |
-| 3 | Apply the policy group to a verification volume and apply I/O after an idle period | That a burst exceeding the ceiling occurs exactly as configured |
-| 4 | Detach the policy group from the volume and delete it | That read-back shows the target is gone (returning to a reversible state) |
+| 1 | Create a verification QoS policy group with a ceiling (max-throughput) | That create is accepted with HTTP 201 (`verified`) |
+| 2 | Change burst-percent / burst-duration / burst-iops | That modify is accepted with HTTP 200 and read-back confirms the values (`verified`) |
+| 3 | Apply the policy group to a verification volume and apply I/O after an idle period | That a burst exceeding the ceiling occurs exactly as configured (apply command form is `documented`, not run live) |
+| 4 | Detach the policy group from the volume and delete it | That read-back shows the target is gone (delete is `verified`; the detach form is `documented`) |
 
 Observing the behavior in step 3 requires a load tool that can record per-second IOPS (for example, fio's per-second log). A single average value alone cannot separate the peak excess width from its duration.
 
