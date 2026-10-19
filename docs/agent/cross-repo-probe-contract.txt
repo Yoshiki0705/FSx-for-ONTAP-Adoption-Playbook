@@ -47,6 +47,7 @@ FSx-for-ONTAP-Observability-integrations	docs/en/cyber-resilience-capability-map
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	fails over to secondary servers
 FSx-for-ONTAP-Observability-integrations	docs/en/fpolicy-production-architecture-patterns.md	retraction	~2 minute recovery gap
 FSx-for-ONTAP-Observability-integrations	docs/en/monitoring-design.md	retraction	It does not choose the collection route.
+FSx-for-ONTAP-Observability-integrations	docs/en/monitoring-design.md	retraction	no dimension that identifies a QoS policy group or workload
 FSx-for-ONTAP-Observability-integrations	docs/en/native-alternative-matrix.md	retraction	to its AWS-native equivalent implementation in this repository
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	KeepAlive messages to the FPolicy server every 120 seconds
 FSx-for-ONTAP-Observability-integrations	docs/en/operational-notes-fpolicy.md	retraction	NOT used for routing FPolicy traffic
@@ -59,6 +60,7 @@ FSx-for-ONTAP-Observability-integrations	docs/en/verification-results-fpolicy-s3
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-model.md	retraction	デプロイの月額コストを見積もる
 FSx-for-ONTAP-Observability-integrations	docs/ja/cost-validation.md	retraction	実際の AWS 請求データ
 FSx-for-ONTAP-Observability-integrations	docs/ja/cyber-resilience-capability-map.md	retraction	NIST CSF 2.0 の 6 機能それぞれについて、本リポジトリは FSx for ONTAP ワークロードに対して何を提供しているのか
+FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	QoS ポリシーグループやワークロードを識別するディメンションはありません
 FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	収集経路の選択は行いません。
 FSx-for-ONTAP-Observability-integrations	docs/ja/native-alternative-matrix.md	retraction	本リポジトリの AWS ネイティブ実装にマッピングしたもの
 FSx-for-ONTAP-Observability-integrations	docs/ja/s3ap-throughput-benchmark.md	retraction	サイジングの参考値であり、サービス上限ではありません
