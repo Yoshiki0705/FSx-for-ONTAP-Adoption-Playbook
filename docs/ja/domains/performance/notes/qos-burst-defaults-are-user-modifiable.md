@@ -182,14 +182,97 @@ qos policy-group show -instance
 
 各ポリシーグループの `max_throughput`（ceiling）とバースト 3 値が返ります。バーストを変更していなければ、burst_percent が 50、burst_duration が 1、burst_iops が 0 のまま表示されます。
 
+### AWS 側から ONTAP 管理面に到達する前提
+
+> **区分**: `verified` — 2026-10-19、ap-northeast-1、ONTAP 9.19.1P2 の検証用 FSx for ONTAP ファイルシステムで `aws fsx describe-file-systems` による管理エンドポイント取得を確認しました。
+
+ONTAP 管理面（REST private CLI / CLI）は **VPC 内からのみ** 到達します。本文の「変更できる面と変更できない面」で述べたとおり、これらのバーストフィールドには AWS API 側の相当パラメータがないため、設定経路は ONTAP 管理面になります。
+
+管理エンドポイントの DNS 名と IP は AWS CLI で取得します。
+
+```console
+aws fsx describe-file-systems --file-system-id <file-system-id> \
+  --query 'FileSystems[0].OntapConfiguration.Endpoints.Management'
+```
+
+これが `DNSName` と `IpAddresses`（管理エンドポイント）を返します。VPC 内のホスト（例: Amazon EC2 インスタンスや踏み台）から HTTPS 443 で到達します。その経路のセキュリティグループでエンドポイントへの 443 を許可しておく必要があります。
+
+認証は ONTAP 管理ユーザー（`fsxadmin`）で行います。認証情報は AWS Secrets Manager に置き、呼び出し時に読み取ってください。コマンドに直接埋め込まないでください。以降のコマンドは ONTAP REST private CLI（`/api/private/cli/...`）を使い、この管理エンドポイントに対して HTTP Basic 認証で到達します。
+
+### 検証用ポリシーグループでの作成・変更・読み戻し・削除
+
+> **区分**: `verified` — 実機の FSx for ONTAP ファイルシステム（ONTAP 9.19.1P2, ap-northeast-1, 2026-10-19）で、以下の REST private CLI リクエストが記載どおりの HTTP ステータスと読み戻し値を返すことを確認しました。
+
 **実際に変更して試す場合は、検証用のポリシーグループを作って適用し、確認後に削除する可逆な範囲で行ってください。** 本番ボリュームに適用しているポリシーグループの値を直接変更すると、そのボリュームの I/O 挙動が即座に変わります。
+
+下の 4 手順表の各ステップに対応するコマンドを示します。`<name>` / `<svm>` / `<volume>` はプレースホルダです。
+
+ステップ 1-2（ceiling とバーストを付けた検証用ポリシーグループの作成）— REST private CLI POST:
+
+```console
+POST /api/private/cli/qos/policy-group
+{"policy_group":"<name>","vserver":"<svm>","max_throughput":"2000IOPS","burst_percent":25,"burst_duration":5}
+```
+
+HTTP 201 を返します（読み戻し: `max_throughput:2000IOPS, burst_percent:25, burst_duration:5`）。
+
+読み戻し:
+
+```console
+GET /api/private/cli/qos/policy-group?policy_group=<name>&fields=policy_group,max_throughput,burst_percent,burst_duration,burst_iops
+```
+
+burst_percent から burst_iops へ切り替える（相互排他のため、先に percent を 0 にリセットしてから iops を設定する）2 回の PATCH:
+
+```console
+PATCH /api/private/cli/qos/policy-group?policy_group=<name>
+{"burst_percent":0}
+```
+
+続けて:
+
+```console
+PATCH /api/private/cli/qos/policy-group?policy_group=<name>
+{"burst_iops":3000}
+```
+
+それぞれ HTTP 200 を返します（読み戻し: `burst_iops:3000`、`burst_percent` は返らなくなる。本文が述べた相互排他制約の実機での確認であり、先に 0 リセットする順序が必要な理由でもあります）。
+
+ステップ 4（削除。可逆な状態に戻す）:
+
+```console
+DELETE /api/private/cli/qos/policy-group?policy_group=<name>
+```
+
+HTTP 200 を返します（読み戻し `num_records: 0`）。
+
+> **区分**: `documented` — REST ではなく ONTAP CLI を使う場合の相当コマンドです。本ノートの検証で実行したのは上記の REST private CLI 経路のみのため、下の素の CLI 文字列は NetApp の `qos policy-group create` リファレンス（<https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html>）に基づく `documented` として扱います。
+
+```console
+qos policy-group create -policy-group <name> -vserver <svm> -max-throughput 2000IOPS -burst-percent 25 -burst-duration 5
+qos policy-group modify -policy-group <name> -burst-percent 0
+qos policy-group modify -policy-group <name> -burst-iops 3000
+qos policy-group delete -policy-group <name>
+```
+
+### 検証用ボリュームへの適用（手順 3）
+
+> **区分**: `documented` — ボリュームへの適用は本ノートの検証では実機に対して実行していません（既存ボリュームは他の検証作業に属するため触れていません）。作成・変更・読み戻し・削除の経路は実証済みですが、ボリューム適用の形は NetApp ドキュメントに基づく `documented` です。
+
+ポリシーグループをボリュームへ適用するコマンドの形です。
+
+```console
+volume modify -vserver <svm> -volume <volume> -qos-policy-group <name>
+```
+
+REST private CLI では `PATCH /api/private/cli/volume?vserver=<svm>&volume=<volume>` にボディ `{"qos_policy_group":"<name>"}` を送ります。detach はポリシーグループに `none` を指定します（`volume modify ... -qos-policy-group none`、いずれも `documented`）。
 
 | # | 手順 | 確認できること |
 |---|---|---|
-| 1 | 検証用の QoS ポリシーグループを ceiling（max-throughput）付きで作成する | create が HTTP 201 で通ること |
-| 2 | burst-percent / burst-duration / burst-iops を変更する | modify が HTTP 200 で通り、読み戻しで値が確定すること |
-| 3 | 検証用ボリュームにポリシーグループを適用し、idle 後に I/O を流す | ceiling を超えるバーストが指定どおり発生すること |
-| 4 | ポリシーグループをボリュームから detach し削除する | 読み戻しで対象が消えること（可逆な状態に戻す） |
+| 1 | 検証用の QoS ポリシーグループを ceiling（max-throughput）付きで作成する | create が HTTP 201 で通ること（`verified`） |
+| 2 | burst-percent / burst-duration / burst-iops を変更する | modify が HTTP 200 で通り、読み戻しで値が確定すること（`verified`） |
+| 3 | 検証用ボリュームにポリシーグループを適用し、idle 後に I/O を流す | ceiling を超えるバーストが指定どおり発生すること（適用コマンドの形は `documented`、実機未実行） |
+| 4 | ポリシーグループをボリュームから detach し削除する | 読み戻しで対象が消えること（削除は `verified`、detach の形は `documented`） |
 
 手順 3 で挙動を観測するには、per-second の IOPS を記録できる負荷ツール（例: fio の per-second ログ）が必要です。1 回の平均値だけでは、ピークの超過幅と持続時間を分離できません。
 
