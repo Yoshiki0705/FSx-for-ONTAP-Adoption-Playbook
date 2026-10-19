@@ -83,6 +83,10 @@ Figure 1: The AWS integration patterns where the QoS ceiling and burst apply (th
 | ONTAP REST API automation (AWS Lambda / Amazon EventBridge) | Configure per-tenant ceilings and bursts automatically at provisioning time. The configuration route is ONTAP REST ([verification record](qos-burst-defaults-are-user-modifiable.md)) |
 | Data ingestion via AWS DataSync / SnapMirror | Cap ingestion / replication so it does not crowd out production reads, relaxing it with burst only during the catch-up window |
 
+**Native CloudWatch metrics have no dimension that names a QoS policy group.** When you want to monitor QoS per policy group or per workload, the route is the counter-manager → Lambda → CloudWatch custom-metric collector that [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/monitoring-design.md#per-policy-group-qos-monitoring) provides. It polls the ONTAP counter manager and publishes per-workload `FSxONTAP/QoS` metrics. The implementation detail (which counters are collected, how a rate is derived from cumulative raw values) lives on the Spoke side. This note holds who-it-helps and when-it-matters; it cites the Spoke for the implementation.
+
+> **Monitoring note**: There is no burst-specific counter in ONTAP, so what is collected is effective throughput / IOPS. "Pinned at the ceiling" is visible, but "currently bursting" is inferred from the time series, not measured directly (Spoke live verification, ONTAP 9.19.1P2).
+
 ![Two-plane management of QoS burst: the AWS Management Console / FSx for ONTAP AWS API have no burst configuration parameter, and the burst of Amazon FSx for NetApp ONTAP can be set only from Amazon EC2 (a client inside the VPC) via ONTAP REST / CLI](../../../../_assets/images/qos-burst-two-plane.svg)
 
 Figure 2: The two-plane management of burst configuration (the AWS management plane has no corresponding parameter; it is set from the ONTAP management plane)
