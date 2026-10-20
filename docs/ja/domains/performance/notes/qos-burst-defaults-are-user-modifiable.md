@@ -81,6 +81,37 @@ ONTAP REST private CLI の `qos/policy-group` に対する create / modify が�
 
 ### 実 I/O 挙動の実測
 
+#### テスト環境
+
+| 項目 | 値 |
+|---|---|
+| デプロイタイプ | 第 1 世代、Single-AZ（SINGLE_AZ_1） |
+| ONTAP バージョン | 9.19.1P2 |
+| スループットキャパシティ | 128 MBps |
+| プロビジョンド SSD IOPS | 3,072（自動。1,024 GiB SSD に対する既定の 3 IOPS/GiB） |
+| ストレージキャパシティ | 1,024 GiB SSD |
+| リージョン | ap-northeast-1 |
+| ワークロード | 4 KB random read |
+| テスト対象の QoS ceiling | 2,000 IOPS |
+| QoS なしの基準線 | 24,400 IOPS |
+| 観測解像度 | 1 秒（per-second IOPS は fio `--log_avg_msec=1000` で取得） |
+| 負荷前のアイドル時間 | あり（バーストクレジット蓄積のため）。秒数は未記録 |
+| クライアントの EC2 インスタンスタイプ | 検証用踏み台（現在 t2.medium。測定時点のタイプは未記録） |
+| プロトコルとマウントオプション（NFS バージョン、rsize/wsize など） | NFSv3（fio 3.32）。rsize/wsize は未記録 |
+| fio パラメータ rw | randread |
+| fio パラメータ bs | 4 KB |
+| fio パラメータ iodepth | 32 |
+| fio パラメータ numjobs | 4 |
+| fio パラメータ direct | 1 |
+| fio パラメータ size | 500 MiB（job ごとのテストファイル） |
+| fio パラメータ ioengine | libaio |
+| fio パラメータ runtime | 未記録 |
+| アイドル時間の秒数 | 未記録 |
+| 試行回数 | 未記録 |
+| テスト対象ボリュームのティアリングポリシー | 未記録（テスト対象は 1 GiB ボリューム） |
+
+「未記録」のまま残るのは、fio の runtime、アイドル時間の秒数、試行回数、マウントの rsize/wsize、測定時点のクライアントインスタンスタイプ、およびテスト対象ボリュームのティアリングポリシーです。いずれも検証ログに記録されておらず、測定の境界が読者に分かるよう列挙しています。
+
 ceiling を 2000 IOPS に設定し、VPC 内の Linux クライアントから fio（4k random read, NFSv3）で負荷をかけ、設定を変えながら per-second の IOPS を観測しました。QoS なしの基準線は 24,400 IOPS です。各パターンとも ceiling 適用前に idle を置いてバーストクレジットを蓄積してから流しました。
 
 | パターン | 設定 | t=1s ピーク | 定常 | 支配する側面 |
@@ -105,6 +136,8 @@ ceiling を 2000 IOPS に設定し、VPC 内の Linux クライアントから f
 - **burst-iops は max-throughput（ceiling IOPS）より大きい必要がある。** ceiling 2000 IOPS に対し burst-iops=500 は ONTAP が拒否し、burst-iops=3000 は通りました。コマンドリファレンスには、burst-iops が max-throughput 未満の場合は max-throughput が使われる、と記載されています。
 
 > **補足**: 実機で得たエラーコード番号は本ノートでは省略しています。挙動として重要なのは「どの組み合わせを ONTAP が拒否するか」であり、番号は環境により変わりうるためです。
+
+> **FSx for ONTAP 側のバーストとの切り分けに関する補足**: ONTAP QoS バーストと FSx for ONTAP 側（AWS 側）のバーストは層が異なります。QoS バーストは「ワークロードが ceiling をどこまで超えてよいか」を制御し、FSx for ONTAP 側のバーストは「ファイルシステム自身がどこまでの性能を出せるか」を制御します。QoS は上限で抑える仕組みであり、ファイルシステムが出せる性能を超えてワークロードを押し上げることはできません（[FSx for ONTAP パフォーマンス](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) と整合）。本測定では、ピークが約 3,000 IOPS（約 12 MB/s）だったのに対し QoS なしで約 24,400 IOPS が出ており、余裕が大きいため FSx for ONTAP 側のバーストは結果に影響していません。この検証構成（128 MBps, Single-AZ 1）はパフォーマンスのページどおり FSx for ONTAP 側のバースト対象です。対象外なのではなく、余裕が大きいことが切り分けの根拠です。設計上の想定（本検証では未測定）として、各ワークロードの ceiling + バーストの合計がファイルシステムの通常時（ベースライン）の性能を超える設計では、FSx for ONTAP 側のクレジットを使い切ったときにワークロードが ceiling にすら届かない場合があり、同じ QoS 設定でもクレジットの状態によって挙動が変わりえます。設計指針としては、ceiling の合計がバースト時ではなく通常時（ベースライン）の性能に収まるようにサイジングします。この飽和したケースは本検証では測定していません。
 
 ---
 

@@ -81,6 +81,37 @@ create / modify against `qos/policy-group` on the ONTAP REST private CLI were ac
 
 ### Measuring real I/O behavior
 
+#### Test environment
+
+| Item | Value |
+|---|---|
+| Deployment type | First-generation, Single-AZ (SINGLE_AZ_1) |
+| ONTAP version | 9.19.1P2 |
+| Throughput capacity | 128 MBps |
+| Provisioned SSD IOPS | 3,072 (automatic; the default 3 IOPS per GiB on 1,024 GiB SSD) |
+| Storage capacity | 1,024 GiB SSD |
+| Region | ap-northeast-1 |
+| Workload | 4 KB random read |
+| QoS ceiling under test | 2,000 IOPS |
+| Baseline without QoS | 24,400 IOPS |
+| Observation resolution | 1 second (per-second IOPS captured with fio `--log_avg_msec=1000`) |
+| Idle period before load | Present (to accumulate burst credit); duration not recorded |
+| Client EC2 instance type | verification bastion, currently t2.medium (instance type at measurement time not recorded) |
+| Protocol and mount options (NFS version, rsize/wsize, etc.) | NFSv3 (fio 3.32); rsize/wsize not recorded |
+| fio parameter rw | randread |
+| fio parameter bs | 4 KB |
+| fio parameter iodepth | 32 |
+| fio parameter numjobs | 4 |
+| fio parameter direct | 1 |
+| fio parameter size | 500 MiB (per-job test file) |
+| fio ioengine | libaio |
+| fio parameter runtime | not recorded |
+| Idle-period duration (seconds) | not recorded |
+| Number of trials / repetitions | not recorded |
+| Volume tiering policy of the volume under test | not recorded (volume under test was a 1 GiB volume) |
+
+The values that remain "not recorded" are the fio runtime, the idle-period duration in seconds, the number of trials, the mount rsize/wsize, the client instance type at measurement time, and the tiering policy of the volume under test. None were captured in the verification log, and they are listed so the reader knows the measurement's boundaries.
+
 With the ceiling set to 2000 IOPS, load was applied from a Linux client inside the VPC using fio (4k random read, NFSv3), and per-second IOPS were observed while varying the settings. The baseline with no QoS is 24,400 IOPS. In every pattern, an idle period was placed before applying the ceiling so that burst credit accumulated before the load started.
 
 | Pattern | Settings | t=1s peak | Steady | Dominant aspect |
@@ -105,6 +136,8 @@ The following two are constraints of ONTAP itself, not constraints specific to F
 - **burst-iops must be greater than max-throughput (the ceiling IOPS).** Against a ceiling of 2000 IOPS, ONTAP rejected burst-iops=500, while burst-iops=3000 was accepted. The command reference states that if burst-iops is below max-throughput, max-throughput is used.
 
 > **Note**: The error code numbers obtained on the live system are omitted from this note. What matters for the behavior is which combinations ONTAP rejects, and the numbers can vary by environment.
+
+> **Note on isolation from FSx for ONTAP-side bursting**: ONTAP QoS burst and FSx for ONTAP-side (AWS-side) bursting are different layers. QoS burst governs how far a workload may exceed its ceiling; FSx for ONTAP-side bursting governs how much the file system itself can deliver. QoS is a mechanism that caps; it cannot push a workload above what the file system can deliver ([consistent with FSx for ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html)). In this measurement, the peak was ~3,000 IOPS (~12 MB/s) against ~24,400 IOPS available without QoS — a large margin — so FSx for ONTAP-side bursting did not affect the result. This test configuration (128 MBps, Single-AZ 1) IS subject to FSx for ONTAP-side bursting, as the performance page states; the point is the margin, not exemption. As a design expectation (not measured in this verification): if a design sets the sum of per-workload (ceiling + burst) above the file system's baseline (sustained) performance, then once FSx for ONTAP-side credits are exhausted a workload may not even reach its ceiling, and the same QoS settings can behave differently depending on credit state. The design guidance is to size so the sum of ceilings fits within the file system's baseline (sustained) performance, not its burst performance. This saturated case was not measured here.
 
 ---
 
