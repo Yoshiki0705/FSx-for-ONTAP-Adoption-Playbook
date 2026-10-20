@@ -94,22 +94,23 @@ ONTAP REST private CLI の `qos/policy-group` に対する create / modify が�
 | ワークロード | 4 KB random read |
 | テスト対象の QoS ceiling | 2,000 IOPS |
 | QoS なしの基準線 | 24,400 IOPS |
-| 観測解像度 | 1 秒 |
+| 観測解像度 | 1 秒（per-second IOPS は fio `--log_avg_msec=1000` で取得） |
 | 負荷前のアイドル時間 | あり（バーストクレジット蓄積のため）。秒数は未記録 |
-| クライアントの EC2 インスタンスタイプ | 未記録 |
-| プロトコルとマウントオプション（NFS バージョン、rsize/wsize など） | 未記録 |
-| fio パラメータ rw | 未記録 |
-| fio パラメータ bs | ワークロードの記述から実質 4 KB |
-| fio パラメータ iodepth | 未記録 |
-| fio パラメータ numjobs | 未記録 |
-| fio パラメータ direct | 未記録 |
-| fio パラメータ size | 未記録 |
+| クライアントの EC2 インスタンスタイプ | 検証用踏み台（現在 t2.medium。測定時点のタイプは未記録） |
+| プロトコルとマウントオプション（NFS バージョン、rsize/wsize など） | NFSv3（fio 3.32）。rsize/wsize は未記録 |
+| fio パラメータ rw | randread |
+| fio パラメータ bs | 4 KB |
+| fio パラメータ iodepth | 32 |
+| fio パラメータ numjobs | 4 |
+| fio パラメータ direct | 1 |
+| fio パラメータ size | 500 MiB（job ごとのテストファイル） |
+| fio パラメータ ioengine | libaio |
 | fio パラメータ runtime | 未記録 |
 | アイドル時間の秒数 | 未記録 |
 | 試行回数 | 未記録 |
-| テスト対象ボリュームのティアリングポリシー | 未記録 |
+| テスト対象ボリュームのティアリングポリシー | auto（テスト対象は 1 GiB ボリューム、ティアリングポリシー auto） |
 
-「未記録」の値は検証ログに記録されておらず、測定の境界が読者に分かるよう列挙しています。
+「未記録」のまま残るのは、fio の runtime、アイドル時間の秒数、試行回数、マウントの rsize/wsize、および測定時点のクライアントインスタンスタイプです。いずれも検証ログに記録されておらず、測定の境界が読者に分かるよう列挙しています。
 
 ceiling を 2000 IOPS に設定し、VPC 内の Linux クライアントから fio（4k random read, NFSv3）で負荷をかけ、設定を変えながら per-second の IOPS を観測しました。QoS なしの基準線は 24,400 IOPS です。各パターンとも ceiling 適用前に idle を置いてバーストクレジットを蓄積してから流しました。
 

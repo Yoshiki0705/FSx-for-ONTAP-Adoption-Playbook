@@ -94,22 +94,23 @@ create / modify against `qos/policy-group` on the ONTAP REST private CLI were ac
 | Workload | 4 KB random read |
 | QoS ceiling under test | 2,000 IOPS |
 | Baseline without QoS | 24,400 IOPS |
-| Observation resolution | 1 second |
+| Observation resolution | 1 second (per-second IOPS captured with fio `--log_avg_msec=1000`) |
 | Idle period before load | Present (to accumulate burst credit); duration not recorded |
-| Client EC2 instance type | not recorded |
-| Protocol and mount options (NFS version, rsize/wsize, etc.) | not recorded |
-| fio parameter rw | not recorded |
-| fio parameter bs | Effectively 4 KB from the workload description |
-| fio parameter iodepth | not recorded |
-| fio parameter numjobs | not recorded |
-| fio parameter direct | not recorded |
-| fio parameter size | not recorded |
+| Client EC2 instance type | verification bastion, currently t2.medium (instance type at measurement time not recorded) |
+| Protocol and mount options (NFS version, rsize/wsize, etc.) | NFSv3 (fio 3.32); rsize/wsize not recorded |
+| fio parameter rw | randread |
+| fio parameter bs | 4 KB |
+| fio parameter iodepth | 32 |
+| fio parameter numjobs | 4 |
+| fio parameter direct | 1 |
+| fio parameter size | 500 MiB (per-job test file) |
+| fio ioengine | libaio |
 | fio parameter runtime | not recorded |
 | Idle-period duration (seconds) | not recorded |
 | Number of trials / repetitions | not recorded |
-| Volume tiering policy of the volume under test | not recorded |
+| Volume tiering policy of the volume under test | auto (volume under test was a 1 GiB volume, tiering policy auto) |
 
-The values marked "not recorded" were not captured in the verification log and are listed so the reader knows the measurement's boundaries.
+The values that remain "not recorded" are the fio runtime, the idle-period duration in seconds, the number of trials, the mount rsize/wsize, and the client instance type at measurement time. None were captured in the verification log, and they are listed so the reader knows the measurement's boundaries.
 
 With the ceiling set to 2000 IOPS, load was applied from a Linux client inside the VPC using fio (4k random read, NFSv3), and per-second IOPS were observed while varying the settings. The baseline with no QoS is 24,400 IOPS. In every pattern, an idle period was placed before applying the ceiling so that burst credit accumulated before the load started.
 
