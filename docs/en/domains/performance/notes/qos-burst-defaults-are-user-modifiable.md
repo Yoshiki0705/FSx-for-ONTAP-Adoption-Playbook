@@ -108,9 +108,9 @@ create / modify against `qos/policy-group` on the ONTAP REST private CLI were ac
 | fio parameter runtime | not recorded |
 | Idle-period duration (seconds) | not recorded |
 | Number of trials / repetitions | not recorded |
-| Volume tiering policy of the volume under test | auto (volume under test was a 1 GiB volume, tiering policy auto) |
+| Volume tiering policy of the volume under test | not recorded (volume under test was a 1 GiB volume) |
 
-The values that remain "not recorded" are the fio runtime, the idle-period duration in seconds, the number of trials, the mount rsize/wsize, and the client instance type at measurement time. None were captured in the verification log, and they are listed so the reader knows the measurement's boundaries.
+The values that remain "not recorded" are the fio runtime, the idle-period duration in seconds, the number of trials, the mount rsize/wsize, the client instance type at measurement time, and the tiering policy of the volume under test. None were captured in the verification log, and they are listed so the reader knows the measurement's boundaries.
 
 With the ceiling set to 2000 IOPS, load was applied from a Linux client inside the VPC using fio (4k random read, NFSv3), and per-second IOPS were observed while varying the settings. The baseline with no QoS is 24,400 IOPS. In every pattern, an idle period was placed before applying the ceiling so that burst credit accumulated before the load started.
 
