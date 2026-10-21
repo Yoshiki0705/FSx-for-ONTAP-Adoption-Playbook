@@ -26,8 +26,12 @@ FSx-for-ONTAP-Agentic-Access-Aware-RAG	benchmarks/results/baseline-estimates.md	
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/fsxn-sizing-and-performance.md	retraction	Permission-aware RAG システムにおける FSx for ONTAP の性能・容量設計指針を提供します
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
 FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/reproduce.md	retraction	請求書は観測していない
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-1-multiprotocol.md	retraction	どちらの組も、プロトコルをまたいで排他が効いた。
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-1-multiprotocol.md	retraction	同じ ntfs ボリュームでも、SMB（Windows と cifs）は大文字小文字を区別せず、NFS は区別する。
 FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-1-multiprotocol.md	retraction	性能の主張ではない
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-1-multiprotocol.md	retraction	逆向き（Windows が書き、Linux が読む）は SMB でも NFS でも
 FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-2-aimf-modern-dotnet.md	retraction	機能欠落の確認は REFUTED、スコープの確認は UPHELD
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-3-s3-access-points.md	retraction	S3 Access Points 経由ではキーの大文字小文字を区別する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max events/second before DLQ overflow
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない

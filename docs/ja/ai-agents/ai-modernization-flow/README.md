@@ -87,6 +87,7 @@ AIMF の Phase 0a は AWS Transform custom（`atx`）を呼びます。両者は
 
 ## 関連
 
+- [FSx for ONTAP 補助パック](aux-pack/README.md) — AIMF の移行プロジェクトに貼り込む FSx for ONTAP 観点の断片集（独立 Playbook ではなく差し込みパック）
 - [AWS ブログ「AI Modernization Flow を公開しました」][blog]
 - [aws-samples/sample-ai-modernization-flow][repo]
 - [FSx-for-ONTAP-App-Modernization-Patterns][appmod] — AIMF を実地で回した結果を持つリポジトリ
