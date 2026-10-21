@@ -81,6 +81,8 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 | Pattern | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Move the application in stages while the data stays on the same volume |
 | Note | [Adding NFS to a volume already serving SMB needs no clone](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | The reason it is unreachable lies outside the security style |
 
+> The split is [AI Modernization Flow](../../ja/ai-agents/ai-modernization-flow/README.md) (日本語) on the application side, this repository on the data side.
+
 ### 3. Containerize
 
 | Type | Resource | Point |

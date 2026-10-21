@@ -25,7 +25,9 @@
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	benchmarks/results/baseline-estimates.md	retraction	デモ環境実測（2 ドキュメント、ap-northeast-1）
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/fsxn-sizing-and-performance.md	retraction	Permission-aware RAG システムにおける FSx for ONTAP の性能・容量設計指針を提供します
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/reproduce.md	retraction	請求書は観測していない
 FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-1-multiprotocol.md	retraction	性能の主張ではない
+FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-2-aimf-modern-dotnet.md	retraction	機能欠落の確認は REFUTED、スコープの確認は UPHELD
 FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max events/second before DLQ overflow
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない

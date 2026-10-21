@@ -81,6 +81,8 @@ lang: ja
 | パターン | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを同じボリュームに置いたまま、アプリケーションを段階的に移す |
 | ノート | [SMB で運用中のボリュームに NFS を足すのに複製は要らない](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | 届かない原因はセキュリティスタイルの外側にあります |
 
+> アプリ側は [AI Modernization Flow](../ai-agents/ai-modernization-flow/README.md)、データ側はこのリポジトリ、という分担です。
+
 ### 3. コンテナ化
 
 | 種類 | リソース | 論点 |
