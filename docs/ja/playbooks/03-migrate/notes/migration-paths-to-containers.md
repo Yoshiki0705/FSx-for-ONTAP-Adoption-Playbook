@@ -34,6 +34,8 @@ lang: ja
 | 2 | リホストでブロックを疎結合にする | 実行中の VM / サーバー | Amazon EC2 | ゲスト OS 内の iSCSI マウント（ブロックを EC2 から切り離して FSx for ONTAP 側に置く） | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) と [AWS Transform の Finalize は物理容量が最大になる工程](atx-finalize-flexclone-capacity.md) |
 | 3 | サードパーティの VM 変換ツール経由（NetApp Shift Toolkit v8.0 など） | 実行中の VM / 仮想ディスク | Amazon EC2 + FSx for ONTAP | OS ディスクは Amazon EBS、データディスクは FSx for ONTAP。後からコンテナが iSCSI / NFS で到達 | **EC2 対応は Early Preview（2026-09 時点）。** GA の経路 1・2 と成熟度が異なります。一般提供の条件は各実装リポジトリを参照 |
 
+**経路 1（ソースコードからのモダナイゼーション）のアプリ側の進め方**は、[AI Modernization Flow](../../../ai-agents/ai-modernization-flow/README.md) が規律あるワークフローとして扱います（アプリ側は AIMF、データ側はこのリポジトリ）。
+
 **経路 1 と経路 2 の違いは入力です。** ソースコードを入力にするモダナイゼーション（経路 1）と、実行中の VM を入力にするリホスト（経路 2）は、AWS Transform の中でも別機能です。**「コンテナ化」と「リホストでのブロック連携」は 1 つのワークフローにまとまりません。** ソースコードからコンテナ化する経路には、リホスト専用のブロックサポートは付きません。
 
 **経路 3 は入力が VM である点で経路 2 に近いですが、変換の仕組みが AWS のマネージド移行と別**です。NetApp Shift Toolkit v8.0 などが該当し、ONTAP のストレージ効率（FlexClone / SnapMirror）を使って OS ディスクを Amazon EBS、データディスクを FSx for ONTAP へ変換します。**中立に選択肢の 1 つとして置いています。**

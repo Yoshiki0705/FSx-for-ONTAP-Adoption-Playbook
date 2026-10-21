@@ -367,6 +367,8 @@ lang: ja
 | `docs/en/reference/performance-evidence-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/verification-status.md` | `実環境で再現した。環境（ONTAP バージョン、リージョン、構成）を併記する` | `retraction` | 同上（EN 版）。「検証済み」を reproduced in a real environment と読む定義の出どころ |
 | `docs/en/reference/performance-evidence-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/performance-expectations.md` | `記録の側が正で、ここは索引` | `retraction` | 同上（EN 版）。入口ページの行が指す、測らずに読む期待値の要約 |
 | `docs/en/reference/performance-evidence-map.md` | `FSx-for-ONTAP-App-Modernization-Patterns` | `docs/ja/stage-1-multiprotocol.md` | `性能の主張ではない` | `retraction` | 同上（EN 版）。デュアルプロトコルの挙動の行が指す記録 |
+| `docs/ja/ai-agents/ai-modernization-flow/README.md` | `FSx-for-ONTAP-App-Modernization-Patterns` | `docs/ja/stage-2-aimf-modern-dotnet.md` | `機能欠落の確認は REFUTED、スコープの確認は UPHELD` | `retraction` | AIMF を 1 セッションで回し、独立検証が機能欠落を REFUTED、スコープを UPHELD と判定した記録。**Hub は引用するだけで測定を持たず、この判定が撤回されれば位置づけページの「実地で回した結果」を読み直します** |
+| `docs/ja/ai-agents/ai-modernization-flow/README.md` | `FSx-for-ONTAP-App-Modernization-Patterns` | `docs/ja/reproduce.md` | `請求書は観測していない` | `retraction` | 観測費用が `Estimated: true` で請求書ではないという費用の但し書きの所在。**Hub はこの約 21.18 USD を請求額として引用しない根拠がこの文で、消えたら費用の注記を読み直します** |
 <!-- cross-repo-table:end -->
 
 ---

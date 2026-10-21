@@ -37,16 +37,19 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 | Amazon Bedrock Knowledge Base | RAG・生成 AI にナレッジを供給する | **データソース**（S3 Access Points 経由。実装で検証済み） | GA | [Bedrock Knowledge Base のデータソースに FSx for ONTAP を使う](bedrock-knowledge-base/README.md) |
 | AWS Security Agent | アプリのセキュリティを検証する（現在は AWS Continuum の一部） | **アプリ経由**（FSx for ONTAP を使うアプリのコードのみ。管理面は見ない） | GA | [AWS Security Agent はアプリを検証し、FSx for ONTAP の設定は検証しない](security-agent/README.md) |
 | AWS Transform | コード・ワークロードを移行・変換する | **移行先**（移行先ストレージに FSx for ONTAP を選択可） | GA | [移行の項へ](#aws-transform-の既存ページへの集約) |
-| AI Modernization Flow | AI エージェントに決められた段階でアプリケーションを移行させるワークフロー | **アプリ経由**（エージェントが移すのはアプリのコードで、データは FSx for ONTAP に置いたまま） | サンプル（aws-samples、2026-10 確認） | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns)（本体は [sample-ai-modernization-flow](https://github.com/aws-samples/sample-ai-modernization-flow)） |
+| AI Modernization Flow（以降 AIMF） | AI エージェントに決められた段階でアプリケーションコードを移行させるワークフロー | **アプリ移行の相棒**（マネージド AWS エージェントではなく、アプリのコードを移すワークフロー。データ側をこのリポジトリが受け持つ） | サンプル（aws-samples、2026-10 確認） | [AI Modernization Flow はアプリ側を移し、このリポジトリがデータ側を受け持つ](ai-modernization-flow/README.md) |
 | Amazon Bedrock Managed Agents (OpenAI) | OpenAI harness ベースのエージェント runtime | 直接の接点は薄い（AgentCore 上の runtime） | Limited Preview | _対象外_ |
 | Kiro | 仕様駆動のソフトウェア開発エージェント | 直接の接点は薄い（現時点でデータソース連携なし） | GA | _対象外_ |
 
-**「関わり方」の 4 類型**:
+**「関わり方」の 5 類型**:
 
 - **監視対象** — エージェントが FSx for ONTAP の稼働・コストを外から観測する。FSx for ONTAP はエージェントの調査対象で、データソースではない
 - **データソース** — FSx for ONTAP 上のファイルをエージェントが読み、ナレッジベースにする。S3 Access Points 経由で成立する
 - **アプリ経由** — FSx for ONTAP を使うアプリのコードや設計だけが対象で、ストレージ管理面には届かない
 - **移行先** — 移行の宛先として FSx for ONTAP を選ぶ。運用に重ねる対象ではない
+- **アプリ移行の相棒** — マネージドな AWS エージェントではなく、アプリのコードを移すワークフロー。アプリ側を相棒が移し、そのデータを FSx for ONTAP でどう扱うかをこのリポジトリが受け持つ。AIMF が該当する
+
+AI Modernization Flow（AIMF）は上の 4 類型のどれにもきれいに当てはまりません。AWS Transform は「移行先」ですが、AIMF が移すのはアプリケーションの**コード**で、FSx for ONTAP はそのデータ側の相手方です。しかも AIMF はマネージドな AWS エージェントではなく、Kiro / Claude Code を実行基盤にする MIT-0 のワークフローです。そのため、既存の 4 類型とは別の関係として「アプリ移行の相棒」を 1 つ加え、AIMF をそこに置きます。詳細は [AIMF の位置づけページ](ai-modernization-flow/README.md)にあります。
 
 **収録欄の表記**:
 
@@ -70,6 +73,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 | **FSx for ONTAP 上のファイルを RAG・生成 AI のナレッジにしたい** | [Amazon Bedrock Knowledge Base](bedrock-knowledge-base/README.md) | S3 Access Points 経由でデータソースにできる。実装で検証済み |
 | **VMware / サーバーを移行し、移行先を FSx for ONTAP にしたい** | [移行ドキュメント](#aws-transform-の既存ページへの集約) | 移行の知見は既存ページにある |
 | **アプリのセキュリティを継続検証したい** | [AWS Security Agent](security-agent/README.md) | オンデマンド侵入テストが用途。ストレージの設定は検証しない |
+| **アプリのコードを規律あるワークフローで移行し、データは FSx for ONTAP に置いたままにしたい** | [AI Modernization Flow](ai-modernization-flow/README.md) | アプリ側を AIMF が移し、データ / ストレージ側をこのリポジトリが受け持つ分担 |
 
 各エージェントの詳細な適合判断は、それぞれのページにあります。
 
