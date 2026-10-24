@@ -31,6 +31,8 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | [`recent-updates.md`](recent-updates.md) | 直近のアップデートと設計への影響。四半期ごとに更新 / Recent updates and their design implications, refreshed quarterly |
 | [`cross-repo-index.md`](cross-repo-index.md) | プロジェクト間の引用索引。どの主張をどのリポジトリから引いているかと、分担の原則 / Index of cross-repository citations: which claim is cited from where, and the division of labour |
 | [`cyber-resilience-capability-map.md`](cyber-resilience-capability-map.md) | サイバーレジリエンス機能マップ。どの Spoke が NIST CSF 2.0 のどの機能を担うかの 1 枚。詳細は各 Spoke のドキュメントへ送る / Cyber resilience capability map: a one-page view of which Spoke covers which NIST CSF 2.0 function, sending you to each Spoke's documentation for detail。**英語版あり / [English version](../../en/reference/cyber-resilience-capability-map.md)** |
+| [`gcp-to-fsx-ontap-preflight-and-sample-validation.md`](gcp-to-fsx-ontap-preflight-and-sample-validation.md) / [English](../../en/reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) | GCP と FSx for ONTAP の到達性、NFS サンプル検証、DP read-only 確認 / GCP reachability, NFS sample validation, and DP read-only checks |
+| [`gcp-to-fsx-ontap-peering-and-replication-open-items.md`](gcp-to-fsx-ontap-peering-and-replication-open-items.md) / [English](../../en/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) | GCNV 管理面のピアリング・レプリケーション未解決項目 / Open items for GCNV-managed peering and replication |
 
 ---
 
