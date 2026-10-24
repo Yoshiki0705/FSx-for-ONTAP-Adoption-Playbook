@@ -36,7 +36,8 @@ lang: ja
 | SnapMirror source volume | FSx for ONTAP | `<snapmirror-source-volume>` | FSx for ONTAP → GCNV | 手順の対象候補 |
 | GCNV destination volume | GCNV | `<gcnv-destination-volume>` | destination | provider API の照合が必要 |
 | Reverse destination | FSx for ONTAP | `<reverse-destination-volume>` | GCNV → FSx for ONTAP | DP/read-only の確認が必要 |
-| FlexCache origin | `<provider>` | `<origin-svm>:<origin-volume>` | origin | topology 未確定、open |
+| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | topology 未確定、open |
+| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | provider interface 未確定、open |
 
 この表の値を、既存の実リソース名から推測して埋めてはいけません。run ledger と provider の read-only response で一致を確認します。
 
@@ -83,6 +84,26 @@ Expiry predicate: <documented-expiry-field-and-condition>
 - ownership and dedicated-role match
 
 片側の read が取れない、identity が台帳と違う、applications が不足する場合は replication に進みません。
+
+## FlexCache
+
+> **Status: open**
+>
+> このスレッドでは、FlexCache 用の origin volume を SnapMirror 用 volume と分けて FSx for ONTAP 側に用意し、SVM ピアリングの applications に `flexcache` を含めました。しかし、GCNV 側の cache volume 作成インターフェース、cache volume の所有者、origin/cache の exact resource identity、作成後の cache state、read/write モードは確定していません。GCNV 側で実際の cache volume を作成したことと、FlexCache の状態を確認したことも、このスレッドでは検証していません。
+
+FlexCache を開始する前に、次の台帳を確定します。
+
+| 項目 | 必要な値 |
+|---|---|
+| Origin provider / cluster / SVM / volume | `<origin-provider>` / `<origin-cluster>` / `<origin-svm>` / `<origin-volume>` |
+| Cache provider / cluster / SVM / volume | `<cache-provider>` / `<cache-cluster>` / `<cache-svm>` / `<cache-volume>` |
+| Origin/cache direction | `<origin-to-cache-direction>` |
+| Volume type and security style | `<origin-volume-type>` / `<cache-volume-type>` / `<security-style>` |
+| Client protocol | `<nfs-or-smb>` |
+| Creation interface | `<documented-gcnv-or-ontap-interface>` |
+| Post-state query | `<documented-cache-state-query>` |
+
+作成後は、origin と cache の identity、cache state、SVM peer state、content read の結果を別々に確認します。cache の作成・変更・削除は、作成者、対象 resource、現在 state、依存関係、逆操作が台帳にない場合は実行しません。FlexCache は S3 Access Point と同じ経路ではなく、cache volume への NFS/SMB アクセス経路を別に確認します。
 
 ## SnapMirror と Reverse Resync
 

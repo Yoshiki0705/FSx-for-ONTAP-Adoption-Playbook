@@ -36,7 +36,8 @@ Durations are planning guidance, not measured provider timings or production est
 | SnapMirror source volume | FSx for ONTAP | `<snapmirror-source-volume>` | FSx for ONTAP to GCNV | Candidate role |
 | GCNV destination volume | GCNV | `<gcnv-destination-volume>` | destination | Provider API check required |
 | Reverse destination | FSx for ONTAP | `<reverse-destination-volume>` | GCNV to FSx for ONTAP | DP/read-only check required |
-| FlexCache origin | `<provider>` | `<origin-svm>:<origin-volume>` | origin | Topology unresolved, open |
+| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | Topology unresolved, open |
+| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | Provider interface unresolved, open |
 
 Do not fill these values by guessing from existing resource names. Confirm them with the run ledger and provider read-only responses.
 
@@ -83,6 +84,26 @@ Do not accept a one-sided `peered` result. Both sides must read and record the f
 - dedicated-role and ownership match
 
 Stop before replication when either read is unavailable, identities differ, or requested applications are missing.
+
+## FlexCache
+
+> **Status: open**
+>
+> In this conversation, a separate FlexCache-origin volume was prepared on FSx for ONTAP and the SVM-peering application list included `flexcache`. The GCNV cache-volume creation interface, cache owner, exact origin/cache resource identities, post-create cache state, and read/write mode were not established. The conversation also did not verify that GCNV created the cache volume or that the FlexCache state was healthy.
+
+Resolve this ledger before creating a FlexCache relationship.
+
+| Item | Required value |
+|---|---|
+| Origin provider / cluster / SVM / volume | `<origin-provider>` / `<origin-cluster>` / `<origin-svm>` / `<origin-volume>` |
+| Cache provider / cluster / SVM / volume | `<cache-provider>` / `<cache-cluster>` / `<cache-svm>` / `<cache-volume>` |
+| Origin/cache direction | `<origin-to-cache-direction>` |
+| Volume type and security style | `<origin-volume-type>` / `<cache-volume-type>` / `<security-style>` |
+| Client protocol | `<nfs-or-smb>` |
+| Creation interface | `<documented-gcnv-or-ontap-interface>` |
+| Post-state query | `<documented-cache-state-query>` |
+
+After creation, verify origin and cache identity, cache state, SVM peer state, and content reads as separate results. Do not create, modify, or delete a cache when the ledger lacks the creator, target resource, current state, dependencies, or inverse operation. FlexCache is not the S3 Access Point path; validate the NFS/SMB path to the cache volume separately.
 
 ## SnapMirror and Reverse Resync
 
