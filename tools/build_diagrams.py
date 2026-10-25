@@ -90,6 +90,27 @@ ICONS = {
         "Architecture-Service-Icons_{d}/Arch_Application-Integration/64/"
         "Arch_Amazon-EventBridge_64.svg"
     ),
+    "aws_vpn": (
+        "Architecture-Service-Icons_{d}/Arch_Networking-Content-Delivery/64/"
+        "Arch_AWS-Site-to-Site-VPN_64.svg"
+    ),
+    "aws_vpc": (
+        "Architecture-Service-Icons_{d}/Arch_Networking-Content-Delivery/64/"
+        "Arch_Amazon-Virtual-Private-Cloud_64.svg"
+    ),
+}
+
+# Google Cloud icons come from the official product-icon packages. Cloud VPN and Cloud Router are
+# retained in the official legacy package because the current package exposes the networking and
+# storage category marks, not service-specific replacements. The package is never committed.
+GOOGLE_ICONS = {
+    "gcp_compute": (
+        "core",
+        "Unique Icons/Compute Engine/SVG/ComputeEngine-512-color-rgb.svg",
+    ),
+    "gcp_storage": ("category", "Category Icons/Storage/SVG/Storage-512-color.svg"),
+    "gcp_vpn": ("legacy", "cloud_vpn/cloud_vpn.svg"),
+    "gcp_router": ("legacy", "cloud_router/cloud_router.svg"),
 }
 
 # Native sizes. Rescaling is what the AWS icon guidelines forbid, so the size follows the asset:
@@ -102,6 +123,12 @@ ICON_SIZE = {
     "lambda": 80,
     "cloudwatch": 80,
     "eventbridge": 80,
+    "aws_vpn": 80,
+    "aws_vpc": 80,
+    "gcp_compute": 80,
+    "gcp_storage": 80,
+    "gcp_vpn": 80,
+    "gcp_router": 80,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -382,6 +409,83 @@ LABELS: dict[str, dict[str, str]] = {
             "*2 The use-case mappings are design patterns (hypothesis), not cited field "
             "deployments."
         ),
+    },
+    # --- gcp-fsx-ontap figures ------------------------------------------------------------------
+    "gcp_cloud": {"ja": "Google Cloud", "en": "Google Cloud"},
+    "gcp_vpc": {"ja": "Google Cloud VPC", "en": "Google Cloud VPC"},
+    "aws_vpc": {"ja": "Amazon VPC", "en": "Amazon VPC"},
+    "gcp_client": {
+        "ja": "Compute Engine<br>検証クライアント",
+        "en": "Compute Engine<br>validation client",
+    },
+    "gcp_vpn": {"ja": "Cloud VPN", "en": "Cloud VPN"},
+    "gcp_router": {"ja": "Cloud Router", "en": "Cloud Router"},
+    "gcnv_storage": {
+        "ja": "Google Cloud NetApp Volumes<br>SVM / volume",
+        "en": "Google Cloud NetApp Volumes<br>SVM / volume",
+    },
+    "aws_vpn": {"ja": "AWS Site-to-Site VPN", "en": "AWS Site-to-Site VPN"},
+    "fsx_cloud": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
+    },
+    "nfs_path": {"ja": "NFS 検証経路", "en": "NFS validation path"},
+    "peering": {
+        "ja": "Cluster / SVM peering<br>双方向の state 確認",
+        "en": "Cluster / SVM peering<br>bilaterally verified state",
+    },
+    "overview_stop": {
+        "ja": "Open: 未検証の provider operation は実行しない",
+        "en": "Open: do not run unverified provider operations",
+    },
+    "direction_forward": {
+        "ja": "SnapMirror: FSx for ONTAP → GCNV",
+        "en": "SnapMirror: FSx for ONTAP → GCNV",
+    },
+    "direction_overview": {
+        "ja": "SnapMirror / Reverse Resync / FlexCache<br>方向別の図を参照",
+        "en": "SnapMirror / Reverse Resync / FlexCache<br>see direction figures",
+    },
+    "direction_reverse": {
+        "ja": "Reverse Resync: GCNV → FSx for ONTAP",
+        "en": "Reverse Resync: GCNV → FSx for ONTAP",
+    },
+    "direction_flex_forward": {
+        "ja": "FlexCache: FSx for ONTAP origin → GCNV cache",
+        "en": "FlexCache: FSx for ONTAP origin → GCNV cache",
+    },
+    "direction_flex_reverse": {
+        "ja": "FlexCache: GCNV origin → FSx for ONTAP cache",
+        "en": "FlexCache: GCNV origin → FSx for ONTAP cache",
+    },
+    "direction_open": {
+        "ja": "Open: creation interface / post-state 未検証",
+        "en": "Open: creation interface / post-state unverified",
+    },
+    "origin_fsx": {
+        "ja": "Origin<br>Amazon FSx for NetApp ONTAP",
+        "en": "Origin<br>Amazon FSx for NetApp ONTAP",
+    },
+    "origin_gcnv": {
+        "ja": "Origin<br>Google Cloud NetApp Volumes",
+        "en": "Origin<br>Google Cloud NetApp Volumes",
+    },
+    "cache_fsx": {
+        "ja": "Cache<br>Amazon FSx for NetApp ONTAP",
+        "en": "Cache<br>Amazon FSx for NetApp ONTAP",
+    },
+    "vpn_bgp": {"ja": "VPN / BGP", "en": "VPN / BGP"},
+    "route_state": {"ja": "route state", "en": "route state"},
+    "initiate_accept": {"ja": "initiate / accept", "en": "initiate / accept"},
+    "bilateral_state": {"ja": "bilateral state", "en": "bilateral state"},
+    "see_direction_figures": {"ja": "方向別の図を参照", "en": "see direction figures"},
+    "state_content": {"ja": "state / content", "en": "state / content"},
+    "nfs_2049": {"ja": "NFS / 2049", "en": "NFS / 2049"},
+    "source_to_target": {"ja": "source → target", "en": "source → target"},
+    "post_state": {"ja": "post-state", "en": "post-state"},
+    "cache_gcnv": {
+        "ja": "Cache<br>Google Cloud NetApp Volumes",
+        "en": "Cache<br>Google Cloud NetApp Volumes",
     },
 }
 
@@ -802,7 +906,181 @@ def _qos_use_cases() -> Diagram:
     )
 
 
-DIAGRAMS = (_backup_copy(), _qos_two_plane(), _qos_use_cases())
+def _gcp_overview() -> Diagram:
+    return Diagram(
+        name="gcp-fsx-ontap-peering-overview",
+        diagram_id="gcp-fsx-ontap-peering-overview",
+        width=940,
+        height=760,
+        frames=(
+            Frame("gcp_cloud", "gcp_cloud", 30, 30, 300, 700),
+            Frame("gcp_vpc", "gcp_vpc", 55, 95, 250, 600),
+            Frame("aws_cloud", "aws_cloud", 610, 30, 300, 700),
+            Frame("aws_vpc", "aws_vpc", 635, 95, 250, 600),
+        ),
+        boxes=(
+            Box("peering", "peering", 350, 160, 240, 82),
+            Box("replication", "direction_overview", 350, 300, 240, 100),
+            Box("nfs", "nfs_path", 350, 500, 240, 70),
+            Box("stop", "overview_stop", 330, 625, 280, 58),
+        ),
+        nodes=(
+            Node("gcp_client", "gcp_compute", "gcp_client", 140, 130),
+            Node("gcp_vpn", "gcp_vpn", "gcp_vpn", 140, 245),
+            Node("gcp_router", "gcp_router", "gcp_router", 140, 360),
+            Node("gcnv", "gcp_storage", "gcnv_storage", 140, 515),
+            Node("aws_vpn", "aws_vpn", "aws_vpn", 710, 245),
+            Node("fsx", "fsx_ontap", "fsx_cloud", 710, 515),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "gcp_vpn",
+                "aws_vpn",
+                "vpn_bgp",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+            Edge(
+                "e2",
+                "gcp_client",
+                "nfs",
+                "nfs_path",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+            Edge(
+                "e3",
+                "nfs",
+                "fsx",
+                "nfs_2049",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+        ),
+    )
+
+
+def _direction_diagram(
+    name: str,
+    diagram_id: str,
+    direction_label: str,
+    source_icon: str,
+    source_label: str,
+    target_icon: str,
+    target_label: str,
+    open_label: str,
+    source_cloud_label: str,
+    target_cloud_label: str,
+) -> Diagram:
+    return Diagram(
+        name=name,
+        diagram_id=diagram_id,
+        width=940,
+        height=560,
+        frames=(
+            Frame("source_cloud", source_cloud_label, 30, 30, 300, 470),
+            Frame("target_cloud", target_cloud_label, 610, 30, 300, 470),
+        ),
+        boxes=(
+            Box("direction", direction_label, 350, 180, 240, 86),
+            Box("open", open_label, 345, 335, 250, 70),
+        ),
+        nodes=(
+            Node("source", source_icon, source_label, 140, 175),
+            Node("target", target_icon, target_label, 710, 175),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "source",
+                "direction",
+                "source_to_target",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+            Edge(
+                "e2",
+                "direction",
+                "target",
+                "post_state",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+            ),
+        ),
+    )
+
+
+def _gcp_snapmirror_forward() -> Diagram:
+    return _direction_diagram(
+        "gcp-fsx-ontap-snapmirror-fsx-to-gcnv",
+        "gcp-fsx-ontap-snapmirror-fsx-to-gcnv",
+        "direction_forward",
+        "fsx_ontap",
+        "fsx_cloud",
+        "gcp_storage",
+        "gcnv_storage",
+        "direction_open",
+        "aws_cloud",
+        "gcp_cloud",
+    )
+
+
+def _gcp_reverse_resync() -> Diagram:
+    return _direction_diagram(
+        "gcp-fsx-ontap-reverse-resync-gcnv-to-fsx",
+        "gcp-fsx-ontap-reverse-resync-gcnv-to-fsx",
+        "direction_reverse",
+        "gcp_storage",
+        "gcnv_storage",
+        "fsx_ontap",
+        "fsx_cloud",
+        "direction_open",
+        "gcp_cloud",
+        "aws_cloud",
+    )
+
+
+def _gcp_flexcache_forward() -> Diagram:
+    return _direction_diagram(
+        "gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache",
+        "gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache",
+        "direction_flex_forward",
+        "fsx_ontap",
+        "origin_fsx",
+        "gcp_storage",
+        "cache_gcnv",
+        "direction_open",
+        "aws_cloud",
+        "gcp_cloud",
+    )
+
+
+def _gcp_flexcache_reverse() -> Diagram:
+    return _direction_diagram(
+        "gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache",
+        "gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache",
+        "direction_flex_reverse",
+        "gcp_storage",
+        "origin_gcnv",
+        "fsx_ontap",
+        "cache_fsx",
+        "direction_open",
+        "gcp_cloud",
+        "aws_cloud",
+    )
+
+
+DIAGRAMS = (
+    _backup_copy(),
+    _qos_two_plane(),
+    _qos_use_cases(),
+    _gcp_overview(),
+    _gcp_snapmirror_forward(),
+    _gcp_reverse_resync(),
+    _gcp_flexcache_forward(),
+    _gcp_flexcache_reverse(),
+)
 
 
 # --- rendering -----------------------------------------------------------------------------------
@@ -831,18 +1109,53 @@ def icon_package(explicit: str | None) -> Path:
 
 
 def package_date(package: Path) -> str:
-    """The release date in the package directory name, e.g. Icon-package_07312026.<hash>."""
-    match = re.search(r"Icon-package_(\d{8})", package.name)
+    """Read the release date from a package root or an extracted service-icon directory."""
+    match = re.search(
+        r"(?:Icon-package_|Architecture-Service-Icons_)(\d{8})", package.name
+    )
+    if not match:
+        for child in package.iterdir():
+            match = re.search(r"Architecture-Service-Icons_(\d{8})", child.name)
+            if match:
+                break
     if not match:
         raise SystemExit(
-            f"build_diagrams: cannot read a release date from {package.name!r}.\n"
-            "  Expected a directory named like Icon-package_07312026.<hash> from "
+            f"build_diagrams: cannot read a release date from {package!s}.\n"
+            "  Expected an Icon-package_YYYYMMDD directory or extracted "
+            "Architecture-Service-Icons_YYYYMMDD directory from "
             "https://aws.amazon.com/architecture/icons/"
         )
     return match.group(1)
 
 
-def data_uris(package: Path) -> dict[tuple[str, str], str]:
+def google_icon_package(explicit: str | None) -> dict[str, Path]:
+    """Locate the three official Google Cloud icon package roots."""
+    if explicit:
+        root = Path(explicit).expanduser()
+        candidates = {
+            "core": root / "core",
+            "category": root / "category",
+            "legacy": root / "legacy",
+        }
+        if not all(path.is_dir() for path in candidates.values()):
+            raise SystemExit(
+                "build_diagrams: --google-icons must contain core/, category/, and legacy/"
+            )
+        return candidates
+    env = os.environ.get("GOOGLE_ICON_PACKAGE")
+    if env:
+        return google_icon_package(env)
+    raise SystemExit(
+        "build_diagrams: the Google Cloud product icon packages were not found.\n"
+        "  Download the official core, category, and legacy packages from "
+        "https://cloud.google.com/icons/ and arrange them under one directory as core/, "
+        "category/, and legacy/. The packages are never committed here."
+    )
+
+
+def data_uris(
+    package: Path, google_packages: dict[str, Path]
+) -> dict[tuple[str, str], str]:
     """Read every icon, per theme, and build its draw.io data URI.
 
     Keyed by (icon, theme) because the general resource icons ship a Light and a Dark file and the
@@ -862,6 +1175,14 @@ def data_uris(package: Path) -> dict[tuple[str, str], str]:
             path = package / resolved
             if not path.is_file():
                 raise SystemExit(f"build_diagrams: {resolved} missing from {package}")
+            encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+            uris[(key, theme)] = f"data:image/svg+xml,{encoded}"
+        for key, (package_name, relative) in GOOGLE_ICONS.items():
+            path = google_packages[package_name] / relative
+            if not path.is_file():
+                raise SystemExit(
+                    f"build_diagrams: {relative} missing from {path.parent}"
+                )
             encoded = base64.b64encode(path.read_bytes()).decode("ascii")
             uris[(key, theme)] = f"data:image/svg+xml,{encoded}"
     return uris
@@ -1106,12 +1427,16 @@ def main() -> int:
         "--check", action="store_true", help="compare committed files to the spec"
     )
     parser.add_argument("--icons", help="path to the AWS Architecture Icons package")
+    parser.add_argument(
+        "--google-icons",
+        help="directory containing extracted core/, category/, and legacy/ Google icon packages",
+    )
     args = parser.parse_args()
 
     if not (args.write or args.check):
         parser.error("give --write or --check")
 
-    uris = data_uris(icon_package(args.icons))
+    uris = data_uris(icon_package(args.icons), google_icon_package(args.google_icons))
 
     if args.check:
         return check(uris)

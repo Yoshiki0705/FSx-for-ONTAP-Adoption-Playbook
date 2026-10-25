@@ -63,6 +63,7 @@ rest gives a reading order.
 | **Combining a product you already run with FSx for ONTAP** | [ISV and SaaS solution map by problem](reference/isv-solution-map.md) | [Candidates that did not meet the bar](reference/isv-solution-map.md#candidates-that-did-not-meet-the-bar) |
 | Checking whether a design hits a limit | [Limits and quotas](../ja/reference/limits/) | [Design](playbooks/02-design/) |
 | Reaching the data over the S3 API or from an analytics platform | [Prerequisites for FSx for ONTAP S3 AP](../ja/domains/data-utilization/notes/s3-access-point-constraints.md) (日本語) | [Writing the access point policy](domains/security-governance/notes/access-point-authorization-layers.md) |
+| **Checking GCP-to-FSx for ONTAP reachability and sample data** | [Preflight and sample validation](reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) | [Peering and replication open items](reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) |
 | Hosting AI/ML training data and branching it per experiment | [Constraints on dataset versions and experiment branches](../ja/domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) (日本語) | [The three things to bound when handing out branches](../ja/domains/security-governance/notes/self-service-without-storage-admin.md) (日本語) |
 
 Two things to know about the links above.

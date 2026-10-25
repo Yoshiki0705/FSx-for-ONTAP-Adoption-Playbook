@@ -63,6 +63,7 @@ graph TD
 | **既存の製品を FSx for ONTAP と組み合わせたい** | [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | [掲載基準を満たさないもの](reference/isv-solution-map.md#掲載基準を満たさないもの) |
 | 上限値に当たらないか確認したい | [上限値・クォータ](reference/limits/) | [設計](playbooks/02-design/) |
 | S3 API や分析基盤からアクセスしたい | [FSx for ONTAP S3 AP の前提条件](domains/data-utilization/notes/s3-access-point-constraints.md) | [アクセスポイントポリシーの書き方](domains/security-governance/notes/access-point-authorization-layers.md) |
+| **GCP と FSx for ONTAP の到達性とサンプルを検証したい** | [到達性とサンプルデータの事前確認](reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) | [ピアリングとレプリケーションの未解決項目](reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) |
 | AI / ML の学習データを置き、実験ごとに分岐させたい | [学習データセットの版と実験ブランチの制約](domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | [実験ブランチを配るときに縛る 3 つの対象](domains/security-governance/notes/self-service-without-storage-admin.md) |
 
 **どの行でも、読んだ内容をそのまま本番に適用しないでください。** 各ノートの `evidence` 区分を確認し、[本番に取り入れる前の確認](evidence-policy.md#本番に取り入れる前の確認) の手順を通してください。
