@@ -365,7 +365,7 @@ class OntapClient:
         Returns:
             list[dict]: ボリューム情報のリスト
         """
-        params = {"fields": "name,uuid,size,state,type,svm,nas,style"}
+        params = {"fields": "name,uuid,size,type,svm,nas,style"}
         if svm_uuid:
             params["svm.uuid"] = svm_uuid
         result = self.get("/storage/volumes", params=params)
@@ -382,9 +382,7 @@ class OntapClient:
         """
         return self.get(
             f"/storage/volumes/{volume_uuid}",
-            params={
-                "fields": "name,uuid,size,state,type,svm,nas,style,snapshot_policy"
-            },
+            params={"fields": "name,uuid,size,type,svm,nas,style,snapshot_policy"},
         )
 
     def list_cifs_shares(self, svm_uuid: str) -> list[dict]:
@@ -434,8 +432,23 @@ class OntapClient:
         """
         return self.get(
             f"/svm/svms/{svm_uuid}",
-            params={"fields": "name,uuid,state,ip_interfaces,cifs,nfs,s3"},
+            params={"fields": "name,uuid,ip_interfaces,cifs,nfs,s3"},
         )
+
+    def list_svms(self) -> list[dict]:
+        """ファイルシステム上の SVM 一覧取得
+
+        ONTAP REST: GET /svm/svms (fields=name,uuid)
+
+        オーケストレーターが明示の svm_uuid なしで呼ばれたとき、per-SVM scope の
+        パターンを全 SVM に対して回すために使う。display extra（state 等）は
+        この ONTAP バージョンが fields で拒否するため name,uuid のみに絞る。
+
+        Returns:
+            list[dict]: SVM の生レコード（name, uuid）
+        """
+        result = self.get("/svm/svms", params={"fields": "name,uuid"})
+        return result.get("records", [])
 
     def get_file_security(
         self,
@@ -474,7 +487,7 @@ class OntapClient:
             list[dict]: FlexCache ボリューム情報のリスト
         """
         params: dict[str, str] = {
-            "fields": "name,uuid,svm,size,path,origins,state",
+            "fields": "name,uuid,svm,size,path,origins",
         }
         if name:
             params["name"] = name
@@ -494,7 +507,7 @@ class OntapClient:
         """
         return self.get(
             f"/storage/flexcache/flexcaches/{uuid}",
-            params={"fields": "name,uuid,svm,size,path,origins,state,prepopulate"},
+            params={"fields": "name,uuid,svm,size,path,origins,prepopulate"},
         )
 
     def create_flexcache(
@@ -612,9 +625,13 @@ class OntapClient:
     # invalid for field "fields"' and the list comes back empty. Per-transfer byte
     # counts come from list_snapmirror_transfers() instead.
 
+    # Minimal field set that every ONTAP version accepts on this endpoint. Display
+    # extras (state, healthy, policy.name, lag_time, last_transfer_type) are omitted
+    # because some versions reject them on /snapmirror/relationships with
+    # 'The value "<field>" is invalid for field "fields"' and return an empty list;
+    # a teardown only needs the uuid and the source/destination identity.
     RELATIONSHIP_FIELDS = (
-        "uuid,source.path,source.svm.name,destination.path,destination.svm.name,"
-        "state,healthy,policy.name,lag_time,last_transfer_type"
+        "uuid,source.path,source.svm.name,destination.path,destination.svm.name"
     )
     TRANSFER_FIELDS = "state,bytes_transferred,end_time,total_duration"
 
@@ -772,6 +789,18 @@ class OntapClient:
     # in DESIGN.md from NetApp documentation. None of these touch SnapLock /
     # Object-Lock / retention — the family guard stays authoritative.
 
+    def unmount_volume(self, volume_uuid: str) -> dict:
+        """ボリュームをアンマウント（ジャンクションパスを外す）
+
+        ONTAP REST: PATCH /storage/volumes/{uuid}  body={"nas": {"path": ""}}
+
+        マウント済みのボリューム（FlexCache 含む）は、そのままでは削除できない。
+        削除前にこの呼び出しでジャンクションを外す。202 を返すことがあるため、
+        呼び出し側で wait_ontap_job によるポーリングが必要。
+        """
+        logger.info("Unmounting volume (clearing junction path): %s", volume_uuid)
+        return self.patch(f"/storage/volumes/{volume_uuid}", body={"nas": {"path": ""}})
+
     def delete_volume(self, volume_uuid: str) -> dict:
         """ボリューム削除
 
@@ -807,6 +836,31 @@ class OntapClient:
                 "svm.uuid": svm_uuid,
                 "fields": "name,uuid,svm,volume",
             },
+        )
+        return result.get("records", [])
+
+    def list_all_s3_buckets(self) -> list[dict]:
+        """クラスタ全体のオブジェクトストア (S3) バケット一覧取得
+
+        svm.uuid で絞らず、クラスタ上の全 SVM のバケットを 1 回の GET で発見する。
+        per-SVM の list_s3_buckets は、バケットを背後で支えるボリュームがどの SVM に
+        紐づくかを呼び出し側が知っている前提だが、FLEXGROUP ボリュームを背後に持つ
+        バケットのように、削除をブロックしている実体が per-SVM の列挙に現れないことが
+        ある。クラスタ全体の列挙は svm.uuid/svm.name と volume.name/volume.uuid を
+        各バケットに添えて返すので、任意の SVM 上のバケットをその SVM の文脈つきで
+        発見・削除できる。
+
+        この ONTAP クラスタは fields に "state" を拒否するため追加しない。
+
+        ONTAP REST: GET /protocols/s3/buckets
+            （fields=name,uuid,svm.uuid,svm.name,volume.name,volume.uuid）
+
+        Returns:
+            list[dict]: バケットの生レコード（name, uuid, svm, volume を含む）
+        """
+        result = self.get(
+            "/protocols/s3/buckets",
+            params={"fields": "name,uuid,svm.uuid,svm.name,volume.name,volume.uuid"},
         )
         return result.get("records", [])
 
@@ -887,8 +941,27 @@ class OntapClient:
             "/storage/volumes",
             params={
                 "clone.parent_volume.name": parent_volume_name,
-                "fields": "name,uuid,svm,clone,state",
+                "fields": "name,uuid,svm,clone",
             },
+        )
+        return result.get("records", [])
+
+    def list_clones(self) -> list[dict]:
+        """ファイルシステム全体の FlexClone 一覧取得
+
+        親ボリューム名が渡されないときに、クローンを FS 全体から発見するために使う。
+        GET /storage/volumes で clone を要求し、呼び出し側が clone.is_flexclone ==
+        true のものだけを残す。display extra（state 等）はこの ONTAP バージョンが
+        fields で拒否するため追加しない。
+
+        ONTAP REST: GET /storage/volumes?fields=name,uuid,svm,clone
+
+        Returns:
+            list[dict]: clone 情報を含むボリュームの生レコード
+        """
+        result = self.get(
+            "/storage/volumes",
+            params={"fields": "name,uuid,svm,clone"},
         )
         return result.get("records", [])
 
@@ -905,4 +978,207 @@ class OntapClient:
         return self.patch(
             f"/storage/volumes/{volume_uuid}",
             body={"clone": {"split_initiated": True}},
+        )
+
+    def list_fpolicy_persistent_stores(self, svm_uuid: str) -> list[dict]:
+        """SVM の FPolicy persistent store 一覧取得
+
+        各 SVM は persistent store を最大 1 つ持つ。これを支えるボリューム
+        （fpolicy_persistent_store）を解放するには、ポリシー/イベント/エンジンを
+        消したあとに persistent store を消す必要がある。
+
+        ONTAP REST: GET /protocols/fpolicy/{svm.uuid}/persistent-stores
+        """
+        result = self.get(
+            f"/protocols/fpolicy/{svm_uuid}/persistent-stores",
+            params={"fields": "name,volume"},
+        )
+        return result.get("records", [])
+
+    def delete_fpolicy_persistent_store(self, svm_uuid: str, name: str) -> dict:
+        """SVM の FPolicy persistent store 削除
+
+        ポリシー/イベント/エンジンの削除後に実行する。順序を守らないと、まだ参照
+        されている persistent store の削除が失敗する。
+
+        ONTAP REST: DELETE /protocols/fpolicy/{svm.uuid}/persistent-stores/{name}
+        """
+        logger.info("Deleting FPolicy persistent store %s on SVM %s", name, svm_uuid)
+        return self.delete(f"/protocols/fpolicy/{svm_uuid}/persistent-stores/{name}")
+
+    # --- CLI passthrough maintenance operations (/api/private/cli) ---
+    #
+    # These wrap the ONTAP private CLI passthrough for surgical teardown blockers
+    # that structured REST does not expose: a stale clone stuck in the volume
+    # recovery queue, a source-side SnapMirror relationship pinning a source
+    # volume, and a surviving vserver peer that blocks an SVM. Each was verified
+    # against a live cluster during a teardown.
+    #
+    # The passthrough has one firm rule, learned the hard way and encoded here so
+    # every call site inherits it:
+    #   - GET takes query parameters (fields=..., filters as query keys).
+    #   - POST must carry its attributes in the request BODY. Query filtering on a
+    #     POST is rejected with "POST on a REST API does not support filtering on an
+    #     attribute".
+    #   - A collection DELETE can be query-based (attribute match in the query).
+    #
+    # None of these touch SnapLock / Object-Lock / retention; the family guard
+    # stays authoritative.
+
+    def list_recovery_queue(self) -> list[dict]:
+        """Volume Recovery Queue（pending-delete ボリューム）一覧取得
+
+        ONTAP CLI passthrough: GET /private/cli/volume/recovery-queue
+        （GET なのでクエリ。ここでは全件を読む。）
+
+        削除保留中（volume type DEL）のボリュームを返す。親の削除を
+        "has one or more clones" で阻む stale clone は、`volume show` と構造化 REST
+        には現れず、ここと `volume clone show` にだけ現れることがある。
+
+        Returns:
+            list[dict]: recovery queue のレコード（vserver, volume などを含む）
+        """
+        result = self.get("/private/cli/volume/recovery-queue")
+        return result.get("records", result if isinstance(result, list) else [])
+
+    def purge_recovery_queue(self, vserver: str, volume: str) -> dict:
+        """Volume Recovery Queue の pending-delete ボリュームを完全破棄する
+
+        ONTAP CLI passthrough: POST /private/cli/volume/recovery-queue/purge
+            body={"vserver": <svm>, "volume": <volume>}
+
+        POST なので属性は **body** に入れる（クエリ指定は passthrough が拒否する）。
+        これにより、親の削除を "has one or more clones" で阻んでいた stale clone
+        （recovery queue 内の DEL ボリューム）を取り除き、親を削除可能にする。
+
+        202 を返すことがあるため、呼び出し側で _poll_if_job / wait_ontap_job が必要。
+        """
+        logger.info("Purging recovery-queue volume %s on vserver %s", volume, vserver)
+        return self.post(
+            "/private/cli/volume/recovery-queue/purge",
+            body={"vserver": vserver, "volume": volume},
+        )
+
+    def list_volume_clones_cli(self, parent_volume_name: str) -> list[dict]:
+        """`volume clone show` 相当（親ボリューム名でクローンを引く）
+
+        ONTAP CLI passthrough: GET /private/cli/volume/clone?parent-volume=<name>
+
+        GET なのでクエリ。構造化 REST（GET /storage/volumes?clone.parent_volume...）
+        に現れないクローン（recovery queue 内の DEL クローン等）を拾う最後の手段。
+
+        Returns:
+            list[dict]: clone のレコード（volume, vserver, parent-volume を含む）
+        """
+        result = self.get(
+            "/private/cli/volume/clone",
+            params={"parent-volume": parent_volume_name},
+        )
+        return result.get("records", result if isinstance(result, list) else [])
+
+    def list_snapmirror_destinations_by_source(
+        self,
+        source_path: str | None = None,
+        source_vserver: str | None = None,
+    ) -> list[dict]:
+        """ソース側から見た SnapMirror の宛先一覧（source-side relationships）
+
+        ONTAP CLI passthrough:
+            GET /private/cli/snapmirror/list-destinations?source-path=<svm:vol>
+            または ?source-vserver=<svm>
+            （fields=relationship-id,source-path,destination-path）
+
+        GET なのでクエリ。ソースボリュームの削除を阻むソース側の関係を見つけるために
+        使う（構造化 REST の /snapmirror/relationships は宛先側視点で、ソース側の
+        解放対象を取りこぼすことがある）。source_path か source_vserver のいずれかを渡す。
+
+        Returns:
+            list[dict]: relationship-id, source-path, destination-path を含むレコード
+        """
+        params = {"fields": "relationship-id,source-path,destination-path"}
+        if source_path:
+            params["source-path"] = source_path
+        if source_vserver:
+            params["source-vserver"] = source_vserver
+        result = self.get("/private/cli/snapmirror/list-destinations", params=params)
+        return result.get("records", result if isinstance(result, list) else [])
+
+    def release_snapmirror_source(
+        self,
+        source_path: str | None = None,
+        destination_path: str | None = None,
+        relationship_id: str | None = None,
+    ) -> dict:
+        """SnapMirror のソース側解放（source-side release）
+
+        ONTAP CLI passthrough: POST /private/cli/snapmirror/release
+            body に source-path を入れる、または relationship-id + destination-path、
+            または relationship-info-only=true（関係情報のみ解放しボリュームは残す）。
+
+        POST なので属性は **body** に入れる（クエリ指定は passthrough が拒否する）。
+        ソースボリュームを削除可能にするため、ソース側に残る関係レコードを外す。
+        destination_path が無ければ relationship-info-only=true を立て、宛先には
+        触れずソース側の情報だけを解放する。
+        """
+        body: dict[str, Any] = {}
+        if source_path:
+            body["source-path"] = source_path
+        if relationship_id:
+            body["relationship-id"] = relationship_id
+        if destination_path:
+            body["destination-path"] = destination_path
+        else:
+            body["relationship-info-only"] = True
+        logger.info("Releasing source-side SnapMirror: %s", body)
+        return self.post("/private/cli/snapmirror/release", body=body)
+
+    def delete_snapmirror_by_destination(self, destination_path: str) -> dict:
+        """SnapMirror を宛先パスで削除する
+
+        ONTAP CLI passthrough: POST /private/cli/snapmirror/delete
+            body={"destination-path": <svm:vol>}
+
+        POST なので属性は **body** に入れる。この CLI の delete は destination-path
+        でのみ指定でき、relationship-id は受け付けない（検証済み）。構造化 REST の
+        DELETE /snapmirror/relationships/{uuid} が使えない（宛先側に関係が無い等）
+        ケースの補完。
+        """
+        logger.info("Deleting SnapMirror by destination-path: %s", destination_path)
+        return self.post(
+            "/private/cli/snapmirror/delete",
+            body={"destination-path": destination_path},
+        )
+
+    def list_vserver_peers(self) -> list[dict]:
+        """vserver peer 一覧取得
+
+        ONTAP CLI passthrough: GET /private/cli/vserver/peer
+
+        GET なのでクエリ。生き残った SVM peer が SVM を MISCONFIGURED / 削除不可に
+        する場合があり、その特定に使う。
+
+        Returns:
+            list[dict]: vserver, peer-vserver などを含むレコード
+        """
+        result = self.get("/private/cli/vserver/peer")
+        return result.get("records", result if isinstance(result, list) else [])
+
+    def delete_vserver_peer(self, vserver: str, peer_vserver: str) -> dict:
+        """vserver peer をクエリ指定で削除する
+
+        ONTAP CLI passthrough:
+            DELETE /private/cli/vserver/peer?vserver=<svm>&peer-vserver=<peer>
+
+        コレクション DELETE はクエリベースでよい（属性一致の DELETE）。生き残った
+        SVM peer に阻まれて削除できない SVM を解放する。値は percent-encode する。
+
+        注意: SVM そのものの削除は AWS FSx API 側で行い、ONTAP REST では実装しない。
+        ここが外すのは peer 関係だけで、SVM は消さない。
+        """
+        from urllib.parse import quote
+
+        logger.info("Deleting vserver peer %s -> %s", vserver, peer_vserver)
+        return self.delete(
+            f"/private/cli/vserver/peer?vserver={quote(vserver)}"
+            f"&peer-vserver={quote(peer_vserver)}"
         )

@@ -71,7 +71,15 @@ class DeletePattern(ABC):
         """
         job = response.get("job") if isinstance(response, dict) else None
         if isinstance(job, dict) and job.get("uuid"):
-            return self.client.wait_ontap_job(job["uuid"])
+            # 非同期ジョブが「対象は既に無い」で失敗するのは、冪等な撤去では成功と
+            # 同じ。delete が 202 を返したあとジョブ側で "doesn't exist" が出る経路は
+            # 同期 try/except の外側なので、ここで吸収する。それ以外の失敗は送出する。
+            try:
+                return self.client.wait_ontap_job(job["uuid"])
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    return {"result": "absent", "job": job["uuid"]}
+                raise
         return response
 
     def _is_absent(self, path: str) -> bool:
@@ -83,10 +91,42 @@ class DeletePattern(ABC):
         try:
             result = self.client.get(path)
         except OntapClientError as err:
-            if err.status_code == 404:
+            if self._is_already_absent_error(err):
                 return True
             raise
         # 一覧系エンドポイントは 200 + records:[] で「無い」を表すことがある。
         if isinstance(result, dict) and "records" in result:
             return not result.get("records")
         return False
+
+    @staticmethod
+    def _is_already_absent_error(err: OntapClientError) -> bool:
+        """削除/取得の失敗が「対象が既に無い」を意味するかを判定する
+
+        冪等な撤去では「存在しない」は成功と同じに扱う。ONTAP は不在を HTTP 404
+        だけでなく、200/400/500 + メッセージ（"doesn't exist" / "does not exist" /
+        "not found" / "no such" / "no entries"）でも返すため、両方を拾う。
+        """
+        if err.status_code == 404:
+            return True
+        # ontap_message は error.message を取り出すが、ONTAP が別の形（本文直下や
+        # 別キー）で返すと str(self) の汎用文（"ONTAP API error: ... returned 400"）に
+        # 退化し、不在の語を取りこぼす。生の response_body も併せて走査する。
+        # さらに ONTAP は "doesn't" に ASCII ではなく Unicode の右シングルクォート
+        # (U+2019) を用いるため、アポストロフィを正規化してから照合する。
+        haystack = " ".join(
+            part.lower() for part in (err.ontap_message, err.response_body) if part
+        )
+        haystack = haystack.replace("\u2019", "'")
+        return any(
+            phrase in haystack
+            for phrase in (
+                "doesn't exist",
+                "does not exist",
+                "not found",
+                "no such",
+                "no entries",
+                "does not have",
+                "already",
+            )
+        )

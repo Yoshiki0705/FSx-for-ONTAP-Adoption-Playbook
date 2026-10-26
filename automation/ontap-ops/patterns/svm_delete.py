@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from ..shared.ontap_client import OntapClientError
 from .base import DeletePattern
 
 logger = logging.getLogger(__name__)
@@ -45,8 +46,26 @@ class SvmDelete(DeletePattern):
     def delete(self) -> list[dict[str, Any]]:
         results = []
         for target in self._targets:
-            response = self.client.delete_svm(target["uuid"])
-            final = self._poll_if_job(response)
+            try:
+                response = self.client.delete_svm(target["uuid"])
+                final = self._poll_if_job(response)
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    # 既に無い SVM は冪等に成功扱いとし、残りを続行する。
+                    results.append({**target, "result": "absent"})
+                    continue
+                # 1 つの SVM が消せなくても（例: 配下にボリュームが残る）、
+                # 他の SVM の削除は進める。失敗を記録して続行する。
+                logger.warning(
+                    "svm_delete: skipping %s (%s): %s",
+                    target.get("name"),
+                    target["uuid"],
+                    err.ontap_message,
+                )
+                results.append(
+                    {**target, "result": "error", "error": err.ontap_message}
+                )
+                continue
             results.append({**target, "result": final})
         return results
 
