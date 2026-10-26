@@ -1,0 +1,9 @@
+# Scoped exception only. The reusable ONTAP-ops Lambda lives at automation/ontap-ops/,
+# whose hyphen is required by its path in the Hub tree (matching the sibling
+# automation/fsxn-ops reference) but makes it an invalid Python module name, so ruff's
+# N999 fires on every __init__.py there. The package is loaded by path (see the tests'
+# _bootstrap.py), never imported as automation.ontap-ops, so the invalid name is inert.
+# Nothing else about the default rule set is changed.
+[lint.per-file-ignores]
+"automation/ontap-ops/**/__init__.py" = ["N999"]
+"automation/ontap-ops/__init__.py" = ["N999"]

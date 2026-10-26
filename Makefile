@@ -15,14 +15,14 @@ PY ?= python3
 
 # Single definition of what gets linted and formatted. CI calls these targets rather
 # than repeating the list, so local and CI cannot end up inspecting different trees.
-PY_PATHS := tools scripts
+PY_PATHS := tools scripts automation
 # Trees that may contain shell scripts and CloudFormation templates. Listed once for the
 # same reason as PY_PATHS: a workflow carrying its own copy is a second list to keep in
 # step. `find` is used rather than a fixed file list so a script added later is covered
 # without editing this file — the failure mode being avoided is a detector whose scan
 # range silently excludes the new thing.
 SH_PATHS := examples scripts tools
-CFN_PATHS := examples
+CFN_PATHS := examples automation
 # Trees that may contain PowerShell. Separate from SH_PATHS because `find -name '*.sh'` never
 # matched a .ps1, which is how examples/multiprotocol-ad/set-test-acls.ps1 stayed unlinted while
 # sitting inside a directory the shell gate already walked.
@@ -31,7 +31,7 @@ PS_PATHS := examples scripts tools
 # Every directory holding tests. A tests/ directory that is not listed here runs
 # nowhere: not locally, not in CI, and only when someone remembers a command from a
 # README. scripts/tests/test_test_discovery.py fails when one is missing.
-TEST_DIRS := scripts/tests
+TEST_DIRS := scripts/tests automation/ontap-ops/tests
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \

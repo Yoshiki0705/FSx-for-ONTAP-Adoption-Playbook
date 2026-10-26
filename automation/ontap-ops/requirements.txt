@@ -1,0 +1,18 @@
+# ONTAP-ops deletion Lambda dependencies.
+#
+# Runtime dependencies are provided by the AWS Lambda python3.12 runtime and are NOT
+# installed from here:
+#   boto3    (AWS SDK; provided by the runtime)
+#   urllib3  (HTTP client for the ONTAP REST calls; provided by the runtime)
+# They are listed as comments so the runtime contract is explicit; vendoring them
+# would only risk drift from the runtime's own copies.
+#
+# boto3     # runtime-provided
+# urllib3   # runtime-provided
+#
+# No test-only dependencies. The tests under tests/ use only the Python standard
+# library (unittest + unittest.mock), matching the Hub's stdlib-only test convention:
+# `make test` runs them with `python -m unittest discover`, and CI installs nothing
+# beyond the Hub toolchain in requirements-dev.txt. A stub boto3/urllib3 injected by
+# tests/_bootstrap.py lets the stdlib interpreter import the Lambda modules without the
+# runtime-provided packages present.
