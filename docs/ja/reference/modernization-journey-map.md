@@ -78,7 +78,7 @@ lang: ja
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
-| パターン | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを同じボリュームに置いたまま、アプリケーションを段階的に移す |
+| パターン | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを同じボリュームに置いたまま、アプリケーションを段階的にモダナイズする |
 | ノート | [SMB で運用中のボリュームに NFS を足すのに複製は要らない](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | 届かない原因はセキュリティスタイルの外側にあります |
 
 > アプリ側は [AI Modernization Flow](../ai-agents/ai-modernization-flow/README.md)、データ側はこのリポジトリ、という分担です。
@@ -149,7 +149,7 @@ lang: ja
 | リポジトリ | 内容 | 形式 |
 |---|---|---|
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | VMware 移行の入口。2 経路を実機検証 | CFn |
-| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを置いたままのアプリケーション移行 | CFn |
+| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを置いたままのアプリケーションのモダナイゼーション | CFn |
 | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS / EKS のデータストア | 実装パターン |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | 業種別 UC + OPS + GenAI + ファイルポータル UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 連携 | S3 Access Points |

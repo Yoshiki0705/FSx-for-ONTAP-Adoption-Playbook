@@ -78,7 +78,7 @@ For each stage, this lists the implementation pattern (spoke), the in-repository
 
 | Type | Resource | Point |
 |------|----------|------|
-| Pattern | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Move the application in stages while the data stays on the same volume |
+| Pattern | [App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Modernize the application in stages while the data stays on the same volume |
 | Note | [Adding NFS to a volume already serving SMB needs no clone](../domains/multiprotocol-identity/notes/adding-a-protocol-does-not-need-a-clone.md) | The reason it is unreachable lies outside the security style |
 
 > The split is [AI Modernization Flow](../../ja/ai-agents/ai-modernization-flow/README.md) (日本語) on the application side, this repository on the data side.
@@ -149,7 +149,7 @@ The correspondence between each stage and a blog post. **Part 1 and Part 2 are p
 | Repository | Contents | Format |
 |---|---|---|
 | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | The migration entry. Both paths verified hands-on | CFn |
-| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Moving an application with the data left in place | CFn |
+| [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Modernizing an application with the data left in place | CFn |
 | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | Datastores for ECS / EKS | Implementation patterns |
 | [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) | Industry use cases + OPS + GenAI + file portal UI | SAM + Amplify Gen2 |
 | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark integration | S3 Access Points |
