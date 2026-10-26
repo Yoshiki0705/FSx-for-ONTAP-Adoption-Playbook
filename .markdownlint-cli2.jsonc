@@ -46,6 +46,7 @@
   "globs": ["**/*.md"],
   "ignores": [
     "node_modules/**",
+    ".venv/**", // gitignored dev virtualenv; third-party package markdown is not ours to lint
     ".private/**", // gitleaks:allow - path pattern, not committed content
     ".kiro/**", // gitleaks:allow - path pattern, not committed content
     ".agents/**", // task/workflow agent scratch; gitignored, not committed content

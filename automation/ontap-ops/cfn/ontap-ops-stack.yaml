@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  ONTAP-ops deletion Lambda for Amazon FSx for NetApp ONTAP.
+  Deletes ONTAP objects the AWS FSx for ONTAP control plane cannot delete (FlexCache,
+  FlexClone, object-store buckets, vserver audit destination, FPolicy, SnapMirror
+  relationships), then dependent volumes and SVMs. VPC Lambda reaching the private
+  ONTAP management endpoint. Operational tooling; dry-run by default.
+
+Parameters:
+  OntapSecretId:
+    Type: String
+    Description: >
+      Secrets Manager secret ID/ARN holding ONTAP fsxadmin credentials
+      ({"username": "fsxadmin", "password": "..."}). Must carry a FileSystemId tag
+      matching the target file system; the function verifies it before use.
+
+  AllowlistFileSystemIds:
+    Type: String
+    Default: ""
+    Description: >
+      Comma/space-separated FSx for ONTAP file system IDs permitted for deletion
+      (e.g. fs-0123456789abcdef0). Supplied at deploy time; never hardcoded in code.
+      Empty means the function refuses every file system.
+
+  KeepListFileSystemIds:
+    Type: String
+    Default: ""
+    Description: >
+      Comma/space-separated file system IDs refused even if passed (defense in depth).
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC in which to place the Lambda and interface endpoints.
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnet IDs for the Lambda and interface endpoints.
+
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: >
+      Security group for the Lambda; must allow HTTPS (443) to the ONTAP management
+      endpoint and to the interface VPC endpoints.
+
+  VerifySsl:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: >
+      TLS verification toward the ONTAP management endpoint. Keep "true" for
+      production; "false" is lab/PoC only.
+
+  CreateVpcEndpoints:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Create interface VPC endpoints (set false if the VPC already has them).
+
+Conditions:
+  ShouldCreateVpcEndpoints: !Equals [!Ref CreateVpcEndpoints, "true"]
+
+Resources:
+  # Interface VPC endpoints so a Lambda in a no-NAT private subnet can still reach
+  # the AWS APIs it needs. The ONTAP management endpoint itself is reached directly
+  # in-VPC over 443, not through an endpoint.
+  SecretsManagerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ShouldCreateVpcEndpoints
+    Properties:
+      VpcId: !Ref VpcId
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.secretsmanager"
+      VpcEndpointType: Interface
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      PrivateDnsEnabled: true
+
+  FsxEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ShouldCreateVpcEndpoints
+    Properties:
+      VpcId: !Ref VpcId
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.fsx"
+      VpcEndpointType: Interface
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      PrivateDnsEnabled: true
+
+  OntapOpsDeletionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: OntapOpsDeletionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Scoped to the one secret this function is allowed to read.
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref OntapSecretId
+              # Read-only FSx: discover the management endpoint and inspect state.
+              # Deletion happens on the ONTAP side over REST, not through the FSx for ONTAP API,
+              # so no fsx:Delete* is granted here.
+              - Effect: Allow
+                Action:
+                  - fsx:DescribeFileSystems
+                  - fsx:DescribeVolumes
+                  - fsx:DescribeStorageVirtualMachines
+                Resource: "*"
+
+  OntapOpsDeletionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: >
+        Deletes ONTAP objects the FSx for ONTAP control plane cannot delete. Dry-run by
+        default; only an event with confirm:true performs deletions.
+      Runtime: python3.12
+      Handler: handler.handler
+      Timeout: 900
+      MemorySize: 256
+      Role: !GetAtt OntapOpsDeletionRole.Arn
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+      Environment:
+        Variables:
+          ONTAP_SECRET_ID: !Ref OntapSecretId
+          ONTAP_OPS_ALLOWLIST: !Ref AllowlistFileSystemIds
+          ONTAP_OPS_KEEP_LIST: !Ref KeepListFileSystemIds
+          ONTAP_VERIFY_SSL: !Ref VerifySsl
+      Code:
+        # Placeholder: deploy the packaged automation/ontap-ops tree (handler.py,
+        # orchestrator.py, patterns/, shared/) from S3 in a real deployment. Runtime
+        # dependencies are boto3 + urllib3 only, both provided by the Lambda runtime,
+        # so there is nothing to vendor.
+        ZipFile: |
+          def handler(event, context):
+              return {"message": "Deploy the packaged automation/ontap-ops tree from S3"}
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt OntapOpsDeletionFunction.Arn
+    Description: ONTAP-ops deletion Lambda ARN
+  FunctionRoleArn:
+    Value: !GetAtt OntapOpsDeletionRole.Arn
+    Description: Execution role ARN (least-privilege, scoped secret)
