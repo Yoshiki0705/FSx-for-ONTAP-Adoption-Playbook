@@ -33,11 +33,32 @@ class FPolicyTeardown(DeletePattern):
         policies = self._list("policies")
         events = self._list("events")
         engines = self._list("engines")
+        stores = self._list("persistent-stores")
 
+        svm = self.svm_uuid
         targets: list[dict[str, Any]] = []
-        targets += [{"kind": "fpolicy-policy", "name": r.get("name")} for r in policies]
-        targets += [{"kind": "fpolicy-event", "name": r.get("name")} for r in events]
-        targets += [{"kind": "fpolicy-engine", "name": r.get("name")} for r in engines]
+        targets += [
+            {"kind": "fpolicy-policy", "name": r.get("name"), "svm_uuid": svm}
+            for r in policies
+        ]
+        targets += [
+            {"kind": "fpolicy-event", "name": r.get("name"), "svm_uuid": svm}
+            for r in events
+        ]
+        targets += [
+            {"kind": "fpolicy-engine", "name": r.get("name"), "svm_uuid": svm}
+            for r in engines
+        ]
+        # persistent store は各 SVM に最大 1 つ。fpolicy_persistent_store ボリュームを
+        # 支えるため、ポリシー/イベント/エンジンの後に削除する。
+        targets += [
+            {
+                "kind": "fpolicy-persistent-store",
+                "name": r.get("name"),
+                "svm_uuid": svm,
+            }
+            for r in stores
+        ]
         self._targets = targets
         return self._targets
 
@@ -54,21 +75,52 @@ class FPolicyTeardown(DeletePattern):
             except OntapClientError:
                 # 既に無効の場合がある。無視して削除へ進む。
                 pass
-            response = self.client.delete(
-                f"/protocols/fpolicy/{self.svm_uuid}/policies/{name}"
-            )
+            try:
+                response = self.client.delete(
+                    f"/protocols/fpolicy/{self.svm_uuid}/policies/{name}"
+                )
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    results.append({**target, "result": "absent"})
+                    continue
+                raise
             results.append({**target, "result": self._poll_if_job(response)})
 
         for target in self._by_kind("fpolicy-event"):
-            response = self.client.delete(
-                f"/protocols/fpolicy/{self.svm_uuid}/events/{target['name']}"
-            )
+            try:
+                response = self.client.delete(
+                    f"/protocols/fpolicy/{self.svm_uuid}/events/{target['name']}"
+                )
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    results.append({**target, "result": "absent"})
+                    continue
+                raise
             results.append({**target, "result": self._poll_if_job(response)})
 
         for target in self._by_kind("fpolicy-engine"):
-            response = self.client.delete(
-                f"/protocols/fpolicy/{self.svm_uuid}/engines/{target['name']}"
-            )
+            try:
+                response = self.client.delete(
+                    f"/protocols/fpolicy/{self.svm_uuid}/engines/{target['name']}"
+                )
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    results.append({**target, "result": "absent"})
+                    continue
+                raise
+            results.append({**target, "result": self._poll_if_job(response)})
+
+        # 最後に persistent store を消す。これより前に消すと、まだ参照されていて失敗する。
+        for target in self._by_kind("fpolicy-persistent-store"):
+            try:
+                response = self.client.delete_fpolicy_persistent_store(
+                    self.svm_uuid, target["name"]
+                )
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    results.append({**target, "result": "absent"})
+                    continue
+                raise
             results.append({**target, "result": self._poll_if_job(response)})
 
         return results
@@ -78,6 +130,7 @@ class FPolicyTeardown(DeletePattern):
             ("fpolicy-policy", "policies"),
             ("fpolicy-event", "events"),
             ("fpolicy-engine", "engines"),
+            ("fpolicy-persistent-store", "persistent-stores"),
         ):
             for target in self._by_kind(kind):
                 path = f"/protocols/fpolicy/{self.svm_uuid}/{endpoint}/{target['name']}"

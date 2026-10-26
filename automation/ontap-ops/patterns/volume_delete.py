@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from ..shared.ontap_client import OntapClientError
 from .base import DeletePattern
 
 logger = logging.getLogger(__name__)
@@ -45,10 +46,37 @@ class VolumeDelete(DeletePattern):
     def delete(self) -> list[dict[str, Any]]:
         results = []
         for target in self._targets:
-            response = self.client.delete_volume(target["uuid"])
-            final = self._poll_if_job(response)
+            try:
+                self._unmount(target["uuid"])
+                response = self.client.delete_volume(target["uuid"])
+                final = self._poll_if_job(response)
+            except OntapClientError as err:
+                if self._is_already_absent_error(err):
+                    # 既に無いボリュームは冪等に成功扱いとし、残りを続行する。
+                    results.append({**target, "result": "absent"})
+                    continue
+                # 1 本が消せなくても（例: 不可視のクローン依存）、残りの
+                # ボリュームの削除は進める。失敗はエラーとして記録し続行する。
+                logger.warning(
+                    "volume_delete: skipping %s (%s): %s",
+                    target.get("name"),
+                    target["uuid"],
+                    err.ontap_message,
+                )
+                results.append(
+                    {**target, "result": "error", "error": err.ontap_message}
+                )
+                continue
             results.append({**target, "result": final})
         return results
+
+    def _unmount(self, uuid: str) -> None:
+        """削除前にジャンクションを外す。既に外れている/無い場合は黙って続行。"""
+        try:
+            self._poll_if_job(self.client.unmount_volume(uuid))
+        except OntapClientError as err:
+            if not self._is_already_absent_error(err):
+                raise
 
     def confirm_gone(self) -> bool:
         return all(

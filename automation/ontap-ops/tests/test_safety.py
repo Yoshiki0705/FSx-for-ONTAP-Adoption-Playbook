@@ -16,6 +16,8 @@ import _bootstrap  # noqa: F401  (loads the ontap_ops package by path)
 from ontap_ops.shared.safety import (
     SafetyViolation,
     assert_in_scope,
+    assert_maintenance_allowed,
+    get_maintenance_list,
     is_dry_run,
 )
 
@@ -96,6 +98,39 @@ class TestAllowlistTable(unittest.TestCase):
                 env = {"ONTAP_OPS_ALLOWLIST": fsid, "ONTAP_OPS_KEEP_LIST": fsid}
                 with self.assertRaises(SafetyViolation):
                     assert_in_scope(fsid, env=env)
+
+
+class TestMaintenanceGate(unittest.TestCase):
+    """Maintenance (surgical, non-teardown) ops are allowed when the FS is in the
+    allowlist OR the maintenance list, and refused otherwise. The maintenance list
+    never opens a teardown path (that stays on assert_in_scope)."""
+
+    def test_allowed_via_maintenance_list(self):
+        assert_maintenance_allowed(FS, env={"ONTAP_OPS_MAINTENANCE_FSIDS": FS})
+
+    def test_allowed_via_allowlist(self):
+        assert_maintenance_allowed(FS, env={"ONTAP_OPS_ALLOWLIST": FS})
+
+    def test_refused_when_in_neither(self):
+        with self.assertRaises(SafetyViolation):
+            assert_maintenance_allowed(FS, env={"ONTAP_OPS_ALLOWLIST": OTHER_FS})
+
+    def test_refused_when_both_empty(self):
+        with self.assertRaises(SafetyViolation):
+            assert_maintenance_allowed(FS, env={})
+
+    def test_missing_file_system_id_refused(self):
+        with self.assertRaises(SafetyViolation):
+            assert_maintenance_allowed("", env={"ONTAP_OPS_MAINTENANCE_FSIDS": FS})
+
+    def test_maintenance_list_parse_comma_and_space(self):
+        env = {"ONTAP_OPS_MAINTENANCE_FSIDS": f"{OTHER_FS}, {FS}"}
+        self.assertEqual(get_maintenance_list(env), [OTHER_FS, FS])
+
+    def test_maintenance_list_does_not_grant_teardown(self):
+        # A FS only in the maintenance list is still refused by assert_in_scope.
+        with self.assertRaises(SafetyViolation):
+            assert_in_scope(FS, env={"ONTAP_OPS_MAINTENANCE_FSIDS": FS})
 
 
 class TestDryRunDefault(unittest.TestCase):

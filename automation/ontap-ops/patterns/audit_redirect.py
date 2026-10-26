@@ -61,9 +61,18 @@ class AuditRedirect(DeletePattern):
         return results
 
     def _delete_nas_audit(self, target: dict[str, Any]) -> dict[str, Any]:
-        # 宛先を解放する前に監査を止める。
-        self.client.disable_audit(self.svm_uuid)
-        response = self.client.delete_audit(self.svm_uuid)
+        # 宛先を解放する前に監査を止める。無効化・削除とも「既に無い」は成功扱い。
+        try:
+            self.client.disable_audit(self.svm_uuid)
+        except OntapClientError as err:
+            if not self._is_already_absent_error(err):
+                raise
+        try:
+            response = self.client.delete_audit(self.svm_uuid)
+        except OntapClientError as err:
+            if self._is_already_absent_error(err):
+                return {**target, "result": "absent"}
+            raise
         final = self._poll_if_job(response)
         return {**target, "result": final}
 
@@ -71,7 +80,7 @@ class AuditRedirect(DeletePattern):
         try:
             response = self.client.delete_object_store_audit(self.svm_uuid)
         except OntapClientError as err:
-            if err.status_code == 404:
+            if self._is_already_absent_error(err):
                 return {**target, "result": "absent"}
             raise
         final = self._poll_if_job(response)

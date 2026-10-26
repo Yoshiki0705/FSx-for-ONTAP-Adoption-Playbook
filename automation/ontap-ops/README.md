@@ -48,6 +48,41 @@ SnapMirror 解放 → FlexClone split/削除 → S3 バケット削除 → 監�
 FPolicy 撤去 → FlexCache 削除 → 非 root ボリューム削除 → SVM 削除。各削除は 202 を
 返せばジョブ完了まで待ち、削除後は GET の 404/空で消えたことを確認する。
 
+## 保守操作（teardown とは別の外科的な単発操作）
+
+teardown を阻む実体だけを外す操作。`event["operation"]` で指定し、FS/SVM/volume
+そのものは消さない。teardown（allowlist のみ）とは別に、allowlist か
+`ONTAP_OPS_MAINTENANCE_FSIDS` のどちらかにあれば許可する（keep-list は teardown の
+保護用で、maintenance では評価しない。maintenance は FS を消さないため）。
+
+> **不可逆操作に関する注意**: maintenance は FS/SVM/volume そのものを消さないが、
+> `purge_recovery_queue` は recovery queue 内の DEL（削除保留）ボリュームを**完全破棄**する
+> （不可逆）。keep-list は maintenance で評価しないため、keep-list の FS を
+> `ONTAP_OPS_MAINTENANCE_FSIDS` に入れると、その FS 上で**名前指定の purge が通る**。これは
+> keep-list の FS で唯一到達できる不可逆操作であり、意図（消す FS との間に残った宙ぶらりんの
+> DEL クローンだけを外す）どおりだが、対象は必ず `svm_name` + `volume` で名指しする（ワイルド
+> カード削除はできない）。keep-list の FS を maintenance に入れるのは、この 1 点を理解した
+> うえで、対象ボリューム名を確認してから行うこと。
+
+| operation | 必須フィールド | 何をするか |
+|---|---|---|
+| `maintenance_plan` | （任意）`parent_volume_name`, `svm_name` | 読み取り専用。recovery queue / ソース側 SnapMirror / vserver peer / CLI の不可視クローンを 1 回で可視化する。 |
+| `purge_recovery_queue` | `svm_name`, `volume` | recovery queue の削除保留（DEL）ボリュームを purge し、親の "has one or more clones" を解消する。 |
+| `snapmirror_release_source` | `source_path` | ソース側に残る SnapMirror 関係を解放し、ソースボリュームを削除可能にする（宛先データは消さない）。 |
+| `snapmirror_delete` | `destination_path` | destination-path 指定で関係を削除する（relationship-id は受け付けない）。 |
+| `delete_vserver_peer` | `svm_name`, `peer_vserver` | 生き残った vserver peer を外し、MISCONFIGURED な SVM を解放する。SVM 自体の削除は AWS FSx for ONTAP API 側で行う。 |
+
+### recovery queue と不可視クローンの所見
+
+削除保留中（volume type DEL）の stale clone が recovery queue に残ると、親の削除が
+"has one or more clones" で失敗する。このクローンは `volume show` にも構造化 REST
+にも現れず、`volume clone show`（diag 権限の CLI）にだけ現れることがある。
+`flexclone_split_delete` は、親が has_flexclone を報告するのに構造化 REST で
+クローンが引けないとき、`volume clone show` にフォールバックして名前を引き、
+recovery queue から purge する。CLI passthrough の規則は 1 つに集約している。
+GET はクエリ、POST は属性を **body** に入れる（POST のクエリ絞り込みは拒否される）、
+コレクション DELETE はクエリでよい。深い背景は steering に置き、ここでは触れない。
+
 ## デプロイ
 
 `cfn/ontap-ops-stack.yaml` が VPC Lambda、インターフェース VPC エンドポイント
@@ -115,6 +150,43 @@ SnapMirror release → FlexClone split/delete → S3 bucket delete → audit des
 release → FPolicy teardown → FlexCache delete → non-root volume delete → SVM delete.
 Every delete returning HTTP 202 is polled to completion; each is then confirmed by a GET
 returning 404/empty.
+
+### Maintenance operations (surgical, separate from teardown)
+
+These remove only the objects that block a teardown; they never delete the FS, an SVM,
+or a volume. Select one with `event["operation"]`. Unlike teardown (allowlist only),
+a maintenance op is allowed when the FS is in the allowlist **or**
+`ONTAP_OPS_MAINTENANCE_FSIDS` (the keep-list protects teardown and is not evaluated for
+maintenance, since maintenance does not delete the FS).
+
+> **Irreversibility note**: maintenance never deletes an FS/SVM/volume, but
+> `purge_recovery_queue` **permanently destroys** a DEL (pending-delete) volume in the
+> recovery queue. Because the keep-list is not evaluated for maintenance, putting a
+> keep-listed FS in `ONTAP_OPS_MAINTENANCE_FSIDS` lets a **named purge run on it** — the
+> one irreversible action reachable on a keep-listed FS. This is by design (shed a
+> dangling DEL clone left by deleting a different FS) and always requires an explicit
+> `svm_name` + `volume` (no wildcard). Add a keep-listed FS to the maintenance list only
+> with that understood and the target volume name verified.
+
+| operation | Required fields | What it does |
+|---|---|---|
+| `maintenance_plan` | (optional) `parent_volume_name`, `svm_name` | Read-only. Surfaces the recovery queue, source-side SnapMirror, vserver peers, and CLI-only clones in one pass. |
+| `purge_recovery_queue` | `svm_name`, `volume` | Purges a pending-delete (DEL) volume from the recovery queue, clearing a parent's "has one or more clones". |
+| `snapmirror_release_source` | `source_path` | Releases a source-side SnapMirror relationship so a source volume can be deleted (the destination data is left intact). |
+| `snapmirror_delete` | `destination_path` | Deletes a relationship keyed on destination-path (relationship-id is not accepted). |
+| `delete_vserver_peer` | `svm_name`, `peer_vserver` | Removes a surviving vserver peer that blocks a MISCONFIGURED SVM. Deleting the SVM itself is done via the AWS FSx for ONTAP API. |
+
+#### Recovery-queue and invisible-clone finding
+
+A stale clone left pending-delete (volume type DEL) in the recovery queue makes a
+parent's delete fail with "has one or more clones". That clone appears in neither
+`volume show` nor structured REST — only in `volume clone show` (the diag-privilege
+CLI). When a parent reports `has_flexclone` but structured REST resolves no clone,
+`flexclone_split_delete` falls back to `volume clone show` for the name and purges it
+from the recovery queue. The CLI passthrough rule is encoded in one place: GET uses
+query parameters, POST carries its attributes in the **body** (query filtering on a POST
+is rejected), and a collection DELETE may be query-based. The deeper rationale lives in
+steering, not here.
 
 ### Deploy
 

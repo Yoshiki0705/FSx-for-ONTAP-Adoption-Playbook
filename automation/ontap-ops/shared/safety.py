@@ -12,10 +12,44 @@ import os
 
 ALLOWLIST_ENV = "ONTAP_OPS_ALLOWLIST"
 KEEP_LIST_ENV = "ONTAP_OPS_KEEP_LIST"
+MAINTENANCE_ENV = "ONTAP_OPS_MAINTENANCE_FSIDS"
 
 
 class SafetyViolation(Exception):
     """安全ゲートが入力を拒否した"""
+
+
+def get_maintenance_list(env: dict[str, str] | None = None) -> list[str]:
+    """env ONTAP_OPS_MAINTENANCE_FSIDS から保守許可リストを読む
+
+    保守操作（read-only 診断、SnapMirror 関係の release/delete、vserver peer 削除、
+    recovery-queue purge）は、ファイルシステム・SVM・ボリュームそのものを削除しない。
+    keep-list の FS でも、宙ぶらりんの関係レコードだけを外す必要がある場合がある
+    （例: 残す FS が、消す FS との SVM peer / SnapMirror 関係を保持している）。
+    その FS をこのリストに入れると、保守操作だけを許可する。teardown（plan/execute、
+    volume/svm/fs 削除）は従来どおり allowlist のみで、このリストでは一切許可しない。
+    """
+    env = env if env is not None else dict(os.environ)
+    return _parse_id_list(env.get(MAINTENANCE_ENV))
+
+
+def assert_maintenance_allowed(
+    file_system_id: str, env: dict[str, str] | None = None
+) -> None:
+    """保守操作（非 teardown）が許可されているか検証する
+
+    allowlist に入っているか、maintenance リストに入っていれば許可。どちらにも無ければ
+    SafetyViolation。teardown は決して許可しない（呼び出し側が plan/execute に進むときは
+    別途 assert_in_scope を通すこと）。
+    """
+    if not file_system_id:
+        raise SafetyViolation("file_system_id is required")
+    allowed = set(get_allowlist(env)) | set(get_maintenance_list(env))
+    if file_system_id not in allowed:
+        raise SafetyViolation(
+            f"{file_system_id} is not permitted for maintenance; add it to "
+            f"{MAINTENANCE_ENV} (surgical, non-teardown) or {ALLOWLIST_ENV}."
+        )
 
 
 def _parse_id_list(raw: str | None) -> list[str]:
