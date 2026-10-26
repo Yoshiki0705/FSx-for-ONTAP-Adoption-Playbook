@@ -124,11 +124,32 @@ class SnapMirrorRelease(DeletePattern):
         return {**target, "result": final}
 
     def confirm_gone(self) -> bool:
-        return all(
-            self._is_absent(f"/snapmirror/relationships/{t['uuid']}")
-            for t in self._targets
-            if t.get("kind") == "snapmirror"
-        )
+        """全 target の不在を読み戻しで確認する
+
+        構造化リレーションシップ（kind=snapmirror）は
+        GET /snapmirror/relationships/{uuid} が 404 か。ソース側解放
+        （kind=snapmirror-source-release）は list-destinations を source-vserver で
+        再取得し、その source-path がもう現れないこと。target があるのに確認を
+        スキップして True を返す vacuous-true は避ける。
+        """
+        structured = [t for t in self._targets if t.get("kind") == "snapmirror"]
+        source_rel = [
+            t for t in self._targets if t.get("kind") == "snapmirror-source-release"
+        ]
+        for t in structured:
+            if not self._is_absent(f"/snapmirror/relationships/{t['uuid']}"):
+                return False
+        if source_rel:
+            remaining = {
+                d.get("source-path")
+                for d in self.client.list_snapmirror_destinations_by_source(
+                    source_vserver=self.svm_name
+                )
+            }
+            for t in source_rel:
+                if t.get("source") in remaining:
+                    return False
+        return True
 
     def _matches_svm(self, record: dict[str, Any]) -> bool:
         source_svm = record.get("source", {}).get("svm", {}).get("name")

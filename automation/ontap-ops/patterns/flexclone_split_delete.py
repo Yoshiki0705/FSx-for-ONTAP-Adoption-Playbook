@@ -142,8 +142,29 @@ class FlexCloneSplitDelete(DeletePattern):
         return {**target, "result": final}
 
     def confirm_gone(self) -> bool:
-        return all(
-            self._is_absent(f"/storage/volumes/{t['uuid']}")
-            for t in self._targets
-            if t.get("kind") != "recovery-queue-clone"
-        )
+        """全 target の不在を読み戻しで確認する
+
+        構造化ボリューム（kind=flexclone）は GET /storage/volumes/{uuid} が 404 か。
+        recovery-queue-clone は recovery queue を再取得し、(vserver, volume) が
+        消えていること。target が 1 件も無い（＝消すものが無かった）ときだけ、
+        確認対象ゼロで True。target があるのに確認をスキップして True を返す
+        （以前の空内包による vacuous-true）ことはしない。
+        """
+        recovery_targets = [
+            t for t in self._targets if t.get("kind") == "recovery-queue-clone"
+        ]
+        volume_targets = [
+            t for t in self._targets if t.get("kind") != "recovery-queue-clone"
+        ]
+        for t in volume_targets:
+            if not self._is_absent(f"/storage/volumes/{t['uuid']}"):
+                return False
+        if recovery_targets:
+            remaining = {
+                (r.get("vserver"), r.get("volume"))
+                for r in self.client.list_recovery_queue()
+            }
+            for t in recovery_targets:
+                if (t.get("vserver"), t.get("name")) in remaining:
+                    return False
+        return True

@@ -249,9 +249,17 @@ def handler(event: dict[str, Any] | None, context: Any = None) -> dict[str, Any]
                 "plan": steps,
             }
         steps = orchestrator.execute(client, **kwargs)
+        # status="executed" は「実行した」であって「全部消えた」ではない。各パターンの
+        # confirmed と result を集約し、1 つでも未確認・エラーがあれば all_confirmed を
+        # False にして呼び出し側が成功と誤読しないようにする。
+        all_confirmed = all(s.get("confirmed") for s in steps)
+        had_errors = any(
+            r.get("result") == "error" for s in steps for r in s.get("results", [])
+        )
         return {
             "status": "executed",
             "file_system_id": file_system_id,
+            "all_confirmed": all_confirmed and not had_errors,
             "steps": steps,
         }
     except OntapClientError as err:

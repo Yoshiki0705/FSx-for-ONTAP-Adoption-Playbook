@@ -105,7 +105,9 @@ class DeletePattern(ABC):
 
         冪等な撤去では「存在しない」は成功と同じに扱う。ONTAP は不在を HTTP 404
         だけでなく、200/400/500 + メッセージ（"doesn't exist" / "does not exist" /
-        "not found" / "no such" / "no entries"）でも返すため、両方を拾う。
+        "not found" / "no such" / "no entries" / "already deleted/removed"）でも返す
+        ため、両方を拾う。非不在（"already has clones" 等）を成功扱いしないよう、
+        不在を確実に表す語だけに限定している。
         """
         if err.status_code == 404:
             return True
@@ -118,15 +120,20 @@ class DeletePattern(ABC):
             part.lower() for part in (err.ontap_message, err.response_body) if part
         )
         haystack = haystack.replace("\u2019", "'")
+        # 不在だけを拾う。以前は裸の "already" / "does not have" も入れていたが、
+        # "already has clones" / "already in use" / 権限の "... does not have ..."
+        # のような非不在メッセージまで成功扱いにしてしまうため外した。不在を確実に
+        # 表す語（existence/found/entries/no such）に限定する。
         return any(
             phrase in haystack
             for phrase in (
                 "doesn't exist",
                 "does not exist",
+                "no longer exists",
                 "not found",
                 "no such",
                 "no entries",
-                "does not have",
-                "already",
+                "already deleted",
+                "already removed",
             )
         )

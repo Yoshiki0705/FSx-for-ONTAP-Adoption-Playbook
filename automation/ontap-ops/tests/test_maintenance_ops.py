@@ -233,5 +233,103 @@ class TestVserverPeerDelete(unittest.TestCase):
         )
 
 
+class TestAbsentMatcherIsStrict(unittest.TestCase):
+    """_is_already_absent_error must treat only true absence as success.
+
+    Regression for a review finding: the bare substrings "already" and
+    "does not have" matched non-absence ONTAP messages (e.g. "already has clones",
+    license/permission "... does not have ...") and silently converted a real
+    failure into success-by-absence.
+    """
+
+    @staticmethod
+    def _err(message: str, status: int = 400):
+        import json
+
+        return OntapClientError(
+            "ONTAP API error",
+            status_code=status,
+            response_body=json.dumps({"error": {"message": message}}),
+        )
+
+    def test_true_absence_is_matched(self):
+        from ontap_ops.patterns.base import DeletePattern
+
+        for msg in (
+            "The volume doesn't exist.",
+            "does not exist",
+            "entry not found",
+            "no such volume",
+            "relationship already deleted",
+        ):
+            self.assertTrue(
+                DeletePattern._is_already_absent_error(self._err(msg)),
+                f"should be absent: {msg!r}",
+            )
+        # 404 alone is absence regardless of body.
+        self.assertTrue(
+            DeletePattern._is_already_absent_error(
+                OntapClientError("x", status_code=404)
+            )
+        )
+
+    def test_non_absence_is_not_matched(self):
+        from ontap_ops.patterns.base import DeletePattern
+
+        for msg in (
+            "Volume already has one or more clones.",
+            "The volume is already in use.",
+            "Operation already in progress.",
+            "The SVM does not have the required license.",
+        ):
+            self.assertFalse(
+                DeletePattern._is_already_absent_error(self._err(msg)),
+                f"must NOT be treated as absent: {msg!r}",
+            )
+
+
+class TestConfirmGoneReadsBackCliKinds(unittest.TestCase):
+    """confirm_gone must read back the CLI-only target kinds, not report True
+    without checking. Regression for a review finding (vacuous all([]) == True and
+    no read-back for recovery-queue-clone / snapmirror-source-release)."""
+
+    def test_recovery_queue_clone_confirm_reads_back(self):
+        # Parent has no structured clone; CLI fallback finds one in the recovery queue.
+        client = RecordingClient(
+            {
+                "/storage/volumes": {"records": []},
+                "/private/cli/volume/clone": {
+                    "records": [{"volume": "stale_clone", "vserver": "svmA"}]
+                },
+                # Recovery queue still lists the clone -> confirm_gone must be False.
+                "/private/cli/volume/recovery-queue": {
+                    "records": [{"vserver": "svmA", "volume": "stale_clone"}]
+                },
+            }
+        )
+        pattern = FlexCloneSplitDelete(client, parent_volume_name="p", split=False)
+        pattern.resolve_dependencies()
+        pattern.delete()
+        # The clone is still in the recovery queue, so confirm_gone must NOT be a
+        # vacuous True.
+        self.assertFalse(pattern.confirm_gone())
+
+    def test_recovery_queue_clone_confirm_true_when_gone(self):
+        client = RecordingClient(
+            {
+                "/storage/volumes": {"records": []},
+                "/private/cli/volume/clone": {
+                    "records": [{"volume": "stale_clone", "vserver": "svmA"}]
+                },
+                # Recovery queue empty after purge -> confirmed gone.
+                "/private/cli/volume/recovery-queue": {"records": []},
+            }
+        )
+        pattern = FlexCloneSplitDelete(client, parent_volume_name="p", split=False)
+        pattern.resolve_dependencies()
+        pattern.delete()
+        self.assertTrue(pattern.confirm_gone())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,6 +55,15 @@ teardown を阻む実体だけを外す操作。`event["operation"]` で指定�
 `ONTAP_OPS_MAINTENANCE_FSIDS` のどちらかにあれば許可する（keep-list は teardown の
 保護用で、maintenance では評価しない。maintenance は FS を消さないため）。
 
+> **不可逆操作に関する注意**: maintenance は FS/SVM/volume そのものを消さないが、
+> `purge_recovery_queue` は recovery queue 内の DEL（削除保留）ボリュームを**完全破棄**する
+> （不可逆）。keep-list は maintenance で評価しないため、keep-list の FS を
+> `ONTAP_OPS_MAINTENANCE_FSIDS` に入れると、その FS 上で**名前指定の purge が通る**。これは
+> keep-list の FS で唯一到達できる不可逆操作であり、意図（消す FS との間に残った宙ぶらりんの
+> DEL クローンだけを外す）どおりだが、対象は必ず `svm_name` + `volume` で名指しする（ワイルド
+> カード削除はできない）。keep-list の FS を maintenance に入れるのは、この 1 点を理解した
+> うえで、対象ボリューム名を確認してから行うこと。
+
 | operation | 必須フィールド | 何をするか |
 |---|---|---|
 | `maintenance_plan` | （任意）`parent_volume_name`, `svm_name` | 読み取り専用。recovery queue / ソース側 SnapMirror / vserver peer / CLI の不可視クローンを 1 回で可視化する。 |
@@ -149,6 +158,15 @@ or a volume. Select one with `event["operation"]`. Unlike teardown (allowlist on
 a maintenance op is allowed when the FS is in the allowlist **or**
 `ONTAP_OPS_MAINTENANCE_FSIDS` (the keep-list protects teardown and is not evaluated for
 maintenance, since maintenance does not delete the FS).
+
+> **Irreversibility note**: maintenance never deletes an FS/SVM/volume, but
+> `purge_recovery_queue` **permanently destroys** a DEL (pending-delete) volume in the
+> recovery queue. Because the keep-list is not evaluated for maintenance, putting a
+> keep-listed FS in `ONTAP_OPS_MAINTENANCE_FSIDS` lets a **named purge run on it** — the
+> one irreversible action reachable on a keep-listed FS. This is by design (shed a
+> dangling DEL clone left by deleting a different FS) and always requires an explicit
+> `svm_name` + `volume` (no wildcard). Add a keep-listed FS to the maintenance list only
+> with that understood and the target volume name verified.
 
 | operation | Required fields | What it does |
 |---|---|---|
