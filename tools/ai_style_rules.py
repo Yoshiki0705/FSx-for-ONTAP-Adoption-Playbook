@@ -255,6 +255,31 @@ RULES: tuple[Rule, ...] = (
         (("ja", "飛躍的に向上した。\n"), ("en", "The copy is blazing fast.\n")),
         (("ja", "3.2 倍に向上した（同一環境）。\n"),),
     ),
+    # Coinages invented during this project's verification and recording that leaked into
+    # reader-facing prose as labels. A reader who looks one up finds no source. Caught only as a
+    # label (a bracket tag, a compound coinage, a slash-joined "open / not measured"), never as a
+    # bare word: verified / run / witness and the verb "witnessed" are ordinary vocabulary, like
+    # D8's delve / tapestry, and are left to the manual review. Tier-definition contract files
+    # (AGENTS.md, evidence-policy.md) are excluded by name in scan_markdown, since there the same
+    # tokens are the functional terms the gates read.
+    Rule(
+        "D25",
+        "warning",
+        ("ja", "en"),
+        "実在しない造語をラベルとして使い、読者が出典にたどり着けない。平易な説明語（検証済み／記録用の別バケット／未測定 等）に置き換えるべき箇所。",
+        "invented coinage used as a label; replace with plain words (verified in a real environment / a separate recording bucket / not measured)",
+        (
+            ("en", "The result is tier [verified], stored in the witness bucket.\n"),
+            ("ja", "この主張は証拠台帳に記録した。\n"),
+        ),
+        (
+            (
+                "en",
+                "We verified it in a real environment and witnessed the execution.\n",
+            ),
+            ("ja", "検証済みで、実行回数も記録した。\n"),
+        ),
+    ),
 )
 
 RULE_BY_ID = {rule.id: rule for rule in RULES}
@@ -312,6 +337,28 @@ LINE_PATTERNS: dict[str, dict[str, re.Pattern[str]]] = {
     "D24": {
         "ja": re.compile(r"劇的に(?!速)|飛躍的に|大幅に(?:高速|向上)"),
         "en": re.compile(r"\bblazing\b|\bdramatically\b(?!\s+(?:faster|improve))", _I),
+    },
+    # Label-forms of project coinages only; see the D25 rule note. A bracket tag [verified] /
+    # [documented]; the compounds evidence ledger / run envelope / zero-call / 証拠台帳 / ゼロコール;
+    # attested as a lone adjective; witness scoped to its bucket/object sense; and the slash-joined
+    # "open / not measured". Bare verified / run / 検証済み / 実行回数 and the verb witnessed are not
+    # matched, because a single word cannot be told from its technical use.
+    "D25": {
+        "en": re.compile(
+            r"\[(?:verified|documented)\]"
+            r"|\bevidence ledger\b|\brun envelope\b|\bzero-call\b"
+            r"|\battested\b"
+            r"|\bwitness\s+(?:bucket|object)\b"
+            r"|\bopen\s*/\s*not measured\b",
+            _I,
+        ),
+        "ja": re.compile(
+            r"\[(?:verified|documented)\]"
+            r"|証拠台帳|ゼロコール"
+            r"|evidence ledger|run envelope|zero-call"
+            r"|witness\s*(?:バケット|オブジェクト)"
+            r"|open\s*/\s*not measured"
+        ),
     },
 }
 D10_PATTERNS = {
@@ -1338,7 +1385,12 @@ def unrendered_strong(text: str) -> list[int]:
 # ---------------------------------------------------------------- entry points
 
 
-def scan_markdown(text: str, lang: str) -> list[Finding]:
+# Files that define the evidence tiers and recording vocabulary. There the coinage labels D25
+# targets are the functional terms the gates read, so the rule is suppressed for them by name.
+TIER_CONTRACT_FILES = frozenset({"AGENTS.md", "evidence-policy.md"})
+
+
+def scan_markdown(text: str, lang: str, relpath: str = "") -> list[Finding]:
     """Every finding for one Markdown document, with 1-based line numbers of the file."""
     if lang not in LANGS:
         return []
@@ -1348,6 +1400,8 @@ def scan_markdown(text: str, lang: str) -> list[Finding]:
     for line in unrendered_strong(text):
         found.append(Finding(line, "D1", d1.level, d1.message))
     found.extend(_structural_findings(_prose_view(lines), lang))
+    if relpath and Path(relpath).name in TIER_CONTRACT_FILES:
+        found = [finding for finding in found if finding.rule != "D25"]
     return sorted(found, key=lambda finding: (finding.line, finding.rule))
 
 
@@ -1390,7 +1444,7 @@ def scan_file(path: Path, relative: str) -> tuple[str, list[Finding]]:
         if match:
             file_allowed.update(part.strip() for part in match.group(1).split(","))
     kept: list[Finding] = []
-    for finding in scan_markdown(text, lang):
+    for finding in scan_markdown(text, lang, relative):
         category = CATEGORY_FOR_LEVEL[finding.level]
         line = (
             _mask_code_spans(lines[finding.line - 1])

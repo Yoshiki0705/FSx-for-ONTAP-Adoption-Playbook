@@ -901,7 +901,7 @@ def main() -> int:
         if path.suffix.lower() == ".md":
             text = "\n".join(lines)
             language = ai_style_rules.language_of(rel.as_posix(), text)
-            for found in ai_style_rules.scan_markdown(text, language):
+            for found in ai_style_rules.scan_markdown(text, language, rel.as_posix()):
                 category = ai_style_rules.CATEGORY_FOR_LEVEL[found.level]
                 marked = marker_categories(lines[found.line - 1])
                 if category in file_allowed or category in marked or "all" in marked:
