@@ -27,8 +27,8 @@ RENDERED = "次は**自分の構成**で引く。\n"
 JA_LEAD = "これはひらがなを十分に含む日本語の段落です。\n\n"
 
 
-def rule_ids(document: str, lang: str = "ja") -> set[str]:
-    return {finding.rule for finding in rules.scan_markdown(document, lang)}
+def rule_ids(document: str, lang: str = "ja", relpath: str = "") -> set[str]:
+    return {finding.rule for finding in rules.scan_markdown(document, lang, relpath)}
 
 
 class EachRuleHasAPositiveAndANegative(unittest.TestCase):
@@ -62,6 +62,61 @@ class EachRuleHasAPositiveAndANegative(unittest.TestCase):
     def test_rule_ids_are_unique(self) -> None:
         ids = [rule.id for rule in rules.RULES]
         self.assertEqual(len(ids), len(set(ids)))
+
+
+class CoinageLabelsD25(unittest.TestCase):
+    """D25 fires on a coinage used as a label, not on a plain word, a verb, or a contract file."""
+
+    def test_label_forms_fire(self) -> None:
+        cases = {
+            "bracket tag en": ("en", "The run is [verified] today.\n"),
+            "attested": ("en", "The claim is attested.\n"),
+            "witness bucket": ("en", "Stored in the witness bucket.\n"),
+            "evidence ledger": ("en", "Logged in the evidence ledger.\n"),
+            "zero-call": ("en", "It is a zero-call path.\n"),
+            "run envelope": ("en", "See the run envelope.\n"),
+            "open / not measured": ("en", "Marked open / not measured.\n"),
+            "ja 証拠台帳": ("ja", "この主張は証拠台帳に記録した。\n"),
+            "ja ゼロコール": ("ja", "これはゼロコールの経路だ。\n"),
+        }
+        for name, (lang, document) in cases.items():
+            with self.subTest(name=name):
+                self.assertIn("D25", rule_ids(document, lang))
+
+    def test_plain_words_and_verbs_are_silent(self) -> None:
+        cases = {
+            "bare verified": ("en", "We verified it in a real environment.\n"),
+            "verb witnessed": ("en", "We witnessed the execution.\n"),
+            "bare run": ("en", "The run finished.\n"),
+            "unlocked": ("en", "That unlocked the account.\n"),
+            "not measured alone": ("en", "We have not measured this.\n"),
+            "ja 検証済み": ("ja", "検証済みで安心だ。\n"),
+            "ja 実行回数": ("ja", "実行回数を記録した。\n"),
+        }
+        for name, (lang, document) in cases.items():
+            with self.subTest(name=name):
+                self.assertNotIn("D25", rule_ids(document, lang))
+
+    def test_code_identifiers_and_schema_keys_are_silent(self) -> None:
+        self.assertNotIn("D25", rule_ids("変数 `witness_bucket` を使う。\n"))
+        self.assertNotIn("D25", rule_ids("YAML の `tier: verified` を書く。\n"))
+        self.assertNotIn("D25", rule_ids("パス `evidence-ledger-v1/x` を開く。\n"))
+
+    def test_mermaid_fence_is_silent(self) -> None:
+        document = "```mermaid\ngraph LR\n  V[verified]\n  D[documented]\n```\n本文。\n"
+        self.assertNotIn("D25", rule_ids(document, "ja", "docs/ja/evidence-policy.md"))
+
+    def test_tier_contract_files_are_excluded_by_name(self) -> None:
+        self.assertNotIn("D25", rule_ids("The run is [verified].\n", "en", "AGENTS.md"))
+        self.assertNotIn(
+            "D25",
+            rule_ids("証拠台帳に記録した。\n", "ja", "docs/ja/evidence-policy.md"),
+        )
+
+    def test_an_ordinary_document_still_fires(self) -> None:
+        self.assertIn(
+            "D25", rule_ids("The run is [verified].\n", "en", "docs/en/foo.md")
+        )
 
 
 class NonProseIsExcluded(unittest.TestCase):
