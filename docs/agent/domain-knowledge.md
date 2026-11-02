@@ -8,18 +8,42 @@ These are established findings from sibling repositories. Do not re-derive them;
 
 ## Before you write "unverified"
 
-Two checks come first, in this order, and both are cheap. A label such as `hypothesis`, `未確認`, or
+Three checks come first, in this order, and all are cheap. A label such as `hypothesis`, `未確認`, or
 "not measured" is a statement that you looked and the answer was not there.
 
-1. **A Spoke may have measured it already.** The file-protocol (NFS / SMB), block (iSCSI / NVMe/TCP) and S3
+1. **Search what the Spokes have already done.** Run `make spoke-search Q='<product or feature name>'`
+   (a phrase needs quotes inside the single quotes). It reads the other repositories' *committed* content,
+   after fetching any ref gone stale, and lists their evidence-ledger entries with the tier each recorded,
+   their feature requests, limits and verification records, and the Kiro memory scope to read for each
+   repository. A hit does not mean your claim is wrong. It means someone investigated, and you read it
+   before saying otherwise. An empty result is also an answer: write down what you searched. Do not grep
+   `~/Projects/*` instead; that reads whatever each checkout happens to hold, and `.private/` holds vendor
+   correspondence that must not become the basis of a published claim.
+2. **A measurement may be indexed already.** The file-protocol (NFS / SMB), block (iSCSI / NVMe/TCP) and S3
    Access Points performance tests were run in the Spokes. Their locations, with the measurement
    environment, are in [`performance-evidence-map.md`](../ja/reference/performance-evidence-map.md); the
    claims this repository cites are in [`cross-repo-index.md`](../ja/reference/cross-repo-index.md). Cite
    those; do not re-measure and do not call them unmeasured.
-2. **Then ask whether a few hours would settle it.** A file system for FSx for ONTAP is kept running in
+3. **Then ask whether a few hours would settle it.** A file system for FSx for ONTAP is kept running in
    `ap-northeast-1` for verification, and AWS access on this machine is IAM Identity Center (SSO). If the
    claim can be tested there within a few hours, test it and record the result with its environment
    (`verified_on`, `region`, ONTAP version) instead of writing "unverified".
+
+Two programs make the first check run without anyone remembering it. Both are tracked here and are meant
+to be called from user-level Kiro hooks, so they apply in every repository of the family and in session
+worktrees, where the gitignored `.kiro/` of the main tree does not exist.
+
+| Program | Hook | What it does |
+|---|---|---|
+| `tools/spoke_search.py --digest` | Prompt submitted | Picks the product and feature names out of the prompt and prints where the Spokes hold records on them. Silent when nothing matches |
+| `scripts/guard_unverified_claims.py` | Before `fs_write`, `str_replace`, `fs_append` | Blocks a Markdown write that **adds** a "not verified / not measured" sentence over material a Spoke recorded, unless that paragraph names the Spoke. A measurement claim about performance must name the evidence map or a Spoke |
+
+The guard names product-shaped terms (CamelCase, digit-bearing, capitalised mid-sentence) found in a
+record of a conclusion in a Spoke: an evidence ledger, a feature request, a limits or pitfalls page, a
+decision. Terms found in many files (FlexCache, SnapMirror, S3 Access Points) name no topic and are not
+matched; the search above is how those are covered. When it blocks, change the text: link the Spoke
+file in the same paragraph with the tier it records, or, if the Spoke covers a neighbouring thing and
+you have said so, add `<!-- spoke-checked: <term> -->`. `git grep spoke-checked` lists every override.
 
 What is established, and what you must still check each time:
 

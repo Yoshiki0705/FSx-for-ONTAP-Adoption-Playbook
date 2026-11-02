@@ -54,10 +54,12 @@ lang: {lang}
 > `verified_on` と `region` を frontmatter に追記してください（**どちらも必須で、`make lint` が検査します**）。
 > ONTAP バージョンと構成は本文に書いてください。
 >
-> **「未確認」「未測定」と書く前に、2 つ確かめてください。**
-> 1. Spoke が既に測定していないか — `docs/ja/reference/performance-evidence-map.md`（NFS / SMB / iSCSI /
+> **「未確認」「未測定」と書く前に、3 つ確かめてください。**
+> 1. Spoke が既に調べていないか。`make spoke-search Q='製品名や機能名'` が、台帳の項目（tier 付き）、
+>    機能要望、検証記録を、他リポジトリの commit 済みの内容から探します
+> 2. 測定なら、地図に載っていないか。`docs/ja/reference/performance-evidence-map.md`（NFS / SMB / iSCSI /
 >    NVMe/TCP / S3 Access Points / FlexCache）と `docs/ja/reference/cross-repo-index.md`
-> 2. 数時間以内に検証できないか — ap-northeast-1 に FSx for ONTAP の検証環境が常時あります。
+> 3. 数時間以内に検証できないか。ap-northeast-1 に FSx for ONTAP の検証環境が常時あります。
 >    手順と前提は `docs/agent/domain-knowledge.md` の「検証環境」にあります
 
 ## 結論
