@@ -23,6 +23,7 @@ docs/en/domains/block-storage/notes/lun-layout-decides-recovery-granularity.md	s
 docs/en/domains/block-storage/notes/when-shared-block-changes-the-design.md	naming	2
 docs/en/playbooks/02-design/notes/deployment-type-is-decided-once.md	sales-vocabulary	1
 docs/en/playbooks/05-operate/notes/monitoring-fails-on-averages.md	naming	1
+docs/en/reference/netapp-primary-sources-map.md	sales-vocabulary	2
 docs/i18n-terms.md	file:naming	1
 docs/ja/case-studies/public-references.md	naming	1
 docs/ja/case-studies/public-references.md	sales-vocabulary	1
@@ -43,6 +44,7 @@ docs/ja/reference/comparison/README.md	file:neutrality	1
 docs/ja/reference/file-protocol-resource-map.md	sales-vocabulary	2
 docs/ja/reference/glossary/README.md	naming	1
 docs/ja/reference/limits/README.md	naming	1
+docs/ja/reference/netapp-primary-sources-map.md	sales-vocabulary	2
 docs/ja/workshop-studio/module-mapping.md	pii	1
 examples/multiprotocol-ad/README.md	sales-vocabulary	1
 examples/multiprotocol-ad/fsxontap-multiprotocol-ad.yaml	naming	1
