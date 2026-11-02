@@ -33,6 +33,7 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | [`cyber-resilience-capability-map.md`](cyber-resilience-capability-map.md) | サイバーレジリエンス機能マップ。どの Spoke が NIST CSF 2.0 のどの機能を担うかの 1 枚。詳細は各 Spoke のドキュメントへ送る / Cyber resilience capability map: a one-page view of which Spoke covers which NIST CSF 2.0 function, sending you to each Spoke's documentation for detail。**英語版あり / [English version](../../en/reference/cyber-resilience-capability-map.md)** |
 | [`gcp-to-fsx-ontap-preflight-and-sample-validation.md`](gcp-to-fsx-ontap-preflight-and-sample-validation.md) / [English](../../en/reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) | GCP と FSx for ONTAP の到達性、NFS サンプル検証、DP read-only 確認 / GCP reachability, NFS sample validation, and DP read-only checks |
 | [`gcp-to-fsx-ontap-peering-and-replication-open-items.md`](gcp-to-fsx-ontap-peering-and-replication-open-items.md) / [English](../../en/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) | GCNV 管理面のピアリング・レプリケーション未解決項目 / Open items for GCNV-managed peering and replication |
+| [`flexcache-cli-nfs-simplified.md`](flexcache-cli-nfs-simplified.md) / [English](../../en/reference/flexcache-cli-nfs-simplified.md) | FlexCache CLI 手順 (NFS編) – 簡易版。SMB 版に対応する NFSv3 + write-around + FlexGroup の最短経路 / FlexCache CLI procedure (NFS), the NFSv3 + write-around + FlexGroup short path matching the SMB version |
 
 ---
 
