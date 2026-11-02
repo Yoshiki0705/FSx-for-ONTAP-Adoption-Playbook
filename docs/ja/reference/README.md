@@ -34,6 +34,7 @@ Cross-cutting reference material, referenced from both the lifecycle and topic a
 | [`gcp-to-fsx-ontap-preflight-and-sample-validation.md`](gcp-to-fsx-ontap-preflight-and-sample-validation.md) / [English](../../en/reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) | GCP と FSx for ONTAP の到達性、NFS サンプル検証、DP read-only 確認 / GCP reachability, NFS sample validation, and DP read-only checks |
 | [`gcp-to-fsx-ontap-peering-and-replication-open-items.md`](gcp-to-fsx-ontap-peering-and-replication-open-items.md) / [English](../../en/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) | GCNV 管理面のピアリング・レプリケーション未解決項目 / Open items for GCNV-managed peering and replication |
 | [`flexcache-cli-nfs-simplified.md`](flexcache-cli-nfs-simplified.md) / [English](../../en/reference/flexcache-cli-nfs-simplified.md) | FlexCache CLI 手順 (NFS編) – 簡易版。SMB 版に対応する NFSv3 + write-around + FlexGroup の最短経路 / FlexCache CLI procedure (NFS), the NFSv3 + write-around + FlexGroup short path matching the SMB version |
+| [`netapp-primary-sources-map.md`](netapp-primary-sources-map.md) / [English](../../en/reference/netapp-primary-sources-map.md) | FlexCache とストレージチューニングの NetApp／AWS 一次資料マップ。設計・運用・構築で読む TR / ベストプラクティスへの導線。資料の結論は転記せず所在だけを索引 / NetApp/AWS primary-source map for FlexCache and storage tuning: the discovery path to TRs and best-practice docs for design, operation, and build; indexes locations, not conclusions |
 
 ---
 

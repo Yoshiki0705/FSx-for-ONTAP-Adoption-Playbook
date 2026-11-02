@@ -37,6 +37,15 @@
 | 10 | FlexGroup はどこで負荷を分散し、作成後に何が動かないか | [FlexGroup は新しいファイルを作るときに分散し、置いた後は動かさない](notes/flexgroup-balances-at-file-creation-not-afterward.md) |
 | 11 | QoS バーストのデフォルト値は FSx for ONTAP で変更できるか | [QoS バーストのデフォルト値はユーザーが変更できる](notes/qos-burst-defaults-are-user-modifiable.md) |
 | 12 | QoS の上限とバーストはどのワークロードに効き、上限を設ける他の手段とどう選び分けるか | [QoS の上限とバーストは、どのワークロードに効くのか](notes/qos-ceiling-burst-use-cases.md) |
+| 13 | FlexCache で読めるのに書けないとき、どこを見るか。無認証ピアはなぜ解除できないか | [FlexCache で「読めるのに書けない」ときに最初に見るところ](notes/flexcache-origin-permissions-and-peering-constraints.md) |
+
+---
+
+## FlexCache・チューニングの一次資料
+
+| 読むもの | 何が分かるか |
+|---|---|
+| [FlexCache とストレージチューニングの NetApp／AWS 一次資料マップ](../../reference/netapp-primary-sources-map.md) | 設計・運用・構築で読む TR / ベストプラクティスへの導線。資料の結論は転記せず所在だけを索引 |
 
 ---
 

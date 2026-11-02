@@ -37,6 +37,15 @@ Covers throughput design, latency, caching, and shared-bandwidth behavior. Alway
 | 10 | Where a FlexGroup spreads load, and what stays put after creation | [A FlexGroup balances when files are created, not afterward](notes/flexgroup-balances-at-file-creation-not-afterward.md) |
 | 11 | Can the QoS burst defaults be changed on FSx for ONTAP | [The QoS burst defaults are user-modifiable](notes/qos-burst-defaults-are-user-modifiable.md) |
 | 12 | Which workloads the QoS ceiling and burst help, and how to choose between QoS and other ways to cap throughput | [Which workloads do the QoS ceiling and burst help](notes/qos-ceiling-burst-use-cases.md) |
+| 13 | Where to look when FlexCache reads but will not write, and why an unauthenticated peer cannot be reverted | [Where to look first when FlexCache reads but will not write](../../../ja/domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) (日本語) |
+
+---
+
+## FlexCache and tuning primary sources
+
+| Read | What it settles |
+|---|---|
+| [NetApp/AWS primary-source map for FlexCache and storage tuning](../../reference/netapp-primary-sources-map.md) | The discovery path to the TRs and recommended-practice docs to read for design, operation, and build. Indexes locations, not the documents' conclusions |
 
 ---
 
