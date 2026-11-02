@@ -112,6 +112,7 @@ graph TD
 | [業種別リソースマップ](reference/industry-resource-map.md) | 業種を入口に、読むモジュールと公開リソースを引きたい |
 | [課題別 ISV / SaaS 選択肢マップ](reference/isv-solution-map.md) | 課題を入口に、組み合わせが公表されている製品と判断ノートの有無を引きたい |
 | [ワークロード別の入口マップ](reference/workload-entry-map.md) | ワークロードを入口に、最初に読むノートの節と、それが防ぐ問題を引きたい |
+| [性能実測の所在マップ](reference/performance-evidence-map.md) | ある性能がどの Spoke のどの文書で実測済みかを探したい。**「性能は未測定」と書く前に確認する** |
 | [プロジェクト間の引用索引](reference/cross-repo-index.md) | ある数値をどのリポジトリから引いているか確かめたい |
 | [上限値・クォータ](reference/limits/) | 設計が上限に当たらないか確認したい |
 | [用語集](reference/glossary/) | ONTAP / AWS の用語の定義を確認したい |

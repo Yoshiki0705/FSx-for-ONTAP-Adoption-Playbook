@@ -98,6 +98,29 @@ ICONS = {
         "Architecture-Service-Icons_{d}/Arch_Networking-Content-Delivery/64/"
         "Arch_Amazon-Virtual-Private-Cloud_64.svg"
     ),
+    "healthomics": (
+        "Architecture-Service-Icons_{d}/Arch_Artificial-Intelligence/64/"
+        "Arch_AWS-HealthOmics_64.svg"
+    ),
+    "s3": (
+        "Architecture-Service-Icons_{d}/Arch_Storage/64/"
+        "Arch_Amazon-Simple-Storage-Service_64.svg"
+    ),
+    # A storage resource icon, not a general one: it ships a single file with no Light/Dark
+    # variant, so no `{v}` here. Placed at 48 per the resource-icon size rule.
+    "s3_tables": (
+        "Resource-Icons_{d}/Res_Storage/"
+        "Res_Amazon-Simple-Storage-Service_S3-Tables_48.svg"
+    ),
+    "agentcore": (
+        "Architecture-Service-Icons_{d}/Arch_Artificial-Intelligence/64/"
+        "Arch_Amazon-Bedrock-AgentCore_64.svg"
+    ),
+    # The resource icon for an access point, which the standard prefers over the generic bucket.
+    "s3_access_point": (
+        "Resource-Icons_{d}/Res_Storage/"
+        "Res_Amazon-Simple-Storage-Service_General-Access-Points_48.svg"
+    ),
 }
 
 # Google Cloud icons come from the official product-icon packages. Cloud VPN and Cloud Router are
@@ -129,6 +152,11 @@ ICON_SIZE = {
     "gcp_storage": 80,
     "gcp_vpn": 80,
     "gcp_router": 80,
+    "healthomics": 80,
+    "s3": 80,
+    "s3_tables": 48,
+    "agentcore": 80,
+    "s3_access_point": 48,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -486,6 +514,152 @@ LABELS: dict[str, dict[str, str]] = {
     "cache_gcnv": {
         "ja": "Cache<br>Google Cloud NetApp Volumes",
         "en": "Cache<br>Google Cloud NetApp Volumes",
+    },
+    # --- genomics-hpc-data-layers ---------------------------------------------------------------
+    # The figure makes one claim: data sits in three layers with different roles, and a managed
+    # object store does not replace the POSIX shared layer. Each label leads with the official
+    # service name; the role is a second-line qualifier, per the naming rule.
+    "onprem_ontap": {
+        "ja": "オンプレミスの<br>NetApp ONTAP",
+        "en": "On-premises<br>NetApp ONTAP",
+    },
+    "fsx_shared_layer": {
+        "ja": "Amazon FSx for NetApp ONTAP<br>（POSIX 共有ファイル層）",
+        "en": "Amazon FSx for NetApp ONTAP<br>(POSIX shared file layer)",
+    },
+    "healthomics_store": {
+        "ja": "AWS HealthOmics<br>（run storage を内蔵）",
+        "en": "AWS HealthOmics<br>(run storage built in)",
+    },
+    "s3_tables_query": {
+        "ja": "Amazon S3 Tables<br>（構造化バリアントのクエリ）",
+        "en": "Amazon S3 Tables<br>(structured variant queries)",
+    },
+    "agentcore_agent": {
+        "ja": "Amazon Bedrock AgentCore<br>（解釈エージェント）",
+        "en": "Amazon Bedrock AgentCore<br>(interpretation agent)",
+    },
+    "mobility_snapmirror": {
+        "ja": "FlexCache<br>または SnapMirror",
+        "en": "FlexCache<br>or SnapMirror",
+    },
+    "outside_run_frame": {
+        "ja": "run の外側（共有ファイル層を自分で用意する側）",
+        "en": "Outside a run (you supply the shared file layer)",
+    },
+    "managed_run_frame": {
+        "ja": "マネージドな解析（共有ファイルシステムはサービスが提供）",
+        "en": "Managed analysis (the service supplies the shared file system)",
+    },
+    "s3_access_point_input": {
+        "ja": "Amazon S3 Access Points<br>（S3 API で同じデータを読む）",
+        "en": "Amazon S3 Access Points<br>(same data over the S3 API)",
+    },
+    "via_access_points": {
+        "ja": "S3 Access Points 経由<br>（Cache には付けられない）",
+        "en": "via S3 Access Points<br>(not on a Cache)",
+    },
+    "vcf_to_tables": {
+        "ja": "VCF → 構造化テーブル",
+        "en": "VCF -&gt; structured tables",
+    },
+    "query_variants": {
+        "ja": "バリアントをクエリ",
+        "en": "query variants",
+    },
+    "genomics_notes": {
+        "ja": (
+            "<b>補足</b><br>"
+            "※1 共有ファイル層の置き場は run の外側<br>"
+            "AWS HealthOmics の run は共有ファイルシステム（run storage）をサービスが提供する。"
+            "FSx for ONTAP が入るのは、共有層を自分で用意する基盤（AWS Batch の EC2 起動タイプ、"
+            "自前の HPC、オンプレミス）側。<br>"
+            "※2 2 つの枠は線で結んでいない<br>"
+            "HealthOmics が FSx for ONTAP の S3 Access Points を入力に使えるかは未確認。<br>"
+            "※3 他クラウドの ONTAP サービスを Origin にした FlexCache は未確認"
+        ),
+        "en": (
+            "<b>Notes</b><br>"
+            "*1 The shared file layer sits outside a run<br>"
+            "An AWS HealthOmics run gets its shared file system (run storage) from the service. "
+            "FSx for ONTAP is a candidate where you supply the shared layer (AWS Batch on EC2, "
+            "your own HPC, on premises).<br>"
+            "*2 The two frames are deliberately not joined<br>"
+            "Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as input is "
+            "unverified.<br>"
+            "*3 FlexCache with a non-AWS ONTAP service as Origin is unverified"
+        ),
+    },
+    # --- ai-hpc-cross-cloud-mobility ------------------------------------------------------------
+    # Reuses the GCNV/FSx mobility framing of the gcp-fsx figures, lifted to the cross-cloud
+    # analytics context: write path local, cross-cloud dependency on the read side.
+    "onprem_ontap_origin": {
+        "ja": "オンプレミスの NetApp ONTAP<br>（Origin）",
+        "en": "On-premises NetApp ONTAP<br>(Origin)",
+    },
+    "onprem_ontap_source": {
+        "ja": "オンプレミスの NetApp ONTAP<br>（SnapMirror 元）",
+        "en": "On-premises NetApp ONTAP<br>(SnapMirror source)",
+    },
+    "fsx_cache_read": {
+        "ja": "Amazon FSx for NetApp ONTAP<br>（Cache。NFS / SMB で読む）",
+        "en": "Amazon FSx for NetApp ONTAP<br>(Cache, read over NFS / SMB)",
+    },
+    "fsx_dest_read": {
+        "ja": "Amazon FSx for NetApp ONTAP<br>（SnapMirror の宛先）",
+        "en": "Amazon FSx for NetApp ONTAP<br>(SnapMirror destination)",
+    },
+    "s3_access_point_analytics": {
+        "ja": "Amazon S3 Access Points<br>（分析基盤が S3 API で読む）",
+        "en": "Amazon S3 Access Points<br>(analytics reads over the S3 API)",
+    },
+    "flexcache_fetch": {
+        "ja": "FlexCache<br>（必要分を取得）",
+        "en": "FlexCache<br>(fetch on demand)",
+    },
+    "snapmirror_replicate": {
+        "ja": "SnapMirror<br>（複製）",
+        "en": "SnapMirror<br>(replicate)",
+    },
+    "serve_s3": {
+        "ja": "break せず<br>S3 API で読む",
+        "en": "read over S3 API,<br>no break",
+    },
+    "flexcache_row_frame": {
+        "ja": "読み取りを近づける: FlexCache（Cache に S3 Access Points は付けられない）",
+        "en": "Bring reads closer: FlexCache (no S3 Access Point on a Cache)",
+    },
+    "snapmirror_row_frame": {
+        "ja": "S3 API で読ませる: SnapMirror の宛先に S3 Access Points",
+        "en": "Serve over S3: S3 Access Point on a SnapMirror destination",
+    },
+    "crosscloud_frame": {
+        "ja": "他クラウドの ONTAP サービス（Google Cloud NetApp Volumes / Azure NetApp Files）",
+        "en": "Non-AWS ONTAP service (Google Cloud NetApp Volumes / Azure NetApp Files)",
+    },
+    "crosscloud_open": {
+        "ja": "未確認: 他クラウドを Origin にした FlexCache は、自環境で検証してから設計前提に置く",
+        "en": "Unverified: verify FlexCache with a non-AWS Origin before relying on it",
+    },
+    "mobility_notes": {
+        "ja": (
+            "<b>補足</b><br>"
+            "※1 書き込みはローカル、クロスな依存は読み取り側<br>"
+            "書き込み経路にクロスクラウド依存を入れると、取り込みが相手の API に結合する。<br>"
+            "※2 FlexCache の Cache は S3 Access Points を付けられない<br>"
+            "S3 API で読ませるなら SnapMirror の宛先を使う。<br>"
+            "※3 他クラウドとのあいだは線を引いていない<br>"
+            "ネットワークが届くことと、FlexCache が成立することは別の問い。"
+        ),
+        "en": (
+            "<b>Notes</b><br>"
+            "*1 Write local, put the cross-cloud dependency on the read side<br>"
+            "A write path that crosses clouds couples ingest to the remote API.<br>"
+            "*2 A FlexCache Cache cannot take an S3 Access Point<br>"
+            "To serve over the S3 API, use a SnapMirror destination.<br>"
+            "*3 No line is drawn to a non-AWS service<br>"
+            "Network reachability and a working FlexCache are different questions."
+        ),
     },
 }
 
@@ -1071,6 +1245,147 @@ def _gcp_flexcache_reverse() -> Diagram:
     )
 
 
+def _genomics_data_layers() -> Diagram:
+    """Where genomics / HPC data sits: outside a HealthOmics run, and inside the managed analysis.
+
+    Two rows, no edge between them. The top row is what this repository can speak to: on-premises
+    ONTAP data reaching FSx for ONTAP (FlexCache fetches what is needed; SnapMirror replicates),
+    and the same data read over the S3 API through an S3 Access Point. The bottom row is the
+    published HealthOmics -> Amazon S3 Tables -> Amazon Bedrock AgentCore chain, where the run has
+    its own shared file system (run storage).
+
+    No edge joins the rows. Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as
+    input has not been checked, so the figure does not draw it. Every row is read rightwards, and
+    nothing leaves the bottom of an icon, so no line crosses an icon's label.
+    """
+    return Diagram(
+        name="genomics-hpc-data-layers",
+        diagram_id="genomics-hpc-data-layers",
+        width=980,
+        height=770,
+        frames=(
+            Frame("outside_run", "outside_run_frame", 30, 30, 920, 250),
+            Frame("managed_run", "managed_run_frame", 30, 310, 920, 230),
+        ),
+        boxes=(
+            # On-premises NetApp ONTAP has no official AWS icon: a named box states the resource
+            # without borrowing an AWS service mark.
+            Box("onprem", "onprem_ontap", 60, 110, 170, 80),
+        ),
+        notes=(Note("notes", "genomics_notes", 30, 570, 920, 170),),
+        nodes=(
+            Node("fsx", "fsx_ontap", "fsx_shared_layer", 400, 110),
+            Node("ap", "s3_access_point", "s3_access_point_input", 720, 126),
+            Node("healthomics", "healthomics", "healthomics_store", 110, 390),
+            Node("s3tables", "s3_tables", "s3_tables_query", 440, 406),
+            Node("agentcore", "agentcore", "agentcore_agent", 700, 390),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "onprem",
+                "fsx",
+                "mobility_snapmirror",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -22),
+            ),
+            Edge(
+                "e2",
+                "fsx",
+                "ap",
+                "via_access_points",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+            Edge(
+                "e3",
+                "healthomics",
+                "s3tables",
+                "vcf_to_tables",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+            Edge(
+                "e4",
+                "s3tables",
+                "agentcore",
+                "query_variants",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+        ),
+    )
+
+
+def _crosscloud_mobility() -> Diagram:
+    """Cross-cloud data mobility: write path local, cross dependency on the read side.
+
+    Two rows, both drawn only from what is documented. Top: on-premises ONTAP as Origin, FSx for
+    ONTAP as Cache (FlexCache); the Cache is read over NFS / SMB and an S3 Access Point cannot be
+    attached to it, so no S3 edge leaves it. Bottom: on-premises ONTAP replicated by SnapMirror to
+    FSx for ONTAP, whose destination volume can be read over the S3 API through an S3 Access
+    Point without a break.
+
+    A non-AWS ONTAP service is drawn as a dashed frame with no edge, because FlexCache with it as
+    Origin is unverified: a solid line would assert the very thing the figure says is unverified.
+    """
+    return Diagram(
+        name="ai-hpc-cross-cloud-mobility",
+        diagram_id="ai-hpc-cross-cloud-mobility",
+        width=960,
+        height=880,
+        frames=(
+            Frame("fc_row", "flexcache_row_frame", 30, 30, 900, 230),
+            Frame("sm_row", "snapmirror_row_frame", 30, 290, 900, 230),
+            Frame("crosscloud", "crosscloud_frame", 30, 550, 900, 110),
+        ),
+        boxes=(
+            Box("onprem_fc", "onprem_ontap_origin", 60, 100, 200, 80),
+            Box("onprem_sm", "onprem_ontap_source", 60, 360, 200, 80),
+            Box("open", "crosscloud_open", 60, 600, 840, 44),
+        ),
+        notes=(Note("notes", "mobility_notes", 30, 690, 900, 160),),
+        nodes=(
+            Node("fsx_cache", "fsx_ontap", "fsx_cache_read", 420, 100),
+            Node("fsx_dest", "fsx_ontap", "fsx_dest_read", 420, 360),
+            Node("ap", "s3_access_point", "s3_access_point_analytics", 700, 376),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "onprem_fc",
+                "fsx_cache",
+                "flexcache_fetch",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+            Edge(
+                "e2",
+                "onprem_sm",
+                "fsx_dest",
+                "snapmirror_replicate",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+            Edge(
+                "e3",
+                "fsx_dest",
+                "ap",
+                "serve_s3",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+        ),
+    )
+
+
 DIAGRAMS = (
     _backup_copy(),
     _qos_two_plane(),
@@ -1080,6 +1395,8 @@ DIAGRAMS = (
     _gcp_reverse_resync(),
     _gcp_flexcache_forward(),
     _gcp_flexcache_reverse(),
+    _genomics_data_layers(),
+    _crosscloud_mobility(),
 )
 
 
@@ -1153,14 +1470,29 @@ def google_icon_package(explicit: str | None) -> dict[str, Path]:
     )
 
 
+def used_icon_keys(diagrams: tuple[Diagram, ...]) -> set[str]:
+    """Every icon key referenced by the given diagrams' nodes.
+
+    Used to decide which icon packages a build actually needs. A change that touches only the
+    AWS-icon figures must not demand the Google Cloud packages, which are a separate manual
+    download — so the Google packages are loaded lazily, only when a selected diagram references a
+    Google icon. This keeps the committed GCP figures' bytes identical (their icons are already
+    embedded) while letting an AWS-only change build and check without them, via `--only`.
+    """
+    return {node.icon for diagram in diagrams for node in diagram.nodes}
+
+
 def data_uris(
-    package: Path, google_packages: dict[str, Path]
+    package: Path, google_packages: dict[str, Path] | None
 ) -> dict[tuple[str, str], str]:
     """Read every icon, per theme, and build its draw.io data URI.
 
     Keyed by (icon, theme) because the general resource icons ship a Light and a Dark file and the
     dark diagram has to carry the Dark bytes. Service icons have one file and are read twice; that
     costs nothing and keeps the lookup uniform.
+
+    `google_packages` is `None` when no selected diagram uses a Google icon; the Google loop is
+    then skipped so the build does not require packages it will not read.
 
     The comma-only URI form is required. `data:image/svg+xml;base64,` exports a broken-image
     placeholder rather than failing, so the export "succeeds" and only looking at the picture shows
@@ -1177,6 +1509,8 @@ def data_uris(
                 raise SystemExit(f"build_diagrams: {resolved} missing from {package}")
             encoded = base64.b64encode(path.read_bytes()).decode("ascii")
             uris[(key, theme)] = f"data:image/svg+xml,{encoded}"
+        if google_packages is None:
+            continue
         for key, (package_name, relative) in GOOGLE_ICONS.items():
             path = google_packages[package_name] / relative
             if not path.is_file():
@@ -1326,10 +1660,10 @@ def cells(xml: str) -> list[tuple[str, str, str, str]]:
     return out
 
 
-def check(uris: dict[tuple[str, str], str]) -> int:
+def check(uris: dict[tuple[str, str], str], diagrams: tuple[Diagram, ...]) -> int:
     problems = 0
     total = 0
-    for diagram in DIAGRAMS:
+    for diagram in diagrams:
         for lang in LANGS:
             for theme in THEMES:
                 total += 1
@@ -1431,19 +1765,39 @@ def main() -> int:
         "--google-icons",
         help="directory containing extracted core/, category/, and legacy/ Google icon packages",
     )
+    parser.add_argument(
+        "--only",
+        action="append",
+        metavar="NAME",
+        help=(
+            "build or check only the named diagram(s); repeatable. Lets an AWS-only change skip "
+            "the Google Cloud packages the GCP figures would otherwise require."
+        ),
+    )
     args = parser.parse_args()
 
     if not (args.write or args.check):
         parser.error("give --write or --check")
 
-    uris = data_uris(icon_package(args.icons), google_icon_package(args.google_icons))
+    names = {d.name for d in DIAGRAMS}
+    if args.only:
+        unknown = sorted(set(args.only) - names)
+        if unknown:
+            parser.error(f"--only names no such diagram: {', '.join(unknown)}")
+        selected = tuple(d for d in DIAGRAMS if d.name in set(args.only))
+    else:
+        selected = DIAGRAMS
+
+    needs_google = bool(used_icon_keys(selected) & set(GOOGLE_ICONS))
+    google_packages = google_icon_package(args.google_icons) if needs_google else None
+    uris = data_uris(icon_package(args.icons), google_packages)
 
     if args.check:
-        return check(uris)
+        return check(uris, selected)
 
     DIAGRAM_DIR.mkdir(parents=True, exist_ok=True)
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    for diagram in DIAGRAMS:
+    for diagram in selected:
         for lang in LANGS:
             for theme in THEMES:
                 path = DIAGRAM_DIR / diagram.filename(lang, theme)

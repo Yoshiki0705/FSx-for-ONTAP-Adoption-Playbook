@@ -30,6 +30,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 | [端末からデータに届く経路の選択](client-access-route.md) | 端末の種類より先に到達経路が決まっており、経路がストレージ形態を狭める順序をたどる。**パブリックインターネット経由は分岐ではなく前提として存在しません** / Following the order in which the reachability route — decided before the endpoint type — narrows which storage forms remain. **Access over the public internet is not a branch; it does not exist** |
 | [ウイルス対策の適用範囲をどこまでにするか](vscan-antivirus-scope.md) | AD 参加の有無・対象プロトコル・共有の設定・スキャン不能時の扱いで構成が先に決まる順序をたどる。**終端にベンダー名は現れません** / Following the order in which AD membership, protocol, share settings, and the behaviour when scanning is unavailable settle the configuration. **No terminal names a vendor**。**英語版あり / [English version](../../../en/reference/decision-trees/vscan-antivirus-scope.md)** |
 | [手元のスループット値は何を測ったのかを判定する](measured-throughput-triage.md) | 4 か所ある上限のどこに当たっているかを切り分ける。**当たっている場所によって打つ手が正反対になります** / Isolating which of four ceilings a disappointing throughput figure actually hit, because the remedy for one is a no-op for the others |
+| [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](ai-workload-data-layer.md) | 業種ではなくワークロードの形（S3 で足りるか・POSIX か・複数ホスト同時か・ONTAP 資産の持ち込み・RAG ソース）で分岐する。**経由させない終端が 2 つあります** / Branching on workload shape rather than industry. **Two terminals do not route through FSx for ONTAP** |
 
 ---
 
@@ -41,6 +42,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 | 分岐の根拠を表で補う / Back each branch with a table | 図だけでは「なぜその分岐か」が伝わらない / A diagram alone does not convey why |
 | 「よくある誤解」を必ず入れる / Always include common misconceptions | 誤った前提での分岐が最も多い失敗 / Branching on a false premise is the most common failure |
 | 推奨案の制約も書く / State the recommended option's constraints too | 一方的な推奨は判断材料にならない / A one-sided recommendation is not decision material |
+| 性能を根拠にする分岐は実測の所在を [性能実測の所在マップ](../performance-evidence-map.md) で確認する / For a branch that rests on performance, check the evidence map | NFS / SMB / S3 Access Points / FlexCache は Spoke で実測済み。「未測定」と書かない / These are already measured in Spokes; do not write "not measured" |
 
 ---
 

@@ -53,6 +53,12 @@ lang: {lang}
 > **Evidence**: `hypothesis` - 未検証の推論です。検証したら `evidence` を昇格し、
 > `verified_on` と `region` を frontmatter に追記してください（**どちらも必須で、`make lint` が検査します**）。
 > ONTAP バージョンと構成は本文に書いてください。
+>
+> **「未確認」「未測定」と書く前に、2 つ確かめてください。**
+> 1. Spoke が既に測定していないか — `docs/ja/reference/performance-evidence-map.md`（NFS / SMB / iSCSI /
+>    NVMe/TCP / S3 Access Points / FlexCache）と `docs/ja/reference/cross-repo-index.md`
+> 2. 数時間以内に検証できないか — ap-northeast-1 に FSx for ONTAP の検証環境が常時あります。
+>    手順と前提は `docs/agent/domain-knowledge.md` の「検証環境」にあります
 
 ## 結論
 

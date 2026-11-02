@@ -667,6 +667,7 @@ issue 本文や説明文へ転記すると同じ問題が再発します。**故
 
 ## 関連ドキュメント
 
+- [性能実測の所在マップ](performance-evidence-map.md) — どの性能がどの Spoke で実測済みか。この索引が probe で指す結果文書を、プロトコル・論点から引きたいとき
 - [業種別リソースマップ](industry-resource-map.md) — 業種から入ったときの索引
 - [ブロックストレージ横断リソースマップ](block-storage-resource-map.md) — 一次情報の索引と資料間の食い違い
 - [知見の分類ポリシー](../evidence-policy.md) — エビデンス階層の定義

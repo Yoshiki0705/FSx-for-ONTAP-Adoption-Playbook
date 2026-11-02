@@ -75,6 +75,7 @@ lang: ja
 | [本番投入前レビュー](../playbooks/04-build/checklists/pre-production-review.md) | **後から変えられない項目**は業種を問いません。SnapLock、Snapshot locking、セキュリティスタイル、`NetworkOrigin` |
 | [知見の分類ポリシー](../evidence-policy.md) | 事例の数値をそのまま設計根拠にしないための区分 |
 | [上限値・クォータ](limits/) | 上限に当たるかどうかは構成で決まり、業種では決まりません |
+| [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](decision-trees/ai-workload-data-layer.md) | **生成 AI・エージェント・HPC のデータ層の判断は業種では決まりません。** S3 で足りるか・POSIX か・複数ホスト同時か・ONTAP 資産の持ち込み・RAG ソースの 4 問で分岐します |
 
 ---
 
@@ -100,9 +101,13 @@ lang: ja
 | 技術資料 | [EDA Scale with IBM LSF](https://aws.amazon.com/blogs/industries/eda-scale-with-fsx-for-netapp-ontap-and-ibm-lsf/) | バッチスケジューラとのスケール |
 | パターン | [UC6: semiconductor-eda](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/semiconductor-eda/) | GDS/OASIS バリデーション |
 | 技術資料 | [AI Projects Are Data Projects: Lessons from Semiconductor Defect Classification](https://medium.com/@janhavi.giri/ai-projects-are-data-projects-lessons-from-semiconductor-defect-classification-f47fddae1cf7) | 欠陥分類 AI のデータ層の摩擦と自己サービス運用モデルの整理。**educational mimic であり実測値の出典ではありません** |
+| 事例 | [SUMCO — Amazon Redshift × 生成 AI による半導体ウェーハ製造 DX](https://aws.amazon.com/jp/blogs/news/sumco-redshift-generative-ai-semiconductor-wafer-dx/) | 製造装置の時系列データ（CSV / Parquet）を S3 に集約し Redshift へ。工場と AWS を Direct Connect で接続するハイブリッド構成。**生成 AI によるデータ分析は PoC 段階と明記** |
+| 技術資料 | [HPC Competency と 9 倍の性能向上（NetApp）](https://www.netapp.com/newsroom/press-releases/news-rel-20231128-255851/) | FSx for ONTAP が HPC / EDA / VFX / ライフサイエンス / seismic 等の高性能用途に対応したこと |
+| 技術資料 | [Optimize HPC workloads on AWS with scalable storage（NetApp）](https://www.netapp.com/blog/optimize-hpc-aws-scalable-storage/) | 高度に並列な HPC / EDA ジョブの共有ストレージとしての位置づけ。Arm の利用に言及 |
 | ノート | [スループットは 1 つの設定値では決まらない](../domains/performance/notes/where-throughput-is-determined-and-shared.md) | 世代・構成・リージョンで上限が変わる |
 | ノート | [学習データセットの版をスケジュール Snapshot に載せると消える](../domains/data-utilization/notes/dataset-versions-and-experiment-branches.md) | 欠陥分類 AI のデータセット版管理と実験ブランチの制約 |
 | ノート | [実験ブランチを配るときに縛る対象は権限だけではない](../domains/security-governance/notes/self-service-without-storage-admin.md) | 解析エンジニアに管理者権限を渡さない運用モデル |
+| 決定木 | [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](decision-trees/ai-workload-data-layer.md) | EDA / HPC は「多数ホストが同じ共有ファイルシステムを同時に叩く」形。共有ファイル層へ分岐します |
 
 ### 自動車 / ADAS / 自動運転
 
@@ -136,8 +141,8 @@ lang: ja
 | 技術資料 | [FSI 向けサービス解説](https://aws.amazon.com/blogs/industries/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) / [日本語版](https://aws.amazon.com/jp/blogs/news/fsi-services-spotlight-featuring-amazon-fsx-for-netapp-ontap/) | 金融業界で問われる論点の整理 |
 | パターン | [UC2: financial-idp](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/financial-idp/) | 帳票 OCR・エンティティ抽出 |
 | ノート | [課金は「確保した量」と「使った量」に分かれる](../domains/cost/notes/provisioned-versus-consumed.md) | TCO の構造 |
-
-### 保険
+| 事例 | [Amazon Quick と Snowflake Cortex AI による AML アラートトリアージの自動化](https://aws.amazon.com/jp/blogs/news/automate-aml-alert-triage-with-amazon-quick-and-snowflake-cortex-ai/) | コンプライアンス文書のコーパスと取引データを MCP 経由で横断。非構造化文書のナレッジソース化。**調査時間の短縮値はテスト環境の結果で、複雑さとデータ量で変わると明記** |
+| 判断 | [Amazon Quick を FSx for ONTAP のデータソースにする](../ai-agents/quick/README.md) | NAS 上のコンプライアンス文書を S3 Access Points 経由でナレッジベース化する適合判断 |
 
 | 種類 | リソース | 論点 |
 |------|----------|------|
@@ -153,6 +158,13 @@ lang: ja
 | 事例 | [Duke Health](https://www.netapp.com/industries/healthcare/case-study-duke-health/) | ミッションクリティカル + HPC ワークロード |
 | 事例 | [医療機器メーカー SQL Server 移行](https://docs.netapp.com/us-en/netapp-solutions-databases/mssql/customer-usecase-mssql-fsx1.html) | オンプレミス SQL Server のコスト削減 |
 | パターン | [UC5: healthcare-dicom](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/healthcare-dicom/) | DICOM 匿名化パイプライン |
+| 事例 | [AstraZeneca データファブリック](https://www.netapp.com/customers/astrazeneca-data-fabric-case-study/) | 研究データをオンプレミスとクラウドにまたいで扱うライフサイエンスのデータファブリック |
+| 事例 | [広島大学 × AWS × NetApp 生成 AI 実証](https://www.netapp.com/ja/blog/hiroshima-university-aws-genai-2/) | 大学の研究データを FSx for ONTAP に置き生成 AI から利用 |
+| 技術資料 | [MGI / Sentieon / AWS でのゲノムデータストレージとワークフロー](https://aws.amazon.com/jp/blogs/news/enhanced-genomic-data-storage-and-workflows-with-mgi-sentieon-and-aws/) | シーケンサー施設（週 63 Tb）→ S3 → HealthOmics Sequence Store。二次解析の共有層とデータモビリティの文脈 |
+| 技術資料 | [PacBio WGS バリアントパイプラインのベンチマーク（HealthOmics）](https://aws.amazon.com/jp/blogs/news/publicsector-benchmarking-pacbio-whole-genome-sequencing-variant-pipeline-analysis-with-aws-healthomics-workflows/) | WDL のコンテナ化パイプライン。二次解析の入出力（BAM / VCF）の置き場 |
+| 技術資料 | [HealthOmics + Bedrock AgentCore でのバリアント解釈](https://aws.amazon.com/jp/blogs/news/accelerating-genomics-variant-interpretation-with-aws-healthomics-and-amazon-bedrock-agentcore/) | VCF → VEP → S3 Tables → AgentCore エージェント。構造化バリアントのクエリ層 |
+| 技術資料 | [Kiro for Life Sciences — 100+ 公開 DB への統合 AI インターフェース](https://aws.amazon.com/jp/blogs/news/accelerating-life-sciences-research-with-kiro-a-unified-ai-interface-to-100-open-source-databases/) | 研究者が公開 DB を横断する MCP。**ストレージは主役ではなく、自前の解析データと突き合わせる文脈で参照** |
+| ノート | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md) | Sequence Store / S3・S3 Tables / POSIX 共有ファイルシステムの役割の違い |
 | ノート | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | データ保護設計 |
 
 ### 通信
@@ -179,9 +191,11 @@ lang: ja
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | 事例 | [コミックス・ウェーブ・フィルム](https://aws.amazon.com/jp/solutions/case-studies/comix-wave-film/) | クラウドで最大 300 台同時レンダリング。55.61 TB / 1,690 万ファイル。DR バックアップ 7 日分。CG 部以外の全部署で採用 |
+| 事例 | [映画『すずめの戸締まり』を支えた FSx for ONTAP（NetApp）](https://www.netapp.com/customers/cwf-case-study/) | コミックス・ウェーブ・フィルムがメインストレージに FSx for ONTAP を採用。ハイブリッドクラウドレンダリング。[CGWorld の制作データ管理記事](https://cgworld.jp/article/202304-cgw294-szmdata.html) |
 | 事例 | [メディア業界の事例](https://www.netapp.com/blog/benefits-of-cloud-computing-in-media-industry/) | VFX 制作ワークフロー |
 | パターン | [UC4: media-vfx](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/media-vfx/) | VFX レンダリング品質チェック |
 | ノート | [デプロイタイプは一度しか決められない](../playbooks/02-design/notes/deployment-type-is-decided-once.md) | スループット上限に直結する選択 |
+| 決定木 | [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](decision-trees/ai-workload-data-layer.md) | レンダリングは「多数ノードが中間フレームを同時に読み書きする」形。共有ファイル層へ分岐します |
 
 ### 教育
 
@@ -198,6 +212,7 @@ lang: ja
 |------|----------|------|
 | 事例 | [Allcargo](https://aws.amazon.com/blogs/storage/how-allcargo-migrated-vdi-workload-to-amazon-fsx-using-aws-datasync/) | 3,500 VDI ユーザーの移行。ログインストーム・Outlook キャッシュ書き込みストーム対策。DataSync + SnapMirror |
 | パターン | [UC12: logistics-ocr](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/industry/logistics-ocr/) | 配送伝票 OCR |
+| 事例 | [日新 × AWS「オプティマ AI」](https://aws.amazon.com/jp/blogs/news/nissin-optimaai/) | 貿易書類（インボイス / B/L 等）の OCR + RAG 照合。実行関税率表・社内ノウハウを Bedrock Knowledge Base で検索。**人が最終判断する設計。UC12 と同じ書類コーパスの形** |
 | ノート | [パッチ公開後 14 日以内にウィンドウがなければメンテナンスが実施される](../playbooks/05-operate/notes/maintenance-cannot-be-deferred.md) | SSD 90% 超のリスク |
 
 ### スポーツ / 小売
@@ -217,7 +232,13 @@ lang: ja
 | パターン | [FSx-for-ONTAP-Agentic-Access-Aware-RAG](https://github.com/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG) | アクセス制御対応 Agentic RAG（CDK） |
 | 技術資料 | [SageMaker + FSx for ONTAP](https://docs.netapp.com/us-en/netapp-solutions-ai/cloud/ai-mlops-fsxn-sagemaker.html) | モデルトレーニングのデータソース |
 | 技術資料 | [Dremio Cloud + FSx for ONTAP](https://www.dremio.com/blog/from-file-systems-to-ai-insights-dremio-cloud-amazon-fsx-for-netapp-ontap/) | ファイルシステムから AI インサイトへ |
+| 事例 | [航空オペレーション基盤を Kiro で実現する](https://aws.amazon.com/jp/blogs/news/building-aviation-ai-operations-platform-with-bedrock-and-kiro/) | 38 GB・約 29 万ファイルの多様な航空データを AgentCore + Bedrock Knowledge Base で横断検索。**大量小ファイルの RAG ナレッジソースの形**（データはすべて架空のデモデータと明記） |
+| 事例 | [フィジカル AI 開発支援プログラム by AWS ジャパン](https://aws.amazon.com/jp/blogs/news/aws-japan-physical-ai-development-support-program-results/) | ロボット学習（遠隔操作ログ・映像・シミュレーション出力）の大容量・多数ファイルのデータパイプライン。51 社の成果 |
+| 事例 | [AWS Summit Japan 2026 の Physical AI（コニカミノルタ）](https://aws.amazon.com/jp/blogs/news/konicaminolta-future-lab-summit2026/) | 電子実験ノートと MI データの蓄積基盤に生成 AI とロボティクスを接続。記録・再現性・監査性を重視 |
+| 事例 | [鉄道設備保全プラットフォーム / Chronos-2](https://aws.amazon.com/jp/blogs/news/aws-summit-japan-2026-railway-maintenance-ai-and-ot-cloud-design/) | 散在する保守履歴・設備マニュアルを Bedrock Knowledge Bases で RAG。時系列基盤モデル Chronos-2 で予兆検知（展示データは架空 / 合成と明記） |
 | ノート | [S3 AP は全リクエストを 1 つの ID で認可する](../domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI パイプラインに引き継がれない |
+| ノート | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md) | マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えない。共有層を自分で用意するかは実行基盤ごとに違う（HealthOmics の run は自前で提供） |
+| 決定木 | [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](decision-trees/ai-workload-data-layer.md) | 業種ではなくワークロードの形（S3 / POSIX / 複数ホスト同時 / ONTAP 資産 / RAG）で分岐 |
 
 ### SaaS / マルチテナント
 
@@ -253,6 +274,8 @@ lang: ja
 |------|----------|------|
 | パターン | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
 | パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
+| 事例 | [talabat のクロスクラウド・ニアリアルタイム分析（AWS + Google Cloud）](https://aws.amazon.com/jp/blogs/news/fresher-insights-faster-decisions-talabats-near-real-time-analytics-across-aws-and-google-cloud/) | 物理コピーを片側に 1 つ保持し両クラウドから読む。**書き込みはローカル、クロスな依存は読み取り側**という原則の出どころ |
+| ノート | [クロスクラウド分析でコピーを増やさない](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md) | 原則を ONTAP のデータモビリティにあてはめた範囲と、他クラウド ONTAP の未確認の範囲 |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 設計段階の制約 |
 
 ### ファイルシステム運用（業種横断）
