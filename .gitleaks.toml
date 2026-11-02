@@ -28,3 +28,20 @@ paths = [
   '''(^|/)tools/''',                  # validator regexes look like secret patterns
   '''(^|/)reference/glossary/''',
 ]
+
+# `.private/` is gitignored, so it is not part of the published surface. `gitleaks detect
+# --no-git` walks the working tree and ignores .gitignore, so a local `make secrets` (and
+# therefore `make all`) was failing on real values kept there for in-flight work. The CI workflow
+# (.github/workflows/gitleaks.yml) scans committed history, where `.private/` does not appear
+# because it is never committed -- so this exclusion changes the local worktree scan and has no
+# effect on CI for as long as `.private/` stays uncommitted.
+#
+# Trade-off, stated plainly: gitleaks-action reads this same .gitleaks.toml, so if a `.private/`
+# file ever did get committed, this allowlist would make CI silent on it too. The protection that
+# remains is .gitignore keeping it out of history in the first place; this path is not a second
+# line of defence. Keep the exclusion narrow to `.private/` for that reason.
+[[allowlists]]
+description = "Local-only, gitignored working notes (kept out of history by .gitignore)"
+paths = [
+  '''(^|/)\.private/''',
+]
