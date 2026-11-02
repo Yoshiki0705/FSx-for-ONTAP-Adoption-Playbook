@@ -227,7 +227,7 @@ graph TD
 
 ### 残る留保 2 点
 
-- 観測したチャネル数は 4 でした。引用元は 2026-09-20 の記載で、出どころをクライアント側の設定としています。設定は `ConnectionCountPerRssNetworkInterface` で、値は 4 です。サーバー側の `max_connections_per_session` は既定の 32 のままで、増やす側の律速ではないとされています。**チャネル数を 4 より増やす条件は未測定です。** NIC を増やす試験も、この値を上げる試験も未実施です。値を変えて確かめた測定がないので、原因が確定したとは読まないでください。引用元の SMB の節の本文と検証状況の表には、この記載と食い違う「確認していない」「未確認」が残っています（2026-10-14 に確認）
+- 観測したチャネル数は 4 でした。[引用元](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)は 2026-09-20 の記載で、出どころをクライアント側の設定としています。設定は `ConnectionCountPerRssNetworkInterface` で、値は 4 です。サーバー側の `max_connections_per_session` は既定の 32 のままで、増やす側の律速ではないとされています。**チャネル数を 4 より増やす条件は未測定です。** NIC を増やす試験も、この値を上げる試験も未実施です。値を変えて確かめた測定がないので、原因が確定したとは読まないでください。引用元の SMB の節の本文と検証状況の表には、この記載と食い違う「確認していない」「未確認」が残っています（2026-10-14 に確認）
 - NFS 16 接続の列と SMB Multichannel の列は `キャッシュの温度が揃っていない` と記録されています。**この 2 列から SMB と NFS の優劣を取れません**
 
 ### Multichannel・CA 共有・oplock の ONTAP 一般の前提
@@ -280,7 +280,7 @@ graph TD
 | S3 File Gateway は NAS の置き換えになる | **AWS が「エンタープライズ NAS の完全な置き換えを意図していない」と明記しています。** ファイルシステムのように振る舞いますが、ファイルシステムではありません |
 | Amazon S3 Files はバケットをそのままマウントする | **リンク先バケットに S3 バージョニングが必須**で、同時更新時はバケットが正本になります。未使用データはファイルシステムから削除されます |
 | FSx for ONTAP を選べば性能で有利 | **上限の形が違うだけです。** 同じデータに複数プロトコルで届く必要がなく最小構成が過剰なら、他の選択肢のほうが素直です |
-| SMB Multichannel のチャネル数は設定で増やせる | **増やせるかは未測定です。** 観測されたチャネル数は 4 で、引用元は出どころをクライアント側の `ConnectionCountPerRssNetworkInterface`（値 4）としていますが、この値を上げる試験も NIC を増やす試験も未実施です。サーバー側の `max_connections_per_session` は既定の 32 のままの観測です |
+| SMB Multichannel のチャネル数は設定で増やせる | **増やせるかは未測定です。** 観測されたチャネル数は 4 で、[引用元](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/perf-matrix-results.md)は出どころをクライアント側の `ConnectionCountPerRssNetworkInterface`（値 4）としていますが、この値を上げる試験も NIC を増やす試験も未実施です。サーバー側の `max_connections_per_session` は既定の 32 のままの観測です |
 | 4 チャネルは Windows の既定値で説明できる | TR-4740 は `ConnectionCountPerRssNetworkInterface` の既定を 4 と書き、引用元が出どころとして記録したクライアント側の設定も 4 です。**ただしその値を変えて確かめた測定はなく、説明が確定したとは書けません** |
 | CA 共有はどのボリュームにも設定できる | SQL Server over SMB の構成について、NetApp は最初から NTFS であり続けたボリュームを前提にしています。ほかの用途の CA 共有に同じ前提がかかるかは、このページからは読めません。FSx for ONTAP での扱いは未確認です |
 

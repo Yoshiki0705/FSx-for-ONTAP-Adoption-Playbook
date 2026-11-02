@@ -203,7 +203,7 @@ If the objective is only search, confirm this before evaluating a migration.
 
 - **The completeness of the Amazon AppFlow connector list** has not been checked. The judgment that it is out of scope — record-oriented, with no FSx for ONTAP destination — is unchanged, but no claim is made that a specific connector does not exist
 - **Per-connector GA / preview status for Amazon Bedrock Knowledge Bases** must be checked individually
-- **Whether Citrix ShareFile supports tenant-wide impersonation** could not be confirmed
+- **Whether Citrix ShareFile supports tenant-wide impersonation** could not be confirmed in [the primary source](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/en/saas-to-fsx-ontap-migration.md) either. The existence of the REST API and OAuth 2.0 was confirmed
 - **A business administrator content API for iCloud Drive** could not be found. No claim is made that none exists
 - **No commercial migration service has been evaluated as a product.** Only structural feasibility is stated
 - The DataSync location table and Bedrock connector list in the primary source are a **snapshot as of 2026-08**

@@ -54,11 +54,13 @@ There is no `No` row. The primary sources checked for this table did not explici
 
 The following values are configuration ceilings documented by AWS, not measured throughput. The workload-visible
 rate can bind earlier on SSD capacity and IOPS, cache state, client networking, protocol, and I/O pattern. Region
-availability is intentionally linked rather than copied into this table.
+availability is intentionally linked rather than copied into this table. Measured throughput, and where each
+figure was measured, is indexed in the [performance evidence map](../performance-evidence-map.md).
 
 次の値は AWS が記載する**設定上の上限**であり、実測スループットではありません。SSD 容量と IOPS、
 キャッシュ状態、クライアントネットワーク、プロトコル、I/O パターンのいずれかが先に上限となります。
 リージョン別の提供状況は表へ複製せず、現行ページを参照します。
+実測値と、その測定環境の所在は[性能実測の所在マップ](../performance-evidence-map.md)にあります。
 
 | 世代 / Generation | デプロイタイプ / Deployment | AWS のリージョングループ / AWS Region group | 上限 / Ceiling |
 |---|---|---|---|
