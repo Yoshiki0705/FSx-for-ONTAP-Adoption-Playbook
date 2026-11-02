@@ -50,7 +50,7 @@ graph TD
     SHARE -->|しない 単一ジョブで完結| NOSHARE["共有ファイル層は不要。<br/>S3 と各ジョブのローカルで完結"]
     SHARE -->|する| ASSET{既存の ONTAP 資産を<br/>持ち込むか}
 
-    ASSET -->|持ち込まない| FSXN["FSx for ONTAP を<br/>中間共有ファイル層にする<br/>NFS / SMB で多数ホストが同時アクセス"]
+    ASSET -->|持ち込まない| SHARED["FSx for ONTAP を<br/>中間共有ファイル層にする<br/>NFS / SMB で多数ホストが同時アクセス"]
     ASSET -->|オンプレミスの ONTAP| MOBIL["FSx for ONTAP + データモビリティ<br/>FlexCache は必要分だけ取得<br/>SnapMirror は宛先に複製を持つ"]
     ASSET -->|他クラウドの ONTAP サービス| OPEN["ネットワーク到達性とは別に<br/>FlexCache 成立は未確認。<br/>自環境で検証してから設計前提に置く"]
 
