@@ -36,8 +36,8 @@ lang: ja
 | SnapMirror source volume | FSx for ONTAP | `<snapmirror-source-volume>` | FSx for ONTAP → GCNV | 手順の対象候補 |
 | GCNV destination volume | GCNV | `<gcnv-destination-volume>` | destination | provider API の照合が必要 |
 | Reverse destination | FSx for ONTAP | `<reverse-destination-volume>` | GCNV → FSx for ONTAP | DP/read-only の確認が必要 |
-| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | topology 未確定、open |
-| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | provider interface 未確定、open |
+| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | 方向と volume type を台帳で確定する。GCNV が origin になれるのは ONTAP-mode のみ |
+| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | GCNV 側の作成 interface は公開資料にある。identity と owner は台帳で確定が必要 |
 
 この表の値を、既存の実リソース名から推測して埋めてはいけません。run ledger と provider の read-only response で一致を確認します。
 
@@ -95,9 +95,11 @@ Expiry predicate: <documented-expiry-field-and-condition>
 
 ## FlexCache
 
-> **Status: open**
+> **Status: open**（公開資料の interface は確認済み、実環境の証拠が未整備）
 >
-> このスレッドでは、FlexCache 用の origin volume を SnapMirror 用 volume と分けて FSx for ONTAP 側に用意し、SVM ピアリングの applications に `flexcache` を含めました。しかし、GCNV 側の cache volume 作成インターフェース、cache volume の所有者、origin/cache の exact resource identity、作成後の cache state、read/write モードは確定していません。GCNV 側で実際の cache volume を作成したことと、FlexCache の状態を確認したことも、このスレッドでは検証していません。
+> GCNV の公開ドキュメントは、Cache の作成インターフェース（`gcloud beta netapp volumes create` の `--cache-parameters`）、作成後の確認（`gcloud beta netapp volumes describe` が返す `cacheParameters.cacheState`）、削除の前提（write-back を有効にしている場合は先に無効化）を記載しています（2026-11-03 に確認。[GCNV の公開インターフェース](#gcnv-の公開インターフェース)）。ledger の `Creation interface` と `Post-state query` は、この資料に対応付けて埋められます。
+>
+> 一方、このリポジトリから参照できる実行記録はありません。S3-Burst-on-ONTAP-Files の確認状況表も、FSx for ONTAP を Origin にした GCNV の Cache 可否を 2026-09-20 時点で未確認と記録しています（[クロスクラウドのノート](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md#構成ごとの確認状況)に要約）。このリポジトリの記録にあるのは、FlexCache 用の origin volume を SnapMirror 用 volume と分けて FSx for ONTAP 側に用意し、SVM ピアリングの applications に `flexcache` を含めたところまでです。cache volume の所有者、origin/cache の exact resource identity、read/write モード、作成後の cache state は、実環境で確認した記録がありません。
 
 FlexCache を開始する前に、次の台帳を確定します。
 
@@ -113,12 +115,33 @@ FlexCache を開始する前に、次の台帳を確定します。
 
 作成後は、origin と cache の identity、cache state、SVM peer state、content read の結果を別々に確認します。cache の作成・変更・削除は、作成者、対象 resource、現在 state、依存関係、逆操作が台帳にない場合は実行しません。FlexCache は S3 Access Point と同じ経路ではなく、cache volume への NFS/SMB アクセス経路を別に確認します。
 
+### GCNV の公開インターフェース
+
+**以下は GCNV の公開ドキュメントが書いている範囲です（2026-11-03 に確認）。実環境で通した記録ではありません。**
+
+| 方向（Origin → Cache） | Cache の作成 | 作成後の確認 | 削除 |
+|---|---|---|---|
+| FSx for ONTAP → GCNV | [`gcloud beta netapp volumes create`](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/create-flexcache-volume) の `--cache-parameters` に、origin の cluster 名、SVM 名、volume 名、intercluster LIF の IP を渡す | `gcloud beta netapp volumes describe` が返す `cacheParameters.cacheState` を読む。`PENDING_CLUSTER_PEERING` なら返された `cluster peer create` を、`PENDING_SVM_PEERING` なら `vserver peer create` を、origin の FSx for ONTAP 側で実行する。1 分待って読み直し、`PEERED` になれば作成完了とされる | 通常の volume と同じ手順で削除する。write-back を有効にしている場合は、先に無効化する（[Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)） |
+| GCNV（ONTAP-mode）→ FSx for ONTAP | FSx for ONTAP 側で ONTAP の `volume flexcache create` を実行する。先に [ONTAP-mode のピアリング手順](https://docs.cloud.google.com/netapp/volumes/docs/ontap/peer-clusters-svms)でクラスタと SVM をピアリングする | FSx for ONTAP 側の `volume flexcache show`、`cluster peer show`、`vserver peer show` | ONTAP の FlexCache relationship の削除手順に従う |
+
+GCNV が書いている条件は次のとおりです。
+
+- Origin ボリュームでアクセス時刻の更新を無効にする。
+- Cache のセキュリティスタイルは origin と同じにする。Cache のプロトコルで決まり、Cache は NFSv4.2 に対応しない。
+- 目標のサイズで作成する。小さく作って後から増やすことはしない、と書かれている。
+- 通信の前提は SnapMirror とボリューム移行と共通で、移行や外部レプリケーションのために作ったネットワーク接続とクラスタピアリングは再利用できる。
+- ピアリングが `PENDING_CLUSTER_PEERING` か `PENDING_SVM_PEERING` のまま 1 時間たつと時間切れになる。IP の誤りの修正と再開には `gcloud beta netapp volumes establish-peering` を使う。
+- ONTAP-mode のボリュームは、Google Cloud console と Google Cloud CLI では作成・参照・更新・削除できない。
+- FlexCache は[リリースノート](https://docs.cloud.google.com/netapp/volumes/docs/release-notes)で 2025-09-24 に allow-listed GA（許可リスト登録が要る一般提供）とされている。対象プロジェクトで有効かを先に確認する。
+
+**この表を実行手順として読まないでください。** GCNV が返すコマンドの構文が FSx for ONTAP の ONTAP バージョンでそのまま通るかは、このリポジトリに実行記録がなく、open です。`describe` の出力には passphrase が含まれるので、記録に残すときは伏せます。
+
 ### FlexCache の方向別図
 
 - [FlexCache: FSx for ONTAP origin → GCNV cache](../../_assets/images/gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache.svg)（[ダークテーマ版](../../_assets/images/gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache-dark.svg)）
 - [FlexCache: GCNV origin → FSx for ONTAP cache](../../_assets/images/gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache.svg)（[ダークテーマ版](../../_assets/images/gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache-dark.svg)）
 
-この図の Open は、cache 作成 interface と作成後 state を検証していないことを示します。SVM peering の applications に `flexcache` が含まれることだけでは、cache 作成成功の証拠になりません。
+この図の Open は、cache の作成と作成後 state を実環境で確認していないことを示します。作成 interface が公開資料にあることとは別の話です。SVM peering の applications に `flexcache` が含まれることだけでは、cache 作成成功の証拠になりません。
 
 ## SnapMirror と Reverse Resync
 
@@ -202,6 +225,8 @@ gcloud netapp volumes replications list \
 
 AWS の FlexCache 手順は、intercluster LIF、cluster peering、SVM peering、cache volume 作成、`volume flexcache show` の順序です。異なるネットワーク間では必要な経路と intercluster TCP 11104 / 11105 を事前に確認します（[Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)）。NetApp の現行手順でも、cluster peer、SVM peer、`volume flexcache create`、`volume flexcache show` の順で扱います（[Create ONTAP FlexCache volumes](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html)）。
 
+次のコマンド形は、Cache を FSx for ONTAP に作る方向です（origin は GCNV の ONTAP-mode または FSx for ONTAP）。Cache を GCNV に作る方向では、cache volume を GCNV の `gcloud beta netapp volumes create` で作り（[GCNV の公開インターフェース](#gcnv-の公開インターフェース)）、origin の FSx for ONTAP 側では `describe` が返す `cluster peer create` と `vserver peer create` だけを実行します。`volume flexcache create` は実行しません。
+
 ```text
 # cluster peer が Available で、intercluster LIF と経路を確認した後だけ実行する。
 cluster peer create -address-family ipv4 -peer-addrs <origin-intercluster-lif-1>,<origin-intercluster-lif-2>
@@ -280,6 +305,9 @@ verified に昇格するために必要な記録
 - [S3 Access Points の制約](../domains/data-utilization/notes/s3-access-point-constraints.md)
 - [Google Cloud: external replication overview](https://cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/overview)
 - [Google Cloud: ONTAP communication prerequisites](https://cloud.google.com/netapp/volumes/docs/migrate/ontap/prerequisites-ontap-netapp-volumes)
+- [Google Cloud: Create a FlexCache volume](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/create-flexcache-volume)
+- [Google Cloud: Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)
+- [Google Cloud: Peer clusters and SVMs](https://docs.cloud.google.com/netapp/volumes/docs/ontap/peer-clusters-svms)
 - [NetApp TR-4743: ONTAP FlexCache and FlexGroup technical reports](https://docs.netapp.com/us-en/ontap-technical-reports/nas-containers.html)
 - [NetApp TR-4015: data protection and disaster recovery technical reports](https://docs.netapp.com/us-en/ontap-technical-reports/data-protection-disaster-recovery.html)
 - [AWS Blog: scalable replication with FSx for ONTAP and SnapMirror](https://aws.amazon.com/blogs/storage/highly-scalable-solution-design-to-replicate-data-using-amazon-fsx-for-netapp-ontap-and-snapmirror/)

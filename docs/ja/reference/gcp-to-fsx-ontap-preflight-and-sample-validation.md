@@ -609,7 +609,7 @@ password を command line に置く形は実行せず、承認済み secret hand
 <source-cluster>::> vserver peer show
 ```
 
-これは GCNV の generated command や acceptance interface を代用しません。**Expected state** は両 cluster の availability、authentication、SVM `peered`、application、identity が fresh read で一致することです。**Inverse** は public provider guidance と dependency を確認した後の `cluster peer delete` または SVM peer removal ですが、last replication、active transfer、共有 peer がある場合は使えません。**Approval gate** は peering、passphrase、network rule、両 provider owner の承認です。片側だけ `peered`、cluster peer が `Unavailable`、GCNV interface が不明、identity が違う場合は STOP とし、`Open` のままにします。[AWS FlexCache の peer prerequisites と CLI](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)を参照します。
+これは GCNV の generated command や acceptance interface を代用しません。FlexCache の Cache を GCNV に作る場合に限り、generated command は GCNV の公開手順にあります（`gcloud beta netapp volumes describe` の `cacheParameters` が返す `cluster peer create` と `vserver peer create`。[GCNV の公開インターフェース](gcp-to-fsx-ontap-peering-and-replication-open-items.md#gcnv-の公開インターフェース)）。**Expected state** は両 cluster の availability、authentication、SVM `peered`、application、identity が fresh read で一致することです。**Inverse** は public provider guidance と dependency を確認した後の `cluster peer delete` または SVM peer removal ですが、last replication、active transfer、共有 peer がある場合は使えません。**Approval gate** は peering、passphrase、network rule、両 provider owner の承認です。片側だけ `peered`、cluster peer が `Unavailable`、GCNV interface が不明、identity が違う場合は STOP とし、`Open` のままにします。[AWS FlexCache の peer prerequisites と CLI](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)を参照します。
 
 ### SnapMirror の create と initialize
 
@@ -697,7 +697,7 @@ GCNV が ONTAP destination 用の `hybridReplicationUserCommands` を返した�
 <cache-cluster>::> volume flexcache show
 ```
 
-**Expected state** は cache identity、origin identity、cache state、write mode、SVM peer、content read が一致することです。**Inverse** は依存 relationship、client mount、cache state を確認した上での volume deletion ですが、公開資料だけで target GCNV cache の inverse を確定できない場合は `Open` です。**Approval gate** は origin/cache 方向、write-back の選択、データアクセス経路、費用、削除承認です。GCNV cache create interface、owner、post-state が不明、方向が逆、peering が片側の場合は STOP です。[AWS FlexCache workflow](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)、[ONTAP FlexCache volume sequence](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html)、[TR-4743 index](https://docs.netapp.com/us-en/ontap-technical-reports/nas-containers.html)を参照します。
+上の ONTAP CLI の形は、Cache を FSx for ONTAP に作る方向です。Cache を GCNV に作る方向の公開インターフェースは [GCNV の公開インターフェース](gcp-to-fsx-ontap-peering-and-replication-open-items.md#gcnv-の公開インターフェース) にあります。**Expected state** は cache identity、origin identity、cache state、write mode、SVM peer、content read が一致することです。**Inverse** は依存 relationship、client mount、cache state を確認した上での volume deletion です。GCNV の cache は通常の volume と同じ手順で削除でき、write-back を有効にしている場合は先に無効化します（[Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)）。**Approval gate** は origin/cache 方向、write-back の選択、データアクセス経路、費用、削除承認です。owner、post-state が不明、方向が逆、peering が片側、対象プロジェクトで GCNV の FlexCache が有効でない場合は STOP です。[AWS FlexCache workflow](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)、[ONTAP FlexCache volume sequence](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html)、[TR-4743 index](https://docs.netapp.com/us-en/ontap-technical-reports/nas-containers.html)を参照します。
 
 ### Delete
 
@@ -898,6 +898,9 @@ mount、fixture、hash、DP volume の具体的なコマンドは本書の各節
 - [Google Cloud: External replication overview](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/overview)
 - [Google Cloud: Managing external replication](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/manage-external-replication)
 - [Google Cloud: ONTAP communication prerequisites](https://docs.cloud.google.com/netapp/volumes/docs/migrate/ontap/prerequisites-ontap-netapp-volumes)
+- [Google Cloud: Create a FlexCache volume](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/create-flexcache-volume)
+- [Google Cloud: Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)
+- [Google Cloud: Peer clusters and SVMs](https://docs.cloud.google.com/netapp/volumes/docs/ontap/peer-clusters-svms)
 - [NetApp: Creating a FlexCache volume](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html)
 - [NetApp: Initializing a replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/initialize-replication-relationship-task.html)
 - [NetApp: Reactivating the original source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)

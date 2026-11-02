@@ -588,7 +588,7 @@ The preconditions are intercluster LIFs, TCP 11104/11105, ICMP, security rules, 
 <source-cluster>::> vserver peer show
 ```
 
-Do not substitute a guessed GCNV command or acceptance interface. The expected state is available/authenticated cluster peering and matching `peered` SVM state and applications on fresh reads. Stop on one-sided state, `Unavailable`, an unknown GCNV interface, or an identity mismatch.
+Do not substitute a guessed GCNV command or acceptance interface. For a FlexCache Cache created on GCNV, GCNV documents the generated commands: `cluster peer create` and `vserver peer create`, returned in `cacheParameters` by `gcloud beta netapp volumes describe` ([GCNV public interface](gcp-to-fsx-ontap-peering-and-replication-open-items.md#gcnv-public-interface)). The expected state is available/authenticated cluster peering and matching `peered` SVM state and applications on fresh reads. Stop on one-sided state, `Unavailable`, an unknown GCNV interface, or an identity mismatch.
 
 ### SnapMirror create and initialize
 
@@ -659,7 +659,7 @@ The preconditions are intercluster LIFs, TCP 11104/11105, cluster/SVM peering, c
 <cache-cluster>::> volume flexcache show
 ```
 
-Stop until cluster peer is `Available`, SVM peer is `peered`, the application is `flexcache`, identities match, and the inverse is documented. The current GCNV cache-creation interface remains `Open`. See [Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html), [Create ONTAP FlexCache volumes](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html), and [TR-4743](https://docs.netapp.com/us-en/ontap-technical-reports/nas-containers.html).
+The command shape above creates a Cache on FSx for ONTAP. For a Cache on GCNV, see [GCNV public interface](gcp-to-fsx-ontap-peering-and-replication-open-items.md#gcnv-public-interface). A GCNV cache is deleted like any other volume, after disabling write-back if it is enabled ([Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)). Stop until cluster peer is `Available`, SVM peer is `peered`, the application is `flexcache`, identities match, and the inverse is recorded. Also stop when the owner or post-state is unknown, the direction is reversed, peering is one-sided, or GCNV FlexCache is not enabled in the target project. See [Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html), [Create ONTAP FlexCache volumes](https://docs.netapp.com/us-en/ontap/flexcache/create-volume-task.html), and [TR-4743](https://docs.netapp.com/us-en/ontap-technical-reports/nas-containers.html).
 
 ### Delete
 
@@ -730,6 +730,9 @@ Save the expected outputs and stop reasons under one run ID. Clean only run-crea
 - [AWS: Creating a FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html)
 - [Google Cloud: External replication overview](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/overview)
 - [Google Cloud: Managing external replications](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/manage-external-replication)
+- [Google Cloud: Create a FlexCache volume](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/create-flexcache-volume)
+- [Google Cloud: Manage FlexCache volumes](https://docs.cloud.google.com/netapp/volumes/docs/configure-and-use/volumes/cache-ontap-volumes/manage-flexcache-volume)
+- [Google Cloud: Peer clusters and SVMs](https://docs.cloud.google.com/netapp/volumes/docs/ontap/peer-clusters-svms)
 - [NetApp: Create an ONTAP SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/create-replication-relationship-task.html)
 - [NetApp: Initialize a SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/initialize-replication-relationship-task.html)
 - [NetApp: Reactivate the original ONTAP source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)
