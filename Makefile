@@ -9,6 +9,7 @@ PY ?= python3
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
         reachability reachability-external reachability-signposted reachability-signposted-external \
+        spoke-search \
         inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
         knowledge-quality-status-ci editorial-report sentence-report glossary-report \
         structure-report mermaid-report frontmatter-report vocabulary-report ai-style-report
@@ -241,6 +242,17 @@ secrets: ## Secret scan of the worktree (fails when gitleaks is not installed)
 
 links: ## Check internal link resolution
 	@$(PY) tools/check_links.py
+# Not a gate: a lookup. Run it before writing that something is unverified, unmeasured or
+# unsupported, and before proposing to verify it. The sibling repositories have investigated
+# much of what this one cites, and "I did not know" is not a reason a reader accepts. It fetches
+# refs that have gone stale first, so "no match" is not an answer from a month-old checkout.
+# Q is split by the shell, so quote a phrase:  make spoke-search Q='healthomics "access point"'
+spoke-search: ## Search the sibling repositories' committed work (Q='term "a phrase"'); run before calling anything unverified
+ifeq ($(strip $(Q)),)
+	@echo "usage: make spoke-search Q='term \"a phrase\"'" >&2; exit 2
+else
+	@$(PY) tools/spoke_search.py $(Q)
+endif
 # Split offline from network for the same reason as links / links-external. The offline half
 # answers "is every cross-repo citation registered"; the network half answers "does the cited
 # file still say it". Both are needed: a citation nobody registered is unverifiable, and a
