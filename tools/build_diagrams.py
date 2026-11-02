@@ -577,7 +577,7 @@ LABELS: dict[str, dict[str, str]] = {
             "※2 2 つの枠は線で結んでいない<br>"
             "HealthOmics の入出力は S3 の URI で、FSx for ONTAP の S3 Access Points を指定できる"
             "記載は AWS の文書にない。run の内側へのマウントも文書になく、試されていない。<br>"
-            "※3 他クラウドの ONTAP サービスを Origin にした FlexCache は未確認"
+            "※3 他クラウドの ONTAP サービスとの FlexCache は、公式ドキュメントに記載はあるが実機の公開記録がない"
         ),
         "en": (
             "<b>Notes</b><br>"
@@ -589,7 +589,7 @@ LABELS: dict[str, dict[str, str]] = {
             "HealthOmics run inputs and outputs are S3 URIs, and AWS's documents do not show an "
             "FSx for ONTAP S3 Access Point accepted there. Mounting a file system inside a run "
             "is not documented either, and has not been tried.<br>"
-            "*3 FlexCache with a non-AWS ONTAP service as Origin is unverified"
+            "*3 FlexCache with a non-AWS ONTAP service: documented by the vendors, no published test record"
         ),
     },
     # --- ai-hpc-cross-cloud-mobility ------------------------------------------------------------
@@ -640,8 +640,8 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "Non-AWS ONTAP service (Google Cloud NetApp Volumes / Azure NetApp Files)",
     },
     "crosscloud_open": {
-        "ja": "未確認: 他クラウドを Origin にした FlexCache は、自環境で検証してから設計前提に置く",
-        "en": "Unverified: verify FlexCache with a non-AWS Origin before relying on it",
+        "ja": "公式ドキュメントに記載あり、実機の公開記録なし。自環境で検証してから設計前提に置く",
+        "en": "Documented by the vendors, no published test record: verify before relying on it",
     },
     "mobility_notes": {
         "ja": (
@@ -651,7 +651,7 @@ LABELS: dict[str, dict[str, str]] = {
             "※2 FlexCache の Cache は S3 Access Points を付けられない<br>"
             "S3 API で読ませるなら SnapMirror の宛先を使う。<br>"
             "※3 他クラウドとのあいだは線を引いていない<br>"
-            "ネットワークが届くことと、FlexCache が成立することは別の問い。"
+            "公式ドキュメントに記載はあるが、実機の公開記録がない。ネットワーク到達性と FlexCache の成立は別の問い。"
         ),
         "en": (
             "<b>Notes</b><br>"
@@ -660,7 +660,7 @@ LABELS: dict[str, dict[str, str]] = {
             "*2 A FlexCache Cache cannot take an S3 Access Point<br>"
             "To serve over the S3 API, use a SnapMirror destination.<br>"
             "*3 No line is drawn to a non-AWS service<br>"
-            "Network reachability and a working FlexCache are different questions."
+            "Documented by the vendors; no published test record. Reachability is not a working FlexCache."
         ),
     },
 }
@@ -1333,8 +1333,10 @@ def _crosscloud_mobility() -> Diagram:
     FSx for ONTAP, whose destination volume can be read over the S3 API through an S3 Access
     Point without a break.
 
-    A non-AWS ONTAP service is drawn as a dashed frame with no edge, because FlexCache with it as
-    Origin is unverified: a solid line would assert the very thing the figure says is unverified.
+    A non-AWS ONTAP service is drawn as a dashed frame with no edge. The vendors' documents
+    describe FlexCache with it, direction by direction, but no test record of such a configuration
+    exists in this repository or its Spokes: a solid line would assert a working configuration
+    the figure cannot back.
     """
     return Diagram(
         name="ai-hpc-cross-cloud-mobility",

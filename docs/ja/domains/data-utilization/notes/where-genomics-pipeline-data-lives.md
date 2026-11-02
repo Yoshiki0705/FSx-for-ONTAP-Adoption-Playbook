@@ -87,7 +87,7 @@ intermediate
 
 **オンプレミスのシーケンサー施設や解析環境を持っている場合**は、ここに ONTAP のデータモビリティが重なります。オンプレミスの NetApp ONTAP を Origin、FSx for ONTAP を Cache にした FlexCache は、**必要になった分だけを取得します。** SnapMirror は宛先に複製を持つので、全量が宛先にも存在します。 手段ごとの権限・管理経路・制約は [コピーを増やさずにデータへ届く](reaching-data-without-copies.md#コピーを増やさない-3-つの手段) にあります。ここでは機構を再説明しません。
 
-**ただし他クラウドの ONTAP ベースサービス（Google Cloud NetApp Volumes, Azure NetApp Files）を Origin にした FlexCache 構成は、このリポジトリでは未確認です。** クロスクラウドのデータモビリティで引ける範囲と引けない範囲は [クロスクラウド分析でコピーを増やさない](cross-cloud-analytics-without-extra-copies.md) に分けて書いています。
+**ただし他クラウドの ONTAP ベースサービス（Google Cloud NetApp Volumes, Azure NetApp Files）との FlexCache は、各社の公式ドキュメントに記載があるものの、実機で通した公開記録がありません。** 向きごとの記載と構成ごとの確認状況は [クロスクラウド分析でコピーを増やさない](cross-cloud-analytics-without-extra-copies.md#構成ごとの確認状況) に分けて書いています。
 
 ---
 
@@ -119,7 +119,7 @@ intermediate
 | HealthOmics を使うなら FSx for ONTAP は出番がない | run の**内側**で使う手段は文書にありません（試されてもいません）。入力を渡す前の置き場、結果を受け取った後の解析、オンプレミスの解析環境との行き来は run の外側で、そこで共有ファイル層が要るかをワークロードの形で決めます |
 | VCF は S3 に置けばよい | 長期保管とコホート横断クエリは S3 / S3 Tables が向きますが、**解析ツールが POSIX で触る中間 VCF は共有ファイルシステム側です** |
 | オンプレのシーケンサーデータはクラウドへ全量コピーするしかない | FlexCache は必要な分だけ取得します。SnapMirror は複製なので宛先にも全量が存在します。どちらを使うかは、読み取り主体でワーキングセットが小さいかで決まります（[3 つの手段](reaching-data-without-copies.md#コピーを増やさない-3-つの手段)） |
-| 他クラウドの ONTAP サービスを Origin にした FlexCache も同じように組める | **このリポジトリでは未確認です**（[クロスクラウドのノート](cross-cloud-analytics-without-extra-copies.md)） |
+| 他クラウドの ONTAP サービスとも FlexCache を同じように組める | **公式ドキュメントの記載は向きごとに違い、実機の公開記録はありません**（[クロスクラウドのノート](cross-cloud-analytics-without-extra-copies.md#構成ごとの確認状況)） |
 
 ---
 
@@ -128,7 +128,7 @@ intermediate
 - [Domain — データ活用](../README.md) — このモジュールのハブ
 - [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](../../../reference/decision-trees/ai-workload-data-layer.md) — 自分がどの形に当たるかを引く決定木
 - [コピーを増やさずにデータへ届く](reaching-data-without-copies.md) — FlexCache / FlexClone / SnapMirror の機構・権限・制約
-- [クロスクラウド分析でコピーを増やさない](cross-cloud-analytics-without-extra-copies.md) — クロスクラウド・クロスリージョンでの引ける範囲と未確認の境界
+- [クロスクラウド分析でコピーを増やさない](cross-cloud-analytics-without-extra-copies.md) — クロスクラウド・クロスリージョンでの構成ごとの確認状況
 - [スループットは 1 つの設定値では決まらない](../../performance/notes/where-throughput-is-determined-and-shared.md) — 共有ファイル層の性能が何で決まるか
 - [業種別リソースマップ](../../../reference/industry-resource-map.md) — 業種とワークロードの形からの入口
 - [知見の分類ポリシー](../../../evidence-policy.md)

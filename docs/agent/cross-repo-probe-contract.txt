@@ -132,10 +132,12 @@ S3-Burst-on-ONTAP-Files	docs/ja/support-matrix.md	retraction	の行を、S3 Acce
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	3 回一致しないため上限値ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	6.1.186-228.374 / 6.12.103-127.188 / 6.18.48-107.148
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	ANA は 2 つのコントローラを 1 デバイスに統合し、逐次読みを 23% 上げた
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	GCNV は条件つきで documented（2026-09-20）。ANF は未確認
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	これは既定値での上限で、ファイルシステムの上限ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	シークレットの値と実際のパスワードが一致しなかった
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	公開ドキュメントに記載を見つけられていない。「できない」ではない
 S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	実環境で再現した。環境（ONTAP バージョン、リージョン、構成）を併記する
+S3-Burst-on-ONTAP-Files	docs/ja/verification-status.md	retraction	未確認（ただし各クラウド側の要件は判明。2026-09-20 に調査）
 S3-Burst-on-ONTAP-Files	docs/ja/verification/README.md	retraction	どちらもファイル名からは区別できないので、下の表の「段階」で見てください
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	「3 行」→「4 行」。範囲は変えない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
