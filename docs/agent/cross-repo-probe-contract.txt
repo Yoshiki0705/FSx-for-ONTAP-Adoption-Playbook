@@ -80,10 +80,12 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	「マウントできない」とは書きません。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	未実装、新パターン候補としてバックログ化
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	could not be confirmed. The existence of the REST API and OAuth 2.0 was confirmed
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/cost-measurement.md	retraction	Cost Explorer
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/multi-tenant-design.md	retraction	テナント ID をパーティションキーにする
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	の可否は確認できていません。REST API と OAuth 2.0 の存在は確認済みです
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	常にエージェントと Basic モードが必要です
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
