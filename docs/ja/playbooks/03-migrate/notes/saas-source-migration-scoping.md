@@ -204,7 +204,7 @@ Amazon Bedrock Knowledge Bases のマネージドコネクタは OneDrive / Goog
 
 - **Amazon AppFlow のコネクタ網羅性**は確認していません。レコード指向で宛先に FSx for ONTAP がないため候補外という判断は変わりませんが、特定のコネクタが存在しないと断言はしていません
 - **Amazon Bedrock Knowledge Bases のコネクタ別 GA / preview 状況**は個別に確認が必要です
-- **Citrix ShareFile のテナント全体の代理実行**の可否は確認できていません
+- **Citrix ShareFile のテナント全体の代理実行**の可否は、[一次情報](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/ja/saas-to-fsx-ontap-migration.md)でも確認できていません。REST API と OAuth 2.0 の存在は確認済みです
 - **iCloud Drive の法人向け管理者 API** は確認できませんでした。存在しないと断言はしていません
 - **商用移行サービスの製品評価はしていません。** 構造上の可否のみです
 - 一次情報の DataSync ロケーション対応表と Bedrock コネクタ一覧は **2026-08 時点のスナップショット**です
