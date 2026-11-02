@@ -54,7 +54,7 @@ intermediate
 
 | 実行基盤 | 共有ファイル層の扱い | FSx for ONTAP の出番 |
 |---|---|---|
-| **AWS HealthOmics のワークフロー** | **run ごとに一時的な共有ファイルシステム（run storage）をサービスが提供します。** 既定は DYNAMIC で、容量を決めなくても使用量に応じて伸びます。STATIC は 1,200 GiB から 2,400 GiB 刻みで確保します | **run の内側にはありません。** 中間成果物は run storage が担います。出番があるのは run の外側、つまり入力を渡す前の置き場、結果を受け取った後の解析・共有、オンプレミスの解析環境との行き来です |
+| **AWS HealthOmics のワークフロー** | **run ごとに一時的な共有ファイルシステム（run storage）をサービスが提供します。** 既定は DYNAMIC で、容量を決めなくても使用量に応じて伸びます。STATIC は 1,200 GiB から 2,400 GiB 刻みで確保します。入力と出力は Amazon S3 の URI で指定し、FSx for ONTAP の S3 Access Points を指定できる記載は AWS の文書にありません | **run の内側で使う手段は、AWS の文書に記載がありません。** 利用者側のファイルシステムを run のタスクにマウントする手段が見つからないという意味で、マウントできないとは言い切れません（タスクが自分で NFS マウントできるかは、どこでも試されていません）。中間成果物は run storage が担います。出番があるのは run の外側、つまり入力を渡す前の置き場、結果を受け取った後の解析・共有、オンプレミスの解析環境との行き来です |
 | **AWS Batch（EC2 起動タイプ）** | 共有ファイル層は自分で用意します。AWS の公開事例には Arm の EDA で AWS Batch と FSx for ONTAP を併用した構成があります | **候補になります。** ホスト OS から NFS / SMB でマウントして使います |
 | **AWS Batch（Fargate 起動タイプ）** | ECS Fargate が対応するボリュームは bind mount と Amazon EFS に限られます | **マウントできません。** 永続が要るなら S3 Access Points 経由のオブジェクトアクセスになります（[コンテナの決定木](../../../reference/decision-trees/container-datastore-selection.md)） |
 | **自前の HPC クラスタ / Nextflow on EC2 / オンプレミス** | 共有ファイル層は自分で用意します | **候補になります。** オンプレミスの NetApp ONTAP があれば、FlexCache で必要な分だけ取得するか、SnapMirror で複製して持ち込めます |
@@ -70,6 +70,8 @@ intermediate
 **3 つのどれかで左側に当たり、かつ共有ファイル層を自分で用意する基盤なら、POSIX 共有ファイルシステムが要ります。** 逆に 3 つとも右側なら、S3 で完結します。
 
 > **出典と確認日**: HealthOmics の run storage（DYNAMIC / STATIC、1,200 GiB と 2,400 GiB 刻み）は [Run storage types in HealthOmics workflows](https://docs.aws.amazon.com/omics/latest/dev/workflows-run-types.html) と [HealthOmics pricing](https://aws.amazon.com/healthomics/pricing/)、Sequence Store を S3 URI（S3 Access Points ベース）で直接 list / read できることは [AWS for Industries: HealthOmics の新機能](https://aws.amazon.com/blogs/industries/aws-healthomics-announces-new-capabilities-for-seamless-integration-of-omics-data-stores-and-analysis-tools/) の記載です（2026-11-02 に確認）。AWS Batch と FSx for ONTAP の組み合わせは [Arm の事例](https://aws.amazon.com/solutions/case-studies/arm-ltd-case-study/) の「AWS Services Used」に並ぶ記載で、構成の詳細は公開されていません。
+
+> **sibling の記録**: HealthOmics と FSx for ONTAP の S3 Access Points およびマウントの関係は、[FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) が調査済みです。[`evidence-ledger.json`](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/agent/evidence-ledger.json) の E-009（`documented`。出典は 2026-09-09 に全文確認されています）は、run の入力と出力が Amazon S3 の URI であり、FSx for ONTAP の S3 Access Points を指定できる記載が AWS の文書にないことを記録しています。標準の S3 アクセスポイントが同じ扱いかは、そちらでも試されておらず、E-009 の中で区別されています。E-014 は、利用者側のファイルシステムを run のタスクにマウントする手段の記載が見つからないことを記録し、マウントできないとは断定していません。[機能要望](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md)には、S3 Access Points から標準の S3 バケットへ複製し（Stage）、`StartRun` を呼び、出力を S3 Access Points へ書き戻す（Writeback）設計案があり、記載時点では未実装です。このリポジトリでは再調査していません。
 
 **どの形に当たるかを判断する決定木**は [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](../../../reference/decision-trees/ai-workload-data-layer.md) にあります。このノートは「データが置かれる場所は基盤ごとに違う」という事実を示し、決定木が「自分はどこに当たるか」を引きます。
 
@@ -114,7 +116,7 @@ intermediate
 |---|---|
 | マネージドなシーケンスストアを使えば共有ファイルシステムは要らない | **役割が別です。** 保管・取り込みの層と、POSIX で中間成果物を同時に触る層は別で、同じパイプラインで両方要ることがあります |
 | サーバーレスな基盤なら POSIX 共有層はどれも不要 | **基盤ごとに違います。** HealthOmics の run は共有ファイルシステム（run storage）をサービスが提供するので run の内側では不要です。AWS Batch の EC2 起動タイプは自分で用意し、Fargate 起動タイプは FSx for ONTAP をマウントできません |
-| HealthOmics を使うなら FSx for ONTAP は出番がない | run の**内側**にはありません。入力を渡す前の置き場、結果を受け取った後の解析、オンプレミスの解析環境との行き来は run の外側で、そこで共有ファイル層が要るかをワークロードの形で決めます |
+| HealthOmics を使うなら FSx for ONTAP は出番がない | run の**内側**で使う手段は文書にありません（試されてもいません）。入力を渡す前の置き場、結果を受け取った後の解析、オンプレミスの解析環境との行き来は run の外側で、そこで共有ファイル層が要るかをワークロードの形で決めます |
 | VCF は S3 に置けばよい | 長期保管とコホート横断クエリは S3 / S3 Tables が向きますが、**解析ツールが POSIX で触る中間 VCF は共有ファイルシステム側です** |
 | オンプレのシーケンサーデータはクラウドへ全量コピーするしかない | FlexCache は必要な分だけ取得します。SnapMirror は複製なので宛先にも全量が存在します。どちらを使うかは、読み取り主体でワーキングセットが小さいかで決まります（[3 つの手段](reaching-data-without-copies.md#コピーを増やさない-3-つの手段)） |
 | 他クラウドの ONTAP サービスを Origin にした FlexCache も同じように組める | **このリポジトリでは未確認です**（[クロスクラウドのノート](cross-cloud-analytics-without-extra-copies.md)） |

@@ -75,6 +75,10 @@ FSx-for-ONTAP-Observability-integrations	llms.txt	retraction	this repository is 
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/README.ja.md	retraction	作成、変更のない plan、タグの値の変更、すべてのタグの削除、削除（destroy）がすべて成功しました。
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/README.md	retraction	Create, a plan with no changes, a tag value change, removal of all tags, and destroy all succeeded.
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json	retraction	alarm:fsxn-monitoring-*
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics provides no documented mechanism to mount
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics run inputs and outputs must be Amazon S3 URIs
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	「マウントできない」とは書きません。
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	未実装、新パターン候補としてバックログ化
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません

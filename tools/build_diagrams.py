@@ -575,7 +575,8 @@ LABELS: dict[str, dict[str, str]] = {
             "FSx for ONTAP が入るのは、共有層を自分で用意する基盤（AWS Batch の EC2 起動タイプ、"
             "自前の HPC、オンプレミス）側。<br>"
             "※2 2 つの枠は線で結んでいない<br>"
-            "HealthOmics が FSx for ONTAP の S3 Access Points を入力に使えるかは未確認。<br>"
+            "HealthOmics の入出力は S3 の URI で、FSx for ONTAP の S3 Access Points を指定できる"
+            "記載は AWS の文書にない。run の内側へのマウントも文書になく、試されていない。<br>"
             "※3 他クラウドの ONTAP サービスを Origin にした FlexCache は未確認"
         ),
         "en": (
@@ -585,8 +586,9 @@ LABELS: dict[str, dict[str, str]] = {
             "FSx for ONTAP is a candidate where you supply the shared layer (AWS Batch on EC2, "
             "your own HPC, on premises).<br>"
             "*2 The two frames are deliberately not joined<br>"
-            "Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as input is "
-            "unverified.<br>"
+            "HealthOmics run inputs and outputs are S3 URIs, and AWS's documents do not show an "
+            "FSx for ONTAP S3 Access Point accepted there. Mounting a file system inside a run "
+            "is not documented either, and has not been tried.<br>"
             "*3 FlexCache with a non-AWS ONTAP service as Origin is unverified"
         ),
     },
@@ -1254,8 +1256,9 @@ def _genomics_data_layers() -> Diagram:
     published HealthOmics -> Amazon S3 Tables -> Amazon Bedrock AgentCore chain, where the run has
     its own shared file system (run storage).
 
-    No edge joins the rows. Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as
-    input has not been checked, so the figure does not draw it. Every row is read rightwards, and
+    No edge joins the rows. A HealthOmics run takes S3 URIs, and AWS's documents do not show an
+    FSx for ONTAP S3 Access Point accepted there (a sibling repository's evidence ledger records
+    this, with the sources), so the figure does not draw it. Every row is read rightwards, and
     nothing leaves the bottom of an icon, so no line crosses an icon's label.
     """
     return Diagram(
