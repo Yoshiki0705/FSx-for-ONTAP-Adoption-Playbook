@@ -6,6 +6,33 @@
 
 These are established findings from sibling repositories. Do not re-derive them; cite and link instead.
 
+## Before you write "unverified"
+
+Two checks come first, in this order, and both are cheap. A label such as `hypothesis`, `未確認`, or
+"not measured" is a statement that you looked and the answer was not there.
+
+1. **A Spoke may have measured it already.** The file-protocol (NFS / SMB), block (iSCSI / NVMe/TCP) and S3
+   Access Points performance tests were run in the Spokes. Their locations, with the measurement
+   environment, are in [`performance-evidence-map.md`](../ja/reference/performance-evidence-map.md); the
+   claims this repository cites are in [`cross-repo-index.md`](../ja/reference/cross-repo-index.md). Cite
+   those; do not re-measure and do not call them unmeasured.
+2. **Then ask whether a few hours would settle it.** A file system for FSx for ONTAP is kept running in
+   `ap-northeast-1` for verification, and AWS access on this machine is IAM Identity Center (SSO). If the
+   claim can be tested there within a few hours, test it and record the result with its environment
+   (`verified_on`, `region`, ONTAP version) instead of writing "unverified".
+
+What is established, and what you must still check each time:
+
+| Item | State |
+|---|---|
+| A verification FSx for ONTAP file system exists in `ap-northeast-1` | Kept running. Confirm the file system ID and its lifecycle with `aws fsx describe-file-systems` before relying on it |
+| AWS authentication | SSO only, valid for about 24 hours from `aws sso login`. The agent cannot log in: ask the user and wait. Never create or use long-term access keys |
+| A Linux host that can reach the ONTAP management endpoint | **Not standing.** Discover one, or start a short-lived SSM-managed instance in the file system's VPC and stop it afterwards |
+| Anything that cannot be undone, or holds a parent resource for a long time | Do not run unprompted. See the immutability rules in `AGENTS.md` |
+
+What a few hours cannot settle: anything that needs a second environment you do not control (for example a
+non-AWS ONTAP service as a FlexCache Origin). Say so, name the missing environment, and keep the label.
+
 ## AD integration
 
 - AWS Managed Microsoft AD inserts an intermediate OU: `OU=Computers,OU=<ShortName>,DC=…`. Omitting it causes silent failures. Self-managed AD has no intermediate OU.
