@@ -9,6 +9,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **The write guard no longer reads the word "measured" as a missing measurement.** The pattern that marks a performance claim as "not measured" matched "measured" with or without "un", so a line that reported a result beside an unrelated "unverified" sentence was flagged. Only "unmeasured", "not measured" and the Japanese 未測定 forms count now. Two self-test cases cover the English and the Japanese wording, and the English one fails on the old pattern. The guard's findings over this repository's existing documents did not change with this fix, since none of them depended on the positive word.
 - **Eight rows and bullets that quote a sibling repository's own "untried" or "unconfirmed" statement now link that statement where it is quoted.**
   The write guard added with the Spoke search flagged them, because each names the source ("the cited source", "the primary source") without linking it in that row or bullet. No claim changes.
   - The SMB Multichannel channel-count rows in `a-single-connection-measures-the-client.md` (JA and EN), `file-storage-options.md`, `throughput-levers.md` and `fsx-ontap-fit-conditions.md` link the per-protocol measurement results they quote. `fsx-ontap-fit-conditions.md` had no link to it before, so it gains three citation rows; the probe strings are the ones the other pages already use.
