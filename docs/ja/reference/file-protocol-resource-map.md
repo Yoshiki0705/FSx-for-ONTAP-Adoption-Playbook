@@ -349,7 +349,7 @@ graph TD
 | 種類 | 例 | 理由 |
 |---|---|---|
 | 他クラウドのマルチクラウド接続ページ | Azure / Google Cloud / Oracle の相互接続ドキュメント | **AWS 外からの到達経路は AWS 側の一次情報で足ります。** 対向側の手順は、対向側を設計する人の資料です |
-| 他クラウドのファイルサービスのドキュメント | Azure NetApp Files のキャッシュ関連 3 件 | **このリポジトリにそれを根拠にする claim がありません。** 索引に置くと「参照したことになっている一次情報」が増えます。FlexCache と比較する claim が生じたら、そのとき追加します |
+| 他クラウドのファイルサービスのドキュメント | Azure NetApp Files のキャッシュ関連 3 件 | **この索引の対象はファイル / プロトコルの選択で、他クラウドのサービス仕様は載せません。** FlexCache の他クラウド構成の claim は[クロスクラウドのノート](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md#参照した公式ドキュメント)にあり、一次情報はそこに確認日つきで列挙しています。この索引に重ねて置くと、同じ出典の確認日が 2 か所に分かれます |
 | 図のアイコンパッケージ | 各クラウドの architecture icons | 資料ではありません |
 | 規約・仕様のメタ文書 | Keep a Changelog、llms.txt、Contributor Covenant | このリポジトリ側にも同じものがあり、索引の対象が違います |
 | 一般的な Linux の man | `inotify(7)` | ファイルプロトコルの一次情報ではありません |

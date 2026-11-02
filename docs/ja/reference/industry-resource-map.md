@@ -275,7 +275,7 @@ lang: ja
 | パターン | [FSx-for-ONTAP-Lakehouse-Integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations) | Athena / Glue / Spark 等からの S3 AP 経由アクセス |
 | パターン | [S3 Burst on ONTAP Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) | S3 で収集 → FlexCache の NFS/SMB で利用。反映 p50 8 ms。[解説記事](https://hakobiya.hatenablog.com/entry/fsxn-s3burst-flexcache-collect-s3-consume-files) |
 | 事例 | [talabat のクロスクラウド・ニアリアルタイム分析（AWS + Google Cloud）](https://aws.amazon.com/jp/blogs/news/fresher-insights-faster-decisions-talabats-near-real-time-analytics-across-aws-and-google-cloud/) | 物理コピーを片側に 1 つ保持し両クラウドから読む。**書き込みはローカル、クロスな依存は読み取り側**という原則の出どころ |
-| ノート | [クロスクラウド分析でコピーを増やさない](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md) | 原則を ONTAP のデータモビリティにあてはめた範囲と、他クラウド ONTAP の未確認の範囲 |
+| ノート | [クロスクラウド分析でコピーを増やさない](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md) | 原則を ONTAP のデータモビリティにあてはめた範囲と、他クラウド ONTAP との FlexCache の確認状況 |
 | ノート | [S3 AP は「S3 として使える」わけではない](../domains/data-utilization/notes/s3-access-point-constraints.md) | 設計段階の制約 |
 
 ### ファイルシステム運用（業種横断）

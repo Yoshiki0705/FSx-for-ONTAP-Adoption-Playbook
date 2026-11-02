@@ -18,7 +18,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **複製先を分析基盤から読みたい** | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) | **break は不要です。** 止めているのは junction path であってボリューム種別ではありません |
 | **ファイルの到着でパイプラインを起動したい** | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) | **判定は書き込みが着地するプロトコルです。** 読む側は入りません |
 | **ゲノム / HPC の解析データをどこに置くか迷う** | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](notes/where-genomics-pipeline-data-lives.md) | **マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えません。** 共有層を自分で用意するかは実行基盤ごとに違います（HealthOmics の run は自前で提供） |
-| **クロスクラウド / クロスリージョンで分析したい** | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) | 書き込みはローカルに寄せ、クロスな依存は読み取り側に。**他クラウド ONTAP の FlexCache は未確認** |
+| **クロスクラウド / クロスリージョンで分析したい** | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) | 書き込みはローカルに寄せ、クロスな依存は読み取り側に。**他クラウド ONTAP との FlexCache は、公式ドキュメントに記載はあるが実機の公開記録がない** |
 
 ---
 
