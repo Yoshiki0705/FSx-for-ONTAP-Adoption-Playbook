@@ -28,6 +28,7 @@
 | Reading a `@2x` PNG directly | Exceeds the 2000px limit. Downscale to a preview first |
 | Working past a `ruff` version mismatch | `make python` now fails instead of warning. Install the pinned version; if it still fires, a second binary is earlier on `PATH` (`which -a ruff`) |
 | Citing another repo's finding without a link | Always link the source repository and doc |
+| Writing "not measured / 未確認" on FSx for ONTAP performance when a Spoke already measured it | Check [`performance-evidence-map.md`](../ja/reference/performance-evidence-map.md) (NFS / SMB / iSCSI / NVMe-oF / S3 Access Points / FlexCache, with environment) and [`cross-repo-index.md`](../ja/reference/cross-repo-index.md) first. This happened once: a data-utilization note called the FSx-for-ONTAP shared-file layer unverified while NFS/SMB multi-host and S3 Access Points throughput were already measured. The maps were linked from the home README but not from the `domains/` notes where the note was written |
 | **Telling a reader to contact AWS or NetApp Support** | `make audit` fails (`support-referral`). Publish the mechanism instead; if there is genuinely no answer yet, the open question belongs in `.private/` |
 | Writing "this cannot be done" from your own observations alone | Search first. See [Concluding that something is impossible](#concluding-that-something-is-impossible) |
 

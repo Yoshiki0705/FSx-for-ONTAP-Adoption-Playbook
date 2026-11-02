@@ -42,6 +42,7 @@ Rendered as mermaid `graph TD`, with a table below giving the reasoning for each
 | 分岐の根拠を表で補う / Back each branch with a table | 図だけでは「なぜその分岐か」が伝わらない / A diagram alone does not convey why |
 | 「よくある誤解」を必ず入れる / Always include common misconceptions | 誤った前提での分岐が最も多い失敗 / Branching on a false premise is the most common failure |
 | 推奨案の制約も書く / State the recommended option's constraints too | 一方的な推奨は判断材料にならない / A one-sided recommendation is not decision material |
+| 性能を根拠にする分岐は実測の所在を [性能実測の所在マップ](../performance-evidence-map.md) で確認する / For a branch that rests on performance, check the evidence map | NFS / SMB / S3 Access Points / FlexCache は Spoke で実測済み。「未測定」と書かない / These are already measured in Spokes; do not write "not measured" |
 
 ---
 
