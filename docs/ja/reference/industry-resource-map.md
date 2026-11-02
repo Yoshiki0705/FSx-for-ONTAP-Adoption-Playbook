@@ -237,7 +237,7 @@ lang: ja
 | 事例 | [AWS Summit Japan 2026 の Physical AI（コニカミノルタ）](https://aws.amazon.com/jp/blogs/news/konicaminolta-future-lab-summit2026/) | 電子実験ノートと MI データの蓄積基盤に生成 AI とロボティクスを接続。記録・再現性・監査性を重視 |
 | 事例 | [鉄道設備保全プラットフォーム / Chronos-2](https://aws.amazon.com/jp/blogs/news/aws-summit-japan-2026-railway-maintenance-ai-and-ot-cloud-design/) | 散在する保守履歴・設備マニュアルを Bedrock Knowledge Bases で RAG。時系列基盤モデル Chronos-2 で予兆検知（展示データは架空 / 合成と明記） |
 | ノート | [S3 AP は全リクエストを 1 つの ID で認可する](../domains/data-utilization/notes/reaching-data-without-copies.md) | 元の ACL は AI パイプラインに引き継がれない |
-| ノート | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md) | マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えない。サーバーレスでも共有層の要否は形で決まる |
+| ノート | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md) | マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えない。共有層を自分で用意するかは実行基盤ごとに違う（HealthOmics の run は自前で提供） |
 | 決定木 | [AI・HPC ワークロードのデータ層に FSx for ONTAP を経由させるかを決める](decision-trees/ai-workload-data-layer.md) | 業種ではなくワークロードの形（S3 / POSIX / 複数ホスト同時 / ONTAP 資産 / RAG）で分岐 |
 
 ### SaaS / マルチテナント

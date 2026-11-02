@@ -17,7 +17,9 @@ lang: ja
 
 **生成 AI・エージェント・HPC のワークロードで「データ層に FSx for ONTAP を経由させるか」は、業種では決まりません。ワークロードの形で決まります。** 鉄道の予兆検知も、ゲノムの二次解析も、ロボット学習も、物流の書類照合も、同じ 4 つの問いで分岐します。
 
-**最初の問いが最も強い制約です。**
+**ただし、4 問に入る前に 1 つ確かめます。実行基盤が共有ファイル層を自分で提供していないかです**（[後述](#実行基盤が共有ファイル層を提供する場合の先決)）。AWS HealthOmics の run は提供するので、run の内側に FSx for ONTAP の出番はありません。
+
+**そのうえで、最初の問いが最も強い制約です。**
 
 | 順 | 問い | なぜここが先か |
 |---|---|---|
@@ -26,7 +28,7 @@ lang: ja
 | 3 | 既存の ONTAP 資産（オンプレミス / 他クラウド）を持ち込むか | あるなら SnapMirror / FlexCache でデータモビリティが重なります。**他クラウド ONTAP の FlexCache は未確認（後述）** |
 | 4 | RAG / エージェントのナレッジソースにするか | するなら S3 Access Points 経由でナレッジベースに載せ、権限の平坦化を別に設計します |
 
-> **区分**: `documented` — 分岐の条件は AWS / NetApp 公式ドキュメントと AWS 公開事例の記載に基づきます（2026-11-02 に確認）。**「FSx for ONTAP を経由させる形」は公開事例の構成を引いており、このリポジトリでの再現実測ではありません。** 他クラウド ONTAP サービスを Origin にした FlexCache は未確認です（[クロスクラウドのノート](../../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md)）。
+> **区分**: `documented` — 分岐の条件は AWS / NetApp 公式ドキュメントと AWS 公開事例の記載に基づきます（2026-11-02 に確認）。**各分岐で前提にする FSx for ONTAP の性能（NFS / SMB の台数試験、S3 Access Points のスループット・レイテンシ、FlexCache の読み取り）は Spoke で実測済みで、所在と測定環境は [性能実測の所在マップ](../performance-evidence-map.md) にあります。** 他クラウド ONTAP サービスを Origin にした FlexCache だけは、Spoke にも実測がなく片側環境も用意できないため未確認です（[クロスクラウドのノート](../../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md)）。
 
 ---
 
@@ -49,7 +51,7 @@ graph TD
     SHARE -->|する| ASSET{既存の ONTAP 資産を<br/>持ち込むか}
 
     ASSET -->|持ち込まない| FSXN["FSx for ONTAP を<br/>中間共有ファイル層にする<br/>NFS / SMB で多数ホストが同時アクセス"]
-    ASSET -->|オンプレミスの ONTAP| MOBIL["FSx for ONTAP + データモビリティ<br/>SnapMirror 複製 または FlexCache<br/>データを全量コピーせず持ち込む"]
+    ASSET -->|オンプレミスの ONTAP| MOBIL["FSx for ONTAP + データモビリティ<br/>FlexCache は必要分だけ取得<br/>SnapMirror は宛先に複製を持つ"]
     ASSET -->|他クラウドの ONTAP サービス| OPEN["ネットワーク到達性とは別に<br/>FlexCache 成立は未確認。<br/>自環境で検証してから設計前提に置く"]
 
     MANAGED -->|する| RAG["S3 Access Points 経由で<br/>Bedrock Knowledge Base 等に載せる<br/>権限の平坦化を別に設計"]
@@ -67,7 +69,7 @@ graph TD
 | 2 | 複数ホストが同じデータを同時に読み書きするか | しない（単一ジョブで完結） | **共有ファイル層は不要。** S3 と各ジョブのローカルで完結します |
 | 2 | 同上 | する | 3 へ |
 | 3 | 既存の ONTAP 資産を持ち込むか | 持ち込まない | **FSx for ONTAP を中間共有ファイル層にする。** NFS / SMB で多数ホストが同時アクセス |
-| 3 | 同上 | オンプレミスの ONTAP | **FSx for ONTAP + データモビリティ。** SnapMirror 複製または FlexCache で全量コピーせず持ち込む |
+| 3 | 同上 | オンプレミスの ONTAP | **FSx for ONTAP + データモビリティ。** FlexCache は必要な分だけ取得し、SnapMirror は宛先に複製を持つ。読み取り主体でワーキングセットが小さければ FlexCache。**Cache には S3 Access Points を付けられない**ので、S3 API で読ませるなら SnapMirror の宛先を使う |
 | 3 | 同上 | 他クラウドの ONTAP サービス | **ネットワーク到達性とは別に FlexCache 成立は未確認。** 自環境で検証してから設計前提に置く |
 | 4 | RAG / エージェントのナレッジソースにするか | する | **S3 Access Points 経由で Bedrock Knowledge Base 等に載せる。** 権限の平坦化を別に設計（元の ACL は引き継がれない） |
 | 4 | 同上 | しない | **S3 直で足りる。** FSx for ONTAP は経由しません |
@@ -102,9 +104,9 @@ graph TD
 
 ---
 
-## サーバーレスな実行基盤での分岐の不変性
+## 実行基盤が共有ファイル層を提供する場合の先決
 
-**AWS HealthOmics や AWS Batch のように、実行基盤の仮想マシンを運用者が意識しない形でも、上の 4 問は同じように効きます。** 「サーバーレス的に扱える」ことと「共有ファイル層が要らない」ことは別です。実行基盤が何であれ、問い 2（複数ホスト同時）と、ツールが POSIX を前提とするかで、共有ファイル層の要否が決まります。詳細は [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md#サーバーレスな実行基盤での共有ファイル層の要否) にあります。
+**上の 4 問に入る前に、実行基盤が共有ファイル層を自分で提供しているかを確かめます。** AWS HealthOmics のワークフローは、run ごとに一時的な共有ファイルシステム（run storage）をサービスが提供するので、run の内側では問い 2 に当たりません。FSx for ONTAP の出番は run の外側（入力を渡す前の置き場、結果の解析、オンプレミスとの行き来）です。AWS Batch は EC2 起動タイプなら共有ファイル層を自分で用意し、Fargate 起動タイプは FSx for ONTAP をマウントできません。基盤ごとの扱いは [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md#サーバーレスな実行基盤での共有ファイル層の要否) にあります。
 
 ---
 
@@ -128,7 +130,7 @@ graph TD
 |---|---|
 | AI / HPC のデータ層は業種で決まる | **ワークロードの形で決まります。** 鉄道もゲノムもロボット学習も、同じ 4 問で分岐します |
 | マネージドな AI / 分析サービスを使うなら FSx for ONTAP は要らない | 要否は別です。**複数ホストが POSIX で同時に触る中間層が要るなら、マネージドサービスと併用します** |
-| 実行基盤がサーバーレスなら共有ファイル層は不要 | **実行基盤ではなくワークロードの形で決まります。** HealthOmics / AWS Batch でも共有層が要る形があります |
+| サーバーレスな基盤なら共有ファイル層はどれも不要 | **基盤ごとに違います。** HealthOmics の run は共有ファイルシステムをサービスが提供するので run の内側では不要です。AWS Batch の EC2 起動タイプは自分で用意し、Fargate 起動タイプは FSx for ONTAP をマウントできません |
 | S3 に置けば RAG のナレッジソースになる | なりますが、**S3 Access Points 経由では元の ACL が引き継がれません。** 権限は別に設計します |
 | ネットワークが他クラウドに届けば ONTAP のモビリティも組める | **到達性と FlexCache / SnapMirror の成立は別の問いです。** 他クラウド ONTAP を Origin にした FlexCache は未確認です |
 | FSx for ONTAP を使うほどよい | **経由させない終端が 2 つあります。** S3 直で足りる形、各ジョブのローカルで完結する形では、経由させないのが正しい判断です |

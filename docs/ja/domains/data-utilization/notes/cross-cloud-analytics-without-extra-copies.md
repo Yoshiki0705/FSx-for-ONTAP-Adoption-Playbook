@@ -59,13 +59,13 @@ advanced
 | 手段 | 何をするか | 書き込み/読み取りの位置づけ |
 |---|---|---|
 | **SnapMirror** | ボリュームを別のファイルシステムへ非同期に複製する | 書き込みは Origin（ローカル）。宛先は読み取り。**宛先は break せずに S3 Access Point で読める**（[別ノート](serving-a-replication-destination-over-s3.md)） |
-| **FlexCache** | 必要な分だけ Origin から取得する疎なキャッシュ | 読み取りを Cache 側（遠い側）に近づける。既定は書き込みを Origin が確認する（[機構](reaching-data-without-copies.md#flexcache-が効く条件)） |
+| **FlexCache** | 必要な分だけ Origin から取得する疎なキャッシュ | 読み取りを Cache 側（遠い側）に近づける。既定は書き込みを Origin が確認する。**Cache には S3 Access Point を付けられず、NFS / SMB で読みます**（[機構](reaching-data-without-copies.md#flexcache-が効く条件)） |
 
 **どちらも「書き込みはローカル、クロスな依存は読み取り側」という原則に沿います。** SnapMirror は書き込みを Origin に閉じ、複製先で読ませます。FlexCache は読み取りを遠い側へ運び、キャッシュミスと書き込み確認だけが Origin への依存になります。機構はこの 2 つのノートにあるので再説明しません。
 
-![クロスクラウドのデータモビリティ。オンプレミスの NetApp ONTAP（Origin / 書き込み元）から SnapMirror / FlexCache で AWS 上の FSx for ONTAP（Cache / 読み取り側）へ、さらに S3 Access Points で分析基盤へ。他クラウドの ONTAP サービスを Origin にした構成は未確認として破線枠で示す。](../../../../_assets/images/ai-hpc-cross-cloud-mobility.svg)
+![データモビリティの 3 つの枠。上の枠は、オンプレミスの NetApp ONTAP を Origin に FlexCache で FSx for ONTAP の Cache へ必要分を取得し、Cache は NFS / SMB で読む（Cache に S3 Access Points は付けられない）。中の枠は、SnapMirror で FSx for ONTAP の宛先へ複製し、宛先に付けた S3 Access Points から break せず S3 API で読む。下の枠は他クラウドの ONTAP サービスで、線は引かず未確認と注記する。](../../../../_assets/images/ai-hpc-cross-cloud-mobility.svg)
 
-図 1: 書き込みはローカルに閉じ、クロスな依存を読み取り側（Cache）に置くデータモビリティ。他クラウドの ONTAP サービスを Origin にした FlexCache は未確認。
+図 1: FlexCache は読み取りを近づけ、S3 API で読ませるなら SnapMirror の宛先を使う。他クラウドの ONTAP サービスを Origin にした FlexCache は線を引かず、未確認として示す。
 
 ---
 

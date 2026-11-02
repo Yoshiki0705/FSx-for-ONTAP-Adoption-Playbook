@@ -116,6 +116,11 @@ ICONS = {
         "Architecture-Service-Icons_{d}/Arch_Artificial-Intelligence/64/"
         "Arch_Amazon-Bedrock-AgentCore_64.svg"
     ),
+    # The resource icon for an access point, which the standard prefers over the generic bucket.
+    "s3_access_point": (
+        "Resource-Icons_{d}/Res_Storage/"
+        "Res_Amazon-Simple-Storage-Service_General-Access-Points_48.svg"
+    ),
 }
 
 # Google Cloud icons come from the official product-icon packages. Cloud VPN and Cloud Router are
@@ -151,6 +156,7 @@ ICON_SIZE = {
     "s3": 80,
     "s3_tables": 48,
     "agentcore": 80,
+    "s3_access_point": 48,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -522,8 +528,8 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "Amazon FSx for NetApp ONTAP<br>(POSIX shared file layer)",
     },
     "healthomics_store": {
-        "ja": "AWS HealthOmics<br>（Sequence Store / ワークフロー）",
-        "en": "AWS HealthOmics<br>(Sequence Store / workflows)",
+        "ja": "AWS HealthOmics<br>（run storage を内蔵）",
+        "en": "AWS HealthOmics<br>(run storage built in)",
     },
     "s3_tables_query": {
         "ja": "Amazon S3 Tables<br>（構造化バリアントのクエリ）",
@@ -534,16 +540,24 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "Amazon Bedrock AgentCore<br>(interpretation agent)",
     },
     "mobility_snapmirror": {
-        "ja": "SnapMirror / FlexCache<br>全量コピーせず持ち込む",
-        "en": "SnapMirror / FlexCache<br>bring data without full copy",
+        "ja": "FlexCache<br>または SnapMirror",
+        "en": "FlexCache<br>or SnapMirror",
     },
-    "ingest_sequence": {
-        "ja": "シーケンスデータの取り込み",
-        "en": "sequence data ingest",
+    "outside_run_frame": {
+        "ja": "run の外側（共有ファイル層を自分で用意する側）",
+        "en": "Outside a run (you supply the shared file layer)",
     },
-    "posix_intermediate": {
-        "ja": "POSIX 中間成果物・参照 DB",
-        "en": "POSIX intermediate / reference DB",
+    "managed_run_frame": {
+        "ja": "マネージドな解析（共有ファイルシステムはサービスが提供）",
+        "en": "Managed analysis (the service supplies the shared file system)",
+    },
+    "s3_access_point_input": {
+        "ja": "Amazon S3 Access Points<br>（S3 API で同じデータを読む）",
+        "en": "Amazon S3 Access Points<br>(same data over the S3 API)",
+    },
+    "via_access_points": {
+        "ja": "S3 Access Points 経由<br>（Cache には付けられない）",
+        "en": "via S3 Access Points<br>(not on a Cache)",
     },
     "vcf_to_tables": {
         "ja": "VCF → 構造化テーブル",
@@ -556,82 +570,95 @@ LABELS: dict[str, dict[str, str]] = {
     "genomics_notes": {
         "ja": (
             "<b>補足</b><br>"
-            "※1 3 層は役割が別<br>"
-            "長期保管・取り込みは AWS HealthOmics、構造化バリアントのクエリは Amazon S3 Tables、"
-            "複数ホストが POSIX で同時に触る中間層は FSx for ONTAP。"
-            "マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えない。<br>"
-            "※2 FSx for ONTAP を経由させるかはワークロードの形で決まる<br>"
-            "複数ホスト同時・POSIX 前提・大きいファイルのランダムアクセスのいずれかに当たるとき。"
-            "実行基盤がサーバーレスでも判断は変わらない。<br>"
-            "※3 他クラウドの ONTAP サービスを Origin にした FlexCache は未確認<br>"
-            "オンプレミス ONTAP ⇄ FSx for ONTAP は公式ドキュメントに記載。"
-            "公開事例の構成に基づき、著者環境での再現実測ではない。"
+            "※1 共有ファイル層の置き場は run の外側<br>"
+            "AWS HealthOmics の run は共有ファイルシステム（run storage）をサービスが提供する。"
+            "FSx for ONTAP が入るのは、共有層を自分で用意する基盤（AWS Batch の EC2 起動タイプ、"
+            "自前の HPC、オンプレミス）側。<br>"
+            "※2 2 つの枠は線で結んでいない<br>"
+            "HealthOmics が FSx for ONTAP の S3 Access Points を入力に使えるかは未確認。<br>"
+            "※3 他クラウドの ONTAP サービスを Origin にした FlexCache は未確認"
         ),
         "en": (
             "<b>Notes</b><br>"
-            "*1 The three layers have distinct roles<br>"
-            "AWS HealthOmics for long-term storage and ingest, Amazon S3 Tables for structured "
-            "variant queries, FSx for ONTAP for the POSIX intermediate layer that many hosts touch "
-            "at once. A managed object store does not replace the POSIX shared file layer.<br>"
-            "*2 Whether to route through FSx for ONTAP follows workload shape<br>"
-            "When any of: many hosts at once, POSIX-dependent tools, large-file random access. "
-            "A serverless execution base does not change the judgement.<br>"
-            "*3 FlexCache with a non-AWS ONTAP service as Origin is unverified<br>"
-            "On-premises ONTAP &lt;-&gt; FSx for ONTAP is documented. Based on published case "
-            "configurations, not reproduced in the author's environment."
+            "*1 The shared file layer sits outside a run<br>"
+            "An AWS HealthOmics run gets its shared file system (run storage) from the service. "
+            "FSx for ONTAP is a candidate where you supply the shared layer (AWS Batch on EC2, "
+            "your own HPC, on premises).<br>"
+            "*2 The two frames are deliberately not joined<br>"
+            "Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as input is "
+            "unverified.<br>"
+            "*3 FlexCache with a non-AWS ONTAP service as Origin is unverified"
         ),
     },
     # --- ai-hpc-cross-cloud-mobility ------------------------------------------------------------
     # Reuses the GCNV/FSx mobility framing of the gcp-fsx figures, lifted to the cross-cloud
     # analytics context: write path local, cross-cloud dependency on the read side.
     "onprem_ontap_origin": {
-        "ja": "オンプレミスの NetApp ONTAP<br>（Origin / 書き込み元）",
-        "en": "On-premises NetApp ONTAP<br>(Origin / write source)",
+        "ja": "オンプレミスの NetApp ONTAP<br>（Origin）",
+        "en": "On-premises NetApp ONTAP<br>(Origin)",
+    },
+    "onprem_ontap_source": {
+        "ja": "オンプレミスの NetApp ONTAP<br>（SnapMirror 元）",
+        "en": "On-premises NetApp ONTAP<br>(SnapMirror source)",
     },
     "fsx_cache_read": {
-        "ja": "Amazon FSx for NetApp ONTAP<br>（Cache / 読み取り側）",
-        "en": "Amazon FSx for NetApp ONTAP<br>(Cache / read side)",
+        "ja": "Amazon FSx for NetApp ONTAP<br>（Cache。NFS / SMB で読む）",
+        "en": "Amazon FSx for NetApp ONTAP<br>(Cache, read over NFS / SMB)",
     },
-    "s3_analytics": {
-        "ja": "Amazon Simple Storage Service<br>（S3 Access Points で分析基盤へ）",
-        "en": "Amazon Simple Storage Service<br>(to analytics via S3 Access Points)",
+    "fsx_dest_read": {
+        "ja": "Amazon FSx for NetApp ONTAP<br>（SnapMirror の宛先）",
+        "en": "Amazon FSx for NetApp ONTAP<br>(SnapMirror destination)",
     },
-    "write_local": {
-        "ja": "書き込みはローカルで短く",
-        "en": "write local and short",
+    "s3_access_point_analytics": {
+        "ja": "Amazon S3 Access Points<br>（分析基盤が S3 API で読む）",
+        "en": "Amazon S3 Access Points<br>(analytics reads over the S3 API)",
     },
-    "read_cross": {
-        "ja": "読み取りをキャッシュ・リトライ可能に",
-        "en": "read side: cacheable, retriable",
+    "flexcache_fetch": {
+        "ja": "FlexCache<br>（必要分を取得）",
+        "en": "FlexCache<br>(fetch on demand)",
+    },
+    "snapmirror_replicate": {
+        "ja": "SnapMirror<br>（複製）",
+        "en": "SnapMirror<br>(replicate)",
     },
     "serve_s3": {
-        "ja": "複製先を S3 API で読む",
-        "en": "read replica via S3 API",
+        "ja": "break せず<br>S3 API で読む",
+        "en": "read over S3 API,<br>no break",
+    },
+    "flexcache_row_frame": {
+        "ja": "読み取りを近づける: FlexCache（Cache に S3 Access Points は付けられない）",
+        "en": "Bring reads closer: FlexCache (no S3 Access Point on a Cache)",
+    },
+    "snapmirror_row_frame": {
+        "ja": "S3 API で読ませる: SnapMirror の宛先に S3 Access Points",
+        "en": "Serve over S3: S3 Access Point on a SnapMirror destination",
     },
     "crosscloud_frame": {
-        "ja": "他クラウドの ONTAP サービス（未確認）",
-        "en": "Non-AWS ONTAP service (unverified)",
+        "ja": "他クラウドの ONTAP サービス（Google Cloud NetApp Volumes / Azure NetApp Files）",
+        "en": "Non-AWS ONTAP service (Google Cloud NetApp Volumes / Azure NetApp Files)",
     },
     "crosscloud_open": {
-        "ja": "Open: 他クラウド ONTAP を Origin にした FlexCache は自環境で検証してから設計前提に置く",
-        "en": "Open: verify FlexCache with a non-AWS ONTAP Origin before relying on it",
+        "ja": "未確認: 他クラウドを Origin にした FlexCache は、自環境で検証してから設計前提に置く",
+        "en": "Unverified: verify FlexCache with a non-AWS Origin before relying on it",
     },
     "mobility_notes": {
         "ja": (
             "<b>補足</b><br>"
-            "※1 原則: 書き込みはローカル、クロスな依存は読み取り側<br>"
-            "書き込み経路にクロスクラウド依存を入れると取り込みが相手の API に結合する。"
-            "読み取り側はキャッシュ・リトライが効く。<br>"
-            "※2 ネットワーク到達性と ONTAP のモビリティ成立は別の問い<br>"
-            "他クラウドの ONTAP サービスを Origin にした FlexCache はこのリポジトリで未確認。"
+            "※1 書き込みはローカル、クロスな依存は読み取り側<br>"
+            "書き込み経路にクロスクラウド依存を入れると、取り込みが相手の API に結合する。<br>"
+            "※2 FlexCache の Cache は S3 Access Points を付けられない<br>"
+            "S3 API で読ませるなら SnapMirror の宛先を使う。<br>"
+            "※3 他クラウドとのあいだは線を引いていない<br>"
+            "ネットワークが届くことと、FlexCache が成立することは別の問い。"
         ),
         "en": (
             "<b>Notes</b><br>"
-            "*1 Principle: write local, place cross-cloud dependency on the read side<br>"
-            "A write path that crosses clouds couples ingest to the remote API. The read side is "
-            "cacheable and retriable.<br>"
-            "*2 Network reachability and ONTAP mobility are different questions<br>"
-            "FlexCache with a non-AWS ONTAP service as Origin is unverified in this repository."
+            "*1 Write local, put the cross-cloud dependency on the read side<br>"
+            "A write path that crosses clouds couples ingest to the remote API.<br>"
+            "*2 A FlexCache Cache cannot take an S3 Access Point<br>"
+            "To serve over the S3 API, use a SnapMirror destination.<br>"
+            "*3 No line is drawn to a non-AWS service<br>"
+            "Network reachability and a working FlexCache are different questions."
         ),
     },
 }
@@ -1219,90 +1246,76 @@ def _gcp_flexcache_reverse() -> Diagram:
 
 
 def _genomics_data_layers() -> Diagram:
-    """Genomics / HPC data sits in three layers with distinct roles.
+    """Where genomics / HPC data sits: outside a HealthOmics run, and inside the managed analysis.
 
-    The claim the figure makes is that a managed object store (AWS HealthOmics Sequence Store,
-    Amazon S3 Tables) does not replace the POSIX shared file layer. On-premises ONTAP brings data
-    in without a full copy via SnapMirror / FlexCache. The flow runs downward and to the right so
-    no edge travels left or up; the three roles fan out to the right of the shared file layer.
+    Two rows, no edge between them. The top row is what this repository can speak to: on-premises
+    ONTAP data reaching FSx for ONTAP (FlexCache fetches what is needed; SnapMirror replicates),
+    and the same data read over the S3 API through an S3 Access Point. The bottom row is the
+    published HealthOmics -> Amazon S3 Tables -> Amazon Bedrock AgentCore chain, where the run has
+    its own shared file system (run storage).
 
-    Everything here is `documented` from published case configurations, not reproduced in this
-    repository — stated in the note and in the two data-utilization notes this figure accompanies.
+    No edge joins the rows. Whether a HealthOmics run can take an FSx for ONTAP S3 Access Point as
+    input has not been checked, so the figure does not draw it. Every row is read rightwards, and
+    nothing leaves the bottom of an icon, so no line crosses an icon's label.
     """
-    # Layout: left column is the on-premises source feeding the shared layer downward. The three
-    # cloud roles are stacked in their own rows so no two edge labels share a band — HealthOmics
-    # (top) feeds the shared layer, the shared layer (middle) writes to S3 Tables, and the agent
-    # (bottom) queries S3 Tables. Every edge runs right or down; labels are nudged off icon rows.
     return Diagram(
         name="genomics-hpc-data-layers",
         diagram_id="genomics-hpc-data-layers",
         width=980,
-        height=1000,
-        groups=(Group("aws_cloud", "aws_cloud", 300, 30, 650, 660),),
-        boxes=(
-            # On-premises NetApp ONTAP has no official AWS icon. A named box states the resource
-            # without borrowing an AWS service mark, which would also fail the service-name gate.
-            Box("onprem", "onprem_ontap", 40, 120, 180, 80),
-            Box("mobility", "mobility_snapmirror", 40, 320, 180, 80),
+        height=770,
+        frames=(
+            Frame("outside_run", "outside_run_frame", 30, 30, 920, 250),
+            Frame("managed_run", "managed_run_frame", 30, 310, 920, 230),
         ),
-        notes=(Note("notes", "genomics_notes", 30, 720, 920, 250),),
+        boxes=(
+            # On-premises NetApp ONTAP has no official AWS icon: a named box states the resource
+            # without borrowing an AWS service mark.
+            Box("onprem", "onprem_ontap", 60, 110, 170, 80),
+        ),
+        notes=(Note("notes", "genomics_notes", 30, 570, 920, 170),),
         nodes=(
-            # HealthOmics sits directly above the shared layer so its edge runs straight down.
-            Node("healthomics", "healthomics", "healthomics_store", 380, 110),
-            # The POSIX shared file layer: the figure's centre of gravity.
-            Node("fsx", "fsx_ontap", "fsx_shared_layer", 380, 380),
-            # Structured-query store to the right, and the agent that reads it below it.
-            Node("s3tables", "s3_tables", "s3_tables_query", 700, 396),
-            Node("agentcore", "agentcore", "agentcore_agent", 680, 560),
+            Node("fsx", "fsx_ontap", "fsx_shared_layer", 400, 110),
+            Node("ap", "s3_access_point", "s3_access_point_input", 720, 126),
+            Node("healthomics", "healthomics", "healthomics_store", 110, 390),
+            Node("s3tables", "s3_tables", "s3_tables_query", 440, 406),
+            Node("agentcore", "agentcore", "agentcore_agent", 700, 390),
         ),
         edges=(
-            # On-premises ONTAP brings data down into the shared layer (left column, downward).
             Edge(
                 "e1",
                 "onprem",
-                "mobility",
-                "ingest_sequence",
-                exit_at=(0.5, 1.0),
-                entry_at=(0.5, 0.0),
-                label_offset=(0, -4),
-            ),
-            # Then right-and-down into the shared layer.
-            Edge(
-                "e2",
-                "mobility",
                 "fsx",
+                "mobility_snapmirror",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
+                label_offset=(0, -22),
             ),
-            # HealthOmics feeds the shared layer its ingested data (straight down).
+            Edge(
+                "e2",
+                "fsx",
+                "ap",
+                "via_access_points",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
             Edge(
                 "e3",
                 "healthomics",
-                "fsx",
-                "posix_intermediate",
-                exit_at=(0.5, 1.0),
-                entry_at=(0.5, 0.0),
-                label_offset=(0, -6),
-            ),
-            # The shared layer writes structured variants out to S3 Tables (right).
-            Edge(
-                "e4",
-                "fsx",
                 "s3tables",
                 "vcf_to_tables",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
-                label_offset=(0, -14),
+                label_offset=(0, -28),
             ),
-            # The agent queries S3 Tables (downward).
             Edge(
-                "e5",
+                "e4",
                 "s3tables",
                 "agentcore",
                 "query_variants",
-                exit_at=(0.5, 1.0),
-                entry_at=(0.5, 0.0),
-                label_offset=(0, -6),
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
             ),
         ),
     )
@@ -1311,44 +1324,63 @@ def _genomics_data_layers() -> Diagram:
 def _crosscloud_mobility() -> Diagram:
     """Cross-cloud data mobility: write path local, cross dependency on the read side.
 
-    A synthesis figure for the cross-cloud-analytics note. It reuses the SnapMirror / FlexCache
-    framing of the gcp-fsx figures but frames it for the AI / HPC data-layer context. The non-AWS
-    ONTAP service is drawn in a dashed `open` frame because FlexCache with it as Origin is
-    unverified in this repository — the same boundary the gcp-fsx cross-cloud figure carries.
+    Two rows, both drawn only from what is documented. Top: on-premises ONTAP as Origin, FSx for
+    ONTAP as Cache (FlexCache); the Cache is read over NFS / SMB and an S3 Access Point cannot be
+    attached to it, so no S3 edge leaves it. Bottom: on-premises ONTAP replicated by SnapMirror to
+    FSx for ONTAP, whose destination volume can be read over the S3 API through an S3 Access
+    Point without a break.
+
+    A non-AWS ONTAP service is drawn as a dashed frame with no edge, because FlexCache with it as
+    Origin is unverified: a solid line would assert the very thing the figure says is unverified.
     """
     return Diagram(
         name="ai-hpc-cross-cloud-mobility",
         diagram_id="ai-hpc-cross-cloud-mobility",
         width=960,
-        height=680,
-        groups=(Group("aws_cloud", "aws_cloud", 360, 30, 560, 360),),
-        frames=(Frame("crosscloud", "crosscloud_frame", 30, 60, 290, 300),),
-        boxes=(
-            # On-premises / non-AWS ONTAP Origin: a named box, no borrowed AWS icon.
-            Box("onprem", "onprem_ontap_origin", 95, 155, 170, 90),
-            Box("open", "crosscloud_open", 30, 400, 890, 56),
+        height=880,
+        frames=(
+            Frame("fc_row", "flexcache_row_frame", 30, 30, 900, 230),
+            Frame("sm_row", "snapmirror_row_frame", 30, 290, 900, 230),
+            Frame("crosscloud", "crosscloud_frame", 30, 550, 900, 110),
         ),
-        notes=(Note("notes", "mobility_notes", 30, 480, 890, 160),),
+        boxes=(
+            Box("onprem_fc", "onprem_ontap_origin", 60, 100, 200, 80),
+            Box("onprem_sm", "onprem_ontap_source", 60, 360, 200, 80),
+            Box("open", "crosscloud_open", 60, 600, 840, 44),
+        ),
+        notes=(Note("notes", "mobility_notes", 30, 690, 900, 160),),
         nodes=(
-            Node("fsx", "fsx_ontap", "fsx_cache_read", 500, 180),
-            Node("s3", "s3", "s3_analytics", 780, 180),
+            Node("fsx_cache", "fsx_ontap", "fsx_cache_read", 420, 100),
+            Node("fsx_dest", "fsx_ontap", "fsx_dest_read", 420, 360),
+            Node("ap", "s3_access_point", "s3_access_point_analytics", 700, 376),
         ),
         edges=(
             Edge(
                 "e1",
-                "onprem",
-                "fsx",
-                "write_local",
+                "onprem_fc",
+                "fsx_cache",
+                "flexcache_fetch",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
             ),
             Edge(
                 "e2",
-                "fsx",
-                "s3",
+                "onprem_sm",
+                "fsx_dest",
+                "snapmirror_replicate",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
+            ),
+            Edge(
+                "e3",
+                "fsx_dest",
+                "ap",
                 "serve_s3",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
+                label_offset=(0, -28),
             ),
         ),
     )
