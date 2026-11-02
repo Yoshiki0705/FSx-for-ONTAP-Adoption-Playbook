@@ -125,10 +125,13 @@ EXEMPT = re.compile(
 FOCUSED_MAX_FILES = 40
 MAX_TERMS = 8
 
-#: A marker that says a *measurement* was not made, as opposed to something merely unconfirmed.
+#: A marker that says a *measurement was not made*, as opposed to something merely unconfirmed.
+#: Only the negative forms: "measured" on its own is a result, and a line that reports one beside
+#: an unrelated "unverified" sentence is not a missing measurement. (The first version of this
+#: pattern read ``(?:un)?measured``, which also matched the positive word.)
 MEASUREMENT_MARKER = re.compile(
     r"未(?:測定|実測|計測)|(?:測定|実測|計測)(?:して|でき(?:て)?)(?:い)?(?:ない|ません)|"
-    r"\b(?:un)?measured\b|\bnot (?:yet )?(?:been )?measured\b",
+    r"\bunmeasured\b|\bnot (?:yet )?(?:been )?measured\b",
     re.IGNORECASE,
 )
 
@@ -613,6 +616,22 @@ def selftest() -> int:
             False,
             "an unconfirmed performance paragraph is not a missing measurement",
             write("FlexCache のスループットの扱いは未確認です。"),
+            repos=repos,
+            root=hub,
+        )
+        expect(
+            False,
+            "a reported result beside an unrelated unverified sentence is not a missing measurement",
+            write(
+                "FlexCache throughput was measured here. The failover case is unverified."
+            ),
+            repos=repos,
+            root=hub,
+        )
+        expect(
+            False,
+            "a Japanese reported result beside an unrelated unverified sentence",
+            write("FlexCache のスループットは測定済みです。別の構成は未確認です。"),
             repos=repos,
             root=hub,
         )
