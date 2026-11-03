@@ -17,7 +17,7 @@ lang: en
 >
 > **Evidence handling**
 >
-> This document is `documented`. The command shapes follow the AWS FlexCache guide, the NetApp public ONTAP procedures, and TR-4743 / TR-4571, but they do not assert success, performance, or state in any specific environment. Every IP, SVM name, cluster name, volume name, and size is a replaceable placeholder. Real values, run output, and performance numbers go only into a private run ledger. Verify in your own environment before production use.
+> This document is `documented`. The command shapes follow the AWS FlexCache guide, the NetApp public ONTAP procedures, and TR-4743 / TR-4571, but they do not assert success, performance, or state in any specific environment. Every IP, SVM name, cluster name, volume name, and size is a replaceable placeholder. Real values, run output, and performance numbers go only into a private record. Verify in your own environment before production use.
 
 ## Conclusion
 
@@ -29,15 +29,15 @@ FlexCache suits read-heavy workloads that change infrequently. A change at the O
 |---|---|
 | `documented` | A prerequisite or operation shape confirmable from public sources. Does not assert success or performance in a real environment. |
 | placeholder | IPs, names, and sizes are replaced per environment. Real values are not published. |
-| stop | When identity, state, peer, or path does not match the ledger, stop on the spot. |
+| stop | When identity, state, peer, or path does not match the recorded values, stop on the spot. |
 
 > **Authoring boundary**
 >
-> `cluster peer create`, `vserver peer create/accept`, and `volume flexcache create` are mutations. Run them only when both clusters' peering is `Available` / `peered`, every intercluster LIF pair reaches each other, and the Origin/Cache identity and inverse operation are in the ledger. If any of these is missing or contradictory, stop rather than run.
+> `cluster peer create`, `vserver peer create/accept`, and `volume flexcache create` are mutations. Run them only when both clusters' peering is `Available` / `peered`, every intercluster LIF pair reaches each other, and the Origin/Cache identity and inverse operation are in the private record. If any of these is missing or contradictory, stop rather than run.
 
 ## Target environment (for replacement)
 
-The SMB version's model names are generalized, and the Cache side is written as any second cluster. Real values go only into a private ledger.
+The SMB version's model names are generalized, and the Cache side is written as any second cluster. Real values go only into a private record.
 
 | Item | Origin storage | Cache storage |
 |---|---|---|
@@ -213,7 +213,7 @@ Cache::*> volume flexcache show
 Cache::*> volume flexcache show -vserver <cache-svm> -volume <cache-volume> -instance
 ```
 
-Meaning: on Cache SVM `<cache-svm>`, create a Cache volume `<cache-volume>` (FlexGroup) for `<origin-volume>` on Origin SVM `<origin-svm>`, thin-provisioned at `<cache-size>`, mounted at `/<cache-volume>`. The security style is inherited from the Origin (unix) and cannot be set or changed on the Cache side. Do not proceed until `volume flexcache show` lists the Cache and the Origin/Cache identity matches the ledger.
+Meaning: on Cache SVM `<cache-svm>`, create a Cache volume `<cache-volume>` (FlexGroup) for `<origin-volume>` on Origin SVM `<origin-svm>`, thin-provisioned at `<cache-size>`, mounted at `/<cache-volume>`. The security style is inherited from the Origin (unix) and cannot be set or changed on the Cache side. Do not proceed until `volume flexcache show` lists the Cache and the Origin/Cache identity matches the recorded values.
 
 ## 4. Other tasks
 
@@ -270,7 +270,7 @@ Stop immediately on any of the following.
 - Any of the four intercluster LIF pairs fails to reach each other.
 - `cluster peer show` does not reach `Available` on either side.
 - The SVM peer is `peered` on only one side, `applications` lacks `flexcache`, or identity does not match.
-- `volume flexcache show` does not list the Cache, or the Origin/Cache identity differs from the ledger.
+- `volume flexcache show` does not list the Cache, or the Origin/Cache identity differs from the recorded values.
 - A passphrase or a real value appeared in shell history, stdout, logs, or public output.
 
 ## Related documents

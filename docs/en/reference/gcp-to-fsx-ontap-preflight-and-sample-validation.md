@@ -17,7 +17,7 @@ lang: en
 >
 > **Evidence handling**
 >
-> Public documents use placeholders only. A `field-observation` describes a state observed in one environment and does not define a service limit. Environment details, account IDs, IP addresses, DNS names, ARNs, secret names, and passwords stay in the private run ledger.
+> Public documents use placeholders only. A `field-observation` describes a state observed in one environment and does not define a service limit. Environment details, account IDs, IP addresses, DNS names, ARNs, secret names, and passwords stay in the private record.
 
 ## Conclusion
 
@@ -29,7 +29,7 @@ SnapMirror, Reverse Resync, FlexCache, cluster peering, and SVM peering are sepa
 |---|---|
 | `documented` | A prerequisite or operation shape is stated in public documentation. It does not prove that the operation works in this environment. |
 | `field-observation` | A state observed once in one environment. It is not a general service guarantee. |
-| `verified` | A reproducible result with run ID, environment, date, settings, and output retained in the private ledger. |
+| `verified` | A reproducible result with run ID, environment, date, settings, and output retained in the private record. |
 | `open` | Required evidence, inverse operation, or provider interface is missing. |
 
 > **Authoring boundary**
@@ -40,7 +40,7 @@ SnapMirror, Reverse Resync, FlexCache, cluster peering, and SVM peering are sepa
 
 | Phase | Purpose | Pass condition | Action on failure |
 |---|---|---|---|
-| 1 | Fix the target and owner | Owner, direction, run ID, and target match the ledger | Stop and return to the owner |
+| 1 | Fix the target and owner | Owner, direction, run ID, and target match the recorded values | Stop and return to the owner |
 | 2 | Read identity and console state | AWS/GCP identities and target lists are recorded | Stop on a mismatch |
 | 3 | Choose EC2 and authentication path | Existing or approved disposable host is ready | Stop without creating a host |
 | 4 | Check network reachability | Forward route, return route, and TCP 2049 pass | Do not change route or firewall |
@@ -50,13 +50,13 @@ SnapMirror, Reverse Resync, FlexCache, cluster peering, and SVM peering are sepa
 ### Execution checklist
 
 - [ ] The authoring boundary and no-mutation rule are confirmed.
-- [ ] Target, owner, direction, run ID, and time window are in the private ledger.
+- [ ] Target, owner, direction, run ID, and time window are in the private record.
 - [ ] AWS and GCP identities match the selected profiles and project.
 - [ ] The existing EC2 host is the first choice and its route is verified.
 - [ ] The cluster management endpoint and SVM management endpoint are distinguished.
 - [ ] GCP learned routes and the AWS return route are checked separately.
 - [ ] TCP 2049 succeeds from the verification client.
-- [ ] Mount source, FSTYPE, and export path match the ledger.
+- [ ] Mount source, FSTYPE, and export path match the recorded values.
 - [ ] The fixture is new and has 48 files and 48 manifest entries.
 - [ ] The DP write probe returns `Read-only file system`.
 - [ ] Expected output, stop reasons, and cleanup boundaries are recorded.
@@ -89,10 +89,10 @@ flowchart TD
     H -- no --> STOP5[Stop and investigate evidence]
     H -- yes --> I{DP write probe is read-only?}
     I -- no --> STOP6[Stop all writes]
-    I -- yes --> J[Save ledger and clean run-created items only]
+    I -- yes --> J[Save the record and clean run-created items only]
 ```
 
-The flow closes read-only discrepancies before any provider mutation. The diagram is only a summary; record each decision in the tables and private ledger.
+The flow closes read-only discrepancies before any provider mutation. The diagram is only a summary; record each decision in the tables and private record.
 
 ## Architecture diagram
 
@@ -102,15 +102,15 @@ The flow closes read-only discrepancies before any provider mutation. The diagra
 
 Direction-specific figures cover [SnapMirror FSx for ONTAP to GCNV](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv-en.svg), [Reverse Resync GCNV to FSx for ONTAP](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx-en.svg), [FlexCache FSx for ONTAP origin to GCNV cache](../../_assets/images/gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache-en.svg), and [FlexCache GCNV origin to FSx for ONTAP cache](../../_assets/images/gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache-en.svg). Each figure has a matching dark-theme asset.
 
-## Prerequisites and ledger
+## Prerequisites and recorded values
 
 ### Intake
 
 Before starting, name the AWS operator, GCP operator, network owner, storage owner, and approver. Fix source, destination, direction, target volumes, verification client, time window, and rollback owner. Do not start while any of these is unknown.
 
-### Environment ledger
+### Recorded environment values
 
-Store real values only in the private ledger.
+Store real values only in the private record.
 
 | Item | Placeholder | Record |
 |---|---|---|
@@ -125,7 +125,7 @@ Store real values only in the private ledger.
 
 ### Stop conditions
 
-Stop when owner, project, account, Region, VPC, SVM, volume, endpoint, direction, or run ID differs from the ledger. Do not change or delete shared VPNs, Cloud Routers, route tables, security rules, SVMs, or volumes unless the run created them and ownership is proven.
+Stop when owner, project, account, Region, VPC, SVM, volume, endpoint, direction, or run ID differs from the recorded values. Do not change or delete shared VPNs, Cloud Routers, route tables, security rules, SVMs, or volumes unless the run created them and ownership is proven.
 
 ## Identity and console read-only verification
 
@@ -146,7 +146,7 @@ aws fsx describe-storage-virtual-machines \
   --query 'StorageVirtualMachines[].{Id:StorageVirtualMachineId,Name:Name,State:Lifecycle}'
 ```
 
-Store the output in a permission-controlled private ledger. Never place secrets, passwords, endpoint values, or account identifiers in an issue, chat, shell history, deck, or public Markdown.
+Store the output in a permission-controlled private record. Never place secrets, passwords, endpoint values, or account identifiers in an issue, chat, shell history, deck, or public Markdown.
 
 ![AWS Management Console SVM volume list with identifiers and timestamps masked](../../_assets/images/aws-console-gcnv-peer-svm-volumes.png)
 
@@ -179,7 +179,7 @@ Use an existing host first. In the EC2 console, read the instance ID, state, own
 
 ### Disposable host
 
-If no existing host is safe, prepare a disposable EC2 host only after approval. Fix the AMI, subnet, restricted security group, IAM instance profile, SSH or SSM path, cost limit, termination owner, and evidence-retention period in the ledger. Do not allow SSH from `0.0.0.0/0`, overwrite a shared security group, or change a shared route table.
+If no existing host is safe, prepare a disposable EC2 host only after approval. Fix the AMI, subnet, restricted security group, IAM instance profile, SSH or SSM path, cost limit, termination owner, and evidence-retention period in the private record. Do not allow SSH from `0.0.0.0/0`, overwrite a shared security group, or change a shared route table.
 
 The public AWS launch location is **EC2 > Instances > Launch instances**. After creation, re-read the VPC, subnet, route, security group, OS tools, and connectivity before using the host.
 
@@ -207,7 +207,7 @@ Do not use `echo`, `printf`, command arguments, shell history, debug logs, Power
 
 ### SSH endpoint
 
-Keep the file-system cluster management endpoint and the SVM management endpoint in separate ledger fields. Use the cluster management endpoint for `fsxadmin` in this procedure.
+Keep the file-system cluster management endpoint and the SVM management endpoint in separate fields of the private record. Use the cluster management endpoint for `fsxadmin` in this procedure.
 
 ```bash
 ssh "<fsx-admin-user>@<cluster-management-endpoint>"
@@ -217,7 +217,7 @@ Once connected, use read-only commands only. Do not enter `cluster peer create`,
 
 ## AWS VPC resource creation procedure
 
-This section describes the order for an approved disposable network. It is not a request to change shared network resources, and it was not executed during this authoring run. Do not change an existing VPC, subnet, route table, security group, NACL, virtual private gateway, VPN, or Cloud Router unless the ledger proves the run created it.
+This section describes the order for an approved disposable network. It is not a request to change shared network resources, and it was not executed during this authoring run. Do not change an existing VPC, subnet, route table, security group, NACL, virtual private gateway, VPN, or Cloud Router unless the private record proves the run created it.
 
 ### Creation order
 
@@ -266,7 +266,7 @@ The expected state is non-overlapping CIDRs and an explicit route-table associat
 
 ### Virtual private gateway and remote-site gateway
 
-Create the identifiers for a virtual-private-gateway AWS Site-to-Site VPN. Use the GCP Cloud VPN public endpoint, BGP ASN, and AWS ASN from the ledger.
+Create the identifiers for a virtual-private-gateway AWS Site-to-Site VPN. Use the GCP Cloud VPN public endpoint, BGP ASN, and AWS ASN from the recorded values.
 
 ```bash
 aws ec2 create-vpn-gateway \
@@ -284,7 +284,7 @@ aws ec2 create-customer-gateway \
   --bgp-asn "<gcp-bgp-asn>"
 ```
 
-If the remote-site gateway is behind NAT, follow the public-IP, UDP 500 / 4500, and NAT-traversal requirements in [AWS gateway options](https://docs.aws.amazon.com/vpn/latest/s2svpn/cgw-options.html). Stop when the IP, ASN, or owner differs from the ledger.
+If the remote-site gateway is behind NAT, follow the public-IP, UDP 500 / 4500, and NAT-traversal requirements in [AWS gateway options](https://docs.aws.amazon.com/vpn/latest/s2svpn/cgw-options.html). Stop when the IP, ASN, or owner differs from the recorded values.
 
 ### VPN connection and route propagation
 
@@ -339,7 +339,7 @@ aws ec2 describe-vpn-connections --region "$AWS_REGION" --vpn-connection-ids "<v
   --query 'VpnConnections[].VgwTelemetry'
 ```
 
-Pass only when tunnels, BGP, learned routes, return routes, security rules, NFS endpoints, and ONTAP endpoints match the ledger. Do not mount or create a fixture when any item differs.
+Pass only when tunnels, BGP, learned routes, return routes, security rules, NFS endpoints, and ONTAP endpoints match the recorded values. Do not mount or create a fixture when any item differs.
 
 Record the dependency order before rollback: EC2 client, security rules, routes, VPN connection, remote-site gateway, virtual private gateway, subnet, and VPC. Do not delete shared resources, active tunnels, route tables used by FSx for ONTAP, or resources with unknown owners. A successful delete response is not proof of rollback; read the final state again.
 
@@ -423,7 +423,7 @@ aws ec2 describe-route-tables \
   --query 'RouteTables[].{Id:RouteTableId,Routes:Routes}'
 ```
 
-Confirm the GCP client CIDR, next hop, and association match the ledger. Return security-rule, NACL, or export-policy changes to the network or storage owner.
+Confirm the GCP client CIDR, next hop, and association match the recorded values. Return security-rule, NACL, or export-policy changes to the network or storage owner.
 
 ### TCP 2049
 
@@ -497,7 +497,7 @@ Stop when the directory already exists, the count is not 48, or the manifest is 
 
 ### SHA-256 and DP read-only
 
-Compare the manifest only after the DP mount source and volume role match the ledger.
+Compare the manifest only after the DP mount source and volume role match the recorded values.
 
 ```bash
 DP_ROOT="<verified-dp-mount>/gcp-fsx-ontap-<sample-run-id>"
@@ -513,7 +513,7 @@ if touch "$DP_ROOT/.write-test" 2>"$DP_ROOT/.write-error"; then
 fi
 ```
 
-The operator must confirm that the error contains `Read-only file system`. Permission denied, I/O error, timeout, and network errors do not prove DP read-only state. Keep individual hashes, real paths, and resource IDs in the private ledger only.
+The operator must confirm that the error contains `Read-only file system`. Permission denied, I/O error, timeout, and network errors do not prove DP read-only state. Keep individual hashes, real paths, and resource IDs in the private record only.
 
 ## Expected output and stop conditions
 
@@ -531,7 +531,7 @@ Record these fields under one `sample_run_id`:
 
 ### Stop conditions
 
-Stop immediately when identity, owner, Region, direction, endpoint, or volume role differs from the ledger; route or TCP 2049 fails; the mount is local or unexpected; fixture, manifest, hash, missing, or extra counts differ; a DP write succeeds; the error is not read-only; provider state is contradictory; the control-plane interface is unknown; or a password appears in output or logs.
+Stop immediately when identity, owner, Region, direction, endpoint, or volume role differs from the recorded values; route or TCP 2049 fails; the mount is local or unexpected; fixture, manifest, hash, missing, or extra counts differ; a DP write succeeds; the error is not read-only; provider state is contradictory; the control-plane interface is unknown; or a password appears in output or logs.
 
 ## Cleanup boundary
 
@@ -553,7 +553,7 @@ Before each mutation:
 
 1. Re-read the `sample_run_id`, target, direction, owner, and approval.
 2. Fresh-read AWS/GCP state and ONTAP `snapmirror show`, `cluster peer show`, and `vserver peer show`.
-3. Compare source, destination, volume role, relationship state, health, dependencies, and inverse to the ledger.
+3. Compare source, destination, volume role, relationship state, health, dependencies, and inverse to the recorded values.
 4. Confirm the command or console location against public documentation.
 5. Record the expected post-state and rollback window.
 6. Stop and leave the operation `Open` when anything is missing, unexpected, or contradictory.
@@ -574,7 +574,7 @@ Do not place the password on the command line. Use the approved secret handoff, 
 
 The preconditions are file system, subnet, SVM name, root security style, volume type, size, junction path, export policy, owner, cleanup, and cost approval. Use the AWS console locations **Amazon FSx for NetApp ONTAP > Storage virtual machines > Create new storage virtual machine** and **Amazon FSx for NetApp ONTAP > Volumes > Create volume**. AWS documents the inputs in [Creating storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-svms.html) and [Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html).
 
-The expected state is an SVM in `Created` state and a volume in `Created` state with the ledger role. The inverse is dependency-aware deletion after a fresh read; do not delete an existing or peered resource. Stop when state remains `Creating`, the target differs, or a relationship exists.
+The expected state is an SVM in `Created` state and a volume in `Created` state with the recorded role. The inverse is dependency-aware deletion after a fresh read; do not delete an existing or peered resource. Stop when state remains `Creating`, the target differs, or a relationship exists.
 
 ### Cluster and SVM peering
 
@@ -675,7 +675,7 @@ For ONTAP, follow the generated state-specific sequence. Do not delete or releas
 
 ## Security and audit
 
-This procedure requires network separation, least-privilege read-only access, explicit TCP 2049 and intercluster-port checks, secret non-disclosure, and ledger records for commands and results. Encryption, retention, and regulatory suitability are design considerations, not legal or compliance judgments. Separate secret owners, console operators, ONTAP actors, and cleanup owners. Keep post-state evidence for every approved state-changing operation.
+This procedure requires network separation, least-privilege read-only access, explicit TCP 2049 and intercluster-port checks, secret non-disclosure, and records of commands and results. Encryption, retention, and regulatory suitability are design considerations, not legal or compliance judgments. Separate secret owners, console operators, ONTAP actors, and cleanup owners. Keep post-state evidence for every approved state-changing operation.
 
 ## Beginner execution procedure
 
@@ -683,11 +683,11 @@ Use this order when handing the runbook to an operator who has not worked with F
 
 ### 0. Inputs before execution
 
-Fill the private ledger with the AWS/GCP identities, target file system and SVM, EC2 client, cluster management endpoint, NFS endpoint, secret placeholder, and `sample_run_id`. Do not put real values in this document or the deck.
+Fill the private record with the AWS/GCP identities, target file system and SVM, EC2 client, cluster management endpoint, NFS endpoint, secret placeholder, and `sample_run_id`. Do not put real values in this document or the deck.
 
 ### 1. Read AWS target state
 
-Run the AWS identity and `describe-*` commands in [AWS identity](#aws-identity). Match the lifecycle, SVM, volume role, size, and junction path to the ledger.
+Run the AWS identity and `describe-*` commands in [AWS identity](#aws-identity). Match the lifecycle, SVM, volume role, size, and junction path to the recorded values.
 
 ### 2. Read the AWS Management Console
 

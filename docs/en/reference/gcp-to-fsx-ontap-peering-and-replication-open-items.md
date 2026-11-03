@@ -19,7 +19,7 @@ This document records the items that are not yet established as a public procedu
 
 | Phase | Purpose | Primary actor | Required evidence | Stop condition |
 |---|---|---|---|---|
-| 1 | Confirm direction and targets | GCP / AWS operators | Source/destination ledger | Stop when direction differs |
+| 1 | Confirm direction and targets | GCP / AWS operators | Source/destination recorded values | Stop when direction differs |
 | 2 | Establish provider interface | GCP / AWS operators | Official API/CLI specification | Mark open if interface is unknown |
 | 3 | Verify peering bilaterally | GCP / AWS operators | Fresh reads from both sides | Stop on one-sided state |
 | 4 | Verify replication state | Storage operators | Source/destination/role/state | Stop on contradictory state |
@@ -31,15 +31,15 @@ Durations are planning guidance, not measured provider timings or production est
 
 | Role | Provider | Resource | Direction | Status |
 |---|---|---|---|---|
-| Cluster source | FSx for ONTAP or GCNV | `<source-cluster>` | source | Must be resolved in the ledger |
-| SVM source | FSx for ONTAP or GCNV | `<source-svm>` | source | Must be resolved in the ledger |
+| Cluster source | FSx for ONTAP or GCNV | `<source-cluster>` | source | Must be resolved in the private record |
+| SVM source | FSx for ONTAP or GCNV | `<source-svm>` | source | Must be resolved in the private record |
 | SnapMirror source volume | FSx for ONTAP | `<snapmirror-source-volume>` | FSx for ONTAP to GCNV | Candidate role |
 | GCNV destination volume | GCNV | `<gcnv-destination-volume>` | destination | Provider API check required |
 | Reverse destination | FSx for ONTAP | `<reverse-destination-volume>` | GCNV to FSx for ONTAP | DP/read-only check required |
-| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | Resolve the direction and volume type in the ledger. GCNV can be an origin only in ONTAP-mode |
-| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | GCNV's creation interface is documented; resolve identity and owner in the ledger |
+| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | Resolve the direction and volume type in the private record. GCNV can be an origin only in ONTAP-mode |
+| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | GCNV's creation interface is documented; resolve identity and owner in the private record |
 
-Do not fill these values by guessing from existing resource names. Confirm them with the run ledger and provider read-only responses.
+Do not fill these values by guessing from existing resource names. Confirm them with the private record and provider read-only responses.
 
 ## Cluster peering
 
@@ -97,11 +97,11 @@ This confirms that an SVM peer and a SnapMirror relationship exist. The `Unavail
 
 > **Status: open** (the interface is documented publicly; real-environment evidence is missing)
 >
-> GCNV's public documentation describes how to create a Cache (`--cache-parameters` of `gcloud beta netapp volumes create`), how to check it afterwards (`cacheParameters.cacheState` returned by `gcloud beta netapp volumes describe`), and what to do before deleting it (disable write-back first if it is enabled), as read on 2026-11-03 ([GCNV public interface](#gcnv-public-interface)). The ledger's `Creation interface` and `Post-state query` can be filled from that source.
+> GCNV's public documentation describes how to create a Cache (`--cache-parameters` of `gcloud beta netapp volumes create`), how to check it afterwards (`cacheParameters.cacheState` returned by `gcloud beta netapp volumes describe`), and what to do before deleting it (disable write-back first if it is enabled), as read on 2026-11-03 ([GCNV public interface](#gcnv-public-interface)). The private record's `Creation interface` and `Post-state query` can be filled from that source.
 >
 > No run record that this repository can cite exists. The S3-Burst-on-ONTAP-Files verification-status table agrees: it records whether GCNV can hold a Cache of an FSx for ONTAP origin as still unconfirmed (2026-09-20), as summarized in the [cross-cloud note](../../ja/domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md#構成ごとの確認状況) (日本語). The record here covers only that a separate FlexCache-origin volume was prepared on FSx for ONTAP and that the SVM-peering application list included `flexcache`. The cache owner, exact origin/cache resource identities, read/write mode, and post-create cache state were not confirmed in a real environment.
 
-Resolve this ledger before creating a FlexCache relationship.
+Resolve the values in this table before creating a FlexCache relationship.
 
 | Item | Required value |
 |---|---|
@@ -113,7 +113,7 @@ Resolve this ledger before creating a FlexCache relationship.
 | Creation interface | `<documented-gcnv-or-ontap-interface>` |
 | Post-state query | `<documented-cache-state-query>` |
 
-After creation, verify origin and cache identity, cache state, SVM peer state, and content reads as separate results. Do not create, modify, or delete a cache when the ledger lacks the creator, target resource, current state, dependencies, or inverse operation. FlexCache is not the S3 Access Point path; validate the NFS/SMB path to the cache volume separately.
+After creation, verify origin and cache identity, cache state, SVM peer state, and content reads as separate results. Do not create, modify, or delete a cache when the private record lacks the creator, target resource, current state, dependencies, or inverse operation. FlexCache is not the S3 Access Point path; validate the NFS/SMB path to the cache volume separately.
 
 ### GCNV public interface
 
@@ -154,7 +154,7 @@ The Open label means that cache creation and the post-create state have not been
 - [SnapMirror: FSx for ONTAP to GCNV](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv-en.svg) ([dark theme](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv-en-dark.svg))
 - [Reverse Resync: GCNV to FSx for ONTAP](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx-en.svg) ([dark theme](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx-en-dark.svg))
 
-The arrows show the data or relationship direction. Before execution, map the source, destination, operator, and post-state to the run ledger and fresh provider reads.
+The arrows show the data or relationship direction. Before execution, map the source, destination, operator, and post-state to the private record and fresh provider reads.
 
 Minimum state mapping to resolve:
 
@@ -164,7 +164,7 @@ Minimum state mapping to resolve:
 | synchronized | same | same | Actual ONTAP output mapped to predicates such as `Snapmirrored` and `Idle` |
 | broken | GCNV destination | GCNV destination | Post-break write-enabled/read-only and provider state |
 | reverse resync | GCNV | FSx for ONTAP | Authoritative operation, direction, post-state, and content evidence |
-| final | Ledger identities | Ledger identities | Relationship state and file content must pass separately |
+| final | Recorded identities | Recorded identities | Relationship state and file content must pass separately |
 
 Names such as `healthy`, `transfer-state`, and `mirrorState` may be used only after mapping them to actual provider response fields. Do not accept a healthy result from another relationship as evidence for the target.
 
@@ -174,10 +174,10 @@ This section is executed only after a separate approval and a passing read-only 
 
 ### Create and initialize a SnapMirror relationship
 
-Prerequisites are source and destination cluster and SVM peering, a `DP` destination volume, ledger-matched source and destination paths, an approved policy and schedule, an owner, a rollback, and a transfer window. NetApp's procedure also requires cluster and SVM peering before relationship creation and verification with `snapmirror show` ([Create an ONTAP SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/create-replication-relationship-task.html)).
+Prerequisites are source and destination cluster and SVM peering, a `DP` destination volume, source and destination paths that match the recorded values, an approved policy and schedule, an owner, a rollback, and a transfer window. NetApp's procedure also requires cluster and SVM peering before relationship creation and verification with `snapmirror show` ([Create an ONTAP SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/create-replication-relationship-task.html)).
 
 ```text
-# Run on the destination cluster. Replace values from the ledger.
+# Run on the destination cluster. Use the recorded values.
 snapmirror create \
   -source-path <source-svm>:<source-volume> \
   -destination-path <destination-svm>:<destination-volume> \
@@ -187,7 +187,7 @@ snapmirror create \
 
 snapmirror show -destination-path <destination-svm>:<destination-volume>
 
-# Initialize only after the relationship and roles match the ledger.
+# Initialize only after the relationship and roles match the recorded values.
 snapmirror initialize \
   -source-path <source-svm>:<source-volume> \
   -destination-path <destination-svm>:<destination-volume>
@@ -211,10 +211,10 @@ gcloud netapp volumes replications list \
   --volume="$GCNV_VOLUME" --location="$GCP_REGION"
 ```
 
-When `hybridReplicationUserCommands` is returned, save the ONTAP commands in the private ledger and execute those commands exactly. Do not infer or rewrite the source, destination, SVM, cluster, or direction from placeholders.
+When `hybridReplicationUserCommands` is returned, save the ONTAP commands in the private record and execute those commands exactly. Do not infer or rewrite the source, destination, SVM, cluster, or direction from placeholders.
 
 - **Stop**: request stop on the Google Cloud side. For an external ONTAP destination, verify `Snapmirrored` / `Idle` with `snapmirror show`, then run the returned `snapmirror break` command.
-- **Resume**: request resume on the Google Cloud side, then run the returned `snapmirror resync` command only when its direction matches the new ledger state.
+- **Resume**: request resume on the Google Cloud side, then run the returned `snapmirror resync` command only when its direction matches the new recorded state.
 - **Reverse**: stop the replication first and start reverse on the Google Cloud side. When ONTAP becomes the new destination, run only the returned `snapmirror resync`, schedule, and modify commands.
 - **Delete**: require stopped state, no outdated SnapMirror connection, and separate approval for cluster-peer cleanup when this is the last replication.
 
@@ -255,11 +255,11 @@ volume flexcache create \
 volume flexcache show
 ```
 
-STOP until `cluster peer show` reports `Available`, the SVM peer is `peered`, the application is `flexcache`, origin and cache identities match the ledger, security style is deliberate, and the inverse operation is recorded. The current cluster peer is `Unavailable`, so FlexCache creation remains Open.
+STOP until `cluster peer show` reports `Available`, the SVM peer is `peered`, the application is `flexcache`, origin and cache identities match the recorded values, security style is deliberate, and the inverse operation is recorded. The current cluster peer is `Unavailable`, so FlexCache creation remains Open.
 
 ### Rollback and destructive-operation boundary
 
-Before deleting a relationship, confirm that no transfer is active, client access is stopped, the owner approved the operation, and the inverse operation and post-state are in the ledger. The published Reverse Resync procedure orders common-snapshot checks, direction changes, update, quiesce, break, delete, release, and re-sync of the original relationship ([Reactivate the original ONTAP source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)).
+Before deleting a relationship, confirm that no transfer is active, client access is stopped, the owner approved the operation, and the inverse operation and post-state are in the private record. The published Reverse Resync procedure orders common-snapshot checks, direction changes, update, quiesce, break, delete, release, and re-sync of the original relationship ([Reactivate the original ONTAP source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)).
 
 - Do not run `snapmirror break`, `snapmirror delete`, or `snapmirror release` during an active transfer.
 - Do not delete shared VPNs, routes, security groups, SVMs, volumes, or cluster peers unless the run created them and ownership is proven.
@@ -289,7 +289,7 @@ The following fields are required before promotion:
 
 This document does not execute deletion of peerings, replication relationships, volumes, SVMs, VPNs, Cloud Routers, VGWs, routes, or security rules. Cleanup requires:
 
-1. A fresh read of owner and exact resource identity from the run ledger.
+1. A fresh read of owner and exact resource identity from the private record.
 2. Leave shared and pre-existing resources in place.
 3. Stop when active transfer, dependencies, or peer relationships remain.
 4. Obtain separate confirmation immediately before each destructive operation.
