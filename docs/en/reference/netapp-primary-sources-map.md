@@ -21,7 +21,7 @@ lang: en
 
 **This index does not restate the documents' conclusions.** Cache behavior values and recommended settings are misread when separated from version and environment. It states only what each document covers; read the specifics at the link.
 
-> **Tier**: `documented` — each row records the location and scope of a published AWS / NetApp primary source. **This repository has not re-measured or re-verified these documents.** The findings this repository reproduced on real hardware are in [Where to look first when FlexCache reads but will not write (日本語)](../../ja/domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) and [FlexCache CLI procedure (NFS) – simplified](flexcache-cli-nfs-simplified.md), where the `verified` / `documented` tiers are assigned.
+> **Tier**: `documented` — each row records the location and scope of a published AWS / NetApp primary source. **This repository has not re-measured or re-verified these documents.** The cases this repository worked through are in [Where to look first when FlexCache reads but will not write (日本語)](../../ja/domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) and [FlexCache CLI procedure (NFS) – simplified](flexcache-cli-nfs-simplified.md), where the `verified` / `documented` tiers are assigned.
 
 ---
 
@@ -70,7 +70,7 @@ lang: en
 
 ## Related documents
 
-- [Where to look first when FlexCache reads but will not write (日本語)](../../ja/domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) — the triage this repository reproduced on real hardware
+- [Where to look first when FlexCache reads but will not write (日本語)](../../ja/domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) — a triage based on primary sources, plus cases observed once (tiers are stated in the note)
 - [FlexCache CLI procedure (NFS) – simplified](flexcache-cli-nfs-simplified.md) — the shortest creation path
 - [Performance evidence map](performance-evidence-map.md) — where the Spokes' measured records live
 - [Evidence policy](../evidence-policy.md)
