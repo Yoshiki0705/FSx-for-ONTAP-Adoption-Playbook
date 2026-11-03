@@ -2,11 +2,9 @@
 title: FlexCache の書き込みが通らないとき、原因は Origin の NFS 権限か、無認証ピアの解除不能という設計上の制約にある
 lifecycle: [design, build, operate]
 domains: [performance, client-access, data-protection]
-evidence: verified
-verified_on: 2026-11-02
-region: ap-northeast-1
+evidence: documented
+source: https://docs.netapp.com/us-en/ontap/nfs-admin/ontap-secures-file-directory-access-concept.html
 ontap_version: 9.18.1P6
-deployment_type: SINGLE_AZ_1
 lang: ja
 ---
 
@@ -20,7 +18,7 @@ Origin 側（Amazon FSx for NetApp ONTAP）の NFS 権限を見ます。export-p
 - export-policy の `RW Access Rule` と、ボリュームの UNIX パーミッション・所有者が、別々に効くこと。
 - cluster peering を無認証モード（`-no-authentication true`）で張ると、無認証ピアが残る間はクラスタ全体のポリシーを認証必須へ戻せない、という設計上の制約。
 - FSx for ONTAP では IPspace が `Default` のみで、`cluster peer create` の `-ipspace` に指定する値が `Default` であること。
-- バージョン差で引数が変わるコマンド（`cluster peer delete` の `-cluster`）。
+- ピアのクラスタ名を取る引数の綴りが、コマンドによって違うこと（`cluster peer delete` は `-cluster`、`vserver peer permission create` は `-peer-cluster`）。
 
 ## このノートが答えないこと
 
@@ -42,9 +40,9 @@ intermediate
 
 **FlexCache の Cache からデータを読めるのに書き込みだけが失敗するとき、Origin 側の NFS 権限を疑います。** FlexCache の Cache ボリュームは読み書き可能で、write-around（既定）では書き込みが Origin に転送されて確定します（[AWS: Replicating your data with FlexCache](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html)）。したがって「Cache が読み取り専用だから書けない」という構図ではなく、Origin 側のアクセス制御が書き込みを拒否しているか、クライアント側のマウントが読み取り専用か、のどちらかです。
 
-実機で確認したのは、**export-policy が書き込みを許していても、ボリュームの UNIX パーミッションと所有者が合っていなければ一般ユーザーは書けない**、という切り分けです。この 2 つは別々に効きます。
+切り分けの要点は、**export-policy が書き込みを許していても、ボリュームの UNIX パーミッションと所有者が合っていなければ一般ユーザーは書けない**ことです。この 2 つは別々に効きます。
 
-> **区分**: `verified` — ap-northeast-1 の FSx for ONTAP ファイルシステム（ONTAP 9.18.1P6, SINGLE_AZ_1）の Origin SVM に対し、ONTAP 管理面（CLI）から読み取りで設定を確認し、UNIX パーミッションを変更して書き込み可否が変わることを確認しました（2026-11-02）。実 ID・IP・SVM 名は記録せず一般化しています。
+> **区分**: `documented` — NetApp の ONTAP ドキュメントは、ONTAP が最大 3 層（export／share、Storage-Level Access Guard、ファイル／ディレクトリ自身の権限）を評価し、有効な権限は 3 層の評価結果で決まると定めています。ファイル自身の権限は、SMB と NFS のどちらで届いても有効です。（出典: [NetApp: Learn about file-based restrictions for ONTAP NAS SVMs](https://docs.netapp.com/us-en/ontap/nfs-admin/ontap-secures-file-directory-access-concept.html)、2025-05-28 更新の版を2026-11-03 に読みました。このノートの「次のような組み合わせ」は、この定めから導いた説明です。実機で再現した記録は、このノートの根拠にしていません。）
 
 ---
 
@@ -57,7 +55,7 @@ NFS の書き込み可否は、次の 2 つが**両方**成立して初めて通
 | export-policy | Origin volume に適用された export-policy の `RW Access Rule` が、クライアントの範囲に対し許可（`any` など）か | `RW Access Rule` が `never` のポリシー（SVM ルートボリューム用の既定ポリシーなど）が付いている |
 | UNIX パーミッション / 所有者 | ボリュームと配下ディレクトリの `unix-permissions`・`user`・`group` | 所有者が `root`、モードが `755` で、書き込むのが一般ユーザー。その他ユーザーには書き込みビットがない |
 
-実機では、Origin volume に付いていた export-policy は `RW Access Rule: any`（`0.0.0.0/0`）で、書き込みを許可していました。一方、ボリュームと配下は所有者 `root`・モード `755` でした。`755` は所有者だけが書けて、その他のユーザーは読み取りと実行だけです。Cache を一般ユーザーでマウントして書くと、この UNIX パーミッションで拒否されます。export-policy を見ただけでは原因にたどり着けません。
+たとえば、Origin volume に付いた export-policy が `RW Access Rule: any`（`0.0.0.0/0`）で書き込みを許可していても、ボリュームと配下の所有者が `root`、モードが `755` なら、一般ユーザーの書き込みは UNIX パーミッションで拒否されます。`755` で書けるのは所有者だけで、その他のユーザーは読み取りと実行しかできないためです。Cache を一般ユーザーでマウントして書いても、同じ理由で拒否されます。export-policy を見ただけでは原因にたどり着けません。
 
 > **設計上の補足**: Origin volume のセキュリティスタイル（NFS 本線では unix）は Cache 側に引き継がれ、Cache 側では変更できません。アクセス制御は Origin 側で設計します。
 
@@ -107,7 +105,7 @@ UNIX 所有者を特定ユーザーに合わせる場合、ONTAP は所有者を
 
 FlexCache の前提となる cluster peering は、通常はパスフレーズで相互認証します。相手側がパスフレーズの対話入力を扱えない環境では、無認証モード（`-no-authentication true`）で張ることがあります。このとき、**解除できなくなる設計上の制約**があります。
 
-> **区分**: `verified` — 無認証ピアが存在する間は、クラスタ全体のポリシーを認証必須（`-is-unauthenticated-access-permitted false`）へ戻せないことを実機で確認しました（ONTAP 9.18.1P6, ap-northeast-1, 2026-11-02）。ONTAP が次の趣旨のエラーで拒否します。
+> **区分**: `field-observation` — 1 回観測、再現は未確認です。2026-10-29、ONTAP 9.18.1P6 の FSx for ONTAP で、無認証ピアが存在する状態で `cluster peer policy modify -is-unauthenticated-access-permitted false` を実行したところ、ONTAP が拒否しました。エラー文は逐語ではなく趣旨を記録しています。拒否された理由は、次の `documented` の記述と一致します。
 
 `cluster peer policy modify -is-unauthenticated-access-permitted false` は、無認証の関係が 1 つでも残っていると ONTAP が拒否します。これは NetApp のコマンドリファレンスにも記載があります。
 
@@ -123,25 +121,39 @@ FlexCache の前提となる cluster peering は、通常はパスフレーズ�
 
 ---
 
-### 引数のバージョン差（実機で確認）
+### ピアのクラスタ名を取る引数の綴りの、コマンド間の差
 
-無認証での再作成時に、相手から提示された手順の引数が当環境（9.18.1P6）で通らない例がありました。
+無認証でピアを作り直すとき、相手から渡された手順の `cluster peer delete -peer-cluster <name>` が通りませんでした。
 
-| 提示された形 | 当環境での結果 | 正しい形 |
-|---|---|---|
-| `cluster peer delete -peer-cluster <name>` | `invalid argument "-peer-cluster"` | `cluster peer delete -cluster <name>` |
+> **区分**: `field-observation` — 1 回観測、再現は未確認です。2026-10-29、ONTAP 9.18.1P6 の FSx for ONTAP で、`cluster peer delete -peer-cluster <name>` は引数エラー（`invalid argument`）になり、`cluster peer delete -cluster <name>` で削除できました。
+
+原因は、ピアのクラスタ名を取る引数の綴りがコマンドごとに違うことです。NetApp のコマンドリファレンスが、この違いを定めています。
+
+> **区分**: `documented` — `cluster peer delete` の引数は `-cluster <text>` です（[NetApp: cluster peer delete](https://docs.netapp.com/us-en/ontap-cli/cluster-peer-delete.html)、2026-10-06 版）。一方、`vserver peer permission create` の引数は `-peer-cluster <text>` です（[NetApp: vserver peer permission create](https://docs.netapp.com/us-en/ontap-cli/vserver-peer-permission-create.html)、同版）。2026-11-03 に両ページを全文で読みました。
+
+| コマンド | ピアのクラスタ名を取る引数 |
+|---|---|
+| `cluster peer delete` | `-cluster <name>` |
+| `vserver peer permission create` | `-peer-cluster <name>` |
+
+`-peer-cluster` を `cluster peer delete` に渡したことが原因と読めますが、他のバージョンで通るかどうかは確認していません。手順書を書き写すときは、コマンドごとに引数の綴りをリファレンスと突き合わせます。
 
 ピアを削除すると、そのピアに紐づく `vserver peer permission` も消えます。無認証で張り直した後は、`vserver peer permission create -vserver <svm> -peer-cluster <name> -applications flexcache` を再作成します。
 
 ---
 
-### IPspace は Default のみ（実機で確認）
+### cluster peer create の -ipspace に Default を指定して成功した例
 
-`cluster peer create` の `-ipspace` に何を指定すべきか迷う場合、FSx for ONTAP では `Default` です。
+`cluster peer create` の `-ipspace` に何を指定すべきか迷う場合の、1 件の事例です。
 
-> **区分**: `verified` — `network ipspace show` で、この FSx for ONTAP に IPspace が `Default` のみ存在し、全 SVM と intercluster LIF がそこに属することを確認しました（ONTAP 9.18.1P6, ap-northeast-1, 2026-11-02）。追加の IPspace をユーザーが作らない限り、FSx for ONTAP の IPspace は `Default` だけです。
+> **区分**: `field-observation` — 1 回観測、再現は未確認です。2026-10-29、ONTAP 9.18.1P6 の FSx for ONTAP で、`cluster peer create -peer-addrs <相手の intercluster LIF 2 つ> -ipspace Default` を実行し、ピアが `Available` になりました。同じ FSx for ONTAP の intercluster LIF の属性表示にも `IPspace Name: Default` がありました。
 
-intercluster LIF も `Default` IPspace 上にあるため、`cluster peer create ... -ipspace Default` が正しい指定です。
+このノートが言えるのは、ここまでです。次の 2 点は確認していないので、書きません。
+
+- この FSx for ONTAP に `Default` 以外の IPspace が存在するかどうか（`network ipspace show` の出力を保管していません）。
+- すべての SVM と intercluster LIF が `Default` に属するかどうか。
+
+`-ipspace` に指定する値は、自分の環境で `network interface show -by-ipspace` を実行し、intercluster LIF がどの IPspace に属するかを見てから決めます（[NetApp: network interface show](https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html)、2026-10-06 版は `-by-ipspace` を「IPspace と Vserver で並べて表示する」と定めています）。
 
 ---
 
@@ -154,7 +166,7 @@ intercluster LIF も `Default` IPspace 上にあるため、`cluster peer create
 | 書き込み権限は Cache 側で直す | **Origin 側で直す。** セキュリティスタイルと所有権は Origin から Cache に引き継がれ、Cache 側では変えられない |
 | 無認証ピアは特定ピアだけの設定 | **クラスタ全体のポリシー。** 無認証ピアが 1 つ残ると認証必須へ戻せない |
 | 無認証許可はいつでも false に戻せる | **無認証ピアを削除してからでないと戻せない。** ONTAP が拒否する（[cluster peer policy modify](https://docs.netapp.com/us-en/ontap-cli/cluster-peer-policy-modify.html)） |
-| `-ipspace` に何を指定すべきか環境ごとに違う | **FSx for ONTAP では `Default`。** 追加 IPspace を作らない限り Default のみ |
+| `-ipspace` には既定の値があり、確かめなくてよい | **intercluster LIF が属する IPspace を `network interface show -by-ipspace` で確かめてから指定する。** 1 件の事例では `Default` で成功した（上の `field-observation`）が、すべての環境に当てはまるとは確認していない |
 
 ---
 

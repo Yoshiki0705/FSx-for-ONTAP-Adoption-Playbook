@@ -21,7 +21,7 @@ lang: ja
 
 **この索引に資料の結論は転記しません。** キャッシュの挙動値や推奨設定は、バージョンと環境を切り離すと誤読されます。各資料が何を扱うかだけを示し、具体的な記述はリンク先で読みます。
 
-> **区分**: `documented` — 各行は、公開されている AWS / NetApp の一次資料の所在と範囲を記載しています。**このリポジトリは、これらの資料の記述を再測定・再検証していません。** 本リポジトリで実機確認した知見は [FlexCache で「読めるのに書けない」ときに最初に見るところ](../domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) と [FlexCache CLI 手順 (NFS編) – 簡易版](flexcache-cli-nfs-simplified.md) にあり、`verified` / `documented` の区分はそちらに付けています。
+> **区分**: `documented` — 各行は、公開されている AWS / NetApp の一次資料の所在と範囲を記載しています。**このリポジトリは、これらの資料の記述を再測定・再検証していません。** 本リポジトリで扱った事例は [FlexCache で「読めるのに書けない」ときに最初に見るところ](../domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) と [FlexCache CLI 手順 (NFS編) – 簡易版](flexcache-cli-nfs-simplified.md) にあり、`verified` / `documented` の区分はそちらに付けています。
 
 ---
 
@@ -70,7 +70,7 @@ lang: ja
 
 ## 関連ドキュメント
 
-- [FlexCache で「読めるのに書けない」ときに最初に見るところ](../domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) — 本リポジトリで実機確認した切り分け
+- [FlexCache で「読めるのに書けない」ときに最初に見るところ](../domains/performance/notes/flexcache-origin-permissions-and-peering-constraints.md) — 一次資料に基づく切り分けと、1 回観測した事例（区分はノート内に記載）
 - [FlexCache CLI 手順 (NFS編) – 簡易版](flexcache-cli-nfs-simplified.md) — 作成手順の最短経路
 - [性能実測の所在マップ](performance-evidence-map.md) — Spoke の実測記録の所在
 - [知見の分類ポリシー](../evidence-policy.md)
