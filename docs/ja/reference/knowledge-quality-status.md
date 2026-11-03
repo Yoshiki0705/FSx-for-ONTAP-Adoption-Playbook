@@ -5,11 +5,11 @@
 
 ## 概要
 
-非公開の Issue Ledger から生成した集計です。件数と分類だけを示し、個別の所見、対象パス、担当、レビュー履歴は含みません。現在の件数: 1。
+非公開の課題記録から生成した集計です。件数と分類だけを示し、個別の所見、対象パス、担当、レビュー履歴は含みません。現在の件数: 1。
 
 ## Overview
 
-Generated from the private Issue Ledger. Shows only counts and classification, never individual findings, paths, owners, or review history. Current count: 1.
+Generated from the private issue record. Shows only counts and classification, never individual findings, paths, owners, or review history. Current count: 1.
 
 ## 分類別集計
 
@@ -26,4 +26,4 @@ Generated from the private Issue Ledger. Shows only counts and classification, n
 ## Provenance
 
 - `generated_from_revision`: `sha256:1de4d1bc1e959e762093f8ac98f30c43776ef31c199aa2b5782f399152894fed`
-- `generated_at`: `2026-09-21T18:15:28.336680Z`
+- `generated_at`: `2026-11-03T10:24:02.841086Z`

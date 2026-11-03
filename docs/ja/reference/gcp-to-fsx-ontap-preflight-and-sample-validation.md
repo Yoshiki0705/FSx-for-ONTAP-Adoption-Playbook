@@ -17,7 +17,7 @@ lang: ja
 >
 > **証拠の扱い**
 >
-> 公開文書は placeholder-only です。本文の `field-observation` は、識別子を公開しない既存環境で観測した状態を示します。環境、日付、アカウント、IP、DNS、ARN、secret 名、パスワードは private run ledger にだけ記録します。
+> 公開文書は placeholder-only です。本文の `field-observation` は、識別子を公開しない既存環境で観測した状態を示します。環境、日付、アカウント、IP、DNS、ARN、secret 名、パスワードは非公開の記録にだけ書き留めます。
 
 ## 結論
 
@@ -29,7 +29,7 @@ SnapMirror、Reverse Resync、FlexCache、cluster peering、SVM peering は、�
 |---|---|
 | `documented` | 公開資料から確認できる前提または操作の形。実環境での成立を示さない。 |
 | `field-observation` | 一つの環境で観測した状態。一般的な上限やサービス保証ではない。 |
-| `verified` | run ID、環境、日付、設定、出力を private ledger に保持した再現結果。公開文書では実値を出さない。 |
+| `verified` | run ID、環境、日付、設定、出力を非公開の記録に保持した再現結果。公開文書では実値を出さない。 |
 | `open` | 必要な証拠、逆操作、または provider interface が揃わず、実行手順として確定していない。 |
 
 > **Authoring boundary**
@@ -40,26 +40,26 @@ SnapMirror、Reverse Resync、FlexCache、cluster peering、SVM peering は、�
 
 | 段階 | 目的 | 合格条件 | 不合格時の扱い |
 |---|---|---|---|
-| 1 | intake と対象固定 | owner、方向、run ID、対象が ledger と一致 | 停止して owner に返す |
+| 1 | intake と対象固定 | owner、方向、run ID、対象が記録した値と一致 | 停止して owner に返す |
 | 2 | 身元とコンソール確認 | AWS/GCP の read-only identity と対象一覧を保存 | 対象不一致なら停止 |
 | 3 | EC2 と認証経路の確定 | 既存 host または承認済み disposable host | 作成承認がなければ停止 |
 | 4 | 経路確認 | forward route、return route、TCP 2049 が確認済み | route や firewall を変更せず停止 |
 | 5 | NFS と fixture | mount source、FSTYPE、48 件、manifest が一致 | fixture を作らず停止 |
-| 6 | DP read-only と記録 | write が成功せず、結果を ledger に保存 | 成功または別エラーなら停止 |
+| 6 | DP read-only と記録 | write が成功せず、結果を非公開の記録に保存 | 成功または別エラーなら停止 |
 
 ### 実行チェックリスト
 
 - [ ] mutation を実行しない authoring boundary を参加者が確認した。
-- [ ] private ledger に対象、owner、方向、run ID、作業時間帯を記録した。
+- [ ] 非公開の記録に、対象、owner、方向、run ID、作業時間帯を書き留めた。
 - [ ] AWS/GCP identity が想定した profile、project、region と一致した。
 - [ ] 既存 EC2 を第一候補として所有者、VPC、subnet、接続経路を確認した。
 - [ ] cluster management endpoint と SVM endpoint を区別した。
 - [ ] GCP の learned route と AWS の return route を別々に確認した。
 - [ ] TCP 2049 が GCP の検証 host から成功した。
-- [ ] mount source、FSTYPE、export path が ledger と一致した。
+- [ ] mount source、FSTYPE、export path が記録した値と一致した。
 - [ ] fixture directory が新規で、48 件と manifest が一致した。
 - [ ] DP 側の write probe が `Read-only file system` になった。
-- [ ] expected output、停止理由、cleanup 境界を ledger に保存した。
+- [ ] expected output、停止理由、cleanup 境界を非公開の記録に保存した。
 
 ## よくある誤解
 
@@ -74,7 +74,7 @@ SnapMirror、Reverse Resync、FlexCache、cluster peering、SVM peering は、�
 
 ```mermaid
 flowchart TD
-    A[対象と owner を ledger に記録] --> B{AWS/GCP identity は一致?}
+    A[対象と owner を非公開の記録に書き留め] --> B{AWS/GCP identity は一致?}
     B -- いいえ --> STOP1[停止: 対象を修正]
     B -- はい --> C{既存 host を安全に使える?}
     C -- いいえ --> D{disposable host の承認がある?}
@@ -89,10 +89,10 @@ flowchart TD
     H -- いいえ --> STOP5[停止: fixture/証拠を調査]
     H -- はい --> I{DP write probe は read-only?}
     I -- いいえ --> STOP6[停止: 書き込みを止める]
-    I -- はい --> J[ledger 保存と run-created だけの cleanup]
+    I -- はい --> J[非公開の記録に保存し、run-created だけ cleanup]
 ```
 
-このフローは、provider の mutation より先に read-only の不一致を閉じるためのものです。diagram だけを証拠にせず、各判定の出力を次の節の表と ledger に残します。
+このフローは、provider の mutation より先に read-only の不一致を閉じるためのものです。diagram だけを証拠にせず、各判定の出力を次の節の表と非公開の記録に残します。
 
 ## 構成図
 
@@ -102,15 +102,15 @@ flowchart TD
 
 方向別の図は [SnapMirror FSx for ONTAP → GCNV](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv.svg)、[Reverse Resync GCNV → FSx for ONTAP](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx.svg)、[FlexCache FSx for ONTAP origin → GCNV cache](../../_assets/images/gcp-fsx-ontap-flexcache-fsx-origin-to-gcnv-cache.svg)、[FlexCache GCNV origin → FSx for ONTAP cache](../../_assets/images/gcp-fsx-ontap-flexcache-gcnv-origin-to-fsx-cache.svg) です。各図の dark theme は同じディレクトリにあります。
 
-## 前提条件と台帳
+## 前提条件と記録する値
 
 ### Intake
 
 開始前に AWS 担当、GCP 担当、network owner、storage owner、承認者を決めます。source、destination、direction、対象 volume、検証 host、実行時間帯、rollback owner が一つでも未確定なら開始しません。
 
-### Environment ledger
+### 環境の値の記録
 
-実値は private ledger にだけ保存します。公開文書の値は置換用の形式です。
+実値は非公開の記録にだけ保存します。公開文書の値は置換用の形式です。
 
 | 項目 | placeholder | 記録する状態 |
 |---|---|---|
@@ -125,7 +125,7 @@ flowchart TD
 
 ### 停止条件
 
-owner、project、account、region、VPC、SVM、volume、endpoint、direction、run ID のいずれかが ledger と一致しない場合は停止します。共有 VPN、Cloud Router、route table、security rule、SVM、volume は、run-created であることを証明できない限り変更または削除しません。
+owner、project、account、region、VPC、SVM、volume、endpoint、direction、run ID のいずれかが記録した値と一致しない場合は停止します。共有 VPN、Cloud Router、route table、security rule、SVM、volume は、run-created であることを証明できない限り変更または削除しません。
 
 ## 身元とコンソールの read-only 確認
 
@@ -146,7 +146,7 @@ aws fsx describe-storage-virtual-machines \
   --query 'StorageVirtualMachines[].{Id:StorageVirtualMachineId,Name:Name,State:Lifecycle}
 ```
 
-出力は private ledger の permission-controlled record へ保存します。secret、password、endpoint の実値を issue、chat、shell history、deck、公開 Markdown へ貼りません。
+出力はアクセス権を絞った非公開の記録へ保存します。secret、password、endpoint の実値を issue、chat、shell history、deck、公開 Markdown へ貼りません。
 
 ### GCP identity
 
@@ -163,7 +163,7 @@ gcloud compute instances describe "<gce-instance-name>" \
   --format='yaml(name,zone,networkInterfaces,labels)'
 ```
 
-Google Cloud NetApp Volumes の SVM、volume、external replication の exact resource selector は、現在の Google Cloud console と公開 CLI 仕様を確認してから ledger に記録します。公開仕様で確認できない selector は推測しません。
+Google Cloud NetApp Volumes の SVM、volume、external replication の exact resource selector は、現在の Google Cloud console と公開 CLI 仕様を確認してから非公開の記録に書き留めます。公開仕様で確認できない selector は推測しません。
 
 ## EC2 の選択
 
@@ -171,7 +171,7 @@ Google Cloud NetApp Volumes の SVM、volume、external replication の exact re
 
 既存 host を第一候補にします。EC2 console の **Instances** で instance ID、state、owner tag、VPC、subnet、security group、route table、SSM の接続可能性を read-only で確認します。次のいずれかに該当したら使いません。
 
-- owner または用途が ledger と一致しない。
+- owner または用途が記録した値と一致しない。
 - 共有 host で、fixture の作成範囲と cleanup owner が決まっていない。
 - GCP 側との route、DNS、TCP 2049 の経路が対象と異なる。
 - OS、NFS client、SSH または SSM の接続経路が確認できない。
@@ -179,7 +179,7 @@ Google Cloud NetApp Volumes の SVM、volume、external replication の exact re
 
 ### Disposable host
 
-既存 host を使えない場合の選択肢として、承認済みの disposable EC2 を用意します。これは AWS mutation なので、この authoring run では実行しません。作成前に AMI、subnet、security group、IAM instance profile、SSM または SSH 経路、費用上限、termination owner、termination 後の証拠保存期間を ledger と承認記録に固定します。
+既存 host を使えない場合の選択肢として、承認済みの disposable EC2 を用意します。これは AWS mutation なので、この authoring run では実行しません。作成前に AMI、subnet、security group、IAM instance profile、SSM または SSH 経路、費用上限、termination owner、termination 後の証拠保存期間を、非公開の記録と承認記録に固定します。
 
 AWS EC2 console の **Instances > Launch instances** が公開された作成場所です。作成後は対象 VPC、subnet、route、security group、OS の NFS client、接続経路を fresh read し、期待値と違えば利用せず停止します。
 
@@ -216,7 +216,7 @@ password を `echo`、`printf`、command argument、shell history、debug log、
 
 ### SSH endpoint
 
-FSx for ONTAP の cluster management endpoint と SVM management endpoint を ledger に別の欄で記録します。AWS の管理者 password 更新手順は file system または SVM の management port への SSH を案内しています。今回の read-only handoff では `fsxadmin` の ONTAP CLI を cluster management endpoint へ接続する経路を選び、SVM endpoint で認証が成立しない場合に再試行を繰り返しません。
+FSx for ONTAP の cluster management endpoint と SVM management endpoint を非公開の記録に別の欄で書き留めます。AWS の管理者 password 更新手順は file system または SVM の management port への SSH を案内しています。今回の read-only handoff では `fsxadmin` の ONTAP CLI を cluster management endpoint へ接続する経路を選び、SVM endpoint で認証が成立しない場合に再試行を繰り返しません。
 
 ```bash
 ssh "<fsx-admin-user>@<cluster-management-endpoint>"
@@ -232,7 +232,7 @@ ssh "<fsx-admin-user>@<cluster-management-endpoint>"
 
 作成順序は次のとおりです。
 
-1. AWS / GCP の CIDR、owner、費用上限、cleanup owner を ledger に記録します。
+1. AWS / GCP の CIDR、owner、費用上限、cleanup owner を非公開の記録に書き留めます。
 2. VPC と subnet を作成し、route table を subnet に関連付けます。
 3. AWS Site-to-Site VPN の virtual private gateway、remote-site gateway、VPN connection を作成します。
 4. route propagation または承認済みの static route を設定します。
@@ -275,7 +275,7 @@ aws ec2 associate-route-table \
 
 ### Virtual Private Gateway と remote-site gateway
 
-AWS Site-to-Site VPN を virtual private gateway で構成する場合の識別子を作成します。GCP Cloud VPN の public endpoint、BGP ASN、AWS 側 ASN は ledger の値を使います。
+AWS Site-to-Site VPN を virtual private gateway で構成する場合の識別子を作成します。GCP Cloud VPN の public endpoint、BGP ASN、AWS 側 ASN は記録した値を使います。
 
 ```bash
 aws ec2 create-vpn-gateway \
@@ -348,7 +348,7 @@ aws ec2 describe-vpn-connections --region "$AWS_REGION" --vpn-connection-ids "<v
   --query 'VpnConnections[].VgwTelemetry'
 ```
 
-**合格条件** は tunnel、BGP、learned route、return route、security rule、NFS endpoint、ONTAP endpoint が台帳と一致することです。どれか一つでも不一致なら client の mount や fixture 作成に進みません。
+**合格条件** は tunnel、BGP、learned route、return route、security rule、NFS endpoint、ONTAP endpoint が記録した値と一致することです。どれか一つでも不一致なら client の mount や fixture 作成に進みません。
 
 rollback は、作成した EC2 client、security rule、route、VPN connection、remote-site gateway、virtual private gateway、subnet、VPC の依存順を記録してから行います。shared resource、active tunnel、FSx for ONTAP が依存する route table、owner 不明の resource は削除しません。作成成功レスポンスだけを rollback 完了の証拠にせず、削除後の state を fresh read します。
 
@@ -432,7 +432,7 @@ aws ec2 describe-route-tables \
   --query 'RouteTables[].{Id:RouteTableId,Routes:Routes}'
 ```
 
-GCP client CIDR への return route、next hop、association が ledger と一致することを確認します。security group、NACL、export policy の変更が必要なら、変更せず network または storage owner へ返します。
+GCP client CIDR への return route、next hop、association が記録した値と一致することを確認します。security group、NACL、export policy の変更が必要なら、変更せず network または storage owner へ返します。
 
 ### TCP 2049
 
@@ -443,7 +443,7 @@ NFS_ENDPOINT="<nfs-endpoint>"
 timeout 5 bash -c "</dev/tcp/$NFS_ENDPOINT/2049"
 ```
 
-失敗、timeout、想定外 endpoint、想定外 source CIDR の場合は mount しません。probe の時刻、host、endpoint の placeholder、結果、run ID を ledger に保存します。
+失敗、timeout、想定外 endpoint、想定外 source CIDR の場合は mount しません。probe の時刻、host、endpoint の placeholder、結果、run ID を非公開の記録に保存します。
 
 ## NFS mount の安全確認
 
@@ -508,7 +508,7 @@ fixture directory が存在する、件数が 48 でない、manifest が 48 行
 
 ### SHA-256 と DP read-only
 
-DP 側の mount source と volume role が ledger と一致した後にだけ照合します。
+DP 側の mount source と volume role が記録した値と一致した後にだけ照合します。
 
 ```bash
 DP_ROOT="<verified-dp-mount>/gcp-fsx-ontap-<sample-run-id>"
@@ -526,13 +526,13 @@ fi
 grep -Fx 'touch: cannot touch' "$DP_ROOT/.write-error" >/dev/null || true
 ```
 
-実行環境により `touch` のエラー文は異なるため、最後の判定はログの固定文字列だけで済ませません。`Read-only file system` を含むことを operator が確認し、permission denied、I/O error、timeout、network error は合格にしません。個別 hash、real path、resource ID は private ledger にだけ保存します。
+実行環境により `touch` のエラー文は異なるため、最後の判定はログの固定文字列だけで済ませません。`Read-only file system` を含むことを operator が確認し、permission denied、I/O error、timeout、network error は合格にしません。個別 hash、real path、resource ID は非公開の記録にだけ保存します。
 
 ## Expected output と停止条件
 
 ### Expected output
 
-private ledger に次を一つの `sample_run_id` で保存します。
+非公開の記録に次を一つの `sample_run_id` で保存します。
 
 - AWS/GCP caller、project、region、対象 resource の placeholder 化済み識別子。
 - forward route、return route、TCP 2049 probe の結果。
@@ -546,7 +546,7 @@ private ledger に次を一つの `sample_run_id` で保存します。
 
 次のいずれかで直ちに停止します。
 
-- AWS/GCP identity、owner、region、direction、endpoint、volume role が ledger と違う。
+- AWS/GCP identity、owner、region、direction、endpoint、volume role が記録した値と違う。
 - tunnel、BGP、learned route、return route、TCP 2049 のどれかが不合格。
 - mount が local filesystem、source 不一致、既存 fixture、既存 marker を示す。
 - fixture、manifest、件数、hash、missing、extra が不一致。
@@ -574,7 +574,7 @@ fixture directory と、この run で作成した mount だけを対象にし�
 
 1. `sample_run_id`、対象、方向、owner、承認者を再読する。
 2. AWS/GCP の current state と ONTAP の `snapmirror show`、`cluster peer show`、`vserver peer show` を fresh read する。
-3. source、destination、volume role、relationship state、health、dependency、逆操作を ledger と照合する。
+3. source、destination、volume role、relationship state、health、dependency、逆操作を記録した値と照合する。
 4. command または console location が公開資料と一致することを確認する。
 5. expected post-state と rollback window を承認記録に残す。
 6. 一つでも不足、矛盾、予期しない state があれば実行せず `Open` とする。
@@ -595,7 +595,7 @@ password を command line に置く形は実行せず、承認済み secret hand
 
 **Preconditions** は file system、subnet、SVM name、root security style、volume type、size、junction path、export policy、owner、cleanup、費用承認です。SVM は AWS console の **Amazon FSx for NetApp ONTAP > Storage virtual machines > Create new storage virtual machine**、volume は **Amazon FSx for NetApp ONTAP > Volumes > Create volume** が公開された場所です。[SVM 作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-svms.html) と [volume 作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html)に沿って入力値を固定します。
 
-**Expected state** は SVM が作成済み、volume が `Created`、role が ledger と一致し、mount 前の endpoint と export policy が確認できることです。**Inverse** は作成した SVM/volume の依存関係を fresh read してからの削除ですが、共有または peering 済みなら実行しません。**Approval gate** は容量、費用、削除可否、security style、DP/RW role の承認です。existing resource の名前推測、SnapLock、snapshot locking、terminal retention の設定は別承認なしに行いません。state が `Creating` のまま、target が違う、依存 relationship がある場合は STOP です。
+**Expected state** は SVM が作成済み、volume が `Created`、role が記録した値と一致し、mount 前の endpoint と export policy が確認できることです。**Inverse** は作成した SVM/volume の依存関係を fresh read してからの削除ですが、共有または peering 済みなら実行しません。**Approval gate** は容量、費用、削除可否、security style、DP/RW role の承認です。existing resource の名前推測、SnapLock、snapshot locking、terminal retention の設定は別承認なしに行いません。state が `Creating` のまま、target が違う、依存 relationship がある場合は STOP です。
 
 ### Cluster と SVM peering
 
@@ -613,7 +613,7 @@ password を command line に置く形は実行せず、承認済み secret hand
 
 ### SnapMirror の create と initialize
 
-**Preconditions** は FSx for ONTAP source、GCNV destination、DP role、source/destination SVM、cluster/SVM peering、schedule、network、GCNV external replication resource、generated hybrid command、destination-side operator、common snapshot です。GCNV console の **NetApp Volumes > Data protection > External replications** で対象を確認できますが、create の現在の provider contract が ledger にない場合は `Open` です。
+**Preconditions** は FSx for ONTAP source、GCNV destination、DP role、source/destination SVM、cluster/SVM peering、schedule、network、GCNV external replication resource、generated hybrid command、destination-side operator、common snapshot です。GCNV console の **NetApp Volumes > Data protection > External replications** で対象を確認できますが、create の現在の provider contract が非公開の記録にない場合は `Open` です。
 
 NetApp の公開 ONTAP 手順が示す initialize の形は次のとおりです。initialize は destination SVM または destination cluster から実行します。
 
@@ -625,7 +625,7 @@ NetApp の公開 ONTAP 手順が示す initialize の形は次のとおりです
   -destination-path <destination-svm>:<destination-volume>
 ```
 
-**Expected state** は baseline transfer 完了後の mirror state、relationship status、health、source/destination が ledger と一致することです。**Inverse** は initialize の途中停止ではなく、provider が示す stop または delete sequence です。途中状態で任意の `break`、`delete`、再 initialize をしません。**Approval gate** は baseline の時間、destination read-only、RPO、費用、GCNV generated command の確認です。GCNV resource がない、peering が片側、destination role が RW、state が contradictory、generated command が取れない場合は STOP です。[initialize の前提と destination-side command](https://docs.netapp.com/us-en/ontap/data-protection/initialize-replication-relationship-task.html)、[GCNV external replication overview](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/overview)、[AWS SnapMirror の設計例](https://aws.amazon.com/blogs/storage/highly-scalable-solution-design-to-replicate-data-using-amazon-fsx-for-netapp-ontap-and-snapmirror/)を参照します。
+**Expected state** は baseline transfer 完了後の mirror state、relationship status、health、source/destination が記録した値と一致することです。**Inverse** は initialize の途中停止ではなく、provider が示す stop または delete sequence です。途中状態で任意の `break`、`delete`、再 initialize をしません。**Approval gate** は baseline の時間、destination read-only、RPO、費用、GCNV generated command の確認です。GCNV resource がない、peering が片側、destination role が RW、state が contradictory、generated command が取れない場合は STOP です。[initialize の前提と destination-side command](https://docs.netapp.com/us-en/ontap/data-protection/initialize-replication-relationship-task.html)、[GCNV external replication overview](https://docs.cloud.google.com/netapp/volumes/docs/protect-data/replicate-ontap/overview)、[AWS SnapMirror の設計例](https://aws.amazon.com/blogs/storage/highly-scalable-solution-design-to-replicate-data-using-amazon-fsx-for-netapp-ontap-and-snapmirror/)を参照します。
 
 ### Stop / pause
 
@@ -721,7 +721,7 @@ ONTAP 側は GCNV の画面が要求する state を確認し、`Broken-off` の
 
 ## Security と監査
 
-この手順は NFS 経路の network separation、least-privilege read-only role、TCP 2049 と intercluster port の明示、secret の非出力、command と結果の ledger 保存を要求します。暗号化、retention、監査要件への適合性は設計判断であり、法務・規制判断ではありません。secret の取得者、console 操作者、ONTAP actor、cleanup owner を分け、state-changing operation は承認記録と post-state を残します。
+この手順は NFS 経路の network separation、least-privilege read-only role、TCP 2049 と intercluster port の明示、secret の非出力、command と結果を非公開の記録に保存することを要求します。暗号化、retention、監査要件への適合性は設計判断であり、法務・規制判断ではありません。secret の取得者、console 操作者、ONTAP actor、cleanup owner を分け、state-changing operation は承認記録と post-state を残します。
 
 ## 初心者向け実行手順
 
@@ -729,7 +729,7 @@ ONTAP 側は GCNV の画面が要求する state を確認し、`Broken-off` の
 
 ### 0. 実行前の入力値
 
-次の値を private run ledger に記録します。公開文書には実値を記録しません。
+次の値を非公開の記録に書き留めます。公開文書には実値を書きません。
 
 | 変数 | 入力値 | 用途 |
 |---|---|---|
@@ -771,7 +771,7 @@ aws fsx describe-volumes \
   --query 'Volumes[].{Name:Name,Id:VolumeId,SVM:OntapConfiguration.StorageVirtualMachineId,Lifecycle:Lifecycle,Type:OntapConfiguration.OntapVolumeType,Size:OntapConfiguration.SizeInMegabytes,Junction:OntapConfiguration.JunctionPath}'
 ```
 
-期待する状態は、file system と SVM が使用可能または作成済みで、対象 volume の名前、SVM、volume type、サイズ、junction path が台帳と一致することです。`Lifecycle` が `FAILED`、対象が複数、名前と ID の対応が不明な場合は停止します。
+期待する状態は、file system と SVM が使用可能または作成済みで、対象 volume の名前、SVM、volume type、サイズ、junction path が記録した値と一致することです。`Lifecycle` が `FAILED`、対象が複数、名前と ID の対応が不明な場合は停止します。
 
 SVM と volume の作成・状態確認に使う AWS CLI とコンソールの項目は、[Creating storage virtual machines](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-svms.html) と [Creating volumes](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) に対応します。
 
@@ -805,7 +805,7 @@ AWS console で状態を読めることは、SnapMirror、Reverse Resync、FlexC
 | OS | `ssh`、`mountpoint`、`findmnt`、`sha256sum`、Python 3 が使える |
 | cleanup | run-created と確認できる場合だけ停止・削除できる |
 
-新規 client が必要な場合は、AWS の Amazon Linux イメージ、対象 VPC / subnet、restricted security group、temporary IAM role、SSH key を台帳に記録してから作成します。`0.0.0.0/0` の SSH 許可、共有 subnet の route 変更、既存 security group の上書きは行いません。
+新規 client が必要な場合は、AWS の Amazon Linux イメージ、対象 VPC / subnet、restricted security group、temporary IAM role、SSH key を非公開の記録に書き留めてから作成します。`0.0.0.0/0` の SSH 許可、共有 subnet の route 変更、既存 security group の上書きは行いません。
 
 ### 4. Credential の安全な取得
 
@@ -868,7 +868,7 @@ mount、fixture、hash、DP volume の具体的なコマンドは本書の各節
 
 ### 7. 証拠記録と cleanup
 
-次の項目を private ledger に記録します。
+次の項目を非公開の記録に書き留めます。
 
 - `sample_run_id`、測定日、AWS / GCP リージョン。
 - file system、SVM、volume の placeholder と role。
@@ -878,7 +878,7 @@ mount、fixture、hash、DP volume の具体的なコマンドは本書の各節
 - DP read-only の結果。
 - run-created の fixture、mount、EC2、security rule の cleanup 結果。
 
-共有 VPN、route、SVM、volume、peering、active transfer は削除しません。作成者、現在状態、依存関係、inverse operation が台帳にない resource は owner review に残します。
+共有 VPN、route、SVM、volume、peering、active transfer は削除しません。作成者、現在状態、依存関係、inverse operation が非公開の記録にない resource は owner review に残します。
 
 ## 関連文書
 

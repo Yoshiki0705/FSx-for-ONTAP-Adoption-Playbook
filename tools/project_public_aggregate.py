@@ -196,14 +196,14 @@ def render(
         "## 概要",
         "",
         (
-            f"非公開の Issue Ledger から生成した集計です。件数と分類だけを示し、"
+            f"非公開の課題記録から生成した集計です。件数と分類だけを示し、"
             f"個別の所見、対象パス、担当、レビュー履歴は含みません。現在の件数: {total}。"
         ),
         "",
         "## Overview",
         "",
         (
-            f"Generated from the private Issue Ledger. Shows only counts and classification, "
+            f"Generated from the private issue record. Shows only counts and classification, "
             f"never individual findings, paths, owners, or review history. Current count: {total}."
         ),
         "",

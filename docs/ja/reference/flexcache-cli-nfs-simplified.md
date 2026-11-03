@@ -17,7 +17,7 @@ lang: ja
 >
 > **証拠の扱い**
 >
-> この文書は `documented` です。コマンドの形は AWS の FlexCache ガイド、NetApp の公開 ONTAP 手順、TR-4743 / TR-4571 に沿いますが、特定環境での成立・性能・状態は示しません。IP、SVM 名、cluster 名、volume 名、サイズはすべて置換用の placeholder です。実値、実行結果、性能値は private run ledger にだけ記録します。本番適用の前に自環境で検証してください。
+> この文書は `documented` です。コマンドの形は AWS の FlexCache ガイド、NetApp の公開 ONTAP 手順、TR-4743 / TR-4571 に沿いますが、特定環境での成立・性能・状態は示しません。IP、SVM 名、cluster 名、volume 名、サイズはすべて置換用の placeholder です。実値、実行結果、性能値は非公開の記録にだけ書き留めます。本番適用の前に自環境で検証してください。
 
 ## 結論
 
@@ -29,15 +29,15 @@ FlexCache は読み取り主体で変更が少ないワークロードに向き�
 |---|---|
 | `documented` | 公開資料から確認できる前提または操作の形。実環境での成立・性能を示さない。 |
 | placeholder | IP・名前・サイズは環境に合わせて置換する。実値は公開しない。 |
-| 停止 | identity・state・peer・経路が台帳と一致しない場合、その場で止める。 |
+| 停止 | identity・state・peer・経路が記録した値と一致しない場合、その場で止める。 |
 
 > **作成境界**
 >
-> `cluster peer create`、`vserver peer create/accept`、`volume flexcache create` は mutation です。実行は、両クラスタの peering が `Available` / `peered`、intercluster LIF 間の疎通が全組み合わせで成立、Origin/Cache の identity と逆操作が台帳にある場合に限ります。一つでも欠ける・矛盾する場合は実行せず停止します。
+> `cluster peer create`、`vserver peer create/accept`、`volume flexcache create` は mutation です。実行は、両クラスタの peering が `Available` / `peered`、intercluster LIF 間の疎通が全組み合わせで成立、Origin/Cache の identity と逆操作が非公開の記録にある場合に限ります。一つでも欠ける・矛盾する場合は実行せず停止します。
 
 ## 対象環境（置換用）
 
-SMB 版の機種名を一般化し、Cache 側を任意の第 2 クラスタとして記述します。実値は private ledger にだけ保存します。
+SMB 版の機種名を一般化し、Cache 側を任意の第 2 クラスタとして記述します。実値は非公開の記録にだけ保存します。
 
 | 項目 | Origin ストレージ | Cache ストレージ |
 |---|---|---|
@@ -213,7 +213,7 @@ Cache::*> volume flexcache show
 Cache::*> volume flexcache show -vserver <cache-svm> -volume <cache-volume> -instance
 ```
 
-意味: Cache SVM `<cache-svm>` に、Origin SVM `<origin-svm>` の `<origin-volume>` に対する Cache volume `<cache-volume>`（FlexGroup）を作成し、`<cache-size>` で thin provisioning、`/<cache-volume>` にマウントします。security style は Origin（unix）を継承し、Cache 側では指定・変更できません。`volume flexcache show` が Cache を表示し、Origin/Cache identity が台帳と一致するまで次へ進みません。
+意味: Cache SVM `<cache-svm>` に、Origin SVM `<origin-svm>` の `<origin-volume>` に対する Cache volume `<cache-volume>`（FlexGroup）を作成し、`<cache-size>` で thin provisioning、`/<cache-volume>` にマウントします。security style は Origin（unix）を継承し、Cache 側では指定・変更できません。`volume flexcache show` が Cache を表示し、Origin/Cache identity が記録した値と一致するまで次へ進みません。
 
 ## 4. その他作業
 
@@ -270,7 +270,7 @@ FlexCache は delegation、ロック、negative lookup cache、disconnected mode
 - intercluster LIF 4 組のいずれかで疎通が成立しない。
 - `cluster peer show` が片側でも `Available` にならない。
 - SVM peer が片側のみ `peered`、applications に `flexcache` が無い、identity 不一致。
-- `volume flexcache show` に Cache が出ない、または Origin/Cache identity が台帳と違う。
+- `volume flexcache show` に Cache が出ない、または Origin/Cache identity が記録した値と違う。
 - passphrase・実値が shell history・stdout・ログ・公開物に出た。
 
 ## Related documents

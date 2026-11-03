@@ -19,7 +19,7 @@ lang: ja
 
 | 段階 | 目的 | 主な担当 | 必要な証拠 | 停止条件 |
 |---|---|---|---|---|
-| 1 | 対象と方向の確定 | GCP / AWS 担当 | source/destination 台帳 | 方向が一致しなければ停止 |
+| 1 | 対象と方向の確定 | GCP / AWS 担当 | source/destination の記録した値 | 方向が一致しなければ停止 |
 | 2 | Provider interface の確定 | GCP / AWS 担当 | API/CLI の公式仕様 | interface が不明なら open |
 | 3 | Peer state の双方向確認 | GCP / AWS 担当 | 両側の fresh read | 片側だけなら停止 |
 | 4 | Replication state の確認 | ストレージ担当 | source/destination/role/state | state が矛盾すれば停止 |
@@ -31,15 +31,15 @@ lang: ja
 
 | 役割 | Provider | Resource | Direction | 状態 |
 |---|---|---|---|---|
-| Cluster source | FSx for ONTAP または GCNV | `<source-cluster>` | source | 台帳で確定が必要 |
-| SVM source | FSx for ONTAP または GCNV | `<source-svm>` | source | 台帳で確定が必要 |
+| Cluster source | FSx for ONTAP または GCNV | `<source-cluster>` | source | 非公開の記録で確定が必要 |
+| SVM source | FSx for ONTAP または GCNV | `<source-svm>` | source | 非公開の記録で確定が必要 |
 | SnapMirror source volume | FSx for ONTAP | `<snapmirror-source-volume>` | FSx for ONTAP → GCNV | 手順の対象候補 |
 | GCNV destination volume | GCNV | `<gcnv-destination-volume>` | destination | provider API の照合が必要 |
 | Reverse destination | FSx for ONTAP | `<reverse-destination-volume>` | GCNV → FSx for ONTAP | DP/read-only の確認が必要 |
-| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | 方向と volume type を台帳で確定する。GCNV が origin になれるのは ONTAP-mode のみ |
-| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | GCNV 側の作成 interface は公開資料にある。identity と owner は台帳で確定が必要 |
+| FlexCache origin volume | `<provider>` | `<origin-svm>:<origin-volume>` | origin | 方向と volume type を非公開の記録で確定する。GCNV が origin になれるのは ONTAP-mode のみ |
+| FlexCache cache volume | `<provider>` | `<cache-svm>:<cache-volume>` | cache | GCNV 側の作成 interface は公開資料にある。identity と owner は非公開の記録で確定が必要 |
 
-この表の値を、既存の実リソース名から推測して埋めてはいけません。run ledger と provider の read-only response で一致を確認します。
+この表の値を、既存の実リソース名から推測して埋めてはいけません。非公開の記録と provider の read-only response で一致を確認します。
 
 ## クラスターピアリング
 
@@ -83,7 +83,7 @@ Expiry predicate: <documented-expiry-field-and-condition>
 - peering state
 - ownership and dedicated-role match
 
-片側の read が取れない、identity が台帳と違う、applications が不足する場合は replication に進みません。
+片側の read が取れない、identity が記録した値と違う、applications が不足する場合は replication に進みません。
 
 ### 実環境の read-only 状態
 
@@ -97,11 +97,11 @@ Expiry predicate: <documented-expiry-field-and-condition>
 
 > **Status: open**（公開資料の interface は確認済み、実環境の証拠が未整備）
 >
-> GCNV の公開ドキュメントは、Cache の作成インターフェース（`gcloud beta netapp volumes create` の `--cache-parameters`）、作成後の確認（`gcloud beta netapp volumes describe` が返す `cacheParameters.cacheState`）、削除の前提（write-back を有効にしている場合は先に無効化）を記載しています（2026-11-03 に確認。[GCNV の公開インターフェース](#gcnv-の公開インターフェース)）。ledger の `Creation interface` と `Post-state query` は、この資料に対応付けて埋められます。
+> GCNV の公開ドキュメントは、Cache の作成インターフェース（`gcloud beta netapp volumes create` の `--cache-parameters`）、作成後の確認（`gcloud beta netapp volumes describe` が返す `cacheParameters.cacheState`）、削除の前提（write-back を有効にしている場合は先に無効化）を記載しています（2026-11-03 に確認。[GCNV の公開インターフェース](#gcnv-の公開インターフェース)）。非公開の記録の `Creation interface` と `Post-state query` の欄は、この資料に対応付けて埋められます。
 >
 > 一方、このリポジトリから参照できる実行記録はありません。S3-Burst-on-ONTAP-Files の確認状況表も、FSx for ONTAP を Origin にした GCNV の Cache 可否を 2026-09-20 時点で未確認と記録しています（[クロスクラウドのノート](../domains/data-utilization/notes/cross-cloud-analytics-without-extra-copies.md#構成ごとの確認状況)に要約）。このリポジトリの記録にあるのは、FlexCache 用の origin volume を SnapMirror 用 volume と分けて FSx for ONTAP 側に用意し、SVM ピアリングの applications に `flexcache` を含めたところまでです。cache volume の所有者、origin/cache の exact resource identity、read/write モード、作成後の cache state は、実環境で確認した記録がありません。
 
-FlexCache を開始する前に、次の台帳を確定します。
+FlexCache を開始する前に、次の表の値を確定します。
 
 | 項目 | 必要な値 |
 |---|---|
@@ -113,7 +113,7 @@ FlexCache を開始する前に、次の台帳を確定します。
 | Creation interface | `<documented-gcnv-or-ontap-interface>` |
 | Post-state query | `<documented-cache-state-query>` |
 
-作成後は、origin と cache の identity、cache state、SVM peer state、content read の結果を別々に確認します。cache の作成・変更・削除は、作成者、対象 resource、現在 state、依存関係、逆操作が台帳にない場合は実行しません。FlexCache は S3 Access Point と同じ経路ではなく、cache volume への NFS/SMB アクセス経路を別に確認します。
+作成後は、origin と cache の identity、cache state、SVM peer state、content read の結果を別々に確認します。cache の作成・変更・削除は、作成者、対象 resource、現在 state、依存関係、逆操作が非公開の記録にない場合は実行しません。FlexCache は S3 Access Point と同じ経路ではなく、cache volume への NFS/SMB アクセス経路を別に確認します。
 
 ### GCNV の公開インターフェース
 
@@ -154,7 +154,7 @@ GCNV が書いている条件は次のとおりです。
 - [SnapMirror: FSx for ONTAP → GCNV](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv.svg)（[ダークテーマ版](../../_assets/images/gcp-fsx-ontap-snapmirror-fsx-to-gcnv-dark.svg)）
 - [Reverse Resync: GCNV → FSx for ONTAP](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx.svg)（[ダークテーマ版](../../_assets/images/gcp-fsx-ontap-reverse-resync-gcnv-to-fsx-dark.svg)）
 
-図の矢印はデータまたは関係の向きを示します。実行前に source、destination、操作主体、post-state を run ledger と provider の fresh read で対応付けます。
+図の矢印はデータまたは関係の向きを示します。実行前に source、destination、操作主体、post-state を非公開の記録と provider の fresh read で対応付けます。
 
 状態確認で最低限対応させる項目
 
@@ -164,7 +164,7 @@ GCNV が書いている条件は次のとおりです。
 | synchronized | 同上 | 同上 | `Snapmirrored` と `Idle` など、実際の ONTAP 出力に対応した predicate |
 | broken | GCNV destination | GCNV destination | break 後の write-enabled/read-only state と provider state |
 | reverse resync | GCNV | FSx for ONTAP | authoritative operation、new direction、post-state、content evidence |
-| final | 台帳と一致 | 台帳と一致 | relationship state とファイル内容を別々に合格判定 |
+| final | 記録した値と一致 | 記録した値と一致 | relationship state とファイル内容を別々に合格判定 |
 
 `healthy`、`transfer-state`、`mirrorState` などの名称は、各 provider の実際の response field と対応付けてから使用します。推測した field 名や、別の関係の `Available`/`ok` を対象関係の証拠にしません。
 
@@ -174,10 +174,10 @@ GCNV が書いている条件は次のとおりです。
 
 ### SnapMirror relationship の作成と初期化
 
-事前条件は、source / destination cluster と SVM の peering、destination volume の `DP`、source / destination path の台帳一致、policy と schedule の選択、owner、rollback、transfer window です。NetApp の手順でも、relationship 作成前に cluster と SVM が peered であることを要求し、作成後に `snapmirror show` で確認します（[Create an ONTAP SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/create-replication-relationship-task.html)）。
+事前条件は、source / destination cluster と SVM の peering、destination volume の `DP`、記録した値と一致する source / destination path、policy と schedule の選択、owner、rollback、transfer window です。NetApp の手順でも、relationship 作成前に cluster と SVM が peered であることを要求し、作成後に `snapmirror show` で確認します（[Create an ONTAP SnapMirror replication relationship](https://docs.netapp.com/us-en/ontap/data-protection/create-replication-relationship-task.html)）。
 
 ```text
-# destination cluster で実行する。値は台帳から置き換える。
+# destination cluster で実行する。値は記録した値から置き換える。
 snapmirror create \
   -source-path <source-svm>:<source-volume> \
   -destination-path <destination-svm>:<destination-volume> \
@@ -212,7 +212,7 @@ gcloud netapp volumes replications list \
   --volume="$GCNV_VOLUME" --location="$GCP_REGION"
 ```
 
-`hybridReplicationUserCommands` が返る場合は、そこに含まれる ONTAP command をそのまま private run ledger に保存します。source、destination、SVM、cluster、方向を placeholder から推測して書き換えません。
+`hybridReplicationUserCommands` が返る場合は、そこに含まれる ONTAP command をそのまま非公開の記録に保存します。source、destination、SVM、cluster、方向を placeholder から推測して書き換えません。
 
 - **Stop**: Google Cloud 側で stop を要求し、外部 ONTAP destination の場合は `snapmirror show` で `Snapmirrored` / `Idle` を確認してから、返された `snapmirror break` を実行します。
 - **Resume**: Google Cloud 側で resume を要求し、返された `snapmirror resync` を新しい方向と一致させて実行します。
@@ -256,11 +256,11 @@ volume flexcache create \
 volume flexcache show
 ```
 
-`cluster peer show` が `Available`、SVM peer が `peered`、application が `flexcache`、origin/cache identity と security style が台帳と一致し、逆操作が記録されるまで STOP です。現在は cluster peer が `Unavailable` なので、FlexCache 作成には進みません。
+`cluster peer show` が `Available`、SVM peer が `peered`、application が `flexcache`、origin/cache identity と security style が記録した値と一致し、逆操作が記録されるまで STOP です。現在は cluster peer が `Unavailable` なので、FlexCache 作成には進みません。
 
 ### Rollback と破壊操作の境界
 
-relationship を削除する前に、active transfer がないこと、client access を停止したこと、owner が承認したこと、inverse operation と post-state が ledger にあることを確認します。Reverse Resync の公開手順は、common snapshot、source / destination の切り替え、update、quiesce、break、delete、release、original relationship の resync までを順序付けています（[Reactivate the original ONTAP source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)）。
+relationship を削除する前に、active transfer がないこと、client access を停止したこと、owner が承認したこと、inverse operation と post-state が非公開の記録にあることを確認します。Reverse Resync の公開手順は、common snapshot、source / destination の切り替え、update、quiesce、break、delete、release、original relationship の resync までを順序付けています（[Reactivate the original ONTAP source volume](https://docs.netapp.com/us-en/ontap/data-protection/reactivate-original-source-volume-task.html)）。
 
 - `snapmirror break`、`snapmirror delete`、`snapmirror release` は active transfer 中に実行しません。
 - shared VPN、route、security group、SVM、volume、cluster peer は run-created と証明できなければ削除しません。
@@ -290,7 +290,7 @@ verified に昇格するために必要な記録
 
 この文書は peering、replication、volume、SVM、VPN、Cloud Router、VGW、route、security rule の削除を実行しません。cleanup には次を要求します。
 
-1. run ledger の owner と exact resource identity を fresh read する。
+1. 非公開の記録にある owner と exact resource identity を、fresh read して照合する。
 2. shared/pre-existing resource は leave in place とする。
 3. active transfer、dependency、peer relationship が残る場合は停止する。
 4. destructive operation ごとに直前の確認と個別承認を取る。
