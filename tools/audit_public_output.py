@@ -43,6 +43,7 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -88,19 +89,6 @@ FILE_ALLOW_SCAN_LINES = 40
 
 # ---------------------------------------------------------------- naming
 
-NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"\bFSxN\b"), "use 'FSx for ONTAP'"),
-    (re.compile(r"\bFSx\s+ONTAP\b"), "use 'FSx for ONTAP' (missing 'for')"),
-    (re.compile(r"\bFSx\s+NetApp\b"), "use 'Amazon FSx for NetApp ONTAP'"),
-    (
-        re.compile(r"\bBlueXP\b|NetApp\s+Workload\s+Factory|NetApp\s+Console\b"),
-        (
-            "do not propose; reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / "
-            "Snapshot-FlexClone-SnapMirror"
-        ),
-    ),
-]
-
 # `\b` is the wrong boundary in a Japanese repository, and it fails silently in the direction
 # that matters most.
 #
@@ -119,6 +107,30 @@ NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
 # boundary. Do not replace them with `\b`.
 ASCII_LEFT = r"(?<![A-Za-z0-9_])"
 ASCII_RIGHT = r"(?![A-Za-z0-9_])"
+
+# The spellings that are never acceptable. The three FSx forms use the boundaries above, not `\b`:
+# `FSxNを使う` and `構成でFSxN` put a Japanese character directly against the name, and `\bFSxN\b`
+# matched neither, so the form that is common in this repository was the one that went unreported.
+# `FSx ONTAP` and `FSx NetApp` had the same two boundaries and the same hole. The bare-`FSx` rule
+# below caught them anyway, but under its own message and only for as long as that rule stayed.
+NAMING_RULES: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(ASCII_LEFT + r"FSxN" + ASCII_RIGHT), "use 'FSx for ONTAP'"),
+    (
+        re.compile(ASCII_LEFT + r"FSx\s+ONTAP" + ASCII_RIGHT),
+        "use 'FSx for ONTAP' (missing 'for')",
+    ),
+    (
+        re.compile(ASCII_LEFT + r"FSx\s+NetApp" + ASCII_RIGHT),
+        "use 'Amazon FSx for NetApp ONTAP'",
+    ),
+    (
+        re.compile(r"\bBlueXP\b|NetApp\s+Workload\s+Factory|NetApp\s+Console\b"),
+        (
+            "do not propose; reframe to CloudWatch / ONTAP REST API / FabricPool / DataSync / "
+            "Snapshot-FlexClone-SnapMirror"
+        ),
+    ),
+]
 
 # Bare "FSx" that is prose rather than part of an accepted phrase or an identifier.
 BARE_FSX = re.compile(
@@ -142,6 +154,63 @@ IDENT_CONTEXT = re.compile(
 # Spans where prose rules do not apply, removed before the prose tests run. Replaced with
 # spaces so that reported column offsets and the "Amazon " lookbehind stay meaningful.
 NON_PROSE = re.compile(r"https?://\S+|`[^`]*`")
+
+# A sentence wrapped across a line break is still one sentence, and the required name is routinely
+# split that way: `FSx for` ends one line and `ONTAP` starts the next, or `Amazon` ends one line and
+# `FSx` starts the next. Read one line at a time, the first is a bare `FSx` (the lookahead cannot see
+# `for ONTAP`) and the second has lost its `Amazon` lookbehind, so correct text was reported as a
+# violation. Found during a sibling repository's naming-gate work.
+#
+# So a line is judged together with its neighbours, but only as far as the sentence continues. A
+# blank line, a list item, a table row and a code fence each end it, because none of them is the next
+# words of the same sentence. A comment or quote marker does not: a wrapped shell or YAML comment and
+# a wrapped block quote carry the sentence on behind the marker.
+CONTINUATION_PREFIX = re.compile(r"[ \t]*(?:[#>][ \t]*)*")
+# `FSx for NetApp ONTAP` wrapped at every space leaves three lines after the `FSx`.
+CONTINUATION_LINES = 3
+
+
+def _blank(match: re.Match[str]) -> str:
+    """The same number of spaces, so offsets and the `Amazon ` lookbehind stay meaningful."""
+    return " " * len(match.group())
+
+
+def _continuation(line: str) -> str:
+    """A neighbouring line as the next words of a sentence: non-prose blanked, markers dropped."""
+    return CONTINUATION_PREFIX.sub("", NON_PROSE.sub(_blank, line), count=1)
+
+
+def has_bare_fsx(line: str, before: str = "", after: Sequence[str] = ()) -> bool:
+    """Whether `line` has a bare "FSx" that is prose, reading a name wrapped across lines as one.
+
+    `before` is the previous line and `after` the lines that follow, each only while it belongs to the
+    same run of text (the caller stops at a code fence). BARE_FSX still does the judging; this only
+    supplies the text its lookarounds need to see. Only a match that starts on `line` counts: one in a
+    neighbour is judged when that line is the one being read.
+    """
+    prose = NON_PROSE.sub(_blank, line)
+    if "FSx" not in prose:
+        return False
+    lead = CONTINUATION_PREFIX.match(prose).end()
+    previous = _continuation(before).rstrip()
+    head = previous + "\n" if previous else ""
+    tail = ""
+    for following in after:
+        words = _continuation(following)
+        if not words.strip():
+            break
+        tail += "\n" + words
+    text = head + prose[lead:] + tail
+    line_start, line_end = len(head), len(head) + len(prose) - lead
+    shift = len(head) - lead
+    for match in BARE_FSX.finditer(text):
+        if not line_start <= match.start() < line_end:
+            continue
+        window = prose[max(0, match.start() - shift - 12) : match.end() - shift + 12]
+        if not IDENT_CONTEXT.search(window):
+            return True
+    return False
+
 
 # ---------------------------------------------------------------- neutrality
 
@@ -636,6 +705,50 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 
 
+def iter_lines(
+    lines: Sequence[str],
+) -> Iterator[tuple[int, str, bool, str, tuple[str, ...]]]:
+    """Yield (number, line, in_fence, before, after) for every line the audit reads.
+
+    A fence delimiter is not read, and neither is a fence-shaped line inside a fence: they are the
+    syntax around the code, not text. A fence closes only on a line made of its own character, at
+    least as long as the opener.
+
+    `before` is the previous line and `after` the next CONTINUATION_LINES, each only while it is a
+    line this function also yields. That is what stops a sentence at a code fence: the delimiter is
+    not yielded, so the lines on either side of it are never each other's neighbours.
+    """
+    inside: list[bool | None] = []  # None marks a delimiter, which is not read
+    fence_marker: str | None = None
+    for line in lines:
+        fence = FENCE.match(line)
+        if fence_marker is None and fence:
+            fence_marker = fence.group(1)
+            inside.append(None)
+        elif fence_marker is not None and fence:
+            candidate = fence.group(1)
+            if (
+                candidate[0] == fence_marker[0]
+                and len(candidate) >= len(fence_marker)
+                and set(line.strip()) == {fence_marker[0]}
+            ):
+                fence_marker = None
+            inside.append(None)
+        else:
+            inside.append(fence_marker is not None)
+    for index, in_fence in enumerate(inside):
+        if in_fence is None:
+            continue
+        before = lines[index - 1] if index and inside[index - 1] is not None else ""
+        after: list[str] = []
+        last = min(index + 1 + CONTINUATION_LINES, len(lines))
+        for following in range(index + 1, last):
+            if inside[following] is None:
+                break
+            after.append(lines[following])
+        yield index + 1, lines[index], in_fence, before, tuple(after)
+
+
 def _outside_code_spans(line: str):
     """Yield (segment, is_code) pairs so a rule can apply to prose only, once."""
     position = 0
@@ -688,8 +801,14 @@ def audit_line(
     file_allowed: frozenset[str] = frozenset(),
     in_fence: bool = False,
     scan_sales: bool = True,
+    before: str = "",
+    after: Sequence[str] = (),
 ) -> list[tuple[str, str]]:
     """Return (category, message) findings for one line, honouring allow markers.
+
+    `before` and `after` are the neighbouring lines of the same run of text, from `iter_lines`. Only
+    the bare-`FSx` rule reads them, so that a name wrapped across a line break is judged as one name.
+    Every other rule reads `line` alone.
 
     **A marker inside a code span or a fenced block is documentation of the syntax, not a use of it.**
     The two are one rule in two shapes - this is code, not prose - and only the code-span half was
@@ -718,12 +837,8 @@ def audit_line(
         for pattern, message in NAMING_RULES:
             if pattern.search(line):
                 findings.append(("naming", message))
-        prose = NON_PROSE.sub(lambda m: " " * len(m.group()), line)
-        for match in BARE_FSX.finditer(prose):
-            window = prose[max(0, match.start() - 12) : match.end() + 12]
-            if not IDENT_CONTEXT.search(window):
-                findings.append(("naming", "bare 'FSx'; use 'FSx for ONTAP'"))
-                break
+        if has_bare_fsx(line, before, after):
+            findings.append(("naming", "bare 'FSx'; use 'FSx for ONTAP'"))
 
     if "neutrality" not in allowed:
         for pattern, message in NEUTRALITY_RULES:
@@ -870,30 +985,17 @@ def main() -> int:
                 continue
             frontmatter_end = closing
         prose_file = path.suffix.lower() in {".md", ".txt"}
-        fence_marker: str | None = None
-        for lineno, line in enumerate(lines, start=1):
-            fence = FENCE.match(line)
-            if fence_marker is None and fence:
-                fence_marker = fence.group(1)
-                continue
-            if fence_marker is not None and fence:
-                candidate = fence.group(1)
-                stripped = line.strip()
-                if (
-                    candidate[0] == fence_marker[0]
-                    and len(candidate) >= len(fence_marker)
-                    and set(stripped) == {fence_marker[0]}
-                ):
-                    fence_marker = None
-                continue
+        for lineno, line, in_fence, before, after in iter_lines(lines):
             scan_sales = prose_file and not (
                 frontmatter_end and lineno <= frontmatter_end
             )
             for category, message in audit_line(
                 line,
                 file_allowed,
-                fence_marker is not None,
+                in_fence,
                 scan_sales=scan_sales,
+                before=before,
+                after=after,
             ):
                 if category not in active:
                     continue
