@@ -270,14 +270,18 @@ RULES: tuple[Rule, ...] = (
         "invented coinage used as a label; replace with plain words (verified in a real environment / a separate recording bucket / not measured)",
         (
             ("en", "The result is tier [verified], stored in the witness bucket.\n"),
+            ("en", "Save the output in the private run ledger.\n"),
             ("ja", "この主張は証拠台帳に記録した。\n"),
+            ("ja", "出力は private ledger にだけ保存する。\n"),
         ),
         (
             (
                 "en",
                 "We verified it in a real environment and witnessed the execution.\n",
             ),
+            ("en", "The general ledger records each transaction.\n"),
             ("ja", "検証済みで、実行回数も記録した。\n"),
+            ("ja", "アカウント台帳に用途と所有者を記録する。\n"),
         ),
     ),
 )
@@ -343,10 +347,17 @@ LINE_PATTERNS: dict[str, dict[str, re.Pattern[str]]] = {
     # attested as a lone adjective; witness scoped to its bucket/object sense; and the slash-joined
     # "open / not measured". Bare verified / run / 検証済み / 実行回数 and the verb witnessed are not
     # matched, because a single word cannot be told from its technical use.
+    # The same holds for ledger. Only the compounds that name the private place real values and
+    # results are kept ("private ledger", "private run ledger", "run ledger", "Environment ledger") are
+    # matched. A bare "ledger", the ordinary Japanese word 台帳 (a register), and a sibling repository's
+    # document name ("delegation ledger", `delegation-ledger.md`) are not: each is ordinary vocabulary or
+    # a name that is cited as a name. The Japanese pattern has no \b because Japanese characters count as
+    # word characters, so a compound written right after a kana ("非公開のprivate ledger") has no boundary.
     "D25": {
         "en": re.compile(
             r"\[(?:verified|documented)\]"
             r"|\bevidence ledger\b|\brun envelope\b|\bzero-call\b"
+            r"|\b(?:private\s+(?:run\s+)?|run\s+|environment\s+)ledger\b"
             r"|\battested\b"
             r"|\bwitness\s+(?:bucket|object)\b"
             r"|\bopen\s*/\s*not measured\b",
@@ -356,6 +367,7 @@ LINE_PATTERNS: dict[str, dict[str, re.Pattern[str]]] = {
             r"\[(?:verified|documented)\]"
             r"|証拠台帳|ゼロコール"
             r"|evidence ledger|run envelope|zero-call"
+            r"|(?i:(?<![a-z])(?:private\s+(?:run\s+)?|run\s+|environment\s+)ledger(?![a-z]))"
             r"|witness\s*(?:バケット|オブジェクト)"
             r"|open\s*/\s*not measured"
         ),

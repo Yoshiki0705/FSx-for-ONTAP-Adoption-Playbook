@@ -119,6 +119,82 @@ class CoinageLabelsD25(unittest.TestCase):
         )
 
 
+class LedgerFormsD25(unittest.TestCase):
+    """D25 catches the compounds that name the private record, and only those.
+
+    A bare ledger is an accounting word, the Japanese 台帳 is an ordinary word for a register, and a
+    sibling repository's document title is cited as a name. None of those may fire.
+    """
+
+    def test_the_four_compounds_fire_in_english(self) -> None:
+        for phrase in (
+            "private ledger",
+            "private run ledger",
+            "run ledger",
+            "Environment ledger",
+            "Private Run Ledger",
+        ):
+            with self.subTest(phrase=phrase):
+                document = f"Values go in the {phrase}.\n"
+                self.assertIn("D25", rule_ids(document, "en"))
+
+    def test_the_compounds_fire_inside_japanese_prose(self) -> None:
+        cases = {
+            "private ledger": "実値は private ledger にだけ保存する。\n",
+            "private run ledger": "出力は private run ledger に残す。\n",
+            "Environment ledger": "先に Environment ledger を確定する。\n",
+            "run ledger": "結果を run ledger に記録する。\n",
+        }
+        for name, document in cases.items():
+            with self.subTest(name=name):
+                self.assertIn("D25", rule_ids(document, "ja"))
+
+    def test_a_compound_written_right_after_kana_still_fires(self) -> None:
+        """A word boundary is absent between a kana and a Latin letter, so the pattern must not need one."""
+        self.assertIn(
+            "D25", rule_ids("実値は非公開のprivate ledgerに保存する。\n", "ja")
+        )
+
+    def test_ordinary_uses_are_silent(self) -> None:
+        cases = {
+            "general ledger": ("en", "The general ledger records each transaction.\n"),
+            "bare ledger": ("en", "A ledger lists the entries.\n"),
+            "hyperledger": ("en", "Hyperledger Fabric is a framework.\n"),
+            "sibling document title": (
+                "en",
+                "The delegation ledger lists what each Technical Report handed over.\n",
+            ),
+            "ja 台帳 as a register": (
+                "ja",
+                "アカウント台帳に用途と所有者を記録する。\n",
+            ),
+            "ja bare ledger": ("ja", "ledger に載っていない経路を調べる。\n"),
+            "latin letter before the phrase": ("ja", "xprivate ledger は別の語だ。\n"),
+            "latin letter after the phrase": ("en", "See the runledgers directory.\n"),
+        }
+        for name, (lang, document) in cases.items():
+            with self.subTest(name=name):
+                self.assertNotIn("D25", rule_ids(document, lang))
+
+    def test_code_spans_and_urls_are_silent(self) -> None:
+        self.assertNotIn(
+            "D25", rule_ids("ファイル `delegation-ledger.md` を開く。\n", "ja")
+        )
+        self.assertNotIn(
+            "D25",
+            rule_ids("See [the table](https://example.com/private-ledger).\n", "en"),
+        )
+        self.assertNotIn("D25", rule_ids("変数 `private_ledger` を使う。\n", "ja"))
+
+    def test_tier_contract_files_stay_excluded(self) -> None:
+        self.assertNotIn(
+            "D25", rule_ids("Keep it in the private ledger.\n", "en", "AGENTS.md")
+        )
+        self.assertIn(
+            "D25", rule_ids("Keep it in the private ledger.\n", "en", "docs/en/foo.md")
+        )
+
+
 class NonProseIsExcluded(unittest.TestCase):
     def test_fence_code_span_comment_frontmatter_and_switcher(self) -> None:
         cases = {
