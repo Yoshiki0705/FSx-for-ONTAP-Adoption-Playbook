@@ -51,7 +51,7 @@ upstream の規約に従う fork も外します。
 | D20 | 冗長な言い回し（`することができ`、`まず最初に`） | warning | ja | 冗長な言い回しで、短く言える動詞が名詞化されている。 | H11 |
 | D23 | 推量の重ね掛け（`可能性があると考えられ`） | warning | ja | 推量が二重になっていて、確認済みか未確認かが読み取れない。 | H1 |
 | D24 | 程度の形容（`飛躍的に`、`blazing`） | warning | ja, en | 程度を形容詞で語っていて、数値と測定環境が示されていない。 | H1, H2 |
-| D25 | 読者向けの地の文の、evidence-tier 風の造語ラベル（`[verified]`、`[documented]` の角括弧タグ、`attested`、`evidence ledger`、`証拠台帳`、`run envelope`、`zero-call`、`ゼロコール`、`witness bucket`、`open / not measured`） | warning | ja, en | 実在しない造語をラベルとして使い、読者が出典にたどり着けない。平易な説明語（検証済み／記録用の別バケット／未測定 等）に置き換えるべき箇所。 | H1, H2 |
+| D25 | 読者向けの地の文の、evidence-tier 風の造語ラベル（`[verified]`、`[documented]` の角括弧タグ、`attested`、`evidence ledger`、`証拠台帳`、`private ledger`、`private run ledger`、`run ledger`、`Environment ledger`、`run envelope`、`zero-call`、`ゼロコール`、`witness bucket`、`open / not measured`） | warning | ja, en | 実在しない造語をラベルとして使い、読者が出典にたどり着けない。平易な説明語（検証済み／記録用の別バケット／未測定 等）に置き換えるべき箇所。 | H1, H2 |
 
 すべての規則は、コードフェンス、インラインコード、HTML コメント、URL、frontmatter、言語スイッチャーの中を対象にしません。
 D1 は CommonMark の太字の規則で判定します。
@@ -70,6 +70,9 @@ D2 の `尽きる` は、`こと` `点` `これ` `それ` が前に来る形だ�
 
 D25 はラベル用法だけを拾い、単語単体は拾いません。
 角括弧タグ（`[verified]` `[documented]`）、複合の造語（`evidence ledger` `証拠台帳` `run envelope` `zero-call` `ゼロコール`）、バケットの意味に限定した `witness bucket` / `witness オブジェクト`、スラッシュで結んだ `open / not measured` だけが対象です。
+ledger は、非公開の記録を指す複合形（`private ledger` `private run ledger` `run ledger` `Environment ledger`）だけを拾います。
+単独の `ledger`、一般語の「台帳」（アカウントの登録簿など）、兄弟リポジトリの文書名（`delegation-ledger.md` とそれを写したリンク文字列）は拾いません。
+単独の `ledger` と一般語の「台帳」は普通の語で、文書名は名前として引かれているためです。
 単語単体の `verified` `run` `証拠` や、動詞の `witnessed`（目撃した）、`unlocked`（ロック解除）、平叙文の `検証済み` `実行回数` は拾いません。
 D8 で英語の AI 語彙を見送ったのと同じ理由で、単語 1 つでは技術用法と区別できないためです。
 除外は 3 つあります。
