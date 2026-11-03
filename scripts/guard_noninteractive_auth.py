@@ -200,7 +200,7 @@ SELFTEST_CASES: list[tuple[str, str, str]] = [
         "the sshpass login that locked fsxadmin",
         (
             "export SSHPASS='secret'; sshpass -e ssh -o PreferredAuthentications=password"
-            " fsxadmin@172.30.131.210 'cluster peer create -peer-addrs 172.16.1.82'"
+            " fsxadmin@10.0.0.5 'cluster peer create -peer-addrs 172.16.1.82'"
         ),
     ),
     (
@@ -232,7 +232,7 @@ SELFTEST_CASES: list[tuple[str, str, str]] = [
     (
         "allow",
         "an interactive ssh a human types the password into",
-        "ssh fsxadmin@172.30.131.210",
+        "ssh fsxadmin@10.0.0.5",
     ),
     (
         "allow",
@@ -252,7 +252,7 @@ SELFTEST_CASES: list[tuple[str, str, str]] = [
     (
         "allow",
         "a plain reachability test, no credential",
-        "nc -z -w 5 172.30.131.210 22",
+        "nc -z -w 5 10.0.0.5 22",
     ),
     (
         "allow",
