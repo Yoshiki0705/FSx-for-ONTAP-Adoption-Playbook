@@ -199,7 +199,7 @@ add_text(
 add_panel(
     slide,
     "この資料の使い方",
-    "上から順に実行し、各スライドの停止条件を run ledger に記録する。\nOpen の操作は interface と証拠が揃うまで実行しない。",
+    "上から順に実行し、各スライドの停止条件を非公開の記録に書き留める。\nOpen の操作は interface と証拠が揃うまで実行しない。",
     0.75,
     4.2,
     5.7,
@@ -257,8 +257,10 @@ slide = new_slide("2. 全体構成", "NFS のデータ経路と、管理面の�
 add_image(slide, "gcp-fsx-ontap-peering-overview@2x.png", 0.75, 1.35, 11.85, 5.55)
 add_footer(slide, 3)
 
-# 4. Ledger and ownership
-slide = new_slide("3. 作業前の台帳", "値の推測をせず、対象・方向・所有者を先に固定する")
+# 4. Recorded values and ownership
+slide = new_slide(
+    "3. 作業前に記録する値", "値の推測をせず、対象・方向・所有者を先に固定する"
+)
 add_panel(
     slide,
     "GCP 側",
@@ -402,7 +404,7 @@ add_code(
 add_panel(
     slide,
     "SOURCE の一致",
-    "<nfs-endpoint>:<export-path> と台帳の値が一致すること。\n既存の run directory や marker があれば停止する。",
+    "<nfs-endpoint>:<export-path> と記録した値が一致すること。\n既存の run directory や marker があれば停止する。",
     8.0,
     1.55,
     4.6,
@@ -511,7 +513,7 @@ add_panel(
 add_panel(
     slide,
     "記録",
-    "source、destination、volume role、manifest、時刻、run ID を private ledger に保存する。",
+    "source、destination、volume role、manifest、時刻、run ID を非公開の記録に保存する。",
     0.7,
     4.75,
     11.8,
@@ -539,7 +541,7 @@ add_panel(
 add_panel(
     slide,
     "FlexCache origin",
-    "SVM: gcnv_peer_svm\nVolume: gcnv_flexcache_origin\nOrigin / cache directionを別台帳\nCreation interface: Open",
+    "SVM: gcnv_peer_svm\nVolume: gcnv_flexcache_origin\nOrigin / cache の方向は別に記録\nCreation interface: Open",
     4.8,
     1.55,
     3.8,
@@ -691,7 +693,7 @@ slide.shapes.add_picture(
 add_panel(
     slide,
     "画面の順序",
-    "VPC → VPC を作成\nSubnet → サブネットを作成\nRoute tables → ルートテーブルを作成\n\nCIDR、AZ、tag、VPC association は ledger と照合する。",
+    "VPC → VPC を作成\nSubnet → サブネットを作成\nRoute tables → ルートテーブルを作成\n\nCIDR、AZ、tag、VPC association は記録した値と照合する。",
     8.2,
     1.55,
     4.3,
@@ -761,7 +763,7 @@ add_footer(slide)
 # Beginner runbook: target discovery
 slide = new_slide(
     "実行手順 A | AWS 対象の discovery",
-    "最初に ID、SVM、volume role を読み取り、台帳と一致させる",
+    "最初に ID、SVM、volume role を読み取り、記録した値と一致させる",
 )
 add_code(
     slide,
@@ -774,7 +776,7 @@ add_code(
 add_panel(
     slide,
     "合格条件",
-    "file system / SVM / volume が台帳と一致。\nLifecycle が FAILED、対象が複数、role 不明なら停止。\nSVM endpoint と cluster management endpoint を分ける。",
+    "file system / SVM / volume が記録した値と一致。\nLifecycle が FAILED、対象が複数、role 不明なら停止。\nSVM endpoint と cluster management endpoint を分ける。",
     8.1,
     1.55,
     4.4,
@@ -813,7 +815,7 @@ add_code(
 add_panel(
     slide,
     "EC2 の選択条件",
-    "FSx for ONTAP の cluster management endpoint と NFS endpoint へ到達。\nTCP 22 / 2049 は必要 CIDR だけ許可。\n新規 EC2 は disposable、IAM role、subnet、SG、cleanup を台帳へ記録。",
+    "FSx for ONTAP の cluster management endpoint と NFS endpoint へ到達。\nTCP 22 / 2049 は必要 CIDR だけ許可。\n新規 EC2 は disposable、IAM role、subnet、SG、cleanup を非公開の記録へ書き留める。",
     8.1,
     1.55,
     4.4,
@@ -864,7 +866,7 @@ add_panel(
 add_panel(
     slide,
     "STOP",
-    "cluster peer: Unavailable\ncreate / initialize / break / resync / FlexCache create は実行しない。\n出力は private ledger に保存する。",
+    "cluster peer: Unavailable\ncreate / initialize / break / resync / FlexCache create は実行しない。\n出力は非公開の記録に保存する。",
     8.1,
     4.45,
     4.4,
@@ -905,7 +907,7 @@ add_panel(
 add_panel(
     slide,
     "両側の合格",
-    "fresh read を同じ run ID に記録\npeering state が両側で一致\nidentity、ownership、applications が台帳と一致\n欠けたら replication へ進まない",
+    "fresh read を同じ run ID に記録\npeering state が両側で一致\nidentity、ownership、applications が記録した値と一致\n欠けたら replication へ進まない",
     8.9,
     1.55,
     3.8,
@@ -996,7 +998,7 @@ add_image(
 )
 add_panel(
     slide,
-    "台帳",
+    "記録する値",
     "origin = <FSx for ONTAP SVM:volume>\ncache = <GCNV SVM:volume>\nclient protocol = NFS / SMB\ncache state query = <documented>",
     8.1,
     1.5,
@@ -1035,7 +1037,7 @@ add_image(
 )
 add_panel(
     slide,
-    "台帳",
+    "記録する値",
     "origin = <GCNV SVM:volume>\ncache = <FSx for ONTAP SVM:volume>\norigin/cache direction\nNFS / SMB access path",
     8.1,
     1.5,
@@ -1135,7 +1137,7 @@ add_panel(
 )
 add_text(
     slide,
-    "完了とは、全項目を実行することではなく、実行した項目と Open の項目を台帳で区別できる状態。",
+    "完了とは、全項目を実行することではなく、実行した項目と Open の項目を記録で区別できる状態。",
     0.9,
     6.3,
     11.5,
