@@ -21,6 +21,12 @@ findings where the truth was 9 — four false positives manufactured by the same
 asymmetry does not only hide findings; it also invents them**, so a clean run and a noisy run are
 equally untrustworthy while it is present.
 
+The same hole stayed open in `NAMING_RULES` after the bare-`FSx` rule beside it was fixed: the
+abbreviation `FSxN` and the two-word forms `FSx ONTAP` and `FSx NetApp` kept `\\b`, so `FSxNを使う` and
+`構成でFSxN` were not reported at all. The abbreviation is the one that matters. A bare-`FSx` rule
+cannot see it, because the `N` after `FSx` is a word character, so this rule was the only thing
+standing between that spelling and the tree. Found during a sibling repository's naming-gate work.
+
 Each case below pairs the Japanese-adjacent form with the spaced ASCII form. Testing only the
 Japanese form would let a fix that breaks ordinary English detection pass.
 """
@@ -38,6 +44,8 @@ AUDIT = ROOT / "tools" / "audit_public_output.py"
 
 sys.path.insert(0, str(ROOT / "tools"))
 
+from audit_public_output import audit_line
+
 # Each case: a label, the Japanese-adjacent text, and the spaced text that already worked.
 #
 # Both are positive. **A version with the boundaries deleted outright passes them both**, because
@@ -46,6 +54,20 @@ sys.path.insert(0, str(ROOT / "tools"))
 # mutation-testing its own equivalent: a guard-free version passed every positive case.
 CASES = [
     ("bare FSx", "FSxを使う構成です。", "The FSx deployment is ready."),
+    # The abbreviation, one side at a time. Japanese on both sides would fail if either boundary
+    # were wrong and so could not say which one. The right-hand form starts the line and the
+    # left-hand form ends it with a full stop (not a word character), so each leaves the other
+    # boundary to a plain edge.
+    (
+        "abbreviation, Japanese on the right",
+        "FSxNを使う構成です。",
+        "The FSxN deployment is ready.",
+    ),
+    (
+        "abbreviation, Japanese on the left",
+        "この構成でFSxN。",
+        "The deployment uses FSxN.",
+    ),
     (
         "account id",
         "アカウント987654321098の設定です。",
@@ -171,6 +193,68 @@ class RulesFireBesideJapanese(unittest.TestCase):
             0,
             f"an example.com address was rejected:\n{result.stdout}{result.stderr}",
         )
+
+
+# The spellings `NAMING_RULES` reports by name: (the message it gives, the spelling).
+SPELLINGS = [
+    ("use 'FSx for ONTAP'", "FSxN"),
+    ("use 'FSx for ONTAP' (missing 'for')", "FSx ONTAP"),
+    ("use 'Amazon FSx for NetApp ONTAP'", "FSx NetApp"),
+]
+
+# Each spelling inside something longer. None of these is the spelling, and a version with the
+# boundaries removed matches inside every one of them. `FSxN_OnPre` is a configured SVM name, which
+# is why `_` stays inside the boundary class.
+EMBEDDED = [
+    ("FSxN", "XFSxN is a scratch identifier."),
+    ("FSxN", "FSxNN appears in a generated name."),
+    ("FSxN", "FSxN_OnPre is a storage virtual machine name."),
+    ("FSxN", "識別子 FSxN_OnPre を使っています。"),
+    ("FSx ONTAP", "XFSx ONTAP is a scratch identifier."),
+    ("FSx ONTAP", "FSx ONTAP_X appears in a generated name."),
+    ("FSx NetApp", "XFSx NetApp is a scratch identifier."),
+    ("FSx NetApp", "FSx NetApp_X appears in a generated name."),
+]
+
+
+class SpellingsFireBesideJapanese(unittest.TestCase):
+    """The rule-level view of the three spellings, checked by the message each one gives.
+
+    The command-line cases above can only say that something was reported, and for two of these
+    that is not enough. `構成でFSx ONTAP` was already reported before the boundary was fixed, by the
+    bare-`FSx` rule and under the wrong message, so a test that asks only for a non-zero exit cannot
+    tell the repaired rule from the broken one. The message can.
+    """
+
+    def reported(self, line: str) -> list[str]:
+        return [
+            message for category, message in audit_line(line) if category == "naming"
+        ]
+
+    def test_the_three_fsx_spellings_fire_beside_japanese(self) -> None:
+        for message, spelling in SPELLINGS:
+            forms = {
+                "Japanese on the right": f"{spelling}を使う構成です。",
+                "Japanese on the left": f"この構成で{spelling}。",
+                "Japanese on both sides": f"構成で{spelling}を選ぶ。",
+            }
+            for where, line in forms.items():
+                with self.subTest(spelling=spelling, where=where):
+                    self.assertIn(message, self.reported(line))
+
+    def test_the_three_fsx_spellings_still_fire_when_spaced(self) -> None:
+        """A boundary fix must not trade one silence for another."""
+        for message, spelling in SPELLINGS:
+            with self.subTest(spelling=spelling):
+                line = f"The {spelling} deployment is ready."
+                self.assertIn(message, self.reported(line))
+
+    def test_the_three_fsx_spellings_ignore_embedded_forms(self) -> None:
+        """What a deleted boundary fails: the spelling inside a longer, legitimate name."""
+        message_for = {spelling: message for message, spelling in SPELLINGS}
+        for spelling, line in EMBEDDED:
+            with self.subTest(line=line):
+                self.assertNotIn(message_for[spelling], self.reported(line))
 
 
 if __name__ == "__main__":

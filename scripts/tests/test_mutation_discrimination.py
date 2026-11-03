@@ -201,6 +201,45 @@ MUTATIONS: list[dict] = [
         ],
     },
     {
+        # The three spellings in NAMING_RULES kept `\b` after the bare-`FSx` rule beside them had
+        # been fixed. Reading three patterns built from two constants, and one rule beside them
+        # written without, a reader "tidies" the three back - and the only thing that notices is a
+        # case with a Japanese character against the name.
+        "name": "naming spellings bounded by the word boundary again",
+        "why": (
+            "`FSxN`, `FSx ONTAP` and `FSx NetApp` went unreported beside Japanese for as long as "
+            "they used `\\b`, and restoring it passes every spaced ASCII case. Only a test that "
+            "puts a Japanese character against the name can tell the two apart."
+        ),
+        "module": "scripts.tests.test_cjk_word_boundaries",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                're.compile(ASCII_LEFT + r"FSxN" + ASCII_RIGHT)',
+                're.compile(r"\\bFSxN\\b")',
+            ),
+            (
+                "tools/audit_public_output.py",
+                r're.compile(ASCII_LEFT + r"FSx\s+ONTAP" + ASCII_RIGHT)',
+                r're.compile(r"\bFSx\s+ONTAP\b")',
+            ),
+            (
+                "tools/audit_public_output.py",
+                r're.compile(ASCII_LEFT + r"FSx\s+NetApp" + ASCII_RIGHT)',
+                r're.compile(r"\bFSx\s+NetApp\b")',
+            ),
+        ],
+        "must_fail": [
+            "test_the_three_fsx_spellings_fire_beside_japanese",
+            "test_japanese_adjacent_forms_are_reported",
+        ],
+        "must_pass": [
+            "test_the_three_fsx_spellings_still_fire_when_spaced",
+            "test_the_three_fsx_spellings_ignore_embedded_forms",
+            "test_spaced_ascii_forms_are_still_reported",
+        ],
+    },
+    {
         # Once the corpus is clean, leaving this category report-only restores the silent gap: the
         # informational target stays green while the required unscoped audit accepts the same term.
         "name": "sales vocabulary removed from the default audit",
@@ -935,6 +974,245 @@ MUTATIONS: list[dict] = [
         ],
         "must_fail": ["test_every_keyword_group_must_match_on_a_hop"],
         "must_pass": ["test_a_signposted_hop_via_the_llms_txt_description_passes"],
+    },
+    # A required name wrapped across a line break. Each entry below removes one decision from the
+    # code that reads a line together with its neighbours, and requires that a test about that
+    # decision - not just any test about wrapping - is the one that fails.
+    {
+        "name": "wrapped names are read one line at a time again",
+        "why": (
+            "Handing the audit no neighbours is the state before the fix. Every one-line case "
+            "still passes, and so does every violation, so only a test that wraps a correct name "
+            "can tell the two apart."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "yield index + 1, lines[index], in_fence, before, tuple(after)",
+                'yield index + 1, lines[index], in_fence, "", ()',
+            ),
+        ],
+        "must_fail": [
+            "test_for_ontap_split_across_lines_is_one_name",
+            "test_neighbours_are_the_adjacent_lines_of_the_same_run",
+        ],
+        "must_pass": [
+            "test_a_violation_wrapped_across_lines_is_still_reported",
+            "test_a_blank_line_ends_the_sentence",
+        ],
+    },
+    {
+        "name": "the line before is never read",
+        "why": (
+            "Looking ahead fixes `FSx for` / `ONTAP` and leaves `Amazon` / `FSx`, whose "
+            "exemption is a lookbehind. A fix that handles the case in the issue and not its "
+            "mirror image passes every `for ONTAP` test."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'before = lines[index - 1] if index and inside[index - 1] is not None else ""',
+                'before = ""',
+            ),
+        ],
+        "must_fail": [
+            "test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line",
+            "test_neighbours_are_the_adjacent_lines_of_the_same_run",
+        ],
+        "must_pass": ["test_for_ontap_split_across_lines_is_one_name"],
+    },
+    {
+        "name": "the lookahead stops after the next line",
+        "why": (
+            "One line ahead handles `FSx for` / `ONTAP`. A narrow editor wraps `FSx for NetApp "
+            "ONTAP` at every space, which leaves three lines after the `FSx`."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "CONTINUATION_LINES = 3",
+                "CONTINUATION_LINES = 1",
+            ),
+        ],
+        "must_fail": [
+            "test_for_ontap_split_across_lines_is_one_name",
+            "test_count_does_not_depend_on_where_a_sentence_is_wrapped",
+        ],
+        "must_pass": [
+            "test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line",
+            "test_a_blank_line_ends_the_sentence",
+        ],
+    },
+    {
+        "name": "a blank line no longer ends the lookahead",
+        "why": (
+            "Skipping the blank-line check is the shortest way to read further, and it joins two "
+            "paragraphs: `FSx for` ending one and `ONTAP` starting the next would pass as one "
+            "name, so a real violation disappears into the paragraph below it."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "if not words.strip():",
+                "if False:",
+            ),
+        ],
+        "must_fail": ["test_a_blank_line_ends_the_sentence"],
+        "must_pass": [
+            "test_for_ontap_split_across_lines_is_one_name",
+            "test_a_full_stop_ends_the_sentence",
+        ],
+    },
+    {
+        "name": "only indentation is dropped from a neighbouring line",
+        "why": (
+            "Indentation is the marker every wrapped line has, so stripping it looks complete. A "
+            "wrapped shell or YAML comment starts with `#` and a wrapped block quote with `>`, "
+            "and the marker would end the sentence."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'CONTINUATION_PREFIX = re.compile(r"[ \\t]*(?:[#>][ \\t]*)*")',
+                'CONTINUATION_PREFIX = re.compile(r"[ \\t]*")',
+            ),
+        ],
+        "must_fail": ["test_comment_and_quote_markers_do_not_end_the_sentence"],
+        "must_pass": ["test_indentation_does_not_end_the_sentence"],
+    },
+    {
+        "name": "a list marker is dropped from a neighbouring line",
+        "why": (
+            "Widening the prefix to bullets makes a wrapped list item work and joins separate "
+            "items: `- ... FSx` followed by `- for ONTAP ...` would pass as one name, which is "
+            "two different sentences."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'CONTINUATION_PREFIX = re.compile(r"[ \\t]*(?:[#>][ \\t]*)*")',
+                'CONTINUATION_PREFIX = re.compile(r"[ \\t]*(?:[#>*+-][ \\t]*)*")',
+            ),
+        ],
+        "must_fail": ["test_a_list_item_or_table_row_ends_the_sentence"],
+        "must_pass": [
+            "test_comment_and_quote_markers_do_not_end_the_sentence",
+            "test_indentation_does_not_end_the_sentence",
+        ],
+    },
+    {
+        "name": "the line's own marker is left in the joined text",
+        "why": (
+            "The line before is cleaned and the line itself is not, so `Amazon` ends one line "
+            "and `# FSx` starts the next with a marker between them. The lookbehind needs "
+            "`Amazon` and one whitespace character directly before the name."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "lead = CONTINUATION_PREFIX.match(prose).end()",
+                "lead = 0",
+            ),
+        ],
+        "must_fail": ["test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line"],
+        "must_pass": ["test_for_ontap_split_across_lines_is_one_name"],
+    },
+    {
+        "name": "a neighbour's finding is reported on this line",
+        "why": (
+            "Searching the whole joined text and returning on any match is the simplest "
+            "implementation. It moves a finding to the line beside the one that has it, so "
+            "the report points at the wrong line and a clean line is reported."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "if not line_start <= match.start() < line_end:",
+                "if False:",
+            ),
+        ],
+        "must_fail": ["test_a_neighbours_violation_is_reported_on_its_own_line_only"],
+        "must_pass": [
+            "test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line",
+            "test_a_violation_wrapped_across_lines_is_still_reported",
+        ],
+    },
+    {
+        "name": "a neighbouring line is read with its links and code spans",
+        "why": (
+            "The line itself has its links and code spans blanked before the name is judged, and "
+            "its neighbours are the same text. Skipping that for them lets a URL ending in "
+            "`Amazon` qualify the next line's `FSx`."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'return CONTINUATION_PREFIX.sub("", NON_PROSE.sub(_blank, line), count=1)',
+                'return CONTINUATION_PREFIX.sub("", line, count=1)',
+            ),
+        ],
+        "must_fail": [
+            "test_a_link_at_the_end_of_the_previous_line_is_not_the_word_amazon"
+        ],
+        "must_pass": [
+            "test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line",
+            "test_for_ontap_split_across_lines_is_one_name",
+        ],
+    },
+    {
+        "name": "a code fence joins the lines on either side of it",
+        "why": (
+            "Letting the neighbours include the delimiter lines is the simplest way to build "
+            "them. The backticks of a delimiter happen to stop a name pattern, so every "
+            "end-to-end case stays green; only the generator's own output shows that a fence "
+            "no longer ends the sentence."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                'before = lines[index - 1] if index and inside[index - 1] is not None else ""',
+                'before = lines[index - 1] if index else ""',
+            ),
+            (
+                "tools/audit_public_output.py",
+                "if inside[following] is None:",
+                "if False:",
+            ),
+        ],
+        "must_fail": ["test_a_fence_delimiter_is_not_read_and_is_not_a_neighbour"],
+        "must_pass": [
+            "test_neighbours_are_the_adjacent_lines_of_the_same_run",
+            "test_a_fence_closes_only_on_a_line_of_its_own_kind",
+        ],
+    },
+    {
+        "name": "the identifier window ignores the lines joined above it",
+        "why": (
+            "The identifier exemption slices the line around the match, and the match is found "
+            "in the joined text. Using the match position unshifted looks in the wrong place "
+            "whenever a line above is long, which only happens with neighbours, so every "
+            "existing identifier test (all of them single-line) stays green."
+        ),
+        "module": "scripts.tests.test_wrapped_names",
+        "edits": [
+            (
+                "tools/audit_public_output.py",
+                "window = prose[max(0, match.start() - shift - 12) : match.end() - shift + 12]",
+                "window = prose[max(0, match.start() - 12) : match.end() + 12]",
+            ),
+        ],
+        "must_fail": ["test_an_identifier_is_exempt_whatever_the_neighbours_are"],
+        "must_pass": ["test_amazon_at_the_end_of_a_line_still_qualifies_the_next_line"],
     },
 ]
 
