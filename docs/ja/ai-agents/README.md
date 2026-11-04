@@ -25,7 +25,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 
 ## 収録エージェント
 
-現時点で AWS が提供するマネージド AI エージェントを網羅した一覧です。AI Modernization Flow だけは aws-samples のサンプルで、マネージドサービスではありません。**提供状態は変わるので、各エージェントの状態は 2026-09 時点の公式ドキュメント調査に基づきます。** 本番採用前に最新の提供状態を確認してください。
+現時点で AWS が提供するマネージド AI エージェントを網羅した一覧です。AI Modernization Flow だけは aws-samples のサンプルで、マネージドサービスではありません。**提供状態は変わるので、各エージェントの状態は 2026-09 時点の公式ドキュメント調査に基づきます。** AWS Security Agent の行だけは、機能ごとに状態が分かれたため 2026-11-04 に再確認しました。本番採用前に最新の提供状態を確認してください。
 
 読み方は 2 つの軸で決めます。「そのエージェントが何をするか（役割）」と、「FSx for ONTAP がそのエージェントにどう関わるか（関わり方）」です。役割は AWS 全体に対するもので、関わり方は FSx for ONTAP との接点の種類を表します。
 
@@ -35,7 +35,7 @@ AWS が提供するマネージド AI エージェント（AWS DevOps Agent, AWS
 | AWS FinOps Agent | コストの異常を調査し、最適化の余地を示す | **コスト対象**（Cost Explorer などの課金データ経由） | Public Preview | [AWS FinOps Agent を FSx for ONTAP のコスト運用に使う](finops-agent/README.md) |
 | Amazon Quick | ファイルを使う AI アシスタント・レポートを生成する | **データソース**（S3 Access Points 経由でナレッジベース化） | GA | [Amazon Quick を FSx for ONTAP のデータソースにする](quick/README.md) |
 | Amazon Bedrock Knowledge Base | RAG・生成 AI にナレッジを供給する | **データソース**（S3 Access Points 経由。実装で検証済み） | GA | [Bedrock Knowledge Base のデータソースに FSx for ONTAP を使う](bedrock-knowledge-base/README.md) |
-| AWS Security Agent | アプリのセキュリティを検証する（現在は AWS Continuum の一部） | **アプリ経由**（FSx for ONTAP を使うアプリのコードのみ。管理面は見ない） | GA | [AWS Security Agent はアプリを検証し、FSx for ONTAP の設定は検証しない](security-agent/README.md) |
+| AWS Security Agent | アプリのセキュリティを検証する（現在は AWS Continuum の一部） | **アプリ経由**（FSx for ONTAP を使うアプリのコードのみ。管理面は見ない） | 機能ごとに異なる（2026-11-04 確認）。侵入テスト: GA / コード脆弱性: GA（2026-10-22〜） / コードスキャン・脅威モデリング・設計レビュー: Preview | [AWS Security Agent はアプリを検証し、FSx for ONTAP の設定は検証しない](security-agent/README.md) |
 | AWS Transform | コード・ワークロードを移行・変換する | **移行先**（移行先ストレージに FSx for ONTAP を選択可） | GA | [移行の項へ](#aws-transform-の既存ページへの集約) |
 | AI Modernization Flow（以降 AIMF） | AI エージェントに決められた段階でアプリケーションコードを移行させるワークフロー | **アプリ移行の相棒**（マネージド AWS エージェントではなく、アプリのコードを移すワークフロー。データ側をこのリポジトリが受け持つ） | サンプル（aws-samples、2026-10 確認） | [AI Modernization Flow はアプリ側を移し、このリポジトリがデータ側を受け持つ](ai-modernization-flow/README.md) |
 | Amazon Bedrock Managed Agents (OpenAI) | OpenAI harness ベースのエージェント runtime | 直接の接点は薄い（AgentCore 上の runtime） | Limited Preview | _対象外_ |

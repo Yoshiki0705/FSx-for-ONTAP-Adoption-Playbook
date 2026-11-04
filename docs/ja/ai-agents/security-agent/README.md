@@ -8,6 +8,8 @@
 
 AWS Security Agent（現在は AWS Continuum の一部）を Amazon FSx for NetApp ONTAP 運用に重ねられるかを扱います。**結論から言うと、ストレージ運用には直接使えません。** このエージェントが検証するのはアプリケーション（設計文書・ソースコード・実行中のアプリ）で、FSx for ONTAP の管理面（ストレージ設定・権限）は見ません。**このページの主眼は、何を検証し何を検証しないかの境界を示すことです。**
 
+**提供状態は機能ごとに異なります（2026-11-04 確認）。** 侵入テストとコード脆弱性は GA、コードスキャン・脅威モデリング・設計レビューは Preview です。内訳は [Security Agent とは](#security-agent-とはdocumented)の表にあります。
+
 ---
 
 ## このページの但し書き
@@ -21,16 +23,19 @@ AWS Security Agent（現在は AWS Continuum の一部）を Amazon FSx for NetA
 
 ## Security Agent とは（documented）
 
-AWS Security Agent は、**開発ライフサイクル全体のアプリケーションセキュリティ**を対象とするエージェントです。AWS Continuum の一部として提供されます。用途は次の 4 つです。
+AWS Security Agent は、**開発ライフサイクル全体のアプリケーションセキュリティ**を対象とするエージェントです。2026-06-17 に AWS Continuum へ統合され、機能名は「Continuum for 〜」に変わりました。用途と提供状態は次のとおりです。
 
-| 用途 | 対象 |
-|---|---|
-| 設計セキュリティレビュー | 設計文書。コードを書く前の段階でセキュリティ要件との整合を評価する |
-| 脅威モデリング | 設計文書・ソースコード。STRIDE 分類で脅威を洗い出す |
-| コードセキュリティレビュー | GitHub / GitLab / Bitbucket / S3 buckets のソースコード。脆弱性を検出し修正の PR を作る |
-| オンデマンド侵入テスト | 実行中アプリの URL・認証情報・ソースコード。多段の攻撃シナリオで脆弱性を検証する |
+| 用途（Continuum での名称） | 対象 | 提供状態（2026-11-04 確認） |
+|---|---|---|
+| オンデマンド侵入テスト（Continuum for penetration testing） | 実行中アプリの URL・認証情報・ソースコード。多段の攻撃シナリオで脆弱性を検証する | GA |
+| コード脆弱性（Continuum for code vulnerabilities） | GitHub または S3 のコードと AWS 環境の情報。悪用可能かを隔離環境で確かめ、修正の PR を作る。発表時の限定プレビューから 2026-10-22 に GA。US East (N. Virginia) と US West (Oregon) で提供 | GA |
+| コードセキュリティレビュー（Continuum code scanning） | GitHub / GitLab / Bitbucket / S3 buckets のソースコード。脆弱性を検出し修正の PR を作る | Preview |
+| 脅威モデリング（Continuum for threat modeling） | 設計文書・ソースコード。STRIDE 分類で脅威を洗い出す | Preview |
+| 設計セキュリティレビュー（Continuum for design security review） | 設計文書。コードを書く前の段階でセキュリティ要件との整合を評価する | Preview |
 
-**対象はいずれもアプリケーション層です**（設計文書、ソースコード、実行中のアプリ）。ストレージの管理面設定を評価する用途ではありません。提供状態は **GA**（AWS Continuum の一部、2026-09 調査時点）。
+**状態の出典は発表記事で、ユーザーガイドの機能ページには提供状態の記載がありません。** 侵入テストの GA は 2026-06 の AWS News Blog と 2026-09-30 の What's New（6 リージョン追加）、コード脆弱性の GA は 2026-10-22 の What's New、Preview の 3 機能は 2026-06-17 前後の What's New と AWS News Blog に基づきます。2026-11-04 に What's New と AWS のブログを検索し、Preview の 3 機能について GA を告げる発表は見つかりませんでした。これは「発表されていない」ことの証明ではないので、採用前に Security Agent のコンソールで確認してください。
+
+**侵入テスト・コードスキャン・脅威モデリング・設計レビューの対象は、いずれもアプリケーション層です**（設計文書、ソースコード、実行中のアプリ）。ストレージの管理面設定を評価する用途ではありません。コード脆弱性だけは、AWS 環境の情報（AWS Config のリソース、ネットワーク構成）を集めて到達可能性の判断に使います。その情報に FSx for ONTAP の設定が含まれるか、含まれた場合に評価の対象になるかは確認していません。
 
 ---
 
@@ -76,12 +81,18 @@ AWS Security Agent は、**開発ライフサイクル全体のアプリケー�
 
 **いずれもアプリに対する検証です。** FSx for ONTAP のストレージ運用そのものを Security Agent が改善するわけではありません。ストレージ側の検証は別に用意する前提で導入を判断してください。
 
+侵入テストにどのデータを触らせるか、テスト中にストレージ層のどの検知が反応するか、自動修復の段階を上げるときの戻り先は、ストレージ側の決定木として Spoke にまとめています。内容は [Continuum と Security Agent の時代にストレージ層で決めておくこと](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/architecture/continuum-security-agent-and-storage.md)にあります（Spoke、未デプロイ）。
+
 ---
 
 ## 参考資料（一次情報）
 
 - [What is AWS Security Agent (now part of AWS Continuum)（AWS 公式ドキュメント）](https://docs.aws.amazon.com/securityagent/latest/userguide/what-is.html) — 用途（設計レビュー / 脅威モデリング / コードレビュー / 侵入テスト）、対象、マルチクラウド対応
 - [AWS Security Agent on-demand penetration testing GA 告知](https://aws.amazon.com/about-aws/whats-new/2026/03/aws-security-agent-ondemand-penetration/) — オンデマンド侵入テストの提供
+- [Introducing AWS Continuum for security at machine speed（What's New、2026-06）](https://aws.amazon.com/about-aws/whats-new/2026/06/aws-continuum/) — Continuum 統合。侵入テストとコードスキャンの改称、コードスキャンと脅威モデリングが Preview
+- [AWS Security Agent adds threat modeling, Kiro power and Claude Code plugin, and more（AWS News Blog）](https://aws.amazon.com/blogs/aws/aws-security-agent-adds-threat-modeling-kiro-power-and-claude-code-plugin-and-more) — 設計レビューと脅威モデリングが Preview、侵入テストが GA と記載
+- [AWS Continuum for Penetration Testing now available in 6 additional Regions（What's New、2026-09-30）](https://aws.amazon.com/about-aws/whats-new/2026/09/aws-continuum-penetration/) — 侵入テストのリージョン追加
+- [AWS Continuum for code vulnerabilities is now generally available（What's New、2026-10）](https://aws.amazon.com/about-aws/whats-new/2026/10/aws-continuum-for-code-vulnerabilities-is-now-generally-available/) — コード脆弱性の GA
 
 ---
 
@@ -91,6 +102,7 @@ AWS Security Agent は、**開発ライフサイクル全体のアプリケー�
 - [Domain — セキュリティ・ガバナンス](../../domains/security-governance/) — FSx for ONTAP 側の権限設計・監査（Security Agent の対象外の領域）
 - [S3 Access Point の権限設計 — 2 層の評価](../../domains/security-governance/notes/access-point-authorization-layers.md) — Security Agent が評価しないストレージ側の認可
 - [S3 Access Points は全リクエストを 1 つの ID で認可する](../../domains/data-utilization/notes/reaching-data-without-copies.md) — ストレージ側の設計判断
+- [Continuum と Security Agent の時代にストレージ層で決めておくこと](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/architecture/continuum-security-agent-and-storage.md) — 侵入テストに触らせるデータ、テスト中に反応するストレージ層の検知、自動修復の段階を上げるときの戻り先の 3 つの決定木。FlexClone による隔離手順と CloudFormation テンプレートを含む（Spoke、未デプロイ）
 
 ---
 
