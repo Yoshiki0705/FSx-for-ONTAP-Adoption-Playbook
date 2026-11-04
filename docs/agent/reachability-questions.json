@@ -566,6 +566,69 @@
         {"path": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations:docs/en/verification-results-cloudwatch-monitoring.md"}
       ],
       "rationale": "The Terraform module and its verification record are published by the observability integrations repository; the Hub states the verified scope and links the release rather than restating the module. The English module README is a README.md, which this gate treats as a route, so the English answer is the verification record."
+    },
+    {
+      "id": "wl-ontap-version-command-api-diff",
+      "question": "After an ONTAP version update on FSx for ONTAP, how do I find out which commands and REST APIs the administrator can use changed?",
+      "keywords": [
+        {
+          "en": ["ONTAP version", "version update", "version"],
+          "ja": ["ONTAP バージョン", "バージョン", "版"]
+        },
+        {
+          "en": ["CLI commands", "commands", "REST API", "REST APIs"],
+          "ja": ["コマンド", "REST API"]
+        }
+      ],
+      "category": "workload",
+      "scope": "hub",
+      "targets": [
+        {"path": "docs/ja/reference/ontap-commands-and-apis.md"},
+        {"path": "docs/en/reference/ontap-commands-and-apis.md"}
+      ],
+      "rationale": "The entry page for ONTAP commands, REST APIs, and permissions routes a version change to the snapshot Lambda that keeps a diff."
+    },
+    {
+      "id": "wl-fsxadmin-commands-and-apis",
+      "question": "How do I list the ONTAP CLI commands and REST APIs available to fsxadmin in my own environment?",
+      "keywords": [
+        {
+          "en": ["fsxadmin", "administrator", "admin"],
+          "ja": ["fsxadmin", "管理者"]
+        },
+        {
+          "en": ["CLI commands", "commands", "REST API", "REST APIs", "permissions"],
+          "ja": ["コマンド", "REST API", "権限"]
+        }
+      ],
+      "category": "workload",
+      "scope": "hub",
+      "targets": [
+        {"path": "docs/ja/reference/ontap-commands-and-apis.md"},
+        {"path": "docs/en/reference/ontap-commands-and-apis.md"}
+      ],
+      "rationale": "The entry page routes the question to the Spoke snapshot document and the snapshot Lambda, with the comparison of ways to take the record."
+    },
+    {
+      "id": "wl-mav-on-fsx-for-ontap",
+      "question": "Can fsxadmin enable Multi-Admin Verification (MAV) on FSx for ONTAP?",
+      "keywords": [
+        {
+          "en": ["MAV", "multi-admin", "Multi-Admin Verification"],
+          "ja": ["MAV", "複数管理者"]
+        },
+        {
+          "en": ["fsxadmin", "FSx for ONTAP"],
+          "ja": ["fsxadmin", "FSx for ONTAP"]
+        }
+      ],
+      "category": "workload",
+      "scope": "hub",
+      "targets": [
+        {"path": "docs/ja/reference/ontap-commands-and-apis.md"},
+        {"path": "docs/en/reference/ontap-commands-and-apis.md", "anchor": "scope-of-the-mav-observations"}
+      ],
+      "rationale": "The target is the section that states the scope of the Spoke's observation (one environment, one version, fsxadmin) without answering yes or no, so the Hub does not assert that MAV is unavailable."
     }
   ]
 }
