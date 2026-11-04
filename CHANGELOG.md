@@ -9,6 +9,21 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Fixed
 
+- **`retraction` names the verdict, not the cause, and the failure message offered "moved or
+  retracted" as though those were the only two.** Four things produce the same vanished probe:
+  withdrawn, moved, reworded, or — where the probe carries an absence ("not in the specification
+  table", "not stated in public documentation") — **the absence stopped being true, which is the
+  cited side learning something rather than retracting anything.** The message now names all four and
+  says an edit is needed here either way. The `reread` case says plainly that an added measurement
+  rewrote a range and the finding may still stand.
+  - **The role vocabulary stays at two values deliberately.** A third would arrive at the published
+    contract's readers as unrecognized, and a sibling repository has already wired a gate that fails
+    on an unknown role — correctly. **The distinction belongs in the message, not in the interface.**
+  - Reported by that sibling, from the concrete case: the day it establishes why SMB Multichannel
+    stops at four channels, `そうなったのかは**確認していない**` disappears and this gate fails
+    **labelled as a withdrawal, on progress.**
+  - **Only the message changed.** No verdict changed, and the contract payload is byte-identical —
+    the regenerated file differs in its comment header alone.
 - **The writing-style detector (D25) now also flags the compounds that name the private record: `private ledger`, `private run ledger`, `run ledger` and `Environment ledger`.**
   Why: about 130 uses of those compounds reached six public GCP pages without a single warning, because D25 matched only `evidence ledger` and `証拠台帳`. The pages were fixed in the previous change; this one closes the gap so the wording cannot return unseen. Level stays `warning`, so no gate changes.
   - Matched in English and in Japanese prose (the Japanese pattern carries no word boundary, since Japanese characters count as word characters and a compound written right after a kana has none). Case is ignored.
