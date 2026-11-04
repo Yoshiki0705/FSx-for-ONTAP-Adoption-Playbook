@@ -138,6 +138,8 @@ the version, so the retrieval path is itself worth recording.
 > VPC and was not reached. **Where a section below states ONTAP 9.17.1P7D1, that applies only to
 > verification performed on that one file system.**
 
+バージョンが上がるたびに、管理者が使えるコマンドと REST API がどう変わったかを記録する手段の 1 つとして、Spoke に [ONTAP カタログのスナップショット Lambda](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/solutions/ontap-catalog-snapshot/README.md) があります。実機で確認されているのは 1 環境・1 バージョン（ONTAP 9.18.1P6）・`fsxadmin` のみで、それ以外は未確認です。
+
 ### 管理エンドポイントへの到達方法 / Reaching the management endpoint
 
 管理エンドポイントは VPC 内のプライベート IP です。**同一 VPC の EC2 に Session Manager の
