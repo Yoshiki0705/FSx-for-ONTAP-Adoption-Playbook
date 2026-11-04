@@ -511,6 +511,11 @@ def main() -> int:
         payload = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
         payload = {"command": raw}
+    if not isinstance(payload, dict):
+        # Valid JSON that is not an object (`[]`, `null`, a bare string, a number) has no `.get`,
+        # so extract_command crashed with exit 1 - a warning that lets the call proceed
+        # unchecked. Treat it as text, the same as input that is not JSON at all.
+        payload = {"command": raw}
 
     command = extract_command(payload)
     areas, matches = find_matches(command)

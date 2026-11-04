@@ -121,6 +121,28 @@ class GuardContract(unittest.TestCase):
             "exit 1 is a warning that does not block; the guard must never use it",
         )
 
+    def test_json_that_is_not_an_object_is_inspected_not_crashed_on(self) -> None:
+        """`[]`, `null`, a bare string and a number used to exit 1, which lets the call through."""
+
+        def feed(text: str) -> int:
+            return subprocess.run(
+                [sys.executable, str(GUARD)],
+                input=text,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            ).returncode
+
+        for text in ("[]", "null", '"plain"', "123", "true"):
+            with self.subTest(event=text):
+                self.assertEqual(feed(text), 0)
+        # The text is still inspected: a blockable command inside a non-object event blocks.
+        blockable = next(c for want, _d, c in guard.SELFTEST_CASES if want == 2)
+        for wrapped in (json.dumps(blockable), json.dumps([blockable])):
+            with self.subTest(event=wrapped[:30]):
+                self.assertEqual(feed(wrapped), 2)
+
 
 class GuardCorpus(unittest.TestCase):
     """Run the in-file corpus through the real process, not just the matcher."""
