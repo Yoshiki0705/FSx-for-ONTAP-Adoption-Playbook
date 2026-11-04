@@ -390,6 +390,14 @@ lang: ja
 | `llms.txt` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | LLM 向け索引の Spoke 行から、バージョンごとの管理者コマンド・REST API の記録手段への導線。内容はそちらが持ちます |
 | `docs/en/playbooks/05-operate/README.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | 同上（EN 版） |
 | `docs/ja/playbooks/05-operate/notes/admin-account-lockout-and-recovery.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | 認証情報を大量に使う処理が、最初の認証失敗で止まる設計。本ノートのロック挙動と整合する実装例の所在 |
+| `docs/ja/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/ontap-command-api-snapshot.md` | `MAV は ONTAP に存在し、` | `retraction` | MAV の観測の所在。**入口ページは MAV が使えるか使えないかを書かず、観測の範囲（1 環境・1 版・`fsxadmin`）とリンクだけを置きます。** 観測が書き換わると、入口ページの MAV の節を読み直します |
+| `docs/ja/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/ontap-command-api-snapshot.md` | `は、実測で確かめたためです` | `retraction` | `show-user-capability` が実行できるコマンドの一覧だと言える根拠の所在。根拠が変わると、入口ページの説明を読み直します |
+| `docs/ja/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | 版ごとに管理者が使えるコマンドと REST API を記録する Lambda の所在。内容はそちらが持ちます |
+| `docs/ja/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/agent-prompts/ontap-catalog-snapshot.md` | `このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい` | `retraction` | Lambda を AI エージェントに実装・導入させるプロンプトの所在 |
+| `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/ontap-command-api-snapshot.md` | `MAV は ONTAP に存在し、` | `retraction` | 同上（EN 版）。MAV の観測の所在 |
+| `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/ontap-command-api-snapshot.md` | `は、実測で確かめたためです` | `retraction` | 同上（EN 版）。`show-user-capability` が実行できるコマンドの一覧だと言える根拠の所在。根拠が変わると、入口ページの説明を読み直します |
+| `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | 同上（EN 版）。版ごとに管理者が使えるコマンドと REST API を記録する Lambda の所在。内容はそちらが持ちます |
+| `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/agent-prompts/ontap-catalog-snapshot.md` | `このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい` | `retraction` | 同上（EN 版）。Lambda を AI エージェントに実装・導入させるプロンプトの所在 |
 <!-- cross-repo-table:end -->
 
 ---
