@@ -1105,6 +1105,28 @@ def selftest() -> int:
     )
     check(prompt_text("{not json") == "{not json", "malformed JSON is treated as text")
 
+    # A prompt with no distinctive term must not pay for finding the sibling clones.
+    import io
+    from contextlib import redirect_stdout
+
+    class _Piped(io.StringIO):
+        def isatty(self) -> bool:
+            return False
+
+    calls: list[object] = []
+    real_discover, real_stdin = globals()["discover"], sys.stdin
+    globals()["discover"] = lambda *a, **k: calls.append(a) or []
+    sys.stdin = _Piped('{"prompt": "マージしてください。"}')
+    try:
+        with redirect_stdout(io.StringIO()) as printed:
+            status = main(["--digest"])
+    finally:
+        globals()["discover"], sys.stdin = real_discover, real_stdin
+    check(
+        status == 0 and not calls and printed.getvalue() == "",
+        "a prompt with no distinctive term skips discovery and prints nothing",
+    )
+
     if failures:
         print("selftest FAILED:", file=sys.stderr)
         for label in failures:
@@ -1154,6 +1176,16 @@ def main(argv: list[str] | None = None) -> int:
 
     here = toplevel(Path.cwd()) or ROOT
     roots = [*args.root, *default_roots(here)] if args.root else None
+
+    text = ""
+    if args.digest:
+        text = prompt_text(sys.stdin.read()) if not sys.stdin.isatty() else ""
+        # Finding the sibling clones costs about 75 git calls (0.27 s measured), and this runs on
+        # every prompt. A prompt with no distinctive term has nothing to look up, so say nothing
+        # before paying for it. ``focused_terms`` returns empty in exactly this case.
+        if not candidate_terms(text):
+            return 0
+
     repos = discover(here, roots, include_current=args.include_current)
     if not repos:
         print(
@@ -1164,7 +1196,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.digest:
-        text = prompt_text(sys.stdin.read()) if not sys.stdin.isatty() else ""
         out = digest(text, repos)
         if out:
             print(out)
