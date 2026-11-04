@@ -31,6 +31,7 @@
 | Writing "not measured / 未確認" (or proposing to verify something) when a Spoke already investigated it | Run `make spoke-search Q='<term>'` first, then check [`performance-evidence-map.md`](../ja/reference/performance-evidence-map.md) (NFS / SMB / iSCSI / NVMe-oF / S3 Access Points / FlexCache, with environment) and [`cross-repo-index.md`](../ja/reference/cross-repo-index.md). This happened twice. A data-utilization note called the FSx-for-ONTAP shared-file layer unverified while NFS/SMB multi-host and S3 Access Points throughput were already measured; the maps were linked from the home README but not from the `domains/` notes where it was written. Then a genomics note and its follow-up check treated HealthOmics with S3 Access Points as untried, while a Spoke already held a feature request and two evidence-ledger entries on it. In both, the reader of the note could not have known, and neither could the agent writing it. `scripts/guard_unverified_claims.py` now blocks that write ([how it decides](domain-knowledge.md#before-you-write-unverified)) |
 | **Telling a reader to contact AWS or NetApp Support** | `make audit` fails (`support-referral`). Publish the mechanism instead; if there is genuinely no answer yet, the open question belongs in `.private/` |
 | Writing "this cannot be done" from your own observations alone | Search first. See [Concluding that something is impossible](#concluding-that-something-is-impossible) |
+| A read-only command stopped by the irreversible-operations guard | The guard matches the command string, not the intent. See [Inspecting the guard without tripping it](#inspecting-the-guard-without-tripping-it) |
 
 ## Silencing the audit
 
@@ -504,3 +505,28 @@ Two properties a mutation must have, both learned by getting them wrong:
   the mutation reads as killed, and one site is unguarded. Zero was already caught; two was not.
 - **A plausible wrong fix, not an arbitrary corruption.** Arbitrary damage is killed by every case, so
   it says nothing about the specific guard.
+
+### Inspecting the guard without tripping it
+
+**`scripts/guard_irreversible_ops.py` judges the text of a command, not what the command does.** A
+read-only `grep` whose arguments name an immutability feature next to a mutating-looking verb is
+blocked the same as the real operation. This happened while comparing the guard against an older
+copy: a keyword list passed on the command line stopped the comparison, and the session then
+stalled without a clear reason.
+
+The block is correct behaviour. **Do not rewrite the string to slip past the pattern**; that is the
+bypass the guard exists to prevent, and `AGENTS.md` says the same about the self-test.
+
+Compare the guard without putting feature names on the command line:
+
+| Question | Command that does not cross the shell with a keyword |
+|---|---|
+| Do two copies match | `cmp <copy-a> <copy-b>` (exit 0 means byte-identical) |
+| Does a copy still block, ask and allow correctly | `python3 <guard> --selftest` (cases live inside the file) |
+| Which copy is newer or larger | `ls -la`, `wc -l` |
+| Does one copy contain every line of the other | `comm -23 <(sort -u a) <(sort -u b)`; a non-zero count can be a rewrite, so confirm with `--selftest` |
+
+A copy without `--selftest` cannot be checked for coverage at all, so treat it as stale and replace it
+with the tracked script. The hook under `~/.kiro/hooks/scripts/` is a hand-made copy: it applies in
+every repository, while the tracked hook applies only in this one, so the two are kept byte-identical
+and re-checked with `cmp` after the tracked script changes.
