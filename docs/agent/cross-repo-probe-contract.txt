@@ -42,6 +42,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mappi
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
+FSx-for-ONTAP-Cyber-Resilience-Patterns	solutions/ontap-catalog-snapshot/README.md	retraction	最初の認証失敗で全体を止める
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	require metadata operations that fail on S3 AP
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
