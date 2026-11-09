@@ -80,12 +80,24 @@ DP_SECURITY_NOTES = (
     "docs/ja/domains/data-utilization/notes/fpolicy-fits-by-how-writes-land.md",
 )
 
+# Cited without a fragment from `S3-Burst-on-ONTAP-Files`' verification-status and
+# multi-cloud-connectivity documents, as the Hub-side record of the FSx-for-ONTAP-origin ->
+# GCNV-ONTAP-mode-cache FlexCache peering direction. The spoke links the file, not a section, so it
+# is path-only: a heading rename inside it breaks nothing for that side, a file move breaks the link.
+# JA and EN are both cited, so both are listed. The spoke's gate refuses an unlisted citation target,
+# so the path is registered here before the citation is written there.
+GCNV_PEERING_NOTES = (
+    "docs/ja/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md",
+    "docs/en/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md",
+)
+
 # Cited from outside by path only, with no fragment. Declared rather than inferred: this repository
 # cannot see the citing side, so only the citing repository knows which form it uses.
 PATH_ONLY = frozenset(
     {
         *PROTOCOL_TIERING_NOTES,
         *DP_SECURITY_NOTES,
+        *GCNV_PEERING_NOTES,
         "docs/ja/reference/decision-trees/access-point-authorization.md",
         "docs/ja/navigation.md",
         "docs/en/README.md",
@@ -267,6 +279,7 @@ def tracked_files() -> list[Path]:
         *(ROOT / rel for rel in HIGH_FILE_COUNT_NOTES),
         *(ROOT / rel for rel in PROTOCOL_TIERING_NOTES),
         *(ROOT / rel for rel in DP_SECURITY_NOTES),
+        *(ROOT / rel for rel in GCNV_PEERING_NOTES),
     ]
 
 

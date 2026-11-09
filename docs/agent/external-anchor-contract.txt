@@ -55,6 +55,7 @@ docs/en/domains/security-governance/notes/admin-plane-protection-depends-on-seve
 docs/en/domains/security-governance/notes/vscan-scope-is-bounded-before-the-vendor.md
 docs/en/playbooks/01-assess/notes/counting-bytes-is-not-counting-files.md
 docs/en/playbooks/01-assess/notes/file-count-fit-depends-on-namespace-shape.md
+docs/en/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md
 docs/ja/domains/block-storage/notes/paths-are-the-failover-mechanism.md
 docs/ja/domains/block-storage/notes/what-block-monitoring-shows.md#実測した次元とメトリクス
 docs/ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md
@@ -147,4 +148,5 @@ docs/ja/reference/decision-trees/measured-throughput-triage.md#手元のスル�
 docs/ja/reference/decision-trees/measured-throughput-triage.md#結論
 docs/ja/reference/decision-trees/measured-throughput-triage.md#関連ドキュメント
 docs/ja/reference/file-protocol-resource-map.md
+docs/ja/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md
 docs/ja/reference/industry-resource-map.md#業種から入ったときの読む順序
