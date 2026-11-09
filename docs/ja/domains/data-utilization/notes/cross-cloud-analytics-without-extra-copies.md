@@ -92,7 +92,7 @@ advanced
 
 **表の `documented` は、相手クラウドのドキュメントがそう書いているという意味で、FSx for ONTAP で動くことを示すものではありません。** 4 構成はどれも、AWS のドキュメントが挙げる対応構成の外にあります。ANF → FSx for ONTAP の「記載なし」は、非対応という意味でもありません。
 
-**実機で通した公開記録は、このリポジトリにも Spoke にもありません。** S3-Burst の確認状況表は、FSx for ONTAP を Origin にした GCNV / ANF の Cache 可否を「未確認（ただし各クラウド側の要件は判明。2026-09-20 に調査）」、逆向きを「GCNV は条件つきで documented（2026-09-20）。ANF は未確認」と記録しています（[確認状況表](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)）。GCNV との手順の未解決項目は [GCNV ⇄ FSx for ONTAP のピアリングとレプリケーションの未解決項目](../../../reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) に整理しています。
+**このリポジトリで実機再現した公開記録はありません。** ただし、FSx for ONTAP を Origin、GCNV（ONTAP モード）を Cache とする向きは、HA VPN 経由のピアリング確立・GCNV 側 Cache 作成・GCE からの NFS 読み取りまでを他プロジェクトで一度観測した第三者の実機記録があります（このリポジトリでの再現ではなく、実値も持ちません）。S3-Burst の確認状況表は、この向きを「GCNV は documented + 他プロジェクトで一度観測（この repo では未再現）」、逆向き（GCNV / ANF を Origin）を「GCNV は条件つきで documented（2026-09-20）。ANF は未確認」と記録しています（[確認状況表](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)）。GCNV との手順の未解決項目は [GCNV ⇄ FSx for ONTAP のピアリングとレプリケーションの未解決項目](../../../reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md) に整理しています。
 
 **他クラウド ONTAP サービス同士のネットワーク到達性**（マネージドな相互接続か、相互接続プロバイダ経由か）と、その上で ONTAP のレプリケーション/キャッシュが成立するかは別の問いです。到達性の検証と未解決項目は [GCNV ⇄ FSx for ONTAP の事前確認とサンプル検証](../../../reference/gcp-to-fsx-ontap-preflight-and-sample-validation.md) にあります。**ネットワークが届くことと、ONTAP のレプリケーション/キャッシュがその経路で機能することを混同しないでください。**
 
