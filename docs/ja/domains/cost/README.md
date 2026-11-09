@@ -16,6 +16,8 @@
 | **見積もり**（これから作る） | [見積もりが外れる典型的な前提](notes/provisioned-versus-consumed.md#見積もりが外れる典型的な前提) | 外れる前提。**重複排除と圧縮は SSD の請求を下げません** |
 | **削る候補が決まっている** | [トレードオフの見比べかた](notes/provisioned-versus-consumed.md#トレードオフの見比べかた) | 削ると何を引き換えにするか。**要件で確保量が決まっているなら削れません** |
 | **公開事例の削減率**（自環境に当てられるか調べたい） | [公開された削減率の基準](notes/archiving-and-tiering-are-ordered-not-alternatives.md#削減率の基準と脚注に書かれた構成) | **基準は自社の旧環境です。** 構成が違えば率は移りません |
+| **AI ワークロードのコスト**（トークンだけで見ていないか） | [AI のコストはトークンだけではない](notes/finops-for-ai-adjacent-cost.md) | **AI コストの大半はトークン隣接コスト**（ストレージ・キャッシュ・人件費）。FSx for ONTAP が効くのはその一部です |
+| **AI の経路選び**（Bedrock / SageMaker から読む） | [AI のアクセス経路別のコストと性能](notes/access-path-cost-and-performance-by-service.md) | **到達性・読まれ方・コストの 3 軸。** 繰り返し読むか 1 回かが cost per call に最も効きます |
 
 ---
 
@@ -32,6 +34,9 @@
 | 7 | 最小構成そのものが高いのではないか。複製が 1 つだけの場合はどうか | [最小構成の床](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#最小構成の床) / [台数の問いから複製の問いへ](../../domains/block-storage/notes/when-ebs-stops-being-the-cheaper-answer.md#台数の問いから複製の問いへの置き換え) |
 | 8 | 外部ツールのアーカイブと容量プール階層はどちらを選ぶのか | [代替ではなく順序を持ちます](notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
 | 9 | 公開事例の削減率を自環境の見積もりに使えるか | [削減率の基準と、脚注に書かれた構成](notes/archiving-and-tiering-are-ordered-not-alternatives.md#削減率の基準と脚注に書かれた構成) |
+| 10 | AI のコストはトークン単価だけで決まるか。FSx for ONTAP はどこに効くか | [AI のコストはトークンだけではない](notes/finops-for-ai-adjacent-cost.md) |
+| 11 | Tokenomics という業界標準はいま何を定義しようとしているか | [Tokenomics が定義しようとしているもの](notes/finops-for-ai-adjacent-cost.md#tokenomics-が定義しようとしているもの) |
+| 12 | プロトコルや接続サービスごとにアクセス性・性能・コストはどう変わるか | [AI のアクセス経路別のコストと性能](notes/access-path-cost-and-performance-by-service.md) |
 
 ---
 
@@ -53,6 +58,21 @@
 **数値をここに持ってくるときは引用として登録します**（[引用索引](../../reference/cross-repo-index.md)）。単価を含む数値には取得日とリージョンが付いており、それを落とすと比較に使えません。
 
 **単価そのものは [AWS の料金ページ](https://aws.amazon.com/jp/fsx/netapp-ontap/pricing/) です。** どのリポジトリの数値も取得時点のもので、料金ページの代わりにはなりません。
+
+---
+
+## FinOps for AI の観点
+
+**AI ワークロードのコストはトークン単価だけでは決まりません。** 業界で形成されつつある整理（Tokenomics）は、AI コストの大半がトークンではなく隣接コスト（ストレージ・キャッシュ・人件費）にあると位置づけています。**FSx for ONTAP はこの隣接コストのうちストレージとキャッシュに効く選択肢の 1 つ**です。
+
+| 知りたいこと | 読むもの | そこにあるもの |
+|---|---|---|
+| AI コストの構成と FSx for ONTAP の効き方 | [AI のコストはトークンだけではない](notes/finops-for-ai-adjacent-cost.md) | トークン隣接コストの構成、Tokenomics の骨子（策定中）、効く条件と効かない条件 |
+| プロトコル・サービスごとの整理 | [AI のアクセス経路別のコストと性能](notes/access-path-cost-and-performance-by-service.md) | NFS / SMB / S3 AP / ブロック / FlexCache × 接続サービスの 3 軸 |
+| 経路の選び方 | [AI のアクセス経路の選び方](../../reference/comparison/finops-for-ai-access-paths.md) | フローチャート付きの比較マトリクス |
+| 最新情報の取り込み | [外部情報ソースの追跡](../../reference/external-sources.md) | Tokenomics / FOCUS / クラウド各社の一次情報を四半期ごとに確認する仕組み |
+
+**実測値は Spoke から引用し、このリポジトリは判断の指針を持ちます。** トークン単価・AI サービス価格は揮発性が高いため固定値を焼きません。
 
 ---
 

@@ -8,6 +8,7 @@ PY ?= python3
 .PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
+        source-freshness source-freshness-external \
         reachability reachability-external reachability-signposted reachability-signposted-external \
         spoke-search \
         inbound-probes inbound-probes-refresh gate knowledge-quality-status knowledge-quality-status-write \
@@ -261,6 +262,15 @@ cross-repo: ## Check that sibling-repository citations are registered
 	@$(PY) tools/check_cross_repo.py
 cross-repo-external: ## Also fetch each cited file and confirm the probe string survives
 	@$(PY) tools/check_cross_repo.py --external
+# The freshness analogue of cross-repo, split the same way. The offline half asks whether each
+# tracked external primary source was confirmed recently enough to keep citing; it needs no
+# network, so it is in `all`. The external half confirms each URL still resolves and stays opt-in,
+# because CI is not sent onto the public network.
+source-freshness: ## Check that tracked external primary sources are within their review interval (offline)
+	@$(PY) tools/check_source_freshness.py --selftest >/dev/null
+	@$(PY) tools/check_source_freshness.py
+source-freshness-external: ## Also confirm each tracked source URL still resolves (network)
+	@$(PY) tools/check_source_freshness.py --external
 # The other gates prove links resolve; none proves a question leads to the document that answers
 # it. The offline half measures Hub-internal reachability from llms.txt within the hop budget; the
 # network half also follows links into sibling repositories and reports INCONCLUSIVE, not FAIL,
@@ -320,7 +330,7 @@ links-external: ## Check internal + external links (network required)
 gate: ## Run `all` and assert it did not change the git index (what the hooks run)
 	@scripts/run_gate.sh /tmp/gate.log
 
-all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo reachability reachability-signposted inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo source-freshness reachability reachability-signposted inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

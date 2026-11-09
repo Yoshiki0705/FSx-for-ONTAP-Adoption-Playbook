@@ -30,6 +30,9 @@ the table of contents; this is the entry point.
 | 5 | How to weigh the cost-availability-performance trade-off | [Weighing the trade-off symmetrically](notes/provisioned-versus-consumed.md#how-to-weigh-trade-offs) |
 | 6 | Whether to choose external archiving or the capacity pool tier | [They are ordered, not alternatives](notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
 | 7 | Whether a published reduction rate can be used as an estimate | [The basis for the reduction, and the configuration in the footnote](notes/archiving-and-tiering-are-ordered-not-alternatives.md#the-basis-for-the-reduction-and-the-configuration-in-the-footnote) |
+| 8 | Whether AI cost is decided by the token price, and where FSx for ONTAP acts | [AI cost is not tokens alone](../../../ja/domains/cost/notes/finops-for-ai-adjacent-cost.md) (日本語) |
+| 9 | What Tokenomics, the forming industry standard, is trying to define | [What Tokenomics is defining](../../../ja/domains/cost/notes/finops-for-ai-adjacent-cost.md) (日本語) |
+| 10 | How access and performance and cost change per protocol and connecting service | [Cost and performance by access path](../../../ja/domains/cost/notes/access-path-cost-and-performance-by-service.md) (日本語) |
 
 ---
 
@@ -51,6 +54,21 @@ the table of contents; this is the entry point.
 **A figure brought here is registered as a citation** ([citation index](../../../ja/reference/cross-repo-index.md) (日本語)). Unit prices carry a retrieval date and a region, and a figure without them cannot be compared.
 
 **Unit prices themselves are on the [AWS pricing page](https://aws.amazon.com/fsx/netapp-ontap/pricing/).** Every figure in those repositories is as of its retrieval date and does not replace it.
+
+---
+
+## FinOps for AI perspective
+
+**The cost of an AI workload is not decided by the token price alone.** The industry framing taking shape (Tokenomics) places most of the cost not in tokens but in adjacent cost — storage, cache, and the people who build the pipeline. **FSx for ONTAP is one option that acts on the storage and cache part of that adjacent cost.**
+
+| What you want | Read | What it holds |
+|---|---|---|
+| How AI cost breaks down and where FSx for ONTAP acts | [AI cost is not tokens alone](../../../ja/domains/cost/notes/finops-for-ai-adjacent-cost.md) (日本語) | The adjacent-cost breakdown, the Tokenomics roadmap (still being written), and when it does and does not help |
+| The per-protocol, per-service breakdown | [Cost and performance by access path](../../../ja/domains/cost/notes/access-path-cost-and-performance-by-service.md) (日本語) | NFS / SMB / S3 access points / block / FlexCache against each connecting service, on three axes |
+| How to choose a path | [Choosing an AI access path](../../../ja/reference/comparison/finops-for-ai-access-paths.md) (日本語) | A comparison matrix with a selection flowchart |
+| Keeping the sources current | [External source tracking](../../../ja/reference/external-sources.md) (日本語) | A gate that re-confirms Tokenomics / FOCUS / cloud-provider primary sources each quarter |
+
+**Measured figures are cited from the spoke repositories; this repository holds the judgment.** Token prices and AI-service prices are volatile, so no fixed figure is baked in here.
 
 ---
 
