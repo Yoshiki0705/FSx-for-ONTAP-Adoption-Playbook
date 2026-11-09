@@ -122,6 +122,13 @@ jobs:
       - name: Check cross-repository citations are registered
         run: make cross-repo
 
+      # Offline half only. The network half (source-freshness-external) confirms each tracked URL
+      # still resolves and stays opt-in, like cross-repo-external: a source being briefly
+      # unreachable is not a defect in this change. This half checks only that each tracked
+      # external primary source was confirmed within its review interval.
+      - name: Check tracked external sources are within their review interval
+        run: make source-freshness
+
       # Offline only: each benchmark question must reach its answer from llms.txt within the hop
       # budget, over the Hub's own links. Cross-repo questions need the network and stay in
       # `make reachability-external`, which no workflow runs.

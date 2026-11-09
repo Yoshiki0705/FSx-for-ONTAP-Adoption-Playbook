@@ -398,6 +398,9 @@ lang: ja
 | `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/ontap-command-api-snapshot.md` | `は、実測で確かめたためです` | `retraction` | 同上（EN 版）。`show-user-capability` が実行できるコマンドの一覧だと言える根拠の所在。根拠が変わると、入口ページの説明を読み直します |
 | `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `solutions/ontap-catalog-snapshot/README.md` | `最初の認証失敗で全体を止める` | `retraction` | 同上（EN 版）。版ごとに管理者が使えるコマンドと REST API を記録する Lambda の所在。内容はそちらが持ちます |
 | `docs/en/reference/ontap-commands-and-apis.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/agent-prompts/ontap-catalog-snapshot.md` | `このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい` | `retraction` | 同上（EN 版）。Lambda を AI エージェントに実装・導入させるプロンプトの所在 |
+| `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-s3-vs-s3ap.md` | `片方にあって他方にない項目が、そのまま設計上の制約になる。` | `retraction` | S3 標準と S3 Access Points の費用構造の対応。**AI の経路別整理が、繰り返し読むか 1 回かで cost per call が逆転する根拠として引く** |
+| `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/cost-measurement.md` | `Cost Explorer` | `retraction` | S3 Access Points のコスト実測手順。**見積りではない** — この区別が落ちると実測値が見積りとして引用されます |
+| `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/cost-estimation.md` | `scaling formulas` | `retraction` | 構成要素別の内訳とスケーリング算定式。**AI の経路別整理が分析基盤に載せるときのコストの所在として引く** |
 <!-- cross-repo-table:end -->
 
 ---
