@@ -661,6 +661,7 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Added
 
+- **Registered `docs/{ja,en}/reference/gcp-to-fsx-ontap-peering-and-replication-open-items.md` in the external-anchor contract** (`tools/check_anchor_contract.py`, path-only). `S3-Burst-on-ONTAP-Files` cites these as the Hub-side record of the FSx-for-ONTAP-origin → GCNV-ONTAP-mode-cache FlexCache peering direction; its gate refuses an unlisted citation target, so the path is registered here before the citation is written there.
 - **A search of the sibling repositories' committed work, and a guard that stops a write from calling investigated work unverified.**
   Twice, a note here called something unverified or unmeasured while a sibling repository had already investigated it (NFS, SMB, block and S3 Access Points performance; then HealthOmics with S3 Access Points). The writer was an agent with no way to know, and the only safeguard was the maintainer remembering.
   - `make spoke-search Q='<term>'` (`tools/spoke_search.py`) searches every sibling clone's committed content at `origin/main`, never a working copy, after fetching refs not fetched within the hour. It prints evidence-ledger entries as id, tier and claim, then feature requests, limits and verification records, and names the Kiro memory scope to read for each repository.
