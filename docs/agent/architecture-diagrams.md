@@ -60,6 +60,8 @@ When a compliant label no longer fits, work down this list. Shrinking the font i
 4. Split the figure.
 5. Abstract — collapse individual resources into the role they play.
 
+Colour, contrast, and effects (gradients, shadows, emoji) are covered in [`visual-design.md`](visual-design.md) (日本語).
+
 Standard shared with sibling repositories:
 `~/.kiro/steering/global-document-readability.md`, derived from
 [こんなアーキテクチャ図は嫌だ (JAWS SONIC 2026)](https://speakerdeck.com/naospon/15-of-anti-pattern-in-aws-architecture-diagrams).
