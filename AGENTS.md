@@ -382,10 +382,11 @@ This file is read every turn, so material for one kind of work lives in tracked,
 |---|---|
 | [`docs/agent/localization.md`](docs/agent/localization.md) | adding, translating, or restructuring a document under `docs/<lang>/` |
 | [`docs/agent/architecture-diagrams.md`](docs/agent/architecture-diagrams.md) | creating, editing, exporting, or sizing a diagram |
+| [`docs/agent/visual-design.md`](docs/agent/visual-design.md) | colours or web screens (日本語) |
 | [`docs/agent/pitfalls.md`](docs/agent/pitfalls.md) | a gate fails and the cause is not obvious, or before finalizing a change |
 | [`docs/agent/domain-knowledge.md`](docs/agent/domain-knowledge.md) | writing a technical claim about AD integration, S3 Access Points, or documented constraints |
 | [`docs/agent/support-reply-handling.md`](docs/agent/support-reply-handling.md) | a claim would otherwise be sourced to what a vendor's support desk said |
-| [`docs/agent/documentation-design.md`](docs/agent/documentation-design.md) | creating or restructuring a README, a module hub, or a technical reference document. **A README that carries detail inline instead of linking out is the failure it prevents** |
+| [`docs/agent/documentation-design.md`](docs/agent/documentation-design.md) | creating or restructuring a README, a module hub, or a technical reference document |
 | [`docs/agent/writing-quality.md`](docs/agent/writing-quality.md) | judging prose, or an `ai-style` audit finding (日本語) |
 
 ### Tools other repositories copy

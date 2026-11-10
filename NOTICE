@@ -1,0 +1,14 @@
+fsxn-adoption-playbook
+Copyright (c) 2026 Yoshiki Fujiwara (MIT License, see LICENSE)
+
+This repository contains material derived from the following work.
+
+unslop-ai-app by Minoru Onda (https://github.com/minorun365/unslop-ai-app),
+Copyright 2026 Minoru Onda, licensed under the Apache License 2.0.
+Derived files:
+  - tools/portable/check-ui/check-ui.mjs (modified; the full license is in tools/portable/check-ui/LICENSE)
+  - docs/agent/visual-design.md (some items rewritten from the upstream skill text)
+
+Upstream notes that part of its content was rewritten from unslop by Damir Sokolovsky
+(https://github.com/heydamir/unslop), licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/).
