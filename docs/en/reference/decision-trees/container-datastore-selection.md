@@ -31,9 +31,9 @@ Whether a container on Amazon ECS / Amazon EKS can use FSx for ONTAP as a persis
 | 4 | Does the expected PV count exceed the volume limit | If it does, `ontap-san-economy`. The decision is in [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | 5 | Windows / SMB dependent | The SMB PV is `ontap-nas` and **Windows nodes only**. The Trident EKS add-on does not support it |
 
-> **Tier**: `documented` — the branch conditions are based on AWS / NetApp official documentation (confirmed 2026-09-22).
-> **The container route has not been confirmed on real hardware.** The measurements this repository and its siblings hold cover the EC2 rehost route only; the path from a container to FSx for ONTAP (Trident PVs, host mounts) is at the literature-review stage.
-> The implementation (five configurations as CloudFormation templates) lives in [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns).
+> **Tier**: `documented` — the branch conditions are based on AWS / NetApp official documentation (confirmed 2026-09-22; the Fargate volume rows rechecked 2026-11-11).
+> **A sibling repository holds the real-infrastructure checks of the container routes** (ap-northeast-1, one observation each, small scale). ECS on EC2 + NFS on 2026-11-10; EKS on EC2 + Trident (an NFS RWX volume and an iSCSI RWO volume persisted across a pod restart and a reschedule to another node) on 2026-10-29; Fargate + S3 Access Points (both ECS and EKS) on 2026-11-10. Performance, Multi-AZ failover, and concurrent writes from several clients are not measured.
+> The implementation (five configurations as CloudFormation templates) lives in [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns). The use cases of S3 Access Points, how to choose the origin, and the check status per AWS service and SaaS product are in that repository's "Use cases and integrations for S3 Access Points".
 
 ---
 
@@ -87,10 +87,26 @@ graph TD
 
 | Terminal | The situation | Why FSx for ONTAP cannot be used |
 |---|---|---|
-| **Object access via S3 Access Points** | Running on Fargate, persistence is needed, but mounting FSx for ONTAP is not required | **Fargate cannot use FSx for ONTAP through a volume mount.** An ECS Fargate task definition supports only bind mount host volumes and Amazon EFS; EKS Fargate cannot run the Trident node pod (DaemonSet, privileged). Reading and writing as objects leaves S3 Access Points as the route, but **the app must be changed to use the S3 SDK** |
+| **Object access via S3 Access Points** | Running on Fargate, persistence is needed, but mounting FSx for ONTAP is not required | **Fargate cannot use FSx for ONTAP through a volume mount.** On ECS Fargate the supported volumes are Amazon EBS, Amazon EFS, Amazon S3 Files, and bind mounts, and a native FSx for ONTAP mount is EC2 only; AWS says Fargate uses FSx for ONTAP through S3 Access Points ([ECS storage options](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html), checked 2026-11-11). EKS Fargate cannot run the Trident node pod (DaemonSet, privileged). Reading and writing as objects leaves S3 Access Points as the route, but **the app must be changed to use the S3 SDK**. Reads, writes, and listing were checked on real infrastructure from ECS Fargate (task role) and EKS Fargate (IRSA) (sibling, 2026-11-10). **Give the access point a UNIX user that the SVM can resolve.** With `ec2-user` on a new SVM, the create API returned success and the access point went to FAILED about 45 seconds later |
 | **Switch to the EC2 launch type** | Want to run on Fargate, but mounting FSx for ONTAP is required | Same as above. **In this case you give up Fargate's operational simplicity and choose EC2 worker nodes (EKS) or the EC2 launch type (ECS).** They do not coexist |
 
 **Fargate's operational simplicity and FSx for ONTAP persistent volumes are a trade-off.** Choosing one gives up the other. A stateless workload suits Fargate and does not need FSx for ONTAP.
+
+---
+
+## Persistent storage when pods run in Nitro Sandbox
+
+**Even on EKS on EC2, a pod isolated with Nitro Sandbox (`runtimeClassName: isolated-sandbox`) could not use a Trident NFS PV.** This is a sibling repository's measurement (2026-11-10, ap-northeast-1, EKS Auto Mode, Kubernetes v1.36.4, Trident add-on v26.6.2-eksbuild.1, one observation). The same PVC mounted in two normal pods on different nodes and could be read and written. In an isolated pod, container creation stopped with `failed to fulfil mount request: … no such file or directory`. An isolated pod with only `emptyDir`, and an isolated pod with an Amazon EBS PVC, both worked.
+
+| Persistent storage for an isolated pod | State |
+|---|---|
+| Amazon EBS (`ReadWriteOncePod`), Amazon EFS | The options AWS's documentation (Storage with Nitro Sandboxes) lists. EBS worked in the measurement |
+| Trident NFS PV (FSx for ONTAP) | Failed in the measurement. Not mentioned in the documentation |
+| Trident iSCSI / NVMe/TCP PV | Not tested. Not mentioned in the documentation either. The sibling records that iSCSI itself was unavailable on the Auto Mode node, so handing it to an isolated pod could not be checked |
+
+**If isolation is required and the data should stay on FSx for ONTAP, there are two options today.** Drop the isolation and use a normal pod with Trident. Or put only the isolated pods' data on EBS or EFS, which means copying the data and running it twice. Which one fits depends on the isolation requirement and on how widely the data is shared.
+
+The cause of the failure was not isolated. The documentation page opens by saying several storage options work through "standard Kubernetes CSI drivers" and does not mention third-party CSI drivers. I filed the clarification as [documentation feedback](https://github.com/awsdocs/amazon-eks-user-guide/issues/1259), and the NFS and block-volume support as feature requests ([NFS](https://github.com/aws/containers-roadmap/issues/2911), [block](https://github.com/aws/containers-roadmap/issues/2912)). **Filing an issue does not mean AWS accepted or prioritized it.**
 
 ---
 
@@ -98,13 +114,14 @@ graph TD
 
 | Branch | What it is based on |
 |---|---|
-| Fargate cannot mount FSx for ONTAP (ECS) | An ECS Fargate task definition supports only bind mount host volumes and Amazon EFS; `dockerVolumeConfiguration` is not supported |
+| Fargate cannot mount FSx for ONTAP (ECS) | The ECS documentation makes a native FSx for ONTAP mount EC2 only and says Fargate goes through S3 Access Points. Fargate supports Amazon EBS, Amazon EFS, Amazon S3 Files, and bind mounts; `dockerVolumeConfiguration` is not supported ([ECS storage options](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html), checked 2026-11-11) |
 | Fargate cannot mount FSx for ONTAP (EKS) | Trident runs a node pod (DaemonSet, privileged) on each worker node, and EKS Fargate cannot run DaemonSets, privileged Pods, or HostNetwork. The only persistence usable on Fargate is Amazon EFS (static only) |
 | ECS on EC2 goes through a host mount | AWS documents the procedure as mounting NFS on EC2 Linux and bind-mounting it, and creating an SMB global mapping on EC2 Windows and bind-mounting it. **The container runtime does not mount FSx for ONTAP directly** |
 | EKS on EC2 uses Trident | The AWS EKS User Guide points to NetApp Trident (a CSI-compliant driver) as the means to use FSx for ONTAP from EKS. There is no separate AWS-native CSI driver for FSx for ONTAP |
 | Shared vs single writer splits the driver | NetApp's integration guide makes "NAS driver if multiple Pods share one PVC, iSCSI block driver if not" the default choice |
 | PV count selects `ontap-san-economy` | `ontap-san` creates a FlexVol plus a LUN per PV, so the PV count lands directly on the volume-count limit. NetApp states that `ontap-san-economy` should be used only when the expected PV count exceeds the volume limit. Details in [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | The SMB PV is Windows nodes only | SMB volumes are `ontap-nas` only, Windows nodes only, and not supported by the Trident EKS add-on |
+| A Trident NFS PV does not work in an isolated pod (Nitro Sandbox) | A sibling's single observation on real infrastructure. AWS's documentation lists only EBS, EFS, and tmpfs-backed CSI drivers, and does not mention NFS from a third-party CSI driver |
 | AWS Transform containerization does not configure persistent storage | The scope of containerization is Dockerizing and deploying; the output (Helm chart / Terraform module) does not include PV / PVC / StorageClass configuration |
 
 The source URLs and the measured / unconfirmed tiers for every item are in the implementation repository [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns), in its derivation document on containerization and FSx for ONTAP integration.
@@ -155,7 +172,7 @@ The source URLs and the measured / unconfirmed tiers for every item are in the i
 | To share across Pods, make iSCSI RWX | Block RWX only makes the raw block device visible to multiple nodes; arbitration is the cluster filesystem's responsibility. **Sharing defaults to `ontap-nas` (NFS/SMB)** |
 | `ontap-san-economy` is always better | **Per-PV Snapshot, SnapMirror, and QoS can no longer be applied.** Choose it only when the PV count is expected to exceed the volume limit |
 | The SMB PV works on Linux nodes too | **Windows nodes only**, and not supported by the Trident EKS add-on |
-| ECS Fargate supports EFS, so it should support FSx for ONTAP too | **They are different.** ECS Fargate's supported volumes are bind mount host volumes and Amazon EFS only; FSx for ONTAP is not included |
+| ECS Fargate supports EFS, so it should support FSx for ONTAP too | **They are different.** FSx for ONTAP cannot be mounted on Fargate; the path AWS describes is object access through S3 Access Points |
 
 ---
 
