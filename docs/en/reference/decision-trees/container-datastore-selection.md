@@ -87,7 +87,7 @@ graph TD
 
 | Terminal | The situation | Why FSx for ONTAP cannot be used |
 |---|---|---|
-| **Object access via S3 Access Points** | Running on Fargate, persistence is needed, but mounting FSx for ONTAP is not required | **Fargate cannot use FSx for ONTAP through a volume mount.** An ECS Fargate task definition supports only bind mount host volumes and Amazon EFS; EKS Fargate cannot run the Trident node pod (DaemonSet, privileged). Reading and writing as objects leaves S3 Access Points as the route, but **the app must be changed to use the S3 SDK**. Reads, writes, and listing were checked on real infrastructure from ECS Fargate (task role) and EKS Fargate (IRSA) (sibling, 2026-11-10). **Give the access point a UNIX user that the SVM can resolve.** With `ec2-user` on a new SVM, the create API returned success and the access point went to FAILED about 45 seconds later |
+| **Object access via S3 Access Points** | Running on Fargate, persistence is needed, but mounting FSx for ONTAP is not required | **Fargate cannot use FSx for ONTAP through a volume mount.** On ECS Fargate the supported volumes are Amazon EBS, Amazon EFS, Amazon S3 Files, and bind mounts, and a native FSx for ONTAP mount is EC2 only; AWS says Fargate uses FSx for ONTAP through S3 Access Points ([ECS storage options](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html), checked 2026-11-11). EKS Fargate cannot run the Trident node pod (DaemonSet, privileged). Reading and writing as objects leaves S3 Access Points as the route, but **the app must be changed to use the S3 SDK**. Reads, writes, and listing were checked on real infrastructure from ECS Fargate (task role) and EKS Fargate (IRSA) (sibling, 2026-11-10). **Give the access point a UNIX user that the SVM can resolve.** With `ec2-user` on a new SVM, the create API returned success and the access point went to FAILED about 45 seconds later |
 | **Switch to the EC2 launch type** | Want to run on Fargate, but mounting FSx for ONTAP is required | Same as above. **In this case you give up Fargate's operational simplicity and choose EC2 worker nodes (EKS) or the EC2 launch type (ECS).** They do not coexist |
 
 **Fargate's operational simplicity and FSx for ONTAP persistent volumes are a trade-off.** Choosing one gives up the other. A stateless workload suits Fargate and does not need FSx for ONTAP.
@@ -114,7 +114,7 @@ The cause of the failure was not isolated. The documentation page opens by sayin
 
 | Branch | What it is based on |
 |---|---|
-| Fargate cannot mount FSx for ONTAP (ECS) | An ECS Fargate task definition supports only bind mount host volumes and Amazon EFS; `dockerVolumeConfiguration` is not supported |
+| Fargate cannot mount FSx for ONTAP (ECS) | The ECS documentation makes a native FSx for ONTAP mount EC2 only and says Fargate goes through S3 Access Points. Fargate supports Amazon EBS, Amazon EFS, Amazon S3 Files, and bind mounts; `dockerVolumeConfiguration` is not supported ([ECS storage options](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html), checked 2026-11-11) |
 | Fargate cannot mount FSx for ONTAP (EKS) | Trident runs a node pod (DaemonSet, privileged) on each worker node, and EKS Fargate cannot run DaemonSets, privileged Pods, or HostNetwork. The only persistence usable on Fargate is Amazon EFS (static only) |
 | ECS on EC2 goes through a host mount | AWS documents the procedure as mounting NFS on EC2 Linux and bind-mounting it, and creating an SMB global mapping on EC2 Windows and bind-mounting it. **The container runtime does not mount FSx for ONTAP directly** |
 | EKS on EC2 uses Trident | The AWS EKS User Guide points to NetApp Trident (a CSI-compliant driver) as the means to use FSx for ONTAP from EKS. There is no separate AWS-native CSI driver for FSx for ONTAP |
@@ -172,7 +172,7 @@ The source URLs and the measured / unconfirmed tiers for every item are in the i
 | To share across Pods, make iSCSI RWX | Block RWX only makes the raw block device visible to multiple nodes; arbitration is the cluster filesystem's responsibility. **Sharing defaults to `ontap-nas` (NFS/SMB)** |
 | `ontap-san-economy` is always better | **Per-PV Snapshot, SnapMirror, and QoS can no longer be applied.** Choose it only when the PV count is expected to exceed the volume limit |
 | The SMB PV works on Linux nodes too | **Windows nodes only**, and not supported by the Trident EKS add-on |
-| ECS Fargate supports EFS, so it should support FSx for ONTAP too | **They are different.** ECS Fargate's supported volumes are bind mount host volumes and Amazon EFS only; FSx for ONTAP is not included |
+| ECS Fargate supports EFS, so it should support FSx for ONTAP too | **They are different.** FSx for ONTAP cannot be mounted on Fargate; the path AWS describes is object access through S3 Access Points |
 
 ---
 
