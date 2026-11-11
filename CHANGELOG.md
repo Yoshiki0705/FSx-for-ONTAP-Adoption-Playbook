@@ -4003,6 +4003,17 @@ version needs to know what changed. **Record demotions of an `evidence` tier her
 
 ### Corrected
 
+- **The container-datastore decision tree no longer says the container route is unconfirmed on real hardware.**
+  It said the measurements covered only the EC2 rehost route. A sibling repository has since checked
+  ECS on EC2 + NFS (2026-11-10), EKS on EC2 + Trident NFS and iSCSI (2026-10-29), and Fargate + S3 Access
+  Points on ECS and EKS (2026-11-10), each as one small-scale observation in ap-northeast-1. The tree
+  keeps `evidence: documented` for its branch conditions and cites those checks as the sibling's.
+  - **New section: persistent storage for pods isolated with Nitro Sandbox.** A Trident NFS PV failed
+    in an isolated pod while an EBS PV worked (one observation, EKS Auto Mode). Trident iSCSI and
+    NVMe/TCP were not tested. The documentation page does not mention third-party CSI drivers; the
+    clarification and the NFS / block support were filed as public issues, which are not acceptance
+    by AWS.
+
 - **`StorageEfficiencyEnabled` is not "lost by a restore" — it is a CLI default.** The backup-copy note and
   the limits reference both stated the attribute was not carried over, on the evidence that a restored
   volume read `true` while its source read `false`. Running the same restore through the console showed the

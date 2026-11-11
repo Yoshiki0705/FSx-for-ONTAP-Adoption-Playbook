@@ -32,7 +32,7 @@ Amazon ECS / Amazon EKS 上のコンテナから FSx for ONTAP を永続ボリ�
 | 5 | Windows / SMB 依存か | SMB PV は `ontap-nas` かつ **Windows ノードのみ**。Trident EKS アドオンでは非対応 |
 
 > **区分**: `documented` — 分岐の条件は AWS / NetApp 公式ドキュメントの記載に基づきます（2026-09-22 に確認）。
-> **コンテナ経路の連携は実機で確認していません。** このリポジトリと sibling が持つ実測は EC2 リホスト経路のみで、コンテナから FSx for ONTAP へ至る経路（Trident の PV、ホストマウント）は文献調査の段階です。
+> **コンテナ経路の実機確認は sibling が持ちます**（ap-northeast-1、各 1 回の観測、小規模）。ECS on EC2 + NFS は 2026-11-10、EKS on EC2 + Trident（NFS の RWX と iSCSI の RWO が、Pod の再起動とノード間の再配置を越えて残った）は 2026-10-29、Fargate + S3 Access Points（ECS、EKS とも）は 2026-11-10。性能、Multi-AZ のフェイルオーバー、複数クライアントの同時書き込みは未測定です。
 > 実装（5 構成の CloudFormation テンプレート）は [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) が持ちます。
 
 ---
@@ -87,10 +87,26 @@ graph TD
 
 | 終端 | どういう状況か | FSx for ONTAP を使えない理由 |
 |---|---|---|
-| **S3 Access Points 経由のオブジェクトアクセス** | Fargate で動かし、永続領域は要るが FSx for ONTAP のマウントは必須でない | **Fargate はボリュームマウントで FSx for ONTAP を使えません。** ECS Fargate のタスク定義は bind mount host ボリュームと Amazon EFS のみ、EKS Fargate は Trident の node pod（DaemonSet・特権）を動かせません。オブジェクトとして読み書きするなら S3 Access Points 経由が残りますが、**アプリを S3 SDK に改修する必要があります** |
+| **S3 Access Points 経由のオブジェクトアクセス** | Fargate で動かし、永続領域は要るが FSx for ONTAP のマウントは必須でない | **Fargate はボリュームマウントで FSx for ONTAP を使えません。** ECS Fargate のタスク定義は bind mount host ボリュームと Amazon EFS のみ、EKS Fargate は Trident の node pod（DaemonSet・特権）を動かせません。オブジェクトとして読み書きするなら S3 Access Points 経由が残りますが、**アプリを S3 SDK に改修する必要があります**。ECS Fargate（タスクロール）と EKS Fargate（IRSA）から、読み書きと一覧を実機で確認しました（sibling、2026-11-10）。**アクセスポイントの UNIX ユーザーは、SVM が解決できる名前にします。** 新しい SVM に `ec2-user` を指定すると、作成 API は成功を返し、約 45 秒後に FAILED になりました |
 | **EC2 起動タイプへの切り替え** | Fargate で動かしたいが FSx for ONTAP のマウントが必須 | 同上。**この場合は Fargate の運用簡素化を諦めて EC2 ワーカーノード（EKS）または EC2 起動タイプ（ECS）を選びます。** 両立しません |
 
 **Fargate の運用簡素化と FSx for ONTAP の永続ボリュームはトレードオフです。** どちらかを選ぶと他方を諦めます。ステートレスなワークロードなら Fargate が適し、FSx for ONTAP は不要です。
+
+---
+
+## Nitro Sandbox の隔離 Pod を使う場合の永続ストレージ
+
+**EKS on EC2 でも、Pod を Nitro Sandbox（`runtimeClassName: isolated-sandbox`）で隔離すると、Trident の NFS PV は使えませんでした。** sibling の実測です（2026-11-10、ap-northeast-1、EKS Auto Mode、Kubernetes v1.36.4、Trident アドオン v26.6.2-eksbuild.1、1 回の観測）。同じ PVC を通常の Pod 2 本（別ノード）でマウントすると読み書きできました。隔離 Pod では、コンテナの作成が `failed to fulfil mount request: … no such file or directory` で止まりました。`emptyDir` だけの隔離 Pod と、Amazon EBS の PVC をマウントした隔離 Pod は動きました。
+
+| 隔離 Pod の永続ストレージ | 状態 |
+|---|---|
+| Amazon EBS（`ReadWriteOncePod`）、Amazon EFS | AWS のドキュメント（Storage with Nitro Sandboxes）が挙げる方式。EBS は実測で成立 |
+| Trident の NFS PV（FSx for ONTAP） | 実測で失敗。ドキュメントには記載が無い |
+| Trident の iSCSI / NVMe/TCP PV | 未検証。ドキュメントにも記載が無い。sibling は、Auto Mode のノードで iSCSI 自体が使えず、隔離 Pod への受け渡しを確かめられなかったと記録している |
+
+**隔離が必要で、データを FSx for ONTAP に置き続けたい場合、今の選択肢は 2 つです。** 隔離を外して通常の Pod + Trident を使う。または、隔離する Pod のデータだけを EBS や EFS に置く（データの複製と運用の二重化が発生する）。どちらが合うかは、隔離の要件とデータの共有範囲で決まります。
+
+失敗の原因は切り分けていません。ドキュメントのページは冒頭で「標準の Kubernetes CSI ドライバ」で複数のストレージを使えると書きますが、サードパーティの CSI ドライバに触れていません。この点の明記を[文書フィードバック](https://github.com/awsdocs/amazon-eks-user-guide/issues/1259)で、サードパーティ CSI の NFS ボリュームとブロックボリュームの対応を機能要望（[NFS](https://github.com/aws/containers-roadmap/issues/2911)、[ブロック](https://github.com/aws/containers-roadmap/issues/2912)）で出しました。**issue の提出は、AWS が受理や優先付けをしたことを意味しません。**
 
 ---
 
@@ -105,6 +121,7 @@ graph TD
 | 共有か単一ライターかでドライバが分かれること | NetApp の統合ガイドが「複数 Pod が同一 PVC を共有するなら NAS ドライバ、非共有なら iSCSI ブロックドライバ」を既定の選択としています |
 | PV 数の上限で `ontap-san-economy` を選ぶこと | `ontap-san` は PV ごとに FlexVol + LUN を作るため、PV 数がボリューム数の上限に直接当たります。NetApp は想定 PV 数がボリューム上限を超える場合にのみ `ontap-san-economy` を使うよう記載しています。詳細は [Kubernetes のブロック PV はボリューム数の上限に当たる](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | SMB PV が Windows ノードのみであること | SMB ボリュームは `ontap-nas` ドライバのみ、Windows ノードのみで、Trident EKS アドオンでは非対応です |
+| 隔離 Pod（Nitro Sandbox）で Trident の NFS PV が使えないこと | sibling の実機 1 回の観測。AWS のドキュメントは EBS、EFS、tmpfs を使う CSI ドライバだけを挙げ、サードパーティの CSI ドライバの NFS には触れていません |
 | AWS Transform のコンテナ化が永続ストレージを構成しないこと | コンテナ化のスコープは Docker 化とデプロイまでで、生成物（Helm チャート / Terraform モジュール）に PV / PVC / StorageClass の構成は含まれません |
 
 出典の URL と実測・未確認の区分は、実装リポジトリ [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) の派生ドキュメント（コンテナ化への派生と FSx for ONTAP の連携可否）に全項目あります。
