@@ -54,7 +54,7 @@ intermediate
 
 | アクセス経路 | 届く接続サービスの例 | アクセス性の前提 |
 |---|---|---|
-| **S3 Access Points** | Amazon Bedrock Knowledge Bases（S3 を要求）、Athena / Glue、SageMaker の S3 入力 | **同一アカウント・同一リージョン・VPC 内が前提。** S3 標準のすべての操作が通るわけではありません（メタデータ操作の一部が失敗します） |
+| **S3 Access Points** | Amazon Bedrock Knowledge Bases（S3 を要求）、Athena / Glue、SageMaker の S3 入力 | **同一アカウント・同一リージョンが前提。ネットワーク origin は呼び出し元で決まり、作成後に変更できません。** Bedrock Knowledge Bases、Athena、Glue のように VPC の外で動くサービスは Internet origin が要り、VPC origin では拒否されます。VPC 内のコンピュートは VPC origin と S3 の Gateway エンドポイントで使えます（[ネットワークの設定](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html)）。S3 標準のすべての操作が通るわけではありません（メタデータ操作の一部が失敗します） |
 | **NFS** | EC2 / EKS 上の推論・学習、SageMaker の NFS マウント、HPC | POSIX 共有が要るワークロード。マウント先からの到達性 |
 | **SMB** | Windows ベースの推論・前処理、ファイルポータル | AD 参加または NTFS ACL。Windows クライアント |
 | **ブロック（iSCSI / NVMe/TCP）** | 単一ホストのデータベース・ベクトルストア | 単一アタッチが基本。共有は設計が要る |

@@ -31,9 +31,9 @@ Amazon ECS / Amazon EKS 上のコンテナから FSx for ONTAP を永続ボリ�
 | 4 | 想定 PV 数がボリューム上限を超えるか | 超えるなら `ontap-san-economy`。判断は [Kubernetes のブロック PV はボリューム数の上限に当たる](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | 5 | Windows / SMB 依存か | SMB PV は `ontap-nas` かつ **Windows ノードのみ**。Trident EKS アドオンでは非対応 |
 
-> **区分**: `documented` — 分岐の条件は AWS / NetApp 公式ドキュメントの記載に基づきます（2026-09-22 に確認）。
+> **区分**: `documented` — 分岐の条件は AWS / NetApp 公式ドキュメントの記載に基づきます（2026-09-22 に確認、Fargate のボリュームの行は 2026-11-11 に再確認）。
 > **コンテナ経路の実機確認は sibling が持ちます**（ap-northeast-1、各 1 回の観測、小規模）。ECS on EC2 + NFS は 2026-11-10、EKS on EC2 + Trident（NFS の RWX と iSCSI の RWO が、Pod の再起動とノード間の再配置を越えて残った）は 2026-10-29、Fargate + S3 Access Points（ECS、EKS とも）は 2026-11-10。性能、Multi-AZ のフェイルオーバー、複数クライアントの同時書き込みは未測定です。
-> 実装（5 構成の CloudFormation テンプレート）は [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) が持ちます。
+> 実装（5 構成の CloudFormation テンプレート）は [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) が持ちます。S3 Access Points の用途、origin の選び方、AWS のサービスと SaaS ごとの確認状況は、同じリポジトリの「S3 Access Points の利用シナリオと連携先の地図」にあります。
 
 ---
 

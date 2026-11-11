@@ -31,9 +31,9 @@ Whether a container on Amazon ECS / Amazon EKS can use FSx for ONTAP as a persis
 | 4 | Does the expected PV count exceed the volume limit | If it does, `ontap-san-economy`. The decision is in [Kubernetes block volumes meet the volume limit (日本語)](../../domains/block-storage/notes/kubernetes-block-volumes-and-the-volume-limit.md) |
 | 5 | Windows / SMB dependent | The SMB PV is `ontap-nas` and **Windows nodes only**. The Trident EKS add-on does not support it |
 
-> **Tier**: `documented` — the branch conditions are based on AWS / NetApp official documentation (confirmed 2026-09-22).
+> **Tier**: `documented` — the branch conditions are based on AWS / NetApp official documentation (confirmed 2026-09-22; the Fargate volume rows rechecked 2026-11-11).
 > **A sibling repository holds the real-infrastructure checks of the container routes** (ap-northeast-1, one observation each, small scale). ECS on EC2 + NFS on 2026-11-10; EKS on EC2 + Trident (an NFS RWX volume and an iSCSI RWO volume persisted across a pod restart and a reschedule to another node) on 2026-10-29; Fargate + S3 Access Points (both ECS and EKS) on 2026-11-10. Performance, Multi-AZ failover, and concurrent writes from several clients are not measured.
-> The implementation (five configurations as CloudFormation templates) lives in [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns).
+> The implementation (five configurations as CloudFormation templates) lives in [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns). The use cases of S3 Access Points, how to choose the origin, and the check status per AWS service and SaaS product are in that repository's "Use cases and integrations for S3 Access Points".
 
 ---
 
