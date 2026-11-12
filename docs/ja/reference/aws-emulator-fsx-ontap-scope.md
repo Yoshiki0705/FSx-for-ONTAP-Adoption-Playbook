@@ -163,3 +163,7 @@ AWS Emulator 側の制約は表のとおりです。実際の AWS 側の制約�
 ---
 
 [🏠 リポジトリトップ](../../../README.md) | [Reference](README.md)
+
+<!-- lang-switcher:start -->
+🌐 [日本語](aws-emulator-fsx-ontap-scope.md) | [English](../../en/reference/aws-emulator-fsx-ontap-scope.md) | [🏠 リポジトリトップ](../../../README.md)
+<!-- lang-switcher:end -->
