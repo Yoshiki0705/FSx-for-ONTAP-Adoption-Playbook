@@ -182,6 +182,12 @@ jobs:
       - name: Check workflow observability
         run: make workflow-observability
 
+      # The copied supply-chain files must stay byte-identical to the commit they were copied from.
+      # Offline only: the network half (supply-chain-copy-external) fetches the source commit and is
+      # opt-in, like links-external, because a host being briefly unreachable is not a defect here.
+      - name: Check copied supply-chain files match their recorded SHA-256
+        run: make supply-chain-copy
+
       # Guardrail tests: the irreversibility guard's block / ask / allow contract, .PHONY
       # completeness, and one deliberate break per documentation gate. Without these a
       # gate can stop detecting anything and still report success.

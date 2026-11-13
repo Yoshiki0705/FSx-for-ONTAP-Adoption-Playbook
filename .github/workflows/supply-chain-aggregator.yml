@@ -1,0 +1,109 @@
+# The supply-chain Aggregator: every six hours, read the target repositories (layers A and B) and the
+# public feeds, hand them to the pure core in tools/supply_chain/, apply the Issue plan it returns, and
+# save the run record to the `supply-chain-runs` branch.
+#
+# Everything this job writes goes through a GitHub App, never through the job's GITHUB_TOKEN:
+#   * token 1 (spoke-token) reads the target repositories and writes Issues (also the failure Issue
+#     here). It is scoped to the repositories the App is installed on.
+#   * token 2 (hub-token) is scoped to this one repository and holds only `contents: write`. It writes
+#     the run record to `supply-chain-runs` and nothing else.
+# The job's own GITHUB_TOKEN is `contents: read`, enough to check out this repository.
+#
+# This workflow runs only on `schedule` and `workflow_dispatch`, so no pull request ever runs it. Its
+# first execution must be observed by a person: push the branch, run it once with workflow_dispatch,
+# read the result, then merge.
+#
+# Needs, set by a maintainer (the workflow fails with a message when they are missing):
+#   variables: SUPPLY_CHAIN_APP_CLIENT_ID, SUPPLY_CHAIN_POLICY_REF (40-digit commit SHA of the
+#              Cyber-Resilience-Patterns repository that holds the Policy_File)
+#   secret:    SUPPLY_CHAIN_APP_PRIVATE_KEY
+#   branch:    supply-chain-runs (created by a maintainer; this workflow never creates it)
+name: supply-chain-aggregator
+
+on:
+  schedule:
+    # Six-hourly. The watchdog runs at another minute so the two do not start together.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+# One run at a time, and a run in progress is never cut off: a half-applied plan is worse than a late one.
+concurrency:
+  group: supply-chain-aggregator
+  cancel-in-progress: false
+
+jobs:
+  aggregate:
+    name: aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check the configuration
+        env:
+          APP_CLIENT_ID: ${{ vars.SUPPLY_CHAIN_APP_CLIENT_ID }}
+          APP_PRIVATE_KEY_PRESENT: ${{ secrets.SUPPLY_CHAIN_APP_PRIVATE_KEY != '' }}
+          POLICY_REF: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
+        run: |
+          if [ -z "$APP_CLIENT_ID" ]; then
+            echo "::error::The repository variable SUPPLY_CHAIN_APP_CLIENT_ID is not set"
+            exit 1
+          fi
+          if [ "$APP_PRIVATE_KEY_PRESENT" != "true" ]; then
+            echo "::error::The repository secret SUPPLY_CHAIN_APP_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          if ! [[ "$POLICY_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The repository variable SUPPLY_CHAIN_POLICY_REF must be 40 lowercase hexadecimal digits"
+            exit 1
+          fi
+
+      - name: Checkout this repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout the Policy_File at the pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns
+          ref: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
+          path: policy
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Create the token for reading the targets and writing Issues
+        id: spoke-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.SUPPLY_CHAIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SUPPLY_CHAIN_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+          permission-issues: write
+          permission-vulnerability-alerts: read
+          permission-actions: read
+          permission-metadata: read
+
+      - name: Create the token for writing the run record
+        id: hub-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.SUPPLY_CHAIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SUPPLY_CHAIN_APP_PRIVATE_KEY }}
+          repositories: ${{ github.repository }}
+          permission-contents: write
+
+      - name: Run the Aggregator
+        env:
+          SPOKE_TOKEN: ${{ steps.spoke-token.outputs.token }}
+          HUB_TOKEN: ${{ steps.hub-token.outputs.token }}
+          POLICY_FILE: policy/docs/agent/supply-chain-policy.json
+          SUPPLY_CHAIN_POLICY_REF: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
+        run: python3 tools/supply_chain_aggregator.py run

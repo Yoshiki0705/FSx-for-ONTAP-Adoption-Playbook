@@ -1,0 +1,122 @@
+# Reusable workflow: validate the OpenVEX documents in a repository's `.vex/` directory.
+#
+# Called by the Spokes (not by this repository). The check itself lives in the source repository
+# (scripts/check_supply_chain.py, subcommand `vex`), not here: it reads the Policy_File and the
+# presets from fixed paths under --root and imports the pure core by a path relative to `scripts/`,
+# so it cannot be copied as a single file. It is checked out at `policy-ref`, a full commit SHA the
+# caller pins, and run against a scratch directory (`work`) holding the caller's tree with the
+# Policy_File from that commit laid on top.
+#
+# Fails the calling job when a document breaks the OpenVEX rules or the one-statement-per-document
+# rule, or when the tool itself cannot run. A repository with no `.vex/` is scanned as 0 files and
+# passes. Violations are written to the job summary.
+#
+# This workflow has no secrets, no write permission, and no inherited secrets. It never hands a
+# VEX document to a scanner: only the Aggregator reads `.vex/`.
+name: vex-validate
+
+on:
+  workflow_call:
+    inputs:
+      vex-directory:
+        description: Directory of OpenVEX documents, relative to the repository root
+        type: string
+        required: false
+        default: .vex
+      policy-ref:
+        description: 40-digit commit SHA of the source repository that holds the check and the Policy_File
+        type: string
+        required: true
+
+permissions: {}
+
+env:
+  # PyYAML is imported when the tool starts (one of its subcommands needs it), not only by `vex`.
+  PYYAML_VERSION: "6.0.3"
+
+jobs:
+  validate:
+    name: validate OpenVEX documents
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check inputs
+        env:
+          POLICY_REF: ${{ inputs.policy-ref }}
+          VEX_DIRECTORY: ${{ inputs.vex-directory }}
+        run: |
+          if ! [[ "$POLICY_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::policy-ref must be 40 lowercase hexadecimal digits"
+            exit 1
+          fi
+          case "$VEX_DIRECTORY" in
+            ''|/*|..|../*|*/..|*/../*)
+              echo "::error::vex-directory must be a relative path without '..'"
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: caller
+          persist-credentials: false
+
+      - name: Checkout the check at policy-ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns
+          ref: ${{ inputs.policy-ref }}
+          path: source
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==${PYYAML_VERSION}"
+
+      - name: Prepare the scratch tree
+        env:
+          VEX_DIRECTORY: ${{ inputs.vex-directory }}
+        run: |
+          mkdir -p work/docs/agent
+          (cd caller && tar --exclude=./.git -cf - .) | tar -xf - -C work
+          cp source/docs/agent/supply-chain-policy.json work/docs/agent/supply-chain-policy.json
+          if [ -f source/docs/agent/automerge-required-checks.json ]; then
+            cp source/docs/agent/automerge-required-checks.json work/docs/agent/automerge-required-checks.json
+          fi
+          directory="${VEX_DIRECTORY%/}"
+          if [ "$directory" != ".vex" ]; then
+            rm -rf work/.vex
+            if [ -d "caller/$directory" ]; then
+              cp -R "caller/$directory" work/.vex
+            fi
+          fi
+
+      - name: Validate OpenVEX documents
+        run: |
+          if python3 source/scripts/check_supply_chain.py vex --root work > "$RUNNER_TEMP/vex.out" 2> "$RUNNER_TEMP/vex.err"; then
+            status=0
+          else
+            status=$?
+          fi
+          {
+            echo "### vex-validate"
+            echo
+            echo "Exit status: $status"
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/vex.out"
+            cat "$RUNNER_TEMP/vex.err"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/vex.out"
+          cat "$RUNNER_TEMP/vex.err" >&2
+          if [ "$status" -ne 0 ]; then
+            echo "::error::vex check failed with exit status $status"
+            exit "$status"
+          fi
