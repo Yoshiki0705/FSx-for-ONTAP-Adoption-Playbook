@@ -1,0 +1,75 @@
+# Watches the Aggregator. If the newest run record on the `supply-chain-runs` branch is older than
+# 12 hours, or there is no record (or the branch cannot be read), this job fails and appends to the
+# Hub's failure Issue, the same one the Aggregator's own consecutive failures use, or opens it if none
+# is open. The 12 hours and the Issue handling are decided by the pure core in tools/supply_chain/.
+#
+# It does not use the GitHub App: the job's own GITHUB_TOKEN reads the branch (contents: read) and
+# writes the Issue (issues: write). It does not depend on the Aggregator's credentials, so a broken
+# App cannot silence it.
+#
+# If this workflow itself is disabled nothing notices. GitHub disables scheduled workflows of a
+# repository with no activity for 60 days; a maintainer looks at the Actions page once a month.
+#
+# This workflow runs only on `schedule` and `workflow_dispatch`, so no pull request ever runs it. Its
+# first execution must be observed by a person (see supply-chain-aggregator.yml).
+name: supply-chain-watchdog
+
+on:
+  schedule:
+    # A different minute from the Aggregator (17 past).
+    - cron: '47 */6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  watch:
+    name: watch the Aggregator
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      # A missing branch must read as "no record", not end the job before it can say so.
+      - name: Checkout the run records
+        id: runs
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: supply-chain-runs
+          path: runs-branch
+          persist-credentials: false
+
+      - name: Check the age of the newest run record
+        id: check
+        continue-on-error: true
+        env:
+          PYTHONPATH: tools
+        run: python3 -m supply_chain.watchdog_cli --runs-dir runs-branch/runs
+
+      - name: Append to the failure Issue
+        if: ${{ steps.check.outcome == 'failure' }}
+        env:
+          NOTIFY_TOKEN: ${{ github.token }}
+          RUNS_CHECKOUT: ${{ steps.runs.outcome }}
+        run: |
+          message="The newest Aggregator run record is older than 12 hours, or there is none (checkout of the supply-chain-runs branch: ${RUNS_CHECKOUT})."
+          python3 tools/supply_chain_aggregator.py notify-failure \
+            --run-id "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --message "$message"
+
+      - name: Fail the job
+        if: ${{ steps.check.outcome == 'failure' }}
+        run: |
+          echo "::error::The Aggregator has not saved a run record in time"
+          exit 1
