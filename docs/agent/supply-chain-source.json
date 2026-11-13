@@ -1,0 +1,62 @@
+{
+  "source_repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+  "source_commit": "60dfe37b367db935005747c29c2c5ef8d8b3e007",
+  "files": {
+    "tools/supply_chain/__init__.py": {
+      "source_path": "solutions/supply-chain/supply_chain/__init__.py",
+      "sha256": "f550d3896bc75c0b768e679595a6df9444ada04004ceb7ebb63332c97b1eeb0f"
+    },
+    "tools/supply_chain/issue_body.py": {
+      "source_path": "solutions/supply-chain/supply_chain/issue_body.py",
+      "sha256": "426686529d54988319cb59ed3e33d5255ac2c71f21a85d893cfc55883ac6ab36"
+    },
+    "tools/supply_chain/metrics.py": {
+      "source_path": "solutions/supply-chain/supply_chain/metrics.py",
+      "sha256": "0c534e3307b7479d4736b97755a0b4ee3693bcc79f5415327045a54f4dcc3af1"
+    },
+    "tools/supply_chain/models.py": {
+      "source_path": "solutions/supply-chain/supply_chain/models.py",
+      "sha256": "163739bf6d3200f4737b6c1778e18a73bbbabcef4ca1db42bb1bc945fd13e8f2"
+    },
+    "tools/supply_chain/normalized.py": {
+      "source_path": "solutions/supply-chain/supply_chain/normalized.py",
+      "sha256": "d5aa88b412bd86e37431f4aae23e6ba2f37b7244207453be7aedae19c9526881"
+    },
+    "tools/supply_chain/planner.py": {
+      "source_path": "solutions/supply-chain/supply_chain/planner.py",
+      "sha256": "9363699dc4430c1a080392bbc5362f98d9bc7fc86c4f1c00271c3008b4a9d50a"
+    },
+    "tools/supply_chain/policy.py": {
+      "source_path": "solutions/supply-chain/supply_chain/policy.py",
+      "sha256": "75f93dfd8f076b1866087b7eb8fc80c29ede406c93a6d60226b66ae2108b5f28"
+    },
+    "tools/supply_chain/run_record.py": {
+      "source_path": "solutions/supply-chain/supply_chain/run_record.py",
+      "sha256": "353e8f195cb3bc7a614e2473b7196631ce872ea745ce095a29bb778634650517"
+    },
+    "tools/supply_chain/threshold.py": {
+      "source_path": "solutions/supply-chain/supply_chain/threshold.py",
+      "sha256": "2710d52b00d408608223fe9c170dd17c10402a5a20f0d254c3077311d7e3c876"
+    },
+    "tools/supply_chain/vex.py": {
+      "source_path": "solutions/supply-chain/supply_chain/vex.py",
+      "sha256": "e097e7685e3560b681cf0d9b3c12a1f7aafc7c389094da6352e0d94a6b711956"
+    },
+    "tools/supply_chain/watchdog.py": {
+      "source_path": "solutions/supply-chain/supply_chain/watchdog.py",
+      "sha256": "e769c236758c8ce7a8005d99c487e077de1b266633335380d29ec9da099ecaff"
+    },
+    "tools/supply_chain/watchdog_cli.py": {
+      "source_path": "solutions/supply-chain/supply_chain/watchdog_cli.py",
+      "sha256": "7456bc5c8132b750d3a1bbf536e2e1d6f3a5d924f6c77808895936002131d2f7"
+    },
+    "tools/supply_chain_adapters/__init__.py": {
+      "source_path": "solutions/supply-chain/adapters/__init__.py",
+      "sha256": "c4a373ab6f44ca618241bc5c50350fcbcae0dd16dab2553dbe64f58d18b5bab1"
+    },
+    "tools/supply_chain_adapters/spdx.py": {
+      "source_path": "solutions/supply-chain/adapters/spdx.py",
+      "sha256": "862f34fdf0415797e2ab39a9c18b21cf794f691a2429a9278694b1ac2b121f6b"
+    }
+  }
+}
