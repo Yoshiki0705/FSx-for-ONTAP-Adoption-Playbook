@@ -4,7 +4,8 @@
 #
 # Everything this job writes goes through a GitHub App, never through the job's GITHUB_TOKEN:
 #   * token 1 (spoke-token) reads the target repositories and writes Issues (also the failure Issue
-#     here). It is scoped to the repositories the App is installed on.
+#     here). It is scoped to the Policy_File's target_repositories plus this
+#     repository (the failure Issue), listed by the `scope` step at run time.
 #   * token 2 (hub-token) is scoped to this one repository and holds only `contents: write`. It writes
 #     the run record to `supply-chain-runs` and nothing else.
 # The job's own GITHUB_TOKEN is `contents: read`, enough to check out this repository.
@@ -78,6 +79,31 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: List the repositories the first token may reach
+        id: scope
+        env:
+          POLICY_FILE: policy/docs/agent/supply-chain-policy.json
+          HUB_REPOSITORY: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          with open(os.environ["POLICY_FILE"], encoding="utf-8") as handle:
+              targets = json.load(handle)["target_repositories"]
+          owner = os.environ["OWNER"]
+          hub = os.environ["HUB_REPOSITORY"]
+          names = []
+          for entry in [*targets, hub]:
+              entry_owner, _, _name = entry.partition("/")
+              if entry_owner.lower() != owner.lower():
+                  print(f"::error::{entry} is not owned by {owner}; the token has one owner")
+                  sys.exit(1)
+              if entry not in names:
+                  names.append(entry)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("repositories<<EOF_REPOS\n" + "\n".join(names) + "\nEOF_REPOS\n")
+          PY
+
       - name: Create the token for reading the targets and writing Issues
         id: spoke-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -85,6 +111,7 @@ jobs:
           client-id: ${{ vars.SUPPLY_CHAIN_APP_CLIENT_ID }}
           private-key: ${{ secrets.SUPPLY_CHAIN_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ steps.scope.outputs.repositories }}
           permission-contents: read
           permission-issues: write
           permission-vulnerability-alerts: read
