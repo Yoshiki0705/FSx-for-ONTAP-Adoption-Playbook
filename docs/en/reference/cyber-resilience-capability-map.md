@@ -87,6 +87,7 @@ Per-function implementation detail lives in the following places. This page does
 
 - The per-function detail is in the cyber repository's single mapping ([docs/en/cyber-resilience-framework-mapping.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/en/cyber-resilience-framework-mapping.md)). It includes the encryption/destruction vs exfiltration scenarios, the management-plane compromise, and the evidence types.
 - The full six-function implementation-level detail is in the observability repository's existing capability map ([docs/en/cyber-resilience-capability-map.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/en/cyber-resilience-capability-map.md)). This page points to it and does not restate its content.
+- The overall policy and order of work for the three pillars (software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics) is in the cyber repository's programme document ([Cyber Resilience Programme](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/en/cyber-resilience-programme.md), [サイバーレジリエンス プログラム](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/cyber-resilience-programme.md) (日本語)). This page holds only the function-to-Spoke mapping and does not restate the content of each pillar.
 
 ---
 
