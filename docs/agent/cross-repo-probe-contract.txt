@@ -39,7 +39,9 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max even
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent-prompts/ontap-catalog-snapshot.md	retraction	このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジックの 3 本の柱を 1 か所にまとめ
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
