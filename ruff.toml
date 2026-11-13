@@ -7,3 +7,16 @@
 [lint.per-file-ignores]
 "automation/ontap-ops/**/__init__.py" = ["N999"]
 "automation/ontap-ops/__init__.py" = ["N999"]
+
+# Byte-for-byte copies of the supply-chain core from another repository. They are verified
+# against docs/agent/supply-chain-source.json by tools/check_supply_chain_copy.py, so they
+# cannot be edited to satisfy this repository's rule set; the rules they trip are listed here
+# by number and nothing wider is excluded.
+"tools/supply_chain/planner.py" = ["I001", "SIM114"]
+"tools/supply_chain/run_record.py" = ["RUF100"]
+"tools/supply_chain/vex.py" = ["RUF100"]
+
+# The copies were formatted with a different line length. Formatting them here would change
+# their bytes, so they are excluded from `ruff format` only; `ruff check` still reads them.
+[format]
+exclude = ["tools/supply_chain/*.py", "tools/supply_chain_adapters/*.py"]
