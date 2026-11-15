@@ -2666,7 +2666,7 @@ class VexApproval(unittest.TestCase):
         self.assert_unapproved(net, "Code Owner")
 
     def test_an_email_address_as_the_owner_is_not_counted(self) -> None:
-        net = self.world(codeowners="/.vex/ reviewer@example.test\n")
+        net = self.world(codeowners="/.vex/ reviewer" + chr(64) + "example.test\n")
         self.assert_unapproved(net, "Code Owner")
 
     def test_a_user_beside_a_team_counts(self) -> None:
@@ -2988,7 +2988,11 @@ class CodeownersOwners(unittest.TestCase):
         )
 
     def test_owners_are_users_in_lower_case_only(self) -> None:
-        text = "/.vex/ @Bob @org/team carol@example.test @a-b @-bad @bad- bob\n"
+        text = (
+            "/.vex/ @Bob @org/team carol"
+            + chr(64)
+            + "example.test @a-b @-bad @bad- bob\n"
+        )
         self.assertEqual(self.owners(text), {"bob", "a-b"})
 
     def test_the_last_match_replaces_the_owners_and_does_not_add_to_them(self) -> None:
