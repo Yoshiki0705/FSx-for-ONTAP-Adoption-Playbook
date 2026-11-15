@@ -1,0 +1,216 @@
+{
+  "aggregator_commit": "8ff5510d573efcea3dbdc9da8b46fd0f28a6f348",
+  "deferred_by_feed": [],
+  "end_state": "failure",
+  "epss": {
+    "fetched_on": null,
+    "model_version": null
+  },
+  "failure_notice_error": null,
+  "failure_reason": "no target repository could be read",
+  "feeds": {
+    "failed": [
+      {
+        "at": "2026-11-15T04:38:27Z",
+        "name": "epss",
+        "reason": "GET https://epss.empiricalsecurity.com/epss_scores-current.csv.gz -> HTTP 302"
+      }
+    ],
+    "fetched": [
+      {
+        "at": "2026-11-15T04:38:27Z",
+        "catalog_version": "2026.11.13",
+        "entry_count": null,
+        "http_date": null,
+        "name": "kev",
+        "payload_sha256": null,
+        "released_at": null,
+        "source_url": null
+      },
+      {
+        "at": "2026-11-15T04:38:27Z",
+        "catalog_version": null,
+        "entry_count": null,
+        "http_date": null,
+        "name": "malicious",
+        "payload_sha256": null,
+        "released_at": null,
+        "source_url": null
+      }
+    ]
+  },
+  "findings": [],
+  "finished_at": "2026-11-15T04:39:10Z",
+  "held_unscored": [],
+  "issues": [],
+  "kev_fetched_on": "2026-11-15",
+  "malicious_withdrawn_unconfirmed": [],
+  "policy_commit": "9f1f508826fa95ea26323f31644db0a08eca3d46",
+  "prev_record_sha256": null,
+  "pull_requests": [],
+  "rate_limit": {
+    "processed": [
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns",
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files",
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP",
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI",
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations",
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG"
+    ],
+    "unprocessed": []
+  },
+  "rejected_vex": [],
+  "repositories": {
+    "fetch_failed": [
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-reposito",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/S3-Burst-on-ONTAP-Files/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-repository\",\"sta",
+        "repo": "Yoshiki0705/S3-Burst-on-ONTAP-Files"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/S3-Burst-on-ONTAP-Files"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/VMware-Migration-EC2-ONTAP/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-repository\",\"",
+        "repo": "Yoshiki0705/VMware-Migration-EC2-ONTAP"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/VMware-Migration-EC2-ONTAP"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/ONTAP-Edge-to-Cloud-AI/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-repository\",\"stat",
+        "repo": "Yoshiki0705/ONTAP-Edge-to-Cloud-AI"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/ONTAP-Edge-to-Cloud-AI"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-rep",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-aler",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-repository\",\"",
+        "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase"
+      },
+      {
+        "layer": "A",
+        "reason": "dependabot alerts: GET https://api.github.com/repos/Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG/dependabot/alerts -> HTTP 400 {\"message\":\"Pagination using the `page` parameter is not supported.\",\"documentation_url\":\"https://docs.github.com/rest/dependabot/alerts#list-dependabot-alerts-for-a-r",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG"
+      }
+    ],
+    "required_checks": {
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase": null,
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook": null,
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG": null,
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations": null,
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations": null,
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns": null,
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI": null,
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files": null,
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP": null
+    },
+    "scanned": [],
+    "scanned_detail": {}
+  },
+  "response_metrics": {},
+  "run_id": "43677638168-1",
+  "schema_version": 2,
+  "started_at": "2026-11-15T04:38:27Z",
+  "summary_overflow": {},
+  "unscored": [],
+  "vex_exclusions": []
+}
