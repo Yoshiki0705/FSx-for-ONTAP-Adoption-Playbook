@@ -485,7 +485,7 @@ release attestation が示すのは、公開された release のタグ、コミ
 
 ### 確かめていないこと
 
-- この手順を実行していません。実機で 1 回通すまで、この節の手順は hypothesis です。
+- この手順を実行していません。実機で 1 回通すまで、この節の手順は未検証です。
 - 既存タグ `supply-chain-preset-v1.0.0` を immutable release にできるか。
 - `gh release create` のフラグと、attestation の取り出し方。
 - ルールセットと immutable release を併用したときの、実際の拒否のされ方。
