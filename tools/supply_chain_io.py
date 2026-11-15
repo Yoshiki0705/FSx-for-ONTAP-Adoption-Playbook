@@ -22,6 +22,7 @@ from __future__ import annotations
 import base64
 import csv
 import gzip
+import hashlib
 import io
 import json
 import re
@@ -42,6 +43,7 @@ USER_AGENT = "fsx-ontap-adoption-playbook-supply-chain-aggregator"
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 EPSS_URL = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
 OSV_ROOT = "https://api.osv.dev"
+OSV_QUERY_URL = f"{OSV_ROOT}/v1/querybatch"
 REQUEST_TIMEOUT_SECONDS = 60
 # A wait longer than this is not served: the run stops and records which repositories were left.
 MAX_SERVED_WAIT_SECONDS = 120.0
@@ -393,14 +395,48 @@ def _kev_released_at(raw: object) -> datetime | None:
     return parsed.replace(microsecond=0) if parsed is not None else None
 
 
+@dataclass(frozen=True, slots=True)
+class FeedPayload:
+    """What one feed response was, so that "the data said none" can be checked later.
+
+    Attributes:
+        sha256: SHA-256 of the response body bytes exactly as received (64 lowercase hex digits). For a
+            compressed body (the EPSS file is gzip) these are the compressed bytes.
+        entry_count: How many entries the body held. What an entry is depends on the feed and is named in
+            the docstring of the function that read it (KEV: the items of ``vulnerabilities``; EPSS: the
+            data rows of the CSV file, whether or not the caller asked about them).
+        source_url: The URL that answered, without its query string (a signed URL carries credentials
+            there). For a feed that redirects, the URL after the redirects.
+        http_date: The ``Date`` header of that response as received, ``None`` when it had none. The run
+            time is never put here in its place.
+    """
+
+    sha256: str
+    entry_count: int
+    source_url: str
+    http_date: str | None
+
+
+def _payload(resp: Response, url: str, entry_count: int) -> FeedPayload:
+    return FeedPayload(
+        hashlib.sha256(resp.body).hexdigest(),
+        entry_count,
+        _redact(url),
+        resp.headers.get("date") or None,
+    )
+
+
 def fetch_kev(
     client: Client,
-) -> tuple[dict[str, KevEntry], str | None, datetime | None]:
-    """CISA KEV: id -> ``KevEntry``, the catalogue version, and the catalogue's ``dateReleased``.
+) -> tuple[dict[str, KevEntry], str | None, datetime | None, FeedPayload]:
+    """CISA KEV: id -> ``KevEntry``, the catalogue version, the catalogue's ``dateReleased``, and the payload.
 
     ``knownRansomwareCampaignUse``, ``dueDate`` and ``forensicTriage`` are shown, never used to decide. A
     missing or unreadable one of them is None for that entry and does not hide the entry's other fields.
     ``dateAdded`` stays required: an entry without it fails the whole fetch, as before.
+
+    The payload's ``entry_count`` is the number of items in ``vulnerabilities``. That the real response carries
+    a ``Date`` header was not observed (no network when this was written); a missing one is ``None``.
     """
     resp = client.send("GET", KEV_URL, headers={"Accept": "application/json"})
     if not resp.ok:
@@ -415,7 +451,12 @@ def fetch_kev(
             _kev_due_date(entry.get("dueDate")),
             _kev_forensic_triage(entry.get("forensicTriage")),
         )
-    return table, doc.get("catalogVersion"), _kev_released_at(doc.get("dateReleased"))
+    return (
+        table,
+        doc.get("catalogVersion"),
+        _kev_released_at(doc.get("dateReleased")),
+        _payload(resp, KEV_URL, len(doc["vulnerabilities"])),
+    )
 
 
 MAX_FEED_REDIRECTS = 3
@@ -423,8 +464,11 @@ MAX_FEED_REDIRECTS = 3
 
 def _get_following_same_host(
     client: Client, url: str, headers: Mapping[str, str]
-) -> Response:
+) -> tuple[Response, str]:
     """GET without a token, following at most MAX_FEED_REDIRECTS redirects to the same host over https.
+
+    Returns:
+        The final response and the URL that answered it.
 
     Raises:
         HttpError: A redirect without Location, to another host or scheme, or a further redirect.
@@ -448,7 +492,7 @@ def _get_following_same_host(
         current = target
         resp = client.send("GET", current, headers=headers)
         hops += 1
-    return resp
+    return resp, current
 
 
 _EPSS_HEADER = re.compile(r"^#model_version:([^,]+),score_date:(\d{4}-\d{2}-\d{2})")
@@ -456,12 +500,16 @@ _EPSS_HEADER = re.compile(r"^#model_version:([^,]+),score_date:(\d{4}-\d{2}-\d{2
 
 def fetch_epss(
     client: Client, wanted: Sequence[str]
-) -> dict[str, tuple[str, date, str]]:
-    """FIRST EPSS daily file: id -> (score, score date, model version), for the ids asked about.
+) -> tuple[dict[str, tuple[str, date, str]], FeedPayload]:
+    """FIRST EPSS daily file: (id -> (score, score date, model version) for the ids asked about, the payload).
 
     The model version and the date are read from the file's first line, not assumed.
+
+    The payload's ``entry_count`` is the number of data rows of the CSV (the ``#model_version`` line and the
+    column header are not rows), counted over the whole file and not only the rows of ``wanted``. Its hash is
+    that of the gzip bytes received, and its URL and ``Date`` are those of the response after any redirects.
     """
-    resp = _get_following_same_host(client, EPSS_URL, {"Accept": "*/*"})
+    resp, final_url = _get_following_same_host(client, EPSS_URL, {"Accept": "*/*"})
     if not resp.ok:
         raise HttpError("GET", EPSS_URL, resp.status)
     lines = io.TextIOWrapper(io.BytesIO(gzip.decompress(resp.body)), encoding="utf-8")
@@ -471,10 +519,12 @@ def fetch_epss(
     model, score_date = header.group(1), date.fromisoformat(header.group(2))
     wanted_set = set(wanted)
     table: dict[str, tuple[str, date, str]] = {}
+    rows = 0
     for row in csv.DictReader(lines):
+        rows += 1
         if row["cve"] in wanted_set:
             table[row["cve"]] = (row["epss"], score_date, model)
-    return table
+    return table, _payload(resp, final_url, rows)
 
 
 def parse_osv_time(raw: object) -> datetime | None:
@@ -510,17 +560,17 @@ class Osv:
                     queries.append(q)
                 resp = self._client.send(
                     "POST",
-                    f"{OSV_ROOT}/v1/querybatch",
+                    OSV_QUERY_URL,
                     headers={"Content-Type": "application/json"},
                     body=json.dumps({"queries": queries}).encode("utf-8"),
                 )
                 if not resp.ok:
-                    raise HttpError("POST", f"{OSV_ROOT}/v1/querybatch", resp.status)
+                    raise HttpError("POST", OSV_QUERY_URL, resp.status)
                 results = resp.json()["results"]
                 if len(results) != len(pending):
                     raise HttpError(
                         "POST",
-                        f"{OSV_ROOT}/v1/querybatch",
+                        OSV_QUERY_URL,
                         resp.status,
                         "result count mismatch",
                     )
@@ -536,7 +586,7 @@ class Osv:
             else:
                 raise HttpError(
                     "POST",
-                    f"{OSV_ROOT}/v1/querybatch",
+                    OSV_QUERY_URL,
                     200,
                     "pagination did not finish",
                 )

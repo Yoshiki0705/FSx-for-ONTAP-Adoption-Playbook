@@ -19,6 +19,7 @@ these tests do not re-test its rules. They pin the behaviours the design asks of
 from __future__ import annotations
 
 import base64
+import dataclasses
 import gzip
 import hashlib
 import io
@@ -1297,7 +1298,11 @@ def declared_empty() -> dict[str, Any]:
 
 
 def artifact(
-    net: FakeNet, sbom: dict[str, Any], extra_members: dict[str, str] | None = None
+    net: FakeNet,
+    sbom: dict[str, Any],
+    extra_members: dict[str, str] | None = None,
+    *,
+    artifact_id: int | None = None,
 ) -> None:
     findings = {
         "schema_version": 1,
@@ -1314,22 +1319,15 @@ def artifact(
         archive.writestr("findings.normalized.json", json.dumps(findings))
         for member, text in (extra_members or {}).items():
             archive.writestr(member, text)
-    net.on(
-        "GET",
-        r"/actions/artifacts\?",
-        ok(
-            {
-                "artifacts": [
-                    {
-                        "name": f"sbom-{SHA}",
-                        "expired": False,
-                        "archive_download_url": f"https://api.github.com/repos/{TARGET}/actions/artifacts/5/zip",
-                        "workflow_run": {"head_branch": "main"},
-                    }
-                ]
-            }
-        ),
-    )
+    item: dict[str, Any] = {
+        "name": f"sbom-{SHA}",
+        "expired": False,
+        "archive_download_url": f"https://api.github.com/repos/{TARGET}/actions/artifacts/5/zip",
+        "workflow_run": {"head_branch": "main"},
+    }
+    if artifact_id is not None:
+        item["id"] = artifact_id
+    net.on("GET", r"/actions/artifacts\?", ok({"artifacts": [item]}))
     net.on("GET", r"/artifacts/5/zip$", Response(200, {}, buffer.getvalue()))
 
 
@@ -3173,9 +3171,12 @@ class ExtraRecord(unittest.TestCase):
                 "record_sha256",
                 "skipped_paths",
                 "pilot",
+                "detector_signals",
+                "detection_excluded_unknown_origin",
+                "sbom",
             ],
         )
-        self.assertEqual(data["schema_version"], 1)
+        self.assertEqual(data["schema_version"], 2)
         self.assertEqual(data["run_id"], RUN_ID)
         self.assertEqual(data["record_path"], outcome.saved_path)
         self.assertEqual(data["record_sha256"], digest(put_texts(net)[0]))
@@ -3759,6 +3760,654 @@ class Helpers(unittest.TestCase):
         self.assertEqual(
             len(parse_policy(policy_text([TARGET])).target_repositories), 1
         )
+
+
+# --- feed fields of the run record (task 15.7) ----------------------------------------------------------
+
+DATE_KEV = "Sat, 14 Nov 2026 15:04:05 GMT"
+DATE_EPSS = "Sat, 14 Nov 2026 15:04:06 GMT"
+KEV_SOURCE = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+EPSS_SOURCE = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
+OSV_SOURCE = "https://api.osv.dev/v1/querybatch"
+
+
+def fetched(outcome: Any, name: str) -> run_record.FeedFetched:
+    found = [f for f in outcome.record.feeds.fetched if f.name == name]
+    assert len(found) == 1, f"{name}: {found}"
+    return found[0]
+
+
+class FeedFields(unittest.TestCase):
+    """What each feed said is recorded: the hash of the body, how many entries, where from, and the Date."""
+
+    KEV_BODY = json.dumps(kev_feed(["CVE-2021-0001", "CVE-2021-0002"])).encode("utf-8")
+
+    def dated(self) -> FakeNet:
+        net = world()
+        net.on("GET", r"cisa\.gov", Response(200, {"date": DATE_KEV}, self.KEV_BODY))
+        net.on(
+            "GET",
+            r"epss\.empiricalsecurity\.com",
+            Response(200, {"date": DATE_EPSS}, epss_file().body),
+        )
+        return net
+
+    def test_kev_and_epss_carry_the_four_fields(self) -> None:
+        outcome = execute(self.dated(), policy_text([TARGET]))
+        kev, epss = fetched(outcome, "kev"), fetched(outcome, "epss")
+        self.assertEqual(kev.payload_sha256, hashlib.sha256(self.KEV_BODY).hexdigest())
+        self.assertEqual(kev.entry_count, 2)
+        self.assertEqual(kev.source_url, KEV_SOURCE)
+        self.assertEqual(kev.http_date, DATE_KEV)
+        self.assertEqual(
+            epss.payload_sha256, hashlib.sha256(epss_file().body).hexdigest()
+        )
+        self.assertEqual(epss.entry_count, 1)
+        self.assertEqual(epss.source_url, EPSS_SOURCE)
+        self.assertEqual(epss.http_date, DATE_EPSS)
+
+    def test_without_a_date_header_the_date_is_none_and_the_rest_is_still_filled(
+        self,
+    ) -> None:
+        outcome = execute(world(), policy_text([TARGET]))
+        for name in ("kev", "epss"):
+            with self.subTest(name):
+                feed = fetched(outcome, name)
+                self.assertIsNone(feed.http_date, "the run time must not stand in")
+                self.assertIsNotNone(feed.payload_sha256)
+                self.assertIsNotNone(feed.entry_count)
+                self.assertIsNotNone(feed.source_url)
+
+    def test_the_fields_survive_the_written_run_record(self) -> None:
+        net = self.dated()
+        execute(net, policy_text([TARGET]))
+        saved = run_record.from_json(put_texts(net)[0])
+        kev = next(f for f in saved.feeds.fetched if f.name == "kev")
+        self.assertEqual(kev.payload_sha256, hashlib.sha256(self.KEV_BODY).hexdigest())
+        self.assertEqual(kev.http_date, DATE_KEV)
+
+    def osv_world(self, record: Response | None) -> FakeNet:
+        net = world()
+        if record is not None:
+            net.on(
+                "POST",
+                r"/v1/querybatch",
+                lambda url, payload: ok(
+                    {
+                        "results": [
+                            {"vulns": [{"id": "MAL-2026-1"}]}
+                            for _ in payload["queries"]
+                        ]
+                    }
+                ),
+            )
+            net.on("GET", r"api\.osv\.dev/v1/vulns/MAL-2026-1", record)
+        return net
+
+    def test_osv_has_a_url_and_a_count_but_no_hash_and_no_date(self) -> None:
+        outcome = execute(self.osv_world(None), policy_text([TARGET]))
+        feed = fetched(outcome, "malicious")
+        self.assertIsNone(feed.payload_sha256, "several responses have no one body")
+        self.assertIsNone(feed.http_date)
+        self.assertEqual(feed.source_url, OSV_SOURCE)
+        self.assertEqual(feed.entry_count, 0, "a count of zero is a statement")
+
+    def test_osv_counts_the_mal_records_that_were_read(self) -> None:
+        record = ok({"id": "MAL-2026-1", "published": "2026-01-01T00:00:00Z"})
+        feed = fetched(
+            execute(self.osv_world(record), policy_text([TARGET])), "malicious"
+        )
+        self.assertEqual(feed.entry_count, 1)
+        self.assertIsNone(feed.payload_sha256)
+
+    def test_osv_does_not_count_a_record_it_could_not_read(self) -> None:
+        net = self.osv_world(ok({"message": "not found"}, 404))
+        feed = fetched(execute(net, policy_text([TARGET])), "malicious")
+        self.assertEqual(feed.entry_count, 0)
+
+    def test_a_failed_feed_gets_no_fetched_entry_and_no_such_fields(self) -> None:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok({"message": "down"}, 503))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertNotIn("kev", [f.name for f in outcome.record.feeds.fetched])
+        self.assertEqual(
+            [f.name for f in outcome.record.feeds.failed if f.name == "kev"], ["kev"]
+        )
+        self.assertEqual(
+            [f.name for f in dataclasses.fields(run_record.FeedFailed)],
+            ["name", "at", "reason"],
+        )
+        self.assertIsNotNone(fetched(outcome, "epss").payload_sha256)
+
+
+# --- what the Aggregator read the SBOM from (task 15.9) ---------------------------------------------------
+
+SBOM_DOC = spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+SBOM_ZIP_BYTES = json.dumps(SBOM_DOC).encode("utf-8")
+EXPORT_BYTES = json.dumps({"sbom": SBOM_DOC}).encode("utf-8")
+GENERATION = json.dumps(
+    {
+        "commit": SHA,
+        "tool": "example-1.0",
+        "scanner_series": "trivy",
+        "skipped_paths": ["test/fixtures"],
+    }
+)
+
+
+def scanned_detail(outcome: Any) -> dict[str, run_record.ScannedRepo]:
+    return outcome.record.repositories.scanned_detail
+
+
+class ScannedDetail(unittest.TestCase):
+    """``scanned_detail`` names, per scanned repository, which SBOM was read and its hash."""
+
+    def test_layer_b_records_the_artifact_bytes_the_id_and_the_commit(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC, {"generation.json": GENERATION}, artifact_id=5)
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(
+            scanned_detail(outcome)[TARGET],
+            run_record.ScannedRepo(
+                SHA, "B", hashlib.sha256(SBOM_ZIP_BYTES).hexdigest(), 5
+            ),
+        )
+
+    def test_layer_a_records_the_response_body_and_no_artifact(self) -> None:
+        outcome = execute(world(), policy_text([TARGET]))
+        self.assertEqual(
+            scanned_detail(outcome)[TARGET],
+            run_record.ScannedRepo(
+                SHA, "A", hashlib.sha256(EXPORT_BYTES).hexdigest(), None
+            ),
+        )
+
+    def test_an_sbom_that_names_no_commit_leaves_the_commit_empty_for_layer_a(
+        self,
+    ) -> None:
+        doc = spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+        del doc["packages"][0]["versionInfo"]
+        net = world()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"sbom": doc}))
+        detail = scanned_detail(execute(net, policy_text([TARGET])))[TARGET]
+        self.assertIsNone(detail.head_sha)
+        self.assertEqual(detail.sbom_source, "A")
+        self.assertIsNotNone(detail.sbom_sha256)
+
+    def test_an_export_that_could_not_be_read_leaves_every_field_empty(self) -> None:
+        net = world()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"message": "down"}, 500))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.record.repositories.scanned, (TARGET,))
+        self.assertEqual(
+            scanned_detail(outcome)[TARGET],
+            run_record.ScannedRepo(None, None, None, None),
+        )
+
+    def test_a_failed_layer_b_leaves_the_record_with_layer_a_not_a_guess(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC, artifact_id=5)
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:  # no findings.normalized.json
+            archive.writestr("sbom.spdx.json", json.dumps(SBOM_DOC))
+        net.on("GET", r"/artifacts/5/zip$", Response(200, {}, buffer.getvalue()))
+        outcome = execute(net, policy_text([TARGET]))
+        detail = scanned_detail(outcome)[TARGET]
+        self.assertEqual(detail.sbom_source, "A")
+        self.assertEqual(detail.sbom_sha256, hashlib.sha256(EXPORT_BYTES).hexdigest())
+        self.assertIsNone(detail.sbom_artifact_id)
+
+    def test_an_artifact_without_an_integer_id_has_no_id(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC)
+        detail = scanned_detail(execute(net, policy_text([TARGET])))[TARGET]
+        self.assertEqual(detail.sbom_source, "B")
+        self.assertIsNone(detail.sbom_artifact_id)
+
+    def test_the_commit_comes_from_the_sbom_then_generation_json_then_the_name(
+        self,
+    ) -> None:
+        silent = spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+        del silent["packages"][0]["versionInfo"]
+        other = "e" * 40
+        net = world()
+        artifact(net, silent, {"generation.json": json.dumps({"commit": other})})
+        detail = scanned_detail(execute(net, policy_text([TARGET])))[TARGET]
+        self.assertEqual(detail.head_sha, other, "generation.json before the name")
+        net = world()
+        artifact(net, silent)
+        detail = scanned_detail(execute(net, policy_text([TARGET])))[TARGET]
+        self.assertEqual(detail.head_sha, SHA, "the artifact name is the last source")
+
+    def test_sources_that_disagree_are_reported_and_the_sbom_wins(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC, {"generation.json": json.dumps({"commit": "d" * 40})})
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(scanned_detail(outcome)[TARGET].head_sha, SHA)
+        notes = [m for m in outcome.messages if "disagree" in m]
+        self.assertEqual(len(notes), 1, outcome.messages)
+        self.assertIn(TARGET, notes[0])
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+
+    def test_only_scanned_repositories_have_a_detail(self) -> None:
+        net = world([TARGET, OTHER])
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/dependency-graph/sbom$",
+            ok({"sbom": purl_less(spdx_doc([("l", "1.0.0", "pkg:npm/l@1.0.0")]))}),
+        )
+        outcome = execute(net, policy_text([TARGET, OTHER]))
+        self.assertEqual(list(scanned_detail(outcome)), [OTHER])
+
+    def test_the_detail_survives_the_written_run_record(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC, artifact_id=5)
+        execute(net, policy_text([TARGET]))
+        saved = run_record.from_json(put_texts(net)[0])
+        self.assertEqual(
+            saved.repositories.scanned_detail[TARGET].sbom_sha256,
+            hashlib.sha256(SBOM_ZIP_BYTES).hexdigest(),
+        )
+
+
+class SbomSummary(unittest.TestCase):
+    """The extra record keeps a summary of the SBOM that was read, never the SBOM."""
+
+    def summary(self, net: FakeNet) -> dict[str, Any]:
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(outcome.extra.sbom, extra_json(net)["sbom"])
+        return extra_json(net)["sbom"]
+
+    def test_layer_b_has_the_counts_the_tools_and_what_generation_json_says(
+        self,
+    ) -> None:
+        net = world()
+        artifact(net, SBOM_DOC, {"generation.json": GENERATION}, artifact_id=5)
+        self.assertEqual(
+            self.summary(net),
+            {
+                TARGET: {
+                    "layer": "B",
+                    "component_count": 1,
+                    "coverage_complete": True,
+                    "tools": [{"name": "example", "version": "1.0"}],
+                    "generation": {"tool": "example-1.0", "scanner_series": "trivy"},
+                }
+            },
+        )
+
+    def test_layer_b_without_generation_json_has_no_generation_entry(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC)
+        self.assertNotIn("generation", self.summary(net)[TARGET])
+
+    def test_generation_values_that_are_not_text_are_left_out(self) -> None:
+        net = world()
+        artifact(
+            net,
+            SBOM_DOC,
+            {"generation.json": json.dumps({"tool": 5, "scanner_series": "trivy"})},
+        )
+        self.assertEqual(
+            self.summary(net)[TARGET]["generation"], {"scanner_series": "trivy"}
+        )
+
+    def test_layer_a_has_no_generation_entry(self) -> None:
+        self.assertEqual(
+            self.summary(world()),
+            {
+                TARGET: {
+                    "layer": "A",
+                    "component_count": 1,
+                    "coverage_complete": True,
+                    "tools": [{"name": "example", "version": "1.0"}],
+                }
+            },
+        )
+
+    def test_incomplete_coverage_is_recorded_as_such(self) -> None:
+        doc = spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+        doc["packages"].append({"SPDXID": "SPDXRef-nopurl", "name": "x"})
+        net = world()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"sbom": doc}))
+        self.assertIs(self.summary(net)[TARGET]["coverage_complete"], False)
+
+    def test_a_repository_whose_sbom_was_not_read_has_no_summary(self) -> None:
+        net = world()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"message": "down"}, 500))
+        self.assertEqual(self.summary(net), {})
+
+    def test_the_sbom_itself_is_not_in_the_extra_record(self) -> None:
+        net = world()
+        artifact(net, SBOM_DOC)
+        execute(net, policy_text([TARGET]))
+        text = base64.b64decode(extra_put(net).body["content"]).decode()
+        self.assertNotIn("SPDXRef", text)
+        self.assertNotIn("pkg:npm/lodash", text)
+
+    def test_the_job_summary_counts_the_summaries(self) -> None:
+        outcome = execute(world(), policy_text([TARGET]))
+        self.assertIn(
+            "- SBOM summaries recorded: 1", aggregator.render_summary(outcome)
+        )
+
+
+# --- the detector's new outputs (task 15.14) -------------------------------------------------------------
+
+SIGNALS = (
+    "vex_unchecked_against_kev",
+    "duplicate_issues",
+    "alias_multi_cve",
+    "kev_unknown",
+    "vex_name_only_ghsa",
+)
+
+
+def signal_finding(vuln_id: str = "CVE-2021-0001") -> models.Finding:
+    return models.Finding(
+        repo=REPO,
+        vuln_id=vuln_id,
+        aliases=(),
+        component=models.Component("pkg:npm/lodash@4.17.20", "lodash", "4.17.20"),
+        cvss_severity="HIGH",
+        fixed_version=None,
+        advisory_published_at=None,
+        layer="A",
+        first_observed_component_at=NOW,
+    )
+
+
+def plan_with(**fields: Any) -> models.Plan:
+    return models.Plan(
+        actions=(),
+        vex_exclusions=(),
+        rejected_vex=(),
+        below_threshold=(),
+        unscored=(),
+        overflow_counts={},
+        malicious_withdrawn_unconfirmed=(),
+        **fields,
+    )
+
+
+class DetectorSignalsBlock(unittest.TestCase):
+    """``build_detector_signals``: the five outputs of the plan, with counts and targets."""
+
+    def test_each_output_lists_its_targets(self) -> None:
+        plan = plan_with(
+            vex_unchecked_against_kev=(signal_finding(),),
+            duplicate_issues=((REPO, 8, "GHSA-aaaa-bbbb-cccc"),),
+            duplicate_of=((REPO, 8, "CVE-2021-0001"),),
+            alias_multi_cve=(
+                (TARGET, "GHSA-aaaa-bbbb-cccc", ("CVE-2021-0001", "CVE-2021-0002")),
+            ),
+            kev_unknown=(signal_finding("CVE-2021-0003"),),
+            vex_name_only_ghsa=((TARGET, "CVE-2021-0001", ".vex/a.json"),),
+        )
+        signals = aggregator.build_detector_signals(plan)
+        purl = "pkg:npm/lodash@4.17.20"
+        self.assertEqual(
+            signals,
+            {
+                "list_limit": 200,
+                "vex_unchecked_against_kev": {
+                    "count": 1,
+                    "omitted": 0,
+                    "items": [
+                        {"repo": TARGET, "vuln_id": "CVE-2021-0001", "purl": purl}
+                    ],
+                },
+                "duplicate_issues": {
+                    "count": 1,
+                    "omitted": 0,
+                    "items": [
+                        {
+                            "repo": TARGET,
+                            "issue_number": 8,
+                            "vuln_id": "GHSA-aaaa-bbbb-cccc",
+                            "representative": "CVE-2021-0001",
+                        }
+                    ],
+                },
+                "alias_multi_cve": {
+                    "count": 1,
+                    "omitted": 0,
+                    "items": [
+                        {
+                            "repo": TARGET,
+                            "vuln_id": "GHSA-aaaa-bbbb-cccc",
+                            "cves": ["CVE-2021-0001", "CVE-2021-0002"],
+                        }
+                    ],
+                },
+                "kev_unknown": {
+                    "count": 1,
+                    "omitted": 0,
+                    "items": [
+                        {"repo": TARGET, "vuln_id": "CVE-2021-0003", "purl": purl}
+                    ],
+                },
+                "vex_name_only_ghsa": {
+                    "count": 1,
+                    "omitted": 0,
+                    "items": [
+                        {
+                            "repo": TARGET,
+                            "vuln_id": "CVE-2021-0001",
+                            "statement_path": ".vex/a.json",
+                        }
+                    ],
+                },
+            },
+        )
+
+    def test_a_duplicate_with_no_representative_says_none(self) -> None:
+        plan = plan_with(duplicate_issues=((REPO, 8, "GHSA-aaaa-bbbb-cccc"),))
+        item = aggregator.build_detector_signals(plan)["duplicate_issues"]["items"][0]
+        self.assertIsNone(item["representative"])
+
+    def test_empty_outputs_are_zero_not_absent(self) -> None:
+        signals = aggregator.build_detector_signals(plan_with())
+        for name in SIGNALS:
+            self.assertEqual(signals[name], {"count": 0, "omitted": 0, "items": []})
+
+    def test_over_the_limit_the_count_stays_and_the_overflow_is_stated(self) -> None:
+        self.assertEqual(aggregator.SIGNAL_LIST_LIMIT, 200)
+        plan = plan_with(
+            kev_unknown=tuple(signal_finding(f"CVE-2021-{n:04d}") for n in range(205))
+        )
+        block = aggregator.build_detector_signals(plan)["kev_unknown"]
+        self.assertEqual((block["count"], block["omitted"]), (205, 5))
+        self.assertEqual(len(block["items"]), 200)
+        self.assertEqual(block["items"][0]["vuln_id"], "CVE-2021-0000")
+
+    def test_a_limit_can_be_given(self) -> None:
+        plan = plan_with(
+            vex_name_only_ghsa=tuple((TARGET, f"CVE-2021-{n}", "p") for n in range(5))
+        )
+        signals = aggregator.build_detector_signals(plan, limit=2)
+        self.assertEqual(signals["list_limit"], 2)
+        self.assertEqual(
+            (
+                signals["vex_name_only_ghsa"]["count"],
+                signals["vex_name_only_ghsa"]["omitted"],
+            ),
+            (5, 3),
+        )
+
+    def test_the_order_does_not_depend_on_the_order_of_the_plan(self) -> None:
+        a, b = signal_finding("CVE-2021-0002"), signal_finding("CVE-2021-0001")
+        one = aggregator.build_detector_signals(plan_with(kev_unknown=(a, b)))
+        two = aggregator.build_detector_signals(plan_with(kev_unknown=(b, a)))
+        self.assertEqual(one, two)
+
+
+class DetectorSignalsInTheRun(unittest.TestCase):
+    """The outputs reach the extra record and the job summary; the run record does not change."""
+
+    def run_with(self, **fields: Any) -> tuple[Any, FakeNet]:
+        real = aggregator.planner.plan
+
+        def patched(inputs: models.PlanInputs) -> models.Plan:
+            return dataclasses.replace(real(inputs), **fields)
+
+        net = world()
+        with mock.patch.object(aggregator.planner, "plan", patched):
+            outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        return outcome, net
+
+    def test_counts_and_targets_reach_the_extra_record_and_the_summary(self) -> None:
+        outcome, net = self.run_with(
+            vex_unchecked_against_kev=(signal_finding(),),
+            alias_multi_cve=((TARGET, "GHSA-aaaa-bbbb-cccc", ("CVE-1", "CVE-2")),),
+        )
+        written = extra_json(net)["detector_signals"]
+        self.assertEqual(written, outcome.extra.detector_signals)
+        self.assertEqual(written["vex_unchecked_against_kev"]["count"], 1)
+        self.assertEqual(
+            written["alias_multi_cve"]["items"][0]["cves"], ["CVE-1", "CVE-2"]
+        )
+        lines = aggregator.render_summary(outcome).splitlines()
+        self.assertIn("- vex_unchecked_against_kev: 1", lines)
+        self.assertIn(
+            "  - repo=example-org/example-repo vuln_id=CVE-2021-0001 purl=pkg:npm/lodash@4.17.20",
+            lines,
+        )
+        self.assertIn("- alias_multi_cve: 1", lines)
+        self.assertIn(
+            "  - repo=example-org/example-repo vuln_id=GHSA-aaaa-bbbb-cccc cves=CVE-1,CVE-2",
+            lines,
+        )
+
+    def test_zero_is_written_for_every_output_in_both_places(self) -> None:
+        outcome = execute(world(), policy_text([TARGET]))
+        lines = aggregator.render_summary(outcome).splitlines()
+        for name in SIGNALS:
+            self.assertEqual(
+                outcome.extra.detector_signals[name],
+                {"count": 0, "omitted": 0, "items": []},
+            )
+            self.assertIn(f"- {name}: 0", lines)
+
+    def test_an_overflow_is_stated_in_the_summary_too(self) -> None:
+        outcome, _net = self.run_with(
+            kev_unknown=tuple(signal_finding(f"CVE-2021-{n:04d}") for n in range(201))
+        )
+        lines = aggregator.render_summary(outcome).splitlines()
+        self.assertIn("- kev_unknown: 201 (1 not listed)", lines)
+        self.assertEqual(len([x for x in lines if x.startswith("  - repo=")]), 200)
+
+    def test_the_run_record_is_not_changed_by_them(self) -> None:
+        _outcome, net = self.run_with(kev_unknown=(signal_finding(),))
+        text = put_texts(net)[0]
+        for word in ("kev_unknown", "detector_signals"):
+            self.assertNotIn(word, text)
+        run_record.from_json(text)
+
+    def test_a_run_whose_policy_could_not_be_read_has_no_signals(self) -> None:
+        outcome = execute(world(), "")
+        self.assertIsNone(outcome.extra)
+        self.assertNotIn(
+            "vex_unchecked_against_kev", aggregator.render_summary(outcome)
+        )
+
+
+class DetectionExcluded(unittest.TestCase):
+    """Issues left out of the detection actual because their origin is unknown are counted."""
+
+    def closed_without_origin(self) -> FakeNet:
+        body = finding_issue_body("CVE-2021-0001", kev=False, severity="HIGH")
+        origin = f'"origin_at": "{iso(NOW)}"'
+        self.assertIn(origin, body)
+        body = body.replace(origin, '"origin_at": null')
+        net = world()
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok(
+                [
+                    issue_item(
+                        7,
+                        body,
+                        state="closed",
+                        closed_at=iso(NOW - timedelta(days=1)),
+                        title="[supply-chain] CVE-2021-0001",
+                    )
+                ]
+            ),
+        )
+        return net
+
+    def test_the_count_is_in_the_extra_record_and_the_summary(self) -> None:
+        net = self.closed_without_origin()
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(
+            outcome.record.response_metrics[TARGET].origin_unknown_excluded, 1
+        )
+        self.assertEqual(extra_json(net)["detection_excluded_unknown_origin"], 1)
+        self.assertIn(
+            "- detection excluded, origin unknown: 1",
+            aggregator.render_summary(outcome).splitlines(),
+        )
+
+    def test_none_excluded_is_zero(self) -> None:
+        net = world()
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(extra_json(net)["detection_excluded_unknown_origin"], 0)
+        self.assertIn(
+            "- detection excluded, origin unknown: 0",
+            aggregator.render_summary(outcome).splitlines(),
+        )
+
+    def test_the_pilot_does_not_already_carry_the_value(self) -> None:
+        pilot = execute(world(), policy_text([TARGET])).extra.pilot
+        self.assertNotIn("excluded_unknown_start", json.dumps(pilot))
+        self.assertNotIn("excluded_unknown_origin", json.dumps(pilot))
+
+
+class ReadingTheExtraRecord(unittest.TestCase):
+    """``parse_extra`` reads every version of the extra record; a field that was never written is ``None``."""
+
+    OLD = json.dumps(
+        {
+            "schema_version": 1,
+            "run_id": "999-1",
+            "record_path": "runs/2026/01/999-1.json",
+            "record_sha256": "0" * 64,
+            "skipped_paths": {TARGET: ["a"]},
+            "pilot": {"counts": {"issued": 0}},
+        }
+    )
+
+    def test_a_record_without_the_new_fields_reads_with_none_not_zero(self) -> None:
+        data = aggregator.parse_extra(self.OLD)
+        self.assertEqual(data["skipped_paths"], {TARGET: ["a"]})
+        self.assertEqual(data["pilot"], {"counts": {"issued": 0}})
+        for key in ("detector_signals", "detection_excluded_unknown_origin", "sbom"):
+            self.assertIn(key, data)
+            self.assertIsNone(data[key], f"{key}: absent must not read as 0 or empty")
+
+    def test_a_new_record_reads_back_what_was_written(self) -> None:
+        net = world()
+        execute(net, policy_text([TARGET]))
+        written = extra_json(net)
+        data = aggregator.parse_extra(
+            base64.b64decode(extra_put(net).body["content"]).decode()
+        )
+        self.assertEqual(data, written)
+        self.assertEqual(data["detector_signals"]["kev_unknown"]["count"], 0)
+
+    def test_a_record_of_an_unknown_version_or_shape_is_refused(self) -> None:
+        for text in (
+            "{ nope",
+            "[]",
+            json.dumps({"schema_version": 3}),
+            json.dumps({"run_id": "1-1"}),
+        ):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                aggregator.parse_extra(text)
 
 
 if __name__ == "__main__":

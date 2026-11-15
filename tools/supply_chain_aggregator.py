@@ -53,9 +53,26 @@ changed here. So a second file, the extra record, is written after the run recor
 ``runs-extra/<YYYY>/<MM>/<run id>.json``. It names the run record (path and SHA-256) and carries ``skipped_paths``
 (per repository, from the ``generation.json`` of the layer B artifact that was scanned) and ``pilot`` (what the
 maintainer reads to judge the detector: ``metrics.compute_pilot_rates`` and the rest, fed here, not recomputed).
-It is not under ``runs/``, which the watchdog and ``recent_outcomes`` read as run records, and it is not part of the
-chain: no ``prev_record_sha256``, tip tag or seal covers it. It is created, never overwritten. A failure to write it
-is a warning and changes neither the run record nor the exit code.
+Since schema version 2 it also carries ``detector_signals`` (five outputs of the plan that no other record shows,
+each with a count, the targets up to ``SIGNAL_LIST_LIMIT`` and the number left out: ``build_detector_signals``),
+``detection_excluded_unknown_origin`` (Issues left out of the detection actual because their origin is unknown,
+summed over the repositories of the run record's ``response_metrics``) and ``sbom`` (a summary of the SBOM that
+was read per repository). A field that an older extra record never had reads as ``None`` through ``parse_extra``;
+``None`` means "not recorded" and is not 0. It is not under ``runs/``, which the watchdog and ``recent_outcomes``
+read as run records, and it is not part of the chain: no ``prev_record_sha256``, tip tag or seal covers it. It is
+created, never overwritten. A failure to write it is a warning and changes neither the run record nor the exit
+code.
+
+What the SBOM was, and how long that is kept (task 15.9). The ``sbom-<commit-sha>`` artifact that the Reusable
+Workflow ``sbom-generate`` uploads is kept for at most 90 days. That workflow runs with a Spoke's token and has no
+right to write the Hub's ``supply-chain-runs`` branch, so it cannot keep anything longer; this job can, and it is
+the one that reads the SBOM of layer A (the dependency graph export) and of layer B (the artifact). It therefore
+keeps ``sbom_sha256`` (and the commit, the layer and the artifact ID) in the run record's ``scanned_detail``, and a
+summary of the SBOM in the extra record's ``sbom``; the SBOM itself is not kept. Both files sit under ``runs/`` and
+``runs-extra/`` of ``supply-chain-runs``, where nothing in this module deletes, so they outlast the artifact (design
+26.3: 365 days or more). The hash lets a later reader confirm that an SBOM they hold is the one that was scanned.
+``sbom_source`` is ``B`` when the layer B artifact was read and its findings were used, else ``A`` when the export
+was read, else ``None``; a repository whose SBOM could not be read has every field ``None``, not a guess.
 
 A document under ``.vex/`` is used only when it is approved (``check_vex_approvals``): the last commit that touched
 it, on the default branch commit this run read, must belong to exactly one merged pull request, and a user other
@@ -81,6 +98,7 @@ import base64
 import contextlib
 import dataclasses
 import fcntl
+import hashlib
 import io
 import json
 import math
@@ -118,7 +136,9 @@ from supply_chain.models import (
 from supply_chain.policy import PolicyError, parse_policy
 from supply_chain_adapters import spdx
 from supply_chain_io import (
+    OSV_QUERY_URL,
     Client,
+    FeedPayload,
     GitHubApi,
     HttpError,
     Osv,
@@ -142,7 +162,7 @@ LABEL_SPECS = {
 }
 RUNS_BRANCH = "supply-chain-runs"
 EXTRA_DIR = "runs-extra"
-EXTRA_SCHEMA_VERSION = 1
+EXTRA_SCHEMA_VERSION = 2
 OBSERVATION_FILE_NAME = "supply-chain-observation.json"
 RECENT_OUTCOMES = max(run_record.FAILURE_STREAK_THRESHOLD, 3)
 PR_SEARCH_CAP = 60
@@ -538,6 +558,26 @@ def duplicate_updates(
 # --- layers A and B ------------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class SbomRead:
+    """One SBOM as this run read it: what it was, its hash and a summary. The SBOM itself is not kept.
+
+    Attributes:
+        layer: ``A`` (the dependency graph export) or ``B`` (the artifact of ``sbom-generate``).
+        sha256: SHA-256 of the bytes read: for layer A the body of the export response, for layer B the
+            ``sbom.spdx.json`` member of the artifact.
+        head_sha: The commit the SBOM describes, ``None`` when no source says (see ``_pick_head``).
+        artifact_id: The workflow artifact ID (layer B), ``None`` for layer A or when the listing had no integer ``id``.
+        summary: The summary written to the extra record's ``sbom`` (``_sbom_summary``).
+    """
+
+    layer: models.Layer
+    sha256: str
+    head_sha: str | None
+    artifact_id: int | None
+    summary: dict[str, Any]
+
+
 @dataclass
 class RepoFetch:
     """What one repository yielded this run."""
@@ -555,12 +595,29 @@ class RepoFetch:
     # The ``skipped_paths`` of the ``generation.json`` in the layer B artifact that was scanned. ``None``: no
     # layer B artifact was used, or it did not say (an empty list is a statement: nothing was excluded).
     skipped_paths: list[str] | None = None
+    # The SBOM of the dependency graph export, when it was read and parsed; ``None`` otherwise.
+    sbom_a: SbomRead | None = None
+    # The SBOM of the layer B artifact. Set only when the whole of layer B succeeded, like ``skipped_paths``.
+    sbom_b: SbomRead | None = None
     # Things worth a line in the job log that do not fail the run.
     warnings: list[str] = field(default_factory=list)
 
     def fail(self, layer: models.Layer, reason: str) -> None:
         self.failures.append(
             run_record.FetchFailure(_repo_text(self.repo), layer, reason[:300])
+        )
+
+    def sbom_read(self) -> SbomRead | None:
+        """The SBOM this repository was scanned from: layer B when its artifact was used, else layer A, else ``None``."""
+        return self.sbom_b or self.sbom_a
+
+    def scanned_detail(self) -> run_record.ScannedRepo:
+        """The run record's ``scanned_detail`` entry. Every field is ``None`` when no SBOM was read."""
+        read = self.sbom_read()
+        if read is None:
+            return run_record.ScannedRepo(None, None, None, None)
+        return run_record.ScannedRepo(
+            read.head_sha, read.layer, read.sha256, read.artifact_id
         )
 
 
@@ -570,6 +627,71 @@ def _sbom_unscanned(info: spdx.SbomInfo) -> bool:
     A document that declares itself empty (``CONTAINS`` -> ``NONE``) has complete coverage and is a real empty.
     """
     return info.component_count == 0 and not info.coverage_complete
+
+
+def _pick_head(
+    name: str, candidates: Sequence[tuple[str, str | None]], warnings: list[str]
+) -> str | None:
+    """The commit an SBOM describes: the first source that states one, in the order given.
+
+    A source whose value is not 40 lowercase hex digits states nothing. When two sources state different commits
+    the first one is used and a line is added to ``warnings``; the disagreement is reported, not settled.
+    """
+    stated = [(src, sha) for src, sha in candidates if sha and HEX40.fullmatch(sha)]
+    if not stated:
+        return None
+    if any(sha != stated[0][1] for _src, sha in stated):
+        listed = ", ".join(f"{src}={sha}" for src, sha in stated)
+        warnings.append(
+            f"{name}: the sources of the SBOM commit disagree ({listed}); recorded {stated[0][0]}"
+        )
+    return stated[0][1]
+
+
+def _generation_facts(members: Mapping[str, bytes]) -> dict[str, str]:
+    """The text values of ``generation.json`` that the SBOM summary and the commit use; unreadable ones are left out.
+
+    Keys: ``tool`` (the creating tool as ``name-version``), ``scanner_series`` and ``commit`` (40 lowercase hex
+    digits). A document that is missing, is not JSON, or has a value that is not text yields no entry for it.
+    """
+    raw = members.get("generation.json")
+    if raw is None:
+        return {}
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    facts = {
+        key: doc[key]
+        for key in ("tool", "scanner_series")
+        if isinstance(doc.get(key), str) and doc[key]
+    }
+    commit = doc.get("commit")
+    if isinstance(commit, str) and HEX40.fullmatch(commit):
+        facts["commit"] = commit
+    return facts
+
+
+def _sbom_summary(
+    layer: models.Layer, info: spdx.SbomInfo, facts: Mapping[str, str]
+) -> dict[str, Any]:
+    """What the extra record keeps of one SBOM: counts, the tools, and (layer B) what ``generation.json`` says.
+
+    ``generation`` is present only when ``generation.json`` gave a ``tool`` or a ``scanner_series`` as text. The
+    ``skipped_paths`` are in the extra record's own ``skipped_paths`` and are not repeated here.
+    """
+    summary: dict[str, Any] = {
+        "layer": layer,
+        "component_count": info.component_count,
+        "coverage_complete": info.coverage_complete,
+        "tools": [{"name": t.name, "version": t.version} for t in info.tools],
+    }
+    generation = {k: v for k, v in facts.items() if k in ("tool", "scanner_series")}
+    if generation:
+        summary["generation"] = generation
+    return summary
 
 
 def _normalize_name(name: str) -> str:
@@ -720,7 +842,11 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         return result
 
     try:  # layer A: the dependency graph export, which only supplies components
-        sbom = api.get_json(f"/repos/{name}/dependency-graph/sbom")["sbom"]
+        export_path = f"/repos/{name}/dependency-graph/sbom"
+        export = api.get(export_path)
+        if not export.ok:
+            raise HttpError("GET", export_path, export.status, export.text()[:200])
+        sbom = export.json()["sbom"]
         info = spdx.parse_spdx(sbom)
         if _sbom_unscanned(info):
             result.unscanned = True
@@ -729,6 +855,13 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
             )
         for component in info.components:
             result.components.setdefault(component.purl, component)
+        result.sbom_a = SbomRead(
+            "A",
+            hashlib.sha256(export.body).hexdigest(),
+            _pick_head(name, [("sbom", info.commit_sha)], result.warnings),
+            None,
+            _sbom_summary("A", info, {}),
+        )
     except (
         HttpError,
         TransportError,
@@ -763,7 +896,8 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         if artifact is None:
             raise ValueError("no sbom-* artifact built from the default branch")
         members = _read_zip(api.download(artifact["archive_download_url"]))
-        sbom_info = spdx.parse_spdx(json.loads(members["sbom.spdx.json"]))
+        sbom_bytes = members["sbom.spdx.json"]
+        sbom_info = spdx.parse_spdx(json.loads(sbom_bytes))
         if _sbom_unscanned(sbom_info):
             result.unscanned = True
             raise ValueError(
@@ -779,10 +913,29 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         if parsed.repo != repo:
             raise ValueError(f"artifact is for {_repo_text(parsed.repo)}")
         result.findings.extend(parsed.findings)
-        # Only now is the artifact the one that was scanned; a failure above leaves ``skipped_paths`` unset.
+        # Only now is the artifact the one that was scanned; a failure above leaves these unset.
         result.skipped_paths, note = _generation_skipped_paths(members)
         if note is not None:
             result.warnings.append(f"{name}: skipped_paths not recorded: {note}")
+        facts = _generation_facts(members)
+        artifact_id = artifact.get("id")
+        result.sbom_b = SbomRead(
+            "B",
+            hashlib.sha256(sbom_bytes).hexdigest(),
+            _pick_head(
+                name,
+                [
+                    ("sbom", sbom_info.commit_sha),
+                    ("generation.json", facts.get("commit")),
+                    ("artifact name", artifact["name"].removeprefix("sbom-")),
+                ],
+                result.warnings,
+            ),
+            artifact_id
+            if isinstance(artifact_id, int) and not isinstance(artifact_id, bool)
+            else None,  # ``id`` of the artifacts list was written from memory of the reference
+            _sbom_summary("B", sbom_info, facts),
+        )
         result.layer_ok["B"] = True
     except (
         HttpError,
@@ -842,6 +995,21 @@ def _mal_findings(
     return out
 
 
+def _fetched(
+    name: models.FeedName, now: datetime, catalog: str | None, payload: FeedPayload
+) -> run_record.FeedFetched:
+    """A ``FeedFetched`` that carries what the response was (hash, entry count, URL, ``Date`` header)."""
+    return run_record.FeedFetched(
+        name,
+        now,
+        catalog,
+        payload_sha256=payload.sha256,
+        entry_count=payload.entry_count,
+        source_url=payload.source_url,
+        http_date=payload.http_date,
+    )
+
+
 def fetch_feeds(
     client: Client,
     osv: Osv,
@@ -850,16 +1018,24 @@ def fetch_feeds(
     open_mal_issues: Mapping[str, ManagedIssue],
     now: datetime,
 ) -> FeedResult:
-    """Fetch KEV, EPSS and OSV. A failed feed is recorded and its value is ``None``; nothing is invented."""
+    """Fetch KEV, EPSS and OSV. A failed feed is recorded and its value is ``None``; nothing is invented.
+
+    KEV and EPSS are recorded with the hash, entry count, URL and ``Date`` header of their response
+    (``FeedPayload``). OSV is recorded with ``source_url`` (the batch query endpoint) and ``entry_count`` (the
+    number of ``MAL-`` records that were read in full) only. Its ``payload_sha256`` and ``http_date`` stay
+    ``None`` on purpose: one fetch is many responses (batch pages, then one GET per record), so there is no one
+    body to hash and no one ``Date``, and a hash made by combining the hashes of several responses would name a
+    byte string nobody received. A failed feed (``FeedFailed``) carries none of these fields.
+    """
     fetched: list[run_record.FeedFetched] = []
     failed: list[run_record.FeedFailed] = []
     kev: dict[str, KevEntry] | None = None
     kev_on: date | None = None
     kev_released: datetime | None = None
     try:
-        kev, catalog, kev_released = fetch_kev(client)
+        kev, catalog, kev_released, kev_payload = fetch_kev(client)
         kev_on = now.date()
-        fetched.append(run_record.FeedFetched("kev", now, catalog))
+        fetched.append(_fetched("kev", now, catalog, kev_payload))
     except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
         kev = None
         failed.append(run_record.FeedFailed("kev", now, str(exc)[:300]))
@@ -870,12 +1046,12 @@ def fetch_feeds(
     epss: dict[str, tuple[str, date, str]] | None = None
     epss_info = run_record.EpssInfo(None, None)
     try:
-        epss = fetch_epss(client, cve_ids)
+        epss, epss_payload = fetch_epss(client, cve_ids)
         sample = next(iter(epss.values()), None)
         epss_info = run_record.EpssInfo(
             sample[1] if sample else None, sample[2] if sample else None
         )
-        fetched.append(run_record.FeedFetched("epss", now, epss_info.model_version))
+        fetched.append(_fetched("epss", now, epss_info.model_version, epss_payload))
     except (HttpError, RateLimited, TransportError, ValueError, OSError) as exc:
         failed.append(run_record.FeedFailed("epss", now, str(exc)[:300]))
 
@@ -929,7 +1105,17 @@ def fetch_feeds(
                     withdrawn[mal_id] = when
             else:
                 delisted.add(mal_id)
-        fetched.append(run_record.FeedFetched("malicious", now, None))
+        fetched.append(
+            run_record.FeedFetched(
+                "malicious",
+                now,
+                None,
+                payload_sha256=None,  # many responses, no one body: see the docstring
+                entry_count=sum(1 for r in records.values() if r is not None),
+                source_url=OSV_QUERY_URL,
+                http_date=None,  # many responses, no one Date
+            )
+        )
     except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
         malicious = None
         withdrawn, delisted, unconfirmed, extra = {}, set(), set(), []
@@ -1839,6 +2025,100 @@ def _pilot_error(reason: str) -> tuple[dict[str, Any], list[str]]:
     return {"error": reason}, [f"pilot record not computed: {reason}"[:300]]
 
 
+#: The most targets of one output of the plan that the extra record and the job summary list. Over it, the count
+#: stays and the targets that are not listed are counted in ``omitted``. A convention (hypothesis), not a sourced value.
+SIGNAL_LIST_LIMIT = 200
+SIGNAL_NAMES = (
+    "vex_unchecked_against_kev",
+    "duplicate_issues",
+    "alias_multi_cve",
+    "kev_unknown",
+    "vex_name_only_ghsa",
+)
+
+
+def _signal_block(items: list[dict[str, Any]], limit: int) -> dict[str, Any]:
+    ordered = sorted(items, key=lambda item: [str(v) for v in item.values()])
+    return {
+        "count": len(items),
+        "omitted": max(0, len(items) - limit),
+        "items": ordered[:limit],
+    }
+
+
+def build_detector_signals(
+    plan: models.Plan, limit: int = SIGNAL_LIST_LIMIT
+) -> dict[str, Any]:
+    """The five outputs of the plan that no other record shows, each with a count and its targets.
+
+    An output with nothing in it is ``{"count": 0, "omitted": 0, "items": []}``: zero is written, not left out,
+    so that "none" and "never recorded" differ. Targets are sorted, so the text does not depend on the order of
+    the plan, and at most ``limit`` are listed per output; ``omitted`` counts the rest.
+
+    * ``vex_unchecked_against_kev``: Findings a VEX statement excludes in a run whose KEV feed failed
+      (repo, id, purl).
+    * ``duplicate_issues``: open Issues whose identifier now belongs to another vulnerability's Issue (repo, Issue
+      number, the Issue's own identifier, and ``representative`` from ``plan.duplicate_of``, ``None`` when the plan
+      names none for that Issue).
+    * ``alias_multi_cve``: records that named more than one CVE (repo, id, the CVEs).
+    * ``kev_unknown``: Findings with no severity in a run whose KEV feed failed (repo, id, purl).
+    * ``vex_name_only_ghsa``: Findings not excluded because a statement names only an alias (repo, the Finding's
+      id, the statement's path).
+    """
+    representative = {(repo, number): rep for repo, number, rep in plan.duplicate_of}
+    return {
+        "list_limit": limit,
+        "vex_unchecked_against_kev": _signal_block(
+            [
+                {
+                    "repo": _repo_text(f.repo),
+                    "vuln_id": f.vuln_id,
+                    "purl": f.component.purl,
+                }
+                for f in plan.vex_unchecked_against_kev
+            ],
+            limit,
+        ),
+        "duplicate_issues": _signal_block(
+            [
+                {
+                    "repo": _repo_text(repo),
+                    "issue_number": number,
+                    "vuln_id": vuln_id,
+                    "representative": representative.get((repo, number)),
+                }
+                for repo, number, vuln_id in plan.duplicate_issues
+            ],
+            limit,
+        ),
+        "alias_multi_cve": _signal_block(
+            [
+                {"repo": repo, "vuln_id": vuln_id, "cves": list(cves)}
+                for repo, vuln_id, cves in plan.alias_multi_cve
+            ],
+            limit,
+        ),
+        "kev_unknown": _signal_block(
+            [
+                {
+                    "repo": _repo_text(f.repo),
+                    "vuln_id": f.vuln_id,
+                    "purl": f.component.purl,
+                }
+                for f in plan.kev_unknown
+            ],
+            limit,
+        ),
+        "vex_name_only_ghsa": _signal_block(
+            [
+                {"repo": repo, "vuln_id": vuln_id, "statement_path": path}
+                for repo, vuln_id, path in plan.vex_name_only_ghsa
+            ],
+            limit,
+        ),
+    }
+
+
 @dataclass(frozen=True)
 class ExtraData:
     """What the extra record will carry, decided before the run record is written.
@@ -1847,11 +2127,20 @@ class ExtraData:
         skipped_paths: ``owner/name`` -> the ``skipped_paths`` of the layer B artifact that was scanned.
         pilot: The pilot record (``build_pilot``).
         warnings: Lines for the job log; none of them fails the run.
+        detector_signals: ``build_detector_signals`` of the plan; ``None`` is "not recorded".
+        detection_excluded_unknown_origin: Issues left out of the detection actual because their origin is
+            unknown, summed over the repositories of this run (the run record's per-repository
+            ``origin_unknown_excluded``); ``None`` is "not recorded".
+        sbom: ``owner/name`` -> the summary of the SBOM that was read (``_sbom_summary``); a repository whose
+            SBOM was not read has no entry.
     """
 
     skipped_paths: dict[str, list[str]]
     pilot: dict[str, Any]
     warnings: tuple[str, ...] = ()
+    detector_signals: dict[str, Any] | None = None
+    detection_excluded_unknown_origin: int | None = None
+    sbom: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 def extra_record_path(record_path: str) -> str:
@@ -1870,8 +2159,42 @@ def render_extra(
         "record_sha256": record_sha256,
         "skipped_paths": extra.skipped_paths,
         "pilot": extra.pilot,
+        "detector_signals": extra.detector_signals,
+        "detection_excluded_unknown_origin": extra.detection_excluded_unknown_origin,
+        "sbom": extra.sbom,
     }
     return json.dumps(body, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+
+
+_EXTRA_FIELDS_SINCE_V2 = (
+    "detector_signals",
+    "detection_excluded_unknown_origin",
+    "sbom",
+)
+
+
+class ExtraRecordError(ValueError):
+    """The text is not an extra record this module can read."""
+
+
+def parse_extra(text: str) -> dict[str, Any]:
+    """Read an extra record of any version. A field the record never had is ``None``.
+
+    ``None`` means "not recorded". It is not 0 and not an empty list: an extra record of schema version 1 did not
+    count the outputs of the plan, so reading it as "0 found" would be a claim nobody made.
+
+    Raises:
+        ExtraRecordError: The text is not an object, or its ``schema_version`` is not 1 or 2.
+        ValueError: The text is not JSON.
+    """
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ExtraRecordError("an extra record is a JSON object")
+    if data.get("schema_version") not in (1, EXTRA_SCHEMA_VERSION):
+        raise ExtraRecordError(
+            f"unknown extra record version: {data.get('schema_version')!r}"
+        )
+    return {**dict.fromkeys(_EXTRA_FIELDS_SINCE_V2), **data}
 
 
 # --- run record storage and the failure notice -------------------------------------------------------
@@ -2645,7 +2968,15 @@ def run(
         aggregator_commit=cfg.aggregator_commit,
         policy_commit=cfg.policy_commit,
         repositories=run_record.Repositories(
-            scanned, failures, dict(sorted(required.items()))
+            scanned,
+            failures,
+            dict(sorted(required.items())),
+            {
+                _repo_text(f.repo): f.scanned_detail()
+                for f in sorted(
+                    fetch_ok_repos, key=lambda f: _repo_text(f.repo).lower()
+                )
+            },
         ),
         feeds=run_record.Feeds(tuple(feeds.fetched), tuple(feeds.failed)),
         kev_fetched_on=feeds.kev_fetched_on,
@@ -2701,6 +3032,15 @@ def run(
             *(w for f in fetch_ok_repos for w in f.warnings),
             *pilot_notes,
         ),
+        detector_signals=build_detector_signals(plan),
+        detection_excluded_unknown_origin=sum(
+            m.origin_unknown_excluded for m in record.response_metrics.values()
+        ),
+        sbom={
+            _repo_text(f.repo): read.summary
+            for f in sorted(fetch_ok_repos, key=lambda f: _repo_text(f.repo).lower())
+            if (read := f.sbom_read()) is not None
+        },
     )
     return _finish(cfg, record, reasons, spoke, hub, now_fn, labels_done, extra)
 
@@ -2914,6 +3254,7 @@ def render_summary(outcome: Outcome) -> str:
         f"- run record SHA-256: {outcome.tip_sha256 or 'none'}"
         + (f" (tag {outcome.tip_tag})" if outcome.tip_tag else ""),
         *_extra_summary_lines(outcome),
+        *_signal_summary_lines(outcome),
         *_vex_summary_lines(record),
         *(f"- {m}" for m in outcome.messages),
     ]
@@ -2932,6 +3273,40 @@ def _vex_summary_lines(record: run_record.RunRecord) -> list[str]:
         f"- VEX documents not approved (vex_unapproved): {unapproved}",
         f"- VEX documents that could not be verified (vex_unverifiable): {unverifiable}",
     ]
+
+
+def _signal_value_text(value: object) -> str:
+    if isinstance(value, list):
+        return ",".join(map(str, value))
+    return "none" if value is None else str(value)
+
+
+def _signal_item_text(item: Mapping[str, Any]) -> str:
+    """One target of an output of the plan as ``key=value`` pairs; a list is joined by commas, ``None`` is ``none``."""
+    return " ".join(f"{key}={_signal_value_text(v)}" for key, v in item.items())
+
+
+def _signal_summary_lines(outcome: Outcome) -> list[str]:
+    """The five outputs of the plan with their counts and targets, the excluded count and the SBOM summaries.
+
+    A count of zero is a line of its own. At most ``SIGNAL_LIST_LIMIT`` targets are listed per output (the same
+    ones as in the extra record); the rest are counted in the header line.
+    """
+    extra = outcome.extra
+    if extra is None or extra.detector_signals is None:
+        return []
+    lines: list[str] = []
+    for name in SIGNAL_NAMES:
+        block = extra.detector_signals[name]
+        omitted = f" ({block['omitted']} not listed)" if block["omitted"] else ""
+        lines.append(f"- {name}: {block['count']}{omitted}")
+        lines.extend(f"  - {_signal_item_text(item)}" for item in block["items"])
+    excluded = extra.detection_excluded_unknown_origin
+    lines.append(
+        f"- detection excluded, origin unknown: {excluded if excluded is not None else 'not computed'}"
+    )
+    lines.append(f"- SBOM summaries recorded: {len(extra.sbom)}")
+    return lines
 
 
 def _extra_summary_lines(outcome: Outcome) -> list[str]:
