@@ -1,0 +1,19 @@
+# Caller of the Hub's reusable `sbom-generate` workflow for this repository.
+#
+# Runs on pushes to main and on manual dispatch. The reusable workflow holds only `contents: read`,
+# takes no secrets, and uploads the SBOM artifact `sbom-<commit-sha>`. No inputs are passed: this
+# repository builds no container image, and `retention-days` keeps its default of 90.
+name: sbom
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sbom:
+    permissions:
+      contents: read
+    uses: Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/.github/workflows/sbom-generate.yml@8dfe0318f82ef3d086b96e24760447e0be85a30a # supply-chain-preset-v1.0.0
