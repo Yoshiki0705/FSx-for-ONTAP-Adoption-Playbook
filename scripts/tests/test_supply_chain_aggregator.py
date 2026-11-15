@@ -11,17 +11,24 @@ these tests do not re-test its rules. They pin the behaviours the design asks of
 * a body never exceeds 50,000 characters;
 * every write carries one of the two tokens, the runs branch only the Hub token, and a redirect
   target (artifact storage) never receives a token;
-* the watchdog appends to the open failure Issue instead of opening a second one.
+* the watchdog appends to the open failure Issue instead of opening a second one;
+* the record chain is guarded: the chain ledger is checked, the last written record is compared with the
+  tag the previous run left, a finished month is sealed, and a month is read and written under one lock.
 """
 
 from __future__ import annotations
 
 import base64
 import gzip
+import hashlib
 import io
 import json
+import multiprocessing
+import os
 import re
 import sys
+import tempfile
+import time
 import unittest
 import zipfile
 from dataclasses import dataclass
@@ -32,6 +39,7 @@ from typing import Any, ClassVar
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import supply_chain_aggregator as aggregator
 from supply_chain import issue_body, models, run_record
 from supply_chain.models import Repo
 from supply_chain_aggregator import (
@@ -62,8 +70,10 @@ HUB = Repo("example-org", "hub-repo")
 TARGET = "example-org/example-repo"
 OTHER = "example-org/other-repo"
 NOW = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
+NOW_FEB = datetime(2026, 2, 3, 3, 4, 5, tzinfo=UTC)
 SHA = "a" * 40
 POLICY_SHA = "b" * 40
+COMMIT = "c" * 40
 RUN_ID = "1000-1"
 
 DEFAULT_EXCLUDED = [
@@ -140,6 +150,9 @@ class FakeNet:
     def __init__(self) -> None:
         self.calls: list[Call] = []
         self._routes: list[tuple[str, re.Pattern[str], Any]] = []
+        # The annotated tags of the Hub: tag object SHA -> message, and tag name -> tag object SHA.
+        self.tag_objects: dict[str, str] = {}
+        self.tag_refs: dict[str, str] = {}
 
     def on(self, method: str, pattern: str, answer: Any) -> None:
         """Routes added later win, so a test can override the defaults."""
@@ -374,11 +387,66 @@ def world(
     )
     net.on("GET", r"api\.osv\.dev/v1/vulns/", ok({"message": "not found"}, 404))
     net.on("GET", rf"/repos/{hub}/git/trees/", tree(runs or []))
-    net.on("PUT", rf"/repos/{hub}/contents/runs/", ok({"content": {}}, 201))
+    net.on("PUT", rf"/repos/{hub}/contents/runs/", put_ok())
+    install_tags(net, hub)
     net.on("GET", rf"/repos/{hub}/issues\?", ok([]))
     for repo in repos:
         net.on("GET", rf"/repos/{repo}/issues\?", ok([]))
     return net
+
+
+def put_ok() -> Response:
+    """The answer to creating a file: the contents API returns the commit that holds it."""
+    return ok({"content": {}, "commit": {"sha": COMMIT}}, 201)
+
+
+def install_tags(net: FakeNet, hub: str) -> None:
+    """Routes for annotated tags in the Hub, backed by ``net.tag_objects`` and ``net.tag_refs``."""
+
+    def create_tag(url: str, payload: dict[str, Any]) -> Response:
+        sha = hashlib.sha256(
+            json.dumps(payload, sort_keys=True).encode("utf-8")
+        ).hexdigest()[:40]
+        net.tag_objects[sha] = payload["message"]
+        return ok({"sha": sha, "tag": payload["tag"]}, 201)
+
+    def create_ref(url: str, payload: dict[str, Any]) -> Response:
+        net.tag_refs[payload["ref"].removeprefix("refs/tags/")] = payload["sha"]
+        return ok({"ref": payload["ref"]}, 201)
+
+    def matching(url: str, _: Any) -> Response:
+        prefix = url.split("/git/matching-refs/tags/", 1)[1].split("?", 1)[0]
+        return ok(
+            [
+                {
+                    "ref": f"refs/tags/{name}",
+                    "object": {"sha": sha, "type": "tag"},
+                }
+                for name, sha in sorted(net.tag_refs.items())
+                if name.startswith(prefix)
+            ]
+        )
+
+    def one_ref(url: str, _: Any) -> Response:
+        name = url.split("/git/ref/tags/", 1)[1].split("?", 1)[0]
+        if name not in net.tag_refs:
+            return ok({"message": "Not Found"}, 404)
+        return ok(
+            {
+                "ref": f"refs/tags/{name}",
+                "object": {"sha": net.tag_refs[name], "type": "tag"},
+            }
+        )
+
+    def tag_object(url: str, _: Any) -> Response:
+        sha = url.rsplit("/", 1)[1].split("?", 1)[0]
+        return ok({"sha": sha, "message": net.tag_objects[sha]})
+
+    net.on("POST", rf"/repos/{hub}/git/tags$", create_tag)
+    net.on("POST", rf"/repos/{hub}/git/refs$", create_ref)
+    net.on("GET", rf"/repos/{hub}/git/matching-refs/tags/", matching)
+    net.on("GET", rf"/repos/{hub}/git/ref/tags/", one_ref)
+    net.on("GET", rf"/repos/{hub}/git/tags/[0-9a-f]+", tag_object)
 
 
 def execute(
@@ -387,17 +455,20 @@ def execute(
     *,
     sleeps: list[float] | None = None,
     run_id: str = RUN_ID,
+    ledger: str | None = None,
+    now: datetime = NOW,
 ) -> Any:
     log = sleeps if sleeps is not None else []
     client = Client(net, sleep=log.append, clock=lambda: 0.0)
-    cfg = Config(HUB, run_id, SHA, policy, POLICY_SHA)
+    extra = {} if ledger is None else {"chain_ack_text": ledger}
+    cfg = Config(HUB, run_id, SHA, policy, POLICY_SHA, **extra)
     return run(
         cfg,
         spoke=GitHubApi(client, SPOKE_TOKEN),
         hub=GitHubApi(client, HUB_TOKEN),
         client=client,
         osv=Osv(client),
-        now_fn=lambda: NOW,
+        now_fn=lambda: now,
     )
 
 
@@ -762,8 +833,12 @@ class TokensAndRedirects(unittest.TestCase):
                 call.token, (SPOKE_TOKEN, HUB_TOKEN), f"{call.method} {call.url}"
             )
         for call in writes:
-            if "/contents/runs/" in call.url:
-                self.assertEqual(call.token, HUB_TOKEN)
+            if (
+                "/contents/runs/" in call.url
+                or "/git/tags" in call.url
+                or "/git/refs" in call.url
+            ):
+                self.assertEqual(call.token, HUB_TOKEN, f"{call.method} {call.url}")
             else:
                 self.assertEqual(call.token, SPOKE_TOKEN, f"{call.method} {call.url}")
         for call in net.calls:
@@ -782,6 +857,7 @@ class TokensAndRedirects(unittest.TestCase):
                 self.assertTrue(
                     "/contents/runs/" in call.url
                     or "/git/trees/" in call.url
+                    or "/git/" in call.url
                     or "/contents/" in call.url
                 )
                 self.assertNotIn("/issues", call.url)
@@ -1513,6 +1589,487 @@ class KevItems(unittest.TestCase):
         result = fetch_feeds(client, Osv(client), [], [], {}, NOW)
         self.assertIsNone(result.snapshot.kev)
         self.assertIsNone(result.snapshot.kev_released_at)
+
+
+def make_record(
+    run_id: str,
+    prev: str | None = None,
+    *,
+    started: datetime = NOW,
+    end_state: str = "success",
+    reason: str | None = None,
+) -> run_record.RunRecord:
+    return run_record.RunRecord(
+        run_id=run_id,
+        started_at=started,
+        finished_at=started,
+        end_state=end_state,  # type: ignore[arg-type]
+        failure_reason=reason,
+        aggregator_commit=SHA,
+        policy_commit=POLICY_SHA,
+        repositories=run_record.Repositories((), (), {}),
+        feeds=run_record.Feeds((), ()),
+        kev_fetched_on=None,
+        epss=run_record.EpssInfo(None, None),
+        findings=(),
+        issues=(),
+        vex_exclusions=(),
+        rejected_vex=(),
+        unscored=(),
+        malicious_withdrawn_unconfirmed=(),
+        summary_overflow={},
+        response_metrics={},
+        pull_requests=(),
+        rate_limit=run_record.RateLimitRecord((), ()),
+        failure_notice_error=None,
+        prev_record_sha256=prev,
+    )
+
+
+def record_text(run_id: str, prev: str | None = None, **kwargs: Any) -> str:
+    return run_record.to_json(make_record(run_id, prev, **kwargs))
+
+
+def digest(text: str) -> str:
+    return run_record.sha256_text(text)
+
+
+def record_path(run_id: str, month: str = "2026/01") -> str:
+    return f"runs/{month}/{run_id}.json"
+
+
+def chain_net(records: dict[str, str]) -> FakeNet:
+    """A world whose runs branch already holds ``records`` (path -> text)."""
+    net = world(runs=list(records))
+    for path, text in records.items():
+        net.on("GET", rf"/contents/{re.escape(path)}", file_response(text))
+    return net
+
+
+def seed_tag(net: FakeNet, name: str, sha256: str, path: str = "runs/2026/01") -> None:
+    """A tag a previous run left, with the two-line annotation this module writes."""
+    obj = hashlib.sha256(name.encode()).hexdigest()[:40]
+    net.tag_objects[obj] = f"path: {path}\nsha256: {sha256}\n"
+    net.tag_refs[name] = obj
+
+
+def ledger_json(*abandoned: tuple[str, str, str]) -> str:
+    """A chain ledger; each entry is ``(month, sha256, decision)``."""
+    return json.dumps(
+        {
+            "schema_version": 1,
+            "accepted_forks": [
+                {
+                    "month": month,
+                    "abandoned_record_sha256": sha,
+                    "decision": decision,
+                }
+                for month, sha, decision in abandoned
+            ],
+        }
+    )
+
+
+def put_texts(net: FakeNet) -> list[str]:
+    return [
+        base64.b64decode(c.body["content"]).decode()
+        for c in net.to("PUT", "/contents/runs/")
+    ]
+
+
+class ChainLedger(unittest.TestCase):
+    """The chain ledger is read before a record is written; an unusable one stops the write."""
+
+    def forked(self) -> tuple[str, str, str, FakeNet]:
+        """A month with one root and two records that both name it (two tips)."""
+        root = record_text("998-1")
+        x = record_text("999-1", digest(root))
+        y = record_text("999-2", digest(root))
+        net = chain_net(
+            {
+                record_path("998-1"): root,
+                record_path("999-1"): x,
+                record_path("999-2"): y,
+            }
+        )
+        return root, x, y, net
+
+    def healthy(self) -> tuple[str, str, FakeNet]:
+        root = record_text("998-1")
+        x = record_text("999-1", digest(root))
+        net = chain_net({record_path("998-1"): root, record_path("999-1"): x})
+        return root, x, net
+
+    def test_two_tips_and_an_empty_ledger_write_nothing(self) -> None:
+        _root, _x, _y, net = self.forked()
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertIsNone(outcome.saved_path)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertTrue(
+            any("chain tips" in m for m in outcome.messages), outcome.messages
+        )
+
+    def test_after_the_abandoned_tip_is_registered_the_record_is_written(self) -> None:
+        _root, x, y, net = self.forked()
+        ledger = ledger_json(("2026-01", digest(y), "Issue 12"))
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        written = put_texts(net)
+        self.assertEqual(len(written), 1)
+        self.assertEqual(
+            run_record.from_json(written[0]).prev_record_sha256,
+            digest(x),
+            "the new record must name the tip that stayed in the chain",
+        )
+
+    def test_a_ledger_entry_for_a_record_that_has_a_child_writes_nothing(self) -> None:
+        root, _x, net = self.healthy()
+        ledger = ledger_json(("2026-01", digest(root), "Issue 12"))
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger)
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertTrue(any("tips" in m for m in outcome.messages), outcome.messages)
+
+    def test_a_ledger_entry_for_an_unknown_sha_writes_nothing(self) -> None:
+        _root, _x, net = self.healthy()
+        ledger = ledger_json(("2026-01", "f" * 64, "Issue 12"))
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger)
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertTrue(
+            any("no record has this SHA-256" in m for m in outcome.messages),
+            outcome.messages,
+        )
+
+    def test_a_ledger_that_is_not_readable_writes_nothing(self) -> None:
+        _root, _x, net = self.healthy()
+        for text in ("{ not json", ""):
+            with self.subTest(text=text):
+                outcome = execute(net, policy_text([TARGET]), ledger=text)
+                self.assertEqual(outcome.exit_code, 1)
+                self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+
+    def test_control_a_healthy_month_with_an_empty_ledger_is_written(self) -> None:
+        _root, x, net = self.healthy()
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger_json())
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(
+            run_record.from_json(put_texts(net)[0]).prev_record_sha256, digest(x)
+        )
+
+    def test_an_entry_of_another_month_is_not_judged_against_this_one(self) -> None:
+        _root, _x, net = self.healthy()
+        ledger = ledger_json(("2025-06", "e" * 64, "Issue 3"))
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+
+
+class TipRecord(unittest.TestCase):
+    """The SHA-256 of what was written is kept, and the next run compares it with the month."""
+
+    def test_the_written_sha_is_in_the_outcome_and_in_an_annotated_tag(self) -> None:
+        net = world()
+        outcome = execute(net, policy_text([TARGET]))
+        text = put_texts(net)[0]
+        self.assertEqual(outcome.tip_sha256, digest(text))
+        name = f"supply-chain-runs-tip-2026-01-{RUN_ID}"
+        self.assertEqual(outcome.tip_tag, name)
+        created = net.to("POST", "/git/tags")
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].token, HUB_TOKEN)
+        self.assertEqual(created[0].body["tag"], name)
+        self.assertEqual(created[0].body["type"], "commit")
+        self.assertEqual(created[0].body["object"], COMMIT)
+        self.assertEqual(
+            created[0].body["message"].splitlines(),
+            [f"path: {outcome.saved_path}", f"sha256: {digest(text)}"],
+        )
+        refs = net.to("POST", "/git/refs")
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0].token, HUB_TOKEN)
+        self.assertEqual(refs[0].body["ref"], f"refs/tags/{name}")
+        self.assertIn(refs[0].body["sha"], net.tag_objects)
+        summary = aggregator.render_summary(outcome)
+        self.assertIn(digest(text), summary)
+        self.assertIn(name, summary)
+
+    def test_a_first_run_with_nothing_recorded_goes_ahead(self) -> None:
+        root = record_text("998-1")
+        net = chain_net({record_path("998-1"): root})
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+
+    def test_control_an_unchanged_tip_goes_ahead(self) -> None:
+        root = record_text("998-1")
+        net = chain_net({record_path("998-1"): root})
+        seed_tag(net, "supply-chain-runs-tip-2026-01-998-1", digest(root))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(len(net.to("PUT", "/contents/runs/")), 1)
+
+    def test_a_tip_edited_by_one_character_stops_the_run(self) -> None:
+        root = record_text("998-1")
+        edited = root.replace(POLICY_SHA, "b" * 39 + "c", 1)
+        self.assertNotEqual(root, edited)
+        net = chain_net({record_path("998-1"): edited})
+        seed_tag(net, "supply-chain-runs-tip-2026-01-998-1", digest(root))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertTrue(
+            any("tip_changed" in m for m in outcome.messages), outcome.messages
+        )
+
+    def test_a_recorded_tip_whose_record_is_gone_stops_the_run(self) -> None:
+        root = record_text("998-1")
+        net = chain_net({record_path("998-1"): root})
+        seed_tag(net, "supply-chain-runs-tip-2026-01-999-1", "d" * 64)
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+
+    def test_an_abandoned_tip_as_the_recorded_value_goes_ahead_once_listed(
+        self,
+    ) -> None:
+        root = record_text("998-1")
+        x = record_text("999-1", digest(root))
+        y = record_text("999-2", digest(root))
+        net = chain_net(
+            {
+                record_path("998-1"): root,
+                record_path("999-1"): x,
+                record_path("999-2"): y,
+            }
+        )
+        seed_tag(net, "supply-chain-runs-tip-2026-01-999-2", digest(y))
+        ledger = ledger_json(("2026-01", digest(y), "PR 40"))
+        outcome = execute(net, policy_text([TARGET]), ledger=ledger)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(len(net.to("PUT", "/contents/runs/")), 1)
+
+    def test_only_the_newest_tag_is_compared_and_newest_is_numeric(self) -> None:
+        root = record_text("998-1")
+        net = chain_net({record_path("998-1"): root})
+        # 999 sorts after 1001 as text, and before it as a number. The newer one names a record that is gone.
+        seed_tag(net, "supply-chain-runs-tip-2026-01-999-1", digest(root))
+        seed_tag(net, "supply-chain-runs-tip-2026-01-1001-1", "d" * 64)
+        outcome = execute(net, policy_text([TARGET]), run_id="1002-1")
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+
+    def test_a_newest_tag_without_a_sha_stops_the_run(self) -> None:
+        root = record_text("998-1")
+        net = chain_net({record_path("998-1"): root})
+        obj = "9" * 40
+        net.tag_objects[obj] = "path: runs/2026/01/998-1.json\n"
+        net.tag_refs["supply-chain-runs-tip-2026-01-998-1"] = obj
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+
+    def test_a_tag_that_cannot_be_created_is_a_warning_and_the_record_stays(
+        self,
+    ) -> None:
+        net = world()
+        net.on("POST", r"/git/tags$", ok({"message": "no"}, 422))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(len(net.to("PUT", "/contents/runs/")), 1)
+        self.assertTrue(any("tag" in m for m in outcome.messages), outcome.messages)
+        self.assertIsNone(outcome.tip_tag)
+        self.assertEqual(outcome.tip_sha256, digest(put_texts(net)[0]))
+
+
+class MonthSeal(unittest.TestCase):
+    """The first run of a new month seals the month before it, and checks a seal that exists."""
+
+    def run_in_february(self, net: FakeNet) -> Any:
+        return execute(net, policy_text([TARGET]), run_id="1100-1", now=NOW_FEB)
+
+    def january(self) -> tuple[str, FakeNet]:
+        jan = record_text("998-1")
+        return jan, chain_net({record_path("998-1"): jan})
+
+    def test_the_first_run_of_a_month_creates_the_seal_of_the_month_before(
+        self,
+    ) -> None:
+        jan, net = self.january()
+        outcome = self.run_in_february(net)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        tags = {c.body["tag"]: c for c in net.to("POST", "/git/tags")}
+        self.assertIn("supply-chain-runs-2026-01", tags)
+        self.assertIn(
+            f"sha256: {digest(jan)}", tags["supply-chain-runs-2026-01"].body["message"]
+        )
+        self.assertIn("supply-chain-runs-tip-2026-02-1100-1", tags)
+        self.assertIn("supply-chain-runs-2026-01", net.tag_refs)
+
+    def test_a_seal_that_exists_is_not_created_again(self) -> None:
+        jan, net = self.january()
+        seed_tag(net, "supply-chain-runs-2026-01", digest(jan))
+        outcome = self.run_in_february(net)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        made = [c.body["tag"] for c in net.to("POST", "/git/tags")]
+        self.assertNotIn("supply-chain-runs-2026-01", made)
+
+    def test_a_sealed_month_that_lost_its_last_record_stops_the_run(self) -> None:
+        first = record_text("998-1")
+        last = record_text("999-1", digest(first))
+        net = chain_net({record_path("998-1"): first})  # the last record is gone
+        seed_tag(net, "supply-chain-runs-2026-01", digest(last))
+        outcome = self.run_in_february(net)
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertTrue(
+            any("seal_mismatch" in m for m in outcome.messages), outcome.messages
+        )
+
+    def test_a_month_with_two_tips_is_not_sealed_and_nothing_is_written(self) -> None:
+        net = chain_net(
+            {
+                record_path("998-1"): record_text("998-1"),
+                record_path("999-1"): record_text("999-1"),
+            }
+        )
+        outcome = self.run_in_february(net)
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs/"), [])
+        self.assertEqual(net.to("POST", "/git/tags"), [])
+
+    def test_a_seal_that_cannot_be_created_is_a_warning(self) -> None:
+        _jan, net = self.january()
+        net.on("POST", r"/git/tags$", ok({"message": "no"}, 422))
+        outcome = self.run_in_february(net)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(len(net.to("PUT", "/contents/runs/")), 1)
+        self.assertTrue(any("seal" in m for m in outcome.messages), outcome.messages)
+
+    def test_a_month_with_no_record_before_it_creates_no_seal(self) -> None:
+        net = world()
+        self.run_in_february(net)
+        made = [c.body["tag"] for c in net.to("POST", "/git/tags")]
+        self.assertEqual(made, ["supply-chain-runs-tip-2026-02-1100-1"])
+
+
+def dir_hub(net: FakeNet, directory: Path, delay: float) -> None:
+    """Makes the runs branch of ``net`` a directory, so that two processes see each other's records."""
+    hub = f"{HUB.owner}/{HUB.name}"
+
+    def listing(url: str, _: Any) -> Response:
+        paths = sorted(
+            p.relative_to(directory).as_posix() for p in directory.rglob("*.json")
+        )
+        time.sleep(
+            delay
+        )  # the window in which an unlocked second run reads the same month
+        return tree(paths)
+
+    def read(url: str, _: Any) -> Response:
+        rel = url.split("/contents/", 1)[1].split("?", 1)[0]
+        return file_response((directory / rel).read_text(encoding="utf-8"))
+
+    def write(url: str, payload: dict[str, Any]) -> Response:
+        target = directory / url.split("/contents/", 1)[1]
+        if target.exists():
+            return ok({"message": "exists"}, 422)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            base64.b64decode(payload["content"]).decode("utf-8"), encoding="utf-8"
+        )
+        return put_ok()
+
+    net.on("GET", rf"/repos/{hub}/git/trees/", listing)
+    net.on("GET", rf"/repos/{hub}/contents/runs/", read)
+    net.on("PUT", rf"/repos/{hub}/contents/runs/", write)
+
+
+def race_child(directory: str, run_id: str, barrier: Any, lock_dir: str) -> None:
+    os.environ["RUNNER_TEMP"] = lock_dir
+    net = world()
+    dir_hub(net, Path(directory), 0.5)
+    barrier.wait(timeout=60)
+    outcome = execute(net, policy_text([TARGET]), run_id=run_id)
+    sys.exit(outcome.exit_code)
+
+
+class MonthLock(unittest.TestCase):
+    def test_two_processes_writing_the_same_month_leave_one_chain(self) -> None:
+        ctx = multiprocessing.get_context("fork")
+        barrier = ctx.Barrier(2)
+        with (
+            tempfile.TemporaryDirectory() as hub_dir,
+            tempfile.TemporaryDirectory() as lock_dir,
+        ):
+            procs = [
+                ctx.Process(target=race_child, args=(hub_dir, rid, barrier, lock_dir))
+                for rid in ("3000-1", "3001-1")
+            ]
+            for proc in procs:
+                proc.start()
+            for proc in procs:
+                proc.join(timeout=180)
+            self.assertEqual([p.exitcode for p in procs], [0, 0])
+            entries = [
+                (p.relative_to(hub_dir).as_posix(), p.read_text(encoding="utf-8"))
+                for p in sorted(Path(hub_dir).rglob("*.json"))
+            ]
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(run_record.verify_chain(entries), ())
+
+    def test_the_lock_file_is_under_runner_temp_and_outside_the_records(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            saved = os.environ.get("RUNNER_TEMP")
+            os.environ["RUNNER_TEMP"] = temp
+            try:
+                path = aggregator.month_lock_path("2026-01")
+                self.assertEqual(path.parent, Path(temp))
+                self.assertIn("2026-01", path.name)
+                with aggregator.month_lock("2026-01"):
+                    self.assertTrue(path.exists())
+            finally:
+                if saved is None:
+                    del os.environ["RUNNER_TEMP"]
+                else:
+                    os.environ["RUNNER_TEMP"] = saved
+
+    def test_without_runner_temp_the_system_temporary_directory_is_used(self) -> None:
+        saved = os.environ.pop("RUNNER_TEMP", None)
+        try:
+            self.assertEqual(
+                aggregator.month_lock_path("2026-01").parent,
+                Path(tempfile.gettempdir()),
+            )
+        finally:
+            if saved is not None:
+                os.environ["RUNNER_TEMP"] = saved
+
+
+class WorkflowAndLedgerFile(unittest.TestCase):
+    WORKFLOW = ROOT / ".github" / "workflows" / "supply-chain-aggregator.yml"
+
+    def test_runs_queue_instead_of_being_dropped(self) -> None:
+        text = self.WORKFLOW.read_text(encoding="utf-8")
+        block = re.search(r"^concurrency:\n((?:  .*\n)+)", text, re.MULTILINE)
+        self.assertIsNotNone(block)
+        body = block.group(1) if block else ""
+        self.assertIn("queue: max", body)
+        self.assertIn("cancel-in-progress: false", body)
+
+    def test_the_ledger_path_is_passed_to_the_aggregator_step(self) -> None:
+        text = self.WORKFLOW.read_text(encoding="utf-8")
+        step = text.split("- name: Run the Aggregator", 1)[1]
+        self.assertIn(
+            "CHAIN_ACK_FILE: policy/docs/agent/supply-chain-chain-ack.json", step
+        )
+
+    def test_a_missing_ledger_file_is_an_empty_ledger(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "ack.json"
+            self.assertIsNone(aggregator.read_chain_ack(None))
+            self.assertIsNone(aggregator.read_chain_ack(str(path)))
+            path.write_text("{}", encoding="utf-8")
+            self.assertEqual(aggregator.read_chain_ack(str(path)), "{}")
 
 
 class Helpers(unittest.TestCase):

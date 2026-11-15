@@ -30,9 +30,13 @@ on:
 permissions: {}
 
 # One run at a time, and a run in progress is never cut off: a half-applied plan is worse than a late one.
+# `queue: max` keeps every waiting run in line; without it GitHub keeps only the newest pending run, so a
+# run that was waiting is dropped, and its record is missing from the chain. The key is from GitHub Docs
+# ("Control the concurrency of workflows and jobs"); it was not run against GitHub when this was written.
 concurrency:
   group: supply-chain-aggregator
   cancel-in-progress: false
+  queue: max
 
 jobs:
   aggregate:
@@ -132,5 +136,7 @@ jobs:
           SPOKE_TOKEN: ${{ steps.spoke-token.outputs.token }}
           HUB_TOKEN: ${{ steps.hub-token.outputs.token }}
           POLICY_FILE: policy/docs/agent/supply-chain-policy.json
+          # The chain ledger of the pinned policy checkout; a file that is not there is an empty ledger.
+          CHAIN_ACK_FILE: policy/docs/agent/supply-chain-chain-ack.json
           SUPPLY_CHAIN_POLICY_REF: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
         run: python3 tools/supply_chain_aggregator.py run
