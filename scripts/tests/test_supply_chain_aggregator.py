@@ -356,10 +356,16 @@ def world(
     return net
 
 
-def execute(net: FakeNet, policy: str, *, sleeps: list[float] | None = None) -> Any:
+def execute(
+    net: FakeNet,
+    policy: str,
+    *,
+    sleeps: list[float] | None = None,
+    run_id: str = RUN_ID,
+) -> Any:
     log = sleeps if sleeps is not None else []
     client = Client(net, sleep=log.append, clock=lambda: 0.0)
-    cfg = Config(HUB, RUN_ID, SHA, policy, POLICY_SHA)
+    cfg = Config(HUB, run_id, SHA, policy, POLICY_SHA)
     return run(
         cfg,
         spoke=GitHubApi(client, SPOKE_TOKEN),
@@ -581,6 +587,24 @@ class RunRecordStorage(unittest.TestCase):
         saved = run_record.from_json(base64.b64decode(puts[0].body["content"]).decode())
         self.assertEqual(saved.run_id, RUN_ID)
         self.assertEqual(saved.policy_commit, POLICY_SHA)
+
+    def test_a_record_names_the_one_before_it_in_the_same_month(self) -> None:
+        first_net = world()
+        execute(first_net, policy_text([TARGET]))
+        first_put = first_net.to("PUT", "/contents/runs/")[0]
+        first_text = base64.b64decode(first_put.body["content"]).decode()
+        self.assertIsNone(run_record.from_json(first_text).prev_record_sha256)
+
+        net = world(runs=["runs/2026/01/1000-1.json"])
+        net.on("GET", r"/contents/runs/2026/01/1000-1\.json", file_response(first_text))
+        outcome = execute(net, policy_text([TARGET]), run_id="1001-1")
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        second = run_record.from_json(
+            base64.b64decode(
+                net.to("PUT", "/contents/runs/")[0].body["content"]
+            ).decode()
+        )
+        self.assertEqual(second.prev_record_sha256, run_record.sha256_text(first_text))
 
     def test_an_existing_path_is_never_overwritten(self) -> None:
         net = world(runs=["runs/2026/01/1000-1.json"])
