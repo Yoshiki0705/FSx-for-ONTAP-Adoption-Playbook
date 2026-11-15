@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -2140,10 +2141,105 @@ WINNER = vex_text(
 LOSER = vex_text("lose", "under_investigation", "2025-12-01T00:00:00Z")
 
 
-def vex_world(files: dict[str, str], merged: dict[str, str | int | None]) -> FakeNet:
-    """One finding that the document ``win.json`` excludes; ``merged`` answers the commits query per file name.
+def vex_commit_sha(name: str) -> str:
+    """A fake commit SHA per file name, so that two files can be told apart by the commit they were made in."""
+    return hashlib.sha256(name.encode()).hexdigest()[:40]
 
-    A string is the committer date of the newest commit, ``None`` an empty list, an integer an HTTP status.
+
+AUTHOR = "alice"
+REVIEWER = "bob"
+PR_HEAD = "9" * 40
+VEX_MERGED = "2025-12-21T00:00:00Z"
+OWNED_BY_REVIEWER = f"/.vex/ @{REVIEWER}\n"
+
+
+def pull_item(
+    number: int,
+    *,
+    author: str | None = AUTHOR,
+    merged_at: str | None = VEX_MERGED,
+    head: str | None = PR_HEAD,
+) -> dict[str, Any]:
+    """A pull request of ``GET /commits/{sha}/pulls`` as the tests fake it (field names from memory)."""
+    item: dict[str, Any] = {
+        "number": number,
+        "state": "closed" if merged_at else "open",
+        "merged_at": merged_at,
+        "user": {"login": author},
+    }
+    if head is not None:
+        item["head"] = {"sha": head}
+    return item
+
+
+def review_item(
+    login: str,
+    state: str,
+    *,
+    commit_id: str = PR_HEAD,
+    at: str = "2025-12-19T00:00:00Z",
+) -> dict[str, Any]:
+    """A review of ``GET /pulls/{n}/reviews`` as the tests fake it (field names from memory)."""
+    return {
+        "user": {"login": login},
+        "state": state,
+        "commit_id": commit_id,
+        "submitted_at": at,
+    }
+
+
+def install_vex_approval(
+    net: FakeNet,
+    merged: dict[str, str],
+    *,
+    codeowners: str | None = OWNED_BY_REVIEWER,
+) -> None:
+    """Routes under which every file of ``merged`` (name -> merge time) is approved by ``REVIEWER``.
+
+    Each file has its own last commit and its own merged pull request (number 100, 101, ...). The pull request
+    was made by ``AUTHOR`` and its head is ``PR_HEAD``; ``REVIEWER`` approved that head and owns ``.vex/``.
+    Tests override a single route afterwards; a route added later wins.
+    """
+    numbers = {name: 100 + index for index, name in enumerate(merged)}
+    by_sha = {vex_commit_sha(name): name for name in merged}
+
+    def commits(url: str, _: Any) -> Response:
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+        return ok([{"sha": vex_commit_sha(query["path"][0].removeprefix(".vex/"))}])
+
+    def pulls(url: str, _: Any) -> Response:
+        name = by_sha[url.split("/commits/", 1)[1].split("/pulls", 1)[0]]
+        return ok([pull_item(numbers[name], merged_at=merged[name])])
+
+    net.on("GET", rf"/repos/{TARGET}/commits\?", commits)
+    net.on("GET", rf"/repos/{TARGET}/commits/[0-9a-f]{{40}}/pulls", pulls)
+    net.on(
+        "GET",
+        rf"/repos/{TARGET}/pulls/\d+/reviews",
+        ok([review_item(REVIEWER, "APPROVED")]),
+    )
+    net.on(
+        "GET",
+        rf"/repos/{TARGET}/contents/(?:\.github/|docs/)?CODEOWNERS\?",
+        ok({"message": "Not Found"}, 404),
+    )
+    if codeowners is not None:
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/\.github/CODEOWNERS\?",
+            file_response(codeowners),
+        )
+
+
+def vex_world(
+    files: dict[str, str],
+    merged: dict[str, str] | None = None,
+    *,
+    codeowners: str | None = OWNED_BY_REVIEWER,
+) -> FakeNet:
+    """One finding that the document ``win.json`` excludes; ``merged`` names the merge time of each file.
+
+    Every file is approved (see ``install_vex_approval``); a test that needs a refusal overrides one route.
     """
     net = world()
     net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
@@ -2154,17 +2250,11 @@ def vex_world(files: dict[str, str], merged: dict[str, str | int | None]) -> Fak
     )
     for name, text in files.items():
         net.on("GET", rf"/contents/\.vex/{re.escape(name)}\?", file_response(text))
-
-    def commits(url: str, _: Any) -> Response:
-        query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
-        answer = merged[query["path"][0].removeprefix(".vex/")]
-        if isinstance(answer, int):
-            return ok({"message": "refused"}, answer)
-        if answer is None:
-            return ok([])
-        return ok([{"commit": {"committer": {"date": answer}}}])
-
-    net.on("GET", rf"/repos/{TARGET}/commits\?", commits)
+    install_vex_approval(
+        net,
+        {name: VEX_MERGED for name in files} if merged is None else merged,
+        codeowners=codeowners,
+    )
     return net
 
 
@@ -2172,20 +2262,39 @@ def rejected_reasons(outcome: Any) -> list[tuple[str, str]]:
     return [(r.path, r.reason) for r in outcome.record.rejected_vex]
 
 
+def reason_of(outcome: Any, path: str) -> str:
+    found = [reason for p, reason in rejected_reasons(outcome) if p == path]
+    assert len(found) == 1, f"{path}: {found}"
+    return found[0]
+
+
 class VexMergedAt(unittest.TestCase):
-    """``PlanInputs.vex_merged_at`` is read per ``.vex/`` document and decides ``vex_stale_non_excluding``."""
+    """``PlanInputs.vex_merged_at`` is the merge time of the pull request that approved each ``.vex/`` document.
+
+    It decides ``vex_stale_non_excluding``.
+    """
 
     FILES: ClassVar[dict[str, str]] = {"win.json": WINNER, "lose.json": LOSER}
+
+    def captured(self, net: FakeNet) -> tuple[Any, models.PlanInputs]:
+        seen: list[models.PlanInputs] = []
+        real = aggregator.planner.plan
+
+        def spy(inputs: models.PlanInputs) -> Any:
+            seen.append(inputs)
+            return real(inputs)
+
+        with mock.patch.object(aggregator.planner, "plan", spy):
+            outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(len(seen), 1)
+        return outcome, seen[0]
 
     def test_each_document_is_asked_for_its_last_commit_from_the_head_commit(
         self,
     ) -> None:
-        net = vex_world(
-            self.FILES,
-            {"win.json": "2025-12-21T00:00:00Z", "lose.json": "2025-12-25T00:00:00Z"},
-        )
+        net = vex_world(self.FILES, {"win.json": VEX_MERGED, "lose.json": VEX_MERGED})
         execute(net, policy_text([TARGET]))
-        asked = net.to("GET", f"/repos/{TARGET}/commits")
+        asked = net.to("GET", f"/repos/{TARGET}/commits?")
         self.assertEqual(len(asked), 2)
         queries = [
             urllib.parse.parse_qs(urllib.parse.urlsplit(c.url).query) for c in asked
@@ -2197,6 +2306,37 @@ class VexMergedAt(unittest.TestCase):
             self.assertEqual(query["sha"], [SHA])
             self.assertEqual(query["per_page"], ["1"])
         self.assertTrue(all(c.token == SPOKE_TOKEN for c in asked))
+
+    def test_the_time_is_the_merge_time_of_the_pull_request_not_the_commit_time(
+        self,
+    ) -> None:
+        net = vex_world(
+            self.FILES,
+            {"win.json": "2025-12-21T01:02:03Z", "lose.json": "2025-12-25T00:00:00Z"},
+        )
+        _outcome, inputs = self.captured(net)
+        merged = (inputs.vex_merged_at or {})[REPO]
+        self.assertEqual(
+            merged,
+            {
+                f"{TARGET}:.vex/win.json": datetime(2025, 12, 21, 1, 2, 3, tzinfo=UTC),
+                f"{TARGET}:.vex/lose.json": datetime(2025, 12, 25, tzinfo=UTC),
+            },
+        )
+        self.assertEqual(
+            sorted(d.path for d in inputs.vex[REPO]),
+            [f"{TARGET}:.vex/lose.json", f"{TARGET}:.vex/win.json"],
+        )
+
+    def test_the_merge_time_is_in_utc_without_a_fraction_of_a_second(self) -> None:
+        net = vex_world(
+            {"win.json": WINNER}, {"win.json": "2025-12-21T10:02:03.456+09:00"}
+        )
+        _outcome, inputs = self.captured(net)
+        self.assertEqual(
+            (inputs.vex_merged_at or {})[REPO],
+            {f"{TARGET}:.vex/win.json": datetime(2025, 12, 21, 1, 2, 3, tzinfo=UTC)},
+        )
 
     def test_a_non_excluding_statement_merged_after_the_one_that_wins_is_reported(
         self,
@@ -2216,50 +2356,77 @@ class VexMergedAt(unittest.TestCase):
             {"win.json": "2025-12-21T00:00:00Z", "lose.json": "2025-12-10T00:00:00Z"},
         )
         outcome = execute(net, policy_text([TARGET]))
-        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/commits")), 2)
+        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/commits?")), 2)
         self.assertNotIn(STALE, [reason for _path, reason in rejected_reasons(outcome)])
         self.assertEqual(len(outcome.record.vex_exclusions), 1)
 
-    def test_a_refused_query_leaves_the_times_of_that_repository_out_and_the_run_goes_on(
+    def test_a_document_that_is_not_approved_has_no_merge_time(self) -> None:
+        net = vex_world(self.FILES)
+        net.on(
+            "GET",
+            r"/pulls/101/reviews",
+            ok([review_item(REVIEWER, "CHANGES_REQUESTED")]),
+        )
+        _outcome, inputs = self.captured(net)
+        self.assertEqual(
+            list((inputs.vex_merged_at or {})[REPO]), [f"{TARGET}:.vex/win.json"]
+        )
+
+    def test_a_refused_query_leaves_that_document_out_and_the_run_goes_on(
         self,
     ) -> None:
         for status in (404, 500):
             with self.subTest(status=status):
-                net = vex_world(
-                    self.FILES,
-                    {"win.json": status, "lose.json": "2025-12-25T00:00:00Z"},
+                net = vex_world(self.FILES)
+                net.on(
+                    "GET",
+                    rf"/repos/{TARGET}/commits\?path=\.vex%2Fwin\.json",
+                    ok({"message": "refused"}, status),
                 )
                 outcome = execute(net, policy_text([TARGET]))
                 self.assertEqual(outcome.exit_code, 0, outcome.messages)
                 self.assertEqual(outcome.record.end_state, "success")
-                self.assertNotIn(
-                    STALE, [reason for _path, reason in rejected_reasons(outcome)]
-                )
-                self.assertEqual(len(outcome.record.vex_exclusions), 1)
                 self.assertTrue(
-                    any("vex_merged_at" in m and TARGET in m for m in outcome.messages),
-                    outcome.messages,
+                    reason_of(outcome, ".vex/win.json").startswith("vex_unverifiable:")
                 )
+                self.assertEqual(outcome.record.vex_exclusions, ())
+                self.assertNotIn(".vex/lose.json", dict(rejected_reasons(outcome)))
 
-    def test_a_document_with_no_commit_is_left_out_by_itself(self) -> None:
-        net = vex_world(
-            self.FILES, {"win.json": "2025-12-21T00:00:00Z", "lose.json": None}
+    def test_a_document_with_no_commit_is_not_verifiable(self) -> None:
+        net = vex_world(self.FILES)
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits\?path=\.vex%2Flose\.json",
+            ok([]),
         )
         outcome = execute(net, policy_text([TARGET]))
         self.assertEqual(outcome.exit_code, 0, outcome.messages)
-        self.assertNotIn(STALE, [reason for _path, reason in rejected_reasons(outcome)])
         self.assertTrue(
-            any("lose.json" in m for m in outcome.messages), outcome.messages
+            reason_of(outcome, ".vex/lose.json").startswith("vex_unverifiable:")
         )
+        self.assertEqual(len(outcome.record.vex_exclusions), 1)
 
     def test_a_repository_without_vex_documents_is_never_asked(self) -> None:
         net = world()
         net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
         execute(net, policy_text([TARGET]))
         self.assertEqual(net.to("GET", "/commits"), [])
+        self.assertEqual(net.to("GET", "CODEOWNERS"), [])
+
+    def test_a_repository_whose_only_document_is_not_valid_is_never_asked(
+        self,
+    ) -> None:
+        net = vex_world({"bad.json": "{ nope"})
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(net.to("GET", "/commits"), [])
+        self.assertIn(".vex/bad.json", dict(rejected_reasons(outcome)))
+        self.assertFalse(
+            reason_of(outcome, ".vex/bad.json").startswith("vex_un"),
+            "an unparseable document is not an approval question",
+        )
 
     def test_a_rate_limit_on_the_query_stops_the_run_like_any_other_read(self) -> None:
-        net = vex_world(self.FILES, {"win.json": 200, "lose.json": 200})
+        net = vex_world(self.FILES)
         net.on(
             "GET",
             rf"/repos/{TARGET}/commits\?",
@@ -2268,6 +2435,593 @@ class VexMergedAt(unittest.TestCase):
         outcome = execute(net, policy_text([TARGET]))
         self.assertEqual(outcome.record.end_state, "failure")
         self.assertIn("rate limit", outcome.record.failure_reason or "")
+
+    def test_a_rate_limit_on_the_pull_request_list_stops_the_run_too(self) -> None:
+        net = vex_world(self.FILES)
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/[0-9a-f]{{40}}/pulls",
+            Response(429, {"retry-after": "3600"}, b""),
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.record.end_state, "failure")
+        self.assertIn("rate limit", outcome.record.failure_reason or "")
+
+
+class VexApproval(unittest.TestCase):
+    """A document counts only when a Code Owner other than the author approved the head that was merged."""
+
+    FILES: ClassVar[dict[str, str]] = {"win.json": WINNER}
+
+    def world(self, **kwargs: Any) -> FakeNet:
+        return vex_world(self.FILES, **kwargs)
+
+    def decided(self, net: FakeNet) -> Any:
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        return outcome
+
+    def assert_unapproved(self, net: FakeNet, *words: str) -> str:
+        outcome = self.decided(net)
+        reason = reason_of(outcome, ".vex/win.json")
+        self.assertTrue(reason.startswith("vex_unapproved:"), reason)
+        for word in words:
+            self.assertIn(word, reason)
+        self.assertEqual(
+            outcome.record.vex_exclusions, (), "an unapproved document was applied"
+        )
+        return reason
+
+    def assert_unverifiable(self, net: FakeNet) -> str:
+        outcome = self.decided(net)
+        reason = reason_of(outcome, ".vex/win.json")
+        self.assertTrue(reason.startswith("vex_unverifiable:"), reason)
+        self.assertEqual(
+            outcome.record.vex_exclusions, (), "an unverifiable document was applied"
+        )
+        return reason
+
+    def test_control_an_approved_document_is_applied(self) -> None:
+        outcome = self.decided(self.world())
+        self.assertEqual(len(outcome.record.vex_exclusions), 1)
+        self.assertEqual(outcome.record.rejected_vex, ())
+
+    def test_one_file_costs_a_commit_a_pull_request_list_and_a_review_list(
+        self,
+    ) -> None:
+        net = self.world()
+        self.decided(net)
+        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/commits?")), 1)
+        self.assertEqual(len(net.to("GET", "/pulls")), 2)  # the list and the reviews
+        self.assertEqual(len(net.to("GET", "/reviews")), 1)
+        self.assertEqual(len(net.to("GET", "CODEOWNERS")), 1)
+        self.assertTrue(
+            all(
+                c.token == SPOKE_TOKEN
+                for c in net.calls
+                if "/commits" in c.url or "/pulls" in c.url or "CODEOWNERS" in c.url
+            )
+        )
+
+    def test_a_later_changes_requested_cancels_an_earlier_approval(self) -> None:
+        net = self.world()
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok(
+                [
+                    review_item(REVIEWER, "APPROVED", at="2025-12-19T00:00:00Z"),
+                    review_item(
+                        REVIEWER, "CHANGES_REQUESTED", at="2025-12-19T01:00:00Z"
+                    ),
+                ]
+            ),
+        )
+        self.assert_unapproved(net, "approval")
+
+    def test_a_later_dismissal_cancels_an_earlier_approval(self) -> None:
+        net = self.world()
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok(
+                [
+                    review_item(REVIEWER, "APPROVED", at="2025-12-19T00:00:00Z"),
+                    review_item(REVIEWER, "DISMISSED", at="2025-12-19T01:00:00Z"),
+                ]
+            ),
+        )
+        self.assert_unapproved(net, "approval")
+
+    def test_the_order_is_by_time_not_by_position_in_the_answer(self) -> None:
+        net = self.world()
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok(
+                [
+                    review_item(
+                        REVIEWER, "CHANGES_REQUESTED", at="2025-12-19T00:00:00Z"
+                    ),
+                    review_item(REVIEWER, "APPROVED", at="2025-12-19T01:00:00Z"),
+                ]
+            ),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_reviews_at_the_same_time_keep_the_order_of_the_answer(self) -> None:
+        same = "2025-12-19T00:00:00Z"
+        for states, applied in (
+            (("CHANGES_REQUESTED", "APPROVED"), True),
+            (("APPROVED", "CHANGES_REQUESTED"), False),
+        ):
+            with self.subTest(states=states):
+                net = self.world()
+                net.on(
+                    "GET",
+                    r"/pulls/100/reviews",
+                    ok([review_item(REVIEWER, s, at=same) for s in states]),
+                )
+                outcome = self.decided(net)
+                self.assertEqual(bool(outcome.record.vex_exclusions), applied)
+
+    def test_a_comment_after_an_approval_does_not_change_it(self) -> None:
+        net = self.world()
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok(
+                [
+                    review_item(REVIEWER, "APPROVED", at="2025-12-19T00:00:00Z"),
+                    review_item(REVIEWER, "COMMENTED", at="2025-12-19T01:00:00Z"),
+                ]
+            ),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_a_comment_alone_is_not_an_approval(self) -> None:
+        net = self.world()
+        net.on("GET", r"/pulls/100/reviews", ok([review_item(REVIEWER, "COMMENTED")]))
+        self.assert_unapproved(net, "approval")
+
+    def test_a_pending_review_is_not_an_approval(self) -> None:
+        net = self.world()
+        pending = review_item(REVIEWER, "PENDING")
+        del pending["submitted_at"]
+        net.on("GET", r"/pulls/100/reviews", ok([pending]))
+        self.assert_unapproved(net, "approval")
+
+    def test_the_approval_of_the_author_alone_is_refused(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{AUTHOR}\n")
+        net.on("GET", r"/pulls/100/reviews", ok([review_item(AUTHOR, "APPROVED")]))
+        self.assert_unapproved(net, "author")
+
+    def test_the_author_is_compared_without_regard_to_case(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{AUTHOR}\n")
+        net.on(
+            "GET", r"/pulls/100/reviews", ok([review_item(AUTHOR.upper(), "APPROVED")])
+        )
+        self.assert_unapproved(net, "author")
+
+    def test_an_approval_by_someone_else_still_counts_beside_the_authors(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{AUTHOR} @{REVIEWER}\n")
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok([review_item(AUTHOR, "APPROVED"), review_item(REVIEWER, "APPROVED")]),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_an_approval_of_an_earlier_head_is_refused(self) -> None:
+        net = self.world()
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok([review_item(REVIEWER, "APPROVED", commit_id="8" * 40)]),
+        )
+        self.assert_unapproved(net, "commit")
+
+    def test_the_head_is_read_from_the_pull_request_when_the_list_has_none(
+        self,
+    ) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{sha}/pulls",
+            ok([pull_item(100, head=None)]),
+        )
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/pulls/100$",
+            ok({"number": 100, "head": {"sha": PR_HEAD}}),
+        )
+        outcome = self.decided(net)
+        self.assertEqual(len(outcome.record.vex_exclusions), 1)
+        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/pulls/100")), 2)
+
+    def test_a_pull_request_whose_head_cannot_be_found_is_not_verifiable(self) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{sha}/pulls",
+            ok([pull_item(100, head=None)]),
+        )
+        net.on("GET", rf"/repos/{TARGET}/pulls/100$", ok({"number": 100}))
+        self.assert_unverifiable(net)
+
+    def test_a_reviewer_who_is_not_a_code_owner_is_refused(self) -> None:
+        net = self.world(codeowners="/.vex/ @carol\n")
+        self.assert_unapproved(net, "Code Owner")
+
+    def test_without_a_codeowners_file_nobody_owns_the_directory(self) -> None:
+        net = self.world(codeowners=None)
+        reason = self.assert_unapproved(net, "CODEOWNERS")
+        self.assertNotIn("is not a Code Owner", reason)
+        self.assertEqual(len(net.to("GET", "CODEOWNERS")), 3, "the three places")
+
+    def test_only_a_team_as_the_owner_leaves_no_approver(self) -> None:
+        net = self.world(codeowners="/.vex/ @example-org/vex-reviewers\n")
+        self.assert_unapproved(net, "Code Owner")
+
+    def test_an_email_address_as_the_owner_is_not_counted(self) -> None:
+        net = self.world(codeowners="/.vex/ reviewer" + chr(64) + "example.test\n")
+        self.assert_unapproved(net, "Code Owner")
+
+    def test_a_user_beside_a_team_counts(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @example-org/team @{REVIEWER}\n")
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_user_names_are_compared_without_regard_to_case(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{REVIEWER.upper()}\n")
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_the_last_matching_line_decides(self) -> None:
+        later = self.world(codeowners=f"/.vex/ @{REVIEWER}\n/.vex/* @carol\n")
+        self.assert_unapproved(later, "Code Owner")
+        earlier = self.world(codeowners=f"/.vex/* @carol\n/.vex/ @{REVIEWER}\n")
+        self.assertEqual(len(self.decided(earlier).record.vex_exclusions), 1)
+
+    def test_a_later_line_that_names_no_owner_takes_the_directory_away(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{REVIEWER}\n/.vex/win.json\n")
+        self.assert_unapproved(net, "Code Owner")
+
+    def test_a_line_that_does_not_match_leaves_the_earlier_one(self) -> None:
+        net = self.world(codeowners=f"/.vex/ @{REVIEWER}\n/docs/ @carol\n*.md @carol\n")
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_a_line_in_a_syntax_that_is_not_supported_after_the_last_match_is_not_decidable(
+        self,
+    ) -> None:
+        net = self.world(codeowners=f"/.vex/ @{REVIEWER}\n[ab]* @carol\n")
+        self.assert_unverifiable(net)
+
+    def test_a_line_in_a_syntax_that_is_not_supported_before_the_last_match_does_not_matter(
+        self,
+    ) -> None:
+        net = self.world(codeowners=f"!/x @carol\n/.vex/ @{REVIEWER}\n")
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_comments_are_not_lines(self) -> None:
+        net = self.world(
+            codeowners=f"# [x] !y\n/.vex/ @{REVIEWER} # @carol [not a pattern]\n"
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_the_first_codeowners_in_the_search_order_is_the_only_one_read(
+        self,
+    ) -> None:
+        net = self.world()  # .github/CODEOWNERS names the reviewer
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/CODEOWNERS\?",
+            file_response("/.vex/ @carol\n"),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+        self.assertEqual(len(net.to("GET", "CODEOWNERS")), 1)
+
+    def test_the_root_file_is_used_when_there_is_none_under_dot_github(self) -> None:
+        net = self.world(codeowners=None)
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/CODEOWNERS\?",
+            file_response(OWNED_BY_REVIEWER),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_a_file_under_dot_github_wins_over_the_root_one(self) -> None:
+        net = self.world(codeowners="/.vex/ @carol\n")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/CODEOWNERS\?",
+            file_response(OWNED_BY_REVIEWER),
+        )
+        self.assert_unapproved(net, "Code Owner")
+
+    def test_the_docs_file_is_the_last_place(self) -> None:
+        net = self.world(codeowners=None)
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/docs/CODEOWNERS\?",
+            file_response(OWNED_BY_REVIEWER),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_a_pull_request_that_was_not_merged_is_refused(self) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{sha}/pulls",
+            ok([pull_item(100, merged_at=None)]),
+        )
+        self.assert_unapproved(net, "not merged")
+
+    def test_a_commit_with_no_pull_request_is_refused_with_its_own_reason(self) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on("GET", rf"/repos/{TARGET}/commits/{sha}/pulls", ok([]))
+        reason = self.assert_unapproved(net, "no pull request")
+        self.assertNotIn("not merged", reason)
+
+    def test_two_merged_pull_requests_are_refused_with_their_own_reason(self) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{sha}/pulls",
+            ok([pull_item(100), pull_item(101)]),
+        )
+        reason = self.assert_unapproved(net, "2 merged pull requests")
+        self.assertNotIn("not merged", reason)
+
+    def test_an_unmerged_pull_request_beside_one_merged_does_not_matter(self) -> None:
+        net = self.world()
+        sha = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{sha}/pulls",
+            ok([pull_item(99, merged_at=None), pull_item(100)]),
+        )
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+
+    def test_a_failure_to_read_is_not_a_refusal(self) -> None:
+        sha = vex_commit_sha("win.json")
+        for label, route, status in (
+            ("commits", rf"/repos/{TARGET}/commits\?", 500),
+            ("pulls 5xx", rf"/repos/{TARGET}/commits/{sha}/pulls", 502),
+            ("pulls 404", rf"/repos/{TARGET}/commits/{sha}/pulls", 404),
+            ("reviews", r"/pulls/100/reviews", 500),
+            ("codeowners", rf"/repos/{TARGET}/contents/\.github/CODEOWNERS\?", 500),
+        ):
+            with self.subTest(label):
+                net = self.world()
+                net.on("GET", route, ok({"message": "down"}, status))
+                self.assert_unverifiable(net)
+
+    def test_a_dropped_connection_is_not_a_refusal_either(self) -> None:
+        def dropped(url: str, payload: Any) -> Response:
+            raise TransportError("connection reset")
+
+        net = self.world()
+        net.on("GET", r"/pulls/100/reviews", dropped)
+        self.assert_unverifiable(net)
+
+    def test_an_answer_of_the_wrong_shape_is_not_a_refusal(self) -> None:
+        sha = vex_commit_sha("win.json")
+        pulls = rf"/repos/{TARGET}/commits/{sha}/pulls"
+        bad_pull = pull_item(100)
+        del bad_pull["merged_at"]
+        no_author = pull_item(100, author=None)
+        no_author["user"] = None
+        bad_number = pull_item(100)
+        bad_number["number"] = "100"
+        bad_time = pull_item(100, merged_at="yesterday")
+        for label, route, body in (
+            ("pulls is an object", pulls, {"pulls": []}),
+            ("a pull is not an object", pulls, ["x"]),
+            ("a pull has no merged_at", pulls, [bad_pull]),
+            ("a pull has no author", pulls, [no_author]),
+            ("a pull has no number", pulls, [bad_number]),
+            ("merged_at is not a time", pulls, [bad_time]),
+            ("reviews is an object", r"/pulls/100/reviews", {"reviews": []}),
+            ("a review is not an object", r"/pulls/100/reviews", ["x"]),
+            (
+                "a review has no state",
+                r"/pulls/100/reviews",
+                [{"user": {"login": REVIEWER}, "submitted_at": "2025-12-19T00:00:00Z"}],
+            ),
+            (
+                "a review has no time",
+                r"/pulls/100/reviews",
+                [{"user": {"login": REVIEWER}, "state": "APPROVED"}],
+            ),
+        ):
+            with self.subTest(label):
+                net = self.world()
+                net.on("GET", route, ok(body))
+                self.assert_unverifiable(net)
+
+    def test_reviews_are_read_to_the_last_page(self) -> None:
+        net = self.world()
+        first = ok(
+            [review_item("carol", "COMMENTED")],
+            headers={
+                "link": f'<https://api.github.com/repos/{TARGET}/pulls/100/reviews?page=2>; rel="next"'
+            },
+        )
+
+        def reviews(url: str, _: Any) -> Response:
+            if "page=2" in url:
+                return ok([review_item(REVIEWER, "APPROVED")])
+            return first
+
+        net.on("GET", r"/pulls/100/reviews", reviews)
+        self.assertEqual(len(self.decided(net).record.vex_exclusions), 1)
+        self.assertEqual(len(net.to("GET", "/pulls/100/reviews")), 2)
+
+    def test_two_files_of_one_commit_ask_for_the_pull_request_and_its_reviews_once(
+        self,
+    ) -> None:
+        other = vex_text(
+            "other",
+            "not_affected",
+            "2025-12-20T00:00:00Z",
+            justification="vulnerable_code_not_present",
+            impact="the vulnerable function is not called",
+            vuln="CVE-2021-9999",
+        )
+        net = vex_world({"win.json": WINNER, "other.json": other})
+        same = vex_commit_sha("win.json")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits\?",
+            ok([{"sha": same}]),
+        )
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits/{same}/pulls",
+            ok([pull_item(100)]),
+        )
+        outcome = self.decided(net)
+        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/commits/{same}/pulls")), 1)
+        self.assertEqual(len(net.to("GET", "/pulls/100/reviews")), 1)
+        self.assertEqual(len(net.to("GET", "CODEOWNERS")), 1)
+        self.assertEqual(outcome.record.rejected_vex, ())
+
+    def test_one_unapproved_file_does_not_take_the_others_with_it(self) -> None:
+        net = vex_world({"win.json": WINNER, "lose.json": LOSER})
+        net.on(
+            "GET",
+            r"/pulls/100/reviews",
+            ok([review_item(REVIEWER, "CHANGES_REQUESTED")]),
+        )
+        outcome = self.decided(net)
+        self.assertTrue(
+            reason_of(outcome, ".vex/win.json").startswith("vex_unapproved:")
+        )
+        self.assertNotIn(".vex/lose.json", dict(rejected_reasons(outcome)))
+
+    def test_the_path_of_a_refusal_is_the_path_in_the_repository(self) -> None:
+        net = self.world(codeowners="/.vex/ @carol\n")
+        outcome = self.decided(net)
+        entry = outcome.record.rejected_vex[0]
+        self.assertEqual((entry.repo, entry.path), (TARGET, ".vex/win.json"))
+
+    def test_the_summary_counts_both_kinds(self) -> None:
+        files = {"win.json": WINNER, "lose.json": LOSER, "third.json": WINNER}
+        net = vex_world(files)
+        net.on("GET", r"/pulls/100/reviews", ok([review_item(REVIEWER, "COMMENTED")]))
+        net.on("GET", r"/pulls/101/reviews", ok({"message": "down"}, 500))
+        outcome = self.decided(net)
+        lines = aggregator.render_summary(outcome).splitlines()
+        self.assertIn("- VEX documents not approved (vex_unapproved): 1", lines)
+        self.assertIn(
+            "- VEX documents that could not be verified (vex_unverifiable): 1", lines
+        )
+
+    def test_the_summary_says_zero_when_there_is_nothing_to_report(self) -> None:
+        lines = aggregator.render_summary(execute(world(), policy_text([TARGET])))
+        self.assertIn("- VEX documents not approved (vex_unapproved): 0", lines)
+        self.assertIn(
+            "- VEX documents that could not be verified (vex_unverifiable): 0", lines
+        )
+
+
+class CodeownersOwners(unittest.TestCase):
+    """``codeowners_owners``: the owners of one path under the last matching line, in the supported syntax."""
+
+    PATH = ".vex/a.openvex.json"
+
+    def owners(self, text: str, path: str = PATH) -> frozenset[str]:
+        return aggregator.codeowners_owners(text, path)
+
+    def test_the_forms_that_cover_the_directory(self) -> None:
+        for pattern in (
+            "/.vex/",
+            "/.vex/*",
+            ".vex/",
+            "/.vex",
+            ".vex",
+            ".vex/*",
+            "/.vex/**",
+            "**/.vex/",
+            "*",
+            "**",
+            "/**/a.openvex.json",
+            "*.json",
+            "/.vex/a.openvex.json",
+            "/.vex/?.openvex.json",
+            "/.v?x/",
+        ):
+            with self.subTest(pattern):
+                self.assertEqual(self.owners(f"{pattern} @bob\n"), {"bob"})
+
+    def test_the_forms_that_do_not_cover_it(self) -> None:
+        for pattern in (
+            "/.github/",
+            "/docs/",
+            ".vexx/",
+            "/vex/",
+            "/other/.vex/",
+            "*.md",
+            "/*.json",
+            "/.vex/b.openvex.json",
+            "/.vex/??.openvex.json",
+            "a.openvex.json/",
+            "/.vex/*/",
+        ):
+            with self.subTest(pattern):
+                self.assertEqual(self.owners(f"{pattern} @bob\n"), frozenset())
+
+    def test_a_directory_deeper_in_the_tree_is_reached_by_an_unanchored_name(
+        self,
+    ) -> None:
+        self.assertEqual(self.owners(".vex/ @bob\n", "pkg/.vex/a.json"), {"bob"})
+        self.assertEqual(self.owners("/.vex/ @bob\n", "pkg/.vex/a.json"), frozenset())
+
+    def test_star_does_not_cross_a_slash(self) -> None:
+        self.assertEqual(self.owners("/.vex/* @bob\n", ".vex/sub/a.json"), {"bob"})
+        self.assertEqual(
+            self.owners("/*/a.json @bob\n", ".vex/sub/a.json"), frozenset()
+        )
+
+    def test_owners_are_users_in_lower_case_only(self) -> None:
+        text = (
+            "/.vex/ @Bob @org/team carol"
+            + chr(64)
+            + "example.test @a-b @-bad @bad- bob\n"
+        )
+        self.assertEqual(self.owners(text), {"bob", "a-b"})
+
+    def test_the_last_match_replaces_the_owners_and_does_not_add_to_them(self) -> None:
+        self.assertEqual(self.owners("/.vex/ @a\n/.vex/* @b\n"), {"b"})
+
+    def test_a_line_with_no_owner_that_matches_leaves_none(self) -> None:
+        self.assertEqual(self.owners("/.vex/ @a\n/.vex/\n"), frozenset())
+
+    def test_blank_lines_and_comments_are_skipped(self) -> None:
+        self.assertEqual(self.owners("\n  # c\n\n/.vex/ @a # @b\n"), {"a"})
+
+    def test_a_line_that_cannot_be_read_after_the_last_match_is_undecidable(
+        self,
+    ) -> None:
+        for odd in ("[ab] @c", "!x @c", "\\#x @c", "a**b @c", "/.vex/[a]* @c", "// @c"):
+            with (
+                self.subTest(odd),
+                self.assertRaises(aggregator.CodeownersUndecidable),
+            ):
+                self.owners(f"/.vex/ @a\n{odd}\n")
+
+    def test_the_same_line_before_the_last_match_is_harmless(self) -> None:
+        for odd in ("[ab] @c", "!x @c", "\\#x @c", "a**b @c"):
+            with self.subTest(odd):
+                self.assertEqual(self.owners(f"{odd}\n/.vex/ @a\n"), {"a"})
+
+    def test_a_file_with_no_line_for_the_path_has_no_owner(self) -> None:
+        self.assertEqual(self.owners(""), frozenset())
+        self.assertEqual(self.owners("# only\n"), frozenset())
 
 
 class ReopenAfterALongClose(unittest.TestCase):
@@ -2593,11 +3347,7 @@ def pilot_world(
             ok([{"type": "file", "name": "p.json"}]),
         )
         net.on("GET", rf"/repos/{TARGET}/contents/\.vex/p\.json\?", file_response(doc))
-        net.on(
-            "GET",
-            rf"/repos/{TARGET}/commits\?",
-            ok([{"commit": {"committer": {"date": "2025-12-21T00:00:00Z"}}}]),
-        )
+        install_vex_approval(net, {"p.json": VEX_MERGED})
     return net
 
 

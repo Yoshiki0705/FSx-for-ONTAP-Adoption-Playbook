@@ -346,66 +346,56 @@ class KevCatalogue(unittest.TestCase):
         )
 
 
-class LastCommitTime(unittest.TestCase):
-    """``GitHubApi.last_commit_time`` reads the newest commit that touched one path, from a given commit.
+class LastCommitSha(unittest.TestCase):
+    """``GitHubApi.last_commit_sha`` names the newest commit that touched one path, from a given commit.
 
-    The responses below are fakes. The query parameters (``path``, ``sha``, ``per_page``) and the field
-    ``commit.committer.date`` were written from memory of the List commits reference; the reference was not
-    reachable when this was written, so the real shape is unconfirmed.
+    The responses below are fakes. The parameters (``path``, ``sha``, ``per_page``) and the field ``sha`` of
+    a list item were written from memory of the List commits reference, which was not reachable when this was
+    written, so the real shape is unconfirmed.
     """
 
     @staticmethod
-    def commit(date_text: str | None) -> dict[str, Any]:
-        committer = {} if date_text is None else {"date": date_text}
-        return {"sha": "f" * 40, "commit": {"committer": committer}}
+    def commit(sha: Any) -> dict[str, Any]:
+        return {"sha": sha, "commit": {"committer": {"date": "2026-11-14T15:04:05Z"}}}
 
     def read(self, answer: Any) -> tuple[Any, Recorder]:
         github, net = api(answer)
-        return github.last_commit_time("o/r", ".vex/a.json", "a" * 40), net
+        return github.last_commit_sha("o/r", ".vex/a.json", "a" * 40), net
 
-    def test_the_first_commit_of_the_list_gives_the_committer_date_in_utc(self) -> None:
-        from datetime import UTC, datetime
-
-        when, net = self.read(
-            lambda url: json_response(
-                [
-                    self.commit("2026-11-14T15:04:05+09:00"),
-                    self.commit("2020-01-01T00:00:00Z"),
-                ]
-            )
+    def test_the_sha_of_the_first_commit_of_the_list_is_returned(self) -> None:
+        sha, net = self.read(
+            lambda url: json_response([self.commit("b" * 40), self.commit("c" * 40)])
         )
-        self.assertEqual(when, datetime(2026, 11, 14, 6, 4, 5, tzinfo=UTC))
+        self.assertEqual(sha, "b" * 40)
+        self.assertEqual(len(net.urls), 1)
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(net.urls[0]).query)
         self.assertEqual(
             query, {"path": [".vex/a.json"], "sha": ["a" * 40], "per_page": ["1"]}
         )
         self.assertTrue(net.urls[0].startswith(f"{ROOT_URL}/repos/o/r/commits?"))
 
-    def test_a_fraction_of_a_second_is_dropped(self) -> None:
-        from datetime import UTC, datetime
+    def test_an_empty_list_is_none(self) -> None:
+        sha, _ = self.read(lambda url: json_response([]))
+        self.assertIsNone(sha)
 
-        when, _ = self.read(
-            lambda url: json_response([self.commit("2026-11-14T15:04:05.678Z")])
-        )
-        self.assertEqual(when, datetime(2026, 11, 14, 15, 4, 5, tzinfo=UTC))
-
-    def test_no_commit_or_an_unreadable_date_is_none(self) -> None:
+    def test_an_item_without_a_readable_sha_is_an_error_not_none(self) -> None:
         for body in (
-            [],
-            [self.commit(None)],
-            [self.commit("soon")],
-            [self.commit("2026-11-14T15:04:05")],
-            [{"commit": None}],
             [{}],
+            [{"sha": None}],
+            [{"sha": 5}],
+            [{"sha": "B" * 40}],
+            [{"sha": "abc"}],
+            ["not an object"],
         ):
             with self.subTest(body=body):
-                when, _ = self.read(lambda url, b=body: json_response(b))
-                self.assertIsNone(when)
+                github, _ = api(lambda url, b=body: json_response(b))
+                with self.assertRaises(HttpError):
+                    github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
 
     def test_an_answer_that_is_not_a_list_is_an_error(self) -> None:
         github, _ = api(lambda url: json_response({"commits": []}))
         with self.assertRaises(HttpError):
-            github.last_commit_time("o/r", ".vex/a.json", "a" * 40)
+            github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
 
     def test_a_refusal_is_an_error(self) -> None:
         for status in (404, 500):
@@ -414,7 +404,7 @@ class LastCommitTime(unittest.TestCase):
                     lambda url, s=status: json_response({"message": "no"}, status=s)
                 )
                 with self.assertRaises(HttpError):
-                    github.last_commit_time("o/r", ".vex/a.json", "a" * 40)
+                    github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
 
 
 class LabelCalls(unittest.TestCase):

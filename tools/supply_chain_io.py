@@ -329,19 +329,21 @@ class GitHubApi:
             raise HttpError("GET", self._url(path), 200, "not a base64 file")
         return base64.b64decode(data["content"]).decode("utf-8")
 
-    def last_commit_time(self, repo: str, path: str, ref: str) -> datetime | None:
-        """When the newest commit that changed ``path`` was made, looking back from the commit ``ref``.
+    def last_commit_sha(self, repo: str, path: str, ref: str) -> str | None:
+        """The SHA of the newest commit that changed ``path``, looking back from the commit ``ref``.
 
-        ``GET /repos/{owner}/{repo}/commits`` with ``path``, ``sha`` and ``per_page=1``; the time is the first
-        item's ``commit.committer.date``, as UTC whole seconds. ``None`` when the list is empty or the date is
-        missing or not a time with a zone. The parameter and field names were written from memory of the List
-        commits reference, which was not reachable when this was written, so they are unconfirmed.
+        ``GET /repos/{owner}/{repo}/commits`` with ``path``, ``sha`` and ``per_page=1``; the answer is the first
+        item's ``sha``. ``None`` when the list is empty. The
+        parameter and field names were written from memory of the List commits reference, which was not
+        reachable when this was written, so they are unconfirmed.
 
-        This is when the commit was made, not when it was merged: a squash merge makes the commit at the merge,
-        but a merge commit or a rebase merge can leave a date from before the merge.
+        An item whose ``sha`` is not 40 lowercase hex digits is an error and not ``None``: "no commit touched
+        this path" and "the answer cannot be read" must not be mixed, because the caller builds a decision on
+        the commit.
 
         Raises:
-            HttpError: GitHub refused the request, or the answer is not a list.
+            HttpError: GitHub refused the request, the answer is not a list, or the first item has no readable
+                ``sha``.
         """
         data = self.get_json(
             f"/repos/{repo}/commits", {"path": path, "sha": ref, "per_page": 1}
@@ -350,13 +352,17 @@ class GitHubApi:
             raise HttpError(
                 "GET", self._url(f"/repos/{repo}/commits"), 200, "not a list"
             )
-        first = data[0] if data else None
-        commit = first.get("commit") if isinstance(first, dict) else None
-        committer = commit.get("committer") if isinstance(commit, dict) else None
-        when = parse_osv_time(
-            committer.get("date") if isinstance(committer, dict) else None
-        )
-        return when.replace(microsecond=0) if when is not None else None
+        if not data:
+            return None
+        sha = data[0].get("sha") if isinstance(data[0], dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            raise HttpError(
+                "GET",
+                self._url(f"/repos/{repo}/commits"),
+                200,
+                "no readable commit sha",
+            )
+        return sha
 
 
 # --- feeds ---------------------------------------------------------------------------------------
