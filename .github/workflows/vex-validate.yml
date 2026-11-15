@@ -13,6 +13,16 @@
 #
 # This workflow has no secrets, no write permission, and no inherited secrets. It never hands a
 # VEX document to a scanner: only the Aggregator reads `.vex/`.
+#
+# It also checks the approval of a pull request that changes `.vex/` (subcommand `vex-validate`):
+# an approving review by someone other than the author, on the current head commit, whose body has
+# the reason heading and a reason of at least 20 characters. That step runs only for pull request
+# and pull request review events and does nothing on any other event. The check code is the copy at
+# `policy-ref`; nothing from the pull request is executed.
+#
+# The caller decides the triggers, because a reusable workflow runs inside the caller's event. The
+# caller starts it on `pull_request` (including `edited`) and `pull_request_review` (`submitted`,
+# `edited`, `dismissed`), makes it a required status check, and its job needs `pull-requests: read`.
 name: vex-validate
 
 on:
@@ -24,7 +34,7 @@ on:
         required: false
         default: .vex
       policy-ref:
-        description: 40-digit commit SHA of the source repository that holds the check and the Policy_File
+        description: 40-digit commit SHA of the source repository that holds the check and the Policy_File. It must include vex-validate (be4b4a9156801bc4fecfb05480ea0fa17859e295 or later)
         type: string
         required: true
 
@@ -40,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - name: Check inputs
         env:
@@ -120,3 +131,68 @@ jobs:
             echo "::error::vex check failed with exit status $status"
             exit "$status"
           fi
+
+      - name: Check the approval review
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -f source/scripts/supply_chain_checks/vex_validate.py ]; then
+            echo "::error::policy-ref predates vex-validate"
+            exit 1
+          fi
+          case "$PR_NUMBER" in
+            ''|*[!0-9]*)
+              echo "::error::pull request number is missing or not numeric"
+              exit 1
+              ;;
+          esac
+          input="$RUNNER_TEMP/vex-validate-input.json"
+          gh api "repos/$REPO/pulls/$PR_NUMBER" \
+            --jq '{user: (.user.login // ""), head_sha: .head.sha, body: (.body // "")}' \
+            > "$RUNNER_TEMP/vex-pr.json"
+          # A renamed file is listed under its new name; its old name is added so that moving a
+          # document out of `.vex/` is still seen as a change to it.
+          gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" \
+            --jq '.[] | {f: [.filename, .previous_filename]}' \
+            | jq -s '[.[].f[] | select(. != null)]' > "$RUNNER_TEMP/vex-files.json"
+          gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            --jq '.[] | {user: (.user.login // ""), state: .state, commit_id: (.commit_id // ""), body: (.body // "")}' \
+            | jq -s '.' > "$RUNNER_TEMP/vex-reviews.json"
+          jq -n \
+            --slurpfile pr "$RUNNER_TEMP/vex-pr.json" \
+            --slurpfile files "$RUNNER_TEMP/vex-files.json" \
+            --slurpfile reviews "$RUNNER_TEMP/vex-reviews.json" \
+            '{pull_request: $pr[0], files: $files[0], reviews: $reviews[0]}' > "$input"
+          if VEX_VALIDATE_INPUT="$input" python3 source/scripts/check_supply_chain.py vex-validate --root work > "$RUNNER_TEMP/vex-approval.out" 2> "$RUNNER_TEMP/vex-approval.err"; then
+            status=0
+          else
+            status=$?
+          fi
+          {
+            echo "### vex-validate approval review"
+            echo
+            echo "Exit status: $status"
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/vex-approval.out"
+            cat "$RUNNER_TEMP/vex-approval.err"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/vex-approval.out"
+          cat "$RUNNER_TEMP/vex-approval.err" >&2
+          if [ "$status" -ne 0 ]; then
+            echo "::error::vex-validate failed with exit status $status"
+            exit "$status"
+          fi
+
+      - name: Note a non pull request event
+        if: github.event_name != 'pull_request' && github.event_name != 'pull_request_review'
+        run: |
+          {
+            echo "### vex-validate approval review"
+            echo
+            echo "not a pull request event"
+          } >> "$GITHUB_STEP_SUMMARY"
