@@ -364,6 +364,68 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 
 ---
 
+## 集約ジョブと見張りの初期設定
+
+保守者が 1 回だけ行う設定です。対象は [`supply-chain-aggregator.yml`](.github/workflows/supply-chain-aggregator.yml)（6 時間ごとに対象リポジトリの脆弱性を読み、Issue を更新して実行記録を保存する）と、[`supply-chain-watchdog.yml`](.github/workflows/supply-chain-watchdog.yml)（その実行記録が止まっていないかを見る）です。どちらも `schedule` と `workflow_dispatch` でしか動かず、pull request では実行されません。**必要な設定が欠けていると、集約ジョブは先頭の確認ステップで理由を表示して失敗します。**
+
+> **この節のコマンドは、この節を書いた時点では実行して確かめていません。** 内容は 2 つのワークフローのコメントと、`tools/supply_chain_aggregator.py`、`tools/supply_chain_io.py` のコードから読み取れる範囲に限っています。
+
+### GitHub App の作成とインストール
+
+集約ジョブは、GitHub App のインストールトークンを 2 つ発行します。ジョブ自身の `GITHUB_TOKEN` は `contents: read` だけで、書き込みには使いません。
+
+| トークン | 発行時の権限 | 届く範囲 |
+|---|---|---|
+| 1 つ目（`spoke-token`） | `permission-contents: read`、`permission-issues: write`、`permission-vulnerability-alerts: read`、`permission-actions: read`、`permission-metadata: read` | ポリシーファイルの `target_repositories` に列挙したリポジトリと、このリポジトリ（失敗の Issue 用） |
+| 2 つ目（`hub-token`） | `permission-contents: write` | このリポジトリだけ。`supply-chain-runs` ブランチへ実行記録を書く |
+
+App は、**このリポジトリとポリシーファイルの `target_repositories` のすべてにインストール**します。トークンの発行先の所有者は 1 つなので、対象は同じ所有者のリポジトリに限られます（所有者が違うと `scope` ステップが失敗します）。App 自体に与える権限は、上の表の権限を含めてください。App がその権限を持っているかは、設定画面で確かめてください。
+
+### リポジトリ変数とシークレットの登録
+
+| 種類 | 名前 | 値 |
+|---|---|---|
+| リポジトリ変数 | `SUPPLY_CHAIN_APP_CLIENT_ID` | App のクライアント ID |
+| シークレット | `SUPPLY_CHAIN_APP_PRIVATE_KEY` | App の秘密鍵 |
+| リポジトリ変数 | `SUPPLY_CHAIN_POLICY_REF` | Cyber-Resilience-Patterns リポジトリの 40 桁の小文字の 16 進数のコミット SHA |
+
+`SUPPLY_CHAIN_POLICY_REF` のコミットには、このリポジトリに写したコードが読めるポリシーファイル（`docs/agent/supply-chain-policy.json`）と、分岐の台帳（`docs/agent/supply-chain-chain-ack.json`）が必要です。台帳のファイルが無いときは、見張りは「決定なし」として読みます。**集約ジョブと見張りの両方がこの変数を読みます。** 形が違うか空のとき、集約ジョブは失敗し、見張りはポリシーファイルを取り出さずに失敗の通知へ進みます。どちらも既定ブランチは取り出しません。
+
+```bash
+gh variable set SUPPLY_CHAIN_APP_CLIENT_ID --body '<クライアント ID>'
+gh secret set SUPPLY_CHAIN_APP_PRIVATE_KEY < <秘密鍵ファイルのパス>
+gh variable set SUPPLY_CHAIN_POLICY_REF --body '<40 桁のコミット SHA>'
+```
+
+### supply-chain-runs ブランチの作成
+
+集約ジョブはこのブランチを作りません。ブランチが無い、または読めないと、実行は失敗として終わり、記録は保存されません。
+
+コードから決められるのは次の範囲です。
+
+- 実行記録は `runs/<年>/<月>/<実行 ID>.json` に保存します。`runs/` ディレクトリを先に作る必要はありません（保存時に作られます）。
+- 集約ジョブは、ブランチの tree のうち `runs/` 配下の記録の形のファイルだけを数えます。それ以外のファイルがあっても読み飛ばします。
+- 見張りは `runs/` 配下の `*.json` だけを読みます。
+
+空の tree だけのブランチを GitHub の tree API が受け付けるかは、コードからは決められず、確かめていません。確実を期すなら、`README.md` を 1 つだけ置いた孤立ブランチ（orphan）にしてください。
+
+ブランチの保護では、集約ジョブの App 以外が書けないようにすることを勧めます。実行記録は 1 件ごとに前の記録の SHA-256 を持つ鎖で、人の手による途中の記録の編集や削除は、見張りが連鎖の切断として報告するためです。
+
+### 初回の実行の観測
+
+初回は人が結果を読みます。
+
+1. 集約ジョブを `workflow_dispatch` で 1 回実行し、ジョブの要約（終了状態、走査したリポジトリ数、実行記録の保存先）を読みます。`supply-chain-runs` ブランチに記録が 1 件増えていることを確かめます。
+2. その後に、見張りを `workflow_dispatch` で 1 回実行し、ジョブの要約に出る報告（JSON）を読みます。記録が 1 件も無い状態で先に実行すると、見張りは失敗します。
+
+見張りのしきい値は、ポリシーファイルの `watchdog.limit_hours`、無ければ 8 時間です。見張りは、記録の古さに加えて、直近の実行が続けて失敗していること、記録の連鎖が切れていること、ポリシーファイルを読めないことでも失敗します。
+
+### 写しの記録の source_commit の差し替え
+
+`docs/agent/supply-chain-source.json` の `source_commit` が 40 桁の `0` のときは、**コピー元のコミットがまだ無い**ことを示します。このリポジトリの写しは、コピー元のリポジトリの作業ツリーにだけある内容と同じです。コピー元で同じ内容をコミットしたら、`source_commit` をそのコミットの SHA に差し替え、`make supply-chain-copy-external` で照合してください。差し替えるまで、このターゲットは失敗します（`make supply-chain-copy` は、記録とファイルの SHA-256 の一致だけを見るので通ります）。
+
+---
+
 ## 検査が捕まえないドリフト
 
 **翻訳のドリフトのうち、機械検出できるのは値だけです。** 裏づけの書き換えは検出できません。

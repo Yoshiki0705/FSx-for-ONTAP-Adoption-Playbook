@@ -6,7 +6,7 @@ Usage:
     python3 tools/supply_chain_aggregator.py notify-failure --run-id ID --message TEXT [--message TEXT ...]
 
 This module decides nothing. Thresholds, de-duplication, when an Issue closes, the per-run limit,
-the 12-hour staleness limit, the failure streak and the retry waits are all in tools/supply_chain/
+the staleness limit of the watchdog, the failure streak and the retry waits are all in tools/supply_chain/
 (a byte-for-byte copy, see docs/agent/supply-chain-source.json). What is here is the order of the
 steps and the translation between GitHub, the feeds and the core's plain values.
 
@@ -25,7 +25,7 @@ repository at SUPPLY_CHAIN_POLICY_REF. SPOKE_TOKEN is a GitHub App installation 
 contents:read, issues:write, dependabot_alerts:read, actions:read and metadata:read. HUB_TOKEN is a
 second installation token limited to this one repository with contents:write only; the job's own
 GITHUB_TOKEN never writes the runs branch. Create both with actions/create-github-app-token from
-the App ID (variable SUPPLY_CHAIN_APP_ID) and private key (secret SUPPLY_CHAIN_APP_PRIVATE_KEY),
+the App's client ID (variable SUPPLY_CHAIN_APP_CLIENT_ID) and private key (secret SUPPLY_CHAIN_APP_PRIVATE_KEY),
 and fail with a clear message when either is unset. The runs branch ``supply-chain-runs`` must
 already exist; it is never created here.
 
@@ -799,6 +799,30 @@ def recent_outcomes(
     return out
 
 
+def chain_to_previous(
+    hub: GitHubApi,
+    hub_repo: Repo,
+    branch: str,
+    record: run_record.RunRecord,
+    existing: Sequence[str],
+) -> run_record.RunRecord:
+    """Set ``prev_record_sha256`` to the SHA-256 of the newest record of the same month, or ``None`` for the first.
+
+    The watchdog follows this link (``run_record.verify_chain``): a record that does not name its predecessor
+    reads as a second start of the month. An existing path is refused first, so that case keeps its own message.
+    A month whose records do not end in exactly one tip raises ``RunRecordError`` and nothing is saved, rather
+    than a record that would start a second chain.
+    """
+    path = run_record.new_record_path(record, existing)
+    month = run_record.month_of(path)
+    texts = [
+        hub.read_file(_repo_text(hub_repo), p, branch)
+        for p in existing
+        if run_record.month_of(p) == month
+    ]
+    return _with(record, prev_record_sha256=run_record.previous_record_sha256(texts))
+
+
 def save_record(
     hub: GitHubApi,
     hub_repo: Repo,
@@ -1270,6 +1294,9 @@ def _finish(
         )
     saved: str | None = None
     try:
+        record = chain_to_previous(
+            hub, cfg.hub, cfg.runs_branch, record, existing_paths
+        )
         saved = save_record(hub, cfg.hub, cfg.runs_branch, record, existing_paths)
     except (HttpError, RateLimited, TransportError, run_record.RunRecordError) as exc:
         messages.append(f"run record not saved: {exc}"[:300])

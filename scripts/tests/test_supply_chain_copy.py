@@ -43,7 +43,7 @@ class SupplyChainCopyGate(unittest.TestCase):
             [sys.executable, str(GATE)], capture_output=True, text=True, check=False
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("examined 14 file(s)", result.stdout)
+        self.assertIn("examined 16 file(s)", result.stdout)
 
     def test_pristine_scratch_copy_passes(self) -> None:
         self.assertEqual(_run(self.root).returncode, 0)
