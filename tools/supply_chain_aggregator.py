@@ -57,6 +57,14 @@ It is not under ``runs/``, which the watchdog and ``recent_outcomes`` read as ru
 chain: no ``prev_record_sha256``, tip tag or seal covers it. It is created, never overwritten. A failure to write it
 is a warning and changes neither the run record nor the exit code.
 
+A document under ``.vex/`` is used only when it is approved (``check_vex_approvals``): the last commit that touched
+it, on the default branch commit this run read, must belong to exactly one merged pull request, and a user other
+than that pull request's author, who owns ``.vex/`` under CODEOWNERS, must have a latest review of APPROVED on the
+head that was merged. A document that fails this is left out of the plan and recorded in ``rejected_vex`` with a
+reason that starts with ``vex_unapproved:``; one that could not be checked (a failed read, an answer that cannot be
+read, a CODEOWNERS line in a syntax that is not supported) starts with ``vex_unverifiable:`` and is left out the
+same way. The merge time of that pull request is what ``PlanInputs.vex_merged_at`` carries.
+
 ``notify-failure`` (used by the watchdog) reads NOTIFY_TOKEN (a SPOKE_TOKEN-style token that can
 write Issues in this repository) and GITHUB_REPOSITORY. It appends to the open failure Issue, or
 opens one when none is open, and exits non-zero when the notice could not be sent.
@@ -947,6 +955,8 @@ def read_vex(
 ) -> tuple[list[models.VexDocument], list[run_record.RejectedVexEntry]]:
     """Read ``.vex/`` from the default branch commit. A document that does not parse is reported, not used.
 
+    This reads and parses only; whether a document is approved is ``check_vex_approvals``.
+
     ``doc.path`` is ``<owner>/<name>:<path>`` so that a rejection in the plan (which names a path only)
     can be attributed to a repository.
     """
@@ -978,37 +988,338 @@ def read_vex(
     return docs, rejected
 
 
-def read_vex_merged_at(
-    api: GitHubApi, fetch: RepoFetch, docs: Sequence[models.VexDocument]
-) -> tuple[dict[str, datetime], list[str]]:
-    """When each ``.vex/`` document last changed, from the head commit this run read.
+# --- the approval of a VEX document ---------------------------------------------------------------------
+#
+# A document under ``.vex/`` suppresses an Issue only when a person other than its author, who owns ``.vex/``,
+# approved the head that was merged. ``scripts/supply_chain_checks/vex_validate.py`` (the required check of a
+# Spoke) makes the same decision on a pull request; this is the second look, on the default branch, in this
+# run. The rule for the latest review of each reviewer is written here again, not imported: the gate is not
+# changed by this module.
+#
+# The GitHub endpoints and fields used below were written from memory of the REST reference, which was not
+# reachable when this was written, so each is unconfirmed: ``GET /commits/{sha}/pulls`` (items with ``number``,
+# ``merged_at``, ``user.login``, ``head.sha``), ``GET /pulls/{number}`` (``head.sha``) and
+# ``GET /pulls/{number}/reviews`` (items with ``user.login``, ``state``, ``commit_id``, ``submitted_at``).
+# So are the CODEOWNERS rules in ``codeowners_owners``: the search order, the last matching line winning, and
+# the syntax that is not supported.
 
-    One request per document: the newest commit that touched its path (``GitHubApi.last_commit_time``). The key
-    is ``doc.path`` (``<owner>/<name>:<path>``), the form ``effective_exclusions`` looks the documents up by.
-    A document that has no usable time is left out by itself. A request that GitHub refuses leaves out the times
-    of the whole repository, because a time for one document without the others would decide nothing; the run
-    goes on, and the reason comes back as a warning. A rate limit is not caught here: it stops the run like any
-    other read.
+VEX_UNAPPROVED = "vex_unapproved:"
+VEX_UNVERIFIABLE = "vex_unverifiable:"
+CODEOWNERS_LOCATIONS = (".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS")
+_OWNER_USER = re.compile(r"@[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*")
+
+
+class CodeownersUndecidable(ValueError):
+    """A CODEOWNERS line in a syntax this module does not read could decide who owns the path."""
+
+
+def _codeowners_regex(pattern: str) -> re.Pattern[str] | None:
+    """The regular expression of one CODEOWNERS pattern, or ``None`` when its syntax is not supported.
+
+    Supported: a leading ``/``, a trailing ``/``, ``*``, ``**`` as a whole path segment, and ``?``. Not
+    supported, so ``None``: ``!`` (negation), ``[ ]``, ``\\`` (the escape of ``#``), and ``**`` inside a segment.
+    The matching is gitignore's: a slash at the start or in the middle anchors the pattern to the root, a
+    pattern that matches a directory covers everything below it, a trailing slash matches directories only.
+    """
+    if pattern.startswith("!") or any(c in pattern for c in "[]\\"):
+        return None
+    directory_only = pattern.endswith("/")
+    body = pattern.rstrip("/")
+    if not body or "//" in body:
+        return None
+    anchored = "/" in body
+    segments = body.removeprefix("/").split("/")
+    parts: list[str] = []
+    last = len(segments) - 1
+    for index, segment in enumerate(segments):
+        if segment == "**":
+            parts.append(".*" if index == last else "(?:.*/)?")
+            continue
+        if "**" in segment:
+            return None
+        parts.append(
+            "".join(
+                "[^/]*" if c == "*" else "[^/]" if c == "?" else re.escape(c)
+                for c in segment
+            )
+        )
+        if index < last:
+            parts.append("/")
+    prefix = "^" if anchored else "^(?:.*/)?"
+    suffix = "/.*$" if directory_only else "(?:/.*)?$"
+    return re.compile(prefix + "".join(parts) + suffix)
+
+
+def codeowners_owners(text: str, path: str) -> frozenset[str]:
+    """The user owners of ``path`` under the last CODEOWNERS line that matches it, in lower case.
+
+    Only ``@user`` is counted. ``@org/team`` is not resolved (a line that names only teams leaves no owner),
+    and an email address is not counted. A later matching line replaces an earlier one; it does not add to it.
+
+    Raises:
+        CodeownersUndecidable: A line in a syntax that is not supported (see ``_codeowners_regex``) stands
+            after the last line that is known to match, so it might be the one that decides. One that stands
+            before the last known match changes nothing and is not an error.
+    """
+    owners: frozenset[str] = frozenset()
+    undecided = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        tokens: list[str] = []
+        for token in line.split():
+            if token.startswith("#"):
+                break
+            tokens.append(token)
+        regex = _codeowners_regex(tokens[0])
+        if regex is None:
+            undecided = True
+            continue
+        if regex.match(path):
+            owners = frozenset(
+                t.removeprefix("@").lower()
+                for t in tokens[1:]
+                if _OWNER_USER.fullmatch(t)
+            )
+            undecided = False
+    if undecided:
+        raise CodeownersUndecidable(
+            "a CODEOWNERS line in a syntax that is not supported follows the last line that matches"
+        )
+    return owners
+
+
+class VexUnverifiable(Exception):
+    """The approval of a document could not be established: a read failed or an answer cannot be read."""
+
+
+@dataclass(frozen=True)
+class VexVerdict:
+    """The decision about one document: approved (with the merge time of the pull request) or why not."""
+
+    approved: bool
+    reason: str = ""
+    merged_at: datetime | None = None
+
+
+def _login(item: object) -> str | None:
+    user = item.get("user") if isinstance(item, dict) else None
+    login = user.get("login") if isinstance(user, dict) else None
+    return login if isinstance(login, str) and login else None
+
+
+class VexApprovalReader:
+    """Decides the approval of the ``.vex/`` documents of one repository, reading each thing once.
+
+    The pull requests of a commit, the reviews of a pull request and the CODEOWNERS file are cached, so that
+    several documents made in one commit cost one list of pull requests and one list of reviews. A failed read
+    is cached too, and raised again for the next document that needs it.
+    """
+
+    def __init__(self, api: GitHubApi, fetch: RepoFetch) -> None:
+        self._api = api
+        self._name = _repo_text(fetch.repo)
+        self._head = fetch.head_sha or ""
+        self._cache: dict[tuple[str, object], object] = {}
+
+    def _cached(
+        self, key: tuple[str, object], what: str, load: Callable[[], Any]
+    ) -> Any:
+        if key in self._cache:
+            value = self._cache[key]
+            if isinstance(value, VexUnverifiable):
+                raise value
+            return value
+        try:
+            value = load()
+        except VexUnverifiable as exc:
+            self._cache[key] = exc
+            raise
+        except (HttpError, TransportError, KeyError, TypeError, ValueError) as exc:
+            failure = VexUnverifiable(f"{what}: {exc}")
+            self._cache[key] = failure
+            raise failure from exc
+        self._cache[key] = value
+        return value
+
+    def _load_pulls(self, sha: str) -> list[dict[str, Any]]:
+        pulls = list(self._api.pages(f"/repos/{self._name}/commits/{sha}/pulls"))
+        for item in pulls:
+            if not isinstance(item, dict) or "merged_at" not in item:
+                raise VexUnverifiable("a pull request of the commit cannot be read")
+        return pulls
+
+    def _load_approvers(self, number: int) -> dict[str, str]:
+        """``{login: commit_id}`` of the reviewers whose latest review that changes a state is an approval."""
+        ordered: list[tuple[datetime, str, str, object]] = []
+        for review in self._api.pages(f"/repos/{self._name}/pulls/{number}/reviews"):
+            if not isinstance(review, dict) or not isinstance(review.get("state"), str):
+                raise VexUnverifiable("a review of the pull request cannot be read")
+            if review["state"] == "PENDING":
+                continue  # not submitted: it has no time and decides nothing
+            login = _login(review)
+            if login is None:
+                continue  # an account that no longer exists cannot be counted
+            submitted = parse_osv_time(review.get("submitted_at"))
+            if submitted is None:
+                raise VexUnverifiable("a review has no readable submitted_at")
+            ordered.append(
+                (submitted, login.lower(), review["state"], review.get("commit_id"))
+            )
+        ordered.sort(
+            key=lambda entry: entry[0]
+        )  # stable: the order of the answer settles equal times
+        latest: dict[str, tuple[str, object]] = {}
+        for _when, login, state, commit_id in ordered:
+            if (
+                state != "COMMENTED"
+            ):  # a comment does not change what the reviewer decided
+                latest[login] = (state, commit_id)
+        return {
+            login: str(commit_id).lower()
+            for login, (state, commit_id) in latest.items()
+            if state == "APPROVED" and isinstance(commit_id, str)
+        }
+
+    def _pull_head(self, pull: dict[str, Any], number: int) -> str:
+        head = pull.get("head")
+        sha = head.get("sha") if isinstance(head, dict) else None
+        if not isinstance(sha, str):
+            data = self._api.get_json(f"/repos/{self._name}/pulls/{number}")
+            head = data.get("head") if isinstance(data, dict) else None
+            sha = head.get("sha") if isinstance(head, dict) else None
+        if not isinstance(sha, str) or not sha:
+            raise VexUnverifiable("the head commit of the pull request cannot be read")
+        return sha.lower()
+
+    def _codeowners_text(self) -> str | None:
+        for location in CODEOWNERS_LOCATIONS:
+            try:
+                return self._api.read_file(self._name, location, self._head)
+            except HttpError as exc:
+                if exc.status != 404:
+                    raise
+        return None
+
+    def verdict(self, rel: str) -> VexVerdict:
+        """Decide one document (``rel`` is ``.vex/<name>``).
+
+        Raises:
+            VexUnverifiable: Something that the decision needs could not be read.
+            RateLimited: GitHub's rate limit stopped the read; the run stops (it is not caught here).
+        """
+        sha = self._cached(
+            ("commit", rel),
+            "last commit of the file",
+            lambda: self._api.last_commit_sha(self._name, rel, self._head),
+        )
+        if sha is None:
+            raise VexUnverifiable("no commit that touched the file was found")
+        pulls = self._cached(
+            ("pulls", sha), "pull requests of the commit", lambda: self._load_pulls(sha)
+        )
+        merged = [p for p in pulls if p["merged_at"] is not None]
+        if not merged:
+            if pulls:
+                return VexVerdict(
+                    False,
+                    "only pull requests that were not merged are associated with the last commit of the file",
+                )
+            return VexVerdict(
+                False,
+                "no pull request is associated with the last commit of the file (a direct push?)",
+            )
+        if len(merged) > 1:
+            return VexVerdict(
+                False,
+                f"{len(merged)} merged pull requests are associated with the last commit of the file",
+            )
+        pull = merged[0]
+        number, author = pull.get("number"), _login(pull)
+        merged_at = parse_osv_time(pull["merged_at"])
+        if type(number) is not int or author is None or merged_at is None:
+            raise VexUnverifiable(
+                "the merged pull request has no readable number, author or merge time"
+            )
+        head = self._cached(
+            ("head", number),
+            "head of the pull request",
+            lambda: self._pull_head(pull, number),
+        )
+        approvers: dict[str, str] = self._cached(
+            ("reviews", number),
+            "reviews of the pull request",
+            lambda: self._load_approvers(number),
+        )
+        if not approvers:
+            return VexVerdict(False, "no reviewer whose latest review is an approval")
+        others = {k: v for k, v in approvers.items() if k != author.lower()}
+        if not others:
+            return VexVerdict(False, "the only approval is by the pull request author")
+        text = self._cached(("codeowners", ""), "CODEOWNERS", self._codeowners_text)
+        if text is None:
+            return VexVerdict(
+                False,
+                "no CODEOWNERS file was found in .github/, the root or docs/, so no Code Owner can approve",
+            )
+        try:
+            owners = codeowners_owners(text, rel)
+        except CodeownersUndecidable as exc:
+            raise VexUnverifiable(f"CODEOWNERS: {exc}") from exc
+        owning = {k: v for k, v in others.items() if k in owners}
+        if not owning:
+            return VexVerdict(False, f"no approver is a Code Owner of {rel}")
+        if head not in owning.values():
+            return VexVerdict(
+                False,
+                "no approval is for the head commit of the merged pull request (a push followed it)",
+            )
+        return VexVerdict(True, merged_at=merged_at.replace(microsecond=0))
+
+
+def check_vex_approvals(
+    api: GitHubApi, fetch: RepoFetch, docs: Sequence[models.VexDocument]
+) -> tuple[
+    list[models.VexDocument], list[run_record.RejectedVexEntry], dict[str, datetime]
+]:
+    """Keep the documents that are approved, and say why each other one was left out.
+
+    A document that is not approved is reported with a reason that starts with ``vex_unapproved:``. One whose
+    approval could not be established (a failed read, an answer that cannot be read, a CODEOWNERS line that
+    cannot be read) starts with ``vex_unverifiable:``: that is "could not be checked", not "not approved". Neither
+    is passed on, so neither suppresses anything. A rate limit is not caught here: it stops the run.
 
     Returns:
-        ``(times, warnings)``; ``times`` is empty when nothing could be read.
+        ``(approved documents, rejections, merge time by doc.path)``. The merge time is that of the merged pull
+        request, which is what ``PlanInputs.vex_merged_at`` takes; only an approved document has one.
     """
+    reader = VexApprovalReader(api, fetch)
     name = _repo_text(fetch.repo)
-    times: dict[str, datetime] = {}
-    warnings: list[str] = []
+    approved: list[models.VexDocument] = []
+    rejected: list[run_record.RejectedVexEntry] = []
+    merged: dict[str, datetime] = {}
     for doc in docs:
         rel = doc.path.partition(":")[2]
         try:
-            when = api.last_commit_time(name, rel, fetch.head_sha or "")
-        except (HttpError, TransportError, KeyError, ValueError) as exc:
-            return {}, [
-                f"{name}: vex_merged_at left out for the repository: {exc}"[:300]
-            ]
-        if when is None:
-            warnings.append(f"{name}: vex_merged_at left out for {rel}: no commit time")
+            verdict = reader.verdict(rel)
+        except VexUnverifiable as exc:
+            rejected.append(
+                run_record.RejectedVexEntry(
+                    name, rel, f"{VEX_UNVERIFIABLE} {exc}"[:300]
+                )
+            )
             continue
-        times[doc.path] = when
-    return times, warnings
+        if not verdict.approved or verdict.merged_at is None:
+            rejected.append(
+                run_record.RejectedVexEntry(
+                    name, rel, f"{VEX_UNAPPROVED} {verdict.reason}"[:300]
+                )
+            )
+            continue
+        approved.append(doc)
+        merged[doc.path] = verdict.merged_at
+    return approved, rejected, merged
 
 
 def count_required_checks(api: GitHubApi, fetch: RepoFetch) -> int | None:
@@ -2149,7 +2460,6 @@ def run(
 
     vex_docs: dict[Repo, tuple[models.VexDocument, ...]] = {}
     vex_merged: dict[Repo, dict[str, datetime]] = {}
-    warnings: list[str] = []
     rejected_vex: list[run_record.RejectedVexEntry] = []
     for fetch in fetch_ok_repos:
         try:
@@ -2161,17 +2471,18 @@ def run(
         except (HttpError, TransportError) as exc:
             fetch.fail("A", f"vex directory: {exc}")
             continue
-        vex_docs[fetch.repo] = tuple(docs)
         rejected_vex.extend(rejected)
         if not docs:
-            continue  # no document, no time to ask for
+            vex_docs[fetch.repo] = ()
+            continue  # no document, no approval to ask for
         try:
-            merged, notes = read_vex_merged_at(spoke, fetch, docs)
+            approved, unapproved, merged = check_vex_approvals(spoke, fetch, docs)
         except RateLimited as exc:
             rate_limited = True
             reasons.append(f"rate limit stopped the run: {exc}")
             break
-        warnings.extend(notes)
+        vex_docs[fetch.repo] = tuple(approved)
+        rejected_vex.extend(unapproved)
         if merged:
             vex_merged[fetch.repo] = merged
 
@@ -2388,7 +2699,6 @@ def run(
         pilot=pilot,
         warnings=(
             *(w for f in fetch_ok_repos for w in f.warnings),
-            *warnings,
             *pilot_notes,
         ),
     )
@@ -2604,9 +2914,24 @@ def render_summary(outcome: Outcome) -> str:
         f"- run record SHA-256: {outcome.tip_sha256 or 'none'}"
         + (f" (tag {outcome.tip_tag})" if outcome.tip_tag else ""),
         *_extra_summary_lines(outcome),
+        *_vex_summary_lines(record),
         *(f"- {m}" for m in outcome.messages),
     ]
     return "\n".join(lines) + "\n"
+
+
+def _vex_summary_lines(record: run_record.RunRecord) -> list[str]:
+    """Two lines: how many ``.vex/`` documents were left out as not approved, and as not verifiable."""
+    unapproved = sum(
+        1 for e in record.rejected_vex if e.reason.startswith(VEX_UNAPPROVED)
+    )
+    unverifiable = sum(
+        1 for e in record.rejected_vex if e.reason.startswith(VEX_UNVERIFIABLE)
+    )
+    return [
+        f"- VEX documents not approved (vex_unapproved): {unapproved}",
+        f"- VEX documents that could not be verified (vex_unverifiable): {unverifiable}",
+    ]
 
 
 def _extra_summary_lines(outcome: Outcome) -> list[str]:
