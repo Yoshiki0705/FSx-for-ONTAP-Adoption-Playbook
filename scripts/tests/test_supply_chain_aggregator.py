@@ -30,6 +30,7 @@ import sys
 import tempfile
 import time
 import unittest
+import urllib.parse
 import zipfile
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -299,6 +300,7 @@ def finding_issue_body(
     repo: str = TARGET,
     severity: str | None = None,
     due_at: datetime = NOW,
+    opened_at: datetime = NOW,
 ) -> str:
     owner, name = repo.split("/")
     return issue_body.render_finding(
@@ -316,7 +318,7 @@ def finding_issue_body(
             origin_at=NOW,
             origin_is_date_only=False,
             detected_at=NOW,
-            opened_at=NOW,
+            opened_at=opened_at,
             due_at=due_at,
             last_run_id="999-1",
             history=(issue_body.HistoryEntry("open", "999-1", NOW),),
@@ -329,13 +331,24 @@ def issue_item(
     body: str,
     state: str = "open",
     labels: tuple[str, ...] = ("supply-chain-aggregator",),
+    *,
+    title: str | None = None,
+    created_at: str | None = None,
+    closed_at: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    item: dict[str, Any] = {
         "number": number,
         "state": state,
         "body": body,
         "labels": [{"name": name} for name in labels],
     }
+    if title is not None:
+        item["title"] = title
+    if created_at is not None:
+        item["created_at"] = created_at
+    if closed_at is not None:
+        item["closed_at"] = closed_at
+    return item
 
 
 def world(
@@ -388,6 +401,7 @@ def world(
     net.on("GET", r"api\.osv\.dev/v1/vulns/", ok({"message": "not found"}, 404))
     net.on("GET", rf"/repos/{hub}/git/trees/", tree(runs or []))
     net.on("PUT", rf"/repos/{hub}/contents/runs/", put_ok())
+    net.on("PUT", rf"/repos/{hub}/contents/runs-extra/", put_ok())
     install_tags(net, hub)
     net.on("GET", rf"/repos/{hub}/issues\?", ok([]))
     for repo in repos:
@@ -457,10 +471,13 @@ def execute(
     run_id: str = RUN_ID,
     ledger: str | None = None,
     now: datetime = NOW,
+    observation: str | None = None,
 ) -> Any:
     log = sleeps if sleeps is not None else []
     client = Client(net, sleep=log.append, clock=lambda: 0.0)
-    extra = {} if ledger is None else {"chain_ack_text": ledger}
+    extra: dict[str, Any] = {} if ledger is None else {"chain_ack_text": ledger}
+    if observation is not None:
+        extra["observation_text"] = observation
     cfg = Config(HUB, run_id, SHA, policy, POLICY_SHA, **extra)
     return run(
         cfg,
@@ -835,6 +852,7 @@ class TokensAndRedirects(unittest.TestCase):
         for call in writes:
             if (
                 "/contents/runs/" in call.url
+                or "/contents/runs-extra/" in call.url
                 or "/git/tags" in call.url
                 or "/git/refs" in call.url
             ):
@@ -1277,7 +1295,9 @@ def declared_empty() -> dict[str, Any]:
     return doc
 
 
-def artifact(net: FakeNet, sbom: dict[str, Any]) -> None:
+def artifact(
+    net: FakeNet, sbom: dict[str, Any], extra_members: dict[str, str] | None = None
+) -> None:
     findings = {
         "schema_version": 1,
         "repo": TARGET,
@@ -1291,6 +1311,8 @@ def artifact(net: FakeNet, sbom: dict[str, Any]) -> None:
     with zipfile.ZipFile(buffer, "w") as archive:
         archive.writestr("sbom.spdx.json", json.dumps(sbom))
         archive.writestr("findings.normalized.json", json.dumps(findings))
+        for member, text in (extra_members or {}).items():
+            archive.writestr(member, text)
     net.on(
         "GET",
         r"/actions/artifacts\?",
@@ -2070,6 +2092,910 @@ class WorkflowAndLedgerFile(unittest.TestCase):
             self.assertIsNone(aggregator.read_chain_ack(str(path)))
             path.write_text("{}", encoding="utf-8")
             self.assertEqual(aggregator.read_chain_ack(str(path)), "{}")
+
+
+VEX_PURL = "pkg:npm/lodash@4.17.20"
+STALE = "vex_stale_non_excluding"
+
+
+def vex_text(
+    doc_id: str,
+    status: str,
+    stamp: str,
+    *,
+    justification: str | None = None,
+    impact: str | None = None,
+    vuln: str = "CVE-2021-0001",
+    purl: str = VEX_PURL,
+) -> str:
+    statement: dict[str, Any] = {
+        "vulnerability": {"name": vuln},
+        "products": [{"@id": purl}],
+        "status": status,
+        "timestamp": stamp,
+    }
+    if justification:
+        statement["justification"] = justification
+    if impact:
+        statement["impact_statement"] = impact
+    return json.dumps(
+        {
+            "@context": "https://openvex.dev/ns/v0.2.0",
+            "@id": f"https://example.test/vex/{doc_id}",
+            "author": "VEX reviewer role",
+            "timestamp": stamp,
+            "version": 1,
+            "statements": [statement],
+        }
+    )
+
+
+WINNER = vex_text(
+    "win",
+    "not_affected",
+    "2025-12-20T00:00:00Z",
+    justification="vulnerable_code_not_present",
+    impact="the vulnerable function is not called",
+)
+LOSER = vex_text("lose", "under_investigation", "2025-12-01T00:00:00Z")
+
+
+def vex_world(files: dict[str, str], merged: dict[str, str | int | None]) -> FakeNet:
+    """One finding that the document ``win.json`` excludes; ``merged`` answers the commits query per file name.
+
+    A string is the committer date of the newest commit, ``None`` an empty list, an integer an HTTP status.
+    """
+    net = world()
+    net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+    net.on(
+        "GET",
+        r"/contents/\.vex\?",
+        ok([{"type": "file", "name": name} for name in files]),
+    )
+    for name, text in files.items():
+        net.on("GET", rf"/contents/\.vex/{re.escape(name)}\?", file_response(text))
+
+    def commits(url: str, _: Any) -> Response:
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+        answer = merged[query["path"][0].removeprefix(".vex/")]
+        if isinstance(answer, int):
+            return ok({"message": "refused"}, answer)
+        if answer is None:
+            return ok([])
+        return ok([{"commit": {"committer": {"date": answer}}}])
+
+    net.on("GET", rf"/repos/{TARGET}/commits\?", commits)
+    return net
+
+
+def rejected_reasons(outcome: Any) -> list[tuple[str, str]]:
+    return [(r.path, r.reason) for r in outcome.record.rejected_vex]
+
+
+class VexMergedAt(unittest.TestCase):
+    """``PlanInputs.vex_merged_at`` is read per ``.vex/`` document and decides ``vex_stale_non_excluding``."""
+
+    FILES: ClassVar[dict[str, str]] = {"win.json": WINNER, "lose.json": LOSER}
+
+    def test_each_document_is_asked_for_its_last_commit_from_the_head_commit(
+        self,
+    ) -> None:
+        net = vex_world(
+            self.FILES,
+            {"win.json": "2025-12-21T00:00:00Z", "lose.json": "2025-12-25T00:00:00Z"},
+        )
+        execute(net, policy_text([TARGET]))
+        asked = net.to("GET", f"/repos/{TARGET}/commits")
+        self.assertEqual(len(asked), 2)
+        queries = [
+            urllib.parse.parse_qs(urllib.parse.urlsplit(c.url).query) for c in asked
+        ]
+        self.assertEqual(
+            sorted(q["path"][0] for q in queries), [".vex/lose.json", ".vex/win.json"]
+        )
+        for query in queries:
+            self.assertEqual(query["sha"], [SHA])
+            self.assertEqual(query["per_page"], ["1"])
+        self.assertTrue(all(c.token == SPOKE_TOKEN for c in asked))
+
+    def test_a_non_excluding_statement_merged_after_the_one_that_wins_is_reported(
+        self,
+    ) -> None:
+        net = vex_world(
+            self.FILES,
+            {"win.json": "2025-12-21T00:00:00Z", "lose.json": "2025-12-25T00:00:00Z"},
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertIn((".vex/lose.json", STALE), rejected_reasons(outcome))
+        self.assertEqual(len(outcome.record.vex_exclusions), 1, "the control: win.json")
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+
+    def test_the_reverse_order_reports_nothing(self) -> None:
+        net = vex_world(
+            self.FILES,
+            {"win.json": "2025-12-21T00:00:00Z", "lose.json": "2025-12-10T00:00:00Z"},
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(len(net.to("GET", f"/repos/{TARGET}/commits")), 2)
+        self.assertNotIn(STALE, [reason for _path, reason in rejected_reasons(outcome)])
+        self.assertEqual(len(outcome.record.vex_exclusions), 1)
+
+    def test_a_refused_query_leaves_the_times_of_that_repository_out_and_the_run_goes_on(
+        self,
+    ) -> None:
+        for status in (404, 500):
+            with self.subTest(status=status):
+                net = vex_world(
+                    self.FILES,
+                    {"win.json": status, "lose.json": "2025-12-25T00:00:00Z"},
+                )
+                outcome = execute(net, policy_text([TARGET]))
+                self.assertEqual(outcome.exit_code, 0, outcome.messages)
+                self.assertEqual(outcome.record.end_state, "success")
+                self.assertNotIn(
+                    STALE, [reason for _path, reason in rejected_reasons(outcome)]
+                )
+                self.assertEqual(len(outcome.record.vex_exclusions), 1)
+                self.assertTrue(
+                    any("vex_merged_at" in m and TARGET in m for m in outcome.messages),
+                    outcome.messages,
+                )
+
+    def test_a_document_with_no_commit_is_left_out_by_itself(self) -> None:
+        net = vex_world(
+            self.FILES, {"win.json": "2025-12-21T00:00:00Z", "lose.json": None}
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertNotIn(STALE, [reason for _path, reason in rejected_reasons(outcome)])
+        self.assertTrue(
+            any("lose.json" in m for m in outcome.messages), outcome.messages
+        )
+
+    def test_a_repository_without_vex_documents_is_never_asked(self) -> None:
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        execute(net, policy_text([TARGET]))
+        self.assertEqual(net.to("GET", "/commits"), [])
+
+    def test_a_rate_limit_on_the_query_stops_the_run_like_any_other_read(self) -> None:
+        net = vex_world(self.FILES, {"win.json": 200, "lose.json": 200})
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits\?",
+            Response(429, {"retry-after": "3600"}, b""),
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.record.end_state, "failure")
+        self.assertIn("rate limit", outcome.record.failure_reason or "")
+
+
+class ReopenAfterALongClose(unittest.TestCase):
+    """An Issue closed for longer than its Response_Target starts a new response when it is reopened."""
+
+    def reopened(self, closed_days_ago: int | None) -> dict[str, Any]:
+        opened = NOW - timedelta(days=50)
+        due = NOW - timedelta(days=20)
+        body = finding_issue_body(
+            "CVE-2021-0001", kev=False, severity="HIGH", due_at=due, opened_at=opened
+        )
+        closed = (
+            None
+            if closed_days_ago is None
+            else iso(NOW - timedelta(days=closed_days_ago))
+        )
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok([issue_item(7, body, state="closed", closed_at=closed)]),
+        )
+        execute(net, policy_text([TARGET]))
+        patches = [c for c in net.to("PATCH", "/issues/7") if c.body.get("body")]
+        self.assertEqual(len(patches), 1)
+        self.assertEqual(patches[0].body["state"], "open")
+        return issue_body.parse_state(patches[0].body["body"]) or {}
+
+    def test_closed_for_longer_than_the_target_the_deadline_starts_again(self) -> None:
+        state = self.reopened(40)  # the target for a HIGH finding is 30 days
+        self.assertEqual(state["opened_at"], iso(NOW))
+        self.assertEqual(state["due_at"], iso(NOW + timedelta(days=30)))
+
+    def test_control_closed_for_less_the_earlier_deadline_continues(self) -> None:
+        state = self.reopened(10)
+        self.assertEqual(state["opened_at"], iso(NOW - timedelta(days=50)))
+        self.assertEqual(state["due_at"], iso(NOW - timedelta(days=20)))
+
+    def test_an_issue_with_no_closing_time_continues_the_earlier_deadline(self) -> None:
+        state = self.reopened(None)
+        self.assertEqual(state["opened_at"], iso(NOW - timedelta(days=50)))
+
+
+class SkippedPaths(unittest.TestCase):
+    """The ``skipped_paths`` of the artifact that was scanned are recorded, never judged."""
+
+    SBOM = spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+
+    def run_with(self, members: dict[str, str] | None) -> tuple[Any, FakeNet]:
+        net = world()
+        artifact(net, self.SBOM, members)
+        return execute(net, policy_text([TARGET])), net
+
+    def test_the_paths_of_generation_json_are_recorded_for_the_repository(self) -> None:
+        text = json.dumps({"skipped_paths": ["test/fixtures", "docs/**/sample"]})
+        outcome, net = self.run_with({"generation.json": text})
+        self.assertEqual(
+            outcome.extra.skipped_paths,
+            {TARGET: ["test/fixtures", "docs/**/sample"]},
+        )
+        self.assertEqual(outcome.extra.warnings, ())
+        self.assertEqual(
+            extra_json(net)["skipped_paths"],
+            {TARGET: ["test/fixtures", "docs/**/sample"]},
+        )
+
+    def test_an_empty_array_stays_an_empty_array(self) -> None:
+        outcome, net = self.run_with({"generation.json": '{"skipped_paths": []}'})
+        self.assertEqual(outcome.extra.skipped_paths, {TARGET: []})
+        self.assertEqual(extra_json(net)["skipped_paths"], {TARGET: []})
+
+    def test_what_cannot_be_read_is_not_recorded_and_says_so_once_and_changes_no_scan(
+        self,
+    ) -> None:
+        control, _ = self.run_with({"generation.json": '{"skipped_paths": []}'})
+        bad = {
+            "no generation.json": None,
+            "not JSON": {"generation.json": "{ nope"},
+            "not an object": {"generation.json": "[]"},
+            "no skipped_paths": {"generation.json": '{"component_count": 1}'},
+            "not an array": {"generation.json": '{"skipped_paths": "a"}'},
+            "a non-string element": {"generation.json": '{"skipped_paths": ["a", 1]}'},
+            "null": {"generation.json": '{"skipped_paths": null}'},
+        }
+        for label, members in bad.items():
+            with self.subTest(label):
+                outcome, _net = self.run_with(members)
+                self.assertEqual(outcome.extra.skipped_paths, {})
+                notes = [m for m in outcome.messages if "skipped_paths" in m]
+                self.assertEqual(len(notes), 1, outcome.messages)
+                self.assertIn(TARGET, notes[0])
+                self.assertEqual(outcome.exit_code, 0, outcome.messages)
+                self.assertEqual(
+                    outcome.record.repositories.scanned,
+                    control.record.repositories.scanned,
+                )
+                self.assertEqual(outcome.record.findings, control.record.findings)
+
+    def test_a_repository_scanned_through_layer_a_is_not_recorded(self) -> None:
+        net = world()
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.record.repositories.scanned, (TARGET,))
+        self.assertEqual(outcome.extra.skipped_paths, {})
+        self.assertEqual(outcome.extra.warnings, ())
+
+    def test_only_the_repositories_that_were_scanned_are_recorded(self) -> None:
+        # the artifact names TARGET, so OTHER's layer B fails and its scan comes from layer A alone
+        net = world([TARGET, OTHER])
+        artifact(net, self.SBOM, {"generation.json": '{"skipped_paths": ["a"]}'})
+        outcome = execute(net, policy_text([TARGET, OTHER]))
+        self.assertEqual(sorted(outcome.extra.skipped_paths), [TARGET])
+
+
+def extra_put(net: FakeNet) -> Call:
+    puts = net.to("PUT", "/contents/runs-extra/")
+    assert len(puts) == 1, f"{len(puts)} writes to runs-extra"
+    return puts[0]
+
+
+def extra_json(net: FakeNet) -> dict[str, Any]:
+    return json.loads(base64.b64decode(extra_put(net).body["content"]).decode())
+
+
+class ExtraRecord(unittest.TestCase):
+    """The side record sits beside the run record and is not part of the chain."""
+
+    def test_it_is_written_after_the_run_record_under_runs_extra(self) -> None:
+        net = world()
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        run_put = net.to("PUT", "/contents/runs/")[0]
+        put = extra_put(net)
+        self.assertLess(net.calls.index(run_put), net.calls.index(put))
+        self.assertEqual(outcome.extra_path, "runs-extra/2026/01/1000-1.json")
+        self.assertTrue(put.url.endswith("/contents/runs-extra/2026/01/1000-1.json"))
+        self.assertNotIn("sha", put.body)
+        self.assertEqual(put.body["branch"], "supply-chain-runs")
+        self.assertEqual(put.token, HUB_TOKEN)
+        text = base64.b64decode(put.body["content"]).decode()
+        self.assertTrue(text.endswith("}\n") and not text.endswith("\n\n"))
+        data = json.loads(text)
+        self.assertEqual(
+            list(data),
+            [
+                "schema_version",
+                "run_id",
+                "record_path",
+                "record_sha256",
+                "skipped_paths",
+                "pilot",
+            ],
+        )
+        self.assertEqual(data["schema_version"], 1)
+        self.assertEqual(data["run_id"], RUN_ID)
+        self.assertEqual(data["record_path"], outcome.saved_path)
+        self.assertEqual(data["record_sha256"], digest(put_texts(net)[0]))
+        self.assertEqual(data["record_sha256"], outcome.tip_sha256)
+
+    def test_the_run_record_and_the_chain_do_not_change(self) -> None:
+        net = world()
+        execute(net, policy_text([TARGET]))
+        first = put_texts(net)[0]
+        for word in ("pilot", "skipped_paths", "runs-extra"):
+            self.assertNotIn(word, first)
+        run_record.from_json(first)
+        # the next run lists the extra record in the tree and still chains to the run record
+        net2 = world(
+            runs=["runs/2026/01/1000-1.json", "runs-extra/2026/01/1000-1.json"]
+        )
+        net2.on("GET", r"/contents/runs/2026/01/1000-1\.json", file_response(first))
+        outcome = execute(net2, policy_text([TARGET]), run_id="1001-1")
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        second = run_record.from_json(put_texts(net2)[0])
+        self.assertEqual(second.prev_record_sha256, digest(first))
+
+    def test_a_failed_write_changes_neither_the_result_nor_the_exit_code(self) -> None:
+        net = world()
+        net.on(
+            "PUT",
+            r"/contents/runs-extra/",
+            ok({"message": "sha wasn't supplied"}, 422),
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(outcome.record.end_state, "success")
+        self.assertEqual(outcome.saved_path, "runs/2026/01/1000-1.json")
+        self.assertIsNone(outcome.extra_path)
+        self.assertEqual(len(net.to("PUT", "/contents/runs-extra/")), 1)
+        self.assertEqual(len(net.to("PUT", "/contents/runs/")), 1)
+        self.assertEqual(
+            len([m for m in outcome.messages if "extra record not saved" in m]), 1
+        )
+        self.assertIsNotNone(outcome.tip_tag, "the tip tag was still made")
+
+    def test_nothing_is_written_when_the_run_record_was_not_saved(self) -> None:
+        net = world()
+        net.on("GET", r"/git/trees/", ok({"message": "Not Found"}, 404))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 1)
+        self.assertEqual(net.to("PUT", "/contents/runs-extra/"), [])
+        self.assertIsNone(outcome.extra_path)
+
+    def test_nothing_is_written_when_the_policy_could_not_be_read(self) -> None:
+        net = world()
+        execute(net, "")
+        self.assertEqual(net.to("PUT", "/contents/runs-extra/"), [])
+
+    def test_the_job_summary_names_it(self) -> None:
+        net = world()
+        artifact(
+            net,
+            spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")]),
+            {"generation.json": '{"skipped_paths": ["a", "b"]}'},
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        lines = aggregator.render_summary(outcome).splitlines()
+        self.assertIn("- run extra record: runs-extra/2026/01/1000-1.json", lines)
+        self.assertIn("- repositories with skipped_paths recorded: 1", lines)
+        self.assertIn("- pilot issued: 0", lines)
+        self.assertEqual(
+            len([x for x in lines if "extra" in x or "pilot" in x or "skipped" in x]),
+            3,
+            "no body is added to the summary",
+        )
+
+    def test_the_summary_says_when_it_was_not_saved(self) -> None:
+        net = world()
+        net.on("PUT", r"/contents/runs-extra/", ok({"message": "no"}, 422))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertIn(
+            "- run extra record: not saved", aggregator.render_summary(outcome)
+        )
+
+
+# --- the pilot record ------------------------------------------------------------------------------
+
+
+def cve_of(index: int) -> str:
+    return f"CVE-2021-{2000 + index}"
+
+
+def pilot_world(
+    count: int,
+    decided: int = 0,
+    false_positives: int = 0,
+    *,
+    existing: int | None = None,
+    created_at: Any = None,
+    targets: list[str] | None = None,
+    extra_items: list[dict[str, Any]] | None = None,
+) -> FakeNet:
+    """``count`` HIGH findings; the first ``existing`` (default all) already have an Issue.
+
+    The first ``decided`` findings are excluded by one VEX document (``not_affected``); the first
+    ``false_positives`` of those say ``component_not_present`` and the rest ``vulnerable_code_not_present``.
+    """
+    net = world(targets)
+    net.on(
+        "GET",
+        r"/dependency-graph/sbom$",
+        ok(
+            {
+                "sbom": spdx_doc(
+                    [
+                        (f"pkg{i}", "1.0.0", f"pkg:npm/pkg{i}@1.0.0")
+                        for i in range(count)
+                    ]
+                )
+            }
+        ),
+    )
+    net.on(
+        "GET",
+        rf"/repos/{TARGET}/dependabot/alerts",
+        ok(
+            [
+                alert(cve=cve_of(i), name=f"pkg{i}", ghsa_id=f"GHSA-aaaa-bbbb-{i:04d}")
+                for i in range(count)
+            ]
+        ),
+    )
+    stamp = iso(NOW - timedelta(days=10))
+    items = []
+    for i in range(count if existing is None else existing):
+        body = finding_issue_body(cve_of(i), kev=False, severity="HIGH")
+        items.append(
+            issue_item(
+                i + 1,
+                body,
+                title=f"[supply-chain] {cve_of(i)}",
+                created_at=created_at(i) if created_at else stamp,
+            )
+        )
+    net.on("GET", rf"/repos/{TARGET}/issues\?", ok([*items, *(extra_items or [])]))
+    if decided:
+        statements = [
+            {
+                "vulnerability": {"name": cve_of(i)},
+                "products": [{"@id": f"pkg:npm/pkg{i}@1.0.0"}],
+                "status": "not_affected",
+                "justification": "component_not_present"
+                if i < false_positives
+                else "vulnerable_code_not_present",
+                "impact_statement": "reviewed",
+                "timestamp": "2025-12-20T00:00:00Z",
+            }
+            for i in range(decided)
+        ]
+        doc = json.dumps(
+            {
+                "@context": "https://openvex.dev/ns/v0.2.0",
+                "@id": "https://example.test/vex/pilot",
+                "author": "VEX reviewer role",
+                "timestamp": "2025-12-20T00:00:00Z",
+                "version": 1,
+                "statements": statements,
+            }
+        )
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/contents/\.vex\?",
+            ok([{"type": "file", "name": "p.json"}]),
+        )
+        net.on("GET", rf"/repos/{TARGET}/contents/\.vex/p\.json\?", file_response(doc))
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/commits\?",
+            ok([{"commit": {"committer": {"date": "2025-12-21T00:00:00Z"}}}]),
+        )
+    return net
+
+
+def observation_text(**fields: Any) -> str:
+    return json.dumps({"schema_version": 1, **fields})
+
+
+class PilotRecord(unittest.TestCase):
+    """The pilot's counts and signals come from ``metrics``; this layer feeds them and writes them down."""
+
+    def pilot(self, net: FakeNet, **kwargs: Any) -> dict[str, Any]:
+        targets = kwargs.pop("targets", [TARGET])
+        outcome = execute(net, policy_text(targets), **kwargs)
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(outcome.extra.pilot, extra_json(net)["pilot"])
+        return outcome.extra.pilot
+
+    def test_no_issue_at_all_still_writes_zero(self) -> None:
+        pilot = self.pilot(world())
+        self.assertEqual(pilot["rates"]["issued"], 0)
+        self.assertTrue(pilot["review"]["applies"])
+        self.assertFalse(pilot["review"]["next_batch_conditions_hold"])
+        self.assertEqual(pilot["sli"], {"met": 0, "denominator": 0})
+        self.assertEqual(pilot["issue_cap"], {"repos": [], "deferred_initial_bulk": 0})
+
+    def test_nineteen_issues_give_no_rate_but_the_six_counts_and_two_signals(
+        self,
+    ) -> None:
+        pilot = self.pilot(pilot_world(19, decided=19, false_positives=1))
+        self.assertIsNone(pilot["rates"]["rate_percent"])
+        self.assertEqual(
+            pilot["counts"],
+            {
+                "issued": 19,
+                "detector_errors": 1,
+                "not_affected_other": 18,
+                "fixed": 0,
+                "affected": 0,
+                "undecided": 0,
+            },
+        )
+        review = pilot["review"]
+        self.assertTrue(review["applies"])
+        self.assertIs(review["errors_are_majority"], False)
+        self.assertIs(review["next_batch_conditions_hold"], True)
+        self.assertNotIn("passed", pilot)
+        self.assertNotIn("verdict", pilot)
+
+    def test_twenty_issues_with_a_quarter_undecided_withhold_the_rate(self) -> None:
+        pilot = self.pilot(pilot_world(20, decided=15, false_positives=3))
+        self.assertEqual(pilot["rates"]["issued"], 20)
+        self.assertEqual(pilot["rates"]["undecided"], 5)
+        self.assertTrue(pilot["rates"]["awaiting_decisions"])
+        self.assertIsNone(pilot["rates"]["rate_percent"])
+
+    def test_once_they_are_decided_the_rate_is_reported(self) -> None:
+        pilot = self.pilot(pilot_world(20, decided=20, false_positives=3))
+        self.assertFalse(pilot["rates"]["awaiting_decisions"])
+        self.assertEqual(pilot["rates"]["false_positive"], 3)
+        self.assertEqual(pilot["rates"]["not_affected_other"], 17)
+        self.assertEqual(pilot["rates"]["rate_percent"], 15.0)
+        self.assertFalse(pilot["review"]["applies"])
+
+    def test_the_status_and_the_justification_come_from_the_excluding_statement(
+        self,
+    ) -> None:
+        pilot = self.pilot(pilot_world(3, decided=2, false_positives=1))
+        rates = pilot["rates"]
+        self.assertEqual(
+            (rates["false_positive"], rates["not_affected_other"], rates["undecided"]),
+            (1, 1, 1),
+        )
+
+    def test_the_sli_leaves_out_not_affected_and_withdrawn_issues(self) -> None:
+        closed = []
+        for number, reason in ((50, "completed"), (51, "not_planned")):
+            vuln = f"CVE-2021-{5000 + number}"
+            item = issue_item(
+                number,
+                finding_issue_body(vuln, kev=False, severity="HIGH"),
+                state="closed",
+                title=f"[supply-chain] {vuln}",
+                created_at=iso(NOW - timedelta(days=10)),
+                closed_at=iso(NOW - timedelta(days=1)),
+            )
+            item["state_reason"] = reason
+            closed.append(item)
+        # three Issues close as vex_not_affected in this run; of the two closed before it, one was a fix
+        # made in time (counted, met) and one was closed without a fix (left out)
+        net = pilot_world(3, decided=3, extra_items=closed)
+        self.assertEqual(self.pilot(net)["sli"], {"met": 1, "denominator": 1})
+
+    def test_an_issue_opened_after_the_window_is_carried_over_not_undecided(
+        self,
+    ) -> None:
+        def created(i: int) -> str:
+            return iso(NOW - timedelta(days=10 if i < 15 else 1))
+
+        net = pilot_world(20, decided=15, created_at=created)
+        window = observation_text(window_end=iso(NOW - timedelta(days=5)))
+        pilot = self.pilot(net, observation=window)
+        rates = pilot["rates"]
+        self.assertEqual(rates["carried_over"], 5)
+        self.assertEqual(rates["undecided"], 0)
+        self.assertEqual(rates["issued"], 15)
+        self.assertEqual(
+            pilot["observation"]["window_end"], iso(NOW - timedelta(days=5))
+        )
+
+    def test_an_issue_opened_before_the_window_start_is_not_counted(self) -> None:
+        net = pilot_world(4, decided=4)
+        window = observation_text(window_start=iso(NOW - timedelta(days=1)))
+        rates = self.pilot(net, observation=window)["rates"]
+        self.assertEqual(rates["before_window"], 4)
+        self.assertEqual(rates["issued"], 0)
+
+    def test_an_issue_without_a_creation_time_and_a_window_is_an_error_not_a_guess(
+        self,
+    ) -> None:
+        def untimed() -> FakeNet:
+            return pilot_world(3, decided=3, created_at=lambda i: None)
+
+        net = untimed()
+        outcome = execute(
+            net,
+            policy_text([TARGET]),
+            observation=observation_text(window_end=iso(NOW)),
+        )
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        self.assertEqual(list(outcome.extra.pilot), ["error"])
+        self.assertIn("opened_at", outcome.extra.pilot["error"])
+        self.assertTrue(any("pilot" in m for m in outcome.messages), outcome.messages)
+        self.assertEqual(extra_json(net)["pilot"], outcome.extra.pilot)
+        # without a window the same Issues are counted
+        self.assertEqual(self.pilot(untimed())["rates"]["issued"], 3)
+
+    def test_test_issues_and_issues_of_other_repositories_are_not_counted(self) -> None:
+        net = pilot_world(3, decided=3, targets=[TARGET, OTHER])
+        other = [
+            issue_item(
+                n,
+                finding_issue_body(f"CVE-2021-{7000 + n}", kev=False, repo=OTHER),
+                title=f"[supply-chain] CVE-2021-{7000 + n}",
+                created_at=iso(NOW - timedelta(days=10)),
+            )
+            for n in (1, 2)
+        ]
+        net.on("GET", rf"/repos/{OTHER}/issues\?", ok(other))
+        observation = observation_text(
+            observed_repos=[TARGET], test_issues=[f"{TARGET}#2", f"{OTHER}#1"]
+        )
+        pilot = self.pilot(net, targets=[TARGET, OTHER], observation=observation)
+        self.assertEqual(pilot["counts"]["issued"], 2)
+        self.assertEqual(pilot["excluded_test_issues"], 2)
+        self.assertEqual(pilot["excluded_outside_observation"], 1)
+        self.assertEqual(pilot["observation"]["observed_repos"], [TARGET])
+
+    def test_without_observed_repos_every_policy_repository_counts(self) -> None:
+        net = pilot_world(2, decided=2, targets=[TARGET, OTHER])
+        other = issue_item(
+            1,
+            finding_issue_body("CVE-2021-7001", kev=False, repo=OTHER),
+            title="[supply-chain] CVE-2021-7001",
+            created_at=iso(NOW - timedelta(days=10)),
+        )
+        net.on("GET", rf"/repos/{OTHER}/issues\?", ok([other]))
+        pilot = self.pilot(net, targets=[TARGET, OTHER])
+        self.assertEqual(pilot["counts"]["issued"], 3)
+        self.assertEqual(pilot["excluded_outside_observation"], 0)
+
+    def test_a_detector_error_named_in_the_input_is_counted_as_one(self) -> None:
+        net = pilot_world(3, decided=0)
+        pilot = self.pilot(
+            net, observation=observation_text(detector_error_issues=[f"{TARGET}#1"])
+        )
+        self.assertEqual(pilot["counts"]["detector_errors"], 1)
+        self.assertEqual(pilot["counts"]["undecided"], 2)
+
+    def test_an_issue_that_is_not_a_finding_issue_by_title_is_not_counted(self) -> None:
+        item = issue_item(
+            9,
+            finding_issue_body("CVE-2021-9999", kev=False, severity="HIGH"),
+            title="Something else",
+            created_at=iso(NOW - timedelta(days=10)),
+        )
+        net = pilot_world(2, decided=0, extra_items=[item])
+        self.assertEqual(self.pilot(net)["counts"]["issued"], 2)
+
+    def test_the_duplicate_side_is_counted_as_a_duplicate_only(self) -> None:
+        keep = finding_issue_body("CVE-2021-0001", kev=False, severity="HIGH")
+        dup = finding_issue_body("GHSA-aaaa-bbbb-cccc", kev=False, severity="HIGH")
+        stamp = iso(NOW - timedelta(days=10))
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok(
+                [
+                    issue_item(
+                        7,
+                        keep,
+                        title="[supply-chain] CVE-2021-0001",
+                        created_at=stamp,
+                    ),
+                    issue_item(
+                        8,
+                        dup,
+                        title="[supply-chain] GHSA-aaaa-bbbb-cccc",
+                        created_at=stamp,
+                    ),
+                ]
+            ),
+        )
+        pilot = self.pilot(net)
+        self.assertEqual(pilot["rates"]["duplicates"], 1)
+        self.assertEqual(pilot["rates"]["issued"], 1)
+        self.assertEqual(pilot["rates"]["undecided"], 1)
+
+    def test_an_issue_opened_by_this_run_is_counted(self) -> None:
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        pilot = self.pilot(net)
+        self.assertEqual(len(net.to("POST", f"/repos/{TARGET}/issues")), 1)
+        self.assertEqual(pilot["rates"]["issued"], 1)
+        self.assertEqual(pilot["rates"]["undecided"], 1)
+
+    def test_three_restarts_require_a_redesign(self) -> None:
+        pilot = self.pilot(world(), observation=observation_text(restarts_done=3))
+        self.assertIs(pilot["restart"]["redesign_required"], True)
+        self.assertEqual(pilot["restart"]["remaining"], 0)
+        self.assertIs(pilot["review"]["may_restart_now"], False)
+
+    def test_the_limits_of_the_input_reach_the_review(self) -> None:
+        pilot = self.pilot(
+            pilot_world(3, decided=0),
+            observation=observation_text(
+                extensions_exhausted=True, max_rate_percent=10
+            ),
+        )
+        self.assertEqual(pilot["observation"]["max_rate_percent"], 10)
+        self.assertIs(pilot["observation"]["extensions_exhausted"], True)
+        world_empty = self.pilot(
+            world(), observation=observation_text(extensions_exhausted=True)
+        )
+        self.assertIn(
+            "no_issues_after_extensions", world_empty["review"]["restart_causes"]
+        )
+
+    def test_no_input_file_means_no_window(self) -> None:
+        pilot = self.pilot(pilot_world(2, decided=2))
+        self.assertIs(pilot["observation"]["input_file"], False)
+        self.assertIsNone(pilot["observation"]["window_start"])
+        self.assertIsNone(pilot["observation"]["window_end"])
+        self.assertEqual(pilot["rates"]["issued"], 2)
+
+    def test_an_input_that_cannot_be_used_is_an_error_and_the_run_goes_on(self) -> None:
+        bad = {
+            "not JSON": "{ nope",
+            "empty (unreadable file)": "",
+            "not an object": "[]",
+            "wrong version": json.dumps({"schema_version": 2}),
+            "unknown key": observation_text(restarts_don=1),
+            "negative restarts": observation_text(restarts_done=-1),
+            "restarts as text": observation_text(restarts_done="1"),
+            "flag as text": observation_text(extensions_exhausted="yes"),
+            "rate as text": observation_text(max_rate_percent="5"),
+            "bad time": observation_text(window_end="yesterday"),
+            "time without a zone": observation_text(window_end="2026-01-01T00:00:00"),
+            "repo list as text": observation_text(observed_repos="a/b"),
+            "bad repo": observation_text(observed_repos=["nope"]),
+            "bad issue reference": observation_text(test_issues=["a/b#0"]),
+            "window reversed": observation_text(
+                window_start=iso(NOW), window_end=iso(NOW - timedelta(days=1))
+            ),
+        }
+        for label, text in bad.items():
+            with self.subTest(label):
+                net = pilot_world(2, decided=2)
+                outcome = execute(net, policy_text([TARGET]), observation=text)
+                self.assertEqual(outcome.exit_code, 0, outcome.messages)
+                self.assertEqual(outcome.record.end_state, "success")
+                self.assertEqual(list(outcome.extra.pilot), ["error"])
+                self.assertEqual(
+                    len([m for m in outcome.messages if "pilot" in m]),
+                    1,
+                    outcome.messages,
+                )
+                self.assertEqual(extra_json(net)["pilot"], outcome.extra.pilot)
+                self.assertEqual(
+                    len(net.to("PUT", "/contents/runs/")),
+                    1,
+                    "the run record is the same",
+                )
+
+
+class IssueCapCause(unittest.TestCase):
+    """Why the per-run limit was reached: the first run in a repository, or a run after it."""
+
+    def cap(self, net: FakeNet) -> dict[str, Any]:
+        outcome = execute(net, policy_text([TARGET], limit=1))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        return outcome.extra.pilot["issue_cap"]
+
+    def test_a_repository_with_no_managed_issue_is_an_initial_bulk(self) -> None:
+        cap = self.cap(pilot_world(3, existing=0))
+        self.assertEqual(
+            cap,
+            {
+                "repos": [{"repo": TARGET, "overflow": 2, "cause": "initial_bulk"}],
+                "deferred_initial_bulk": 2,
+            },
+        )
+
+    def test_a_repository_that_has_managed_issues_is_ongoing(self) -> None:
+        cap = self.cap(pilot_world(3, existing=1))
+        self.assertEqual(
+            cap,
+            {
+                "repos": [{"repo": TARGET, "overflow": 1, "cause": "ongoing"}],
+                "deferred_initial_bulk": 0,
+            },
+        )
+
+    def test_a_closed_managed_issue_also_makes_it_ongoing(self) -> None:
+        net = pilot_world(3, existing=0)
+        body = finding_issue_body("CVE-2021-8000", kev=False, severity="HIGH")
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok(
+                [
+                    issue_item(
+                        90, body, state="closed", title="[supply-chain] CVE-2021-8000"
+                    )
+                ]
+            ),
+        )
+        self.assertEqual(self.cap(net)["repos"][0]["cause"], "ongoing")
+
+    def test_nothing_over_the_limit_leaves_the_list_empty(self) -> None:
+        self.assertEqual(
+            self.cap(pilot_world(1, existing=0)),
+            {"repos": [], "deferred_initial_bulk": 0},
+        )
+
+    def test_the_findings_over_the_limit_come_back_in_the_next_run(self) -> None:
+        first = pilot_world(3, existing=0)
+        execute(first, policy_text([TARGET], limit=1))
+        opened_first = [
+            c.body["title"]
+            for c in first.to("POST", f"/repos/{TARGET}/issues")
+            if c.url.endswith("/issues")
+            and c.body["title"].startswith("[supply-chain] CVE")
+        ]
+        second = pilot_world(3, existing=1)
+        execute(second, policy_text([TARGET], limit=1))
+        opened_second = [
+            c.body["title"]
+            for c in second.to("POST", f"/repos/{TARGET}/issues")
+            if c.url.endswith("/issues")
+            and c.body["title"].startswith("[supply-chain] CVE")
+        ]
+        self.assertEqual(opened_first, [f"[supply-chain] {cve_of(0)}"])
+        self.assertEqual(opened_second, [f"[supply-chain] {cve_of(1)}"])
+
+
+class ObservationFile(unittest.TestCase):
+    def test_the_path_is_the_override_or_the_file_beside_the_policy(self) -> None:
+        self.assertEqual(
+            aggregator.observation_path("policy/docs/agent/p.json", "x/obs.json"),
+            "x/obs.json",
+        )
+        self.assertEqual(
+            aggregator.observation_path("policy/docs/agent/p.json", None),
+            "policy/docs/agent/supply-chain-observation.json",
+        )
+        self.assertEqual(
+            aggregator.observation_path("policy/docs/agent/p.json", ""),
+            "policy/docs/agent/supply-chain-observation.json",
+        )
+
+    def test_a_missing_file_is_no_input_and_a_present_one_is_read(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "obs.json"
+            self.assertIsNone(aggregator.read_observation(str(path)))
+            path.write_text('{"schema_version": 1}', encoding="utf-8")
+            self.assertEqual(
+                aggregator.read_observation(str(path)), '{"schema_version": 1}'
+            )
+
+    def test_a_file_that_cannot_be_decoded_is_an_unusable_input_not_an_absent_one(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "obs.json"
+            path.write_bytes(b"\xff\xfe\x00")
+            self.assertEqual(aggregator.read_observation(str(path)), "")
 
 
 class Helpers(unittest.TestCase):

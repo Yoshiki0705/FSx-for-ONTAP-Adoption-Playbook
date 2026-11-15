@@ -22,6 +22,9 @@ steps and the translation between GitHub, the feeds and the core's plain values.
     CHAIN_ACK_FILE     path of the chain ledger in the same checkout (docs/agent/supply-chain-chain-ack.json).
                        A file that does not exist is an empty ledger: no decision has been made.
     RUNNER_TEMP        where the per-month lock files go (the system temporary directory when unset)
+    OBSERVATION_FILE   path of the pilot observation input (optional). Without it, the file
+                       ``supply-chain-observation.json`` beside POLICY_FILE is used when it exists; with neither,
+                       the pilot is counted with no window. See ``parse_observation``.
 
 POLICY_FILE is the path inside the directory where the workflow checked out the policy
 repository at SUPPLY_CHAIN_POLICY_REF. SPOKE_TOKEN is a GitHub App installation token with
@@ -45,6 +48,15 @@ The record chain is guarded around the write of the run record (``guard_chain``)
 A tag that cannot be created is a warning: the record stays, and the next run starts without a recorded value.
 Protecting the tags with a ruleset is a maintainer's setting and is not made here.
 
+The run record has no place for ``skipped_paths`` or for the pilot's counts, and its schema is a copy that is not
+changed here. So a second file, the extra record, is written after the run record, on the same branch, at
+``runs-extra/<YYYY>/<MM>/<run id>.json``. It names the run record (path and SHA-256) and carries ``skipped_paths``
+(per repository, from the ``generation.json`` of the layer B artifact that was scanned) and ``pilot`` (what the
+maintainer reads to judge the detector: ``metrics.compute_pilot_rates`` and the rest, fed here, not recomputed).
+It is not under ``runs/``, which the watchdog and ``recent_outcomes`` read as run records, and it is not part of the
+chain: no ``prev_record_sha256``, tip tag or seal covers it. It is created, never overwritten. A failure to write it
+is a warning and changes neither the run record nor the exit code.
+
 ``notify-failure`` (used by the watchdog) reads NOTIFY_TOKEN (a SPOKE_TOKEN-style token that can
 write Issues in this repository) and GITHUB_REPOSITORY. It appends to the open failure Issue, or
 opens one when none is open, and exits non-zero when the notice could not be sent.
@@ -63,13 +75,14 @@ import dataclasses
 import fcntl
 import io
 import json
+import math
 import os
 import re
 import sys
 import tempfile
 import urllib.parse
 import zipfile
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -120,6 +133,9 @@ LABEL_SPECS = {
     models.OVERDUE_LABEL: (OVERDUE_COLOR, OVERDUE_DESCRIPTION),
 }
 RUNS_BRANCH = "supply-chain-runs"
+EXTRA_DIR = "runs-extra"
+EXTRA_SCHEMA_VERSION = 1
+OBSERVATION_FILE_NAME = "supply-chain-observation.json"
 RECENT_OUTCOMES = max(run_record.FAILURE_STREAK_THRESHOLD, 3)
 PR_SEARCH_CAP = 60
 MAX_ZIP_MEMBER_BYTES = 200 * 1024 * 1024
@@ -206,6 +222,7 @@ def list_managed_issues(
                 vuln_id=marker.vuln_id,
                 state=item["state"],
                 body_state=issue_body.parse_state(item.get("body")),
+                closed_at=parse_osv_time(item.get("closed_at")),
                 labels=_label_names(item.get("labels")),
             )
         )
@@ -527,6 +544,11 @@ class RepoFetch:
     # An SBOM with no component and incomplete coverage was read: the repository was not scanned, and nothing
     # read from it (a missing finding included) is a ground to close an Issue.
     unscanned: bool = False
+    # The ``skipped_paths`` of the ``generation.json`` in the layer B artifact that was scanned. ``None``: no
+    # layer B artifact was used, or it did not say (an empty list is a statement: nothing was excluded).
+    skipped_paths: list[str] | None = None
+    # Things worth a line in the job log that do not fail the run.
+    warnings: list[str] = field(default_factory=list)
 
     def fail(self, layer: models.Layer, reason: str) -> None:
         self.failures.append(
@@ -650,6 +672,29 @@ def _read_zip(blob: bytes) -> dict[str, bytes]:
     return members
 
 
+def _generation_skipped_paths(
+    members: Mapping[str, bytes],
+) -> tuple[list[str] | None, str | None]:
+    """The ``skipped_paths`` of the artifact's ``generation.json``, or ``None`` and why it was not read.
+
+    An empty list is returned as an empty list: "nothing was excluded" is a statement, a missing key is not.
+    ``sbom-generate.yml`` writes ``skipped_paths`` as the list of the lines of its ``skip-paths`` input.
+    """
+    raw = members.get("generation.json")
+    if raw is None:
+        return None, "the artifact has no generation.json"
+    try:
+        doc = json.loads(raw)
+    except ValueError as exc:  # includes a UnicodeDecodeError
+        return None, f"generation.json is not JSON: {exc}"
+    if not isinstance(doc, dict) or "skipped_paths" not in doc:
+        return None, "generation.json has no skipped_paths"
+    value = doc["skipped_paths"]
+    if not isinstance(value, list) or not all(isinstance(p, str) for p in value):
+        return None, "skipped_paths is not an array of strings"
+    return list(value), None
+
+
 def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
     """Read layers A and B of one repository. A failure of one part is recorded and the rest goes on."""
     result = RepoFetch(repo)
@@ -726,6 +771,10 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         if parsed.repo != repo:
             raise ValueError(f"artifact is for {_repo_text(parsed.repo)}")
         result.findings.extend(parsed.findings)
+        # Only now is the artifact the one that was scanned; a failure above leaves ``skipped_paths`` unset.
+        result.skipped_paths, note = _generation_skipped_paths(members)
+        if note is not None:
+            result.warnings.append(f"{name}: skipped_paths not recorded: {note}")
         result.layer_ok["B"] = True
     except (
         HttpError,
@@ -929,6 +978,39 @@ def read_vex(
     return docs, rejected
 
 
+def read_vex_merged_at(
+    api: GitHubApi, fetch: RepoFetch, docs: Sequence[models.VexDocument]
+) -> tuple[dict[str, datetime], list[str]]:
+    """When each ``.vex/`` document last changed, from the head commit this run read.
+
+    One request per document: the newest commit that touched its path (``GitHubApi.last_commit_time``). The key
+    is ``doc.path`` (``<owner>/<name>:<path>``), the form ``effective_exclusions`` looks the documents up by.
+    A document that has no usable time is left out by itself. A request that GitHub refuses leaves out the times
+    of the whole repository, because a time for one document without the others would decide nothing; the run
+    goes on, and the reason comes back as a warning. A rate limit is not caught here: it stops the run like any
+    other read.
+
+    Returns:
+        ``(times, warnings)``; ``times`` is empty when nothing could be read.
+    """
+    name = _repo_text(fetch.repo)
+    times: dict[str, datetime] = {}
+    warnings: list[str] = []
+    for doc in docs:
+        rel = doc.path.partition(":")[2]
+        try:
+            when = api.last_commit_time(name, rel, fetch.head_sha or "")
+        except (HttpError, TransportError, KeyError, ValueError) as exc:
+            return {}, [
+                f"{name}: vex_merged_at left out for the repository: {exc}"[:300]
+            ]
+        if when is None:
+            warnings.append(f"{name}: vex_merged_at left out for {rel}: no commit time")
+            continue
+        times[doc.path] = when
+    return times, warnings
+
+
 def count_required_checks(api: GitHubApi, fetch: RepoFetch) -> int | None:
     """Required status checks on the default branch (classic protection plus rulesets), or None if unreadable.
 
@@ -1078,6 +1160,407 @@ def response_metrics(
             pr_to_merge_hours=hours(result.pr_to_merge),
         )
     return out
+
+
+# --- the pilot record: what the maintainer reads to judge the detector ---------------------------------------
+
+
+class ObservationError(ValueError):
+    """The observation input cannot be used."""
+
+
+@dataclass(frozen=True)
+class Observation:
+    """The optional input of the observation (``supply-chain-observation.json``, ``schema_version`` 1).
+
+    Attributes:
+        observed_repos: The repositories under observation; ``None`` (a missing or empty list) means every
+            repository of the Policy_File.
+        window_start: Start of a restarted observation (UTC). ``None`` when not given.
+        window_end: The time the set is cut at (UTC). ``None`` when not given.
+        restarts_done: Restarts already made (0 or more).
+        extensions_exhausted: The extensions are used up.
+        max_rate_percent: The false-positive rate limit the maintainer decided; ``None`` when none is decided.
+        detector_error_issues: Issues a maintainer classified as the detector's own error.
+        test_issues: Issues opened to check for a false negative. They are not counted.
+        from_file: True when the values came from a file, False for the defaults of "no input".
+    """
+
+    observed_repos: frozenset[Repo] | None = None
+    window_start: datetime | None = None
+    window_end: datetime | None = None
+    restarts_done: int = 0
+    extensions_exhausted: bool = False
+    max_rate_percent: float | None = None
+    detector_error_issues: frozenset[tuple[Repo, int]] = frozenset()
+    test_issues: frozenset[tuple[Repo, int]] = frozenset()
+    from_file: bool = False
+
+
+_OBSERVATION_KEYS = frozenset(
+    {
+        "schema_version",
+        "observed_repos",
+        "window_start",
+        "window_end",
+        "restarts_done",
+        "extensions_exhausted",
+        "max_rate_percent",
+        "detector_error_issues",
+        "test_issues",
+    }
+)
+_REPO_NAME = re.compile(r"[^/\s#]+/[^/\s#]+")
+_ISSUE_REF = re.compile(r"([^/\s#]+/[^/\s#]+)#([1-9][0-9]*)")
+
+
+def _observation_list(data: Mapping[str, Any], key: str) -> list[str]:
+    value = data.get(key)
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ObservationError(f"{key} must be an array of strings")
+    return value
+
+
+def _observation_time(data: Mapping[str, Any], key: str) -> datetime | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    when = parse_osv_time(value)
+    if when is None:
+        raise ObservationError(f"{key} must be an ISO 8601 time with a zone")
+    return when
+
+
+def parse_observation(text: str | None) -> Observation:
+    """Read the observation input. ``None`` (no file) is "no input": every default, no window.
+
+    Args:
+        text: The text of the file, ``None`` when there is no file. An empty text is a file that could not be
+            read, and is refused like any other text that is not an observation.
+
+    Raises:
+        ObservationError: The text is not JSON, is not an object, has a key this module does not know (a
+            misspelled key is refused, not ignored), or a value has the wrong type.
+    """
+    if text is None:
+        return Observation()
+    try:
+        data = json.loads(text)
+    except ValueError as exc:
+        raise ObservationError(f"not JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ObservationError("the top level must be an object")
+    unknown = sorted(set(data) - _OBSERVATION_KEYS)
+    if unknown:
+        raise ObservationError(f"unknown key: {', '.join(unknown)}")
+    if type(data.get("schema_version")) is not int or data["schema_version"] != 1:
+        raise ObservationError("schema_version must be 1")
+    restarts = data.get("restarts_done", 0)
+    if type(restarts) is not int or restarts < 0:
+        raise ObservationError("restarts_done must be an integer of 0 or more")
+    exhausted = data.get("extensions_exhausted", False)
+    if not isinstance(exhausted, bool):
+        raise ObservationError("extensions_exhausted must be true or false")
+    rate = data.get("max_rate_percent")
+    if rate is not None and (
+        isinstance(rate, bool)
+        or not isinstance(rate, int | float)
+        or not math.isfinite(rate)
+        or rate < 0
+    ):
+        raise ObservationError("max_rate_percent must be a number of 0 or more")
+    observed: list[Repo] = []
+    for name in _observation_list(data, "observed_repos"):
+        if not _REPO_NAME.fullmatch(name):
+            raise ObservationError(f"observed_repos: {name!r} is not owner/name")
+        observed.append(_split_repo(name))
+    issue_sets: dict[str, frozenset[tuple[Repo, int]]] = {}
+    for key in ("detector_error_issues", "test_issues"):
+        refs = []
+        for text_ref in _observation_list(data, key):
+            found = _ISSUE_REF.fullmatch(text_ref)
+            if found is None:
+                raise ObservationError(f"{key}: {text_ref!r} is not owner/name#number")
+            refs.append((_split_repo(found.group(1)), int(found.group(2))))
+        issue_sets[key] = frozenset(refs)
+    return Observation(
+        observed_repos=frozenset(observed) or None,
+        window_start=_observation_time(data, "window_start"),
+        window_end=_observation_time(data, "window_end"),
+        restarts_done=restarts,
+        extensions_exhausted=exhausted,
+        max_rate_percent=float(rate) if rate is not None else None,
+        detector_error_issues=issue_sets["detector_error_issues"],
+        test_issues=issue_sets["test_issues"],
+        from_file=True,
+    )
+
+
+def observation_path(policy_file: str, override: str | None) -> str:
+    """The observation input: ``OBSERVATION_FILE`` when set, else the file beside the Policy_File."""
+    return override or str(Path(policy_file).parent / OBSERVATION_FILE_NAME)
+
+
+def read_observation(path: str | None) -> str | None:
+    """The text of the observation input, ``None`` when there is no file, ``""`` when it cannot be read.
+
+    ``""`` is not an observation, so ``parse_observation`` refuses it and the pilot says so; a file that exists
+    but cannot be read must not look like "no input".
+    """
+    if not path:
+        return None
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+
+@dataclass(frozen=True)
+class PilotCandidate:
+    """One finding Issue the pilot may count, as the run saw it."""
+
+    repo: Repo
+    number: int
+    vuln_id: str | None
+    opened_at: (
+        datetime | None
+    )  # ``created_at`` of the Issue; ``None`` when GitHub gave none that can be read
+    duplicate: bool  # its state block names a representative (Requirement 8.38)
+
+
+def pilot_candidates(
+    issues: Sequence[ManagedIssue],
+    raw: Mapping[tuple[str, int], Mapping[str, Any]],
+    actions: Sequence[models.IssueAction],
+    results: Mapping[int, int | None],
+    now: datetime,
+) -> list[PilotCandidate]:
+    """The finding Issues of this run: those that were listed, and those this run opened.
+
+    An Issue is a finding Issue of the Aggregator when its marker says so and its title starts with
+    ``[supply-chain] `` (the title ``apply_action`` gives). Open and closed Issues count alike. One opened by
+    this run counts with ``now`` as its opening time, and is undecided by construction.
+    """
+    out: list[PilotCandidate] = []
+    for issue in sorted(issues, key=lambda i: (_repo_text(i.repo).lower(), i.number)):
+        if issue.kind != "finding":
+            continue
+        item = raw.get((_repo_text(issue.repo).lower(), issue.number), {})
+        title = item.get("title")
+        if not (isinstance(title, str) and title.startswith(FINDING_TITLE_PREFIX)):
+            continue
+        named = (issue.body_state or {}).get("duplicate_of")
+        out.append(
+            PilotCandidate(
+                issue.repo,
+                issue.number,
+                issue.vuln_id,
+                parse_osv_time(item.get("created_at")),
+                isinstance(named, str) and bool(named),
+            )
+        )
+    for index, action in enumerate(actions):
+        number = results.get(index)
+        if action.op == "create" and action.kind == "finding" and number is not None:
+            out.append(PilotCandidate(action.repo, number, action.vuln_id, now, False))
+    return out
+
+
+def issue_cap_record(
+    plan: models.Plan, managed_repos: Collection[Repo]
+) -> dict[str, Any]:
+    """Which repositories reached the per-run limit of new Issues, and why (Requirements 22.49, 22.50).
+
+    ``cause`` is ``initial_bulk`` when, before this run, the repository had no Issue of the Aggregator at all
+    (open or closed, of any kind), and ``ongoing`` otherwise. The rule is a hypothesis: it reads "the first
+    run in a repository" from the absence of Issues, and has not been checked against a real first run. A
+    repository whose Issues were all deleted by hand would read as ``initial_bulk`` again.
+
+    ``deferred_initial_bulk`` is the sum of ``overflow`` of the ``initial_bulk`` rows: the Findings the next runs
+    take up. Nothing here carries them over. The plan holds no memory: a Finding that did not get an Issue is
+    a Finding with no Issue in the next run too, and is opened then, up to the limit again (the summary Issue
+    lists them meanwhile).
+    """
+    rows: list[dict[str, Any]] = []
+    deferred = 0
+    for repo, overflow in sorted(
+        plan.overflow_counts.items(), key=lambda kv: _repo_text(kv[0]).lower()
+    ):
+        if overflow <= 0:
+            continue
+        cause = "ongoing" if repo in managed_repos else "initial_bulk"
+        rows.append({"repo": _repo_text(repo), "overflow": overflow, "cause": cause})
+        deferred += overflow if cause == "initial_bulk" else 0
+    return {"repos": rows, "deferred_initial_bulk": deferred}
+
+
+def _optional_time(value: datetime | None) -> str | None:
+    return None if value is None else _time_text(value)
+
+
+def build_pilot(
+    observation_text: str | None,
+    *,
+    policy_repos: Sequence[Repo],
+    candidates: Sequence[PilotCandidate],
+    plan: models.Plan,
+    decisions: Mapping[tuple[str, str, str], tuple[str, str | None]],
+    lines: Sequence[metrics.IssueTimeline],
+    managed_repos: Collection[Repo],
+    now: datetime,
+) -> tuple[dict[str, Any], list[str]]:
+    """The ``pilot`` of the extra record, and the warnings. Feeds ``metrics``; it counts nothing itself.
+
+    ``metrics.compute_pilot_rates``, ``review_low_sample``, ``observation_restart_status`` and ``sli_counts``
+    decide every number; this function chooses which Issues they see. It makes no pass/fail field: the decision
+    to start the next batch is the maintainer's, from these counts and a reading of each Issue.
+
+    The status and justification of an Issue come from the statement that excludes its Finding
+    (``plan.vex_exclusions``), so an ``affected`` or ``under_investigation`` statement, which excludes nothing,
+    is not seen: such an Issue counts as undecided. An Issue whose Finding is no longer reported has no
+    exclusion either.
+
+    Args:
+        observation_text: The observation input, ``None`` for no file.
+        policy_repos: The repositories of the Policy_File (all of them are observed when the input names none).
+        candidates: The finding Issues (``pilot_candidates``).
+        plan: The plan of this run: ``vex_exclusions``, ``duplicate_of`` and ``overflow_counts``.
+        decisions: ``(vex path, vulnerability id, purl)`` -> ``(status, justification)`` of the statements read.
+        lines: Timelines of the Issues of the repositories that were read, for the SLI.
+        managed_repos: Repositories that had an Issue of the Aggregator before this run.
+        now: The run time.
+
+    Returns:
+        ``(pilot, warnings)``. ``pilot`` is ``{"error": reason}`` when the input cannot be used or a count
+        cannot be made; the reason is also the one warning.
+    """
+    try:
+        observation = parse_observation(observation_text)
+    except ObservationError as exc:
+        return _pilot_error(f"observation input unusable: {exc}")
+    observed = observation.observed_repos or frozenset(policy_repos)
+    exclusions: dict[tuple[Repo, str], list[tuple[str, str, str]]] = {}
+    for finding, path in plan.vex_exclusions:
+        for name in (finding.vuln_id, *finding.aliases):
+            exclusions.setdefault((finding.repo, name), []).append(
+                (path, finding.vuln_id, finding.component.purl)
+            )
+    duplicates = {(repo, number) for repo, number, _rep in plan.duplicate_of}
+    outcomes: list[metrics.PilotIssueOutcome] = []
+    outside = tests = 0
+    for cand in candidates:
+        key = (cand.repo, cand.number)
+        if key in observation.test_issues:
+            tests += 1
+            continue
+        if cand.repo not in observed:
+            outside += 1
+            continue
+        status: str | None = None
+        justification: str | None = None
+        for path, vuln_id, purl in sorted(
+            exclusions.get((cand.repo, cand.vuln_id or ""), [])
+        ):
+            if (path, vuln_id, purl) in decisions:
+                status, justification = decisions[(path, vuln_id, purl)]
+                break
+        outcomes.append(
+            metrics.PilotIssueOutcome(
+                vex_status=status,
+                justification=justification,
+                detector_error=key in observation.detector_error_issues,
+                duplicate=cand.duplicate or key in duplicates,
+                opened_at=cand.opened_at,
+            )
+        )
+    try:
+        rates = metrics.compute_pilot_rates(
+            outcomes,
+            window_start=observation.window_start,
+            window_end=observation.window_end,
+        )
+        review = metrics.review_low_sample(
+            rates,
+            max_rate_percent=observation.max_rate_percent,
+            extensions_exhausted=observation.extensions_exhausted,
+            restarts_done=observation.restarts_done,
+        )
+        restart = metrics.observation_restart_status(observation.restarts_done)
+        sli = metrics.sli_counts(lines, now)
+    except ValueError as exc:
+        return _pilot_error(f"the counts cannot be made: {exc}")
+    pilot: dict[str, Any] = {
+        "observation": {
+            "input_file": observation.from_file,
+            "observed_repos": sorted(_repo_text(r) for r in observed),
+            "window_start": _optional_time(observation.window_start),
+            "window_end": _optional_time(observation.window_end),
+            "restarts_done": observation.restarts_done,
+            "extensions_exhausted": observation.extensions_exhausted,
+            "max_rate_percent": observation.max_rate_percent,
+        },
+        # The six counts of Requirement 22.17, under its names.
+        "counts": {
+            "issued": rates.issued,
+            "detector_errors": rates.false_positive,
+            "not_affected_other": rates.not_affected_other,
+            "fixed": rates.fixed,
+            "affected": rates.affected,
+            "undecided": rates.undecided,
+        },
+        "rates": dataclasses.asdict(rates),
+        "review": dataclasses.asdict(review),
+        "restart": dataclasses.asdict(restart),
+        "sli": {"met": sli.met, "denominator": sli.denominator},
+        "issue_cap": issue_cap_record(plan, managed_repos),
+        "excluded_outside_observation": outside,
+        "excluded_test_issues": tests,
+    }
+    # through JSON once, so that what is returned is what is written (tuples become lists)
+    return json.loads(json.dumps(pilot, allow_nan=False)), []
+
+
+def _pilot_error(reason: str) -> tuple[dict[str, Any], list[str]]:
+    return {"error": reason}, [f"pilot record not computed: {reason}"[:300]]
+
+
+@dataclass(frozen=True)
+class ExtraData:
+    """What the extra record will carry, decided before the run record is written.
+
+    Attributes:
+        skipped_paths: ``owner/name`` -> the ``skipped_paths`` of the layer B artifact that was scanned.
+        pilot: The pilot record (``build_pilot``).
+        warnings: Lines for the job log; none of them fails the run.
+    """
+
+    skipped_paths: dict[str, list[str]]
+    pilot: dict[str, Any]
+    warnings: tuple[str, ...] = ()
+
+
+def extra_record_path(record_path: str) -> str:
+    """``runs-extra/<YYYY>/<MM>/<run id>.json`` for ``runs/<YYYY>/<MM>/<run id>.json``."""
+    return f"{EXTRA_DIR}/{record_path.removeprefix('runs/')}"
+
+
+def render_extra(
+    extra: ExtraData, run_id: str, record_path: str, record_sha256: str
+) -> str:
+    """The text of the extra record: fixed key order, UTF-8, one newline at the end."""
+    body = {
+        "schema_version": EXTRA_SCHEMA_VERSION,
+        "run_id": run_id,
+        "record_path": record_path,
+        "record_sha256": record_sha256,
+        "skipped_paths": extra.skipped_paths,
+        "pilot": extra.pilot,
+    }
+    return json.dumps(body, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
 
 
 # --- run record storage and the failure notice -------------------------------------------------------
@@ -1529,6 +2012,9 @@ class Config:
     # The text of the chain ledger. ``None`` is an empty ledger (no decision has been made); a text that cannot be
     # read as a ledger stops the write.
     chain_ack_text: str | None = None
+    # The text of the observation input. ``None`` is "no input" (every default, no window); a text that cannot be
+    # read as one makes the pilot record ``{"error": ...}`` and nothing else.
+    observation_text: str | None = None
 
 
 @dataclass
@@ -1541,6 +2027,10 @@ class Outcome:
     # not saved, or the tag could not be created.
     tip_sha256: str | None = None
     tip_tag: str | None = None
+    # What the extra record carries (``None`` when the run ended before there was anything to say), and where
+    # it was saved (``None`` when it was not).
+    extra: ExtraData | None = None
+    extra_path: str | None = None
 
 
 def _empty_record(
@@ -1658,6 +2148,8 @@ def run(
     findings = list(normalized.dedupe_findings([*findings, *feeds.extra_findings]))
 
     vex_docs: dict[Repo, tuple[models.VexDocument, ...]] = {}
+    vex_merged: dict[Repo, dict[str, datetime]] = {}
+    warnings: list[str] = []
     rejected_vex: list[run_record.RejectedVexEntry] = []
     for fetch in fetch_ok_repos:
         try:
@@ -1671,6 +2163,17 @@ def run(
             continue
         vex_docs[fetch.repo] = tuple(docs)
         rejected_vex.extend(rejected)
+        if not docs:
+            continue  # no document, no time to ask for
+        try:
+            merged, notes = read_vex_merged_at(spoke, fetch, docs)
+        except RateLimited as exc:
+            rate_limited = True
+            reasons.append(f"rate limit stopped the run: {exc}")
+            break
+        warnings.extend(notes)
+        if merged:
+            vex_merged[fetch.repo] = merged
 
     required: dict[str, int | None] = {}
     for fetch in fetches:
@@ -1710,6 +2213,7 @@ def run(
             feeds=feeds.snapshot,
             vex=vex_docs,
             issues=tuple(i for i in issues if i.repo in fetch_ok),
+            vex_merged_at=vex_merged or None,
         )
     )
 
@@ -1819,6 +2323,7 @@ def run(
     if any(not e.ok for e in entries) and not any("Issue" in r for r in reasons):
         reasons.append("some Issue operations were not applied")
 
+    lines = timelines(issues, raw, actions, results, now)
     finished = now_fn()
     record = run_record.RunRecord(
         run_id=cfg.run_id,
@@ -1853,7 +2358,7 @@ def run(
             )
         },
         response_metrics=response_metrics(
-            timelines(issues, raw, actions, results, now),
+            lines,
             pull_requests,
             [f.repo for f in fetch_ok_repos],
             policy.response_target.detect_hours,
@@ -1864,20 +2369,57 @@ def run(
         rate_limit=run_record.RateLimitRecord(tuple(processed), tuple(unprocessed)),
         failure_notice_error=None,
     )
-    return _finish(cfg, record, reasons, spoke, hub, now_fn, labels_done)
+    pilot, pilot_notes = build_pilot(
+        cfg.observation_text,
+        policy_repos=policy.target_repositories,
+        candidates=pilot_candidates(issues, raw, actions, results, now),
+        plan=plan,
+        decisions=_vex_decisions(vex_docs),
+        lines=[t for t in lines if t.repo in fetch_ok],
+        managed_repos=frozenset(i.repo for i in issues),
+        now=now,
+    )
+    extra = ExtraData(
+        skipped_paths={
+            _repo_text(f.repo): list(f.skipped_paths)
+            for f in sorted(fetch_ok_repos, key=lambda f: _repo_text(f.repo).lower())
+            if f.skipped_paths is not None
+        },
+        pilot=pilot,
+        warnings=(
+            *(w for f in fetch_ok_repos for w in f.warnings),
+            *warnings,
+            *pilot_notes,
+        ),
+    )
+    return _finish(cfg, record, reasons, spoke, hub, now_fn, labels_done, extra)
 
 
-def _vex_statuses(
+def _vex_decisions(
     docs: Mapping[Repo, Sequence[models.VexDocument]],
-) -> dict[tuple[str, str, str], str]:
-    table: dict[tuple[str, str, str], str] = {}
+) -> dict[tuple[str, str, str], tuple[str, str | None]]:
+    """``(document path, vulnerability id, product purl)`` -> ``(status, justification)`` of the statements read.
+
+    The first statement in the order of document path and statement position that names the key. It is not
+    always the statement that decided an exclusion (the newest does); the same limit as ``_vex_statuses``.
+    """
+    table: dict[tuple[str, str, str], tuple[str, str | None]] = {}
     for repo_docs in docs.values():
         for doc in sorted(repo_docs, key=lambda d: d.path):
             for statement in doc.statements:
                 for vuln_id in (statement.vuln_id, *statement.aliases):
                     for product in statement.products:
-                        table.setdefault((doc.path, vuln_id, product), statement.status)
+                        table.setdefault(
+                            (doc.path, vuln_id, product),
+                            (statement.status, statement.justification),
+                        )
     return table
+
+
+def _vex_statuses(
+    docs: Mapping[Repo, Sequence[models.VexDocument]],
+) -> dict[tuple[str, str, str], str]:
+    return {key: value[0] for key, value in _vex_decisions(docs).items()}
 
 
 def _finish(
@@ -1888,15 +2430,55 @@ def _finish(
     hub: GitHubApi,
     now_fn: Callable[[], datetime],
     labels_done: set[str],
+    extra: ExtraData | None = None,
 ) -> Outcome:
     """Decide and send the failure notice, then save the record. The notice comes first so that a
     notice that could not be sent is written into the record: the record is never rewritten.
 
     The month's lock is held from the listing of the records to the end of the write, so that two runs of one
-    month do not read the same tip.
+    month do not read the same tip. The extra record is written under the same lock, after the run record.
     """
     with month_lock(_record_month(record)):
-        return _finish_locked(cfg, record, reasons, spoke, hub, now_fn, labels_done)
+        outcome = _finish_locked(cfg, record, reasons, spoke, hub, now_fn, labels_done)
+        return _save_extra(hub, cfg, outcome, extra)
+
+
+def _save_extra(
+    hub: GitHubApi, cfg: Config, outcome: Outcome, extra: ExtraData | None
+) -> Outcome:
+    """Attach ``extra`` to the outcome and, when the run record was saved, create the extra record beside it.
+
+    The file is created with a PUT that carries no ``sha``, so an existing path is refused and never
+    overwritten. Whatever goes wrong here is a warning in ``outcome.messages``: the run record, its tags and the
+    exit code are already settled and are not touched.
+    """
+    if extra is None:
+        return outcome
+    outcome.extra = extra
+    outcome.messages.extend(extra.warnings)
+    if outcome.saved_path is None or outcome.tip_sha256 is None:
+        return outcome  # no run record, so nothing for the extra record to name
+    path = extra_record_path(outcome.saved_path)
+    try:
+        text = render_extra(
+            extra, outcome.record.run_id, outcome.saved_path, outcome.tip_sha256
+        )
+        resp = hub.write(
+            "PUT",
+            f"/repos/{_repo_text(cfg.hub)}/contents/{path}",
+            {
+                "message": f"chore: record supply-chain run extras {outcome.record.run_id}",
+                "content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+                "branch": cfg.runs_branch,
+            },
+        )
+        if resp.status != 201:
+            raise HttpError("PUT", f"contents/{path}", resp.status, resp.text()[:200])
+    except (HttpError, RateLimited, TransportError, ValueError) as exc:
+        outcome.messages.append(f"run extra record not saved: {exc}"[:300])
+        return outcome
+    outcome.extra_path = path
+    return outcome
 
 
 def _finish_locked(
@@ -2021,9 +2603,24 @@ def render_summary(outcome: Outcome) -> str:
         f"- run record: {outcome.saved_path or 'not saved'}",
         f"- run record SHA-256: {outcome.tip_sha256 or 'none'}"
         + (f" (tag {outcome.tip_tag})" if outcome.tip_tag else ""),
+        *_extra_summary_lines(outcome),
         *(f"- {m}" for m in outcome.messages),
     ]
     return "\n".join(lines) + "\n"
+
+
+def _extra_summary_lines(outcome: Outcome) -> list[str]:
+    """Three lines about the extra record: where it is, how many repositories carry ``skipped_paths``, and
+    how many Issues the pilot counted. No body of it goes into the summary."""
+    extra = outcome.extra
+    if extra is None:
+        return []
+    issued = (extra.pilot.get("rates") or {}).get("issued")
+    return [
+        f"- run extra record: {outcome.extra_path or 'not saved'}",
+        f"- repositories with skipped_paths recorded: {len(extra.skipped_paths)}",
+        f"- pilot issued: {issued if issued is not None else 'not computed'}",
+    ]
 
 
 def _write_summary(outcome: Outcome) -> None:
@@ -2065,6 +2662,9 @@ def cmd_run() -> int:
         policy_text=policy_text,
         policy_commit=policy_ref,
         chain_ack_text=chain_ack_text,
+        observation_text=read_observation(
+            observation_path(_env("POLICY_FILE"), os.environ.get("OBSERVATION_FILE"))
+        ),
     )
     outcome = run(
         cfg,
