@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "run_id": "43721770621-1",
+  "record_path": "runs/2026/11/43721770621-1.json",
+  "record_sha256": "5d070d5f381f505f4f7a423d55e2a177bc256ec37ede66bf3b0559d191c568b7",
+  "skipped_paths": {
+    "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": [
+      "scripts/tests/fixtures",
+      "tests/fixtures"
+    ]
+  },
+  "pilot": {
+    "observation": {
+      "input_file": false,
+      "observed_repos": [
+        "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+        "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+        "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+        "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns",
+        "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns",
+        "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+        "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations",
+        "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+        "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+        "Yoshiki0705/ONTAP-Edge-to-Cloud-AI",
+        "Yoshiki0705/S3-Burst-on-ONTAP-Files",
+        "Yoshiki0705/VMware-Migration-EC2-ONTAP"
+      ],
+      "window_start": null,
+      "window_end": null,
+      "restarts_done": 0,
+      "extensions_exhausted": false,
+      "max_rate_percent": null
+    },
+    "counts": {
+      "issued": 32,
+      "detector_errors": 0,
+      "not_affected_other": 0,
+      "fixed": 0,
+      "affected": 0,
+      "undecided": 32
+    },
+    "rates": {
+      "issued": 32,
+      "false_positive": 0,
+      "not_affected_other": 0,
+      "undecided": 32,
+      "rate_percent": null,
+      "min_issues": 20,
+      "awaiting_decisions": true,
+      "fixed": 0,
+      "affected": 0,
+      "duplicates": 0,
+      "under_investigation": 0,
+      "carried_over": 0,
+      "before_window": 0
+    },
+    "review": {
+      "applies": false,
+      "issued": 32,
+      "detector_errors": 0,
+      "not_affected_other": 0,
+      "undecided": 32,
+      "within_error_limit": true,
+      "needs_cause_classification": false,
+      "awaiting_decisions": true,
+      "errors_are_majority": false,
+      "next_batch_conditions_hold": false,
+      "under_investigation": 0,
+      "restart_causes": [],
+      "can_restart_observation": false,
+      "needs_maintainer_decision": false,
+      "may_restart_now": false
+    },
+    "restart": {
+      "restarts_done": 0,
+      "remaining": 3,
+      "may_restart": true,
+      "redesign_required": false
+    },
+    "sli": {
+      "met": 0,
+      "denominator": 0
+    },
+    "issue_cap": {
+      "repos": [],
+      "deferred_initial_bulk": 0
+    },
+    "excluded_outside_observation": 0,
+    "excluded_test_issues": 0
+  }
+}
