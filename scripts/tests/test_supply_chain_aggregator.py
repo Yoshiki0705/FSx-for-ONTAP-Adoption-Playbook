@@ -195,7 +195,9 @@ def spdx_doc(purls: list[tuple[str, str, str]]) -> dict[str, Any]:
     return {
         "spdxVersion": "SPDX-2.3",
         "SPDXID": "SPDXRef-DOCUMENT",
+        "dataLicense": "CC0-1.0",
         "name": "example",
+        "documentNamespace": "https://example.test/spdx/example",
         "documentDescribes": ["SPDXRef-root"],
         "creationInfo": {
             "created": "2026-01-01T00:00:00Z",
