@@ -27,8 +27,8 @@ name: supply-chain-watchdog
 
 on:
   schedule:
-    # A different minute from the Aggregator (17 past).
-    - cron: '47 */6 * * *'
+    # Hourly, at a different minute from the Aggregator (17 past).
+    - cron: '47 * * * *'
   workflow_dispatch:
 
 permissions: {}

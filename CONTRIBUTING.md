@@ -426,6 +426,72 @@ gh variable set SUPPLY_CHAIN_POLICY_REF --body '<40 桁のコミット SHA>'
 
 ---
 
+## Renovate_Preset のリリースの手順
+
+保守者が `supply-chain-preset-v*` のタグを immutable release にするときの手順です。対象は Renovate_Preset（`renovate/supply-chain.json` と `renovate/supply-chain-automerge.json`）と、Reusable_Workflow 3 種（`sbom-generate`、`vex-validate`、`cooldown-pinning-check`）です。
+
+> **この節のコマンドは、この節を書いた時点では実行して確かめていません。** 下の「確かめた事項」は、保守者が 2026-11-15 に GitHub の公式文書を読んで確認した内容です。この節の執筆時に、文書そのものは読み直していません。食い違いがあれば、公式文書が正です。
+
+### 前提と現状
+
+2026-11-15 に `GET /repos/{owner}/{repo}/immutable-releases` を 1 回読んだ結果は `enabled: false` でした。このリポジトリの immutable releases の設定は無効です。タグ `supply-chain-preset-v1.0.0`（注釈付きタグ）はありますが、GitHub の Release のオブジェクトは 0 件です。
+
+**この設定を有効にするのは保守者の作業です。** この節を書く側は、Settings を変更しません。
+
+### 確かめた事項
+
+出典は次の公式文書です。
+
+- [Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+- [Preventing changes to your releases](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/preventing-changes-to-your-releases)
+- [Verifying the integrity of a release](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/verify-release-integrity)
+- [GitHub CLI のマニュアル](https://cli.github.com/manual/)
+
+| 事項 | 内容 |
+|---|---|
+| 公開後のタグ | 別のコミットへ動かせない。リリースが存在する間は削除できない。リリースを削除しても、タグ名は再利用できない |
+| 公開後のアセット | 変更も削除もできない |
+| 編集できるもの | タイトルとリリースノート、プレリリースか最新かの印 |
+| release attestation | immutable release を作ると、リリースのタグ、コミット SHA、アセットを含むものが自動で作られる |
+| 推奨の流れ | ドラフトで作成、すべてのアセットを添付、公開 |
+| 設定の入口 | Settings の「Releases」の「Enable release immutability」。**有効にしても、その後に作る release にだけ効く** |
+| 検証 | `gh release verify <タグ>` は immutable かを確かめる。`gh release verify-asset <タグ> <成果物のパス>` は、ローカルの成果物が release のアセットと同じかを確かめる。ソースの zip と tarball は対象外 |
+
+### 手順
+
+1. 保守者が Settings で immutability を有効にします。有効にする前に作った release には効きません。
+2. 新しいタグ名でドラフトの release を作ります。ドラフトの作り方（Web の画面、または `gh release create`）は、このリポジトリで実行して確かめていません。`gh release create` のフラグは未確認なので、CLI のマニュアルで確かめてから使ってください。
+3. `renovate/supply-chain.json` と `renovate/supply-chain-automerge.json` をアセットとして添付します。公開後は変更も削除もできないので、添付する内容はこの時点で確定させます。
+4. 公開します。
+5. 公開後に 2 つのコマンドで確かめます。形は保守者が確認したものです。
+   - `gh release verify <タグ>`
+   - `gh release verify-asset <タグ> <成果物のパス>`（成果物ごとに実行します）
+
+既存のタグ `supply-chain-preset-v1.0.0` を、プリセットの内容を変えずに immutable release にできるかは、**確認できていません。** 確かめる方法は、使い捨ての別のタグ名で上の手順を 1 回通すことです。ただし、公開した release は存在する間は削除できず、削除してもタグ名を再利用できません。試験用のタグも残り続ける前提で、名前を決めてください。
+
+### ルールセットとの併用
+
+ルールセットによるタグの書き換えと削除の禁止は、immutable release に置き換えず、併用します。公式文書から読める範囲では、immutable release が守るのは公開した release のタグとアセットです。release を持たないタグと、公開前のドラフトのタグは、守る対象に含まれないと読めます。この読みは文書の記述からの推測で、実機では確かめていません。
+
+### Reusable_Workflow 3 種の扱い
+
+3 種も、Renovate_Preset と同じ Hub のタグ付きリリースに含めます。呼び出し側の `uses:` は、タグではなく 40 桁のコミット SHA で固定します。release attestation は、そのリリースのコミット SHA とタグを結びつけます。呼び出し側は、`uses:` の SHA が attestation のコミット SHA と一致するかを確かめます。
+
+**attestation の中身の読み方（どのコマンドで取り出し、どの欄を比べるか）は確かめていません。** 上の確かめ方は推測です。
+
+### release attestation が示すものと示さないもの
+
+release attestation が示すのは、公開された release のタグ、コミット SHA、アセットの組が一致することです。ビルドの来歴（SLSA の Build の段階）を示すものではありません。リリースの成果物がどのビルド環境で、どの入力から作られたかは、この attestation からは分かりません。
+
+### 確かめていないこと
+
+- この手順を実行していません。実機で 1 回通すまで、この節の手順は hypothesis です。
+- 既存タグ `supply-chain-preset-v1.0.0` を immutable release にできるか。
+- `gh release create` のフラグと、attestation の取り出し方。
+- ルールセットと immutable release を併用したときの、実際の拒否のされ方。
+
+---
+
 ## 検査が捕まえないドリフト
 
 **翻訳のドリフトのうち、機械検出できるのは値だけです。** 裏づけの書き換えは検出できません。
