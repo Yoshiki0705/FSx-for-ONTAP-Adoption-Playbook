@@ -1,11 +1,22 @@
-# Watches the Aggregator. If the newest run record on the `supply-chain-runs` branch is older than
-# 12 hours, or there is no record (or the branch cannot be read), this job fails and appends to the
-# Hub's failure Issue, the same one the Aggregator's own consecutive failures use, or opens it if none
-# is open. The 12 hours and the Issue handling are decided by the pure core in tools/supply_chain/.
+# Watches the Aggregator. This job fails, and appends to the Hub's failure Issue (the same one the
+# Aggregator's own consecutive failures use, opened here if none is open), when any of these holds:
+#   * the newest run record on the `supply-chain-runs` branch is older than 8 hours (the limit is
+#     `watchdog.limit_hours` of the Policy_File, 8 when the file does not set it), or there is no
+#     record, or the branch cannot be read;
+#   * the latest runs failed in a row;
+#   * the record chain (`prev_record_sha256`) is broken, apart from the tips the chain ledger lists;
+#   * the Policy_File or the chain ledger could not be used (the report then says `error`).
+# The limits and the Issue handling are decided by the pure core in tools/supply_chain/.
 #
-# It does not use the GitHub App: the job's own GITHUB_TOKEN reads the branch (contents: read) and
-# writes the Issue (issues: write). It does not depend on the Aggregator's credentials, so a broken
-# App cannot silence it.
+# The Policy_File and the chain ledger are read from the Cyber-Resilience-Patterns repository at the
+# commit in the repository variable SUPPLY_CHAIN_POLICY_REF, the same variable the Aggregator reads.
+# A variable that is not 40 lowercase hexadecimal digits is reported and nothing is checked out: the
+# default branch is never read, because that would be an unpinned version. The check then fails
+# because the Policy_File cannot be read, and the notice goes out.
+#
+# It does not use the GitHub App: the job's own GITHUB_TOKEN reads the branch and the public policy
+# repository (contents: read) and writes the Issue (issues: write). It does not depend on the
+# Aggregator's credentials, so a broken App cannot silence it.
 #
 # If this workflow itself is disabled nothing notices. GitHub disables scheduled workflows of a
 # repository with no activity for 60 days; a maintainer looks at the Actions page once a month.
@@ -50,20 +61,66 @@ jobs:
           path: runs-branch
           persist-credentials: false
 
-      - name: Check the age of the newest run record
+      # A bad variable must not turn into a checkout of the default branch, and must not end the job
+      # before the check can report it.
+      - name: Check the Policy_File variable
+        id: policy-ref
+        continue-on-error: true
+        env:
+          POLICY_REF: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
+        run: |
+          if ! [[ "$POLICY_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The repository variable SUPPLY_CHAIN_POLICY_REF must be 40 lowercase hexadecimal digits"
+            exit 1
+          fi
+
+      - name: Checkout the Policy_File at the pinned commit
+        id: policy
+        if: ${{ steps.policy-ref.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns
+          ref: ${{ vars.SUPPLY_CHAIN_POLICY_REF }}
+          path: policy
+          persist-credentials: false
+
+      # An absent chain ledger file is read as "no decision". An unreadable Policy_File makes the
+      # command exit 1 and write a report in the error state.
+      - name: Check the run records
         id: check
         continue-on-error: true
         env:
           PYTHONPATH: tools
-        run: python3 -m supply_chain.watchdog_cli --runs-dir runs-branch/runs
+        run: |
+          python3 -m supply_chain.watchdog_cli \
+            --runs-dir runs-branch/runs \
+            --policy-file policy/docs/agent/supply-chain-policy.json \
+            --chain-ack policy/docs/agent/supply-chain-chain-ack.json \
+            --report-file watchdog-report.json
+
+      - name: Show the report in the job summary
+        if: ${{ always() }}
+        run: |
+          if [ -f watchdog-report.json ]; then
+            {
+              echo '## Watchdog report'
+              echo
+              echo '```json'
+              cat watchdog-report.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Append to the failure Issue
         if: ${{ steps.check.outcome == 'failure' }}
         env:
           NOTIFY_TOKEN: ${{ github.token }}
           RUNS_CHECKOUT: ${{ steps.runs.outcome }}
+          POLICY_REF_CHECK: ${{ steps.policy-ref.outcome }}
+          POLICY_CHECKOUT: ${{ steps.policy.outcome }}
         run: |
-          message="The newest Aggregator run record is older than 12 hours, or there is none (checkout of the supply-chain-runs branch: ${RUNS_CHECKOUT})."
+          message="The Aggregator watchdog failed. Possible causes: the newest run record is older than the limit or there is none, the latest runs failed in a row, the record chain is broken, or an input could not be read (checkout of the supply-chain-runs branch: ${RUNS_CHECKOUT}; SUPPLY_CHAIN_POLICY_REF check: ${POLICY_REF_CHECK}; Policy_File checkout: ${POLICY_CHECKOUT}). The job summary holds the report."
           python3 tools/supply_chain_aggregator.py notify-failure \
             --run-id "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --message "$message"
@@ -71,5 +128,5 @@ jobs:
       - name: Fail the job
         if: ${{ steps.check.outcome == 'failure' }}
         run: |
-          echo "::error::The Aggregator has not saved a run record in time"
+          echo "::error::The watchdog found the Aggregator unhealthy or could not check it"
           exit 1
