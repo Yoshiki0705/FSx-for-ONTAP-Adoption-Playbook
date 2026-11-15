@@ -207,5 +207,162 @@ class EpssRedirect(unittest.TestCase):
         self.assertTrue(hasattr(UrllibTransport, "request"))
 
 
+class KevCatalogue(unittest.TestCase):
+    """``fetch_kev`` reads dueDate, forensicTriage and the catalogue's dateReleased, entry by entry.
+
+    The catalogue below is a fake. Its field names come from the models' docstring; the real catalogue was not
+    fetched in this session (no network), so the real shape of ``dateReleased`` is unconfirmed.
+    """
+
+    def fetch(self, doc: Any) -> Any:
+        from supply_chain_io import KEV_URL, fetch_kev
+
+        net = Recorder(lambda url: json_response(doc))
+        client = Client(net, sleep=lambda _: None)
+        result = fetch_kev(client)
+        self.assertEqual(net.urls, [KEV_URL])
+        return result
+
+    @staticmethod
+    def entry(cve: str, **extra: Any) -> dict[str, Any]:
+        return {"cveID": cve, "dateAdded": "2026-11-14", **extra}
+
+    def test_due_date_and_forensic_triage_fill_the_entry(self) -> None:
+        from datetime import date
+
+        from supply_chain.models import KevEntry
+
+        table, catalog, _ = self.fetch(
+            {
+                "catalogVersion": "2026.11.14",
+                "dateReleased": "2026-11-14T15:04:05.123Z",
+                "vulnerabilities": [
+                    self.entry(
+                        "CVE-2026-0001",
+                        dueDate="2026-12-05",
+                        forensicTriage="Yes",
+                        knownRansomwareCampaignUse="Known",
+                    ),
+                    self.entry(
+                        "CVE-2026-0002",
+                        dueDate="2026-12-06",
+                        forensicTriage="No",
+                        knownRansomwareCampaignUse="Unknown",
+                    ),
+                ],
+            }
+        )
+        self.assertEqual(catalog, "2026.11.14")
+        self.assertEqual(
+            table["CVE-2026-0001"],
+            KevEntry(date(2026, 11, 14), True, date(2026, 12, 5), True),
+        )
+        self.assertIsInstance(table["CVE-2026-0001"], KevEntry)
+        self.assertEqual(
+            table["CVE-2026-0002"],
+            KevEntry(date(2026, 11, 14), None, date(2026, 12, 6), False),
+        )
+
+    def test_a_missing_field_is_none_and_a_bad_field_does_not_hide_the_others(
+        self,
+    ) -> None:
+        from datetime import date
+
+        table, _, _ = self.fetch(
+            {
+                "vulnerabilities": [
+                    self.entry("CVE-2026-0010"),
+                    self.entry(
+                        "CVE-2026-0011",
+                        dueDate="soon",
+                        forensicTriage="Yes",
+                        knownRansomwareCampaignUse="Known",
+                    ),
+                    self.entry(
+                        "CVE-2026-0012", dueDate=20261205, forensicTriage="maybe"
+                    ),
+                    self.entry(
+                        "CVE-2026-0013", dueDate="2026-12-05", forensicTriage=None
+                    ),
+                ]
+            }
+        )
+        self.assertEqual(
+            tuple(table["CVE-2026-0010"]), (date(2026, 11, 14), None, None, None)
+        )
+        self.assertEqual(
+            tuple(table["CVE-2026-0011"]), (date(2026, 11, 14), True, None, True)
+        )
+        self.assertEqual(
+            tuple(table["CVE-2026-0012"]), (date(2026, 11, 14), None, None, None)
+        )
+        self.assertEqual(
+            tuple(table["CVE-2026-0013"]),
+            (date(2026, 11, 14), None, date(2026, 12, 5), None),
+        )
+
+    def test_date_released_is_read_as_utc_without_a_fraction_of_a_second(self) -> None:
+        from datetime import UTC, datetime
+
+        for raw in (
+            "2026-11-14T15:04:05.123Z",
+            "2026-11-14T15:04:05.1233Z",
+            "2026-11-14T15:04:05Z",
+        ):
+            with self.subTest(raw=raw):
+                _, _, released = self.fetch(
+                    {"dateReleased": raw, "vulnerabilities": []}
+                )
+                self.assertEqual(released, datetime(2026, 11, 14, 15, 4, 5, tzinfo=UTC))
+
+    def test_an_unreadable_date_released_is_none(self) -> None:
+        for doc in (
+            {"vulnerabilities": []},
+            {"dateReleased": "garbage", "vulnerabilities": []},
+            {"dateReleased": "2026-11-14T15:04:05", "vulnerabilities": []},
+            {"dateReleased": 20261114, "vulnerabilities": []},
+        ):
+            with self.subTest(doc=doc):
+                _, _, released = self.fetch(doc)
+                self.assertIsNone(released)
+
+    def test_the_released_time_passes_the_snapshot_check(self) -> None:
+        from supply_chain.models import FeedSnapshot
+
+        table, _, released = self.fetch(
+            {
+                "dateReleased": "2026-11-14T15:04:05.999Z",
+                "vulnerabilities": [self.entry("CVE-2026-0001")],
+            }
+        )
+        FeedSnapshot(
+            kev=table,
+            epss={},
+            malicious={},
+            malicious_withdrawn={},
+            malicious_delisted=frozenset(),
+            malicious_unconfirmed=frozenset(),
+            kev_released_at=released,
+        )
+
+
+class LabelCalls(unittest.TestCase):
+    def test_delete_sends_a_delete_with_the_token_and_no_body(self) -> None:
+        seen: list[tuple[str, str, Any]] = []
+
+        class Net:
+            def request(
+                self, method: str, url: str, headers: Any, body: bytes | None
+            ) -> Response:
+                seen.append((method, url, body))
+                return json_response([], status=200)
+
+        github = GitHubApi(Client(Net(), sleep=lambda _: None), "token-value")
+        self.assertEqual(github.delete("/repos/o/r/issues/7/labels/x").status, 200)
+        self.assertEqual(
+            seen, [("DELETE", f"{ROOT_URL}/repos/o/r/issues/7/labels/x", None)]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
