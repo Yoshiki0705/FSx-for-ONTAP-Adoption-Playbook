@@ -238,6 +238,20 @@ class Client:
         return resp.body
 
 
+_LINK_ENTRY = re.compile(r"<([^>]*)>([^<]*)")
+
+
+def _next_link(header: str | None) -> str | None:
+    """The URL of rel="next" in a Link header, or None."""
+    if not header:
+        return None
+    for target, params in _LINK_ENTRY.findall(header):
+        for rel in re.findall(r'rel\s*=\s*"?([^";,]+)"?', params):
+            if "next" in rel.split():
+                return target
+    return None
+
+
 class GitHubApi:
     """One GitHub REST token. The Aggregator holds two of these and never mixes them up."""
 
@@ -270,15 +284,28 @@ class GitHubApi:
     def pages(
         self, path: str, params: Mapping[str, Any] | None = None, key: str | None = None
     ) -> Iterator[Any]:
-        """Yield every item of a paginated list, 100 per page, until a short page."""
-        for page in range(1, MAX_PAGES + 1):
-            data = self.get_json(
-                path, {**(params or {}), "per_page": PER_PAGE, "page": page}
-            )
-            items = data[key] if key else data
-            yield from items
-            if len(items) < PER_PAGE:
+        """Yield every item of a paginated list by following the Link header's rel="next".
+
+        No ``page`` parameter is sent: some lists (Dependabot alerts) refuse it and page by cursor.
+        A next URL must be https on the same host as the API root; anything else is an error. A
+        response without a next link is the last page.
+        """
+        root_host = urllib.parse.urlsplit(self._root).netloc.lower()
+        url: str | None = self._url(path, {**(params or {}), "per_page": PER_PAGE})
+        for _ in range(MAX_PAGES):
+            resp = self._client.send("GET", url, token=self._token)
+            if not resp.ok:
+                raise HttpError("GET", url, resp.status, resp.text()[:200])
+            data = resp.json()
+            yield from (data[key] if key else data)
+            url = _next_link(resp.headers.get("link"))
+            if url is None:
                 return
+            parts = urllib.parse.urlsplit(url)
+            if parts.scheme != "https" or parts.netloc.lower() != root_host:
+                raise HttpError(
+                    "GET", url, resp.status, "next link leaves the API host"
+                )
         raise HttpError("GET", self._url(path), 0, f"more than {MAX_PAGES} pages")
 
     def download(self, url: str) -> bytes:
@@ -317,6 +344,39 @@ def fetch_kev(client: Client) -> tuple[dict[str, tuple[date, bool | None]], str 
     return table, doc.get("catalogVersion")
 
 
+MAX_FEED_REDIRECTS = 3
+
+
+def _get_following_same_host(
+    client: Client, url: str, headers: Mapping[str, str]
+) -> Response:
+    """GET without a token, following at most MAX_FEED_REDIRECTS redirects to the same host over https.
+
+    Raises:
+        HttpError: A redirect without Location, to another host or scheme, or a further redirect.
+    """
+    origin = urllib.parse.urlsplit(url).netloc.lower()
+    current = url
+    resp = client.send("GET", current, headers=headers)
+    hops = 0
+    while resp.status in (301, 302, 303, 307, 308):
+        location = resp.headers.get("location")
+        if not location:
+            raise HttpError("GET", current, resp.status, "redirect without Location")
+        if hops >= MAX_FEED_REDIRECTS:
+            raise HttpError("GET", current, resp.status, "too many redirects")
+        target = urllib.parse.urljoin(current, location)
+        parts = urllib.parse.urlsplit(target)
+        if parts.scheme != "https" or parts.netloc.lower() != origin:
+            raise HttpError(
+                "GET", current, resp.status, "redirect leaves the original https host"
+            )
+        current = target
+        resp = client.send("GET", current, headers=headers)
+        hops += 1
+    return resp
+
+
 _EPSS_HEADER = re.compile(r"^#model_version:([^,]+),score_date:(\d{4}-\d{2}-\d{2})")
 
 
@@ -327,7 +387,7 @@ def fetch_epss(
 
     The model version and the date are read from the file's first line, not assumed.
     """
-    resp = client.send("GET", EPSS_URL, headers={"Accept": "*/*"})
+    resp = _get_following_same_host(client, EPSS_URL, {"Accept": "*/*"})
     if not resp.ok:
         raise HttpError("GET", EPSS_URL, resp.status)
     lines = io.TextIOWrapper(io.BytesIO(gzip.decompress(resp.body)), encoding="utf-8")
