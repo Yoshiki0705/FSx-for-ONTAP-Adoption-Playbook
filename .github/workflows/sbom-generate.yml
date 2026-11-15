@@ -7,11 +7,20 @@
 # public-repository ceiling):
 #   sbom.spdx.json            SPDX 2.3, with the commit SHA, the creation time (UTC, seconds) and the tool
 #   findings.normalized.json  the scan of that SBOM, in the shape tools/supply_chain/normalized.py reads
-#   generation.json           purls, directness, author, format name and version, generation stage
+#   generation.json           purls, directness, author, format name and version, generation stage,
+#                             skipped_paths
 #   image-sboms/*.spdx.json   one per container image, when `image-ref` is given
 #   lambda-inventory.json     Lambda functions found in CloudFormation / SAM / CDK templates, when any exist
 # A commit with no components still gets an SBOM: `generation.json` says `component_count: 0` and the
 # SPDX document says `CONTAINS NONE`.
+#
+# Exclusion. Nothing is excluded unless the caller names it in `skip-paths`; the default is empty. A wrong
+# exclusion removes a real dependency from the SBOM and the scan, so name only what is neither installed
+# nor shipped, such as test fixtures. The excluded paths stay on record in `skipped_paths` of
+# `generation.json`. The exclusion applies to the repository working tree only (`trivy fs`, `syft dir:`,
+# and the template inventory). The container-image SBOMs are not filtered, because `skip-paths` names
+# paths of the working tree, not paths inside the image. `trivy sbom` and `grype sbom:` read only what the
+# SBOM lists, so they need no exclusion of their own.
 #
 # What it does NOT do, on purpose:
 #   * It does not attach the SBOM to the container image, attach it to a release, or attest it. The
@@ -50,6 +59,11 @@ on:
         type: number
         required: false
         default: 90
+      skip-paths:
+        description: Directories or globs, one per line and relative to the repository root, left out of SBOM generation and the scan. Empty excludes nothing
+        type: string
+        required: false
+        default: ''
     outputs:
       sbom-artifact-name:
         description: Name of the uploaded artifact, sbom-<commit-sha>
@@ -84,6 +98,7 @@ jobs:
           IMAGE_BUILD_COMMAND: ${{ inputs.image-build-command }}
           IMAGE_REF: ${{ inputs.image-ref }}
           RETENTION_DAYS: ${{ inputs.retention-days }}
+          SKIP_PATHS: ${{ inputs.skip-paths }}
         run: |
           case "$RETENTION_DAYS" in
             ''|*[!0-9]*)
@@ -111,6 +126,49 @@ jobs:
               ;;
           esac
 
+          # skip-paths: one repository-relative directory or glob per line. Each accepted line is written,
+          # without a leading ./ or a trailing /, to skip-paths.txt; later steps read only that file.
+          skip_file="$RUNNER_TEMP/skip-paths.txt"
+          : > "$skip_file"
+          entry_count=0
+          line_no=0
+          while IFS= read -r line || [ -n "$line" ]; do
+            line_no=$((line_no + 1))
+            line="${line%$'\r'}"
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+            if [ -z "$line" ]; then
+              continue
+            fi
+            entry_count=$((entry_count + 1))
+            if [ "$entry_count" -gt 50 ]; then
+              echo "::error::skip-paths has more than 50 entries"
+              exit 1
+            fi
+            case "$line" in
+              /*|'~'*|-*|*..*|*\\*|*//*)
+                echo "::error::skip-paths line $line_no is absolute, starts with ~ or -, or contains .. or a backslash or //"
+                exit 1
+                ;;
+            esac
+            if ! [[ "$line" =~ ^[A-Za-z0-9._/*?-]+$ ]]; then
+              echo "::error::skip-paths line $line_no contains a character outside A-Z a-z 0-9 . _ / * ? -"
+              exit 1
+            fi
+            entry="$line"
+            while [ "${entry#./}" != "$entry" ]; do
+              entry="${entry#./}"
+            done
+            if [ -z "$entry" ] || [ "$entry" = "." ] || [[ "$entry" =~ ^[*/]+$ ]]; then
+              echo "::error::skip-paths line $line_no matches the whole repository"
+              exit 1
+            fi
+            while [ "${entry%/}" != "$entry" ]; do
+              entry="${entry%/}"
+            done
+            printf '%s\n' "$entry" >> "$skip_file"
+          done <<< "$SKIP_PATHS"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -132,10 +190,11 @@ jobs:
 
               sc.py stamp <sbom.spdx.json>                       add the commit SHA, check created / tool / commit
               sc.py findings trivy|grype <raw.json> <out.json> <tool-name> <tool-version> [<more raw.json> ...]
-              sc.py inventory <root> <out.json>                  Lambda functions in CloudFormation / SAM / CDK templates
-              sc.py generation <sbom.spdx.json> <out.json> <series> <image-count>
+              sc.py inventory <root> <out.json> [<skip-paths.txt>]   Lambda functions in CloudFormation / SAM / CDK templates
+              sc.py generation <sbom.spdx.json> <out.json> <series> <image-count> [<skip-paths.txt>]
           """
 
+          import fnmatch
           import glob
           import json
           import os
@@ -264,15 +323,41 @@ jobs:
               return yaml.load(text, Loader=Loader)
 
 
-          def inventory(root, out_path):
+          def read_skip_paths(path):
+              if not path:
+                  return []
+              seen = []
+              for raw in open(path, encoding="utf-8").read().splitlines():
+                  entry = raw.strip()
+                  if entry and entry not in seen:
+                      seen.append(entry)
+              return seen
+
+
+          def is_skipped(rel, patterns):
+              rel = rel.replace(os.sep, "/")
+              for pattern in patterns:
+                  candidates = [pattern]
+                  if pattern.startswith("**/"):
+                      candidates.append(pattern[3:])  # `**/x` also names `x` at the root
+                  for c in candidates:
+                      if fnmatch.fnmatchcase(rel, c) or fnmatch.fnmatchcase(rel, c + "/*"):
+                          return True
+              return False
+
+
+          def inventory(root, out_path, skip_paths_file=None):
               import yaml  # an ImportError here is a broken install and must fail the step, not read as "no templates"
 
               skip = ("/node_modules/", "/.git/")
+              skipped = read_skip_paths(skip_paths_file)
               paths = sorted(
                   p
                   for pattern in ("**/*.template.json", "**/cdk.out/*.json", "**/*.yaml", "**/*.yml")
                   for p in glob.glob(os.path.join(root, pattern), recursive=True)
-                  if not any(s in p for s in skip) and os.path.getsize(p) <= 2_000_000
+                  if not any(s in p for s in skip)
+                  and not is_skipped(os.path.relpath(p, root), skipped)
+                  and os.path.getsize(p) <= 2_000_000
               )
               functions, templates = [], 0
               for path in sorted(set(paths)):
@@ -311,7 +396,7 @@ jobs:
               print(f"{out_path}: {templates} template(s), {len(functions)} function(s)")
 
 
-          def generation(sbom_path, out_path, series, image_count):
+          def generation(sbom_path, out_path, series, image_count, skip_paths_file=None):
               doc = json.load(open(sbom_path, encoding="utf-8"))
               packages = [p for p in doc.get("packages", []) if purl_of(p)]
               info = doc["creationInfo"]
@@ -332,6 +417,7 @@ jobs:
                   "directness": {p["SPDXID"]: ("direct" if p["SPDXID"] in direct else "unknown") for p in packages},
                   "purls": sorted(purl_of(p) for p in packages),
                   "image_sbom_count": int(image_count),
+                  "skipped_paths": read_skip_paths(skip_paths_file),
               }
               json.dump(out, open(out_path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
               print(f"{out_path}: component_count={out['component_count']}")
@@ -393,10 +479,23 @@ jobs:
           out="$RUNNER_TEMP/out"
           raw="$RUNNER_TEMP/raw"
           sc="$RUNNER_TEMP/sc.py"
+          skip_file="$RUNNER_TEMP/skip-paths.txt"
+          # Exclusions apply to the working-tree SBOM only, never to the container-image SBOMs.
+          skip_args=()
+          while IFS= read -r skip_entry; do
+            if [ -z "$skip_entry" ]; then
+              continue
+            fi
+            if [ "$SCANNER_SERIES" = "trivy" ]; then
+              skip_args+=(--skip-dirs "$skip_entry" --skip-files "$skip_entry")
+            else
+              skip_args+=(--exclude "./$skip_entry" --exclude "./$skip_entry/**")
+            fi
+          done < "$skip_file"
           if [ "$SCANNER_SERIES" = "trivy" ]; then
             # SPDX 2.3 is Trivy's JSON SPDX output. --exit-code 0 is explicit: a finding is not a failure
             # of this workflow, it is the data; an error of the scan itself still fails the step.
-            trivy fs --quiet --format spdx-json --output "$out/sbom.spdx.json" .
+            trivy fs --quiet --format spdx-json --output "$out/sbom.spdx.json" ${skip_args[@]+"${skip_args[@]}"} .
             python3 "$sc" stamp "$out/sbom.spdx.json"
             trivy sbom --quiet --format json --exit-code 0 --output "$raw/source.json" "$out/sbom.spdx.json"
             raws=("$raw/source.json")
@@ -409,7 +508,7 @@ jobs:
             python3 "$sc" findings trivy "${raws[0]}" "$out/findings.normalized.json" trivy "$TRIVY_VERSION" "${raws[@]:1}"
           else
             # spdx-json@2.3 names the version: Syft's default `spdx-json` is SPDX 3.0, which the reader refuses.
-            syft dir:. --quiet --output "spdx-json@2.3=$out/sbom.spdx.json"
+            syft dir:. --quiet --output "spdx-json@2.3=$out/sbom.spdx.json" ${skip_args[@]+"${skip_args[@]}"}
             python3 "$sc" stamp "$out/sbom.spdx.json"
             grype "sbom:$out/sbom.spdx.json" --quiet --output json --file "$raw/source.json"
             raws=("$raw/source.json")
@@ -421,14 +520,15 @@ jobs:
             fi
             python3 "$sc" findings grype "${raws[0]}" "$out/findings.normalized.json" syft+grype "${SYFT_VERSION}+${GRYPE_VERSION}" "${raws[@]:1}"
           fi
-          python3 "$sc" generation "$out/sbom.spdx.json" "$out/generation.json" "$SCANNER_SERIES" "$(find "$out/image-sboms" -name '*.spdx.json' | wc -l | tr -d ' ')"
-          python3 "$sc" inventory . "$out/lambda-inventory.json"
+          python3 "$sc" generation "$out/sbom.spdx.json" "$out/generation.json" "$SCANNER_SERIES" "$(find "$out/image-sboms" -name '*.spdx.json' | wc -l | tr -d ' ')" "$skip_file"
+          python3 "$sc" inventory . "$out/lambda-inventory.json" "$skip_file"
           {
             echo "### sbom-generate"
             echo
             echo "- scanner series: $SCANNER_SERIES"
             echo "- components: $(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["component_count"])' "$out/generation.json")"
             echo "- findings: $(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["findings"]))' "$out/findings.normalized.json")"
+            echo "- skipped paths: $(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["skipped_paths"]))' "$out/generation.json")"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Name the artifact
