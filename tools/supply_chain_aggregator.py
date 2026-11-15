@@ -66,7 +66,14 @@ from supply_chain import (
     threshold,
     vex,
 )
-from supply_chain.models import Component, Finding, ManagedIssue, PullRequestRef, Repo
+from supply_chain.models import (
+    Component,
+    Finding,
+    KevEntry,
+    ManagedIssue,
+    PullRequestRef,
+    Repo,
+)
 from supply_chain.policy import PolicyError, parse_policy
 from supply_chain_adapters import spdx
 from supply_chain_io import (
@@ -85,6 +92,13 @@ from supply_chain_io import (
 LABEL = "supply-chain-aggregator"
 LABEL_COLOR = "ededed"
 LABEL_DESCRIPTION = "Opened and maintained by the supply-chain Aggregator"
+OVERDUE_COLOR = "b60205"
+OVERDUE_DESCRIPTION = "The Response_Target due time of this Issue has passed (set by the supply-chain Aggregator)"
+# name -> (color, description), for every label this module may create.
+LABEL_SPECS = {
+    LABEL: (LABEL_COLOR, LABEL_DESCRIPTION),
+    models.OVERDUE_LABEL: (OVERDUE_COLOR, OVERDUE_DESCRIPTION),
+}
 RUNS_BRANCH = "supply-chain-runs"
 RECENT_OUTCOMES = max(run_record.FAILURE_STREAK_THRESHOLD, 3)
 PR_SEARCH_CAP = 60
@@ -168,43 +182,94 @@ def list_managed_issues(
                 vuln_id=marker.vuln_id,
                 state=item["state"],
                 body_state=issue_body.parse_state(item.get("body")),
+                labels=_label_names(item.get("labels")),
             )
         )
         raw_items.append(item)
     return managed, raw_items
 
 
-def ensure_label(api: GitHubApi, repo: Repo, done: set[str]) -> None:
-    """Create the identification label once per repository if it does not exist."""
-    key = _repo_text(repo).lower()
+def _label_names(raw: object) -> frozenset[str]:
+    """Names of the labels of an Issue as the API lists them (objects, or bare strings in older shapes)."""
+    names: set[str] = set()
+    for label in raw if isinstance(raw, list) else ():
+        name = label if isinstance(label, str) else (label or {}).get("name")
+        if isinstance(name, str) and name:
+            names.add(name)
+    return frozenset(names)
+
+
+def ensure_label(api: GitHubApi, repo: Repo, done: set[str], name: str = LABEL) -> None:
+    """Create a label (by default the identification label) once per repository if it does not exist."""
+    key = f"{_repo_text(repo).lower()}:{name}"
     if key in done:
         return
+    color, description = LABEL_SPECS[name]
     path = f"/repos/{_repo_text(repo)}/labels"
-    if api.get(f"{path}/{urllib.parse.quote(LABEL)}").status == 404:
+    if api.get(f"{path}/{urllib.parse.quote(name, safe='')}").status == 404:
         resp = api.write(
             "POST",
             path,
-            {"name": LABEL, "color": LABEL_COLOR, "description": LABEL_DESCRIPTION},
+            {"name": name, "color": color, "description": description},
         )
         if resp.status not in (201, 422):  # 422: it was created in between
             raise HttpError("POST", path, resp.status, resp.text()[:200])
     done.add(key)
 
 
+def set_issue_labels(
+    api: GitHubApi,
+    repo: Repo,
+    number: int,
+    add: Sequence[str],
+    remove: Sequence[str],
+    labels_done: set[str],
+) -> None:
+    """Add and remove labels on an Issue. A label that is already off the Issue is not an error.
+
+    Endpoints (GitHub REST, Issues > Labels): ``POST /repos/{owner}/{repo}/issues/{n}/labels`` with
+    ``{"labels": [...]}`` and ``DELETE /repos/{owner}/{repo}/issues/{n}/labels/{name}``. These were written from
+    memory of the reference, without a network to read it against.
+    """
+    base = f"/repos/{_repo_text(repo)}/issues/{number}/labels"
+    if add:
+        for name in add:
+            ensure_label(api, repo, labels_done, name)
+        resp = api.write("POST", base, {"labels": list(add)})
+        if not resp.ok:
+            raise HttpError("POST", base, resp.status, resp.text()[:200])
+    for name in remove:
+        path = f"{base}/{urllib.parse.quote(name, safe='')}"
+        resp = api.delete(path)
+        if not resp.ok and resp.status != 404:
+            raise HttpError("DELETE", path, resp.status, resp.text()[:200])
+
+
 def apply_action(
     api: GitHubApi, action: models.IssueAction, labels_done: set[str]
 ) -> int | None:
-    """Apply one planned Issue operation. Returns the Issue number. Raises HttpError on a refusal."""
+    """Apply one planned Issue operation. Returns the Issue number. Raises HttpError on a refusal.
+
+    An ``update`` with no body changes labels and nothing else: no body is written for it.
+    """
     base = f"/repos/{_repo_text(action.repo)}/issues"
     if action.op == "create":
         ensure_label(api, action.repo, labels_done)
+        for name in action.add_labels:
+            ensure_label(api, action.repo, labels_done, name)
         title = (
             SUMMARY_TITLE
             if action.kind == "summary"
             else f"{FINDING_TITLE_PREFIX}{action.vuln_id}"
         )
         resp = api.write(
-            "POST", base, {"title": title, "body": action.body, "labels": [LABEL]}
+            "POST",
+            base,
+            {
+                "title": title,
+                "body": action.body,
+                "labels": [LABEL, *action.add_labels],
+            },
         )
         if resp.status != 201:
             raise HttpError("POST", base, resp.status, resp.text()[:200])
@@ -221,10 +286,13 @@ def apply_action(
     if action.number is None:
         raise HttpError("PATCH", base, 0, "action has no Issue number")
     path = f"{base}/{action.number}"
+    payload: dict[str, Any] | None
     if action.op == "update":
-        payload: dict[str, Any] = {"body": action.body}
+        payload = {"body": action.body} if action.body is not None else None
     elif action.op == "reopen":
-        payload = {"state": "open", "body": action.body}
+        payload = {"state": "open"}
+        if action.body is not None:
+            payload["body"] = action.body
     else:  # close
         payload = {
             "state": "closed",
@@ -232,18 +300,190 @@ def apply_action(
             if action.close_reason == "resolved"
             else "not_planned",
         }
-    resp = api.write("PATCH", path, payload)
-    if not resp.ok:
-        raise HttpError("PATCH", path, resp.status, resp.text()[:200])
-    if (
-        action.op == "close"
-    ):  # the reason is recorded as a comment; failing to comment does not undo the close
+    if payload is not None:
+        resp = api.write("PATCH", path, payload)
+        if not resp.ok:
+            raise HttpError("PATCH", path, resp.status, resp.text()[:200])
+    if action.op == "close":
+        # the reason is recorded as a comment; failing to comment does not undo the close
         api.write(
             "POST",
             f"{path}/comments",
             {"body": f"Closed by the Aggregator: {action.close_reason}"},
         )
+    elif action.add_labels or action.remove_labels:
+        set_issue_labels(
+            api,
+            action.repo,
+            action.number,
+            action.add_labels,
+            action.remove_labels,
+            labels_done,
+        )
     return action.number
+
+
+# --- duplicates ----------------------------------------------------------------------------------------
+
+
+def _state_date(raw: object) -> date | None:
+    if not isinstance(raw, str):
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _rebuild_finding_issue(
+    issue: ManagedIssue,
+    body: object,
+    representative: str,
+    run_id: str,
+    now: datetime,
+) -> issue_body.FindingIssue | None:
+    """Rebuild what the body of ``issue`` shows from its state block, with ``duplicate_of`` set.
+
+    Returns ``None`` when the state cannot be read back faithfully: a missing time, a KEV listing without its
+    date, or components left out of the body for length (a rebuilt body would no longer say so). The Issue is
+    then left as it is.
+    """
+    state = issue.body_state or {}
+    marker = issue_body.parse_marker(body if isinstance(body, str) else None)
+    detected, opened, due = (
+        _parse_time(state.get(k)) for k in ("detected_at", "opened_at", "due_at")
+    )
+    if (
+        marker is None
+        or issue.vuln_id is None
+        or detected is None
+        or opened is None
+        or due is None
+    ):
+        return None
+    if state.get("components_omitted") not in (0, None):
+        return None
+    components: list[Component] = []
+    raw_components = state.get("components")
+    for item in raw_components if isinstance(raw_components, list) else ():
+        if not isinstance(item, Mapping) or not isinstance(item.get("purl"), str):
+            return None
+        version = (
+            item["version"] if isinstance(item.get("version"), str) else models.UNKNOWN
+        )
+        components.append(
+            Component(
+                purl=item["purl"],
+                name=normalized.component_from_purl(item["purl"]).name,
+                version=version,
+            )
+        )
+    kev: KevEntry | None = None
+    if state.get("kev_listed") is True:
+        raw_kev = state.get("kev")
+        if not isinstance(raw_kev, Mapping):
+            return None
+        added = _state_date(raw_kev.get("date_added"))
+        if added is None:
+            return None
+        triage = raw_kev.get("forensic_triage")
+        kev = KevEntry(
+            added,
+            True if raw_kev.get("known_ransomware_campaign_use") is True else None,
+            _state_date(raw_kev.get("due_date")),
+            triage if isinstance(triage, bool) else None,
+        )
+    epss: tuple[str, date, str] | None = None
+    raw_epss = state.get("epss")
+    if isinstance(raw_epss, Mapping):
+        when = _state_date(raw_epss.get("date"))
+        score, model = raw_epss.get("score"), raw_epss.get("model_version")
+        if when is None or not isinstance(score, str) or not isinstance(model, str):
+            return None
+        epss = (score, when, model)
+    severity = state.get("cvss_severity")
+    history: list[issue_body.HistoryEntry] = []
+    raw_history = state.get("history")
+    for entry in raw_history if isinstance(raw_history, list) else ():
+        if not isinstance(entry, Mapping):
+            continue
+        at = _parse_time(entry.get("at"))
+        if (
+            at is not None
+            and isinstance(entry.get("op"), str)
+            and isinstance(entry.get("run_id"), str)
+        ):
+            history.append(issue_body.HistoryEntry(entry["op"], entry["run_id"], at))
+    history.append(issue_body.HistoryEntry("update", run_id, now))
+    sources = state.get("cvss_sources")
+    fixed, alias_only = state.get("fixed_version"), state.get("vex_names_alias_only")
+    malicious = state.get("malicious")
+    return issue_body.FindingIssue(
+        repo=issue.repo,
+        vuln_id=issue.vuln_id,
+        aliases=marker.aliases,
+        components=tuple(components),
+        cvss_severity=severity
+        if severity in ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+        else None,
+        kev=kev,
+        epss=epss,
+        fixed_version=fixed if isinstance(fixed, str) else None,
+        origin_at=_parse_time(state.get("origin_at")),
+        origin_is_date_only=state.get("origin_is_date_only") is True,
+        detected_at=detected,
+        opened_at=opened,
+        due_at=due,
+        last_run_id=run_id,
+        history=tuple(history),
+        malicious=malicious if isinstance(malicious, bool) else None,
+        kev_first_release_at=_parse_time(state.get("kev_first_release_at")),
+        cvss_sources=tuple(s for s in sources if isinstance(s, str))
+        if isinstance(sources, list)
+        else (),
+        duplicate_of=representative,
+        vex_names_alias_only=alias_only if isinstance(alias_only, str) else None,
+    )
+
+
+def duplicate_updates(
+    plan: models.Plan,
+    issues: Sequence[ManagedIssue],
+    raw: Mapping[tuple[str, int], Mapping[str, Any]],
+    run_id: str,
+    now: datetime,
+) -> list[models.IssueAction]:
+    """Updates that write ``duplicate_of`` into the Issues the plan names as duplicates.
+
+    The Issue stays open. One whose state already names the same representative is left alone, so the next
+    run writes nothing. The plan names the duplicates and the representative; it does not render their bodies.
+    """
+    by_key = {(_repo_text(i.repo).lower(), i.number): i for i in issues}
+    out: list[models.IssueAction] = []
+    for repo, number, representative in plan.duplicate_of:
+        key = (_repo_text(repo).lower(), number)
+        issue, item = by_key.get(key), raw.get(key)
+        if issue is None or item is None or issue.vuln_id is None:
+            continue
+        if (issue.body_state or {}).get("duplicate_of") == representative:
+            continue
+        data = _rebuild_finding_issue(
+            issue, item.get("body"), representative, run_id, now
+        )
+        if data is None:
+            continue
+        out.append(
+            models.IssueAction(
+                "update",
+                repo,
+                "finding",
+                issue.vuln_id,
+                number,
+                issue_body.render_finding(data),
+                None,
+            )
+        )
+    return out
 
 
 # --- layers A and B ------------------------------------------------------------------------------
@@ -260,11 +500,22 @@ class RepoFetch:
     findings: list[Finding] = field(default_factory=list)
     layer_ok: dict[str, bool] = field(default_factory=lambda: {"A": False, "B": False})
     failures: list[run_record.FetchFailure] = field(default_factory=list)
+    # An SBOM with no component and incomplete coverage was read: the repository was not scanned, and nothing
+    # read from it (a missing finding included) is a ground to close an Issue.
+    unscanned: bool = False
 
     def fail(self, layer: models.Layer, reason: str) -> None:
         self.failures.append(
             run_record.FetchFailure(_repo_text(self.repo), layer, reason[:300])
         )
+
+
+def _sbom_unscanned(info: spdx.SbomInfo) -> bool:
+    """True when the SBOM lists no addressable package and says so by incomplete coverage (Requirement 4.14).
+
+    A document that declares itself empty (``CONTAINS`` -> ``NONE``) has complete coverage and is a real empty.
+    """
+    return info.component_count == 0 and not info.coverage_complete
 
 
 def _normalize_name(name: str) -> str:
@@ -288,10 +539,46 @@ def _purl_for_alert(repo: RepoFetch, ecosystem: str, name: str) -> list[Componen
     ]
 
 
+def _advisory_type(raw: object) -> models.AdvisoryType | None:
+    """The advisory ``type`` of a Dependabot alert's ``security_advisory``, read the way the core reads it.
+
+    ``malware`` stays ``malware``; ``reviewed``, ``unreviewed`` and ``vulnerability`` are ``vulnerability``;
+    anything else, and a missing field, is ``None``. Whether the alert object carries ``type`` at all was not
+    confirmed against the reference (no network when this was written), so a missing field is the normal case.
+    """
+    text = raw.strip().lower() if isinstance(raw, str) else ""
+    if text == "malware":
+        return "malware"
+    return (
+        "vulnerability" if text in ("reviewed", "unreviewed", "vulnerability") else None
+    )
+
+
+def _cvss_source(advisory: Mapping[str, Any]) -> str | None:
+    """Which CVSS version the alert carries a score for, as ``GHSA:CVSS_V4`` or ``GHSA:CVSS_V3``. Display only.
+
+    Version 4 is named when its score is above zero, else version 3. This reads the presence of a score in
+    ``cvss_severities``; it does not know which of the two GitHub's ``severity`` was derived from, so it is a
+    guess about the source and never an input to a decision.
+    """
+    severities = advisory.get("cvss_severities")
+    if not isinstance(severities, Mapping):
+        return None
+    for key, name in (("cvss_v4", "GHSA:CVSS_V4"), ("cvss_v3", "GHSA:CVSS_V3")):
+        entry = severities.get(key)
+        score = entry.get("score") if isinstance(entry, Mapping) else None
+        if isinstance(score, int | float) and not isinstance(score, bool) and score > 0:
+            return name
+    return None
+
+
 def findings_from_alerts(
     repo: RepoFetch, alerts: Iterable[Mapping[str, Any]], now: datetime
 ) -> list[Finding]:
-    """Convert open Dependabot alerts to Findings (layer A). The CVE is the representative id."""
+    """Convert open Dependabot alerts to Findings (layer A). The CVE is the representative id.
+
+    Aliases are the GHSA identifier of a record that has a CVE, and nothing else.
+    """
     out: list[Finding] = []
     for alert in alerts:
         advisory, vulnerability = (
@@ -301,6 +588,13 @@ def findings_from_alerts(
         cve, ghsa = advisory.get("cve_id"), advisory["ghsa_id"]
         patched = vulnerability.get("first_patched_version") or {}
         package = vulnerability["package"]
+        advisory_type = _advisory_type(advisory.get("type"))
+        # A malware advisory has no severity, as in the normalized findings of layer B.
+        severity = (
+            None
+            if advisory_type == "malware"
+            else normalized.normalize_severity(advisory.get("severity"))
+        )
         for component in _purl_for_alert(repo, package["ecosystem"], package["name"]):
             out.append(
                 Finding(
@@ -308,13 +602,13 @@ def findings_from_alerts(
                     vuln_id=cve or ghsa,
                     aliases=(ghsa,) if cve else (),
                     component=component,
-                    cvss_severity=normalized.normalize_severity(
-                        advisory.get("severity")
-                    ),
+                    cvss_severity=severity,
                     fixed_version=patched.get("identifier"),
                     advisory_published_at=parse_osv_time(advisory.get("published_at")),
                     layer="A",
                     first_observed_component_at=now,
+                    advisory_type=advisory_type,
+                    cvss_source=_cvss_source(advisory) if severity else None,
                 )
             )
     return out
@@ -350,7 +644,13 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
 
     try:  # layer A: the dependency graph export, which only supplies components
         sbom = api.get_json(f"/repos/{name}/dependency-graph/sbom")["sbom"]
-        for component in spdx.parse_spdx(sbom).components:
+        info = spdx.parse_spdx(sbom)
+        if _sbom_unscanned(info):
+            result.unscanned = True
+            raise ValueError(
+                "no package of the export has a purl with a version, so nothing was scanned"
+            )
+        for component in info.components:
             result.components.setdefault(component.purl, component)
     except (
         HttpError,
@@ -360,6 +660,10 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         spdx.SbomFormatError,
     ) as exc:
         result.fail("A", f"sbom export: {exc}")
+    if result.unscanned:
+        return (
+            result  # not scanned: neither the alerts nor layer B are read as an answer
+        )
     try:  # layer A: Dependabot alerts, which supply the findings
         alerts = list(api.pages(f"/repos/{name}/dependabot/alerts", {"state": "open"}))
         result.findings.extend(findings_from_alerts(result, alerts, now))
@@ -382,7 +686,13 @@ def fetch_repo(api: GitHubApi, repo: Repo, now: datetime) -> RepoFetch:
         if artifact is None:
             raise ValueError("no sbom-* artifact built from the default branch")
         members = _read_zip(api.download(artifact["archive_download_url"]))
-        components = spdx.parse_spdx(json.loads(members["sbom.spdx.json"])).components
+        sbom_info = spdx.parse_spdx(json.loads(members["sbom.spdx.json"]))
+        if _sbom_unscanned(sbom_info):
+            result.unscanned = True
+            raise ValueError(
+                "no package of the artifact SBOM has a purl with a version, so nothing was scanned"
+            )
+        components = sbom_info.components
         for component in components:
             result.components.setdefault(component.purl, component)
         doc = json.loads(members["findings.normalized.json"])
@@ -462,13 +772,15 @@ def fetch_feeds(
     """Fetch KEV, EPSS and OSV. A failed feed is recorded and its value is ``None``; nothing is invented."""
     fetched: list[run_record.FeedFetched] = []
     failed: list[run_record.FeedFailed] = []
-    kev: dict[str, tuple[date, bool | None]] | None = None
+    kev: dict[str, KevEntry] | None = None
     kev_on: date | None = None
+    kev_released: datetime | None = None
     try:
-        kev, catalog = fetch_kev(client)
+        kev, catalog, kev_released = fetch_kev(client)
         kev_on = now.date()
         fetched.append(run_record.FeedFetched("kev", now, catalog))
     except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
+        kev = None
         failed.append(run_record.FeedFailed("kev", now, str(exc)[:300]))
 
     cve_ids = sorted(
@@ -549,6 +861,7 @@ def fetch_feeds(
         malicious_withdrawn=withdrawn,
         malicious_delisted=frozenset(delisted),
         malicious_unconfirmed=frozenset(unconfirmed),
+        kev_released_at=kev_released,
     )
     return FeedResult(snapshot, fetched, failed, kev_on, epss_info, extra)
 
@@ -692,6 +1005,7 @@ def timelines(
             (h for h in history if isinstance(h, dict) and h.get("op") == "open"), {}
         )
         closed = entry["closed_at"]
+        duplicate_of = state.get("duplicate_of")
         reason = entry["reason"] if closed is not None else None
         if closed is not None and reason is None:
             reason = "withdrawn"  # closed by someone, not by a resolved fix; never counted as resolved
@@ -705,6 +1019,7 @@ def timelines(
                 due_at=_parse_time(state.get("due_at")),
                 closed_at=closed,
                 close_reason=reason,
+                duplicate_of=duplicate_of if isinstance(duplicate_of, str) else None,
             )
         )
     return out
@@ -1010,7 +1325,9 @@ def run(
         for issue, item in zip(found, items, strict=True):
             raw[(_repo_text(issue.repo).lower(), issue.number)] = item
         listed.append(fetch)
-    fetch_ok_repos = [f for f in listed if f.layer_ok["A"] or f.layer_ok["B"]]
+    fetch_ok_repos = [
+        f for f in listed if (f.layer_ok["A"] or f.layer_ok["B"]) and not f.unscanned
+    ]
     fetch_ok = frozenset(f.repo for f in fetch_ok_repos)
 
     findings = list(
@@ -1088,7 +1405,12 @@ def run(
 
     entries: list[run_record.IssueEntry] = []
     results: dict[int, int | None] = {}
-    for index, action in enumerate(plan.actions):
+    # The duplicates' ``duplicate_of`` bodies are written after the plan's own actions.
+    actions = [
+        *plan.actions,
+        *duplicate_updates(plan, issues, raw, cfg.run_id, now),
+    ]
+    for index, action in enumerate(actions):
         if rate_limited:
             entries.append(
                 run_record.IssueEntry(
@@ -1221,7 +1543,7 @@ def run(
             )
         },
         response_metrics=response_metrics(
-            timelines(issues, raw, plan.actions, results, now),
+            timelines(issues, raw, actions, results, now),
             pull_requests,
             [f.repo for f in fetch_ok_repos],
             policy.response_target.detect_hours,

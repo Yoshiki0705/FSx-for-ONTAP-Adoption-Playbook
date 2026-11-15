@@ -25,19 +25,30 @@ import sys
 import unittest
 import zipfile
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from supply_chain import issue_body, models, run_record
 from supply_chain.models import Repo
-from supply_chain_aggregator import Config, notify_failure, run
+from supply_chain_aggregator import (
+    Config,
+    RepoFetch,
+    _mal_findings,
+    apply_action,
+    fetch_feeds,
+    findings_from_alerts,
+    list_managed_issues,
+    notify_failure,
+    run,
+)
 from supply_chain_io import (
     Client,
     GitHubApi,
+    HttpError,
     Osv,
     RateLimited,
     Response,
@@ -76,7 +87,7 @@ def policy_text(targets: list[str], limit: int = 10) -> str:
                 "epss_used_for_opening": False,
             },
             "cooldown_days": {"default": 3, "major": 7},
-            "package_manager_wait": {"default_days": 3, "major_days": 7},
+            "package_manager_wait": {"default_days": 3},
             "dependency_scope": {"non_production_paths": ["test/", "tests/"]},
             "automerge": {
                 "enabled_repositories": [],
@@ -209,7 +220,10 @@ def spdx_doc(purls: list[tuple[str, str, str]]) -> dict[str, Any]:
 
 
 def alert(
-    cve: str = "CVE-2021-0001", severity: str = "high", name: str = "lodash"
+    cve: str | None = "CVE-2021-0001",
+    severity: str = "high",
+    name: str = "lodash",
+    **advisory_extra: Any,
 ) -> dict[str, Any]:
     return {
         "number": 1,
@@ -219,6 +233,7 @@ def alert(
             "cve_id": cve,
             "severity": severity,
             "published_at": "2025-12-01T00:00:00Z",
+            **advisory_extra,
         },
         "security_vulnerability": {
             "package": {"ecosystem": "npm", "name": name},
@@ -265,7 +280,12 @@ def file_response(text: str) -> Response:
 
 
 def finding_issue_body(
-    vuln_id: str, *, kev: bool, repo: str = TARGET, severity: str | None = None
+    vuln_id: str,
+    *,
+    kev: bool,
+    repo: str = TARGET,
+    severity: str | None = None,
+    due_at: datetime = NOW,
 ) -> str:
     owner, name = repo.split("/")
     return issue_body.render_finding(
@@ -284,19 +304,24 @@ def finding_issue_body(
             origin_is_date_only=False,
             detected_at=NOW,
             opened_at=NOW,
-            due_at=NOW,
+            due_at=due_at,
             last_run_id="999-1",
             history=(issue_body.HistoryEntry("open", "999-1", NOW),),
         )
     )
 
 
-def issue_item(number: int, body: str, state: str = "open") -> dict[str, Any]:
+def issue_item(
+    number: int,
+    body: str,
+    state: str = "open",
+    labels: tuple[str, ...] = ("supply-chain-aggregator",),
+) -> dict[str, Any]:
     return {
         "number": number,
         "state": state,
         "body": body,
-        "labels": [{"name": "supply-chain-aggregator"}],
+        "labels": [{"name": name} for name in labels],
     }
 
 
@@ -873,6 +898,621 @@ class WatchdogNotice(unittest.TestCase):
             ),
             1,
         )
+
+
+REPO = Repo("example-org", "example-repo")
+OVERDUE = models.OVERDUE_LABEL
+IDENT_LABEL = "supply-chain-aggregator"
+
+
+def iso(value: datetime) -> str:
+    return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def created_body(net: FakeNet, repo: str = TARGET) -> str:
+    posts = [
+        c for c in net.to("POST", f"/repos/{repo}/issues") if c.url.endswith("/issues")
+    ]
+    return posts[0].body["body"]
+
+
+def issue_api(net: FakeNet) -> GitHubApi:
+    return GitHubApi(Client(net, sleep=lambda _: None), SPOKE_TOKEN)
+
+
+def closes(net: FakeNet, number: int) -> list[Call]:
+    return [
+        c
+        for c in net.to("PATCH", f"/issues/{number}")
+        if (c.body or {}).get("state") == "closed"
+    ]
+
+
+class IssueLabels(unittest.TestCase):
+    def test_listing_reads_the_labels_of_every_issue(self) -> None:
+        body = finding_issue_body("CVE-2021-0001", kev=True, severity="LOW")
+        net = world()
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok(
+                [
+                    issue_item(7, body, labels=(IDENT_LABEL, OVERDUE)),
+                    issue_item(8, body, labels=(IDENT_LABEL,)),
+                ]
+            ),
+        )
+        issues, _ = list_managed_issues(issue_api(net), REPO)
+        self.assertEqual(
+            [i.labels for i in issues],
+            [frozenset({IDENT_LABEL, OVERDUE}), frozenset({IDENT_LABEL})],
+        )
+
+    def test_a_label_only_update_writes_no_body_and_adds_the_label(self) -> None:
+        action = models.IssueAction(
+            "update",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            None,
+            None,
+            add_labels=(OVERDUE,),
+        )
+        net = world()
+        self.assertEqual(apply_action(issue_api(net), action, set()), 7)
+        self.assertEqual(
+            net.to("PATCH", "/issues/7"),
+            [],
+            "a body was written for a label-only update",
+        )
+        adds = [c for c in net.to("POST", "/issues/7/labels")]
+        self.assertEqual([c.body for c in adds], [{"labels": [OVERDUE]}])
+        self.assertEqual(adds[0].token, SPOKE_TOKEN)
+        made = [
+            c for c in net.to("POST", "/labels") if c.url.endswith(f"{TARGET}/labels")
+        ]
+        self.assertEqual([c.body["name"] for c in made], [OVERDUE])
+
+    def test_an_existing_overdue_label_is_not_created_again(self) -> None:
+        action = models.IssueAction(
+            "update",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            None,
+            None,
+            add_labels=(OVERDUE,),
+        )
+        net = world()
+        net.on("GET", rf"/labels/{OVERDUE}$", ok({"name": OVERDUE}))
+        apply_action(issue_api(net), action, set())
+        self.assertEqual(
+            [
+                c
+                for c in net.to("POST", "/labels")
+                if c.url.endswith(f"{TARGET}/labels")
+            ],
+            [],
+        )
+        self.assertEqual(len(net.to("POST", "/issues/7/labels")), 1)
+
+    def test_removing_a_label_that_is_already_gone_succeeds(self) -> None:
+        action = models.IssueAction(
+            "update",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            None,
+            None,
+            remove_labels=(OVERDUE,),
+        )
+        for status in (200, 404):
+            with self.subTest(status=status):
+                net = world()
+                net.on("DELETE", r"/issues/7/labels/", ok({"message": "x"}, status))
+                self.assertEqual(apply_action(issue_api(net), action, set()), 7)
+                deletes = net.to("DELETE", "/issues/7/labels/")
+                self.assertEqual(len(deletes), 1)
+                self.assertTrue(deletes[0].url.endswith(f"/issues/7/labels/{OVERDUE}"))
+                self.assertEqual(deletes[0].token, SPOKE_TOKEN)
+                self.assertEqual(net.to("PATCH", "/issues/7"), [])
+
+    def test_any_other_failure_to_remove_a_label_is_an_error(self) -> None:
+        action = models.IssueAction(
+            "update",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            None,
+            None,
+            remove_labels=(OVERDUE,),
+        )
+        net = world()
+        net.on("DELETE", r"/issues/7/labels/", ok({"message": "no"}, 403))
+        with self.assertRaises(HttpError):
+            apply_action(issue_api(net), action, set())
+
+    def test_a_refused_label_add_is_an_error(self) -> None:
+        action = models.IssueAction(
+            "update",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            None,
+            None,
+            add_labels=(OVERDUE,),
+        )
+        net = world()
+        net.on("POST", r"/issues/7/labels$", ok({"message": "no"}, 403))
+        with self.assertRaises(HttpError):
+            apply_action(issue_api(net), action, set())
+
+    def test_create_and_reopen_carry_the_added_label(self) -> None:
+        body = finding_issue_body("CVE-2021-0001", kev=True, severity="LOW")
+        net = world()
+        created = models.IssueAction(
+            "create",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            None,
+            body,
+            None,
+            add_labels=(OVERDUE,),
+        )
+        apply_action(issue_api(net), created, set())
+        post = [
+            c
+            for c in net.to("POST", f"/repos/{TARGET}/issues")
+            if c.url.endswith("/issues")
+        ]
+        self.assertEqual(post[0].body["labels"], [IDENT_LABEL, OVERDUE])
+        reopened = models.IssueAction(
+            "reopen",
+            REPO,
+            "finding",
+            "CVE-2021-0001",
+            7,
+            body,
+            None,
+            add_labels=(OVERDUE,),
+        )
+        apply_action(issue_api(net), reopened, set())
+        patch = net.to("PATCH", "/issues/7")
+        self.assertEqual(patch[0].body["state"], "open")
+        self.assertEqual(
+            [c.body for c in net.to("POST", "/issues/7/labels")],
+            [{"labels": [OVERDUE]}],
+        )
+
+    def test_the_label_follows_the_due_time_in_a_run(self) -> None:
+        first = world()
+        first.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        execute(first, policy_text([TARGET]))
+        body = created_body(first)
+        due = iso(NOW + timedelta(days=30))
+        self.assertIn(f'"due_at": "{due}"', body)
+        late = body.replace(due, iso(NOW - timedelta(days=1)))
+
+        def run_with(text: str, labels: tuple[str, ...]) -> FakeNet:
+            net = world()
+            net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+            net.on(
+                "GET",
+                rf"/repos/{TARGET}/issues\?",
+                ok([issue_item(7, text, labels=labels)]),
+            )
+            net.on("DELETE", r"/issues/7/labels/", ok([{"name": IDENT_LABEL}]))
+            execute(net, policy_text([TARGET]))
+            return net
+
+        past = run_with(late, (IDENT_LABEL,))
+        self.assertEqual(past.to("PATCH", "/issues/7"), [], "the body was rewritten")
+        self.assertEqual(
+            [c.body for c in past.to("POST", "/issues/7/labels")],
+            [{"labels": [OVERDUE]}],
+        )
+        self.assertEqual(past.to("DELETE", "/issues/7/labels/"), [])
+
+        settled = run_with(late, (IDENT_LABEL, OVERDUE))
+        self.assertEqual(settled.to("POST", "/issues/7/labels"), [])
+        self.assertEqual(settled.to("DELETE", "/issues/7/labels/"), [])
+        self.assertEqual(settled.to("PATCH", "/issues/7"), [])
+
+        current = run_with(body, (IDENT_LABEL, OVERDUE))
+        removed = current.to("DELETE", "/issues/7/labels/")
+        self.assertEqual(len(removed), 1)
+        self.assertEqual(current.to("POST", "/issues/7/labels"), [])
+        self.assertEqual(current.to("PATCH", "/issues/7"), [])
+
+
+class DuplicateIssues(unittest.TestCase):
+    """A duplicate (an Issue under an alias of another Issue's vulnerability) stays open and says so."""
+
+    def pair(self, dup_due: datetime = NOW, dup_text: str | None = None) -> FakeNet:
+        keep = finding_issue_body("CVE-2021-0001", kev=False, severity="HIGH")
+        dup = dup_text or finding_issue_body(
+            "GHSA-aaaa-bbbb-cccc", kev=False, severity="HIGH", due_at=dup_due
+        )
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert()]))
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/issues\?",
+            ok([issue_item(7, keep), issue_item(8, dup)]),
+        )
+        return net
+
+    def test_the_duplicate_is_rewritten_with_duplicate_of_and_stays_open(self) -> None:
+        net = self.pair()
+        execute(net, policy_text([TARGET]))
+        self.assertEqual(closes(net, 8), [], "the duplicate was closed")
+        patches = net.to("PATCH", "/issues/8")
+        self.assertEqual(len(patches), 1)
+        self.assertEqual(patches[0].token, SPOKE_TOKEN)
+        self.assertNotIn("state", patches[0].body)
+        text = patches[0].body["body"]
+        state = issue_body.parse_state(text) or {}
+        self.assertEqual(state["duplicate_of"], "CVE-2021-0001")
+        self.assertEqual(state["vuln_id"], "GHSA-aaaa-bbbb-cccc")
+        self.assertEqual(state["due_at"], iso(NOW))
+        self.assertEqual(state["opened_at"], iso(NOW))
+        marker = issue_body.parse_marker(text)
+        self.assertEqual(marker.vuln_id if marker else None, "GHSA-aaaa-bbbb-cccc")
+        self.assertIn("重複の代表", text)
+        self.assertEqual(state["history"][-1]["run_id"], RUN_ID)
+
+    def test_a_second_run_does_not_write_the_duplicate_again(self) -> None:
+        first = self.pair()
+        execute(first, policy_text([TARGET]))
+        text = first.to("PATCH", "/issues/8")[0].body["body"]
+        second = self.pair(dup_text=text)
+        execute(second, policy_text([TARGET]))
+        self.assertEqual(second.to("PATCH", "/issues/8"), [])
+        self.assertEqual(closes(second, 8), [])
+
+    def test_an_overdue_duplicate_is_not_counted_as_overdue(self) -> None:
+        net = self.pair(dup_due=NOW - timedelta(days=1))
+        outcome = execute(net, policy_text([TARGET]))
+        metrics_row = outcome.record.response_metrics[TARGET]
+        self.assertEqual(metrics_row.overdue_open, 0)
+
+
+def purl_less(doc: dict[str, Any]) -> dict[str, Any]:
+    for package in doc["packages"]:
+        package.pop("externalRefs", None)
+    return doc
+
+
+def declared_empty() -> dict[str, Any]:
+    doc = spdx_doc([])
+    doc["relationships"].append(
+        {
+            "spdxElementId": "SPDXRef-root",
+            "relationshipType": "CONTAINS",
+            "relatedSpdxElement": "NONE",
+        }
+    )
+    return doc
+
+
+def artifact(net: FakeNet, sbom: dict[str, Any]) -> None:
+    findings = {
+        "schema_version": 1,
+        "repo": TARGET,
+        "commit": SHA,
+        "layer": "B",
+        "generated_at": "2026-01-01T00:00:00Z",
+        "tool": {"name": "trivy", "version": "1.2.3"},
+        "findings": [],
+    }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("sbom.spdx.json", json.dumps(sbom))
+        archive.writestr("findings.normalized.json", json.dumps(findings))
+    net.on(
+        "GET",
+        r"/actions/artifacts\?",
+        ok(
+            {
+                "artifacts": [
+                    {
+                        "name": f"sbom-{SHA}",
+                        "expired": False,
+                        "archive_download_url": f"https://api.github.com/repos/{TARGET}/actions/artifacts/5/zip",
+                        "workflow_run": {"head_branch": "main"},
+                    }
+                ]
+            }
+        ),
+    )
+    net.on("GET", r"/artifacts/5/zip$", Response(200, {}, buffer.getvalue()))
+
+
+class UnscannedSbom(unittest.TestCase):
+    """An SBOM with no component and incomplete coverage was not scanned; it is no ground to close an Issue."""
+
+    def net(self) -> FakeNet:
+        body = finding_issue_body("CVE-2021-0001", kev=True, severity="LOW")
+        net = world()
+        net.on("GET", rf"/repos/{TARGET}/issues\?", ok([issue_item(7, body)]))
+        return net
+
+    def test_control_a_scanned_sbom_with_no_finding_closes_the_issue(self) -> None:
+        net = self.net()
+        execute(net, policy_text([TARGET]))
+        self.assertEqual(len(closes(net, 7)), 1, "the control did not close")
+
+    def test_control_an_sbom_that_declares_itself_empty_still_closes(self) -> None:
+        net = self.net()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"sbom": declared_empty()}))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(len(closes(net, 7)), 1)
+        self.assertEqual(outcome.record.repositories.scanned, (TARGET,))
+
+    def test_an_export_with_no_package_that_has_a_purl_closes_nothing(self) -> None:
+        net = self.net()
+        sbom = purl_less(spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")]))
+        net.on("GET", r"/dependency-graph/sbom$", ok({"sbom": sbom}))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(closes(net, 7), [])
+        self.assertEqual(outcome.record.repositories.scanned, ())
+        failed = {(f.repo, f.layer) for f in outcome.record.repositories.fetch_failed}
+        self.assertIn((TARGET, "A"), failed)
+        self.assertEqual(outcome.record.end_state, "failure")
+
+    def test_the_artifact_sbom_is_judged_the_same_way(self) -> None:
+        control = self.net()
+        artifact(control, spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")]))
+        execute(control, policy_text([TARGET]))
+        self.assertEqual(len(closes(control, 7)), 1, "the control did not close")
+
+        net = self.net()
+        artifact(
+            net, purl_less(spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")]))
+        )
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(closes(net, 7), [])
+        self.assertEqual(outcome.record.repositories.scanned, ())
+        failed = {(f.repo, f.layer) for f in outcome.record.repositories.fetch_failed}
+        self.assertIn((TARGET, "B"), failed)
+
+    def test_one_unscanned_repository_does_not_stop_the_other(self) -> None:
+        net = world([TARGET, OTHER])
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/dependency-graph/sbom$",
+            ok(
+                {
+                    "sbom": purl_less(
+                        spdx_doc([("lodash", "4.17.20", "pkg:npm/lodash@4.17.20")])
+                    )
+                }
+            ),
+        )
+        net.on("GET", rf"/repos/{OTHER}/dependabot/alerts", ok([alert()]))
+        outcome = execute(net, policy_text([TARGET, OTHER]))
+        self.assertEqual(outcome.record.repositories.scanned, (OTHER,))
+        self.assertEqual(len(net.to("POST", f"/repos/{OTHER}/issues")), 1)
+
+
+class AdvisoryFields(unittest.TestCase):
+    def read(self, **advisory_extra: Any) -> models.Finding:
+        found = findings_from_alerts(RepoFetch(REPO), [alert(**advisory_extra)], NOW)
+        self.assertEqual(len(found), 1)
+        return found[0]
+
+    def test_a_malware_type_is_read_and_carries_no_severity(self) -> None:
+        finding = self.read(type="malware")
+        self.assertEqual(finding.advisory_type, "malware")
+        self.assertIsNone(finding.cvss_severity)
+        self.assertIsNone(finding.cvss_source)
+
+    def test_the_other_documented_types_are_a_vulnerability(self) -> None:
+        for kind in ("reviewed", "unreviewed"):
+            with self.subTest(kind=kind):
+                finding = self.read(type=kind)
+                self.assertEqual(finding.advisory_type, "vulnerability")
+                self.assertEqual(finding.cvss_severity, "HIGH")
+
+    def test_a_missing_or_unknown_type_is_none(self) -> None:
+        self.assertIsNone(self.read().advisory_type)
+        self.assertIsNone(self.read(type="something-new").advisory_type)
+        self.assertIsNone(self.read(type=5).advisory_type)
+
+    def test_the_source_of_the_severity_follows_the_scores_that_are_present(
+        self,
+    ) -> None:
+        v3 = {
+            "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "score": 9.8,
+        }
+        v4 = {
+            "vector_string": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+            "score": 9.3,
+        }
+        empty = {"vector_string": None, "score": 0.0}
+        cases = (
+            ({"cvss_v3": v3, "cvss_v4": empty}, "GHSA:CVSS_V3"),
+            ({"cvss_v3": v3, "cvss_v4": v4}, "GHSA:CVSS_V4"),
+            ({"cvss_v3": empty, "cvss_v4": v4}, "GHSA:CVSS_V4"),
+            ({"cvss_v3": empty, "cvss_v4": empty}, None),
+            ({}, None),
+        )
+        for severities, expected in cases:
+            with self.subTest(severities=severities):
+                self.assertEqual(
+                    self.read(cvss_severities=severities).cvss_source, expected
+                )
+        self.assertIsNone(self.read().cvss_source)
+        self.assertIsNone(self.read(cvss_severities="garbage").cvss_source)
+
+    def test_there_is_no_source_without_a_severity(self) -> None:
+        for severity in (None, "", "unknown"):
+            with self.subTest(severity=severity):
+                found = findings_from_alerts(
+                    RepoFetch(REPO),
+                    [
+                        alert(
+                            severity=severity,  # type: ignore[arg-type]
+                            cvss_severities={
+                                "cvss_v3": {"vector_string": "x", "score": 7.0}
+                            },
+                        )
+                    ],
+                    NOW,
+                )
+                self.assertIsNone(found[0].cvss_severity)
+                self.assertIsNone(found[0].cvss_source)
+
+    def test_a_malware_alert_opens_an_issue_as_a_malicious_package(self) -> None:
+        net = world()
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/dependabot/alerts",
+            ok([alert(cve=None, severity="low", type="malware")]),
+        )
+        execute(net, policy_text([TARGET]))
+        state = issue_body.parse_state(created_body(net)) or {}
+        self.assertIs(state["malicious"], True)
+        self.assertEqual(state["due_at"], iso(NOW + timedelta(days=7)))
+
+    def test_the_severity_source_is_written_to_the_issue_state(self) -> None:
+        net = world()
+        net.on(
+            "GET",
+            rf"/repos/{TARGET}/dependabot/alerts",
+            ok(
+                [
+                    alert(
+                        cvss_severities={
+                            "cvss_v4": {"vector_string": "v", "score": 8.7}
+                        }
+                    )
+                ]
+            ),
+        )
+        execute(net, policy_text([TARGET]))
+        state = issue_body.parse_state(created_body(net)) or {}
+        self.assertEqual(state["cvss_sources"], ["GHSA:CVSS_V4"])
+
+
+class Aliases(unittest.TestCase):
+    """Aliases come from OSV ``aliases`` and from GitHub's ``ghsa_id`` and ``cve_id``, and from nothing else."""
+
+    def finding_for(self, record: dict[str, Any]) -> models.Finding:
+        component = models.Component("pkg:npm/evil@1.0.0", "evil", "1.0.0")
+        fetch = RepoFetch(REPO, components={component.purl: component})
+        fetch.layer_ok["A"] = True
+        found = _mal_findings(
+            [fetch], {component.purl: ["MAL-2026-1"]}, {"MAL-2026-1": record}, NOW
+        )
+        self.assertEqual(len(found), 1)
+        return found[0]
+
+    def test_osv_related_and_upstream_are_not_aliases(self) -> None:
+        finding = self.finding_for(
+            {
+                "id": "MAL-2026-1",
+                "aliases": [],
+                "related": ["CVE-2099-0001"],
+                "upstream": ["CVE-2099-0002"],
+                "published": "2026-01-01T00:00:00Z",
+            }
+        )
+        self.assertEqual(finding.aliases, ())
+
+    def test_osv_aliases_are_read_without_the_id_itself(self) -> None:
+        finding = self.finding_for(
+            {
+                "id": "MAL-2026-1",
+                "aliases": ["GHSA-aaaa-bbbb-cccc", "MAL-2026-1"],
+                "related": ["CVE-2099-0001"],
+            }
+        )
+        self.assertEqual(finding.aliases, ("GHSA-aaaa-bbbb-cccc",))
+
+    def test_an_alert_names_its_ghsa_as_the_alias_of_its_cve_and_nothing_more(
+        self,
+    ) -> None:
+        extra = {
+            "identifiers": [
+                {"type": "GHSA", "value": "GHSA-aaaa-bbbb-cccc"},
+                {"type": "CVE", "value": "CVE-2021-0001"},
+            ],
+            "references": [{"url": "https://example.test/CVE-2099-0001"}],
+        }
+        with_cve = findings_from_alerts(RepoFetch(REPO), [alert(**extra)], NOW)[0]
+        self.assertEqual(
+            (with_cve.vuln_id, with_cve.aliases),
+            ("CVE-2021-0001", ("GHSA-aaaa-bbbb-cccc",)),
+        )
+        without = findings_from_alerts(RepoFetch(REPO), [alert(cve=None)], NOW)[0]
+        self.assertEqual(
+            (without.vuln_id, without.aliases), ("GHSA-aaaa-bbbb-cccc", ())
+        )
+
+
+class KevItems(unittest.TestCase):
+    CATALOGUE: ClassVar[dict[str, Any]] = {
+        "catalogVersion": "2026.01.02",
+        "dateReleased": "2026-01-02T01:02:03.456Z",
+        "vulnerabilities": [
+            {
+                "cveID": "CVE-2021-0001",
+                "dateAdded": "2026-01-01",
+                "dueDate": "2026-01-22",
+                "forensicTriage": "Yes",
+                "knownRansomwareCampaignUse": "Known",
+            }
+        ],
+    }
+
+    def test_a_listed_issue_shows_the_due_date_and_the_forensic_triage(self) -> None:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok(self.CATALOGUE))
+        net.on(
+            "GET", rf"/repos/{TARGET}/dependabot/alerts", ok([alert(severity="low")])
+        )
+        execute(net, policy_text([TARGET]))
+        text = created_body(net)
+        state = issue_body.parse_state(text) or {}
+        self.assertEqual(
+            state["kev"],
+            {
+                "date_added": "2026-01-01",
+                "known_ransomware_campaign_use": True,
+                "due_date": "2026-01-22",
+                "forensic_triage": True,
+            },
+        )
+        self.assertIn("2026-01-22", text)
+
+    def test_the_snapshot_carries_the_entries_and_the_release_time(self) -> None:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok(self.CATALOGUE))
+        client = Client(net, sleep=lambda _: None)
+        result = fetch_feeds(client, Osv(client), [], [], {}, NOW)
+        entry = (result.snapshot.kev or {})["CVE-2021-0001"]
+        self.assertIsInstance(entry, models.KevEntry)
+        self.assertEqual(entry.due_date, date(2026, 1, 22))
+        self.assertIs(entry.forensic_triage, True)
+        self.assertEqual(
+            result.snapshot.kev_released_at, datetime(2026, 1, 2, 1, 2, 3, tzinfo=UTC)
+        )
+
+    def test_a_failed_catalogue_leaves_both_empty(self) -> None:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok({"message": "down"}, 503))
+        client = Client(net, sleep=lambda _: None)
+        result = fetch_feeds(client, Osv(client), [], [], {}, NOW)
+        self.assertIsNone(result.snapshot.kev)
+        self.assertIsNone(result.snapshot.kev_released_at)
 
 
 class Helpers(unittest.TestCase):

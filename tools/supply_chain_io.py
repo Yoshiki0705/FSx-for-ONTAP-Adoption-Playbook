@@ -35,6 +35,7 @@ from datetime import UTC, date, datetime
 from typing import Any, Protocol
 
 from supply_chain import run_record
+from supply_chain.models import KevEntry
 
 API_ROOT = "https://api.github.com"
 USER_AGENT = "fsx-ontap-adoption-playbook-supply-chain-aggregator"
@@ -281,6 +282,10 @@ class GitHubApi:
             body=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         )
 
+    def delete(self, path: str) -> Response:
+        """DELETE with no body. Returns the response; the caller checks it (a 404 may be acceptable)."""
+        return self._client.send("DELETE", self._url(path), token=self._token)
+
     def pages(
         self, path: str, params: Mapping[str, Any] | None = None, key: str | None = None
     ) -> Iterator[Any]:
@@ -328,20 +333,54 @@ class GitHubApi:
 # --- feeds ---------------------------------------------------------------------------------------
 
 
-def fetch_kev(client: Client) -> tuple[dict[str, tuple[date, bool | None]], str | None]:
-    """CISA KEV: id -> (dateAdded, knownRansomwareCampaignUse). The latter is shown, never used to decide."""
+def _kev_due_date(raw: object) -> date | None:
+    """``dueDate`` (``YYYY-MM-DD``) of a KEV entry, or None when it is missing or not that shape."""
+    if not isinstance(raw, str):
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _kev_forensic_triage(raw: object) -> bool | None:
+    """``forensicTriage``: ``Yes`` is True, ``No`` is False, anything else (a missing field too) is None."""
+    return {"Yes": True, "No": False}.get(raw) if isinstance(raw, str) else None
+
+
+def _kev_released_at(raw: object) -> datetime | None:
+    """The catalogue's ``dateReleased`` as UTC whole seconds, or None when it is missing or not a UTC time.
+
+    The fraction of a second is dropped because ``FeedSnapshot`` takes whole seconds. The real value was not
+    fetched when this was written; the fake in the tests has the shape ``2026-11-14T15:04:05.123Z``.
+    """
+    parsed = parse_osv_time(raw)
+    return parsed.replace(microsecond=0) if parsed is not None else None
+
+
+def fetch_kev(
+    client: Client,
+) -> tuple[dict[str, KevEntry], str | None, datetime | None]:
+    """CISA KEV: id -> ``KevEntry``, the catalogue version, and the catalogue's ``dateReleased``.
+
+    ``knownRansomwareCampaignUse``, ``dueDate`` and ``forensicTriage`` are shown, never used to decide. A
+    missing or unreadable one of them is None for that entry and does not hide the entry's other fields.
+    ``dateAdded`` stays required: an entry without it fails the whole fetch, as before.
+    """
     resp = client.send("GET", KEV_URL, headers={"Accept": "application/json"})
     if not resp.ok:
         raise HttpError("GET", KEV_URL, resp.status)
     doc = resp.json()
-    table: dict[str, tuple[date, bool | None]] = {}
+    table: dict[str, KevEntry] = {}
     for entry in doc["vulnerabilities"]:
         flag = entry.get("knownRansomwareCampaignUse")
-        table[entry["cveID"]] = (
+        table[entry["cveID"]] = KevEntry(
             date.fromisoformat(entry["dateAdded"]),
             True if flag == "Known" else None,
+            _kev_due_date(entry.get("dueDate")),
+            _kev_forensic_triage(entry.get("forensicTriage")),
         )
-    return table, doc.get("catalogVersion")
+    return table, doc.get("catalogVersion"), _kev_released_at(doc.get("dateReleased"))
 
 
 MAX_FEED_REDIRECTS = 3
