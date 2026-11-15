@@ -19,6 +19,9 @@ steps and the translation between GitHub, the feeds and the core's plain values.
     POLICY_FILE        path of the checked-out Policy_File
     SUPPLY_CHAIN_POLICY_REF   the 40-hex commit the Policy_File was checked out at
                        (repository variable; the workflow must not hard-code a SHA)
+    CHAIN_ACK_FILE     path of the chain ledger in the same checkout (docs/agent/supply-chain-chain-ack.json).
+                       A file that does not exist is an empty ledger: no decision has been made.
+    RUNNER_TEMP        where the per-month lock files go (the system temporary directory when unset)
 
 POLICY_FILE is the path inside the directory where the workflow checked out the policy
 repository at SUPPLY_CHAIN_POLICY_REF. SPOKE_TOKEN is a GitHub App installation token with
@@ -28,6 +31,19 @@ GITHUB_TOKEN never writes the runs branch. Create both with actions/create-githu
 the App's client ID (variable SUPPLY_CHAIN_APP_CLIENT_ID) and private key (secret SUPPLY_CHAIN_APP_PRIVATE_KEY),
 and fail with a clear message when either is unset. The runs branch ``supply-chain-runs`` must
 already exist; it is never created here.
+
+The record chain is guarded around the write of the run record (``guard_chain``), under one lock per month:
+
+* the chain ledger is read, and the month's records are read through it (``chain_recovery.effective_entries``);
+  a ledger that cannot be read or cannot stand stops the write;
+* the SHA-256 of the record the previous run wrote is read from the newest annotated tag
+  ``supply-chain-runs-tip-<YYYY-MM>-<run id>`` and compared with the month (``run_record.verify_month_tip``);
+* the first run of a month seals the month before it with the annotated tag ``supply-chain-runs-<YYYY-MM>``, or
+  checks the seal that is already there (``run_record.verify_month_seal``);
+* after the write, the SHA-256 of the new record goes into the job summary and into a new tip tag.
+
+A tag that cannot be created is a warning: the record stays, and the next run starts without a recorded value.
+Protecting the tags with a ruleset is a maintainer's setting and is not made here.
 
 ``notify-failure`` (used by the watchdog) reads NOTIFY_TOKEN (a SPOKE_TOKEN-style token that can
 write Issues in this repository) and GITHUB_REPOSITORY. It appends to the open failure Issue, or
@@ -42,21 +58,25 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import dataclasses
+import fcntl
 import io
 import json
 import os
 import re
 import sys
+import tempfile
 import urllib.parse
 import zipfile
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 from supply_chain import (
+    chain_recovery,
     issue_body,
     metrics,
     models,
@@ -107,6 +127,10 @@ HEX40 = re.compile(r"[0-9a-f]{40}")
 FINDING_TITLE_PREFIX = "[supply-chain] "
 SUMMARY_TITLE = "[supply-chain] 起票数の上限を超えた脆弱性の一覧"
 FAILURE_TITLE = "[supply-chain] Aggregator の実行失敗"
+# Annotated tags that pin the record chain. The two-line annotation is ``path: ...`` and ``sha256: ...``.
+TIP_TAG_PREFIX = "supply-chain-runs-tip-"
+SEAL_TAG_PREFIX = "supply-chain-runs-"
+_SHA256_LINE = re.compile(r"^sha256: ?([0-9a-f]{64})$", re.MULTILINE)
 
 # Dependabot ecosystem names to purl types. From the purl type names, not confirmed against a
 # live alert for every ecosystem; an unlisted ecosystem falls back to ``generic``.
@@ -1114,38 +1138,305 @@ def recent_outcomes(
     return out
 
 
-def chain_to_previous(
-    hub: GitHubApi,
-    hub_repo: Repo,
-    branch: str,
-    record: run_record.RunRecord,
-    existing: Sequence[str],
-) -> run_record.RunRecord:
-    """Set ``prev_record_sha256`` to the SHA-256 of the newest record of the same month, or ``None`` for the first.
+class ChainGuardError(Exception):
+    """The month's records cannot take a new record; nothing is written."""
 
-    The watchdog follows this link (``run_record.verify_chain``): a record that does not name its predecessor
-    reads as a second start of the month. An existing path is refused first, so that case keeps its own message.
-    A month whose records do not end in exactly one tip raises ``RunRecordError`` and nothing is saved, rather
-    than a record that would start a second chain.
+
+@dataclass(frozen=True)
+class ChainGuard:
+    """What the checks before a write decided.
+
+    Attributes:
+        prev_record_sha256: The SHA-256 the new record names as its predecessor, ``None`` for the first of a month.
+        seal: ``(tag name, SHA-256)`` of the month before, to be created after the write; ``None`` when there is
+            nothing to seal or the seal is already there.
     """
-    path = run_record.new_record_path(record, existing)
-    month = run_record.month_of(path)
-    texts = [
-        hub.read_file(_repo_text(hub_repo), p, branch)
-        for p in existing
-        if run_record.month_of(p) == month
+
+    prev_record_sha256: str | None
+    seal: tuple[str, str] | None
+
+
+def _record_month(record: run_record.RunRecord) -> str:
+    """``YYYY-MM`` of the month the record will be stored under (the month it started in)."""
+    return f"{record.started_at.year:04d}-{record.started_at.month:02d}"
+
+
+def _previous_month(month: str) -> str:
+    year, number = int(month[:4]), int(month[5:7])
+    return f"{year - 1:04d}-12" if number == 1 else f"{year:04d}-{number - 1:02d}"
+
+
+def _path_month(path: str) -> str:
+    """``YYYY-MM`` of ``runs/<YYYY>/<MM>/<file>``; empty for any other path."""
+    parts = path.split("/")
+    return f"{parts[1]}-{parts[2]}" if len(parts) == 4 else ""
+
+
+def month_lock_path(month: str) -> Path:
+    """The lock file of one month. Under ``$RUNNER_TEMP``, outside ``.git/`` and outside the records."""
+    return (
+        Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir())
+        / f"supply-chain-aggregator-{month}.lock"
+    )
+
+
+@contextlib.contextmanager
+def month_lock(month: str) -> Iterator[None]:
+    """Hold the lock of one month while the month's records are read, ``prev_record_sha256`` is decided and the
+    record is written.
+
+    ``flock`` guards only processes on one machine, such as two runs a maintainer starts by hand. On GitHub
+    Actions nothing is shared between runners, so the only exclusion there is the workflow's ``concurrency``.
+    """
+    with month_lock_path(month).open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def read_chain_ack(path: str | None) -> str | None:
+    """The text of the chain ledger, or ``None`` when there is no file (no decision has been made)."""
+    if not path:
+        return None
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+
+
+def tag_message(path: str, sha256: str) -> str:
+    """The annotation of a tip or seal tag: two lines, ``path`` and ``sha256``."""
+    return f"path: {path}\nsha256: {sha256}\n"
+
+
+def _annotated_sha256(
+    hub: GitHubApi, hub_repo: Repo, tag_object_sha: str
+) -> str | None:
+    """The ``sha256`` line of an annotated tag object, or ``None`` when it has none.
+
+    ``GET /repos/{owner}/{repo}/git/tags/{tag_sha}``. The shape (a ``message`` string) was written from memory of
+    the reference, without a network to read it against.
+    """
+    data = hub.get_json(f"/repos/{_repo_text(hub_repo)}/git/tags/{tag_object_sha}")
+    message = data.get("message") if isinstance(data, dict) else None
+    found = _SHA256_LINE.search(message) if isinstance(message, str) else None
+    return found.group(1) if found else None
+
+
+def recorded_tip(hub: GitHubApi, hub_repo: Repo, month: str) -> str | None:
+    """The SHA-256 the newest tip tag of ``month`` carries, or ``None`` when the month has no tip tag.
+
+    The newest is the one with the highest ``<run id>-<attempt>``, in the order of ``_record_sort_key``. A newest
+    tag that is not annotated or has no ``sha256`` line is not skipped for an older one: the check fails.
+    ``GET /repos/{owner}/{repo}/git/matching-refs/{ref}`` lists refs by prefix; the shape was written from memory
+    of the reference.
+    """
+    prefix = f"{TIP_TAG_PREFIX}{month}-"
+    try:
+        refs = list(
+            hub.pages(f"/repos/{_repo_text(hub_repo)}/git/matching-refs/tags/{prefix}")
+        )
+    except HttpError as exc:
+        if exc.status != 404:
+            raise
+        refs = []
+    newest: tuple[tuple[str, str, int], str, dict[str, Any]] | None = None
+    for ref in refs:
+        name = (
+            str(ref.get("ref", "")).removeprefix("refs/tags/")
+            if isinstance(ref, dict)
+            else ""
+        )
+        found = re.fullmatch(re.escape(prefix) + r"([0-9]+-[0-9]+)", name)
+        if found is None:
+            continue
+        key = _record_sort_key(f"runs/{month.replace('-', '/')}/{found.group(1)}.json")
+        if newest is None or key > newest[0]:
+            newest = (key, name, ref)
+    if newest is None:
+        return None
+    _key, name, ref = newest
+    target = ref.get("object")
+    if (
+        not isinstance(target, dict)
+        or target.get("type") != "tag"
+        or not isinstance(target.get("sha"), str)
+    ):
+        raise ChainGuardError(f"the tag {name} is not an annotated tag")
+    sha256 = _annotated_sha256(hub, hub_repo, target["sha"])
+    if sha256 is None:
+        raise ChainGuardError(f"the tag {name} carries no sha256 line")
+    return sha256
+
+
+def _tag_object(hub: GitHubApi, hub_repo: Repo, name: str) -> dict[str, Any] | None:
+    """The ``object`` of ``refs/tags/<name>``, or ``None`` when there is no such tag.
+
+    ``GET /repos/{owner}/{repo}/git/ref/tags/{name}``; the shape was written from memory of the reference.
+    """
+    resp = hub.get(f"/repos/{_repo_text(hub_repo)}/git/ref/tags/{name}")
+    if resp.status == 404:
+        return None
+    if not resp.ok:
+        raise HttpError("GET", f"git/ref/tags/{name}", resp.status, resp.text()[:200])
+    target = resp.json().get("object")
+    return target if isinstance(target, dict) else {}
+
+
+def create_annotated_tag(
+    hub: GitHubApi, hub_repo: Repo, name: str, commit_sha: str, message: str
+) -> None:
+    """Create an annotated tag on ``commit_sha``: the tag object first, then the ref that points at it.
+
+    ``POST /repos/{owner}/{repo}/git/tags`` (``tag``, ``message``, ``object``, ``type``) and
+    ``POST /repos/{owner}/{repo}/git/refs`` (``ref``, ``sha``). Both bodies were written from memory of the
+    reference, without a network to read it against; ``tagger`` is left out.
+
+    Raises:
+        HttpError: GitHub refused one of the two requests.
+        KeyError: The tag object response has no ``sha``.
+    """
+    base = f"/repos/{_repo_text(hub_repo)}/git"
+    resp = hub.write(
+        "POST",
+        f"{base}/tags",
+        {"tag": name, "message": message, "object": commit_sha, "type": "commit"},
+    )
+    if resp.status != 201:
+        raise HttpError("POST", f"{base}/tags", resp.status, resp.text()[:200])
+    resp = hub.write(
+        "POST", f"{base}/refs", {"ref": f"refs/tags/{name}", "sha": resp.json()["sha"]}
+    )
+    if resp.status != 201:
+        raise HttpError("POST", f"{base}/refs", resp.status, resp.text()[:200])
+
+
+def _month_entries(
+    hub: GitHubApi, cfg: Config, existing: Sequence[str], month: str
+) -> list[tuple[str, str]]:
+    """``(path, text)`` of every record stored for ``month``."""
+    return [
+        (path, hub.read_file(_repo_text(cfg.hub), path, cfg.runs_branch))
+        for path in existing
+        if _path_month(path) == month
     ]
-    return _with(record, prev_record_sha256=run_record.previous_record_sha256(texts))
 
 
-def save_record(
+def _previous_month_seal(
+    hub: GitHubApi,
+    cfg: Config,
+    month: str,
+    existing: Sequence[str],
+    ledger: Sequence[chain_recovery.AcceptedFork],
+    *,
+    first_of_month: bool,
+) -> tuple[str, str] | None:
+    """Check the seal of the month before ``month``, or return the one to create.
+
+    A seal that exists is compared with the month only in the first run of ``month`` (it reads every record of
+    the month before). A seal that is missing is looked for in every run, so that a failed creation is tried again.
+    """
+    previous = _previous_month(month)
+    if not any(_path_month(p) == previous for p in existing):
+        return None
+    name = f"{SEAL_TAG_PREFIX}{previous}"
+    target = _tag_object(hub, cfg.hub, name)
+    if target is not None and not first_of_month:
+        return None
+    entries = _month_entries(hub, cfg, existing, previous)
+    kept, problems = chain_recovery.effective_entries(
+        entries, [f for f in ledger if f.month == previous]
+    )
+    if problems:
+        raise ChainGuardError(
+            f"the chain ledger cannot stand for {previous}: " + "; ".join(problems)
+        )
+    if target is None:
+        try:
+            seal = run_record.month_seal(previous, kept)
+        except run_record.RunRecordError as exc:
+            raise ChainGuardError(f"{previous} cannot be sealed: {exc}") from exc
+        return seal
+    sealed = (
+        _annotated_sha256(hub, cfg.hub, target["sha"])
+        if target.get("type") == "tag" and "sha" in target
+        else None
+    )
+    if sealed is None:
+        raise ChainGuardError(
+            f"the seal tag {name} is not an annotated tag with a sha256 line"
+        )
+    broken = run_record.verify_month_seal(previous, kept, sealed)
+    if broken is not None:
+        raise ChainGuardError(f"{broken.reason} at {broken.path}")
+    return None
+
+
+def guard_chain(
+    hub: GitHubApi,
+    cfg: Config,
+    month: str,
+    record: run_record.RunRecord,
+    existing: Sequence[str],
+) -> ChainGuard:
+    """The checks before the record of ``month`` is written. Raises ``ChainGuardError`` when it must not be.
+
+    In this order: an existing path is refused; the chain ledger is read; the month's records are read through the
+    ledger; the SHA-256 the last run wrote is compared with the month; the one tip is found; the month before is
+    sealed or its seal checked. Entries of the ledger for other months are not judged here, because only this
+    month and the one before are read, and an entry for an older record would read as "no record has this SHA-256".
+
+    Raises:
+        ChainGuardError: A check failed.
+        HttpError, TransportError, RateLimited: A record or a tag could not be read.
+        run_record.RunRecordError: The record's path or run id is refused.
+    """
+    run_record.new_record_path(record, existing)
+    try:
+        ledger = chain_recovery.parse_ledger(
+            chain_recovery.render_ledger(())
+            if cfg.chain_ack_text is None
+            else cfg.chain_ack_text
+        )
+    except chain_recovery.LedgerError as exc:
+        raise ChainGuardError(f"the chain ledger cannot be used: {exc}") from exc
+    entries = _month_entries(hub, cfg, existing, month)
+    accepted = [f for f in ledger if f.month == month]
+    kept, problems = chain_recovery.effective_entries(entries, accepted)
+    if problems:
+        raise ChainGuardError("the chain ledger cannot stand: " + "; ".join(problems))
+    broken = run_record.verify_month_tip(
+        month,
+        entries,
+        recorded_tip(hub, cfg.hub, month),
+        abandoned=frozenset(f.abandoned_record_sha256 for f in accepted),
+    )
+    if broken is not None:
+        raise ChainGuardError(f"{broken.reason} at {broken.path}")
+    try:
+        previous = run_record.previous_record_sha256(text for _path, text in kept)
+    except run_record.RunRecordError as exc:
+        raise ChainGuardError(str(exc)) from exc
+    seal = _previous_month_seal(
+        hub, cfg, month, existing, ledger, first_of_month=not entries
+    )
+    return ChainGuard(previous, seal)
+
+
+def save_record_commit(
     hub: GitHubApi,
     hub_repo: Repo,
     branch: str,
     record: run_record.RunRecord,
     existing: Sequence[str],
-) -> str:
-    """Create the record file with a PUT that carries no ``sha``: an existing path is refused, never overwritten."""
+) -> tuple[str, str | None]:
+    """Create the record file with a PUT that carries no ``sha``: an existing path is refused, never overwritten.
+
+    Returns the path and the SHA of the commit that holds it (``commit.sha`` of the contents API response, from
+    memory of the reference), or ``None`` for the commit when the response does not carry one.
+    """
     path = run_record.new_record_path(record, existing)
     text = run_record.to_json(record)
     resp = hub.write(
@@ -1159,7 +1450,19 @@ def save_record(
     )
     if resp.status != 201:
         raise HttpError("PUT", f"contents/{path}", resp.status, resp.text()[:200])
-    return path
+    commit = (resp.json().get("commit") or {}).get("sha")
+    return path, commit if isinstance(commit, str) else None
+
+
+def save_record(
+    hub: GitHubApi,
+    hub_repo: Repo,
+    branch: str,
+    record: run_record.RunRecord,
+    existing: Sequence[str],
+) -> str:
+    """``save_record_commit`` without the commit: the path of the new file."""
+    return save_record_commit(hub, hub_repo, branch, record, existing)[0]
 
 
 def apply_failure_notice(
@@ -1223,6 +1526,9 @@ class Config:
     policy_text: str
     policy_commit: str
     runs_branch: str = RUNS_BRANCH
+    # The text of the chain ledger. ``None`` is an empty ledger (no decision has been made); a text that cannot be
+    # read as a ledger stops the write.
+    chain_ack_text: str | None = None
 
 
 @dataclass
@@ -1231,6 +1537,10 @@ class Outcome:
     exit_code: int
     saved_path: str | None
     messages: list[str]
+    # SHA-256 of the record that was written, and the annotated tag that keeps it; ``None`` when the record was
+    # not saved, or the tag could not be created.
+    tip_sha256: str | None = None
+    tip_tag: str | None = None
 
 
 def _empty_record(
@@ -1580,7 +1890,25 @@ def _finish(
     labels_done: set[str],
 ) -> Outcome:
     """Decide and send the failure notice, then save the record. The notice comes first so that a
-    notice that could not be sent is written into the record: the record is never rewritten."""
+    notice that could not be sent is written into the record: the record is never rewritten.
+
+    The month's lock is held from the listing of the records to the end of the write, so that two runs of one
+    month do not read the same tip.
+    """
+    with month_lock(_record_month(record)):
+        return _finish_locked(cfg, record, reasons, spoke, hub, now_fn, labels_done)
+
+
+def _finish_locked(
+    cfg: Config,
+    record: run_record.RunRecord,
+    reasons: Sequence[str],
+    spoke: GitHubApi,
+    hub: GitHubApi,
+    now_fn: Callable[[], datetime],
+    labels_done: set[str],
+) -> Outcome:
+    month = _record_month(record)
     messages = list(reasons)
     notice_error: str | None = None
     try:
@@ -1590,6 +1918,23 @@ def _finish(
         # is possible. The run is abnormal; the watchdog sees the missing record.
         messages.append(f"run record not saved: runs branch not readable: {exc}"[:300])
         return Outcome(record, 1, None, messages)
+    guard: ChainGuard | None = None
+    try:
+        guard = guard_chain(hub, cfg, month, record, existing_paths)
+    except (
+        ChainGuardError,
+        HttpError,
+        RateLimited,
+        TransportError,
+        ValueError,
+        KeyError,
+    ) as exc:
+        # A run that cannot be chained is a failed run, and counts as one in the streak, although its record
+        # is not stored.
+        messages.append(f"run record not saved: {exc}"[:300])
+        record = _with(
+            record, end_state="failure", failure_reason="; ".join(messages)[:1000]
+        )
     try:
         outcomes = recent_outcomes(hub, cfg.hub, cfg.runs_branch, existing_paths)
         outcomes.append(run_record.RunOutcome(cfg.run_id, record.end_state))
@@ -1614,16 +1959,40 @@ def _finish(
             failure_reason="; ".join(messages)[:1000],
             failure_notice_error=notice_error,
         )
-    saved: str | None = None
+    if guard is None:
+        return Outcome(record, 1, None, messages)
+    record = _with(record, prev_record_sha256=guard.prev_record_sha256)
     try:
-        record = chain_to_previous(
+        saved, commit_sha = save_record_commit(
             hub, cfg.hub, cfg.runs_branch, record, existing_paths
         )
-        saved = save_record(hub, cfg.hub, cfg.runs_branch, record, existing_paths)
     except (HttpError, RateLimited, TransportError, run_record.RunRecordError) as exc:
         messages.append(f"run record not saved: {exc}"[:300])
         return Outcome(record, 1, None, messages)
-    return Outcome(record, 1 if record.end_state == "failure" else 0, saved, messages)
+    sha256 = run_record.sha256_text(run_record.to_json(record))
+    tip_name = f"{TIP_TAG_PREFIX}{month}-{record.run_id}"
+    pending = [("tip", tip_name, tag_message(saved, sha256))]
+    if guard.seal is not None:
+        sealed_dir = f"runs/{_previous_month(month).replace('-', '/')}"
+        pending.append(("seal", guard.seal[0], tag_message(sealed_dir, guard.seal[1])))
+    # A tag that cannot be made does not undo the record: the next run then has no recorded value to compare.
+    made: set[str] = set()
+    for label, name, message in pending:
+        try:
+            if commit_sha is None:
+                raise ValueError("the write response carries no commit SHA")
+            create_annotated_tag(hub, cfg.hub, name, commit_sha, message)
+            made.add(name)
+        except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
+            messages.append(f"{label} tag {name} not created: {exc}"[:300])
+    return Outcome(
+        record,
+        1 if record.end_state == "failure" else 0,
+        saved,
+        messages,
+        tip_sha256=sha256,
+        tip_tag=tip_name if tip_name in made else None,
+    )
 
 
 def _with(record: run_record.RunRecord, **changes: Any) -> run_record.RunRecord:
@@ -1640,10 +2009,8 @@ def _env(name: str) -> str:
     return value
 
 
-def _write_summary(outcome: Outcome) -> None:
-    path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not path:
-        return
+def render_summary(outcome: Outcome) -> str:
+    """The text of the job summary of one run."""
     record = outcome.record
     lines = [
         f"## Supply-chain Aggregator run {record.run_id}",
@@ -1652,10 +2019,19 @@ def _write_summary(outcome: Outcome) -> None:
         f"- repositories scanned: {len(record.repositories.scanned)}, fetch failures: {len(record.repositories.fetch_failed)}",
         f"- Issue operations: {len(record.issues)}, not applied: {sum(1 for i in record.issues if not i.ok)}",
         f"- run record: {outcome.saved_path or 'not saved'}",
+        f"- run record SHA-256: {outcome.tip_sha256 or 'none'}"
+        + (f" (tag {outcome.tip_tag})" if outcome.tip_tag else ""),
         *(f"- {m}" for m in outcome.messages),
     ]
+    return "\n".join(lines) + "\n"
+
+
+def _write_summary(outcome: Outcome) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
     with open(path, "a", encoding="utf-8") as handle:
-        handle.write("\n".join(lines) + "\n")
+        handle.write(render_summary(outcome))
 
 
 def cmd_run() -> int:
@@ -1676,12 +2052,19 @@ def cmd_run() -> int:
         policy_text = ""
         print(f"error: Policy_File not readable: {exc}", file=sys.stderr)
     client = Client(UrllibTransport())
+    try:
+        chain_ack_text = read_chain_ack(os.environ.get("CHAIN_ACK_FILE"))
+    except OSError as exc:
+        # An unreadable ledger is not an empty one: "" cannot be read as a ledger, so the write is refused.
+        chain_ack_text = ""
+        print(f"error: chain ledger not readable: {exc}", file=sys.stderr)
     cfg = Config(
         hub=_split_repo(_env("GITHUB_REPOSITORY")),
         run_id=f"{_env('GITHUB_RUN_ID')}-{_env('GITHUB_RUN_ATTEMPT')}",
         aggregator_commit=sha,
         policy_text=policy_text,
         policy_commit=policy_ref,
+        chain_ack_text=chain_ack_text,
     )
     outcome = run(
         cfg,
