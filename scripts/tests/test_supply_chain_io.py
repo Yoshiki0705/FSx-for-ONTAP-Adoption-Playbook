@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import sys
 import unittest
@@ -147,7 +148,7 @@ class EpssRedirect(unittest.TestCase):
             return self.file()
 
         client, net = self.client(answer)
-        table = fetch_epss(client, ["CVE-2021-0001"])
+        table, _payload = fetch_epss(client, ["CVE-2021-0001"])
         self.assertEqual(net.urls, [EPSS_URL, self.DATED])
         self.assertEqual(table["CVE-2021-0001"][0], "0.5")
 
@@ -188,7 +189,7 @@ class EpssRedirect(unittest.TestCase):
             return answer
 
         client, net = self.client(chain(3))
-        self.assertIn("CVE-2021-0001", fetch_epss(client, ["CVE-2021-0001"]))
+        self.assertIn("CVE-2021-0001", fetch_epss(client, ["CVE-2021-0001"])[0])
         self.assertEqual(len(net.urls), 4)
 
         client, net = self.client(chain(4))
@@ -221,7 +222,7 @@ class KevCatalogue(unittest.TestCase):
         client = Client(net, sleep=lambda _: None)
         result = fetch_kev(client)
         self.assertEqual(net.urls, [KEV_URL])
-        return result
+        return result[:3]  # the payload is checked in FeedPayloads
 
     @staticmethod
     def entry(cve: str, **extra: Any) -> dict[str, Any]:
@@ -344,6 +345,102 @@ class KevCatalogue(unittest.TestCase):
             malicious_unconfirmed=frozenset(),
             kev_released_at=released,
         )
+
+
+class FeedPayloads(unittest.TestCase):
+    """``fetch_kev`` and ``fetch_epss`` say what they read: the hash of the body, the count, the URL, the Date.
+
+    The ``Date`` header is faked here; that a real KEV or EPSS response carries one was not observed.
+    """
+
+    DATE = "Sat, 14 Nov 2026 15:04:05 GMT"
+
+    @staticmethod
+    def kev_body(count: int = 2) -> bytes:
+        doc = {
+            "catalogVersion": "2026.11.14",
+            "vulnerabilities": [
+                {"cveID": f"CVE-2026-{n:04d}", "dateAdded": "2026-11-14"}
+                for n in range(count)
+            ],
+        }
+        return json.dumps(doc).encode("utf-8")
+
+    def kev(self, body: bytes, headers: dict[str, str]) -> Any:
+        from supply_chain_io import fetch_kev
+
+        client = Client(
+            Recorder(lambda url: Response(200, headers, body)), sleep=lambda _: None
+        )
+        return fetch_kev(client)
+
+    def test_kev_reports_the_hash_of_the_body_bytes_and_the_entry_count(self) -> None:
+        from supply_chain_io import KEV_URL
+
+        body = self.kev_body(2)
+        _table, _catalog, _released, payload = self.kev(body, {"date": self.DATE})
+        self.assertEqual(payload.sha256, hashlib.sha256(body).hexdigest())
+        self.assertEqual(payload.entry_count, 2)
+        self.assertEqual(payload.source_url, KEV_URL)
+        self.assertEqual(payload.http_date, self.DATE)
+
+    def test_kev_with_no_vulnerabilities_counts_zero(self) -> None:
+        payload = self.kev(self.kev_body(0), {})[3]
+        self.assertEqual(payload.entry_count, 0)
+
+    def test_a_response_without_a_date_header_has_no_date(self) -> None:
+        payload = self.kev(self.kev_body(1), {})[3]
+        self.assertIsNone(payload.http_date)
+
+    def test_epss_hashes_the_bytes_as_received_and_counts_every_row_read(self) -> None:
+        from supply_chain_io import fetch_epss
+
+        text = (
+            "#model_version:v2026.01.01,score_date:2026-01-02T12:00:00Z\n"
+            "cve,epss,percentile\n"
+            "CVE-2021-0001,0.5,0.9\nCVE-2021-0002,0.1,0.2\nCVE-2021-0003,0.2,0.3\n"
+        )
+        compressed = gzip.compress(text.encode("utf-8"))
+        client = Client(
+            Recorder(lambda url: Response(200, {"date": self.DATE}, compressed)),
+            sleep=lambda _: None,
+        )
+        table, payload = fetch_epss(client, ["CVE-2021-0001"])
+        self.assertEqual(list(table), ["CVE-2021-0001"])
+        self.assertEqual(payload.sha256, hashlib.sha256(compressed).hexdigest())
+        self.assertEqual(payload.entry_count, 3, "all rows, not only the wanted ones")
+        self.assertEqual(payload.source_url, EPSS_URL)
+        self.assertEqual(payload.http_date, self.DATE)
+
+    def test_epss_names_the_url_that_answered_without_its_query_and_its_date(
+        self,
+    ) -> None:
+        from supply_chain_io import fetch_epss
+
+        text = (
+            "#model_version:v1,score_date:2026-01-02T12:00:00Z\ncve,epss,percentile\n"
+        )
+        final = "https://epss.empiricalsecurity.com/epss_scores-2026-01-02.csv.gz"
+
+        def answer(url: str) -> Response:
+            if url == EPSS_URL:
+                return Response(
+                    302,
+                    {"location": f"{final}?sig=secret", "date": "redirect date"},
+                    b"",
+                )
+            return Response(
+                200,
+                {"date": self.DATE},
+                gzip.compress(text.encode("utf-8")),
+            )
+
+        client = Client(Recorder(answer), sleep=lambda _: None)
+        _table, payload = fetch_epss(client, [])
+        self.assertEqual(payload.source_url, final)
+        self.assertNotIn("secret", payload.source_url)
+        self.assertEqual(payload.http_date, self.DATE)
+        self.assertEqual(payload.entry_count, 0)
 
 
 class LastCommitSha(unittest.TestCase):
