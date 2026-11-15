@@ -379,6 +379,8 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 | 1 つ目（`spoke-token`） | `permission-contents: read`、`permission-issues: write`、`permission-vulnerability-alerts: read`、`permission-actions: read`、`permission-metadata: read` | ポリシーファイルの `target_repositories` に列挙したリポジトリと、このリポジトリ（失敗の Issue 用） |
 | 2 つ目（`hub-token`） | `permission-contents: write` | このリポジトリだけ。`supply-chain-runs` ブランチへ実行記録を書く |
 
+秘密鍵の入れ替えを確認する [`supply-chain-key-rotation.yml`](.github/workflows/supply-chain-key-rotation.yml) は、同じ App から 3 つ目のトークンを発行します。権限は `permission-secrets: read` だけで、このリポジトリのシークレットの更新日時を読む用途に限ります（[App の秘密鍵の入れ替え](#app-の秘密鍵の-90-日ごとの入れ替え)）。
+
 App は、**このリポジトリとポリシーファイルの `target_repositories` のすべてにインストール**します。トークンの発行先の所有者は 1 つなので、対象は同じ所有者のリポジトリに限られます（所有者が違うと `scope` ステップが失敗します）。App 自体に与える権限は、上の表の権限を含めてください。App がその権限を持っているかは、設定画面で確かめてください。
 
 ### リポジトリ変数とシークレットの登録
@@ -423,6 +425,63 @@ gh variable set SUPPLY_CHAIN_POLICY_REF --body '<40 桁のコミット SHA>'
 ### 写しの記録の source_commit の差し替え
 
 `docs/agent/supply-chain-source.json` の `source_commit` が 40 桁の `0` のときは、**コピー元のコミットがまだ無い**ことを示します。このリポジトリの写しは、コピー元のリポジトリの作業ツリーにだけある内容と同じです。コピー元で同じ内容をコミットしたら、`source_commit` をそのコミットの SHA に差し替え、`make supply-chain-copy-external` で照合してください。差し替えるまで、このターゲットは失敗します（`make supply-chain-copy` は、記録とファイルの SHA-256 の一致だけを見るので通ります）。
+
+### App の秘密鍵の 90 日ごとの入れ替え
+
+集約ジョブの GitHub App（`sc-aggregator-yoshiki0705`）の秘密鍵は、リポジトリのシークレット `SUPPLY_CHAIN_APP_PRIVATE_KEY` に入っています。この鍵を 90 日ごとに入れ替えます。90 日はこのリポジトリの運用方針で、GitHub が強制する期限ではありません。
+
+毎日 1 回、[`supply-chain-key-rotation.yml`](.github/workflows/supply-chain-key-rotation.yml) がシークレットの更新日時から経過日数を数えます。80 日で Issue を 1 件立て、90 日を超えると workflow を失敗させます。入れ替えそのものは人が行います。鍵の作成と削除に使える API がないためです。判定は [`scripts/check_app_key_age.py`](scripts/check_app_key_age.py)、入れ替えの実行は [`scripts/rotate_app_key.sh`](scripts/rotate_app_key.sh) が受け持ちます。
+
+#### 公式文書で確かめた事項
+
+docs.github.com の該当ページを全文読んで確かめた内容です。食い違いがあれば、公式文書が正です。
+
+| # | 事項 | 出典 |
+|---|---|---|
+| 1 | 秘密鍵は REST API で作成・一覧・削除できません。GitHub Apps の REST リファレンスに鍵の endpoint はありません。作成は App の設定画面の Credentials → Key pairs → New key（PEM が自動でダウンロードされる）、削除は同じ画面の Delete だけです。鍵が 1 本のときは、新しい鍵を作ってから古い鍵を削除します | [GitHub Apps の REST API](https://docs.github.com/en/rest/apps/apps)、[秘密鍵の管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps) |
+| 2 | 秘密鍵に有効期限はありません（"Private keys do not expire and instead need to be manually revoked"）。90 日は運用方針です | 同上の「秘密鍵の管理」 |
+| 3 | 1 つの App に持てる鍵は 25 本までです。複数の鍵を同時に有効にして、止めずに入れ替えられます | [秘密鍵の管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)（"You can create up to 25 private keys for an app"） |
+| 4 | `GET /repos/{owner}/{repo}/actions/secrets/{secret_name}` は `name`、`created_at`、`updated_at` を返し、値は返しません。App のインストールトークンは、リポジトリ権限 `Secrets`（read）で読めます | [Actions のシークレットの REST API](https://docs.github.com/en/rest/actions/secrets)、[App に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps) |
+| 5 | workflow の `GITHUB_TOKEN` の `permissions` に `secrets` はありません。シークレットの `updated_at` は `GITHUB_TOKEN` では読めないので、App のトークン（`actions/create-github-app-token`、`permission-secrets: read`）で読みます | [workflow の構文の permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax) |
+
+#### 毎日の確認の判定と動作
+
+経過日数は、現在の UTC から `updated_at` を引いた日数で、日の小数は切り捨てます。しきい値は環境変数 `WARN_DAYS`（既定 80）と `MAX_DAYS`（既定 90）で変えられます。
+
+| 判定 | 条件 | Issue の扱い | workflow |
+|---|---|---|---|
+| `ok` | 80 日未満 | 開いている Issue があれば、コメントを付けて閉じる | 成功 |
+| `due` | 80 日以上 90 日未満 | なければ 1 件立てる。あれば何も変えない | 成功 |
+| `overdue` | 90 日以上 | なければ立てる。あって本文が期限超過の版でなければ、本文を更新する | 失敗 |
+| `unreadable` | トークンを作れない、API が 200 以外、`updated_at` が読めない | 立てず、変えない。理由を表示する | 失敗 |
+
+対象の Issue は、開いている Issue のうち本文の 1 行目が `<!-- supply-chain-key-rotation:v1 -->` のものです。題では探さず、ラベルも使いません。集約ジョブの Issue とは目印が違うので、互いに触りません。入れ替えが済むと、次の実行が `ok` になり、Issue を自動で閉じます。
+
+#### 保守者の初回の設定
+
+1. App の設定画面（`https://github.com/settings/apps/sc-aggregator-yoshiki0705`）の Repository permissions で、Secrets を Read-only にして保存します。
+2. インストール側で、新しい権限の承認を求められるので承認します。承認の画面の場所と文言は確かめていません。
+3. 承認が済むまで、この workflow は `unreadable` で失敗します。承認後に `workflow_dispatch` で 1 回実行し、ジョブの要約の表（判定、`updated_at`、経過日数）を読みます。この workflow は pull request では実行されないので、最初の実行は人が観測します。
+
+#### 入れ替えの手順
+
+起票された Issue のチェックリストと同じ手順です。人の操作は、設定画面のボタン 3 回（作成 1 回、削除 1 回と、公式文書にある削除の確認 1 回）とコマンド 1 本です。
+
+1. 設定画面の Credentials → Key pairs で「Generate a private key」を押し、PEM を保存します。ボタンは 1 回です。
+2. `bash scripts/rotate_app_key.sh <PEM のパス>` を実行します。新しい鍵を App が受け付けるかを、シークレットを変える前に確かめます。その後でシークレットを登録し、この workflow を実行して結果を待ち、最後に PEM を削除します。コマンドは 1 本です。PEM が git のリポジトリの中にあると、実行を拒否します。
+3. 設定画面で、スクリプトが表示した指紋と一致しない古い鍵の Delete を押し、確認画面でもう一度 Delete を押します。
+4. 操作は要りません。Issue は、入れ替え後の次の workflow の実行で自動で閉じます。
+
+スクリプトは、新しい鍵の検証が 200 以外ならシークレットに触れずに止まります。workflow の実行が失敗したときは、古い鍵を削除する案内を出さず、シークレットを戻す方法を表示します。そのとき古い鍵はまだ有効なので、原因を直すまで設定画面の鍵は両方残してください。
+
+#### 確かめていないこと
+
+- 実際の API の応答の形です。`updated_at` の書式、Issue 一覧に pull request が混ざる形、閉じるときの `state_reason` は、REST リファレンスから書きました。実機では確かめていません。
+- 権限 `Secrets: Read-only` を足す前と後の、実際の挙動です。権限がないときの応答が 403 か 404 かは、確かめていません。
+- `actions/create-github-app-token` に、リポジトリ名だけと `permission-secrets: read` を渡す形です。workflow は `github.repository` からオーナー部分を除く 1 ステップを先に置いています。
+- `gh secret set` でシークレットの `updated_at` が更新されること。この仕組みの前提ですが、実機では確かめていません。
+- `scripts/rotate_app_key.sh` を実機で通していません。試験は、`gh`、`curl`、`openssl` の代役と、試験の中で作った使い捨ての鍵で行いました。`GET /app` の実際の応答と、表示する指紋の形式が設定画面の表示と同じかどうかも未確認です。
+- 公開リポジトリでは、リポジトリに 60 日の活動がないと scheduled workflow が自動で無効になります（[Disabling and enabling a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)）。無効になると、この確認も止まり、通知は出ません。集約ジョブが `supply-chain-runs` ブランチへ書く記録がこの「活動」に数えられるかは、確かめていません。
 
 ---
 
