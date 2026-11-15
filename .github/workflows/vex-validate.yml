@@ -191,6 +191,8 @@ jobs:
       - name: Note a non pull request event
         if: github.event_name != 'pull_request' && github.event_name != 'pull_request_review'
         run: |
-          echo "### vex-validate approval review" >> "$GITHUB_STEP_SUMMARY"
-          echo >> "$GITHUB_STEP_SUMMARY"
-          echo "not a pull request event" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### vex-validate approval review"
+            echo
+            echo "not a pull request event"
+          } >> "$GITHUB_STEP_SUMMARY"
