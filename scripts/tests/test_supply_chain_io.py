@@ -417,6 +417,67 @@ class LastCommitTime(unittest.TestCase):
                     github.last_commit_time("o/r", ".vex/a.json", "a" * 40)
 
 
+class LastCommitSha(unittest.TestCase):
+    """``GitHubApi.last_commit_sha`` names the newest commit that touched one path, from a given commit.
+
+    The responses below are fakes. The parameters (``path``, ``sha``, ``per_page``) and the field ``sha`` of
+    a list item were written from memory of the List commits reference, which was not reachable when this was
+    written, so the real shape is unconfirmed.
+    """
+
+    @staticmethod
+    def commit(sha: Any) -> dict[str, Any]:
+        return {"sha": sha, "commit": {"committer": {"date": "2026-11-14T15:04:05Z"}}}
+
+    def read(self, answer: Any) -> tuple[Any, Recorder]:
+        github, net = api(answer)
+        return github.last_commit_sha("o/r", ".vex/a.json", "a" * 40), net
+
+    def test_the_sha_of_the_first_commit_of_the_list_is_returned(self) -> None:
+        sha, net = self.read(
+            lambda url: json_response([self.commit("b" * 40), self.commit("c" * 40)])
+        )
+        self.assertEqual(sha, "b" * 40)
+        self.assertEqual(len(net.urls), 1)
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(net.urls[0]).query)
+        self.assertEqual(
+            query, {"path": [".vex/a.json"], "sha": ["a" * 40], "per_page": ["1"]}
+        )
+        self.assertTrue(net.urls[0].startswith(f"{ROOT_URL}/repos/o/r/commits?"))
+
+    def test_an_empty_list_is_none(self) -> None:
+        sha, _ = self.read(lambda url: json_response([]))
+        self.assertIsNone(sha)
+
+    def test_an_item_without_a_readable_sha_is_an_error_not_none(self) -> None:
+        for body in (
+            [{}],
+            [{"sha": None}],
+            [{"sha": 5}],
+            [{"sha": "B" * 40}],
+            [{"sha": "abc"}],
+            ["not an object"],
+        ):
+            with self.subTest(body=body):
+                github, _ = api(lambda url, b=body: json_response(b))
+                with self.assertRaises(HttpError):
+                    github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
+
+    def test_an_answer_that_is_not_a_list_is_an_error(self) -> None:
+        github, _ = api(lambda url: json_response({"commits": []}))
+        with self.assertRaises(HttpError):
+            github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
+
+    def test_a_refusal_is_an_error(self) -> None:
+        for status in (404, 500):
+            with self.subTest(status=status):
+                github, _ = api(
+                    lambda url, s=status: json_response({"message": "no"}, status=s)
+                )
+                with self.assertRaises(HttpError):
+                    github.last_commit_sha("o/r", ".vex/a.json", "a" * 40)
+
+
 class LabelCalls(unittest.TestCase):
     def test_delete_sends_a_delete_with_the_token_and_no_body(self) -> None:
         seen: list[tuple[str, str, Any]] = []

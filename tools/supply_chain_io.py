@@ -358,6 +358,41 @@ class GitHubApi:
         )
         return when.replace(microsecond=0) if when is not None else None
 
+    def last_commit_sha(self, repo: str, path: str, ref: str) -> str | None:
+        """The SHA of the newest commit that changed ``path``, looking back from the commit ``ref``.
+
+        The same request as ``last_commit_time`` (``GET /repos/{owner}/{repo}/commits`` with ``path``, ``sha``
+        and ``per_page=1``); the answer is the first item's ``sha``. ``None`` when the list is empty. The
+        parameter and field names were written from memory of the List commits reference, which was not
+        reachable when this was written, so they are unconfirmed.
+
+        An item whose ``sha`` is not 40 lowercase hex digits is an error and not ``None``: "no commit touched
+        this path" and "the answer cannot be read" must not be mixed, because the caller builds a decision on
+        the commit.
+
+        Raises:
+            HttpError: GitHub refused the request, the answer is not a list, or the first item has no readable
+                ``sha``.
+        """
+        data = self.get_json(
+            f"/repos/{repo}/commits", {"path": path, "sha": ref, "per_page": 1}
+        )
+        if not isinstance(data, list):
+            raise HttpError(
+                "GET", self._url(f"/repos/{repo}/commits"), 200, "not a list"
+            )
+        if not data:
+            return None
+        sha = data[0].get("sha") if isinstance(data[0], dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            raise HttpError(
+                "GET",
+                self._url(f"/repos/{repo}/commits"),
+                200,
+                "no readable commit sha",
+            )
+        return sha
+
 
 # --- feeds ---------------------------------------------------------------------------------------
 
