@@ -148,6 +148,7 @@ from supply_chain_io import (
     fetch_epss,
     fetch_kev,
     parse_osv_time,
+    summarize_received,
 )
 
 LABEL = "supply-chain-aggregator"
@@ -996,9 +997,17 @@ def _mal_findings(
 
 
 def _fetched(
-    name: models.FeedName, now: datetime, catalog: str | None, payload: FeedPayload
+    name: models.FeedName,
+    now: datetime,
+    catalog: str | None,
+    payload: FeedPayload,
+    released_at: datetime | None = None,
 ) -> run_record.FeedFetched:
-    """A ``FeedFetched`` that carries what the response was (hash, entry count, URL, ``Date`` header)."""
+    """A ``FeedFetched`` that carries what the response was (hash, entry count, URL, ``Date`` header).
+
+    ``released_at`` is the time the source says the data was released (KEV: ``dateReleased``); ``None`` for a
+    feed that says none, or when it could not be read.
+    """
     return run_record.FeedFetched(
         name,
         now,
@@ -1007,6 +1016,7 @@ def _fetched(
         entry_count=payload.entry_count,
         source_url=payload.source_url,
         http_date=payload.http_date,
+        released_at=released_at,
     )
 
 
@@ -1021,11 +1031,23 @@ def fetch_feeds(
     """Fetch KEV, EPSS and OSV. A failed feed is recorded and its value is ``None``; nothing is invented.
 
     KEV and EPSS are recorded with the hash, entry count, URL and ``Date`` header of their response
-    (``FeedPayload``). OSV is recorded with ``source_url`` (the batch query endpoint) and ``entry_count`` (the
-    number of ``MAL-`` records that were read in full) only. Its ``payload_sha256`` and ``http_date`` stay
-    ``None`` on purpose: one fetch is many responses (batch pages, then one GET per record), so there is no one
-    body to hash and no one ``Date``, and a hash made by combining the hashes of several responses would name a
-    byte string nobody received. A failed feed (``FeedFailed``) carries none of these fields.
+    (``FeedPayload``). KEV also carries ``released_at``, the catalogue's ``dateReleased`` (``None`` when it is
+    missing or cannot be read).
+
+    OSV is one fetch made of many responses: the pages of the batch query, then one GET per ``MAL-`` record in
+    the order of the ids, then one GET per record of an open ``MAL-`` Issue that left the feed, again in the order
+    of the ids (design D-26). It is recorded as follows.
+
+    * ``payload_sha256``: the SHA-256 of one text, made of the SHA-256 of the body of each response in the order
+      above (lower case hex), one per line, with a newline after the last. It stands for the list of hashes, not
+      for one body: no one body was received, so it is not the hash of anything OSV sent. A response that did not
+      arrive (a dropped connection, a stop for the rate limit) is not in the list; one that arrived with an error
+      status is, because its body was received. ``None`` when no response arrived.
+    * ``http_date``: the ``Date`` header of the first response of the fetch as received, ``None`` when that
+      response had none (a later response never stands in) or when no response arrived.
+    * ``source_url``: the batch query endpoint. ``entry_count``: the number of ``MAL-`` records read in full.
+
+    A failed feed (``FeedFailed``) carries none of these fields.
     """
     fetched: list[run_record.FeedFetched] = []
     failed: list[run_record.FeedFailed] = []
@@ -1035,7 +1057,7 @@ def fetch_feeds(
     try:
         kev, catalog, kev_released, kev_payload = fetch_kev(client)
         kev_on = now.date()
-        fetched.append(_fetched("kev", now, catalog, kev_payload))
+        fetched.append(_fetched("kev", now, catalog, kev_payload, kev_released))
     except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
         kev = None
         failed.append(run_record.FeedFailed("kev", now, str(exc)[:300]))
@@ -1060,6 +1082,7 @@ def fetch_feeds(
     delisted: set[str] = set()
     unconfirmed: set[str] = set()
     extra: list[Finding] = []
+    first_received = len(osv.received)  # the responses of this fetch start here
     try:
         purls = sorted(
             {
@@ -1105,15 +1128,16 @@ def fetch_feeds(
                     withdrawn[mal_id] = when
             else:
                 delisted.add(mal_id)
+        digest, first_date = summarize_received(osv.received[first_received:])
         fetched.append(
             run_record.FeedFetched(
                 "malicious",
                 now,
                 None,
-                payload_sha256=None,  # many responses, no one body: see the docstring
+                payload_sha256=digest,  # the digest of the list of hashes, see the docstring
                 entry_count=sum(1 for r in records.values() if r is not None),
                 source_url=OSV_QUERY_URL,
-                http_date=None,  # many responses, no one Date
+                http_date=first_date,
             )
         )
     except (HttpError, RateLimited, TransportError, KeyError, ValueError) as exc:
@@ -1818,7 +1842,12 @@ def read_observation(path: str | None) -> str | None:
 
 @dataclass(frozen=True)
 class PilotCandidate:
-    """One finding Issue the pilot may count, as the run saw it."""
+    """One finding Issue the pilot may count, as the run saw it.
+
+    ``purls`` are the purls of the components its state block lists (empty when the block lists none or cannot
+    be read). They are one of the two places the component of a detector error is read from; the other is the
+    statement that excludes the Issue's finding (``build_pilot``).
+    """
 
     repo: Repo
     number: int
@@ -1827,6 +1856,19 @@ class PilotCandidate:
         datetime | None
     )  # ``created_at`` of the Issue; ``None`` when GitHub gave none that can be read
     duplicate: bool  # its state block names a representative (Requirement 8.38)
+    purls: tuple[str, ...] = ()
+
+
+def _state_purls(state: object) -> tuple[str, ...]:
+    """The purls of the ``components`` of an Issue's state block; anything unreadable is left out."""
+    raw = state.get("components") if isinstance(state, Mapping) else None
+    if not isinstance(raw, list):
+        return ()
+    return tuple(
+        item["purl"]
+        for item in raw
+        if isinstance(item, Mapping) and isinstance(item.get("purl"), str)
+    )
 
 
 def pilot_candidates(
@@ -1858,12 +1900,22 @@ def pilot_candidates(
                 issue.vuln_id,
                 parse_osv_time(item.get("created_at")),
                 isinstance(named, str) and bool(named),
+                _state_purls(issue.body_state),
             )
         )
     for index, action in enumerate(actions):
         number = results.get(index)
         if action.op == "create" and action.kind == "finding" and number is not None:
-            out.append(PilotCandidate(action.repo, number, action.vuln_id, now, False))
+            out.append(
+                PilotCandidate(
+                    action.repo,
+                    number,
+                    action.vuln_id,
+                    now,
+                    False,
+                    _state_purls(issue_body.parse_state(action.body)),
+                )
+            )
     return out
 
 
@@ -1899,6 +1951,45 @@ def _optional_time(value: datetime | None) -> str | None:
     return None if value is None else _time_text(value)
 
 
+def purl_name_version(purl: str) -> str | None:
+    """``pkg:<type>/<name>@<version>`` of a purl: type, namespace, name and version; no qualifier, no subpath.
+
+    The namespace is part of the name (``pkg:maven/org.apache/log4j@2.0.0``). ``None`` when the text is not a
+    purl, or has no name or no version: a component whose version is unknown is not a component to join on.
+    """
+    base = purl.split("#", 1)[0].split("?", 1)[0]
+    if not base.startswith("pkg:"):
+        return None
+    head, at, version = base.rpartition("@")
+    if not at or not version:
+        return None
+    kind, slash, name = head.removeprefix("pkg:").partition("/")
+    if not kind or not slash or not name.strip("/"):
+        return None
+    return f"{head}@{version}"
+
+
+def detector_error_cause_key(purls: Iterable[str], kind: str | None) -> str | None:
+    """``"<purl name@version>|<kind>"`` of a detector error, or ``None`` when its cause cannot be named.
+
+    Two detector errors are one cause when they share a component and a kind of error. ``None`` makes the
+    Issue its own cause in ``metrics.compute_pilot_rates``, which counts the errors on the high side. It is
+    returned when the kind is not known, when the Issue has no component, when it has more than one (a cause
+    would be a guess) or when a purl cannot be read.
+
+    Args:
+        purls: The purls the Issue is about. Several purls that differ only in qualifiers or subpath are one
+            component.
+        kind: The kind of the error (``skip-paths``), ``None`` when nothing says what it was.
+    """
+    if kind is None:
+        return None
+    components = {purl_name_version(p) for p in purls}
+    if len(components) != 1 or None in components:
+        return None
+    return f"{next(iter(components))}|{kind}"
+
+
 def build_pilot(
     observation_text: str | None,
     *,
@@ -1909,6 +2000,7 @@ def build_pilot(
     lines: Sequence[metrics.IssueTimeline],
     managed_repos: Collection[Repo],
     now: datetime,
+    error_kinds: Mapping[tuple[Repo, int], str] | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     """The ``pilot`` of the extra record, and the warnings. Feeds ``metrics``; it counts nothing itself.
 
@@ -1930,6 +2022,10 @@ def build_pilot(
         lines: Timelines of the Issues of the repositories that were read, for the SLI.
         managed_repos: Repositories that had an Issue of the Aggregator before this run.
         now: The run time.
+        error_kinds: ``(repository, Issue number)`` -> the kind of detector error (``skip-paths``) that is known
+            for the Issue. A kind is a fact that something outside this function established; it is never
+            guessed here. The Aggregator has no source for one yet (see ``run``), so it passes none, and every
+            detector error is then its own cause. Used only for an Issue that counts as a detector error.
 
     Returns:
         ``(pilot, warnings)``. ``pilot`` is ``{"error": reason}`` when the input cannot be used or a count
@@ -1959,19 +2055,34 @@ def build_pilot(
             continue
         status: str | None = None
         justification: str | None = None
+        excluded_purls: set[str] = set()
         for path, vuln_id, purl in sorted(
             exclusions.get((cand.repo, cand.vuln_id or ""), [])
         ):
-            if (path, vuln_id, purl) in decisions:
+            excluded_purls.add(purl)
+            if status is None and (path, vuln_id, purl) in decisions:
                 status, justification = decisions[(path, vuln_id, purl)]
-                break
+        detector_error = key in observation.detector_error_issues
+        # The same test as ``compute_pilot_rates``: an Issue it counts as a detector error.
+        counted_as_error = detector_error or (
+            status == "not_affected"
+            and justification == metrics.FALSE_POSITIVE_JUSTIFICATION
+        )
+        cause_key = (
+            detector_error_cause_key(
+                excluded_purls or cand.purls, (error_kinds or {}).get(key)
+            )
+            if counted_as_error
+            else None
+        )
         outcomes.append(
             metrics.PilotIssueOutcome(
                 vex_status=status,
                 justification=justification,
-                detector_error=key in observation.detector_error_issues,
+                detector_error=detector_error,
                 duplicate=cand.duplicate or key in duplicates,
                 opened_at=cand.opened_at,
+                cause_key=cause_key,
             )
         )
     try:
@@ -3020,6 +3131,11 @@ def run(
         lines=[t for t in lines if t.repo in fetch_ok],
         managed_repos=frozenset(i.repo for i in issues),
         now=now,
+        # No ``error_kinds``: nothing this run reads says why a detector error was one. The ``skipped_paths`` of
+        # the artifact tell what was excluded from a scan, not that an Issue was closed because of it; an Issue
+        # is closed as ``resolved`` whether the finding was fixed or its path was left out; and the observation
+        # input names the Issues a maintainer classified, not the kind. So each detector error is its own
+        # cause, which counts the errors on the high side.
     )
     extra = ExtraData(
         skipped_paths={
