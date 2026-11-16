@@ -1,6 +1,6 @@
 {
   "source_repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
-  "source_commit": "be4b4a9156801bc4fecfb05480ea0fa17859e295",
+  "source_commit": "febf0dd31027dc1c388dce689de8f12e31865b0d",
   "files": {
     "tools/supply_chain/__init__.py": {
       "source_path": "solutions/supply-chain/supply_chain/__init__.py",
@@ -20,7 +20,7 @@
     },
     "tools/supply_chain/metrics.py": {
       "source_path": "solutions/supply-chain/supply_chain/metrics.py",
-      "sha256": "dfbb868377e5626e17b2ad1b28ac5ef295e2301ab4870c9450bf3138c339b556"
+      "sha256": "a4236ae4e168ce323562cd14cbeaac58dc42bcae28c3c7c103ce24771d1fa5cb"
     },
     "tools/supply_chain/models.py": {
       "source_path": "solutions/supply-chain/supply_chain/models.py",
