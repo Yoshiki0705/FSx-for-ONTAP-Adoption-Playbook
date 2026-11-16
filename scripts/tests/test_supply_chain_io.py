@@ -522,5 +522,93 @@ class LabelCalls(unittest.TestCase):
         )
 
 
+class OsvReceivedBodies(unittest.TestCase):
+    """``Osv`` keeps, for every response it received, the hash of the body and the ``Date`` header, in order.
+
+    The responses are fakes. That a real OSV response carries a ``Date`` header was not observed (no network).
+    """
+
+    D1 = "Sat, 14 Nov 2026 15:04:05 GMT"
+    D2 = "Sat, 14 Nov 2026 15:04:06 GMT"
+
+    @staticmethod
+    def sha(body: bytes) -> str:
+        return hashlib.sha256(body).hexdigest()
+
+    def osv(self, answer: Any) -> Any:
+        from supply_chain_io import Osv
+
+        return Osv(Client(Recorder(answer), sleep=lambda _: None))
+
+    def test_every_page_and_every_record_is_kept_in_the_order_received(self) -> None:
+        first = json.dumps(
+            {"results": [{"vulns": [{"id": "MAL-1"}], "next_page_token": "t"}]}
+        ).encode("utf-8")
+        second = json.dumps({"results": [{"vulns": [{"id": "MAL-2"}]}]}).encode("utf-8")
+        record = b'{"id": "MAL-1"}'
+
+        def answer(url: str) -> Response:
+            if url.endswith("/v1/querybatch"):
+                # the Recorder does not pass the body, so the second call is told by count
+                calls = [u for u in net.urls if u.endswith("/v1/querybatch")]
+                return Response(
+                    200,
+                    {"date": self.D1 if len(calls) == 1 else self.D2},
+                    first if len(calls) == 1 else second,
+                )
+            return Response(200, {}, record)
+
+        from supply_chain_io import Osv
+
+        net = Recorder(answer)
+        osv = Osv(Client(net, sleep=lambda _: None))
+        self.assertEqual(osv.received, [])
+        found = osv.query_purls(["pkg:npm/a@1"])
+        osv.get_vuln("MAL-1")
+        self.assertEqual(found, {"pkg:npm/a@1": ["MAL-1", "MAL-2"]})
+        self.assertEqual(
+            [(r.sha256, r.http_date) for r in osv.received],
+            [
+                (self.sha(first), self.D1),
+                (self.sha(second), self.D2),
+                (self.sha(record), None),
+            ],
+        )
+
+    def test_a_response_that_did_not_arrive_is_not_kept(self) -> None:
+        from supply_chain_io import TransportError
+
+        def answer(url: str) -> Response:
+            raise TransportError("connection reset")
+
+        osv = self.osv(answer)
+        with self.assertRaises(TransportError):
+            osv.get_vuln("MAL-1")
+        self.assertEqual(osv.received, [])
+
+    def test_the_summary_is_the_hash_of_the_lines_of_hashes(self) -> None:
+        from supply_chain_io import ReceivedBody, summarize_received
+
+        a, b = "a" * 64, "b" * 64
+        digest, date = summarize_received(
+            [ReceivedBody(a, self.D1), ReceivedBody(b, self.D2)]
+        )
+        self.assertEqual(digest, self.sha(f"{a}\n{b}\n".encode()))
+        self.assertEqual(date, self.D1)
+        swapped, _ = summarize_received(
+            [ReceivedBody(b, self.D2), ReceivedBody(a, self.D1)]
+        )
+        self.assertNotEqual(swapped, digest, "the order must change the value")
+        self.assertEqual(summarize_received([]), (None, None))
+
+    def test_the_date_is_that_of_the_first_response_even_when_it_has_none(self) -> None:
+        from supply_chain_io import ReceivedBody, summarize_received
+
+        _digest, date = summarize_received(
+            [ReceivedBody("a" * 64, None), ReceivedBody("b" * 64, self.D2)]
+        )
+        self.assertIsNone(date)
+
+
 if __name__ == "__main__":
     unittest.main()

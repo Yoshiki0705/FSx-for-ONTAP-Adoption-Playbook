@@ -538,11 +538,63 @@ def parse_osv_time(raw: object) -> datetime | None:
     return parsed.astimezone(UTC) if parsed.utcoffset() is not None else None
 
 
+@dataclass(frozen=True, slots=True)
+class ReceivedBody:
+    """One response ``Osv`` received: the SHA-256 of its body and its ``Date`` header as received.
+
+    Attributes:
+        sha256: SHA-256 of the body bytes exactly as received (64 lowercase hex digits), whatever the status.
+        http_date: The ``Date`` header, ``None`` when the response had none.
+    """
+
+    sha256: str
+    http_date: str | None
+
+
+def summarize_received(items: Sequence[ReceivedBody]) -> tuple[str | None, str | None]:
+    """The digest of a list of responses and the ``Date`` of the first one.
+
+    The digest is the SHA-256 of one text: the SHA-256 of each body (lower case hex), one per line in the order
+    given, with a newline after the last. It stands for the list of hashes, not for one body. ``Date`` is that of
+    the first response, as received; ``None`` when the first has none (a later one never stands in).
+
+    Returns:
+        ``(digest, date)``; ``(None, None)`` for an empty list.
+    """
+    if not items:
+        return None, None
+    lines = "".join(f"{item.sha256}\n" for item in items)
+    return hashlib.sha256(lines.encode("ascii")).hexdigest(), items[0].http_date
+
+
 class Osv:
-    """OSV.dev: which MAL- records mention a purl, and what one record says."""
+    """OSV.dev: which MAL- records mention a purl, and what one record says.
+
+    Every response that arrives is noted in ``received`` (the hash of its body and its ``Date``), in the order
+    it arrived. A request that got no response (a dropped connection, a rate limit that ended the run) adds
+    nothing. The caller takes the slice that belongs to the fetch it is describing.
+    """
 
     def __init__(self, client: Client) -> None:
         self._client = client
+        self.received: list[ReceivedBody] = []
+
+    def _send(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str] | None = None,
+        body: bytes | None = None,
+    ) -> Response:
+        resp = self._client.send(method, url, headers=headers, body=body)
+        self.received.append(
+            ReceivedBody(
+                hashlib.sha256(resp.body).hexdigest(),
+                resp.headers.get("date") or None,
+            )
+        )
+        return resp
 
     def query_purls(self, purls: Sequence[str]) -> dict[str, list[str]]:
         """purl -> ids of the vulnerabilities OSV lists for it (all kinds; the caller keeps MAL-)."""
@@ -558,7 +610,7 @@ class Osv:
                     if tokens[i]:
                         q["page_token"] = tokens[i]
                     queries.append(q)
-                resp = self._client.send(
+                resp = self._send(
                     "POST",
                     OSV_QUERY_URL,
                     headers={"Content-Type": "application/json"},
@@ -593,6 +645,4 @@ class Osv:
         return found
 
     def get_vuln(self, vuln_id: str) -> Response:
-        return self._client.send(
-            "GET", f"{OSV_ROOT}/v1/vulns/{urllib.parse.quote(vuln_id)}"
-        )
+        return self._send("GET", f"{OSV_ROOT}/v1/vulns/{urllib.parse.quote(vuln_id)}")

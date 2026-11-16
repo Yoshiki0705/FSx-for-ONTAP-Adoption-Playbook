@@ -3777,6 +3777,15 @@ def fetched(outcome: Any, name: str) -> run_record.FeedFetched:
     return found[0]
 
 
+def osv_digest(bodies: list[bytes]) -> str:
+    """The SHA-256 of the lines of the SHA-256 of each body, one line each, a newline after the last.
+
+    Written here on its own, not taken from the code under test.
+    """
+    lines = "".join(hashlib.sha256(body).hexdigest() + "\n" for body in bodies)
+    return hashlib.sha256(lines.encode("ascii")).hexdigest()
+
+
 class FeedFields(unittest.TestCase):
     """What each feed said is recorded: the hash of the body, how many entries, where from, and the Date."""
 
@@ -3844,10 +3853,14 @@ class FeedFields(unittest.TestCase):
             net.on("GET", r"api\.osv\.dev/v1/vulns/MAL-2026-1", record)
         return net
 
-    def test_osv_has_a_url_and_a_count_but_no_hash_and_no_date(self) -> None:
+    def test_osv_has_a_url_a_count_and_the_digest_of_the_responses(self) -> None:
         outcome = execute(self.osv_world(None), policy_text([TARGET]))
         feed = fetched(outcome, "malicious")
-        self.assertIsNone(feed.payload_sha256, "several responses have no one body")
+        # one batch response was received: the single page of the query for the one purl (it has no Date)
+        self.assertEqual(
+            feed.payload_sha256,
+            osv_digest([json.dumps({"results": [{}]}).encode("utf-8")]),
+        )
         self.assertIsNone(feed.http_date)
         self.assertEqual(feed.source_url, OSV_SOURCE)
         self.assertEqual(feed.entry_count, 0, "a count of zero is a statement")
@@ -3858,7 +3871,7 @@ class FeedFields(unittest.TestCase):
             execute(self.osv_world(record), policy_text([TARGET])), "malicious"
         )
         self.assertEqual(feed.entry_count, 1)
-        self.assertIsNone(feed.payload_sha256)
+        self.assertIsNotNone(feed.payload_sha256)
 
     def test_osv_does_not_count_a_record_it_could_not_read(self) -> None:
         net = self.osv_world(ok({"message": "not found"}, 404))
@@ -3878,6 +3891,200 @@ class FeedFields(unittest.TestCase):
             ["name", "at", "reason"],
         )
         self.assertIsNotNone(fetched(outcome, "epss").payload_sha256)
+
+
+class OsvDigest(unittest.TestCase):
+    """``payload_sha256`` and ``http_date`` of the ``malicious`` feed summarise the responses received.
+
+    Order of the responses: the pages of the batch query, then the ``MAL-`` records by id, then the records
+    of the Issues that left the feed by id. The responses below are fakes; that OSV sends a ``Date`` header
+    was not observed.
+    """
+
+    D1 = "Sat, 14 Nov 2026 15:04:01 GMT"
+    D2 = "Sat, 14 Nov 2026 15:04:02 GMT"
+    D3 = "Sat, 14 Nov 2026 15:04:03 GMT"
+    D4 = "Sat, 14 Nov 2026 15:04:04 GMT"
+    D5 = "Sat, 14 Nov 2026 15:04:05 GMT"
+    PAGE1 = json.dumps(
+        {"results": [{"vulns": [{"id": "MAL-2026-1"}], "next_page_token": "t"}]}
+    ).encode("utf-8")
+    PAGE2 = json.dumps({"results": [{"vulns": [{"id": "MAL-2026-2"}]}]}).encode("utf-8")
+    REC1 = json.dumps({"id": "MAL-2026-1", "published": "2026-01-01T00:00:00Z"}).encode(
+        "utf-8"
+    )
+    REC2 = json.dumps({"id": "MAL-2026-2", "published": "2026-01-02T00:00:00Z"}).encode(
+        "utf-8"
+    )
+    GONE = json.dumps({"id": "MAL-2026-0", "withdrawn": "2026-01-01T00:00:00Z"}).encode(
+        "utf-8"
+    )
+
+    def osv_net(
+        self,
+        *,
+        first_date: str | None = None,
+        rec1: Any = None,
+        rec2: Any = None,
+    ) -> FakeNet:
+        """An Issue for MAL-2026-0 that left the feed, two pages of the query, and one record per id."""
+        net = world()
+        gone_issue = issue_item(
+            7,
+            finding_issue_body("MAL-2026-0", kev=False),
+            title="[supply-chain] MAL-2026-0",
+        )
+        net.on("GET", rf"/repos/{TARGET}/issues\?", ok([gone_issue]))
+
+        def batch(url: str, payload: dict[str, Any]) -> Response:
+            if payload["queries"][0].get("page_token") is None:
+                headers = {"date": first_date} if first_date else {}
+                return Response(200, headers, self.PAGE1)
+            return Response(200, {"date": self.D2}, self.PAGE2)
+
+        net.on("POST", r"/v1/querybatch", batch)
+        net.on(
+            "GET",
+            r"api\.osv\.dev/v1/vulns/MAL-2026-1$",
+            rec1 or Response(200, {"date": self.D3}, self.REC1),
+        )
+        net.on(
+            "GET",
+            r"api\.osv\.dev/v1/vulns/MAL-2026-2$",
+            rec2 or Response(200, {"date": self.D4}, self.REC2),
+        )
+        net.on(
+            "GET",
+            r"api\.osv\.dev/v1/vulns/MAL-2026-0$",
+            Response(200, {"date": self.D5}, self.GONE),
+        )
+        return net
+
+    def feed(self, net: FakeNet) -> run_record.FeedFetched:
+        return fetched(execute(net, policy_text([TARGET])), "malicious")
+
+    def test_the_digest_covers_pages_then_records_then_the_records_that_left_the_feed(
+        self,
+    ) -> None:
+        feed = self.feed(self.osv_net(first_date=self.D1))
+        expected = osv_digest([self.PAGE1, self.PAGE2, self.REC1, self.REC2, self.GONE])
+        self.assertEqual(feed.payload_sha256, expected)
+        self.assertEqual(feed.http_date, self.D1)
+        self.assertEqual(feed.entry_count, 2)
+        self.assertEqual(feed.source_url, OSV_SOURCE)
+
+    def test_a_different_order_gives_a_different_value(self) -> None:
+        # the same bodies, but MAL-2026-1 answers with the second record and the other way round
+        swapped = self.osv_net(
+            first_date=self.D1,
+            rec1=Response(200, {"date": self.D3}, self.REC2),
+            rec2=Response(200, {"date": self.D4}, self.REC1),
+        )
+        feed = self.feed(swapped)
+        same = osv_digest([self.PAGE1, self.PAGE2, self.REC1, self.REC2, self.GONE])
+        other = osv_digest([self.PAGE1, self.PAGE2, self.REC2, self.REC1, self.GONE])
+        self.assertNotEqual(same, other)
+        self.assertEqual(feed.payload_sha256, other)
+
+    def test_the_date_is_the_first_responses_even_when_it_has_none(self) -> None:
+        feed = self.feed(self.osv_net(first_date=None))
+        self.assertIsNone(feed.http_date, "a later response's Date must not stand in")
+        self.assertIsNotNone(feed.payload_sha256)
+
+    def test_a_response_that_never_arrived_is_not_in_the_digest(self) -> None:
+        def dropped(url: str, payload: Any) -> Response:
+            raise TransportError("connection reset")
+
+        feed = self.feed(self.osv_net(first_date=self.D1, rec2=dropped))
+        self.assertEqual(
+            feed.payload_sha256,
+            osv_digest([self.PAGE1, self.PAGE2, self.REC1, self.GONE]),
+        )
+        self.assertEqual(feed.entry_count, 1)
+
+    def test_a_record_that_answered_with_an_error_is_in_the_digest(self) -> None:
+        # a body was received, so it is part of what was read, though the record is not used
+        missing = Response(404, {}, b'{"message": "not found"}')
+        feed = self.feed(self.osv_net(first_date=self.D1, rec2=missing))
+        self.assertEqual(
+            feed.payload_sha256,
+            osv_digest(
+                [self.PAGE1, self.PAGE2, self.REC1, missing.body, self.GONE],
+            ),
+        )
+
+    def test_no_response_at_all_leaves_both_empty(self) -> None:
+        net = world()
+        net.on("GET", r"/dependency-graph/sbom$", ok({"sbom": declared_empty()}))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(net.to("POST", "/v1/querybatch"), [], "the control: no query")
+        feed = fetched(outcome, "malicious")
+        self.assertIsNone(feed.payload_sha256)
+        self.assertIsNone(feed.http_date)
+        self.assertEqual(feed.entry_count, 0)
+
+    def test_the_value_survives_the_written_run_record(self) -> None:
+        net = self.osv_net(first_date=self.D1)
+        execute(net, policy_text([TARGET]))
+        saved = run_record.from_json(put_texts(net)[0])
+        feed = next(f for f in saved.feeds.fetched if f.name == "malicious")
+        self.assertEqual(feed.http_date, self.D1)
+        self.assertEqual(
+            feed.payload_sha256,
+            osv_digest([self.PAGE1, self.PAGE2, self.REC1, self.REC2, self.GONE]),
+        )
+
+    def test_a_failed_feed_has_no_digest(self) -> None:
+        net = self.osv_net(first_date=self.D1)
+        net.on("POST", r"/v1/querybatch", ok({"message": "down"}, 500))
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertNotIn("malicious", [f.name for f in outcome.record.feeds.fetched])
+        self.assertIn("malicious", [f.name for f in outcome.record.feeds.failed])
+
+
+class KevReleasedAt(unittest.TestCase):
+    """``FeedFetched.released_at`` of ``kev`` is the catalogue's ``dateReleased``."""
+
+    def kev_net(self, doc: dict[str, Any]) -> FakeNet:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok(doc))
+        return net
+
+    def test_it_is_the_date_released_in_utc_without_a_fraction(self) -> None:
+        doc = {**kev_feed(), "dateReleased": "2026-01-02T01:02:03.456Z"}
+        net = self.kev_net(doc)
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(
+            fetched(outcome, "kev").released_at,
+            datetime(2026, 1, 2, 1, 2, 3, tzinfo=UTC),
+        )
+        saved = run_record.from_json(put_texts(net)[0])
+        kev = next(f for f in saved.feeds.fetched if f.name == "kev")
+        self.assertEqual(kev.released_at, datetime(2026, 1, 2, 1, 2, 3, tzinfo=UTC))
+
+    def test_a_catalogue_without_a_readable_date_released_has_none(self) -> None:
+        for label, doc in (
+            ("missing", kev_feed()),
+            ("garbage", {**kev_feed(), "dateReleased": "garbage"}),
+            ("no zone", {**kev_feed(), "dateReleased": "2026-01-02T01:02:03"}),
+        ):
+            with self.subTest(label):
+                outcome = execute(self.kev_net(doc), policy_text([TARGET]))
+                self.assertIsNone(fetched(outcome, "kev").released_at)
+
+    def test_the_other_feeds_have_no_release_time(self) -> None:
+        outcome = execute(world(), policy_text([TARGET]))
+        for name in ("epss", "malicious"):
+            self.assertIsNone(fetched(outcome, name).released_at)
+
+    def test_a_failed_catalogue_has_no_fetched_entry_and_no_release_time(self) -> None:
+        net = world()
+        net.on("GET", r"cisa\.gov", ok({"message": "down"}, 503))
+        client = Client(net, sleep=lambda _: None)
+        result = fetch_feeds(client, Osv(client), [], [], {}, NOW)
+        self.assertNotIn("kev", [f.name for f in result.fetched])
+        self.assertIsNone(result.snapshot.kev_released_at)
+        self.assertIn("kev", [f.name for f in result.failed])
 
 
 # --- what the Aggregator read the SBOM from (task 15.9) ---------------------------------------------------
@@ -4408,6 +4615,218 @@ class ReadingTheExtraRecord(unittest.TestCase):
         ):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 aggregator.parse_extra(text)
+
+
+CRYPTO = "pkg:pypi/cryptography@41.0.0"
+SKIP = "skip-paths"
+
+
+def cause_candidate(
+    number: int, *purls: str, vuln: str | None = None
+) -> aggregator.PilotCandidate:
+    return aggregator.PilotCandidate(
+        REPO,
+        number,
+        vuln or f"CVE-2021-{3000 + number}",
+        NOW - timedelta(days=1),
+        False,
+        tuple(purls),
+    )
+
+
+class PurlComponent(unittest.TestCase):
+    """The component of a cause: the name and the version of a purl, without qualifiers and subpath."""
+
+    def test_type_namespace_name_and_version_are_kept(self) -> None:
+        for purl, expected in (
+            (CRYPTO, CRYPTO),
+            ("pkg:npm/%40scope/name@1.2.3", "pkg:npm/%40scope/name@1.2.3"),
+            ("pkg:maven/org.apache/log4j@2.0.0", "pkg:maven/org.apache/log4j@2.0.0"),
+            ("pkg:pypi/cryptography@41.0.0?arch=x86#sub/path", CRYPTO),
+            ("pkg:pypi/cryptography@41.0.0#sub", CRYPTO),
+        ):
+            with self.subTest(purl):
+                self.assertEqual(aggregator.purl_name_version(purl), expected)
+
+    def test_a_purl_without_a_version_or_a_name_has_no_component(self) -> None:
+        for purl in (
+            "pkg:pypi/cryptography",
+            "pkg:pypi/cryptography@",
+            "pkg:pypi/cryptography?x=1@2",
+            "pkg:pypi/@1.0",
+            "cryptography@1.0",
+            "",
+        ):
+            with self.subTest(purl):
+                self.assertIsNone(aggregator.purl_name_version(purl))
+
+    def test_the_cause_key_joins_the_component_and_the_kind(self) -> None:
+        self.assertEqual(
+            aggregator.detector_error_cause_key((CRYPTO,), SKIP), f"{CRYPTO}|{SKIP}"
+        )
+
+    def test_without_a_kind_or_with_other_than_one_component_there_is_no_key(
+        self,
+    ) -> None:
+        other = "pkg:pypi/other@1.0"
+        self.assertIsNone(aggregator.detector_error_cause_key((CRYPTO,), None))
+        self.assertIsNone(aggregator.detector_error_cause_key((), SKIP))
+        self.assertIsNone(aggregator.detector_error_cause_key((CRYPTO, other), SKIP))
+        self.assertIsNone(aggregator.detector_error_cause_key(("junk",), SKIP))
+        # two purls of one component (different qualifiers) are one component
+        self.assertEqual(
+            aggregator.detector_error_cause_key((CRYPTO, CRYPTO + "?arch=x"), SKIP),
+            f"{CRYPTO}|{SKIP}",
+        )
+
+
+class PilotCause(unittest.TestCase):
+    """Detector errors that share a component and a kind of error are one cause (Requirement 22.75)."""
+
+    def pilot(
+        self,
+        candidates: list[aggregator.PilotCandidate],
+        errors: list[int],
+        *,
+        kinds: dict[Any, str] | None = None,
+        plan: models.Plan | None = None,
+        decisions: dict[Any, Any] | None = None,
+    ) -> dict[str, Any]:
+        pilot, notes = aggregator.build_pilot(
+            observation_text(detector_error_issues=[f"{TARGET}#{n}" for n in errors]),
+            policy_repos=[REPO],
+            candidates=candidates,
+            plan=plan or plan_with(),
+            decisions=decisions or {},
+            lines=[],
+            managed_repos=frozenset(),
+            now=NOW,
+            error_kinds=kinds,
+        )
+        self.assertEqual(notes, [])
+        return pilot
+
+    def passed(self, *args: Any, **kwargs: Any) -> list[Any]:
+        """The ``cause_key`` of every outcome that ``build_pilot`` handed to the core, in order."""
+        seen: list[Any] = []
+        real = aggregator.metrics.compute_pilot_rates
+
+        def spy(outcomes: Any, **kw: Any) -> Any:
+            items = list(outcomes)
+            seen.extend(item.cause_key for item in items)
+            return real(items, **kw)
+
+        with mock.patch.object(aggregator.metrics, "compute_pilot_rates", spy):
+            self.pilot(*args, **kwargs)
+        return seen
+
+    def test_three_issues_closed_by_skip_paths_on_one_component_are_one_error(
+        self,
+    ) -> None:
+        candidates = [cause_candidate(n, CRYPTO) for n in (1, 2, 3)]
+        kinds = {(REPO, n): SKIP for n in (1, 2, 3)}
+        args = (candidates, [1, 2, 3])
+        self.assertEqual(self.passed(*args, kinds=kinds), [f"{CRYPTO}|{SKIP}"] * 3)
+        pilot = self.pilot(*args, kinds=kinds)
+        self.assertEqual(pilot["review"]["detector_errors"], 1)
+        self.assertEqual(pilot["review"]["detector_error_issues"], 3)
+        self.assertEqual(pilot["rates"]["false_positive"], 3)
+        self.assertEqual(pilot["rates"]["false_positive_causes"], 1)
+        self.assertIs(pilot["review"]["within_error_limit"], True)
+
+    def test_two_components_are_two_causes(self) -> None:
+        candidates = [
+            cause_candidate(1, CRYPTO),
+            cause_candidate(2, "pkg:pypi/other@2.0"),
+        ]
+        pilot = self.pilot(candidates, [1, 2], kinds={(REPO, 1): SKIP, (REPO, 2): SKIP})
+        self.assertEqual(pilot["review"]["detector_errors"], 2)
+        self.assertEqual(pilot["review"]["detector_error_issues"], 2)
+
+    def test_a_version_makes_a_different_component(self) -> None:
+        candidates = [
+            cause_candidate(1, CRYPTO),
+            cause_candidate(2, "pkg:pypi/cryptography@42.0.0"),
+        ]
+        pilot = self.pilot(candidates, [1, 2], kinds={(REPO, 1): SKIP, (REPO, 2): SKIP})
+        self.assertEqual(pilot["review"]["detector_errors"], 2)
+
+    def test_without_material_for_the_kind_each_issue_is_its_own_cause(self) -> None:
+        candidates = [cause_candidate(n, CRYPTO) for n in (1, 2, 3)]
+        self.assertEqual(self.passed(candidates, [1, 2, 3]), [None] * 3)
+        pilot = self.pilot(candidates, [1, 2, 3])
+        self.assertEqual(pilot["review"]["detector_errors"], 3)
+        self.assertEqual(pilot["review"]["detector_error_issues"], 3)
+        self.assertIs(pilot["review"]["needs_cause_classification"], True)
+
+    def test_a_kind_without_a_component_is_not_a_cause(self) -> None:
+        candidates = [cause_candidate(n) for n in (1, 2)]
+        kinds = {(REPO, 1): SKIP, (REPO, 2): SKIP}
+        self.assertEqual(self.passed(candidates, [1, 2], kinds=kinds), [None, None])
+
+    def test_an_issue_with_two_components_is_not_guessed(self) -> None:
+        candidates = [cause_candidate(1, CRYPTO, "pkg:pypi/other@2.0")]
+        self.assertEqual(self.passed(candidates, [1], kinds={(REPO, 1): SKIP}), [None])
+
+    def test_an_issue_that_is_not_a_detector_error_gets_no_key(self) -> None:
+        candidates = [cause_candidate(1, CRYPTO), cause_candidate(2, CRYPTO)]
+        kinds = {(REPO, 1): SKIP, (REPO, 2): SKIP}
+        self.assertEqual(
+            self.passed(candidates, [1], kinds=kinds), [f"{CRYPTO}|{SKIP}", None]
+        )
+
+    def test_a_not_affected_for_another_justification_is_not_an_error(self) -> None:
+        finding = signal_finding("CVE-2021-3001")
+        plan = dataclasses.replace(plan_with(), vex_exclusions=((finding, "p"),))
+        decisions = {
+            ("p", "CVE-2021-3001", finding.component.purl): (
+                "not_affected",
+                "vulnerable_code_not_present",
+            )
+        }
+        candidates = [cause_candidate(1, vuln="CVE-2021-3001")]
+        self.assertEqual(
+            self.passed(
+                candidates, [], kinds={(REPO, 1): SKIP}, plan=plan, decisions=decisions
+            ),
+            [None],
+        )
+
+    def test_the_component_comes_from_the_excluding_statement_when_the_issue_has_none(
+        self,
+    ) -> None:
+        findings = [signal_finding("CVE-2021-3001"), signal_finding("CVE-2021-3002")]
+        plan = dataclasses.replace(
+            plan_with(), vex_exclusions=tuple((f, "p") for f in findings)
+        )
+        decisions = {
+            ("p", f.vuln_id, f.component.purl): (
+                "not_affected",
+                "component_not_present",
+            )
+            for f in findings
+        }
+        candidates = [
+            cause_candidate(1, vuln="CVE-2021-3001"),
+            cause_candidate(2, vuln="CVE-2021-3002"),
+        ]
+        kinds = {(REPO, 1): SKIP, (REPO, 2): SKIP}
+        pilot = self.pilot(candidates, [], kinds=kinds, plan=plan, decisions=decisions)
+        self.assertEqual(pilot["rates"]["false_positive"], 2)
+        self.assertEqual(pilot["rates"]["false_positive_causes"], 1)
+        self.assertEqual(pilot["review"]["detector_errors"], 1)
+
+    def test_the_two_counts_reach_the_extra_record_of_a_run(self) -> None:
+        net = pilot_world(3, decided=3, false_positives=3)
+        outcome = execute(net, policy_text([TARGET]))
+        self.assertEqual(outcome.exit_code, 0, outcome.messages)
+        for pilot in (outcome.extra.pilot, extra_json(net)["pilot"]):
+            self.assertEqual(pilot["rates"]["false_positive"], 3)
+            # nothing in what this module reads says why the three were wrong, so none is joined
+            self.assertEqual(pilot["rates"]["false_positive_causes"], 3)
+            self.assertEqual(pilot["review"]["detector_errors"], 3)
+            self.assertEqual(pilot["review"]["detector_error_issues"], 3)
+            self.assertEqual(pilot["counts"]["detector_errors"], 3)
 
 
 if __name__ == "__main__":
