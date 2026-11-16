@@ -1,0 +1,853 @@
+{
+  "aggregator_commit": "e66a691f38423c6b96feae430432c35366c13a0a",
+  "deferred_by_feed": [],
+  "end_state": "success",
+  "epss": {
+    "fetched_on": "2026-11-16",
+    "model_version": "v2026.06.15"
+  },
+  "failure_notice_error": null,
+  "failure_reason": null,
+  "feeds": {
+    "failed": [],
+    "fetched": [
+      {
+        "at": "2026-11-16T22:16:47Z",
+        "catalog_version": "2026.11.13",
+        "entry_count": 1781,
+        "http_date": "Mon, 16 Nov 2026 22:17:44 GMT",
+        "name": "kev",
+        "payload_sha256": "4028ec035856331a717d3305e87e45be37d400fc500da34a5464f05fc2773764",
+        "released_at": "2026-11-13T20:24:18Z",
+        "source_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      },
+      {
+        "at": "2026-11-16T22:16:47Z",
+        "catalog_version": "v2026.06.15",
+        "entry_count": 406741,
+        "http_date": "Mon, 16 Nov 2026 21:38:31 GMT",
+        "name": "epss",
+        "payload_sha256": "ed50c47e22890dae2c6dcf24c94545c75671e0a52f9bc0a342d2cf4ceee84991",
+        "released_at": null,
+        "source_url": "https://epss.empiricalsecurity.com/epss_scores-2026-11-16.csv.gz"
+      },
+      {
+        "at": "2026-11-16T22:16:47Z",
+        "catalog_version": null,
+        "entry_count": 0,
+        "http_date": "Mon, 16 Nov 2026 22:17:45 GMT",
+        "name": "malicious",
+        "payload_sha256": "f293d5e8593cdfd8e8c4feab7b506d15814eb481d2e1512fa0bfd5542472e293",
+        "released_at": null,
+        "source_url": "https://api.osv.dev/v1/querybatch"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.5",
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.6",
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "LOW",
+      "epss": "0.00459",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/fast-xml-parser@5.7.3",
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-126066"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "LOW",
+      "epss": null,
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/deepmerge@4.3.1",
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-93753"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "LOW",
+      "epss": "0.003",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/katex@0.16.47",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "vuln_id": "CVE-2026-103923"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.6",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@9.0.9",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.0035",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/uuid@11.1.1",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-41907"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.0035",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/uuid@8.3.2",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-41907"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "LOW",
+      "epss": null,
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/deepmerge@4.3.1",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "vuln_id": "CVE-2026-93753"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00154",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:pypi/pytest@8.2.2",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "vuln_id": "CVE-2025-71176"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.6",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@9.0.9",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "LOW",
+      "epss": null,
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/deepmerge@4.3.1",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-93753"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.3",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@10.2.6",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@5.1.9",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-118764"
+    },
+    {
+      "component_first_seen_sha": null,
+      "cvss_severity": "MEDIUM",
+      "epss": "0.00301",
+      "first_seen_run_id": null,
+      "kev_listed": false,
+      "malicious": false,
+      "meets_threshold": false,
+      "purl": "pkg:npm/minimatch@9.0.9",
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-118764"
+    }
+  ],
+  "finished_at": "2026-11-16T22:19:04Z",
+  "held_unscored": [],
+  "issues": [],
+  "kev_fetched_on": "2026-11-16",
+  "malicious_withdrawn_unconfirmed": [],
+  "policy_commit": "9f1f508826fa95ea26323f31644db0a08eca3d46",
+  "prev_record_sha256": "186e131916fbbcd68d36cce00fdd081c4b332ad530f2d46fb9623d62296f16f5",
+  "pull_requests": [
+    {
+      "created_at": "2026-11-15T05:56:23Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "vuln_id": "GHSA-537c-gmf6-5ccf"
+    },
+    {
+      "created_at": "2026-11-15T05:56:23Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "vuln_id": "CVE-2026-69249"
+    },
+    {
+      "created_at": "2026-11-15T05:56:22Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "vuln_id": "CVE-2026-26007"
+    },
+    {
+      "created_at": "2026-11-15T05:02:16Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "vuln_id": "GHSA-mrv2-3pqr-j5jr"
+    },
+    {
+      "created_at": "2026-11-15T05:02:15Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "vuln_id": "GHSA-cg2g-xh64-v4q7"
+    },
+    {
+      "created_at": "2026-11-15T05:02:20Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-96639"
+    },
+    {
+      "created_at": "2026-11-15T05:02:20Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112900"
+    },
+    {
+      "created_at": "2026-11-15T05:02:19Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112403"
+    },
+    {
+      "created_at": "2026-11-15T05:02:19Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112400"
+    },
+    {
+      "created_at": "2026-11-15T05:02:18Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112399"
+    },
+    {
+      "created_at": "2026-11-15T05:02:18Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112398"
+    },
+    {
+      "created_at": "2026-11-15T05:02:18Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112397"
+    },
+    {
+      "created_at": "2026-11-15T05:02:17Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112393"
+    },
+    {
+      "created_at": "2026-11-15T05:02:17Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112392"
+    },
+    {
+      "created_at": "2026-11-15T05:02:16Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "vuln_id": "CVE-2026-112390"
+    },
+    {
+      "created_at": "2026-11-15T05:02:23Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-59880"
+    },
+    {
+      "created_at": "2026-11-15T05:02:23Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-59879"
+    },
+    {
+      "created_at": "2026-11-15T05:02:23Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-4800"
+    },
+    {
+      "created_at": "2026-11-15T05:02:22Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-29063"
+    },
+    {
+      "created_at": "2026-11-15T05:02:22Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-106446"
+    },
+    {
+      "created_at": "2026-11-15T05:02:22Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-106445"
+    },
+    {
+      "created_at": "2026-11-15T05:02:21Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "vuln_id": "CVE-2026-104852"
+    },
+    {
+      "created_at": "2026-11-15T05:02:14Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-18446"
+    },
+    {
+      "created_at": "2026-11-15T05:02:14Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-16221"
+    },
+    {
+      "created_at": "2026-11-15T05:02:14Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-14257"
+    },
+    {
+      "created_at": "2026-11-15T05:02:13Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-13760"
+    },
+    {
+      "created_at": "2026-11-15T05:02:13Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-13676"
+    },
+    {
+      "created_at": "2026-11-15T05:02:12Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-13149"
+    },
+    {
+      "created_at": "2026-11-15T05:02:12Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-106446"
+    },
+    {
+      "created_at": "2026-11-15T05:02:11Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-106445"
+    },
+    {
+      "created_at": "2026-11-15T05:02:11Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-102278"
+    },
+    {
+      "created_at": "2026-11-15T05:02:10Z",
+      "merged_at": null,
+      "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "vuln_id": "CVE-2026-102276"
+    }
+  ],
+  "rate_limit": {
+    "processed": [
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns",
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files",
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP",
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI",
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations",
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG"
+    ],
+    "unprocessed": []
+  },
+  "rejected_vex": [],
+  "repositories": {
+    "fetch_failed": [
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/S3-Burst-on-ONTAP-Files"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/VMware-Migration-EC2-ONTAP"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/ONTAP-Edge-to-Cloud-AI"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Observability-integrations"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase"
+      },
+      {
+        "layer": "B",
+        "reason": "sbom artifact: no sbom-* artifact built from the default branch",
+        "repo": "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG"
+      }
+    ],
+    "required_checks": {
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase": null,
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook": null,
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG": null,
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": null,
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations": null,
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations": null,
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns": null,
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI": null,
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files": null,
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP": null
+    },
+    "scanned": [
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase",
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG",
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns",
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations",
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations",
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns",
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI",
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files",
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP"
+    ],
+    "scanned_detail": {
+      "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "2332ff60aee7380ee1c5dca4cf4d50bc6759c6ba98510d09c9ec0db4d8f1c889",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook": {
+        "head_sha": "e66a691f38423c6b96feae430432c35366c13a0a",
+        "sbom_artifact_id": 14257435528,
+        "sbom_sha256": "7bc702a21cbbf32fe907c4ff743e507bc48bd64a5b701897c4177339c6308f2c",
+        "sbom_source": "B"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "40e1cc28cfbce3e55d1558ad2e15198dfc1b1095b31200e7a9d89ae7800899e7",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "7b86c3154a46f7a2280bc64a6d17a6db5d87402e1b2710e45be7cd4146b65fdd",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "42aa14aa72b2f7bc220bc8946b56b273db12c2b3b5e55d35e79b3031787b99c0",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": {
+        "head_sha": "8024b6704e4d8eff743c576025b9cca5fae1268b",
+        "sbom_artifact_id": 14260520856,
+        "sbom_sha256": "0eb7ddc7dab126fa633a32bcee0ea911c73cced81825eb85189c74bf3357966d",
+        "sbom_source": "B"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "c79cd4cca76b0b4399f94f79f774887eceeee89876b3ffcf272677c72f5a8cc9",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-Observability-integrations": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "1f3554a5d8b58a6ae470acaad2d20747ca5fa1bc848c9d837061da3be824ea9f",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "34ac2ac2f6a0cc0b45a54a824dbaba70ef5338355c2fe0534b93efc42dd73add",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/ONTAP-Edge-to-Cloud-AI": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "879478957eddb2224b454578c6d538bc01e01d3970a882c9267496025c0065d6",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/S3-Burst-on-ONTAP-Files": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "caa4d3ac2709c58a3b698cea312eca3b7e58a87e8936382067e64d83a811798e",
+        "sbom_source": "A"
+      },
+      "Yoshiki0705/VMware-Migration-EC2-ONTAP": {
+        "head_sha": null,
+        "sbom_artifact_id": null,
+        "sbom_sha256": "1c804cff1d205a873a47d76b60e60871a10de487d2ce3be732ed26cf1ca26cf4",
+        "sbom_source": "A"
+      }
+    }
+  },
+  "response_metrics": {
+    "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "open_to_pr_hours": [
+        0.01,
+        0.01,
+        0.01,
+        0.01,
+        0.01,
+        0.01,
+        0.01,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [
+        0.0,
+        0.0
+      ],
+      "open_to_pr_hours": [
+        0.02,
+        0.02
+      ],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "open_to_pr_hours": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Observability-integrations": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "open_to_pr_hours": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "open_to_pr_hours": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/ONTAP-Edge-to-Cloud-AI": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/S3-Burst-on-ONTAP-Files": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    },
+    "Yoshiki0705/VMware-Migration-EC2-ONTAP": {
+      "detect_over_24h": 0,
+      "detect_to_open_hours": [],
+      "open_to_pr_hours": [],
+      "origin_unknown_excluded": 0,
+      "overdue_open": 0,
+      "pr_to_merge_hours": []
+    }
+  },
+  "run_id": "43968465420-1",
+  "schema_version": 2,
+  "started_at": "2026-11-16T22:16:47Z",
+  "summary_overflow": {},
+  "unscored": [],
+  "vex_exclusions": []
+}
