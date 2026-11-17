@@ -40,8 +40,10 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent-prompts/ontap-catalog-snapsho
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	is one pattern for that.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/supply-chain-use-cases.md	retraction	It is organized as 11 use cases (A1 to D1).
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	に置く構成は、そのための 1 つのパターンである
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジックの 3 本の柱を 1 か所にまとめ
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/supply-chain-use-cases.md	retraction	11 のユースケース（A1 から D1）に分けてまとめる
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
