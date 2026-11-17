@@ -88,6 +88,7 @@ cyber リポジトリが論理エアギャップボールトの復旧アカウ�
 - 機能ごとの詳細な対応は、cyber リポジトリの単一のマッピング（[docs/ja/cyber-resilience-framework-mapping.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/cyber-resilience-framework-mapping.md)）にあります。暗号化・破壊型と持ち出し型のシナリオ別対応、管理面の侵害、証跡の種別を含みます。
 - 6 機能すべての実装レベルの詳細は、observability リポジトリの既存の機能マップ（[docs/ja/cyber-resilience-capability-map.md](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/cyber-resilience-capability-map.md)）にあります。このページはそこを指すだけで、内容は写しません。
 - 3 本の柱（ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジック）の全体方針と着手の順序は、cyber リポジトリのプログラム文書（[サイバーレジリエンス プログラム](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/cyber-resilience-programme.md)、[Cyber Resilience Programme](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/en/cyber-resilience-programme.md)）にあります。このページは機能と Spoke の対応だけを持ち、柱ごとの内容は写しません。
+- ONTAP と FSx for ONTAP を使う組織がストレージを含むソフトウェアサプライチェーンを管理するときのユースケースと選択肢は、cyber リポジトリのユースケース文書（[サプライチェーン管理のユースケースと選択肢（ストレージを含む構成）](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/supply-chain-use-cases.md)、[Supply-Chain Use Cases and Options (Including Storage)](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/en/supply-chain-use-cases.md)）にあります。このページはユースケースの表を写しません。
 
 ---
 
