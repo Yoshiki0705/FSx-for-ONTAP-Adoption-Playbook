@@ -82,6 +82,14 @@ reason that starts with ``vex_unapproved:``; one that could not be checked (a fa
 read, a CODEOWNERS line in a syntax that is not supported) starts with ``vex_unverifiable:`` and is left out the
 same way. The merge time of that pull request is what ``PlanInputs.vex_merged_at`` carries.
 
+The cause of a detector error comes from the pull requests of the repository (``config_pr_causes``, read only). The
+Issues a maintainer classified as detector errors and that were closed as resolved are one cause when exactly one
+pull request merged into the default branch between their opening and their closing changed a file that configures
+the detector (``DETECTOR_CONFIG_PATHS``): the cause is ``config-pr:<owner>/<name>#<number>``, and it is read again
+each run, with no state kept. Any other case, or a read that fails or cannot reach the end of a list, leaves each
+Issue its own cause, which counts the errors on the high side. A repository that could not be read adds a line to
+the pilot's warnings; a rate limit is recorded like any other and the Issues have no cause for that run.
+
 ``notify-failure`` (used by the watchdog) reads NOTIFY_TOKEN (a SPOKE_TOKEN-style token that can
 write Issues in this repository) and GITHUB_REPOSITORY. It appends to the open failure Issue, or
 opens one when none is open, and exits non-zero when the notice could not be sent.
@@ -98,6 +106,7 @@ import base64
 import contextlib
 import dataclasses
 import fcntl
+import fnmatch
 import hashlib
 import io
 import json
@@ -137,6 +146,7 @@ from supply_chain.policy import PolicyError, parse_policy
 from supply_chain_adapters import spdx
 from supply_chain_io import (
     OSV_QUERY_URL,
+    PER_PAGE,
     Client,
     FeedPayload,
     GitHubApi,
@@ -167,6 +177,16 @@ EXTRA_SCHEMA_VERSION = 2
 OBSERVATION_FILE_NAME = "supply-chain-observation.json"
 RECENT_OUTCOMES = max(run_record.FAILURE_STREAK_THRESHOLD, 3)
 PR_SEARCH_CAP = 60
+# The cause of a detector error (``config_pr_causes``). A convention (hypothesis), not a sourced value, except
+# ``PR_FILES_ITEM_LIMIT``, which is the most files the pull request files endpoint answers with.
+#: Pages of the closed pull request list read per repository per run, ``PER_PAGE`` items each. Reached with the
+#: list not yet older than the oldest opening, the list is not exhausted and the repository gets no cause.
+PR_LIST_PAGE_LIMIT = 5
+#: Files of one pull request the API answers with at most (3000). Reached, the list may be cut.
+PR_FILES_ITEM_LIMIT = 3000
+#: Pull requests whose files are listed per repository per run. A pull request that needs a listing after this
+#: is not read, and the Issues it would decide get no cause.
+PR_FILES_LISTING_LIMIT = 30
 MAX_ZIP_MEMBER_BYTES = 200 * 1024 * 1024
 HEX40 = re.compile(r"[0-9a-f]{40}")
 FINDING_TITLE_PREFIX = "[supply-chain] "
@@ -1581,6 +1601,269 @@ def search_pull_requests(
     return found
 
 
+# --- the cause of a detector error: the pull request that changed the detector's configuration ----------------
+#
+# A detector error that was fixed by changing the detector's configuration (a ``skip-paths`` in the caller's
+# SBOM workflow, say) has one cause however many Issues it had opened. The Aggregator reads that from GitHub and
+# keeps nothing between runs: for each Issue that was closed as resolved it lists the pull requests merged into
+# the default branch after the Issue was opened, up to the time it was closed, and takes the one that changed the
+# configuration. Exactly one is a cause; none, several, or a list that cannot be read to its end is not, and the
+# Issue then counts as its own cause, which counts the errors on the high side. Nothing here writes.
+#
+# The two endpoints (``GET /repos/{owner}/{repo}/pulls`` and ``GET /repos/{owner}/{repo}/pulls/{n}/files``) and
+# the fields used (``number``, ``merged_at``, ``updated_at``, ``base.ref``; ``filename``, ``previous_filename``)
+# are the ones the maintainer confirmed against the reference. Nothing was run against GitHub when this was written.
+
+# The paths that configure the detector, as one list. A pattern with ``*`` stands for a file name in one
+# directory (the ``*`` does not cross a ``/``); the rest are exact paths. Case is significant. ``.vex/`` is not
+# here: a VEX document is a judgement on a finding, not a setting of the detector, and another route reads it.
+DETECTOR_CONFIG_PATHS = (
+    ".github/workflows/sbom*.yml",
+    ".github/workflows/sbom*.yaml",
+    "docs/agent/supply-chain-policy.json",
+    "renovate.json",
+    "renovate.json5",
+    ".renovaterc",
+    ".renovaterc.json",
+    ".github/renovate.json",
+    ".github/renovate.json5",
+    ".gitlab/renovate.json",
+    ".gitlab/renovate.json5",
+)
+
+
+def is_detector_config_path(path: str) -> bool:
+    """True when ``path`` is one of ``DETECTOR_CONFIG_PATHS``. The ground for the list is design D-79, item 5.
+
+    The directory must be the listed one exactly and the file name must match the listed name, so
+    ``.github/workflows/sbom/x.yml`` and ``sbom/readme.md`` are not configuration, and neither is
+    ``.github/workflows/SBOM.yml`` (case is significant).
+    """
+    directory, _, name = path.rpartition("/")
+    for pattern in DETECTOR_CONFIG_PATHS:
+        pattern_directory, _, pattern_name = pattern.rpartition("/")
+        if directory == pattern_directory and fnmatch.fnmatchcase(name, pattern_name):
+            return True
+    return False
+
+
+def touches_detector_config(files: Iterable[object]) -> bool:
+    """True when a changed file is configuration, by its ``filename`` or by its ``previous_filename``.
+
+    ``files`` are the items of ``GET /pulls/{n}/files``. A rename out of a configuration path changed the
+    configuration as much as a rename into one. An item that is not a mapping, or a name that is not text, is
+    not a path and counts for nothing.
+    """
+    for item in files:
+        if not isinstance(item, Mapping):
+            continue
+        for key in ("filename", "previous_filename"):
+            name = item.get(key)
+            if isinstance(name, str) and is_detector_config_path(name):
+                return True
+    return False
+
+
+@dataclass(frozen=True)
+class ResolvedIssue:
+    """A finding Issue closed as resolved, as ``config_pr_causes`` takes it.
+
+    Attributes:
+        repo: The repository the Issue is in.
+        number: The Issue number.
+        opened_at: ``created_at`` of the Issue. ``None`` when GitHub gave none that can be read: such an Issue has
+            no window and gets no cause.
+        closed_at: When the Issue was closed (for one this run closed, the run time).
+    """
+
+    repo: Repo
+    number: int
+    opened_at: datetime | None
+    closed_at: datetime
+
+
+def _merged_pull_requests(
+    api: GitHubApi, name: str, branch: str, oldest_opening: datetime
+) -> list[tuple[int, datetime]]:
+    """``(number, merged_at)`` of the pull requests merged into ``branch`` that can matter, newest update first.
+
+    The list is read by ``updated_at`` descending and is cut at the first pull request updated before
+    ``oldest_opening``: a merged pull request was updated at or after it was merged, so none after that point was
+    merged after the opening either. It is not read past ``PR_LIST_PAGE_LIMIT`` pages.
+
+    Raises:
+        ValueError: An item cannot be read, or the list was not exhausted within the limit.
+        HttpError, TransportError: The list could not be read.
+        RateLimited: GitHub's rate limit stopped the read (not caught here).
+    """
+    merged: list[tuple[int, datetime]] = []
+    for seen, item in enumerate(
+        api.pages(
+            f"/repos/{name}/pulls",
+            {"state": "closed", "base": branch, "sort": "updated", "direction": "desc"},
+        ),
+        start=1,
+    ):
+        number = item.get("number") if isinstance(item, Mapping) else None
+        updated = (
+            parse_osv_time(item.get("updated_at"))
+            if isinstance(item, Mapping)
+            else None
+        )
+        if type(number) is not int or updated is None:
+            raise ValueError(
+                "a pull request of the list has no readable number or updated_at"
+            )
+        if updated < oldest_opening:
+            return merged
+        raw_merged = item.get("merged_at")
+        merged_at = parse_osv_time(raw_merged)
+        if raw_merged is not None and merged_at is None:
+            raise ValueError(f"pull request #{number} has no readable merged_at")
+        base = item.get("base")
+        ref = base.get("ref") if isinstance(base, Mapping) else None
+        if merged_at is not None and ref == branch:
+            merged.append((number, merged_at))
+        if seen >= PR_LIST_PAGE_LIMIT * PER_PAGE:
+            raise ValueError(
+                f"the list of closed pull requests was not exhausted in {PR_LIST_PAGE_LIMIT} pages"
+            )
+    return merged
+
+
+class _ChangedFiles:
+    """Whether a pull request changed the detector's configuration, one listing per pull request per repository.
+
+    A listing that cannot be read, or cannot be read to its end, is ``None`` for that pull request: not "no", so
+    that no other pull request is taken for the only one. A match is certain even in a list that may be cut, so
+    it ends the listing; only the absence of a match needs the whole list. At most ``PR_FILES_LISTING_LIMIT``
+    pull requests are listed.
+    """
+
+    def __init__(self, api: GitHubApi, name: str) -> None:
+        self._api, self._name = api, name
+        self._answers: dict[int, bool | None] = {}
+        self._listed = 0
+        self.notes: list[str] = []
+
+    def _note(self, text: str) -> None:
+        line = f"config PR cause not read for {self._name}: {text}"[:300]
+        if line not in self.notes:
+            self.notes.append(line)
+
+    def touches_config(self, number: int) -> bool | None:
+        """True or False when the pull request's files were read, ``None`` when they were not (a note says why)."""
+        if number in self._answers:
+            return self._answers[number]
+        if self._listed >= PR_FILES_LISTING_LIMIT:
+            self._note(
+                f"more than {PR_FILES_LISTING_LIMIT} pull requests would need their files listed"
+            )
+            self._answers[number] = None
+            return None
+        self._listed += 1
+        try:
+            answer = self._read(number)
+        except (HttpError, TransportError, KeyError, TypeError, ValueError) as exc:
+            self._note(f"files of pull request #{number}: {exc}")
+            answer = None
+        self._answers[number] = answer
+        return answer
+
+    def _read(self, number: int) -> bool:
+        listing = self._api.pages(f"/repos/{self._name}/pulls/{number}/files")
+        for count, item in enumerate(listing, start=1):
+            if not isinstance(item, Mapping) or not isinstance(
+                item.get("filename"), str
+            ):
+                raise TypeError("a changed file has no readable filename")
+            if touches_detector_config([item]):
+                return True
+            if count >= PR_FILES_ITEM_LIMIT:
+                raise ValueError(
+                    f"the list reached the {PR_FILES_ITEM_LIMIT} files the API answers with at most, so it may be cut"
+                )
+        return False
+
+    def sole_config_pr(self, numbers: Iterable[int]) -> int | None:
+        """The one pull request of ``numbers`` that changed the configuration, ``None`` for none, several or unread."""
+        found: int | None = None
+        for number in numbers:
+            touched = self.touches_config(number)
+            if touched is None:
+                return None
+            if touched:
+                if found is not None:
+                    return None
+                found = number
+        return found
+
+
+def config_pr_causes(
+    api: GitHubApi,
+    issues: Sequence[ResolvedIssue],
+    default_branches: Mapping[Repo, str | None],
+) -> tuple[dict[tuple[Repo, int], str], list[str]]:
+    """The cause of each Issue that one configuration pull request settles: ``config-pr:<owner>/<name>#<number>``.
+
+    For each Issue, the pull requests merged into the repository's default branch with ``opened_at < merged_at <=
+    closed_at`` are collected, and those that changed the detector's configuration (``touches_detector_config``)
+    are counted. Exactly one: its key is the Issue's cause, and every Issue that pull request settled has the same
+    one, a single Issue included. None, two or more, or any pull request in the window whose files could not be
+    read to their end: no entry, which makes the Issue its own cause. The same holds for every Issue of a
+    repository whose default branch is not known or whose pull request list cannot be read to its end.
+
+    Args:
+        api: The token that reads the repository. Only ``GET`` is sent.
+        issues: Finding Issues closed as resolved (``detector_error_candidates`` chooses them).
+        default_branches: Repository -> its default branch, ``None`` when unknown.
+
+    Returns:
+        ``((repo, Issue number) -> cause key, notes)``. A repository that could not be read adds one line to
+        ``notes``; nothing is raised for it.
+
+    Raises:
+        RateLimited: GitHub's rate limit stopped the read. The run records it like any other rate limit, and the
+            Issues have no cause for this run.
+    """
+    by_repo: dict[Repo, list[tuple[ResolvedIssue, datetime]]] = {}
+    for issue in issues:
+        if issue.opened_at is not None:
+            by_repo.setdefault(issue.repo, []).append((issue, issue.opened_at))
+    result: dict[tuple[Repo, int], str] = {}
+    notes: list[str] = []
+    for repo in sorted(by_repo, key=lambda r: _repo_text(r).lower()):
+        name = _repo_text(repo)
+        branch = default_branches.get(repo)
+        if not branch:
+            notes.append(
+                f"config PR cause not read for {name}: the default branch is not known"
+            )
+            continue
+        group = sorted(by_repo[repo], key=lambda pair: pair[0].number)
+        try:
+            merged = _merged_pull_requests(
+                api, name, branch, min(opened for _issue, opened in group)
+            )
+        except (HttpError, TransportError, KeyError, TypeError, ValueError) as exc:
+            notes.append(
+                f"config PR cause not read for {name}: pull request list: {exc}"[:300]
+            )
+            continue
+        changed = _ChangedFiles(api, name)
+        for issue, opened in group:
+            window = sorted(
+                number
+                for number, merged_at in merged
+                if opened < merged_at <= issue.closed_at
+            )
+            cause = changed.sole_config_pr(window)
+            if cause is not None:
+                result[(repo, issue.number)] = f"config-pr:{name}#{cause}"
+        notes.extend(changed.notes)
+    return result, notes
+
+
 # --- timelines for the response metrics ------------------------------------------------------------
 
 
@@ -1857,6 +2140,12 @@ class PilotCandidate:
     )  # ``created_at`` of the Issue; ``None`` when GitHub gave none that can be read
     duplicate: bool  # its state block names a representative (Requirement 8.38)
     purls: tuple[str, ...] = ()
+    # When the Issue was closed (``closed_at`` of the Issue; for one this run closed, the run time), ``None``
+    # while it is open. ``resolved``: it was closed as resolved (``state_reason`` ``completed``, or closed by
+    # this run with the reason ``resolved``). Read the way ``timelines`` reads them. Used to look for the cause
+    # of a detector error (``config_pr_causes``); they change no count.
+    closed_at: datetime | None = None
+    resolved: bool = False
 
 
 def _state_purls(state: object) -> tuple[str, ...]:
@@ -1883,6 +2172,10 @@ def pilot_candidates(
     An Issue is a finding Issue of the Aggregator when its marker says so and its title starts with
     ``[supply-chain] `` (the title ``apply_action`` gives). Open and closed Issues count alike. One opened by
     this run counts with ``now`` as its opening time, and is undecided by construction.
+
+    ``closed_at`` and ``resolved`` follow ``timelines``: a listed Issue is closed as resolved when its
+    ``closed_at`` is readable and its ``state_reason`` is ``completed``; an Issue this run closes has ``now``, and
+    is resolved when the action's reason is ``resolved``; an Issue this run reopens is no longer closed.
     """
     out: list[PilotCandidate] = []
     for issue in sorted(issues, key=lambda i: (_repo_text(i.repo).lower(), i.number)):
@@ -1893,6 +2186,7 @@ def pilot_candidates(
         if not (isinstance(title, str) and title.startswith(FINDING_TITLE_PREFIX)):
             continue
         named = (issue.body_state or {}).get("duplicate_of")
+        closed_at = parse_osv_time(item.get("closed_at"))
         out.append(
             PilotCandidate(
                 issue.repo,
@@ -1901,6 +2195,8 @@ def pilot_candidates(
                 parse_osv_time(item.get("created_at")),
                 isinstance(named, str) and bool(named),
                 _state_purls(issue.body_state),
+                closed_at,
+                closed_at is not None and item.get("state_reason") == "completed",
             )
         )
     for index, action in enumerate(actions):
@@ -1916,7 +2212,24 @@ def pilot_candidates(
                     _state_purls(issue_body.parse_state(action.body)),
                 )
             )
-    return out
+    changed: dict[tuple[Repo, int], tuple[datetime | None, bool]] = {}
+    for index, action in enumerate(actions):
+        number = results.get(index)
+        if action.kind != "finding" or number is None:
+            continue
+        if action.op == "close":
+            changed[(action.repo, number)] = (now, action.close_reason == "resolved")
+        elif action.op == "reopen":
+            changed[(action.repo, number)] = (None, False)
+    final: list[PilotCandidate] = []
+    for cand in out:
+        state = changed.get((cand.repo, cand.number))
+        final.append(
+            cand
+            if state is None
+            else dataclasses.replace(cand, closed_at=state[0], resolved=state[1])
+        )
+    return final
 
 
 def issue_cap_record(
@@ -1990,6 +2303,111 @@ def detector_error_cause_key(purls: Iterable[str], kind: str | None) -> str | No
     return f"{next(iter(components))}|{kind}"
 
 
+@dataclass(frozen=True)
+class _PilotRow:
+    """One finding Issue the pilot counts, with what decides whether it is a detector error."""
+
+    cand: PilotCandidate
+    key: tuple[Repo, int]
+    status: str | None
+    justification: str | None
+    excluded_purls: frozenset[str]
+    detector_error: bool  # a maintainer classified it, by the observation input
+    counted_as_error: bool  # ``compute_pilot_rates`` counts it as a detector error
+
+
+def _classify_pilot(
+    observation: Observation,
+    policy_repos: Sequence[Repo],
+    candidates: Sequence[PilotCandidate],
+    plan: models.Plan,
+    decisions: Mapping[tuple[str, str, str], tuple[str, str | None]],
+) -> tuple[list[_PilotRow], int, int]:
+    """The Issues the pilot counts, in order, and how many were left out as outside the observation or as tests.
+
+    The status and justification of an Issue come from the statement that excludes its Finding
+    (``plan.vex_exclusions``). ``counted_as_error`` is the test of ``compute_pilot_rates`` for a detector error.
+    """
+    observed = observation.observed_repos or frozenset(policy_repos)
+    exclusions: dict[tuple[Repo, str], list[tuple[str, str, str]]] = {}
+    for finding, path in plan.vex_exclusions:
+        for name in (finding.vuln_id, *finding.aliases):
+            exclusions.setdefault((finding.repo, name), []).append(
+                (path, finding.vuln_id, finding.component.purl)
+            )
+    rows: list[_PilotRow] = []
+    outside = tests = 0
+    for cand in candidates:
+        key = (cand.repo, cand.number)
+        if key in observation.test_issues:
+            tests += 1
+            continue
+        if cand.repo not in observed:
+            outside += 1
+            continue
+        status: str | None = None
+        justification: str | None = None
+        excluded_purls: set[str] = set()
+        for path, vuln_id, purl in sorted(
+            exclusions.get((cand.repo, cand.vuln_id or ""), [])
+        ):
+            excluded_purls.add(purl)
+            if status is None and (path, vuln_id, purl) in decisions:
+                status, justification = decisions[(path, vuln_id, purl)]
+        detector_error = key in observation.detector_error_issues
+        # The same test as ``compute_pilot_rates``: an Issue it counts as a detector error.
+        counted_as_error = detector_error or (
+            status == "not_affected"
+            and justification == metrics.FALSE_POSITIVE_JUSTIFICATION
+        )
+        rows.append(
+            _PilotRow(
+                cand,
+                key,
+                status,
+                justification,
+                frozenset(excluded_purls),
+                detector_error,
+                counted_as_error,
+            )
+        )
+    return rows, outside, tests
+
+
+def detector_error_candidates(
+    observation_text: str | None,
+    *,
+    policy_repos: Sequence[Repo],
+    candidates: Sequence[PilotCandidate],
+    plan: models.Plan,
+    decisions: Mapping[tuple[str, str, str], tuple[str, str | None]],
+) -> list[ResolvedIssue]:
+    """The Issues whose cause ``config_pr_causes`` is asked about: the ones ``build_pilot`` counts as a detector
+    error, that were closed as resolved, with a closing time and an opening time.
+
+    The arguments are those of ``build_pilot``, and the test is the same one, so that the two cannot disagree on
+    which Issues are detector errors. An observation input that cannot be used gives none: ``build_pilot`` reports
+    that itself.
+    """
+    try:
+        observation = parse_observation(observation_text)
+    except ObservationError:
+        return []
+    rows, _outside, _tests = _classify_pilot(
+        observation, policy_repos, candidates, plan, decisions
+    )
+    return [
+        ResolvedIssue(
+            row.cand.repo, row.cand.number, row.cand.opened_at, row.cand.closed_at
+        )
+        for row in rows
+        if row.counted_as_error
+        and row.cand.resolved
+        and row.cand.closed_at is not None
+        and row.cand.opened_at is not None
+    ]
+
+
 def build_pilot(
     observation_text: str | None,
     *,
@@ -2001,6 +2419,7 @@ def build_pilot(
     managed_repos: Collection[Repo],
     now: datetime,
     error_kinds: Mapping[tuple[Repo, int], str] | None = None,
+    cause_keys: Mapping[tuple[Repo, int], str] | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     """The ``pilot`` of the extra record, and the warnings. Feeds ``metrics``; it counts nothing itself.
 
@@ -2026,6 +2445,10 @@ def build_pilot(
             for the Issue. A kind is a fact that something outside this function established; it is never
             guessed here. The Aggregator has no source for one yet (see ``run``), so it passes none, and every
             detector error is then its own cause. Used only for an Issue that counts as a detector error.
+        cause_keys: ``(repository, Issue number)`` -> the cause of the Issue as ``config_pr_causes`` named it
+            (``config-pr:<owner>/<name>#<number>``). It is read first: an Issue it names gets that value, and the
+            Issues that share it are one cause. Used only for an Issue that counts as a detector error; an Issue
+            it does not name falls back to ``error_kinds``, and then to being its own cause.
 
     Returns:
         ``(pilot, warnings)``. ``pilot`` is ``{"error": reason}`` when the input cannot be used or a count
@@ -2035,52 +2458,27 @@ def build_pilot(
         observation = parse_observation(observation_text)
     except ObservationError as exc:
         return _pilot_error(f"observation input unusable: {exc}")
+    rows, outside, tests = _classify_pilot(
+        observation, policy_repos, candidates, plan, decisions
+    )
     observed = observation.observed_repos or frozenset(policy_repos)
-    exclusions: dict[tuple[Repo, str], list[tuple[str, str, str]]] = {}
-    for finding, path in plan.vex_exclusions:
-        for name in (finding.vuln_id, *finding.aliases):
-            exclusions.setdefault((finding.repo, name), []).append(
-                (path, finding.vuln_id, finding.component.purl)
-            )
     duplicates = {(repo, number) for repo, number, _rep in plan.duplicate_of}
     outcomes: list[metrics.PilotIssueOutcome] = []
-    outside = tests = 0
-    for cand in candidates:
-        key = (cand.repo, cand.number)
-        if key in observation.test_issues:
-            tests += 1
-            continue
-        if cand.repo not in observed:
-            outside += 1
-            continue
-        status: str | None = None
-        justification: str | None = None
-        excluded_purls: set[str] = set()
-        for path, vuln_id, purl in sorted(
-            exclusions.get((cand.repo, cand.vuln_id or ""), [])
-        ):
-            excluded_purls.add(purl)
-            if status is None and (path, vuln_id, purl) in decisions:
-                status, justification = decisions[(path, vuln_id, purl)]
-        detector_error = key in observation.detector_error_issues
-        # The same test as ``compute_pilot_rates``: an Issue it counts as a detector error.
-        counted_as_error = detector_error or (
-            status == "not_affected"
-            and justification == metrics.FALSE_POSITIVE_JUSTIFICATION
-        )
-        cause_key = (
-            detector_error_cause_key(
-                excluded_purls or cand.purls, (error_kinds or {}).get(key)
+    for row in rows:
+        cand = row.cand
+        cause_key: str | None = None
+        if row.counted_as_error:
+            # A cause named by the configuration pull request that settled the Issue comes first; the kind of
+            # error (``error_kinds``) is the other source, and the Issue is its own cause when neither says.
+            cause_key = (cause_keys or {}).get(row.key) or detector_error_cause_key(
+                row.excluded_purls or cand.purls, (error_kinds or {}).get(row.key)
             )
-            if counted_as_error
-            else None
-        )
         outcomes.append(
             metrics.PilotIssueOutcome(
-                vex_status=status,
-                justification=justification,
-                detector_error=detector_error,
-                duplicate=cand.duplicate or key in duplicates,
+                vex_status=row.status,
+                justification=row.justification,
+                detector_error=row.detector_error,
+                duplicate=cand.duplicate or row.key in duplicates,
                 opened_at=cand.opened_at,
                 cause_key=cause_key,
             )
@@ -3069,6 +3467,28 @@ def run(
         reasons.append("some Issue operations were not applied")
 
     lines = timelines(issues, raw, actions, results, now)
+    # The cause of each detector error closed as resolved: the one pull request that changed the detector's
+    # configuration in the Issue's window. After the Issue operations, because an Issue this run closes is
+    # one of them. A rate limit is recorded like the others above; the Issues then have no cause this run.
+    pilot_candidate_list = pilot_candidates(issues, raw, actions, results, now)
+    pilot_decisions = _vex_decisions(vex_docs)
+    config_causes: dict[tuple[Repo, int], str] = {}
+    config_notes: list[str] = []
+    asked = detector_error_candidates(
+        cfg.observation_text,
+        policy_repos=policy.target_repositories,
+        candidates=pilot_candidate_list,
+        plan=plan,
+        decisions=pilot_decisions,
+    )
+    if asked:
+        try:
+            config_causes, config_notes = config_pr_causes(
+                spoke, asked, {f.repo: f.default_branch for f in fetches}
+            )
+        except RateLimited as exc:
+            rate_limited = True
+            reasons.append(f"rate limit stopped the run: {exc}")
     finished = now_fn()
     record = run_record.RunRecord(
         run_id=cfg.run_id,
@@ -3125,18 +3545,22 @@ def run(
     pilot, pilot_notes = build_pilot(
         cfg.observation_text,
         policy_repos=policy.target_repositories,
-        candidates=pilot_candidates(issues, raw, actions, results, now),
+        candidates=pilot_candidate_list,
         plan=plan,
-        decisions=_vex_decisions(vex_docs),
+        decisions=pilot_decisions,
         lines=[t for t in lines if t.repo in fetch_ok],
         managed_repos=frozenset(i.repo for i in issues),
         now=now,
-        # No ``error_kinds``: nothing this run reads says why a detector error was one. The ``skipped_paths`` of
-        # the artifact tell what was excluded from a scan, not that an Issue was closed because of it; an Issue
-        # is closed as ``resolved`` whether the finding was fixed or its path was left out; and the observation
-        # input names the Issues a maintainer classified, not the kind. So each detector error is its own
-        # cause, which counts the errors on the high side.
+        # The only source of a cause is ``config_pr_causes``: the one pull request that changed the detector's
+        # configuration between the opening and the closing of an Issue closed as resolved. ``error_kinds`` is
+        # still not supplied: nothing this run reads says what kind of error a detector error was. The
+        # ``skipped_paths`` of the artifact tell what was excluded from a scan, not that an Issue was closed
+        # because of it, and an Issue is closed as ``resolved`` whether the finding was fixed or its path was
+        # left out. An Issue that no configuration pull request settles is its own cause, which counts the
+        # errors on the high side.
+        cause_keys=config_causes,
     )
+    pilot_notes = [*pilot_notes, *config_notes]
     extra = ExtraData(
         skipped_paths={
             _repo_text(f.repo): list(f.skipped_paths)
