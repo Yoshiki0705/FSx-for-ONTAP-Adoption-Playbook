@@ -19,8 +19,10 @@ AWS Workshop Studio 公開ワークショップ
 [実測値](measured-timings.md) と [自アカウント開催で詰まる箇所](facilitation-risks.md) は自前の東京リージョンの環境で測ったもので、
 このノートはその比較対象になります。手順そのものは本家にあるので、ここには本家を読んでも分からないことだけを書きます。
 
-> **記録の範囲に関する補足**: 1 人で 1 回実施した結果です。参加者が数十人いる本番のイベントでは、
-> 同じ操作でも待ち時間が変わります。1 回だけ観測した挙動は、本文でその旨を書いています。
+> **記録の範囲に関する補足**: 1 人で 1 回実施した結果です。このワークショップは
+> [Storage-JAWS #9 Amazon Quick ハンズオン](https://storage-jaws.connpass.com/event/400950/)（2026-09-18、現地参加の募集 50 人、
+> ハンズオン環境は AWS 側が用意）でも題材になっています。そのように数十人が同じ時間帯に払い出し環境で進める場合は、
+> 同じ操作でも待ち時間が変わる可能性があります。1 回だけ観測した挙動は、本文でその旨を書いています。
 
 ## 結論を先に
 
@@ -41,7 +43,7 @@ AWS Workshop Studio 公開ワークショップ
 | 項目 | 値 |
 |---|---|
 | 実施日 | 2026-11-20〜21（JST）。ナレッジベースなどの時刻は UTC で記録 |
-| 環境 | Workshop Studio の検証用イベント（72 時間、us-east-1）が払い出したアカウント。ロールは `WSParticipantRole` |
+| 環境 | Workshop Studio で作成したイベント（期間 72 時間、us-east-1）が払い出したアカウント。ロールは `WSParticipantRole` |
 | 事前に作成されていたもの | CloudFormation スタック 1 本（VPC、FSx for ONTAP、EC2 2 台） |
 | FSx for ONTAP | マルチ AZ 1、SSD 2,048 GiB、スループット 512 MBps、HA ペア 1。ONTAP 9.18.1P8HF2（ONTAP CLI の `version` で 2 ノードとも確認） |
 | ボリューム | `design_data` と `logs` の 2 本、各 10 GiB |
