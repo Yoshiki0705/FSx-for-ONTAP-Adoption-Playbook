@@ -74,3 +74,8 @@ examples/client-access/*.csr
 !.env.example
 credentials
 aws-exports.js
+
+# Browser automation artifacts (page snapshots may contain credentials)
+.playwright-mcp/
+muc-out.tgz
+*.har
