@@ -166,6 +166,8 @@ ONTAP REST API でボリュームを作ると、それが Amazon FSx の API（`
 
 ---
 
+- cyber リポジトリの[復旧時間と復旧点の目標のガイド](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/recovery-objectives-guide.md#復旧の層ごとの特徴と実測の所在)は、この文書を、復旧の層ごとの実測の所在として挙げています。値はそちらに写されていません。
+
 ## 選び方
 
 **上から順に確認してください。** 答えが決まった時点で必要な方式が決まります。

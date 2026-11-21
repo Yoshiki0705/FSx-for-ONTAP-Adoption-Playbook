@@ -193,6 +193,8 @@ CLI と同じ操作をコンソールで通したときに、画面側にしか�
 
 **ストレージ効率はリストア後に再確認してください。** 省略すると容量前提が変わります。
 
+- cyber リポジトリの[復旧の測定結果](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/recovery-measurement-results.md#先行記録との関係)は、この記録を、測定の土台にする先行記録として挙げています。値はそちらに写されていません。
+
 ---
 
 ### 実測 — AWS Backup 経由のクロスリージョンコピーとリストア
