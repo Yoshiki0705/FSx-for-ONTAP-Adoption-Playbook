@@ -10,7 +10,7 @@ lang: ja
 
 # ワークショップ各操作の実測時間
 
-[🏠 リポジトリトップ](../../../../README.md) | [90 分版シナリオ](README.md)
+[🏠 リポジトリトップ](../../../../README.md) | [90 分版シナリオ](README.md) | [払い出し環境での通し実施](provisioned-environment-run.md)
 
 [FSx for NetApp ONTAP S3 Access Points Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/9cd82e0b-8348-456b-932a-818b9e5825a1/en-US)
 の各操作を、Workshop Studio の提供環境ではなく**自前の検証環境で**実行して測った値です。
