@@ -113,6 +113,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-ve
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	solutions/flexcache/devops-cicd/README.md	retraction	に反映されるまで ~30 分かかる
 S3-Burst-on-ONTAP-Files	docs/ja/deployment/onprem-terraform.md	retraction	クラスタピアと SVM ピアが先に必要です。
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
 S3-Burst-on-ONTAP-Files	docs/ja/performance-expectations.md	retraction	記録の側が正で、ここは索引
