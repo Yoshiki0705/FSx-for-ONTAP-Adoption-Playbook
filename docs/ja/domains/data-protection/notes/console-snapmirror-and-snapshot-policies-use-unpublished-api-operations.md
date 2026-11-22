@@ -21,7 +21,7 @@ lang: ja
 
 ## このノートが答えないこと
 
-- 作成、変更、削除の操作名と入力項目（一覧の読み取りしか確認していない）
+- 更新（変更）の操作名と、各操作の入力項目の全体（作成と削除は動かして確認したが、入力項目の一覧は確認していない）
 - これらの操作が今後も同じ名前と形で残ること（未公開で、保証はない）
 - SnapMirror 関係を作るときの権限、料金、転送の挙動（測っていない）
 
@@ -50,6 +50,20 @@ intermediate
 ![スナップショットポリシーの一覧。名前、ID、ファイルシステム、スコープ、状態が並ぶ](../../../../_assets/images/aws-console-fsx-snapshot-policies-list.png)
 
 ![SnapMirror ポリシーの一覧。名前、ID、スコープ、スナップショットコピーモード、リテンションルールが並ぶ](../../../../_assets/images/aws-console-fsx-snapmirror-policies-list.png)
+
+### 作成と削除の操作
+
+第 3 世代の 2 つのファイルシステム（`us-east-1`、2026-11-22）で、コンソールから作成し、署名付きリクエストで削除しました。操作名は CloudTrail の記録です。
+
+| 対象 | 作成（コンソールが呼んだ） | 削除（署名付きリクエストで呼んだ） |
+|---|---|---|
+| クラスターピア | `CreateClusterPeer` | `DeleteClusterPeer`（HTTP 200） |
+| SVM ピア | `CreateStorageVirtualMachinePeer` | `DeleteStorageVirtualMachinePeer`（HTTP 200） |
+| SnapMirror ポリシー | `CreateSnapmirrorPolicy` | `DeleteSnapmirrorPolicy`（HTTP 200） |
+| SnapMirror 関係 | `CreateSnapmirrorRelationship` | `DeleteSnapmirrorRelationship`（HTTP 200） |
+| スナップショットポリシー | `CreateSnapshotPolicy` | `DeleteSnapshotPolicy`（HTTP 200） |
+
+10 操作とも、2026-11-20 時点の公開 SDK のモデルにありません。手順と所要時間は [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) にあります。
 
 ### 応答の内容
 

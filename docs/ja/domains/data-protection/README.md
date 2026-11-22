@@ -17,6 +17,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | **ランサムウェア対策を求められている** | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) | **不可逆な選択が 3 段あります。** 特権削除は満了後には使えません |
 | **既存のバックアップ製品を使っている** | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) | **経路が違う場合があります。** 「非対応」と「書かれていない」の区別も要ります |
 | **コンソールの SnapMirror やスナップショットポリシーを自動化したい** | [コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) | **今は AWS CLI から使えるとは書けません。** 呼べても、公開されるまで前提にしません |
+| **コンソールだけで SnapMirror をつなぎたい** | [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) | **クラスターピア、SVM ピア、関係の順です。** SVM ピアは宛先側から作り、パスフレーズのシークレットにはカスタマー管理の KMS キーが要ります |
 
 ---
 
@@ -36,6 +37,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 10 | 既存の第三者バックアップ製品をそのまま使えるか | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) |
 | 11 | ベンダー資料の「対応」をどう読むか。列挙に無いことは非対応か | [明示的な除外と列挙の不在の区別](notes/third-party-backup-reaches-it-by-another-route.md#明示的な除外と列挙の不在の区別) |
 | 12 | コンソールの SnapMirror やスナップショットポリシーは AWS CLI から使えるか | [画面が呼ぶ操作](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#画面が呼ぶ操作) |
+| 13 | コンソールで SnapMirror をつなぐ手順と、断られる条件は何か | [作る順序](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md#作る順序) |
 
 ---
 
