@@ -84,7 +84,7 @@ intermediate
 | [What's New](https://aws.amazon.com/new/) の最新 100 件、2026-11-22 22:58 JST | FSx for ONTAP の項目は第 3 世代の告知（2026-11-20）の 1 件だけで、これらの画面には触れていない |
 
 | [Amazon FSx API リファレンスの操作一覧](https://docs.aws.amazon.com/fsx/latest/APIReference/API_Operations.html)、2026-11-22 23:40 JST | 45 操作。上の 15 操作はない |
-| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonfsx.html)、同日 | 上の 15 操作に対応する IAM アクションの記載なし |
+| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_fsx.html)、同日 | 上の 15 操作に対応する IAM アクションの記載なし |
 | AWS CloudFormation のレジストリ（`aws cloudformation list-types`、`us-east-1` と `ap-northeast-1`）、同日 | `AWS::FSx::ClusterPeer`、`AWS::FSx::StorageVirtualMachinePeer`、`AWS::FSx::SnapmirrorPolicy`、`AWS::FSx::SnapmirrorRelationship` が 2026-11-06 に、`AWS::FSx::SnapshotPolicy` が 2026-10-30 に、公開の型として登録されている。型の定義（`describe-type`）は、作成に `fsx:CreateClusterPeer` などの IAM アクションを求める。`AWS::FSx::Volume` の定義には `CloneConfiguration` がある |
 | [CloudFormation テンプレートリファレンス](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/)、同日 | 上の 5 つの型のページはない（URL が入門ページへ転送される）。`AWS::FSx::Volume` のページに `CloneConfiguration` はない |
 | AWS Cloud Control API（`aws cloudcontrol list-resources` / `get-resource`、`ap-northeast-1`）、同日 | 5 つの型とも読み取れた。件数はコンソールの一覧と一致した。SnapMirror 関係は `State`、`Healthy`、`LagTimeInMinutes` を返した。作成と削除は Cloud Control API からは試していない |
