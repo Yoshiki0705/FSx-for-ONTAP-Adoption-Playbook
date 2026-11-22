@@ -4,8 +4,8 @@ lifecycle: [design, operate]
 domains: [data-protection]
 evidence: verified
 verified_on: 2026-11-22
-region: ap-northeast-1
-deployment_type: SINGLE_AZ_1
+region: us-east-1
+deployment_type: [SINGLE_AZ_1, SINGLE_AZ_3, MULTI_AZ_3]
 lang: ja
 ---
 
@@ -31,7 +31,7 @@ intermediate
 
 ## 本文
 
-> **区分**: `verified`（検証日 2026-11-22、`ap-northeast-1`、`SINGLE_AZ_1` 第 1 世代 1 HA ペア）— コンソールの一覧画面が呼ぶ操作名と、読み取り操作の応答。**一覧の表示だけで、作成・変更・削除は実行していません。**
+> **区分**: `verified`（検証日 2026-11-22）— 一覧画面が呼ぶ読み取り操作は `ap-northeast-1` の `SINGLE_AZ_1`（第 1 世代、1 HA ペア）、作成と削除は `us-east-1` の第 3 世代 2 台で確認しました。**変更（更新）の操作は実行していません。削除の確認は、HTTP 200 の応答と、直後の `Describe` で一覧から消えたかの読み戻しのうち、前者だけです。**
 
 ### 画面が呼ぶ操作
 
@@ -83,7 +83,7 @@ intermediate
 
 | これまでの前提 | 今回確認したこと |
 |---|---|
-| スナップショットポリシーは ONTAP の CLI か REST API でしか作れず、AWS 側からは名前を指定するだけ | コンソールにポリシーの一覧と作成ボタンがある。作成の API 名は未確認 |
+| スナップショットポリシーは ONTAP の CLI か REST API でしか作れず、AWS 側からは名前を指定するだけ | コンソールにポリシーの一覧と作成ボタンがあり、作成は `CreateSnapshotPolicy` を呼ぶ（上の表） |
 | SnapMirror のピアリングと関係の作成は ONTAP 側で行う | コンソールに専用の画面がある。AWS CLI からの操作は、モデルにないので今は使えない |
 | （前提ではなく観測）一覧に何が出るか | SnapMirror 関係 2 件、クラスターピア 5 件が表示された。作った経路（ONTAP 側か AWS 側か）は区別していない |
 
