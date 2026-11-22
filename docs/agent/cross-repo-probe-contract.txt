@@ -41,10 +41,14 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-age
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	is one pattern for that.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/recovery-measurement-results.md	retraction	It is not a production estimate and not a value for other configurations.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/recovery-objectives-guide.md	retraction	An RTO is not a value until its start and end are fixed.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/supply-chain-use-cases.md	retraction	It is organized as 11 use cases (A1 to D1).
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	に置く構成は、そのための 1 つのパターンである
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジックの 3 本の柱を 1 か所にまとめ
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	本番の見積りではなく、他の構成の値でもない。
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-objectives-guide.md	retraction	RTO は、起点と終点を決めないと値にならない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/supply-chain-use-cases.md	retraction	11 のユースケース（A1 から D1）に分けてまとめる
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
@@ -109,6 +113,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-ve
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	solutions/flexcache/devops-cicd/README.md	retraction	に反映されるまで ~30 分かかる
 S3-Burst-on-ONTAP-Files	docs/ja/deployment/onprem-terraform.md	retraction	クラスタピアと SVM ピアが先に必要です。
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
 S3-Burst-on-ONTAP-Files	docs/ja/performance-expectations.md	retraction	記録の側が正で、ここは索引
