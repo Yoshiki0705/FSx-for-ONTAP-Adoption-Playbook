@@ -49,7 +49,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.12'
+          python-version: '3.15'
 
       # A missing branch must read as "no record", not end the job before it can say so.
       - name: Checkout the run records
