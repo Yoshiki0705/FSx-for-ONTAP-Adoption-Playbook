@@ -72,6 +72,8 @@ us-east-1 で、`SINGLE_AZ_3` と `MULTI_AZ_3` の 2 つを同じ VPC に作り�
 
 ![ファイルシステムの作成画面。デプロイタイプにマルチ AZ 3（推奨）、シングル AZ 3、マルチ AZ 2 などが並び、SSD ストレージ容量とスループットを指定する](../../../../_assets/images/aws-console-fsx-ja-create-deployment-types.png)
 
+英語の画面は[こちら](../../../../_assets/images/aws-console-fsx-en-create-deployment-types.png)です。
+
 ### 上限
 
 ユーザーガイドの「Quotas」「Availability, durability, and deployment options」「Amazon FSx for NetApp ONTAP performance」の記載です（2026-11-22 に読んだ）。
