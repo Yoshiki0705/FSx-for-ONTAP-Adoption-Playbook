@@ -119,7 +119,7 @@ import urllib.request
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from itertools import pairwise
 from pathlib import Path
 from typing import Self
@@ -1226,7 +1226,7 @@ def build_report(
         shown = str(questions_file)
     report = {
         "schema": REPORT_SCHEMA,
-        "run_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "run_date": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "git_sha": _git_sha(root),
         "mode": result.mode,
         "max_hops": result.max_hops,

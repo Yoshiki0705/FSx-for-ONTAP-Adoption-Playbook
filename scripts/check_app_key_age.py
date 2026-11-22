@@ -48,7 +48,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, NamedTuple
 
 API = "https://api.github.com"
@@ -144,12 +144,12 @@ def _parse_timestamp(value: object) -> datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:
-        moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        moment = datetime.fromisoformat(value)
     except ValueError:
         return None
     if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=timezone.utc)
-    return moment.astimezone(timezone.utc)
+        moment = moment.replace(tzinfo=UTC)
+    return moment.astimezone(UTC)
 
 
 def classify(
@@ -403,7 +403,7 @@ def main(
     send: Send | None = None,
 ) -> int:
     environment = os.environ if env is None else env
-    moment = now or datetime.now(timezone.utc)
+    moment = now or datetime.now(UTC)
     transport = send or urllib_send
     try:
         config = load_config(environment)

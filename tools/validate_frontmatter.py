@@ -224,11 +224,12 @@ def validate(path: Path) -> tuple[list[str], str | None]:
                 f"{rel}: evidence 'field-observation' must state in the body that the "
                 f"observation was not reproduced"
             )
-    elif tier == "hypothesis":
-        if not any(marker in lowered for marker in UNTESTED_MARKERS):
-            errors.append(
-                f"{rel}: evidence 'hypothesis' must state in the body that it is untested"
-            )
+    elif tier == "hypothesis" and not any(
+        marker in lowered for marker in UNTESTED_MARKERS
+    ):
+        errors.append(
+            f"{rel}: evidence 'hypothesis' must state in the body that it is untested"
+        )
 
     return errors, tier
 

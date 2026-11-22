@@ -49,7 +49,7 @@ import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -501,7 +501,7 @@ def render(
     per_file: int = 2,
     now: datetime | None = None,
 ) -> str:
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     shown = " + ".join(f'"{t}"' for t in query)
     lines = [
         f"spoke-search: {shown}   ({len(results)} repositories; committed content at each ref, not working copies)"
@@ -949,7 +949,7 @@ def selftest() -> int:
             "a ledger entry carries its tier",
         )
 
-        text = render(["healthomics"], found, now=datetime.now(timezone.utc))
+        text = render(["healthomics"], found, now=datetime.now(UTC))
         check(
             "[record] docs/aws-feature-requests/gaps.md" in text,
             "render marks decision files",
