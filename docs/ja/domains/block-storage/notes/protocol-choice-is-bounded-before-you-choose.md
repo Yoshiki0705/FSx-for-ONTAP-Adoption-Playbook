@@ -20,7 +20,7 @@ lang: ja
 
 ## このノートで学べること
 
-- iSCSI と NVMe/TCP の選択が世代（NVMe/TCP は第 2 世代のみ）・HA ペア数（6 組以下）・ホスト OS で先に狭まること
+- iSCSI と NVMe/TCP の選択が世代（NVMe/TCP は第 2・第 3 世代のみ）・HA ペア数（6 組以下）・ホスト OS で先に狭まること
 - 両者が同じ LIF を使い、NVMe/TCP のポート 4420 / 8009 が AWS のセキュリティグループ要件表に載っていないこと
 
 ## このノートが答えないこと
@@ -46,7 +46,7 @@ intermediate
 
 | 条件 | 効き方 |
 |---|---|
-| **世代** | **NVMe/TCP は第 2 世代のみ。** 第 1 世代では作り直し以外に道がありません |
+| **世代** | **NVMe/TCP は第 2・第 3 世代のみ。** 第 1 世代では作り直し以外に道がありません。第 3 世代は AWS のユーザーガイドの記載で、このノートの検証は第 2 世代です |
 | **HA ペア数** | **どちらも 6 組以下のファイルシステムがサポート対象。** 7 組目追加時の遷移動作は文書化されておらず、**足した HA ペアは削除できません** |
 | **ホスト OS** | **Windows Server で NVMe/TCP は ONTAP 側で非対応です。** AWS に手順が無いのはその反映で、AWS 固有の制約ではありません（[NetApp KB](https://kb.netapp.com/on-prem/ontap/da/SAN/SAN-KBs/Does_NetApp_ONTAP_SAN_support_NVMe_TCP_with_Windows_Server)） |
 
@@ -84,10 +84,11 @@ intermediate
 |---|---|---|
 | 第 1 世代（`SINGLE_AZ_1` / `MULTI_AZ_1`） | **使える** | **使えない** |
 | 第 2 世代（`SINGLE_AZ_2` / `MULTI_AZ_2`） | 使える | **使える** |
-| HA ペア 1〜6 組 | 使える | 第 2 世代なら使える |
+| 第 3 世代（`SINGLE_AZ_3` / `MULTI_AZ_3`、記載のみで未検証） | 使える | 使える |
+| HA ペア 1〜6 組 | 使える | 第 2・第 3 世代なら使える |
 | HA ペア 7 組以上 | **非サポート** | **非サポート** |
 
-**HA ペアを 7 組以上にできるのは第 2 世代の Single-AZ だけです。** つまり「ブロックを使いながらスケールアウトの上限まで伸ばす」ことはできません。**ブロックを使う構成の HA ペア上限は 6 組です。**
+**HA ペアを 7 組以上にできるのは第 2・第 3 世代の Single-AZ だけです。** つまり「ブロックを使いながらスケールアウトの上限まで伸ばす」ことはできません。**ブロックを使う構成の HA ペア上限は 6 組です。**
 
 **足した HA ペアは削除できません。** ブロックが必要なら、6 組をファイルシステムの上限として設計します。デプロイタイプと世代の不可逆性は [デプロイタイプは一度しか決められない](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) にあります。
 
@@ -239,7 +240,7 @@ graph TD
 
 | 誤解 | 実際 |
 |---|---|
-| プロトコルは後から変えられる | **NVMe/TCP には第 2 世代が必要**で、第 1 世代なら作り直しです |
+| プロトコルは後から変えられる | **NVMe/TCP には第 2 世代以降が必要**で、第 1 世代なら作り直しです |
 | NVMe/TCP は iSCSI の上位互換なのでいつでも選べる | 世代・HA ペア数・ホストのカーネル・Windows 手順の不在という 4 つの前提があります |
 | iSCSI と NVMe/TCP は別の LIF を使う | **同じ LIF が両方の service を持っています** |
 | iSCSI 用のセキュリティグループがあれば NVMe/TCP も通る | **ポートが違い、4420 は AWS の要件表に載っていません** |
@@ -272,7 +273,7 @@ graph TD
 
 | 論点 | 出典 |
 |---|---|
-| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
+| iSCSI が HA ペア 6 組以下、NVMe/TCP が第 2・第 3 世代かつ 6 組以下であること。SVM のエンドポイントが `Nfs` / `Smb` / `Iscsi` / `Nvme` / `Management` の 5 種であること | [AWS: Accessing your FSx for ONTAP data](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/supported-fsx-clients.html) |
 | 6 組以下がブロックプロトコルのサポート範囲であること、追加した HA ペアが削除できないこと。7 組目追加時の既存 LUN と接続の遷移動作は未記載 | [AWS: Adding HA pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
 | デプロイタイプと世代が作成後に変更できないこと、世代ごとのスループット選択肢 | [AWS: Availability, durability, and deployment options](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/high-availability-AZ.html) |
 | `os_type` に `windows_2008` を使うこと、`space-allocation` の推奨、LUN 最大 128 TB | [AWS: Creating an iSCSI LUN](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-iscsi-lun.html) |

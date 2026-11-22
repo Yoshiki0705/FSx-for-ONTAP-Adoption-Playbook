@@ -16,6 +16,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **AI / RAG に載せたい** | [権限が平坦化されることの意味](notes/reaching-data-without-copies.md#権限が平坦化されることの意味) | **元の ACL は引き継がれません。** 判定を索引側に設計する必要があります |
 | **コピーを増やしたくない** | [コピーを増やさない 3 つの手段](notes/reaching-data-without-copies.md#コピーを増やさない-3-つの手段) | 3 つの手段と、それぞれが引き受ける制約 |
 | **複製先を分析基盤から読みたい** | [SnapMirror の宛先は break せずに S3 API で読める](notes/serving-a-replication-destination-over-s3.md) | **break は不要です。** 止めているのは junction path であってボリューム種別ではありません |
+| **クローンをすぐ S3 Access Points につなぎたい** | [コンソールで作ったクローンは API に即座に現れ、S3 Access Points まで 1 回の観測で約 93 秒](notes/a-console-clone-attaches-s3-access-points-in-minutes.md) | **遅れるのは ONTAP 側で作ったクローンです。** コンソールで作る経路は、クローンと S3 アクセスを 1 回の操作で指定できます |
 | **ファイルの到着でパイプラインを起動したい** | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) | **判定は書き込みが着地するプロトコルです。** 読む側は入りません |
 | **ゲノム / HPC の解析データをどこに置くか迷う** | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](notes/where-genomics-pipeline-data-lives.md) | **マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えません。** 共有層を自分で用意するかは実行基盤ごとに違います（HealthOmics の run は自前で提供） |
 | **クロスクラウド / クロスリージョンで分析したい** | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) | 書き込みはローカルに寄せ、クロスな依存は読み取り側に。**他クラウド ONTAP との FlexCache は、公式ドキュメントに記載はあるが実機の公開記録がない** |
@@ -38,6 +39,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 10 | ファイルの到着をイベントとして受け取れるか。FPolicy が使えるのはどの場合か | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) |
 | 11 | ゲノム / HPC の解析データはどこに置かれるか。実行基盤ごとに共有ファイル層を自分で用意する必要はあるか | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](notes/where-genomics-pipeline-data-lives.md) |
 | 12 | クロスクラウド / クロスリージョンでコピーを増やさず分析するには | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) |
+| 13 | クローンを分析基盤につなぐまでの待ち時間は、作る経路で変わるか | [コンソールで作ったクローンは API に即座に現れ、S3 Access Points まで 1 回の観測で約 93 秒](notes/a-console-clone-attaches-s3-access-points-in-minutes.md) |
 
 ---
 
