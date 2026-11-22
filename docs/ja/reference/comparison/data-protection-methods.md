@@ -145,7 +145,7 @@ break と昇格が要るのは、宛先で本番サービスを引き継ぐ DR �
 
 ### ONTAP で作ったボリュームが AWS の API に現れるまでの時間
 
-ONTAP REST API でボリュームを作ると、それが Amazon FSx の API（`describe-volumes` など）に現れるまでに時間がかかり、**この時間の上限は分かっていません。** 姉妹プロジェクトの実測では 20 秒間隔・ギャップ無しの観測で数百秒から千数百秒を要し、別の回では千数百秒経ってもまだ未出現でした。**3 回の観測が一致しないため上限値として扱えません**（[S3-Burst の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)）。AWS の記載は「数分」ですが、**特定の秒数を見込んだ設計にはせず、こちら側で制御できない反映待ちとしてポーリングで扱ってください。**
+ONTAP REST API でボリュームを作ると、それが Amazon FSx の API（`describe-volumes` など）に現れるまでに時間がかかり、**この時間の上限は分かっていません。** 姉妹プロジェクトの実測では 20 秒間隔・ギャップ無しの観測で数百秒から千数百秒を要し、別の回では千数百秒経ってもまだ未出現でした。**3 回の観測が一致しないため上限値として扱えません**（[S3-Burst の検証状況](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification-status.md)）。AWS の記載は「数分」ですが、**特定の秒数を見込んだ設計にはせず、こちら側で制御できない反映待ちとしてポーリングで扱ってください。** クローンについては、AWS 側（コンソール）で作る経路があり、API に即座に現れました（1 回の観測、[詳細](../../domains/data-utilization/notes/a-console-clone-attaches-s3-access-points-in-minutes.md)）。ONTAP 側で作る経路の待ちは、この観測では解消していません。
 
 ---
 
@@ -165,6 +165,8 @@ ONTAP REST API でボリュームを作ると、それが Amazon FSx の API（`
 > **これは手順の記載であって、実行ではありません。** 本リポジトリでこのリストアテストを実行してはいません。手順 3・4 の `volume clone show -estimate` / split / offline / delete は ONTAP 一般の操作で、FSx for ONTAP での所要時間や容量挙動は自環境での確認が要ります。
 
 ---
+
+- cyber リポジトリの[復旧時間と復旧点の目標のガイド](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/recovery-objectives-guide.md#復旧の層ごとの特徴と実測の所在)は、この文書を、復旧の層ごとの実測の所在として挙げています。値はそちらに写されていません。
 
 ## 選び方
 

@@ -122,7 +122,7 @@ ONTAP 側の操作は数秒で終わりますが、その junction path が Amaz
 | 複製先を読ませるには break が必要 | 不要です。break は宛先で本番サービスを引き継ぐ場合の手順です |
 | `UpdateVolume` が 200 を返したので junction path は設定された | DP ボリュームでは無言で破棄されます。`DescribeVolumes` で読み直してください |
 | ONTAP が mount できないから取り付けられない | ONTAP は mount します。拒否しているのは Amazon FSx API 側です |
-| クローンなら分単位で分析基盤に渡せる | クローン作成は数秒ですが、Amazon FSx コントロールプレーンへの反映に数分から数十分かかります |
+| クローンなら分単位で分析基盤に渡せる | ONTAP 側で作ったクローンは、作成は数秒でも Amazon FSx コントロールプレーンへの反映に数分から数十分かかります。コンソールで「既存のボリュームからクローン」と「S3 アクセス: 有効」を指定すると、1 回の観測では API に即座に現れ、約 93 秒でアクセスポイントまで届きました（[観測](a-console-clone-attaches-s3-access-points-in-minutes.md)） |
 | FlexCache の Cache Volume も ONTAP 9.18.1 なら取り付けられる | 取り付けられません。9.18.1 で対応したのは ONTAP ネイティブの S3 NAS bucket という別の機構です |
 | クローンを削除すれば親ボリュームもすぐ削除できる | recovery queue に入っている間は削除できません。[クローンを消しても親が消せない期間](../../block-storage/notes/lun-layout-decides-recovery-granularity.md#クローンを消しても親が消せない期間) を先に読んでください |
 

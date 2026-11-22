@@ -593,6 +593,8 @@ nr_sessions を 1 動かすとパスは 2 本動く（SVM は両ノードに LIF
 
 このコマンドは LIF を読むだけで、LIF にもセッションにも変更を加えません。フェイルオーバーの実測（手順 12）は、第 2 世代ではスループット容量の変更間に 6 時間空ける必要があります。
 
+- cyber リポジトリの[復旧時間と復旧点の目標のガイド](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ja/recovery-objectives-guide.md#復旧の層ごとの特徴と実測の所在)は、この文書を、復旧の層ごとの実測の所在として挙げています。値はそちらに写されていません。
+
 ## Read next
 
 [LUN の Snapshot は既定で何を保証するか？](a-snapshot-of-a-lun-is-crash-consistent.md)

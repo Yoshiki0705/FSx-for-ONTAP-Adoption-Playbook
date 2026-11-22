@@ -542,6 +542,8 @@ Moving nr_sessions by 1 moves paths by 2 (because an SVM has a LIF on both nodes
 
 This command only reads LIFs; it changes nothing on the LIF or the session. The measured failover (step 12) needs a 6-hour gap between throughput-capacity changes on second generation.
 
+- The Cyber Resilience Patterns repository's [recovery objectives guide](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/en/recovery-objectives-guide.md#features-of-each-recovery-layer-and-where-the-measurements-are) cites this document as the place of the measurements for a recovery layer. Its values are not copied there.
+
 ## Read next
 
 [What does a LUN snapshot guarantee by default?](a-snapshot-of-a-lun-is-crash-consistent.md)
