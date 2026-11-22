@@ -38,6 +38,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 11 | ベンダー資料の「対応」をどう読むか。列挙に無いことは非対応か | [明示的な除外と列挙の不在の区別](notes/third-party-backup-reaches-it-by-another-route.md#明示的な除外と列挙の不在の区別) |
 | 12 | コンソールの SnapMirror やスナップショットポリシーは AWS CLI から使えるか | [画面が呼ぶ操作](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#画面が呼ぶ操作) |
 | 13 | コンソールで SnapMirror をつなぐ手順と、断られる条件は何か | [作る順序](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md#作る順序) |
+| 14 | オンプレミスの ONTAP や既存の FSx for ONTAP 利用者は、SnapMirror・スナップショット・クローンをどの場面で使い分けるか | [3 つの出発点と 6 組のパラメーター](notes/snapmirror-snapshot-clone-use-cases-and-ontap-parameters.md) |
 
 ---
 
