@@ -13,6 +13,10 @@ lang: ja
 
 今は使えると書けません。コンソールは Amazon FSx API の操作を呼んでいますが、公開 SDK のモデルにもユーザーガイドにも載っていません。
 
+![AWS マネジメントコンソールは公開されていない Amazon FSx API の操作で送信元の FSx for ONTAP に届き、送信元から宛先へ SnapMirror がつながる。管理用の Amazon EC2 は ONTAP CLI / REST API で宛先を操作する。右の欄に、コンソールの画面、AWS CLI・SDK の公開モデルに該当する操作がないこと、自動化の経路を書いている](../../../../_assets/images/fsx-console-snapmirror-planes.svg)
+
+図の内容は本文の表と同じです（[暗い背景の版](../../../../_assets/images/fsx-console-snapmirror-planes-dark.svg)）。
+
 ## このノートで学べること
 
 - FSx for ONTAP のコンソールに、クラスターピア、SVM ピア、SnapMirror 関係、SnapMirror ポリシー、スナップショットポリシーの画面があること（第 1 世代のファイルシステムで確認。第 3 世代に限った機能ではない）

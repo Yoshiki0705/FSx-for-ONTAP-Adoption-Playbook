@@ -663,6 +663,80 @@ LABELS: dict[str, dict[str, str]] = {
             "Documented by the vendors; no published test record. Reachability is not a working FlexCache."
         ),
     },
+    # --- third-generation file systems (fsx-third-generation-overview) ---
+    "region_use1": {
+        "ja": "us-east-1（バージニア北部）",
+        "en": "us-east-1 (N. Virginia)",
+    },
+    "ec2_nas_client": {
+        "ja": "Amazon EC2<br>（クライアント）",
+        "en": "Amazon EC2<br>(client)",
+    },
+    "fsx_maz3": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP<br>Multi-AZ 3（1 HA ペア）",
+        "en": "Amazon FSx for<br>NetApp ONTAP<br>Multi-AZ 3 (1 HA pair)",
+    },
+    "fsx_saz3": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP<br>Single-AZ 3（1〜12 HA ペア）",
+        "en": "Amazon FSx for<br>NetApp ONTAP<br>Single-AZ 3 (1-12 HA pairs)",
+    },
+    "nas_protocols": {"ja": "NFS / SMB / iSCSI", "en": "NFS / SMB / iSCSI"},
+    "gen3_notes": {
+        "ja": (
+            "<b>1 HA ペアあたりの上限</b><br>"
+            "18,432 MBps<br>720,000 SSD IOPS<br>（ドキュメント記載）<br><br>"
+            "<b>作成を受け付けた<br>リージョン</b><br>"
+            "us-east-1<br>us-east-2<br>us-west-2<br>（2026-11-22 時点）<br><br>"
+            "<b>単価</b><br>第 2 世代と同じ"
+        ),
+        "en": (
+            "<b>Limits per HA pair</b><br>"
+            "18,432 MBps<br>720,000 SSD IOPS<br>(per the user guide)<br><br>"
+            "<b>Regions that accepted<br>the create request</b><br>"
+            "us-east-1<br>us-east-2<br>us-west-2<br>(as of 2026-11-22)<br><br>"
+            "<b>Unit prices</b><br>Same as generation 2"
+        ),
+    },
+    # --- console SnapMirror and the management planes (fsx-console-snapmirror-planes) ---
+    "console_box": {
+        "ja": "AWS マネジメント<br>コンソール",
+        "en": "AWS Management<br>Console",
+    },
+    "fsx_sm_source": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP<br>（送信元）",
+        "en": "Amazon FSx for<br>NetApp ONTAP<br>(source)",
+    },
+    "fsx_sm_destination": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP<br>（宛先）",
+        "en": "Amazon FSx for<br>NetApp ONTAP<br>(destination)",
+    },
+    "ec2_admin": {
+        "ja": "Amazon EC2<br>（管理用）",
+        "en": "Amazon EC2<br>(administration)",
+    },
+    "fsx_api_unpublished": {
+        "ja": "Amazon FSx API<br>（未公開の操作）",
+        "en": "Amazon FSx API<br>(unpublished)",
+    },
+    "snapmirror_edge": {"ja": "SnapMirror", "en": "SnapMirror"},
+    "ontap_cli_rest": {"ja": "ONTAP CLI / REST API", "en": "ONTAP CLI / REST API"},
+    "planes_notes": {
+        "ja": (
+            "<b>コンソールの画面</b><br>"
+            "・クラスターピア<br>・SVM ピア<br>　（両側に作る）<br>"
+            "・SnapMirror ポリシー<br>・SnapMirror 関係<br>・スナップショット<br>　ポリシー<br><br>"
+            "<b>AWS CLI・SDK の<br>公開モデル</b><br>該当する操作なし<br>（2026-11-22 時点）<br><br>"
+            "<b>自動化</b><br>ONTAP CLI / REST API"
+        ),
+        "en": (
+            "<b>Console screens</b><br>"
+            "- Cluster peers<br>- SVM peers<br>&nbsp;&nbsp;(one per side)<br>"
+            "- SnapMirror policies<br>- SnapMirror<br>&nbsp;&nbsp;relationships<br>"
+            "- Snapshot policies<br><br>"
+            "<b>Public AWS CLI and<br>SDK model</b><br>No such operations<br>(as of 2026-11-22)<br><br>"
+            "<b>Automation</b><br>ONTAP CLI / REST API"
+        ),
+    },
 }
 
 # There is deliberately no `note` label, and no Note shape below. The figure used to carry a nine
@@ -1391,6 +1465,109 @@ def _crosscloud_mobility() -> Diagram:
     )
 
 
+def _third_generation_overview() -> Diagram:
+    """What a third-generation file system is, and where it could be created on the day checked.
+
+    One Region, two deployment types, one client. The limits and the accepted Regions are short
+    text in the notes column rather than icons: they are facts about the service, not resources.
+    The canvas is wide and short so the same image serves as the blog cover, which dev.to crops to
+    about 2.4:1.
+    """
+    return Diagram(
+        name="fsx-third-generation-overview",
+        diagram_id="fsx-third-generation-overview",
+        width=1000,
+        height=500,
+        groups=(
+            Group("aws_cloud", "aws_cloud", 30, 30, 700, 440),
+            Group(
+                "region",
+                "region_use1",
+                60,
+                80,
+                640,
+                370,
+                gr_icon="group_region",
+                kind="region",
+                dashed=True,
+            ),
+        ),
+        notes=(Note("notes", "gen3_notes", 760, 30, 210, 440),),
+        nodes=(
+            Node("ec2", "ec2", "ec2_nas_client", 120, 150),
+            Node("maz3", "fsx_ontap", "fsx_maz3", 460, 130),
+            Node("saz3", "fsx_ontap", "fsx_saz3", 460, 300),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "ec2",
+                "maz3",
+                "nas_protocols",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.75),
+                label_at=-0.2,
+                label_offset=(0, -14),
+            ),
+            Edge("e2", "ec2", "saz3", exit_at=(1.0, 0.75), entry_at=(0.0, 0.5)),
+        ),
+    )
+
+
+def _console_snapmirror_planes() -> Diagram:
+    """Which management plane connects SnapMirror, and which one an automation can rely on.
+
+    The console reaches the file systems through Amazon FSx API operations that the public SDK model
+    does not carry, so the AWS CLI gets no edge: that is stated in the notes column rather than
+    drawn as a box with nothing leaving it. The ONTAP CLI / REST API path from an in-VPC host is the
+    published one. Wide and short so the image serves as the blog cover.
+    """
+    return Diagram(
+        name="fsx-console-snapmirror-planes",
+        diagram_id="fsx-console-snapmirror-planes",
+        width=1000,
+        height=520,
+        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 710, 460),),
+        boxes=(Box("console", "console_box", 60, 100, 150, 60),),
+        notes=(Note("notes", "planes_notes", 770, 30, 200, 460),),
+        nodes=(
+            Node("fsx_src", "fsx_ontap", "fsx_sm_source", 340, 90),
+            Node("fsx_dst", "fsx_ontap", "fsx_sm_destination", 560, 310),
+            Node("ec2", "ec2", "ec2_admin", 110, 310),
+        ),
+        edges=(
+            Edge(
+                "e1",
+                "console",
+                "fsx_src",
+                "fsx_api_unpublished",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, 30),
+            ),
+            Edge(
+                "e2",
+                "fsx_src",
+                "fsx_dst",
+                "snapmirror_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.5, 0.0),
+                label_at=-0.3,
+                label_offset=(0, -14),
+            ),
+            Edge(
+                "e3",
+                "ec2",
+                "fsx_dst",
+                "ontap_cli_rest",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -14),
+            ),
+        ),
+    )
+
+
 DIAGRAMS = (
     _backup_copy(),
     _qos_two_plane(),
@@ -1402,6 +1579,8 @@ DIAGRAMS = (
     _gcp_flexcache_reverse(),
     _genomics_data_layers(),
     _crosscloud_mobility(),
+    _third_generation_overview(),
+    _console_snapmirror_planes(),
 )
 
 

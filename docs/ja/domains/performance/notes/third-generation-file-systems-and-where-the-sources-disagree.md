@@ -13,6 +13,10 @@ lang: ja
 
 2026-11-22 に確認した 7 リージョンのうち、受け付けたのは米国の 3 リージョンです。上限は 1 HA ペアあたり 18,432 MBps と 720,000 IOPS です。
 
+![us-east-1 に置いた第 3 世代の 2 つのデプロイタイプ（Multi-AZ 3 は 1 HA ペア、Single-AZ 3 は 1〜12 HA ペア）と、NFS、SMB、iSCSI でつなぐ Amazon EC2 のクライアント。右の欄に 1 HA ペアあたりの上限、作成を受け付けたリージョン、単価を書いている](../../../../_assets/images/fsx-third-generation-overview.svg)
+
+図の内容は本文の表と同じです（[暗い背景の版](../../../../_assets/images/fsx-third-generation-overview-dark.svg)）。
+
 ## このノートで学べること
 
 - 第 3 世代（`SINGLE_AZ_3`、`MULTI_AZ_3`）を作成要求で受け付けるリージョンの実測と、公式の記載との食い違い
