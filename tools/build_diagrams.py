@@ -683,16 +683,18 @@ LABELS: dict[str, dict[str, str]] = {
     "nas_protocols": {"ja": "NFS / SMB / iSCSI", "en": "NFS / SMB / iSCSI"},
     "gen3_notes": {
         "ja": (
-            "<b>1 HA ペアあたりの上限</b><br>"
-            "18,432 MBps<br>720,000 SSD IOPS<br>（ドキュメント記載）<br><br>"
-            "<b>作成を受け付けた<br>リージョン</b><br>"
+            "<b>上限（ドキュメント記載）</b><br>"
+            "1 HA ペア:<br>18,432 MBps<br>720,000 SSD IOPS<br>"
+            "Single-AZ 3、12 HA ペア:<br>221,184 MBps<br>8,640,000 SSD IOPS<br><br>"
+            "<b>デプロイできた<br>リージョン</b><br>"
             "us-east-1<br>us-east-2<br>us-west-2<br>（2026-11-22 時点）<br><br>"
             "<b>単価</b><br>第 2 世代と同じ"
         ),
         "en": (
-            "<b>Limits per HA pair</b><br>"
-            "18,432 MBps<br>720,000 SSD IOPS<br>(per the user guide)<br><br>"
-            "<b>Regions that accepted<br>the create request</b><br>"
+            "<b>Limits (documented)</b><br>"
+            "One HA pair:<br>18,432 MBps<br>720,000 SSD IOPS<br>"
+            "Single-AZ 3, 12 pairs:<br>221,184 MBps<br>8,640,000 SSD IOPS<br><br>"
+            "<b>Regions where it<br>could be deployed</b><br>"
             "us-east-1<br>us-east-2<br>us-west-2<br>(as of 2026-11-22)<br><br>"
             "<b>Unit prices</b><br>Same as generation 2"
         ),
@@ -1476,7 +1478,7 @@ def _third_generation_overview() -> Diagram:
     return Diagram(
         name="fsx-third-generation-overview",
         diagram_id="fsx-third-generation-overview",
-        width=1000,
+        width=1020,
         height=500,
         groups=(
             Group("aws_cloud", "aws_cloud", 30, 30, 700, 440),
@@ -1492,7 +1494,7 @@ def _third_generation_overview() -> Diagram:
                 dashed=True,
             ),
         ),
-        notes=(Note("notes", "gen3_notes", 760, 30, 210, 440),),
+        notes=(Note("notes", "gen3_notes", 750, 30, 240, 440),),
         nodes=(
             Node("ec2", "ec2", "ec2_nas_client", 120, 150),
             Node("maz3", "fsx_ontap", "fsx_maz3", 460, 130),
