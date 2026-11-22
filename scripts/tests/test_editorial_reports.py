@@ -697,12 +697,13 @@ class SupplyChainContract(unittest.TestCase):
 
         manifest = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
         lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
-        self.assertEqual(
-            manifest["devDependencies"]["@mermaid-js/mermaid-cli"], "11.17.0"
-        )
+        # The contract is an exact pin that the lockfile agrees with, not a
+        # particular version: a literal here failed every dependency bump.
+        pinned = manifest["devDependencies"]["@mermaid-js/mermaid-cli"]
+        self.assertRegex(pinned, r"^\d+\.\d+\.\d+$")
         self.assertEqual(
             lock["packages"]["node_modules/@mermaid-js/mermaid-cli"]["version"],
-            "11.17.0",
+            pinned,
         )
         self.assertIn(
             "integrity",
