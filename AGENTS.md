@@ -442,6 +442,6 @@ Surface findings explicitly and fix before finalizing.
 
 - Primary region for verification: `ap-northeast-1` (Tokyo)
 - ONTAP baseline for carried-over findings: 9.17.1P7D1
-- Tooling: Python 3.12 or later (stdlib only for `tools/`; CI runs 3.14), `ruff` and `cfn-lint` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`, `shellcheck`. CI installs the pinned versions rather than resolving the latest release, so a lint verdict does not depend on the day it runs
+- Tooling: Python 3.12 or later (stdlib only for `tools/`; CI runs 3.15), `ruff` and `cfn-lint` exact-pinned in `requirements-dev.txt`, `markdownlint-cli2`, `gitleaks`, `shellcheck`. CI installs the pinned versions rather than resolving the latest release, so a lint verdict does not depend on the day it runs
 - A CI interpreter bump is a documentation change too: the version appears in prose in `AGENTS.md` and `CONTRIBUTING.md`, and a dependency bot cannot update prose. State the supported floor as a range and the CI version separately, so a later bump touches one line instead of three
 - No application runtime. `examples/` deploys into the reader's own account and is never deployed from CI

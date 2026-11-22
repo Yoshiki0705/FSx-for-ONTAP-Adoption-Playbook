@@ -1,0 +1,84 @@
+# Checks the age of the aggregator App's private key once a day and keeps one Issue in step with it:
+# an Issue at 80 days, a failing job at 90 days, and the Issue closed on its own once the key has
+# been replaced (the repository secret SUPPLY_CHAIN_APP_PRIVATE_KEY has a new `updated_at`).
+#
+# The 90 days is this repository's policy. GitHub private keys have no expiry date, and a key cannot
+# be created or deleted through the REST API, so a person replaces it with scripts/rotate_app_key.sh
+# and the App's settings page (CONTRIBUTING.md, "App の秘密鍵の 90 日ごとの入れ替え"). All decisions
+# are made in scripts/check_app_key_age.py.
+#
+# Two tokens, never swapped:
+#   * the App's token (permission-secrets: read, this repository only) reads the secret's metadata.
+#     The job's GITHUB_TOKEN cannot: a workflow `permissions` map has no `secrets` key.
+#   * the job's GITHUB_TOKEN (issues: write) opens, rewrites and closes the one Issue.
+# The App token step is allowed to fail on purpose, so the script can report "unreadable" with the
+# reason (for example, the App has not been given Secrets: Read-only yet) instead of the job
+# stopping before it can say anything.
+#
+# This workflow runs only on `schedule` and `workflow_dispatch`, so no pull request ever runs it. Its
+# first execution must be observed by a person (see supply-chain-aggregator.yml): push the branch,
+# run it once with workflow_dispatch, read the result, then merge.
+#
+# Needs, set by a maintainer:
+#   variable: SUPPLY_CHAIN_APP_CLIENT_ID
+#   secret:   SUPPLY_CHAIN_APP_PRIVATE_KEY
+#   the App: repository permission Secrets: Read-only, approved on the installation
+name: supply-chain-key-rotation
+
+on:
+  schedule:
+    # Once a day, at a minute the Aggregator (17) and the watchdog (47) do not use.
+    - cron: '31 3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+# One run at a time, and a run in progress is never cut off.
+concurrency:
+  group: supply-chain-key-rotation
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: check the App key age
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.15'
+
+      # The App-token action takes repository names, not owner/name. An empty value would widen the
+      # token to every repository of the installation, so the name is cut out here, not in the action.
+      - name: Name the repository the token is for
+        id: repo
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=${REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Create the token that reads the secret metadata
+        id: app-token
+        continue-on-error: true
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.SUPPLY_CHAIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SUPPLY_CHAIN_APP_PRIVATE_KEY }}
+          repositories: ${{ steps.repo.outputs.name }}
+          permission-secrets: read
+
+      - name: Check the age of the App private key
+        env:
+          GH_REPO: ${{ github.repository }}
+          ISSUE_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          TOKEN_STEP_OUTCOME: ${{ steps.app-token.outcome }}
+        run: python3 scripts/check_app_key_age.py

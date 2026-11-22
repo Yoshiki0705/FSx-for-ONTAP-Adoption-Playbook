@@ -137,5 +137,6 @@ Generate EDA Data ──> 1,952 個のログファイル
 |---|---|
 | [実測値](measured-timings.md) | 各操作の実測時間と、測定した環境の条件 |
 | [開催時の落とし穴](facilitation-risks.md) | 自アカウント開催で詰まった箇所と切り分け |
+| [払い出し環境での通し実施](provisioned-environment-run.md) | Workshop Studio の払い出し環境（us-east-1）で本家の手順を頭から順に実施した結果と、本家どおりに進まない箇所 |
 | [FSx for ONTAP S3 AP の前提条件](../../domains/data-utilization/notes/s3-access-point-constraints.md) | アクセスポイント自体の制約 |
 | [S3 Access Point の認可モデル](../../domains/data-utilization/notes/reaching-data-without-copies.md) | 1 つの ID で全リクエストを認可する構造 |

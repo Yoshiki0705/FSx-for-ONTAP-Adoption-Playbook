@@ -5,7 +5,7 @@ PY ?= python3
 # directories, so an undeclared target sharing one of those names makes make print
 # "up to date" and skip the recipe entirely — a gate that reports success without
 # running. scripts/tests/test_makefile_phony.py fails when a target is missing.
-.PHONY: sweep-probes entry-points allow-budget workflow-observability help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
+.PHONY: sweep-probes entry-points allow-budget workflow-observability supply-chain-copy supply-chain-copy-external help lint i18n-status i18n-check switcher-check ja-markers switcher-write audit links links-external anchors pr-verify hooks all \
         frontmatter markdown headings python powershell format-python new-note stats drift test secrets clean \
         diagrams diagrams-check diagram-fonts diagram-flow cfn shell cross-repo cross-repo-external \
         source-freshness source-freshness-external \
@@ -305,6 +305,17 @@ anchors: ## Check that externally cited section anchors have not been renamed
 workflow-observability: ## Check every workflow's triggers parse, and classify them
 	@$(PY) scripts/check_workflow_observability.py --selftest
 
+# The copied supply-chain files are byte-for-byte copies pinned to one source commit. The offline half
+# compares the tree with docs/agent/supply-chain-source.json and is part of `all`; the external half
+# fetches the source commit, needs the network, and stays out of `all` and CI for the same reason
+# links-external does: a host being briefly unreachable is not a defect in a change.
+supply-chain-copy: ## Check the copied supply-chain files match their recorded SHA-256 (offline)
+	@$(PY) tools/check_supply_chain_copy.py --selftest >/dev/null
+	@$(PY) tools/check_supply_chain_copy.py
+
+supply-chain-copy-external: ## Check the copies against the pinned source commit (network required)
+	@$(PY) tools/check_supply_chain_copy.py --external
+
 sweep-probes: ## Remove probe files a killed test run left in docs/ or examples/
 	@$(PY) scripts/sweep_gate_probes.py
 
@@ -330,7 +341,7 @@ links-external: ## Check internal + external links (network required)
 gate: ## Run `all` and assert it did not change the git index (what the hooks run)
 	@scripts/run_gate.sh /tmp/gate.log
 
-all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability secrets links cross-repo source-freshness reachability reachability-signposted inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
+all: sweep-probes lint entry-points i18n-check switcher-check ja-markers audit allow-budget workflow-observability supply-chain-copy secrets links cross-repo source-freshness reachability reachability-signposted inbound-probes anchors knowledge-quality-status diagram-fonts diagram-flow drift test ## Run every check (commit gate)
 	@echo "All checks passed."
 
 # In `all`, unlike `diagrams-check`: this reads the committed .drawio and .svg only, so it needs

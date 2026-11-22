@@ -438,8 +438,13 @@ lang: ja
         )
         return validate_frontmatter.validate(path)[0]
 
-    def test_scalar_and_nonempty_inline_lists_accept_only_four_values(self) -> None:
-        for raw in ["MULTI_AZ_1", "[MULTI_AZ_2]", "[SINGLE_AZ_1, SINGLE_AZ_2]"]:
+    def test_scalar_and_nonempty_inline_lists_accept_the_six_known_values(self) -> None:
+        for raw in [
+            "MULTI_AZ_1",
+            "[MULTI_AZ_2]",
+            "[SINGLE_AZ_1, SINGLE_AZ_2]",
+            "[MULTI_AZ_3, SINGLE_AZ_3]",
+        ]:
             parsed = frontmatter.parse(f"deployment_type: {raw}")
             values = validate_frontmatter._as_list(parsed["deployment_type"])
             self.assertTrue(values)
@@ -453,7 +458,7 @@ lang: ja
         self.assertTrue(
             any(
                 "unknown value" in error
-                for error in self.validate_deployment("MULTI_AZ_3")
+                for error in self.validate_deployment("MULTI_AZ_9")
             )
         )
 
@@ -697,12 +702,13 @@ class SupplyChainContract(unittest.TestCase):
 
         manifest = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
         lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
-        self.assertEqual(
-            manifest["devDependencies"]["@mermaid-js/mermaid-cli"], "11.17.0"
-        )
+        # The contract is an exact pin that the lockfile agrees with, not a
+        # particular version: a literal here failed every dependency bump.
+        pinned = manifest["devDependencies"]["@mermaid-js/mermaid-cli"]
+        self.assertRegex(pinned, r"^\d+\.\d+\.\d+$")
         self.assertEqual(
             lock["packages"]["node_modules/@mermaid-js/mermaid-cli"]["version"],
-            "11.17.0",
+            pinned,
         )
         self.assertIn(
             "integrity",

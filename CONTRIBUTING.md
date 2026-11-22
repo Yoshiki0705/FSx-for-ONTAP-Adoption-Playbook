@@ -19,7 +19,7 @@ make new-note MODULE=domains/performance SLUG=my-concern
 make all           # コミット前に必ず実行
 ```
 
-`tools/` は Python 3.12 以降の標準ライブラリのみで動きます。追加の依存はありません。CI は 3.14 で実行しています。
+`tools/` は Python 3.12 以降の標準ライブラリのみで動きます。追加の依存はありません。CI は 3.15 で実行しています。
 
 ### 外部ツール 4 つのインストール
 
@@ -361,6 +361,193 @@ Tier 1 は**セクション構成と数が言語間で一致**していること
 外部記事タイトルに FSxN が含まれる場合   <!-- allow:naming -->
 | `name@example.com` | 「(internal reviewer)」 |   <!-- allow:pii -->
 ```
+
+---
+
+## 集約ジョブと見張りの初期設定
+
+保守者が 1 回だけ行う設定です。対象は [`supply-chain-aggregator.yml`](.github/workflows/supply-chain-aggregator.yml)（6 時間ごとに対象リポジトリの脆弱性を読み、Issue を更新して実行記録を保存する）と、[`supply-chain-watchdog.yml`](.github/workflows/supply-chain-watchdog.yml)（その実行記録が止まっていないかを見る）です。どちらも `schedule` と `workflow_dispatch` でしか動かず、pull request では実行されません。**必要な設定が欠けていると、集約ジョブは先頭の確認ステップで理由を表示して失敗します。**
+
+> **この節のコマンドは、この節を書いた時点では実行して確かめていません。** 内容は 2 つのワークフローのコメントと、`tools/supply_chain_aggregator.py`、`tools/supply_chain_io.py` のコードから読み取れる範囲に限っています。
+
+### GitHub App の作成とインストール
+
+集約ジョブは、GitHub App のインストールトークンを 2 つ発行します。ジョブ自身の `GITHUB_TOKEN` は `contents: read` だけで、書き込みには使いません。
+
+| トークン | 発行時の権限 | 届く範囲 |
+|---|---|---|
+| 1 つ目（`spoke-token`） | `permission-contents: read`、`permission-issues: write`、`permission-vulnerability-alerts: read`、`permission-actions: read`、`permission-metadata: read` | ポリシーファイルの `target_repositories` に列挙したリポジトリと、このリポジトリ（失敗の Issue 用） |
+| 2 つ目（`hub-token`） | `permission-contents: write` | このリポジトリだけ。`supply-chain-runs` ブランチへ実行記録を書く |
+
+秘密鍵の入れ替えを確認する [`supply-chain-key-rotation.yml`](.github/workflows/supply-chain-key-rotation.yml) は、同じ App から 3 つ目のトークンを発行します。権限は `permission-secrets: read` だけで、このリポジトリのシークレットの更新日時を読む用途に限ります（[App の秘密鍵の入れ替え](#app-の秘密鍵の-90-日ごとの入れ替え)）。
+
+App は、**このリポジトリとポリシーファイルの `target_repositories` のすべてにインストール**します。トークンの発行先の所有者は 1 つなので、対象は同じ所有者のリポジトリに限られます（所有者が違うと `scope` ステップが失敗します）。App 自体に与える権限は、上の表の権限を含めてください。App がその権限を持っているかは、設定画面で確かめてください。
+
+### リポジトリ変数とシークレットの登録
+
+| 種類 | 名前 | 値 |
+|---|---|---|
+| リポジトリ変数 | `SUPPLY_CHAIN_APP_CLIENT_ID` | App のクライアント ID |
+| シークレット | `SUPPLY_CHAIN_APP_PRIVATE_KEY` | App の秘密鍵 |
+| リポジトリ変数 | `SUPPLY_CHAIN_POLICY_REF` | Cyber-Resilience-Patterns リポジトリの 40 桁の小文字の 16 進数のコミット SHA |
+
+`SUPPLY_CHAIN_POLICY_REF` のコミットには、このリポジトリに写したコードが読めるポリシーファイル（`docs/agent/supply-chain-policy.json`）と、分岐の台帳（`docs/agent/supply-chain-chain-ack.json`）が必要です。台帳のファイルが無いときは、見張りは「決定なし」として読みます。**集約ジョブと見張りの両方がこの変数を読みます。** 形が違うか空のとき、集約ジョブは失敗し、見張りはポリシーファイルを取り出さずに失敗の通知へ進みます。どちらも既定ブランチは取り出しません。
+
+```bash
+gh variable set SUPPLY_CHAIN_APP_CLIENT_ID --body '<クライアント ID>'
+gh secret set SUPPLY_CHAIN_APP_PRIVATE_KEY < <秘密鍵ファイルのパス>
+gh variable set SUPPLY_CHAIN_POLICY_REF --body '<40 桁のコミット SHA>'
+```
+
+### supply-chain-runs ブランチの作成
+
+集約ジョブはこのブランチを作りません。ブランチが無い、または読めないと、実行は失敗として終わり、記録は保存されません。
+
+コードから決められるのは次の範囲です。
+
+- 実行記録は `runs/<年>/<月>/<実行 ID>.json` に保存します。`runs/` ディレクトリを先に作る必要はありません（保存時に作られます）。
+- 集約ジョブは、ブランチの tree のうち `runs/` 配下の記録の形のファイルだけを数えます。それ以外のファイルがあっても読み飛ばします。
+- 見張りは `runs/` 配下の `*.json` だけを読みます。
+
+空の tree だけのブランチを GitHub の tree API が受け付けるかは、コードからは決められず、確かめていません。確実を期すなら、`README.md` を 1 つだけ置いた孤立ブランチ（orphan）にしてください。
+
+ブランチの保護では、集約ジョブの App 以外が書けないようにすることを勧めます。実行記録は 1 件ごとに前の記録の SHA-256 を持つ鎖で、人の手による途中の記録の編集や削除は、見張りが連鎖の切断として報告するためです。
+
+### 初回の実行の観測
+
+初回は人が結果を読みます。
+
+1. 集約ジョブを `workflow_dispatch` で 1 回実行し、ジョブの要約（終了状態、走査したリポジトリ数、実行記録の保存先）を読みます。`supply-chain-runs` ブランチに記録が 1 件増えていることを確かめます。
+2. その後に、見張りを `workflow_dispatch` で 1 回実行し、ジョブの要約に出る報告（JSON）を読みます。記録が 1 件も無い状態で先に実行すると、見張りは失敗します。
+
+見張りのしきい値は、ポリシーファイルの `watchdog.limit_hours`、無ければ 8 時間です。見張りは、記録の古さに加えて、直近の実行が続けて失敗していること、記録の連鎖が切れていること、ポリシーファイルを読めないことでも失敗します。
+
+### 写しの記録の source_commit の差し替え
+
+`docs/agent/supply-chain-source.json` の `source_commit` が 40 桁の `0` のときは、**コピー元のコミットがまだ無い**ことを示します。このリポジトリの写しは、コピー元のリポジトリの作業ツリーにだけある内容と同じです。コピー元で同じ内容をコミットしたら、`source_commit` をそのコミットの SHA に差し替え、`make supply-chain-copy-external` で照合してください。差し替えるまで、このターゲットは失敗します（`make supply-chain-copy` は、記録とファイルの SHA-256 の一致だけを見るので通ります）。
+
+### App の秘密鍵の 90 日ごとの入れ替え
+
+集約ジョブの GitHub App（`sc-aggregator-yoshiki0705`）の秘密鍵は、リポジトリのシークレット `SUPPLY_CHAIN_APP_PRIVATE_KEY` に入っています。この鍵を 90 日ごとに入れ替えます。90 日はこのリポジトリの運用方針で、GitHub が強制する期限ではありません。
+
+毎日 1 回、[`supply-chain-key-rotation.yml`](.github/workflows/supply-chain-key-rotation.yml) がシークレットの更新日時から経過日数を数えます。80 日で Issue を 1 件立て、90 日を超えると workflow を失敗させます。入れ替えそのものは人が行います。鍵の作成と削除に使える API がないためです。判定は [`scripts/check_app_key_age.py`](scripts/check_app_key_age.py)、入れ替えの実行は [`scripts/rotate_app_key.sh`](scripts/rotate_app_key.sh) が受け持ちます。
+
+#### 公式文書で確かめた事項
+
+docs.github.com の該当ページを全文読んで確かめた内容です。食い違いがあれば、公式文書が正です。
+
+| # | 事項 | 出典 |
+|---|---|---|
+| 1 | 秘密鍵は REST API で作成・一覧・削除できません。GitHub Apps の REST リファレンスに鍵の endpoint はありません。作成は App の設定画面の Credentials → Key pairs → New key（PEM が自動でダウンロードされる）、削除は同じ画面の Delete だけです。鍵が 1 本のときは、新しい鍵を作ってから古い鍵を削除します | [GitHub Apps の REST API](https://docs.github.com/en/rest/apps/apps)、[秘密鍵の管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps) |
+| 2 | 秘密鍵に有効期限はありません（"Private keys do not expire and instead need to be manually revoked"）。90 日は運用方針です | 同上の「秘密鍵の管理」 |
+| 3 | 1 つの App に持てる鍵は 25 本までです。複数の鍵を同時に有効にして、止めずに入れ替えられます | [秘密鍵の管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)（"You can create up to 25 private keys for an app"） |
+| 4 | `GET /repos/{owner}/{repo}/actions/secrets/{secret_name}` は `name`、`created_at`、`updated_at` を返し、値は返しません。App のインストールトークンは、リポジトリ権限 `Secrets`（read）で読めます | [Actions のシークレットの REST API](https://docs.github.com/en/rest/actions/secrets)、[App に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps) |
+| 5 | workflow の `GITHUB_TOKEN` の `permissions` に `secrets` はありません。シークレットの `updated_at` は `GITHUB_TOKEN` では読めないので、App のトークン（`actions/create-github-app-token`、`permission-secrets: read`）で読みます | [workflow の構文の permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax) |
+
+#### 毎日の確認の判定と動作
+
+経過日数は、現在の UTC から `updated_at` を引いた日数で、日の小数は切り捨てます。しきい値は環境変数 `WARN_DAYS`（既定 80）と `MAX_DAYS`（既定 90）で変えられます。
+
+| 判定 | 条件 | Issue の扱い | workflow |
+|---|---|---|---|
+| `ok` | 80 日未満 | 開いている Issue があれば、コメントを付けて閉じる | 成功 |
+| `due` | 80 日以上 90 日未満 | なければ 1 件立てる。あれば何も変えない | 成功 |
+| `overdue` | 90 日以上 | なければ立てる。あって本文が期限超過の版でなければ、本文を更新する | 失敗 |
+| `unreadable` | トークンを作れない、API が 200 以外、`updated_at` が読めない | 立てず、変えない。理由を表示する | 失敗 |
+
+対象の Issue は、開いている Issue のうち本文の 1 行目が `<!-- supply-chain-key-rotation:v1 -->` のものです。題では探さず、ラベルも使いません。集約ジョブの Issue とは目印が違うので、互いに触りません。入れ替えが済むと、次の実行が `ok` になり、Issue を自動で閉じます。
+
+#### 保守者の初回の設定
+
+1. App の設定画面（`https://github.com/settings/apps/sc-aggregator-yoshiki0705`）の Repository permissions で、Secrets を Read-only にして保存します。
+2. インストール側で、新しい権限の承認を求められるので承認します。承認の画面の場所と文言は確かめていません。
+3. 承認が済むまで、この workflow は `unreadable` で失敗します。承認後に `workflow_dispatch` で 1 回実行し、ジョブの要約の表（判定、`updated_at`、経過日数）を読みます。この workflow は pull request では実行されないので、最初の実行は人が観測します。
+
+#### 入れ替えの手順
+
+起票された Issue のチェックリストと同じ手順です。人の操作は、設定画面のボタン 3 回（作成 1 回、削除 1 回と、公式文書にある削除の確認 1 回）とコマンド 1 本です。
+
+1. 設定画面の Credentials → Key pairs で「Generate a private key」を押し、PEM を保存します。ボタンは 1 回です。
+2. `bash scripts/rotate_app_key.sh <PEM のパス>` を実行します。新しい鍵を App が受け付けるかを、シークレットを変える前に確かめます。その後でシークレットを登録し、この workflow を実行して結果を待ち、最後に PEM を削除します。コマンドは 1 本です。PEM が git のリポジトリの中にあると、実行を拒否します。
+3. 設定画面で、スクリプトが表示した指紋と一致しない古い鍵の Delete を押し、確認画面でもう一度 Delete を押します。
+4. 操作は要りません。Issue は、入れ替え後の次の workflow の実行で自動で閉じます。
+
+スクリプトは、新しい鍵の検証が 200 以外ならシークレットに触れずに止まります。workflow の実行が失敗したときは、古い鍵を削除する案内を出さず、シークレットを戻す方法を表示します。そのとき古い鍵はまだ有効なので、原因を直すまで設定画面の鍵は両方残してください。
+
+#### 確かめていないこと
+
+- 実際の API の応答の形です。`updated_at` の書式、Issue 一覧に pull request が混ざる形、閉じるときの `state_reason` は、REST リファレンスから書きました。実機では確かめていません。
+- 権限 `Secrets: Read-only` を足す前と後の、実際の挙動です。権限がないときの応答が 403 か 404 かは、確かめていません。
+- `actions/create-github-app-token` に、リポジトリ名だけと `permission-secrets: read` を渡す形です。workflow は `github.repository` からオーナー部分を除く 1 ステップを先に置いています。
+- `gh secret set` でシークレットの `updated_at` が更新されること。この仕組みの前提ですが、実機では確かめていません。
+- `scripts/rotate_app_key.sh` を実機で通していません。試験は、`gh`、`curl`、`openssl` の代役と、試験の中で作った使い捨ての鍵で行いました。`GET /app` の実際の応答と、表示する指紋の形式が設定画面の表示と同じかどうかも未確認です。
+- 公開リポジトリでは、リポジトリに 60 日の活動がないと scheduled workflow が自動で無効になります（[Disabling and enabling a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)）。無効になると、この確認も止まり、通知は出ません。集約ジョブが `supply-chain-runs` ブランチへ書く記録がこの「活動」に数えられるかは、確かめていません。
+
+---
+
+## Renovate_Preset のリリースの手順
+
+保守者が `supply-chain-preset-v*` のタグを immutable release にするときの手順です。対象は Renovate_Preset（`renovate/supply-chain.json` と `renovate/supply-chain-automerge.json`）と、Reusable_Workflow 3 種（`sbom-generate`、`vex-validate`、`cooldown-pinning-check`）です。
+
+> **この節のコマンドは、この節を書いた時点では実行して確かめていません。** 下の「確かめた事項」は、保守者が 2026-11-15 に GitHub の公式文書を読んで確認した内容です。この節の執筆時に、文書そのものは読み直していません。食い違いがあれば、公式文書が正です。
+
+### 前提と現状
+
+2026-11-15 に `GET /repos/{owner}/{repo}/immutable-releases` を 1 回読んだ結果は `enabled: false` でした。このリポジトリの immutable releases の設定は無効です。タグ `supply-chain-preset-v1.0.0`（注釈付きタグ）はありますが、GitHub の Release のオブジェクトは 0 件です。
+
+**この設定を有効にするのは保守者の作業です。** この節を書く側は、Settings を変更しません。
+
+### 確かめた事項
+
+出典は次の公式文書です。
+
+- [Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+- [Preventing changes to your releases](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/preventing-changes-to-your-releases)
+- [Verifying the integrity of a release](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/verify-release-integrity)
+- [GitHub CLI のマニュアル](https://cli.github.com/manual/)
+
+| 事項 | 内容 |
+|---|---|
+| 公開後のタグ | 別のコミットへ動かせない。リリースが存在する間は削除できない。リリースを削除しても、タグ名は再利用できない |
+| 公開後のアセット | 変更も削除もできない |
+| 編集できるもの | タイトルとリリースノート、プレリリースか最新かの印 |
+| release attestation | immutable release を作ると、リリースのタグ、コミット SHA、アセットを含むものが自動で作られる |
+| 推奨の流れ | ドラフトで作成、すべてのアセットを添付、公開 |
+| 設定の入口 | Settings の「Releases」の「Enable release immutability」。**有効にしても、その後に作る release にだけ効く** |
+| 検証 | `gh release verify <タグ>` は immutable かを確かめる。`gh release verify-asset <タグ> <成果物のパス>` は、ローカルの成果物が release のアセットと同じかを確かめる。ソースの zip と tarball は対象外 |
+
+### 手順
+
+1. 保守者が Settings で immutability を有効にします。有効にする前に作った release には効きません。
+2. 新しいタグ名でドラフトの release を作ります。ドラフトの作り方（Web の画面、または `gh release create`）は、このリポジトリで実行して確かめていません。`gh release create` のフラグは未確認なので、CLI のマニュアルで確かめてから使ってください。
+3. `renovate/supply-chain.json` と `renovate/supply-chain-automerge.json` をアセットとして添付します。公開後は変更も削除もできないので、添付する内容はこの時点で確定させます。
+4. 公開します。
+5. 公開後に 2 つのコマンドで確かめます。形は保守者が確認したものです。
+   - `gh release verify <タグ>`
+   - `gh release verify-asset <タグ> <成果物のパス>`（成果物ごとに実行します）
+
+既存のタグ `supply-chain-preset-v1.0.0` を、プリセットの内容を変えずに immutable release にできるかは、**確認できていません。** 確かめる方法は、使い捨ての別のタグ名で上の手順を 1 回通すことです。ただし、公開した release は存在する間は削除できず、削除してもタグ名を再利用できません。試験用のタグも残り続ける前提で、名前を決めてください。
+
+### ルールセットとの併用
+
+ルールセットによるタグの書き換えと削除の禁止は、immutable release に置き換えず、併用します。公式文書から読める範囲では、immutable release が守るのは公開した release のタグとアセットです。release を持たないタグと、公開前のドラフトのタグは、守る対象に含まれないと読めます。この読みは文書の記述からの推測で、実機では確かめていません。
+
+### Reusable_Workflow 3 種の扱い
+
+3 種も、Renovate_Preset と同じ Hub のタグ付きリリースに含めます。呼び出し側の `uses:` は、タグではなく 40 桁のコミット SHA で固定します。release attestation は、そのリリースのコミット SHA とタグを結びつけます。呼び出し側は、`uses:` の SHA が attestation のコミット SHA と一致するかを確かめます。
+
+**attestation の中身の読み方（どのコマンドで取り出し、どの欄を比べるか）は確かめていません。** 上の確かめ方は推測です。
+
+### release attestation が示すものと示さないもの
+
+release attestation が示すのは、公開された release のタグ、コミット SHA、アセットの組が一致することです。ビルドの来歴（SLSA の Build の段階）を示すものではありません。リリースの成果物がどのビルド環境で、どの入力から作られたかは、この attestation からは分かりません。
+
+### 確かめていないこと
+
+- この手順を実行していません。実機で 1 回通すまで、この節の手順は未検証です。
+- 既存タグ `supply-chain-preset-v1.0.0` を immutable release にできるか。
+- `gh release create` のフラグと、attestation の取り出し方。
+- ルールセットと immutable release を併用したときの、実際の拒否のされ方。
 
 ---
 

@@ -23,9 +23,9 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
 
       # Installed from the pinned manifest, not `pipx install ruff`. An unpinned install
       # resolves to the latest release, so a ruff version that widens its default rule set
@@ -182,6 +182,12 @@ jobs:
       - name: Check workflow observability
         run: make workflow-observability
 
+      # The copied supply-chain files must stay byte-identical to the commit they were copied from.
+      # Offline only: the network half (supply-chain-copy-external) fetches the source commit and is
+      # opt-in, like links-external, because a host being briefly unreachable is not a defect here.
+      - name: Check copied supply-chain files match their recorded SHA-256
+        run: make supply-chain-copy
+
       # Guardrail tests: the irreversibility guard's block / ask / allow contract, .PHONY
       # completeness, and one deliberate break per documentation gate. Without these a
       # gate can stop detecting anything and still report success.
@@ -206,7 +212,7 @@ jobs:
           persist-credentials: false
 
       - name: Run markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        uses: DavidAnson/markdownlint-cli2-action@3ce8f712b5d8f31acd8e201be6d97e3d2bb23eb7 # v25.1.0
         with:
           globs: |
             **/*.md
