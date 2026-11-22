@@ -83,17 +83,33 @@ intermediate
 | [ユーザーガイドのドキュメント履歴](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html)、2026-11-22 22:58 JST | これらの機能の項目なし。第 3 世代の項目もまだない |
 | [What's New](https://aws.amazon.com/new/) の最新 100 件、2026-11-22 22:58 JST | FSx for ONTAP の項目は第 3 世代の告知（2026-11-20）の 1 件だけで、これらの画面には触れていない |
 
-確認した範囲では、告知も文書化もされていない画面です。段階的な展開か、プレビューか、一部のアカウントに限ったものかは分かりません。画面を確認したのは 1 つのアカウントの `ap-northeast-1` と `us-east-1` だけです。
+| [Amazon FSx API リファレンスの操作一覧](https://docs.aws.amazon.com/fsx/latest/APIReference/API_Operations.html)、2026-11-22 23:40 JST | 45 操作。上の 15 操作はない |
+| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonfsx.html)、同日 | 上の 15 操作に対応する IAM アクションの記載なし |
+| AWS CloudFormation のレジストリ（`aws cloudformation list-types`、`us-east-1` と `ap-northeast-1`）、同日 | `AWS::FSx::ClusterPeer`、`AWS::FSx::StorageVirtualMachinePeer`、`AWS::FSx::SnapmirrorPolicy`、`AWS::FSx::SnapmirrorRelationship` が 2026-11-06 に、`AWS::FSx::SnapshotPolicy` が 2026-10-30 に、公開の型として登録されている。型の定義（`describe-type`）は、作成に `fsx:CreateClusterPeer` などの IAM アクションを求める。`AWS::FSx::Volume` の定義には `CloneConfiguration` がある |
+| [CloudFormation テンプレートリファレンス](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/)、同日 | 上の 5 つの型のページはない（URL が入門ページへ転送される）。`AWS::FSx::Volume` のページに `CloneConfiguration` はない |
+| AWS Cloud Control API（`aws cloudcontrol list-resources` / `get-resource`、`ap-northeast-1`）、同日 | 5 つの型とも読み取れた。件数はコンソールの一覧と一致した。SnapMirror 関係は `State`、`Healthy`、`LagTimeInMinutes` を返した。作成と削除は Cloud Control API からは試していない |
+| AWS CDK と AWS Cloud Control プロバイダー（Terraform）の変更履歴、同日 | 上の 5 つの型の記載なし |
+| [AWS Storage Blog](https://aws.amazon.com/blogs/storage/) の最新 20 件、同日 | これらの画面に触れた記事なし |
 
-**したがって、AWS CLI や SDK から使える、とは書けません。** 署名付きリクエストで通ることは確認しましたが、公開されていない操作は仕様が変わる可能性があります。自動化の前提にせず、公開されるまではコンソールと ONTAP の CLI・REST API の併用として設計してください。
+確認した範囲では、告知も文書化もされていない画面です。ただし、CloudFormation のレジストリには型があり、公開されている Cloud Control API から読み取れます。段階的な展開か、プレビューか、一部のアカウントに限ったものかは分かりません。画面を確認したのは 1 つのアカウントの `ap-northeast-1` と `us-east-1` だけです。
+
+**したがって、`aws fsx` の AWS CLI や SDK から使える、とは書けません。** 読み取りは、`aws cloudcontrol` から型の名前を指定して行えました。 署名付きリクエストで通ることは確認しましたが、公開されていない操作は仕様が変わる可能性があります。自動化の前提にせず、公開されるまではコンソールと ONTAP の CLI・REST API の併用として設計してください。
 
 ### 設計への影響
 
 | これまでの前提 | 今回確認したこと |
 |---|---|
 | スナップショットポリシーは ONTAP の CLI か REST API でしか作れず、AWS 側からは名前を指定するだけ | コンソールにポリシーの一覧と作成ボタンがあり、作成は `CreateSnapshotPolicy` を呼ぶ（上の表） |
-| SnapMirror のピアリングと関係の作成は ONTAP 側で行う | コンソールに専用の画面がある。AWS CLI からの操作は、モデルにないので今は使えない |
+| SnapMirror のピアリングと関係の作成は ONTAP 側で行う | コンソールに専用の画面がある。`aws fsx` の CLI には操作がない。Cloud Control API（`aws cloudcontrol`）からは読み取れた |
 | （前提ではなく観測）一覧に何が出るか | SnapMirror 関係 2 件、クラスターピア 5 件が表示された。作った経路（ONTAP 側か AWS 側か）は区別していない |
+
+東京の既存のファイルシステムでは、ONTAP の CLI で作ったクラスターピアと SnapMirror 関係が、コンソールの一覧に表示されました。相手は、Google Cloud NetApp Volumes とオンプレミスの ONTAP です（ID、IP アドレス、クラスター名、相手のボリューム名はマスクした）。
+
+![SnapMirror 関係の一覧。Google Cloud NetApp Volumes の SVM を送信元とする SnapMirrored の関係と、オンプレミスの SVM を送信元とする Broken off の関係が並ぶ](../../../../_assets/images/aws-console-fsx-ja-snapmirror-relationships-hybrid.png)
+
+![SVM ピアの一覧。Google Cloud NetApp Volumes の SVM が 2 件、オンプレミスの SVM が 2 件、PEERED で並ぶ](../../../../_assets/images/aws-console-fsx-ja-svm-peers-hybrid.png)
+
+Cloud Control API で読んだ SnapMirrored の関係は、`Healthy` が `true` で、`LagTimeInMinutes` が 68,200（約 47 日）でした。`Healthy` だけでは遅れを判断できないので、遅延の閾値は別に決めてください（1 回の確認）。
 
 ## 自環境での確認手順
 
@@ -109,7 +125,7 @@ intermediate
 
 ```text
 手順 2 に Snapmirror / SnapshotPolicies / ClusterPeers など、aws fsx help にない名前が出る
-手順 3 で一覧にない名前は、AWS CLI から呼べない
+手順 3 で一覧にない名前は、`aws fsx` の CLI から呼べない（`aws cloudcontrol` で型の名前を指定すれば読み取れる場合がある）
 ```
 
 ## Read next
