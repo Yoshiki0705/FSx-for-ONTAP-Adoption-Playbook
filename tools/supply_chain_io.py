@@ -532,7 +532,7 @@ def parse_osv_time(raw: object) -> datetime | None:
     if not isinstance(raw, str) or not raw:
         return None
     try:
-        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(raw)
     except ValueError:
         return None
     return parsed.astimezone(UTC) if parsed.utcoffset() is not None else None

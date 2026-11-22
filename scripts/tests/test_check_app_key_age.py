@@ -22,7 +22,7 @@ import sys
 import tempfile
 import unittest
 import urllib.parse
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import check_app_key_age as K
 
-NOW = datetime(2026, 11, 16, 3, 31, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 16, 3, 31, tzinfo=UTC)
 REPO = "example-org/example-repo"
 SECRET_PATH = f"/repos/{REPO}/actions/secrets/SUPPLY_CHAIN_APP_PRIVATE_KEY"
 ISSUES_PATH = f"/repos/{REPO}/issues"

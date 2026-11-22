@@ -13,6 +13,7 @@
 # cannot be edited to satisfy this repository's rule set; the rules they trip are listed here
 # by number and nothing wider is excluded.
 "tools/supply_chain/canonical.py" = ["RUF100"]
+"tools/supply_chain/metrics.py" = ["UP017"]
 "tools/supply_chain/normalized.py" = ["I001"]
 "tools/supply_chain/planner.py" = ["I001", "SIM114"]
 "tools/supply_chain/run_record.py" = ["RUF100"]
