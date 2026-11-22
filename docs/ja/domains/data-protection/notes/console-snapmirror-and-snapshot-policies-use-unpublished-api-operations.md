@@ -107,13 +107,30 @@ intermediate
 | SnapMirror のピアリングと関係の作成は ONTAP 側で行う | コンソールに専用の画面がある。`aws fsx` の CLI には操作がない。Cloud Control API（`aws cloudcontrol`）からは読み取れた |
 | （前提ではなく観測）一覧に何が出るか | SnapMirror 関係 2 件、クラスターピア 5 件が表示された。作った経路（ONTAP 側か AWS 側か）は区別していない |
 
-東京の既存のファイルシステムでは、ONTAP の CLI で作ったクラスターピアと SnapMirror 関係が、コンソールの一覧に表示されました。相手は、Google Cloud NetApp Volumes とオンプレミスの ONTAP です（ID、IP アドレス、クラスター名、相手のボリューム名はマスクした）。
+東京の既存のファイルシステムでは、コンソールにこれらの画面が現れる前（2026-09 の時点で存在）に ONTAP の CLI・REST API で作ったクラスターピア、SVM ピア、SnapMirror 関係が、コンソールの一覧に表示されました。AWS 側で取り込みの操作はしていません。画面を開いた時点で、すでに一覧に入っていました。相手は、Google Cloud NetApp Volumes とオンプレミスの ONTAP です（ID、IP アドレス、クラスター名、相手のボリューム名はマスクした）。
 
 ![SnapMirror 関係の一覧。Google Cloud NetApp Volumes の SVM を送信元とする SnapMirrored の関係と、オンプレミスの SVM を送信元とする Broken off の関係が並ぶ](../../../../_assets/images/aws-console-fsx-ja-snapmirror-relationships-hybrid.png)
 
 ![SVM ピアの一覧。Google Cloud NetApp Volumes の SVM が 2 件、オンプレミスの SVM が 2 件、PEERED で並ぶ](../../../../_assets/images/aws-console-fsx-ja-svm-peers-hybrid.png)
 
 Cloud Control API で読んだ SnapMirrored の関係は、`Healthy` が `true` で、`LagTimeInMinutes` が 68,200（約 47 日）でした。`Healthy` だけでは遅れを判断できないので、遅延の閾値は別に決めてください（1 回の確認）。
+
+### SVM ピアで選べるアプリケーションと設計で読む資料
+
+SVM ピアの作成画面では、許可するアプリケーションとして SnapMirror、FlexCache、ファイルコピー、LUN コピーの 4 つを選べます。確認日の時点で、コンソールに作成画面があるのは SnapMirror の関係だけです。FlexCache、ファイルコピー、LUN コピーは、SVM ピアで許可できても、作る操作は ONTAP の CLI・REST API で行います（FlexCache は FSx for ONTAP のユーザーガイドに ONTAP の CLI での手順がある）。コンソールが今後これらに対応するかは分かりません。
+
+画面は ONTAP の設定をそのまま項目にしているので、設計は ONTAP の資料で行います。
+
+| 設計すること | 読む資料 |
+|---|---|
+| クラスターピアの前提（インタークラスター LIF、経路、ファイアウォール） | [NetApp: クラスターピアリングの前提条件](https://docs.netapp.com/us-en/ontap/peering/prerequisites-cluster-peering-reference.html)、[AWS: セキュリティグループで許可する通信](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html) |
+| クラスターピアと SVM ピアの作り方 | [NetApp: クラスターピアの作成](https://docs.netapp.com/us-en/ontap/peering/create-cluster-relationship-93-later-task.html)、[NetApp: SVM ピアの作成](https://docs.netapp.com/us-en/ontap/peering/create-intercluster-svm-peer-relationship-93-later-task.html)、[NetApp: vserver peer create（アプリケーションの指定）](https://docs.netapp.com/us-en/ontap-cli/vserver-peer-create.html) |
+| SnapMirror のポリシーと保持 | [NetApp: 統合レプリケーション](https://docs.netapp.com/us-en/ontap/data-protection/snapmirror-unified-replication-concept.html)、[AWS: SnapMirror によるレプリケーション](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/scheduled-replication.html)、[AWS: SnapMirror による移行](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
+| FlexCache | [NetApp: FlexCache](https://docs.netapp.com/us-en/ontap/flexcache/index.html)、[NetApp: FlexCache で使える機能](https://docs.netapp.com/us-en/ontap/flexcache/supported-unsupported-features-concept.html)、[AWS: FlexCache によるデータの複製](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-flexcache.html)、[AWS: FlexCache の作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-flexcache.html) |
+| ファイルコピー | [NetApp: ファイルコピーの開始（REST API）](https://docs.netapp.com/us-en/ontap-restapi/post-storage-file-copy.html) |
+| LUN コピー | [NetApp: lun copy start](https://docs.netapp.com/us-en/ontap-cli/lun-copy-start.html) |
+
+資料はどれも 2026-11-22 に開けることを確かめました。FSx for ONTAP で使える ONTAP の機能と版には制約があるので、ONTAP の資料と FSx for ONTAP のユーザーガイドの両方を確かめてください。
 
 ## 自環境での確認手順
 

@@ -727,7 +727,7 @@ LABELS: dict[str, dict[str, str]] = {
             "<b>コンソールの画面</b><br>"
             "・クラスターピア<br>・SVM ピア<br>　（両側に作る）<br>"
             "・SnapMirror ポリシー<br>・SnapMirror 関係<br>・スナップショット<br>　ポリシー<br><br>"
-            "<b>AWS CLI・SDK の<br>公開モデル</b><br>該当する操作なし<br>（2026-11-22 時点）<br><br>"
+            "<b>aws fsx（CLI・SDK）</b><br>該当する操作なし<br><b>Cloud Control API</b><br>5 つの型を読み取れた<br>（2026-11-22 時点）<br><br>"
             "<b>自動化</b><br>ONTAP CLI / REST API"
         ),
         "en": (
@@ -735,7 +735,7 @@ LABELS: dict[str, dict[str, str]] = {
             "- Cluster peers<br>- SVM peers<br>&nbsp;&nbsp;(one per side)<br>"
             "- SnapMirror policies<br>- SnapMirror<br>&nbsp;&nbsp;relationships<br>"
             "- Snapshot policies<br><br>"
-            "<b>Public AWS CLI and<br>SDK model</b><br>No such operations<br>(as of 2026-11-22)<br><br>"
+            "<b>aws fsx (CLI, SDK)</b><br>No such operations<br><b>Cloud Control API</b><br>Five types readable<br>(as of 2026-11-22)<br><br>"
             "<b>Automation</b><br>ONTAP CLI / REST API"
         ),
     },
