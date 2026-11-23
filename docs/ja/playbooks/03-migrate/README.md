@@ -31,6 +31,7 @@
 | 6 | 移行元が SaaS / クラウドストレージの場合、方式の前に何を確定させるか | [SaaS からの移行は転送方式より先に移行元の群を確定させる](notes/saas-source-migration-scoping.md) |
 | 7 | AWS Transform で移行するとき、どの工程で容量がいくら要るか | [AWS Transform の Finalize は後片付けではなく、物理容量が最大になる工程](notes/atx-finalize-flexclone-capacity.md) |
 | 8 | コンテナ / モダナイズ後の環境へ移す経路が複数あるとき、どう仕分けるか | [コンテナ / モダナイゼーションへの移行経路は 3 つに分かれる](notes/migration-paths-to-containers.md) |
+| 9 | 同じファイルシステム内で LUN やファイルを別の SVM へコピーするとき、LUN copy・file copy と AWS DataSync などをどう使い分けるか | [LUN copy と file copy は同じファイルシステム内の SVM 間コピーで、SnapMirror の機能ではない](notes/lun-copy-and-file-copy-stay-inside-one-file-system.md) |
 
 ---
 
