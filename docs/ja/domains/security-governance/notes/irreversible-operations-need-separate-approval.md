@@ -323,6 +323,7 @@ WORM 系の機能と違い MAV 自体は不可逆ではありませんが、**�
 - [IaC の境界は API の表面で決まる](../../../playbooks/04-build/notes/what-iac-cannot-reach.md) — AWS API が届かない操作の一覧
 - [本番投入前レビュー](../../../playbooks/04-build/checklists/pre-production-review.md#不可逆な項目の一覧) — 不可逆項目の一覧
 - [上限値・クォータ](../../../reference/limits/) — エラーコードを含む全記録
+- [AWS Backup の論理エアギャップボールトは隔離方式の 1 つ](../../data-protection/notes/aws-backup-air-gapped-vault-as-isolation-option.md) — Vault Lock のコンプライアンスモードとボールトの暗号化キーを承認の対象にする場合の提示値
 - [知見の分類ポリシー](../../../evidence-policy.md)
 - [監査ログボリューム — コンソールでの操作ポイント](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/ja/snaplock-audit-log-console-guardrails.md) — 実画面 3 枚。作成画面の警告の範囲、保持期間の 3 欄の意味、詰まった後に読むフィールド
 

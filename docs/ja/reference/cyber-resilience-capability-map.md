@@ -96,9 +96,9 @@ cyber リポジトリが論理エアギャップボールトの復旧アカウ�
 
 ## 論理エアギャップボールトの扱い
 
-論理エアギャップボールトは、上の表では Protect（文書のみ）と Recover（Option D のリストア）に現れます。このボールトを隔離方式の 1 つとしてデータ保護ドメインに追加する作業は、別の Issue（[#316](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/316)）で扱います。SnapLock・Tamperproof Snapshot・別アカウントへの SnapVault と並べたトレードオフ、Vault Lock のコンプライアンスモードが常に有効であることなどの不可逆な設定の承認経路は、#316 に委ねます。このページでは繰り返しません。
+論理エアギャップボールトは、上の表では Protect（文書のみ）と Recover（Option D のリストア）に現れます。このボールトを SnapLock・Tamperproof Snapshot・別アカウントへの SnapVault と並べた隔離方式としての扱い、Vault Lock のコンプライアンスモードが常に有効であることなどの不可逆な設定の承認経路は、[AWS Backup の論理エアギャップボールトは隔離方式の 1 つ](../domains/data-protection/notes/aws-backup-air-gapped-vault-as-isolation-option.md)にあります（[#316](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/316)）。このページでは繰り返しません。
 
-このマップは機能と Spoke の対応を見る reference であり、#316 はデータ保護ドメインの隔離方式の内容です。2 つは別の持ち場で、重複しません。
+このマップは機能と Spoke の対応を見る reference であり、上のノートはデータ保護ドメインの隔離方式の内容です。2 つは別の持ち場で、重複しません。
 
 ---
 

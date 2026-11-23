@@ -15,6 +15,7 @@ the table of contents; this is the entry point.
 |---|---|---|
 | **Snapshots are already being taken** | [What each mechanism protects against](notes/snapshots-are-not-a-recovery-plan.md#what-each-mechanism-protects-against) | **a Snapshot is lost with the volume it lives on** |
 | **A copy is needed in another region or account** | [A backup copy holds no file system until it is restored](../../../ja/domains/data-protection/notes/backup-copies-across-regions-and-accounts.md) (日本語) | what exists at the destination and what does not, and how it differs from SnapMirror |
+| **An isolation target is needed for AWS-account compromise** | [AWS Backup's logically air-gapped vault as an isolation option](../../../ja/domains/data-protection/notes/aws-backup-air-gapped-vault-as-isolation-option.md) (日本語) | **the file system key and the vault key are decided first, and no documented way back was found for either** |
 | **Ransomware protection has been asked for** | [Enabling SnapLock and locking are separate](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md) (日本語) | **three irreversible steps.** Privileged delete is unavailable once retention expires |
 
 ---
@@ -30,6 +31,7 @@ the table of contents; this is the entry point.
 | 5 | What is effective as ransomware readiness | [Ransomware readiness is layered](../../../ja/domains/data-protection/notes/snaplock-and-layered-ransomware-readiness.md#層で考えるランサムウェア対策) (日本語) |
 | 6 | Whether an existing third-party backup product can be used as it is | [It reaches it by a route that is not the AWS API](notes/third-party-backup-reaches-it-by-another-route.md) |
 | 7 | How to read "supported" in vendor material; whether absence from a list means non-support | [Telling a stated exclusion from an absence](notes/third-party-backup-reaches-it-by-another-route.md#telling-a-stated-exclusion-from-an-absence) |
+| 8 | When to choose AWS Backup's logically air-gapped vault as an isolation option, and what must be decided first | [Where the four isolation options keep recovery points](../../../ja/domains/data-protection/notes/aws-backup-air-gapped-vault-as-isolation-option.md) (日本語) |
 
 ---
 
