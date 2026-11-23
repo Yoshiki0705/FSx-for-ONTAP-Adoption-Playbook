@@ -353,6 +353,8 @@ aws fsx describe-volumes --volume-ids <volume-id> --query 'Volumes[].OntapConfig
 [<snaplock-configuration-object-or-null>]
 ```
 
+ONTAP REST では、SnapLock でないボリュームの `snaplock.type` が `non_snaplock` で返ります。別リポジトリの記録（[ONTAP 9.19.1P2 での測定](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#実測結果verified)）によると、2026-10-07、ap-northeast-1、第 1 世代 `SINGLE_AZ_1` の NTFS ボリュームと SVM ルートボリュームの両方がこの値でした（各 1 回の観測。`documented` として転記しており、ここでは再現していません）。同じ記録では `snapshot_locking_enabled` も false でした。この 2 つが SnapLock と snapshot locking の有効化がないことを示す値です。第 2 世代、Multi-AZ、他の ONTAP の版では未確認です。
+
 この読み取りは何も作成・有効化・ロック・削除しません。返る値からは、ロック済みファイルの有無も、監査ログボリュームの保持期間も、削除可能性も分かりません。不可逆な操作の検証は使い捨ての専用ファイルシステムでのみ行ってください。
 
 ## Read next

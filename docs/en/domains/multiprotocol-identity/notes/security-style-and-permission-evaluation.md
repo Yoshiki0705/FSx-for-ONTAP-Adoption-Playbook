@@ -130,6 +130,20 @@ A table for choosing a means of blocking. Constraints on the recommended options
 
 ---
 
+### Open question: the SMB and NFS difference for a user without a traverse right
+
+With the same NTFS ACL, a read-only user who held no traverse (`execute`) right could read files under `seed/` over SMB but could not enter `seed/` over NFS. **The difference was observed. The reason is untested.**
+
+| Item | Content |
+|---|---|
+| Difference (observed) | Same user, same ACL (unchanged). SMB read files under `seed/`. NFS listed the top level but could not enter `seed/`. ONTAP's effective-permissions did not include `execute` |
+| Reason (`hypothesis`, untested) | The source guesses that SMB applies the user right that skips traverse checking (Bypass traverse checking), while NFS evaluates `execute` on each directory |
+| Environment | ap-northeast-1, 2026-10-07, ONTAP 9.19.1P2, generation 1 `SINGLE_AZ_1`, NTFS volume, NFS 4.1 with `sec=sys`. One observation |
+
+The source is [stage 1, "NFS からの拒否と原因" (Japanese)](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-1-multiprotocol.md#nfs-からの拒否と原因) in another repository, where the difference is `verified` and the reason is `hypothesis`. This document transcribes both and did not rerun them. **Do not use the guessed reason in the decisions under "What can and cannot be stopped" above.** To test it, change the user-right setting and see whether the difference disappears, in a test environment.
+
+---
+
 ### Primary sources
 
 | Point | Source |

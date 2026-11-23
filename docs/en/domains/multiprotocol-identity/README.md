@@ -39,6 +39,7 @@ the table of contents; this is the entry point.
 | 11 | Whether the verification mechanism in use today survives the move | [Where to verify who can access a file after a protocol change](../../../ja/reference/decision-trees/verifying-permissions-after-a-protocol-change.md) (日本語) |
 | 12 | Whether creating a volume makes it visible over SMB | **No. Creating a share is a separate step** ([SMB reaches shares and nothing else](notes/smb-errors-do-not-name-their-cause.md#smb-reaches-shares-and-nothing-else)) |
 | 13 | Whether `c$` is acceptable for a connectivity check | **It costs representativeness.** Mapping as an administrator bypasses part of the permission evaluation ([the default administrative shares](notes/smb-errors-do-not-name-their-cause.md#do-not-count-the-default-administrative-shares-as-a-share-exists)) |
+| 14 | What differs when one NTFS volume is used over SMB and NFS at once | **Name characters, locks and time-to-readable differ.** Each pair was measured once ([What differs when one NTFS volume is used over SMB and NFS at once?](notes/cross-protocol-access-to-one-ntfs-volume.md)) |
 
 ---
 

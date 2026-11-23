@@ -62,6 +62,7 @@ Amazon FSx for NetApp ONTAP を本番に入れる直前に確認する項目で�
 ## 3. ID とアクセス（Active Directory を使う場合）
 
 - [ ] **AD 参加に必要なポートが、SVM の ENI から DC へ開いている**。DNS 53、Kerberos 88 / 464、LDAP 389 / 636、SMB 445、RPC 135 と動的ポート、グローバルカタログ 3268、AD Web Services 9389、NTP 123
+  - 9389 はこの SVM 側の経路の値です。Windows の管理ホストから AD Web Services への経路は別で、ドメイン参加済みの Windows EC2 1 台から 9389 に到達せず 389 / 636 には到達した例が 1 件あります（原因は未記録。ap-northeast-1、2026-10-07、AWS Managed Microsoft AD Standard。[App-Modernization-Patterns の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/environment.md#作成後に判明した前提の不足)）。この 1 件は上のポート一覧を変える根拠になりません
 - [ ] **`FileSystemAdministratorsGroup` に指定するグループを決めた**。権限が不足すると SVM の AD 参加が失敗し、`MISCONFIGURED` 状態になります
 - [ ] **OU のパスを実際の AD 構成で確認した**。AWS Managed Microsoft AD はドメイン短縮名の中間 OU を作ります。中間 OU を省いたパスは、エラーにならず静かに失敗する形で現れます
 - [ ] **AD が到達不能になったときの影響範囲を把握した**。AD 参加済み SVM では、AD を使う SMB 認証や Windows `FileSystemIdentity` の名前解決が DC 到達性に依存します。NFS やローカル ID を含む全データ経路が停止するという意味ではありません

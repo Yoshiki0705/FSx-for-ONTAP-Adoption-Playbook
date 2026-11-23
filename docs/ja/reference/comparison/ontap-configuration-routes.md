@@ -68,6 +68,8 @@ lang: ja
 
 **委任された管理者アカウントで実行できない ONTAP 操作もあります。** 許可範囲を確認するときは [fsxadmin の権限と制約](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/fsxadmin-limitations.md) を参照し、実行前に現在の ONTAP CLI / REST API リファレンスと突き合わせます。できない操作の一覧はこちらへ複製しません。
 
+**ONTAP REST の経路には、未検証の 2 点があります（`hypothesis`）。** 別リポジトリの段階 0 文書が、共有 ACL・file-security・`files` のエンドポイントは名前ではなく UUID をパスに要求すること、管理エンドポイントの証明書 CN が管理 DNS 名で IP 接続では TLS 検証の調整が要ることを、未測定の所見として記録しています（ap-northeast-1、ONTAP 9.19.1P2、第 1 世代 `SINGLE_AZ_1`、2026-10-07 の 1 回の構築。[出典](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#この段階で判明した所見手順への反映)）。ここでも測っていません。`curl -k` は検証を省くだけなので、DNS 名での接続を試す手順は[管理エンドポイントへの到達方法](../limits/README.md#管理エンドポイントの-tls-検証と-rest-のパスhypothesis未検証--tls-verification-and-rest-paths-hypothesis-untested)にあります。
+
 **`FsxAdminPassword` には 8〜50 文字という制約があり、改行や特定の制御文字を含められません。** 自動生成のポリシーがこの範囲を外れていると作成時に失敗します。
 
 ---

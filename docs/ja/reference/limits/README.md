@@ -109,6 +109,16 @@ the version, so the retrieval path is itself worth recording.
 | ONTAP バージョン | `9.17.1P7D1` | 実測 | 2026-08-06 | ビルド日時も併せて返ります |
 | ONTAP バージョン（同一ファイルシステム、再取得） | **`9.18.1P3D1`** | 実測 | 2026-08-17 | ビルド 2026-06-20。**11 日で世代が上がっています** |
 | ONTAP REST の認証 | `fsxadmin` の Basic 認証 | 実測 | 2026-08-06 / 2026-08-17 | 未認証は `401` |
+| ONTAP バージョン（別の構築 1 回の観測） | `9.19.1P2` | `documented`（[別リポジトリの実測を転記](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/environment.md#実測した-ontap-の版)） | 2026-10-07 | 第 1 世代 `SINGLE_AZ_1`、ap-northeast-1、作成時に版を指定せず。**1 回の作成で観測した値で、新しく作る環境が常に同じ版になるとは言えません。** `describe-file-systems` の `OntapConfiguration` に版を示すキーはなく、版は ONTAP REST `GET /api/cluster?fields=version` で読んでいます。上の `9.17.1P7D1` を基準とする記述は変えていません |
+
+> **転記の範囲**: 上の `9.19.1P2` の行は別リポジトリの記録の転記で、この文書では再現していません。
+> `OntapConfiguration` に版のキーがないことも同じ観測の一部です（2026-10-07、`DeploymentType`、
+> `DiskIopsConfiguration`、`Endpoints`、`HAPairs`、`PreferredSubnetId`、`ThroughputCapacity`、
+> `ThroughputCapacityPerHAPair`、`WeeklyMaintenanceStartTime` のみ。第 2 世代と Multi-AZ は未確認）。
+>
+> **Transcription scope**: the `9.19.1P2` row is transcribed from another repository's record and was
+> not reproduced here. The absence of a version key in `OntapConfiguration` belongs to the same single
+> observation (2026-10-07, Gen1 `SINGLE_AZ_1`, ap-northeast-1; Gen2 and Multi-AZ not checked).
 
 > **記録したバージョンは古くなります。** 同じファイルシステムで 11 日後に再取得したら別の版でした。
 > ONTAP のパッチ適用はサービス側で実施されます。通常は数週間に 1 回程度で、パッチ公開後 14 日以内に
@@ -165,6 +175,34 @@ aws ssm start-session \
 > **Credential handling**: this path needs **no additional IAM permission on the instance, and no
 > password enters SSM command history.** Passing credentials through `aws ssm send-command
 > --parameters` persists them in that history in clear text — avoid it.
+
+#### 管理エンドポイントの TLS 検証と REST のパス（`hypothesis`、未検証） / TLS verification and REST paths (`hypothesis`, untested)
+
+次の 2 点は、別リポジトリの段階 0 文書（[この段階で判明した所見](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#この段階で判明した所見手順への反映)）で `hypothesis`
+と区分されている記述の転記です。**この文書でも実測しておらず、`hypothesis` のままです。**
+出典の環境は ap-northeast-1、ONTAP 9.19.1P2、第 1 世代 `SINGLE_AZ_1`、2026-10-07 の 1 回の構築です。
+
+- **証明書の宛先名と接続先の食い違い（未検証）。** 出典は、管理エンドポイントの証明書の CN が管理 DNS 名であり、
+  出典のスクリプトは管理 IP で接続するため、`curl` に TLS 検証の調整が要ると書いています。`curl -k` は
+  検証を省くので、通信相手の確認にはなりません。代わりに、VPC 内のホストから管理 DNS 名で接続するか、
+  ポートフォワード経由で `curl --connect-to <管理 DNS 名>:443:localhost:18443`（または `--resolve`）を使い、
+  DNS 名のまま検証する方法が考えられます。**この方法が通るか、証明書が信頼された CA にたどれるかは未確認です。**
+- **共有 ACL・file-security・`files` のエンドポイントのパス（未検証）。** 出典は、これらが SVM 名・ボリューム名ではなく
+  UUID を要求すると書いています。名前を渡したときの応答は出典に記録がありません。
+
+These two points transcribe statements that the source repository's stage 0 document labels
+`hypothesis`. **Neither was measured here; both stay `hypothesis`.** Source environment: ap-northeast-1,
+ONTAP 9.19.1P2, Gen1 `SINGLE_AZ_1`, a single build on 2026-10-07.
+
+- **Certificate name versus connect target (untested).** The source states that the management
+  endpoint's certificate CN is the management DNS name while its scripts connect by management IP, so
+  `curl` needs its TLS verification adjusted. `curl -k` skips verification and therefore does not
+  confirm the peer. Alternatives to try: connect by the management DNS name from inside the VPC, or
+  through the port forward with `curl --connect-to <management-dns-name>:443:localhost:18443` (or
+  `--resolve`) so verification runs against the DNS name. **Whether that works, and whether the
+  certificate chains to a trusted CA, is unconfirmed.**
+- **Paths of the share ACL, file-security and `files` endpoints (untested).** The source states they
+  require a UUID rather than an SVM or volume name. The response to a name is not recorded in the source.
 
 ---
 
