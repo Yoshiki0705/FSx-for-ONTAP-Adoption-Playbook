@@ -86,16 +86,17 @@ intermediate
 | ユーザーガイドの「Creating volumes」、2026-11-22 に読んだ内容 | SnapMirror やクラスターピアのコンソール手順の記載なし。カスタムのスナップショットポリシーは ONTAP の CLI か REST API で作ると書かれている |
 | [ユーザーガイドのドキュメント履歴](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html)、2026-11-22 22:58 JST | これらの機能の項目なし。第 3 世代の項目もまだない |
 | [What's New](https://aws.amazon.com/new/) の最新 100 件、2026-11-22 22:58 JST | FSx for ONTAP の項目は第 3 世代の告知（2026-11-20）の 1 件だけで、これらの画面には触れていない |
-
 | [Amazon FSx API リファレンスの操作一覧](https://docs.aws.amazon.com/fsx/latest/APIReference/API_Operations.html)、2026-11-22 23:40 JST | 45 操作。上の 15 操作はない |
 | [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_fsx.html)、同日 | 上の 15 操作に対応する IAM アクションの記載なし |
+| 同じサービス認可リファレンス、2026-11-23 11:30 JST | 20 の IAM アクションが載っていた。上の 15 操作と、更新の 5 操作（`UpdateClusterPeer`、`UpdateStorageVirtualMachinePeer`、`UpdateSnapmirrorPolicy`、`UpdateSnapmirrorRelationship`、`UpdateSnapshotPolicy`）。リソースタイプ `cluster-peer`、`svm-peer`、`snapmirror-policy`、`snapmirror-relationship`、`snapshot-policy` の ARN の形式もある |
+| What's New、ドキュメント履歴、API リファレンスの操作一覧、botocore（1.44.9 と `develop` ブランチ）、2026-11-23 11:30 JST | 2026-11-22 から変化なし。告知も、15 操作の API と SDK の定義もない |
 | AWS CloudFormation のレジストリ（`aws cloudformation list-types`、`us-east-1` と `ap-northeast-1`）、同日 | `AWS::FSx::ClusterPeer`、`AWS::FSx::StorageVirtualMachinePeer`、`AWS::FSx::SnapmirrorPolicy`、`AWS::FSx::SnapmirrorRelationship` が 2026-11-06 に、`AWS::FSx::SnapshotPolicy` が 2026-10-30 に、公開の型として登録されている。型の定義（`describe-type`）は、作成に `fsx:CreateClusterPeer` などの IAM アクションを求める。`AWS::FSx::Volume` の定義には `CloneConfiguration` がある |
 | [CloudFormation テンプレートリファレンス](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/)、同日 | 上の 5 つの型のページはない（URL が入門ページへ転送される）。`AWS::FSx::Volume` のページに `CloneConfiguration` はない |
 | AWS Cloud Control API（`aws cloudcontrol list-resources` / `get-resource`、`ap-northeast-1`）、同日 | 5 つの型とも読み取れた。件数はコンソールの一覧と一致した。SnapMirror 関係は `State`、`Healthy`、`LagTimeInMinutes` を返した。作成と削除は Cloud Control API からは試していない |
 | AWS CDK と AWS Cloud Control プロバイダー（Terraform）の変更履歴、同日 | 上の 5 つの型の記載なし |
 | [AWS Storage Blog](https://aws.amazon.com/blogs/storage/) の最新 20 件、同日 | これらの画面に触れた記事なし |
 
-確認した範囲では、告知も文書化もされていない画面です。ただし、CloudFormation のレジストリには型があり、公開されている Cloud Control API から読み取れます。段階的な展開か、プレビューか、一部のアカウントに限ったものかは分かりません。画面を確認したのは 1 つのアカウントの `ap-northeast-1` と `us-east-1` だけです。
+確認した範囲では、告知のない画面です。文書化されているのは、2026-11-23 に確認したサービス認可リファレンスの IAM アクションとリソースタイプだけです。ただし、CloudFormation のレジストリには型があり、公開されている Cloud Control API から読み取れます。段階的な展開か、プレビューか、一部のアカウントに限ったものかは分かりません。画面を確認したのは 1 つのアカウントの `ap-northeast-1` と `us-east-1` だけです。
 
 **したがって、`aws fsx` の AWS CLI や SDK から使える、とは書けません。** 読み取りは、`aws cloudcontrol` から型の名前を指定して行えました。 署名付きリクエストで通ることは確認しましたが、公開されていない操作は仕様が変わる可能性があります。自動化の前提にせず、公開されるまではコンソールと ONTAP の CLI・REST API の併用として設計してください。
 
@@ -105,6 +106,7 @@ intermediate
 |---|---|
 | スナップショットポリシーは ONTAP の CLI か REST API でしか作れず、AWS 側からは名前を指定するだけ | コンソールにポリシーの一覧と作成ボタンがあり、作成は `CreateSnapshotPolicy` を呼ぶ（上の表） |
 | SnapMirror のピアリングと関係の作成は ONTAP 側で行う | コンソールに専用の画面がある。`aws fsx` の CLI には操作がない。Cloud Control API（`aws cloudcontrol`）からは読み取れた |
+| これらの操作を IAM のアクションとして文書で確かめる手段はない | 2026-11-23 にはサービス認可リファレンスにアクションとリソースタイプが載っていた。その名前を SCP や権限境界に書いて、コンソールの操作を実際に止められるかは確かめていない |
 | （前提ではなく観測）一覧に何が出るか | SnapMirror 関係 2 件、クラスターピア 5 件が表示された。作った経路（ONTAP 側か AWS 側か）は区別していない |
 
 東京の既存のファイルシステムでは、コンソールにこれらの画面が現れる前（2026-09 の時点で存在）に ONTAP の CLI・REST API で作ったクラスターピア、SVM ピア、SnapMirror 関係が、コンソールの一覧に表示されました。AWS 側で取り込みの操作はしていません。画面を開いた時点で、すでに一覧に入っていました。相手は、Google Cloud NetApp Volumes とオンプレミスの ONTAP です（ID、IP アドレス、クラスター名、相手のボリューム名はマスクした）。
@@ -152,3 +154,5 @@ SVM ピアの作成画面では、許可するアプリケーションとして 
 ## Read next
 
 [Snapshot は復旧計画ではない](snapshots-are-not-a-recovery-plan.md)
+
+このノートの確認をまとめた解説記事: [2026-11-22 時点、FSx for ONTAP のコンソールに告知なしで表示された SnapMirror・スナップショットポリシーの画面と、公開情報との照合](https://hakobiya.hatenablog.com/entry/fsxn-console-snapmirror-snapshot-policy-cli-api)（はてなブログ。英語版は [dev.to](https://dev.to/aws-builders/fsx-for-ontap-console-snapmirror-and-snapshot-policies-can-the-aws-cli-and-api-use-them-reading-2cd9)）

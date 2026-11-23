@@ -142,3 +142,5 @@ us-east-1 の Pricing API（2026-11-22 に取得）の単価で、SSD 1,024 GiB�
 ## Read next
 
 [スループットは 1 つの設定値では決まらない](where-throughput-is-determined-and-shared.md)
+
+このノートの確認をまとめた解説記事: [2026-11-22、FSx for ONTAP 第 3 世代を us-east-1 にデプロイできた](https://hakobiya.hatenablog.com/entry/fsxn-third-generation-regions-and-limits)（はてなブログ。英語版は [dev.to](https://dev.to/aws-builders/2026-11-22-i-deployed-third-generation-fsx-for-ontap-in-us-east-1-deployable-regions-and-hef)）

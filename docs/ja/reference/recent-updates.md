@@ -1,5 +1,5 @@
 ---
-title: 直近のアップデートと設計への影響 — 2026 年 5〜8 月
+title: 直近のアップデートと設計への影響 — 2026 年 5〜11 月
 lifecycle: [design, build, operate]
 domains: [performance, cost, security-governance, data-utilization, data-protection]
 evidence: documented
@@ -15,21 +15,51 @@ lang: ja
 
 ## 結論
 
-**2026 年 5〜8 月に、設計判断に影響するアップデートが 4 つの軸で出ています。**
+**2026 年 5〜11 月に、設計判断に影響するアップデートが 5 つの軸で出ています。**
 
 1. **データ保護の到達範囲** — バックアップを別リージョン・別アカウントへコピー可能に。**既存の制約記述が 1 つ無効になりました**
 2. **リージョン拡張と世代制限の緩和** — 第 2 世代が使えるリージョンが増え、性能上限の格差が縮まりつつある
 3. **マルチプロトコル統合の拡大** — Transfer Family (SFTP/FTPS/FTP) が S3 AP 経由で FSx for ONTAP に接続可能に
 4. **VMware 関連パスの追加** — 経路が 2 つあり、役割も状態も異なる。AWS Transform は **EC2 リホスト時のデータボリュームのターゲットストレージ**（2026-08-30 GA）、Amazon EVS は **VMware を継続したままの外部データストア**（2025-06 に public preview として告知、GA 告知は未確認）
+5. **第 3 世代と、告知のないコンソール画面（2026-11）** — 第 3 世代は告知されたが、作れるリージョンは記載と食い違う。SnapMirror やスナップショットポリシーの画面は告知がなく、公開 SDK に操作がない
 
 以下は各アップデートの概要と、このリポジトリの既存ノートとの対応です。
 
-> **区分**: `documented` — すべて AWS 公式 What's New / Document History / Blog の記載に基づきます。
+> **区分**: `documented` — 告知のないコンソール画面の項目を除き、AWS 公式 What's New / Document History / Blog の記載に基づきます。
 > 具体的なスループット値やレイテンシの実測は含みません。
 
 ---
 
 ## FSx for ONTAP 本体のアップデート
+
+### 第 3 世代のファイルシステム（2026-11-20）
+
+2026-11-20 に What's New で告知された新しい世代で、デプロイタイプは `SINGLE_AZ_3` と `MULTI_AZ_3` です。2026-11-22 に作成要求を送った 7 リージョンのうち、受け付けたのは米国の 3 リージョンでした。上限は 1 HA ペアあたり 18,432 MBps と 720,000 SSD IOPS で、Single-AZ 3 は最大 12 HA ペアです。ユーザーガイドの提供リージョンの表と、API リファレンスの IOPS 上限は、作成要求の結果と食い違っていました。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 作れるリージョンは、告知や表ではなく作成要求で確かめる。食い違いは 2026-11-22 時点のもの | [第 3 世代のファイルシステムは、どのリージョンで作れて、上限はいくつか](../domains/performance/notes/third-generation-file-systems-and-where-the-sources-disagree.md) |
+| NVMe/TCP と、7 組以上の HA ペアは第 2・第 3 世代だけ。第 1 世代からは作り直しになる | [ブロックプロトコルの選択肢は世代で先に狭まるか](../domains/block-storage/notes/protocol-choice-is-bounded-before-you-choose.md) |
+
+出典: [What's New（2026-11-20）](https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-fsx-for-netapp-ontap-third-generation/)。リージョンと作成時間は関連ノートの実測（`us-east-1`、2026-11-22）です。
+
+---
+
+### 告知のないコンソール画面: ピア、SnapMirror、スナップショットポリシー（2026-11-22 に確認）
+
+Amazon FSx コンソールに、クラスターピア、SVM ピア、SnapMirror ポリシー、SnapMirror 関係、スナップショットポリシーの画面と、ボリューム作成画面のクローンが表示されていました。
+
+> **区分**: この項目だけは告知に基づきません。画面の存在と、画面が呼ぶ操作は、2026-11-22 に自分のアカウント（`ap-northeast-1`、`us-east-1`）で確認した結果です。
+
+- 2026-11-23 の再確認でも、What's New、ドキュメント履歴、API リファレンス、公開 SDK（botocore）には記載がありません。
+- サービス認可リファレンスには、2026-11-23 に 20 の IAM アクションとリソースタイプが載っていました。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 公開されるまでは、本番の手順と自動化に ONTAP の CLI・REST API を使い続ける | [コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](../domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) |
+| コンソールで SnapMirror 関係を作るなら、SVM ピアを宛先側から作る | [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](../domains/data-protection/notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) |
+
+---
 
 ### バックアップを別リージョン・別アカウントへコピー可能に（2026-08）
 
@@ -310,6 +340,7 @@ GPU インスタンスが複数 AZ に分散する ML トレーニングで、Fl
 |---|---|
 | [Document History](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html) | ドキュメント本文の変更が日付付きで並ぶ。**ただし全件ではありません** |
 | What's New（FSx for ONTAP と **AWS Backup の両方**） | 機能追加の一次情報。周辺サービス側にしか出ない項目があります |
+| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_fsx.html) | IAM アクションが、API リファレンスや SDK より先に載ることがある（2026-11 のコンソール画面の操作） |
 | ユーザーガイドの該当ページ本文 | **制約を引用している箇所は、引用元の現行版を読み直す**。History に出ない改訂があります |
 
 **制約を根拠に設計判断を書いている箇所は、定期的に出典の現行版と突き合わせてください。** 「できない」という記述は、機能追加によって静かに古くなります。
