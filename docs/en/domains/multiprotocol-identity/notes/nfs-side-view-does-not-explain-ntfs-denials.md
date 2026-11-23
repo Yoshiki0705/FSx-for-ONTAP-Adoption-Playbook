@@ -248,6 +248,7 @@ each of the following can only be expected to behave the same way, and was not c
 | 3 | A volume brought in by a migration | The measurement used directories created on an empty volume. A volume migrated in with existing ACLs was not measured |
 | 4 | The performance effect of enabling NFSv4 ACLs | Enabling it was required for this measurement, but **the effect on performance was not measured.** Do not assume it is free |
 | 5 | Removing the inherited `Everyone` from the volume root | It is what removed the discriminating power of `allow/`. A re-measurement without it has not been done |
+| 6 | Setting an ACE over REST without `apply_to` covering `this_folder`, `sub_folders` and `files` | **An untested expectation (`hypothesis`).** The [stage 0 record (Japanese)](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#この段階で判明した所見手順への反映) in another repository says that without it the inherited ACE on child files is folder-only, so listing works but reading contents is denied. The source holds no measurement either. `inherited/` in this note is the case with all three set; this failure shape was not measured |
 
 ### Common misconceptions
 

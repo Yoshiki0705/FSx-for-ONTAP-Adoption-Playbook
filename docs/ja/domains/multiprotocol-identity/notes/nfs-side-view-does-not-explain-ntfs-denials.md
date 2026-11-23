@@ -238,6 +238,7 @@ NFS 設定で `v40_features.acl_enabled` と `v41_features.acl_enabled` が**ど
 | 3 | 移行で持ち込んだボリューム | 実測は空のボリュームに作ったディレクトリに対するものです。既存 ACL を持つボリュームを移行した場合を測っていません |
 | 4 | NFSv4 ACL を有効化した際の性能影響 | 有効化は本ノートの測定に必要でしたが、**性能への影響は測っていません。** 無償と仮定しないでください |
 | 5 | ボリュームルートの継承 `Everyone` を外した場合 | 実測では `allow/` の識別力がこれで失われました。除去した状態での再測は未実施です |
+| 6 | REST で ACE を設定するとき `apply_to` に `this_folder`・`sub_folders`・`files` の 3 つを指定しなかった場合 | **未検証の推測（`hypothesis`）です。** 別リポジトリの[段階 0 の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#この段階で判明した所見手順への反映)は、指定しないと子ファイルへ継承された ACE がフォルダ限定になり、一覧はできても内容の読み取りが拒否される、と書いています。出典側でも実測の記録はありません。本ノートの `inherited/` は 3 つを指定した側で、この失敗の形は測っていません |
 
 ### よくある誤解
 

@@ -135,7 +135,7 @@ An SVM's AD join can be specified in a template, but **the join itself depends o
 | NetBIOS name | **Do not reuse a name that failed.** A computer account is left behind in AD |
 | Service account password | Treat it as a secret |
 
-**An AD join cannot be judged by "did the template succeed".** Check the join state through the SVM's lifecycle state. The prerequisites are in [Domain — Multiprotocol & Identity](../../../domains/multiprotocol-identity/).
+**An AD join cannot be judged by "did the template succeed".** Check the join state through the SVM's lifecycle state. As a complement, ONTAP REST `GET /api/protocols/cifs/domains/{svm.uuid}?fields=discovered_servers` shows whether a domain controller (`ms_dc`) in `state=ok` was discovered. `/api/protocols/active-directory` returned 0 records on the same SVM, so it cannot be used for this check. The source never saw a case where the lifecycle state alone was wrong, so this adds a check and does not replace the lifecycle one (one SVM, ap-northeast-1, 2026-10-07, Gen1 `SINGLE_AZ_1`, ONTAP 9.19.1P2, AWS Managed Microsoft AD Standard; source: [App-Modernization-Patterns stage 0 measured results](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/en/stage-0-smb-ntfs.md#measured-results-verified)). The prerequisites are in [Domain — Multiprotocol & Identity](../../../domains/multiprotocol-identity/).
 
 ---
 

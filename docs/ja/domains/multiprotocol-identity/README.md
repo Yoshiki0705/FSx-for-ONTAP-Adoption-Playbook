@@ -42,6 +42,7 @@ NFS と SMB の共存、Active Directory 連携、ID マッピングを扱いま
 | 13 | ブロックのデータをファイルプロトコルから読めるか | **読めません。** マルチプロトコルは NFS / SMB / S3 の間で成立する性質です（[LUN の中身はファイルプロトコルに現れない](../block-storage/notes/lun-contents-do-not-reach-file-protocols.md)） |
 | 14 | ボリュームを作れば SMB で見えるか | **見えません。共有の作成が別に必要です**（[SMB で到達できるのは共有だけ](notes/smb-errors-do-not-name-their-cause.md#smb-で到達できるのは共有だけ)） |
 | 15 | 疎通確認に `c$` を使ってよいか | **代表性が落ちます。** 管理者でマップすると権限評価の一部を迂回します（[既定で存在する共有を「共有あり」と数えないこと](notes/smb-errors-do-not-name-their-cause.md#既定で存在する共有を共有ありと数えないこと)） |
+| 16 | 同じ NTFS ボリュームを SMB と NFS で同時に使うと何が違うか | **名前の文字、ロック、読めるまでの時間が違います。** 各組 1 回の計測です（[NTFS ボリュームを SMB と NFS で同時に使うと、何が違うか](notes/cross-protocol-access-to-one-ntfs-volume.md)） |
 
 ---
 

@@ -135,7 +135,7 @@ SVM の AD 参加はテンプレートで指定できますが、**参加その�
 | NetBIOS 名 | **失敗した名前を再利用しないでください。** AD 側に計算機アカウントが残ります |
 | サービスアカウントのパスワード | シークレットとして扱います |
 
-**AD 参加は「テンプレートが成功したか」では判定できません。** 参加状態は SVM のライフサイクル状態で確認します。前提条件は [Domain — マルチプロトコル・ID](../../../domains/multiprotocol-identity/) にあります。
+**AD 参加は「テンプレートが成功したか」では判定できません。** 参加状態は SVM のライフサイクル状態で確認します。補完として、ONTAP REST の `GET /api/protocols/cifs/domains/{svm.uuid}?fields=discovered_servers` で、`state=ok` のドメインコントローラー（`ms_dc`）が発見されているかを確かめられます。同じ SVM で `/api/protocols/active-directory` は 0 件を返したので、こちらは判定に使えません。ライフサイクル状態だけの判定が誤った例は、出典では観測されていないので、ライフサイクル状態の確認は置き換えず、この確認を足します（1 つの SVM、ap-northeast-1、2026-10-07、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P2、AWS Managed Microsoft AD Standard。出典: [App-Modernization-Patterns の段階 0 の実測結果](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-0-smb-ntfs.md#実測結果verified)）。前提条件は [Domain — マルチプロトコル・ID](../../../domains/multiprotocol-identity/) にあります。
 
 ---
 

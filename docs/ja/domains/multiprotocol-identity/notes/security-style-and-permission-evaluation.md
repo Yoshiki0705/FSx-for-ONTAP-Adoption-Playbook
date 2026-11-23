@@ -127,6 +127,20 @@ graph TD
 
 ---
 
+### 未解決の問い: 走査の権利を持たないユーザーの SMB と NFS の差
+
+同じ NTFS ACL のまま、走査（`execute`）の権利を持たない読み取り専用ユーザーが、SMB では `seed/` 配下のファイルを読め、NFS では `seed/` に入れませんでした。**差は観測されています。理由は未検証です。**
+
+| 項目 | 内容 |
+|---|---|
+| 差（観測） | 同じユーザー、同じ ACL（変更なし）。SMB は `seed/` 配下を読めた。NFS は最上位を一覧できたが `seed/` に入れなかった。ONTAP の effective-permissions に `execute` はなかった |
+| 理由（`hypothesis`、未検証） | SMB では走査チェックを省略するユーザー権利（Bypass traverse checking）が働き、NFS ではディレクトリごとに `execute` が評価されるため、と出典は推測している |
+| 環境 | ap-northeast-1、2026-10-07、ONTAP 9.19.1P2、第 1 世代 `SINGLE_AZ_1`、NTFS ボリューム、NFS は 4.1 `sec=sys`。観測は 1 回 |
+
+出典は別リポジトリの[段階 1（NFS からの拒否と原因）](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns/blob/main/docs/ja/stage-1-multiprotocol.md#nfs-からの拒否と原因)で、差は出典側で `verified`、理由は `hypothesis` です。この文書は両方を転記しており、再実行していません。**上の「止められるものと止められないもの」の判断に、この理由の推測を使わないでください。** 検証したい場合は、ユーザー権利の設定を変えて差が消えるかを、検証用の環境で測ります。
+
+---
+
 ### 参照した一次情報
 
 | 論点 | 出典 |
