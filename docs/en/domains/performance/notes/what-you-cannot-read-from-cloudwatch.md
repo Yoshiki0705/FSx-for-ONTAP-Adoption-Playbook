@@ -31,38 +31,38 @@ intermediate
 
 ## Body
 
-[🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
+[🏠 Repository home](../../../README.md) | [Domain: Performance](../README.md)
 
 ---
 
 ### Conclusion
 
-**For FSx for ONTAP volume-operation latency, CloudWatch operation-time/count metric pairs yield only an average. This does not mean that CloudWatch generally lacks percentile support.**
+For FSx for ONTAP volume-operation latency, CloudWatch operation-time/count metric pairs yield only an average. This does not mean that CloudWatch generally lacks percentile support.
 
 `DataReadOperationTime` / `DataReadOperations`, `DataWriteOperationTime` / `DataWriteOperations`, and `MetadataOperationTime` / `MetadataOperations` are totals of time and operation count; `Sum` is the valid statistic for both sides of each pair.
 
-For each pair, **total time divided by total count** is the period average. These pairs do not contain a request distribution, so p99 is not present.
+For each pair, total time divided by total count is the period average. These pairs do not contain a request distribution, so p99 is not present.
 
-**When p99 is required, obtain a distribution from client instrumentation or other request-level telemetry.** Other FSx for ONTAP file-system and second-generation metrics support `Average`, `Minimum`, and `Maximum`; second-generation metrics also emit per-`FileServer` or per-`Aggregate` series. Choose the statistic and dimensions that match the saturation question.
+When p99 is required, obtain a distribution from client instrumentation or other request-level telemetry. Other FSx for ONTAP file-system and second-generation metrics support `Average`, `Minimum`, and `Maximum`; second-generation metrics also emit per-`FileServer` or per-`Aggregate` series. Choose the statistic and dimensions that match the saturation question.
 
-And one more thing. **A benchmark is affected by the burst credit balance.** A file system accumulates credits while it runs below its baseline and spends them to exceed the baseline. **Re-run the same test with a depleted balance and a different figure comes out.**
+One more point: a benchmark result depends on the burst credit balance. A file system accumulates credits while it runs below its baseline and spends them to exceed the baseline. Re-running the same test with a depleted balance gives a different figure.
 
-> **Evidence**: `documented` — the metrics' valid statistics, how the performance characteristics are determined, and the credit mechanism are based on AWS documentation.
-> **No measured figures are included.** The procedure for measuring is in [Verify in your own environment](#verify-in-your-own-environment).
+> Evidence: `documented`. The metrics' valid statistics, how the performance characteristics are determined, and the credit mechanism are based on AWS documentation.
+> This note includes no measurement made in this repository. The procedure for measuring is in [Verify it in your environment](#verify-in-your-own-environment).
 
 ---
 
 ### The three things that determine performance
 
-A client reaches the file server through an ENI. **Each file server has a fast in-memory cache and an NVMe cache.** Behind them are the SSD disks.
+A client reaches the file server through an ENI. Each file server has a fast in-memory cache and an NVMe cache, with the SSD disks behind them.
 
 | Performance characteristic | What determines it |
 |---|---|
-| Network I/O performance (client to file server, in total) | **Throughput capacity only** |
-| **The size of the in-memory and NVMe caches** | **Throughput capacity only** |
-| Disk I/O performance (file server to disk) | **The combination of throughput capacity and SSD IOPS** |
+| Network I/O performance (client to file server, in total) | Throughput capacity only |
+| The size of the in-memory and NVMe caches | Throughput capacity only |
+| Disk I/O performance (file server to disk) | The combination of throughput capacity and SSD IOPS |
 
-**There is no setting that specifies cache size directly.** Cache size is determined by throughput capacity, so "we want more cache" is the same statement as "raise throughput capacity".
+There is no setting that specifies cache size directly. Cache size is determined by throughput capacity, so "we want more cache" is the same statement as "raise throughput capacity".
 
 That the ceiling itself varies by generation, configuration and Region is in [Throughput is not set by one value](where-throughput-is-determined-and-shared.md).
 
@@ -70,131 +70,113 @@ That the ceiling itself varies by generation, configuration and Region is in [Th
 
 ### When the cache helps
 
-**What lands in the cache is the active working set.** So the condition reduces to one thing.
-
-**Whether the working set fits in the cache size that throughput capacity determines.**
+What lands in the cache is the active working set, so the condition reduces to one question: **does the working set fit in the cache size that throughput capacity determines?**
 
 | Workload | Does the cache help |
 |---|---|
 | Repeated access to the same data, small in total | Yes |
 | A wide access range, reading different data each time | No. The working set does not fit |
-| A working set larger than the cache | **Either raise throughput capacity or design the range down** |
+| A working set larger than the cache | Either raise throughput capacity or design the range down |
 
 Accelerating reads against another file system or a remote site is FlexCache's territory, with different conditions. It is in [When FlexCache helps](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) (日本語).
 
-Note also that **adding an HA pair enables the NVMe cache by default on the new nodes, and disabling it is recommended for throughput-oriented workloads.** The constraint is in [What happens when you add an HA pair](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md#what-happens-when-you-add-an-ha-pair).
+Adding an HA pair enables the NVMe cache by default on the new nodes, and disabling it is recommended for throughput-oriented workloads. The constraint is in [What happens when you add an HA pair](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md#what-happens-when-you-add-an-ha-pair).
 
 ---
 
 ### How bandwidth is shared between protocols
 
-**There is no per-protocol allocation.**
+There is no per-protocol allocation.
 
-Network I/O performance is defined as the **total** between clients and the file server. And `NetworkThroughputUtilization` covers **all traffic, including background tasks** (SnapMirror, tiering, backup).
+Network I/O performance is defined as the total between clients and the file server. `NetworkThroughputUtilization` also covers all traffic, including background tasks (SnapMirror, tiering, backup).
 
 | Unit of sharing | Detail |
 |---|---|
-| Network bandwidth | **One HA pair's worth.** NFS, SMB, iSCSI and S3 Access Points draw on the same budget |
+| Network bandwidth | One HA pair's worth. NFS, SMB, iSCSI and S3 Access Points draw on the same budget |
 | Background tasks | They draw on the same budget |
-| Explicit priority | **Client traffic takes precedence over background tasks** — that one point only |
+| Explicit priority | Client traffic takes precedence over background tasks (that one point only) |
 
-**So "NFS is slow because of SMB" can happen.** And no setting separates them. Where separation is required, the design decision is **splitting volumes onto another HA pair or onto another file system.** The unit of sharing is in [The unit of sharing is the HA pair](where-throughput-is-determined-and-shared.md#the-unit-of-sharing-is-the-ha-pair).
+So "NFS is slow because of SMB" can happen, and no setting separates the protocols. Where separation is required, split the volumes onto another HA pair or onto another file system. The unit of sharing is in [The unit of sharing is the HA pair](where-throughput-is-determined-and-shared.md#the-unit-of-sharing-is-the-ha-pair).
 
 ---
 
 ### The burst and credit mechanism that breaks a benchmark
 
-**File-based workloads are spiky.** Short periods of high I/O with idle time between them.
+File-based workloads are spiky. They consist of short periods of high I/O with idle time between them.
 
-To match that, FSx for ONTAP provides **a baseline speed sustainable around the clock plus the ability to burst above it for a limited time.** Both network I/O and disk I/O are covered.
+To match that, FSx for ONTAP provides a baseline speed sustainable around the clock plus the ability to burst above it for a limited time. Both network I/O and disk I/O are covered.
 
-**Bursting is managed by a network I/O credit mechanism.** Credits are allocated on average utilisation, and **a file system accumulates them while its throughput and IOPS run below the baseline.**
+Bursting is managed by a network I/O credit mechanism. Credits are allocated on average utilization, and a file system accumulates them while its throughput and IOPS run below the baseline.
 
 #### The effect on a benchmark
 
 | Situation | What is measured |
 |---|---|
-| Running a short test with credits well accumulated | **Burst performance.** Not sustained performance |
+| Running a short test with credits well accumulated | Burst performance. Not sustained performance |
 | Running the same test after credits are spent | Baseline performance |
-| Not recording the balance | **It does not reproduce.** The same procedure yields a different figure |
+| Not recording the balance | It does not reproduce. The same procedure yields a different figure |
 
-**The balance is visible in `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance`.** Unlike the other metrics, these two are emitted at **five-minute intervals**. The granularity list is in [Monitoring granularity and retention](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#monitoring-granularity-and-retention).
+The balance is visible in `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance`. Unlike the other metrics, these two are emitted at five-minute intervals. The granularity list is in [Monitoring granularity and retention](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md#monitoring-granularity-and-retention).
 
 #### How large the step is, and how long until it falls
 
-**The table above is the mechanism; it never carried the size.** The measurement is in the
-[cited record](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md)
-(日本語) — second generation `SINGLE_AZ_2`, provisioned 1,536 MBps, 1 MiB sequential read over a
-1,800 GiB file.
+The table above shows the mechanism only. The measured sizes are in the [cited record](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) (日本語): second generation `SINGLE_AZ_2`, provisioned 1,536 MBps, 1 MiB sequential read over a 1,800 GiB file.
 
 | Observation | Value |
 |---|---|
-| The step | **2.0x** (2,882 MB/s → 1,439 MB/s) |
-| Time until it falls | **about 27 minutes from a full balance** |
+| The step | 2.0x (2,882 MB/s → 1,439 MB/s) |
+| Time until it falls | about 27 minutes from a full balance |
 | Recovery to full | about 30 minutes idle |
-| Reproducibility of a short (~2 minute) window | 0.16% across two runs. **What reproduces is the burst figure** |
+| Reproducibility of a short (~2 minute) window | 0.16% across two runs. What reproduces is the burst figure |
 
-**The provisioned value is neither figure.** At 1,536 both 2,882 and 1,439 were observed, so
-**the provisioned value cannot be used as the read ceiling.**
+The provisioned value matches neither observed figure. At 1,536 both 2,882 and 1,439 were observed, so **the provisioned value cannot be used as the read ceiling.**
 
-**The fall is a step, not a decay.** It completed within one 10-second interval. **Extending a test
-slightly moves nothing, and then the figure is simply different past the boundary.** The procedure
-above — lengthen the test until the number drops — assumes that shape.
+The fall is a step, not a decay. It completed within one 10-second interval. Extending a test slightly moves nothing; the figure is simply different once the boundary is passed. Step 5 of [Verify it in your environment](#verify-in-your-own-environment) (lengthen the test in stages until the figure drops) assumes that shape.
 
-**Sizing from a five-minute measurement errs in one direction: overestimation.** It starts from
-burst, so the figure to take is the one after the balance is spent. Which one applies is decided by
-the shape of the workload.
+Sizing from a five-minute measurement overestimates, because the measurement starts in burst. Which figure applies depends on the shape of the workload.
 
 | Workload shape | Figure to use |
 |---|---|
-| Work under 30 minutes, with gaps over 30 minutes between runs | the burst side |
-| Continuous, or gaps under 30 minutes | the baseline side |
-| Cannot be determined | **the baseline side** — the one that does not overestimate |
+| Work under 30 minutes, with gaps over 30 minutes between runs | The burst side |
+| Continuous, or gaps under 30 minutes | The baseline side |
+| Cannot be determined | The baseline side, which does not overestimate |
 
-> **The 27 minutes is a single observation.** The consumption and recovery slopes are each linear
-> over four or more points, but **the duration itself was not measured twice.** Reproducibility is
-> a statement about the slopes, not about the duration.
+> The 27 minutes is a single observation. The consumption and recovery slopes are each linear over four or more points, but the duration itself was not measured twice. Reproducibility holds for the slopes, not for the duration.
 
 #### The absent balance metric on a configuration with no burst
 
-**Raising the provisioned value removes the burst allowance itself.** The published disk-burst
-column reads "—" from 3,072 upward, and the cited record measures **no decay over 30 minutes** at
-6,144 — the step seen at 1,536 is absent.
+Raising the provisioned value removes the burst allowance itself. The published disk-burst column has no value from 3,072 upward, and the cited record measures no decay over 30 minutes at 6,144 (the step seen at 1,536 is absent).
 
-**And that turns into a question of how to read CloudWatch.**
+This changes how CloudWatch has to be read.
 
 | Configuration | `FileServerDiskThroughputBalance` |
 |---|---|
 | 1,536 (allowance present) | 99% → 0% over 27 minutes |
-| **6,144 (no allowance)** | **not a single data point is published** |
+| 6,144 (no allowance) | Not a single data point is published |
 
-**"Returns 0" and "returns no records" have to be read differently.** A spent balance and an absent
-allowance are different states, and **reading absence as zero produces a dashboard that reports
-permanent exhaustion.** The NVMe cache records take the same shape.
+Read "returns 0" and "returns no records" as different states. A spent balance and an absent allowance are not the same, and **reading absence as zero produces a dashboard that reports permanent exhaustion.** The NVMe cache records take the same shape.
 
-**Write it down as a trade.** A higher provisioned value buys a stable figure and **gives up the
-room to absorb a short peak.** The cited record notes that the burst at 1,536 (3,125) is close to
-the baseline at 3,072 (3,072). **The boundary itself, 3,072, is not measured.**
+There is a trade. A higher provisioned value buys a stable figure and gives up the room to absorb a short peak. The cited record notes that the burst at 1,536 (3,125) is close to the baseline at 3,072 (3,072). The boundary itself, 3,072, was not measured.
 
 ---
 
 ### What a reproducible benchmark requires
 
-**"The same procedure" is not enough. It has to start from the same state.**
+Reproducing a result takes the same procedure and the same starting state.
 
 | What to record | Why |
 |---|---|
-| **The credit balance before the test** | **It decides whether burst or sustained performance was measured** |
+| The credit balance before the test | It decides whether burst or sustained performance was measured |
 | The test duration | A short test measures burst |
 | Region, generation, deployment type | The ceiling itself changes |
 | The throughput capacity and SSD IOPS settings | They bear on all three performance characteristics |
 | HA pair count and volume style (FlexVol / FlexGroup) | Distinguish the file-system ceiling from the one HA pair whose aggregate holds the FlexVol |
 | Tiering policy and cooling period | Whether reads come from SSD or the capacity pool changes |
 | Background tasks running at the same time | They use the same bandwidth |
-| Client-side or other request-level measurement (**including the tail**) | Volume operation-time/count pairs yield an average, so obtain the distribution separately |
+| Client-side or other request-level measurement (including the tail) | Volume operation-time/count pairs yield an average, so obtain the distribution separately |
 | Statistic and dimensions (`Average` / `Minimum` / `Maximum`, `FileServer` / `Aggregate`) | Averages and aggregation can hide saturation; choose them for the question |
 
-**The last two rows are a point that recurs throughout this repository.** The reasoning is in [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md).
+The reasoning behind the last two rows (the tail, and the choice of statistic and dimensions) is in [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md).
 
 ---
 
@@ -227,18 +209,18 @@ graph TD
 
 | Misconception | Actually |
 |---|---|
-| CloudWatch cannot expose any p99 for FSx for ONTAP | **The volume read/write/metadata operation-time/count pairs yield only averages.** This does not make a general claim about CloudWatch or statistics for other metrics |
-| There is a latency metric | There is a **total** of time and a **total** of counts; you divide them for an average |
-| A benchmark reproduces if the procedure is the same | **A different credit balance yields a different figure** |
-| A short test shows sustained performance | A short test measures burst. **Measured at 2.0x, and the error is always an overestimate** |
-| The provisioned throughput capacity is the read ceiling | **It is not.** At 1,536 both 2,882 and 1,439 were observed. **Neither is the provisioned value** |
-| A balance metric reading 0 means exhaustion | **A configuration with no allowance emits no records at all.** Read 0 and absence differently |
-| Cache size can be configured | **It is determined by throughput capacity.** It cannot be set directly |
+| CloudWatch cannot expose any p99 for FSx for ONTAP | The volume read/write/metadata operation-time/count pairs yield only averages. This does not make a general claim about CloudWatch or statistics for other metrics |
+| There is a latency metric | There is a total of time and a total of counts; you divide them for an average |
+| A benchmark reproduces if the procedure is the same | A different credit balance yields a different figure |
+| A short test shows sustained performance | A short test measures burst. The measured error was 2.0x, in the direction of overestimation |
+| The provisioned throughput capacity is the read ceiling | It is not. At 1,536 both 2,882 and 1,439 were observed. Neither matches the provisioned value |
+| A balance metric reading 0 means exhaustion | A configuration with no allowance emits no records at all. Read 0 and absence differently |
+| Cache size can be configured | It is determined by throughput capacity. It cannot be set directly |
 | The cache helps every workload | It helps when the working set fits |
-| Bandwidth can be allocated per protocol | **No allocation exists.** It is shared per HA pair |
+| Bandwidth can be allocated per protocol | No allocation exists. It is shared per HA pair |
 | SMB and NFS do not affect each other | They draw on the same budget. Interference can happen |
 | Background tasks use separate bandwidth | The same bandwidth, though client traffic takes precedence |
-| Disk performance is determined by SSD IOPS alone | It is **the combination of throughput capacity and SSD IOPS** |
+| Disk performance is determined by SSD IOPS alone | It is the combination of throughput capacity and SSD IOPS |
 
 ---
 
@@ -251,7 +233,7 @@ graph TD
 | Second-generation metric statistics and the `FileServer` / `Aggregate` dimensions | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
 | That each file server has an in-memory cache and an NVMe cache; the three performance characteristics; that network I/O and cache size are determined by throughput capacity alone while disk I/O is determined by the combination of throughput capacity and SSD IOPS; that file-based workloads are spiky; bursting and the network I/O credit mechanism; that credits accumulate while running below the baseline | [AWS: Amazon FSx for NetApp ONTAP performance](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/performance.html) |
 | That `NetworkThroughputUtilization` is a ratio against one HA pair's worth and covers all traffic including background tasks | [AWS: Second-generation file system metrics](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/so-file-system-metrics.html) |
-| **The size of the step (2.0x), the ~27 minutes until it falls, the recovery slope, the step shape, and the balance metric being absent at 6,144** (**measured / outside the documentation**; conditions and unmeasured ranges are in the cited record) | [S3-Burst-on-ONTAP-Files: throughput capacity, burst and baseline](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) (日本語) |
+| The size of the step (2.0x), the ~27 minutes until it falls, the recovery slope, the step shape, and the balance metric being absent at 6,144 (a measurement, not AWS documentation; conditions and unmeasured ranges are in the cited record) | [S3-Burst-on-ONTAP-Files: throughput capacity, burst and baseline](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/throughput-capacity-burst-and-baseline.md) (日本語) |
 | That `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` are emitted at five-minute intervals | [AWS: Monitoring with Amazon CloudWatch](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/monitoring-cloudwatch.html) |
 | That client traffic takes precedence over background tasks | [AWS: Migrating to FSx for ONTAP using NetApp SnapMirror](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 | That adding an HA pair enables the NVMe cache by default, and that disabling it is recommended for throughput-oriented workloads | [AWS: Adding high-availability (HA) pairs](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/adding-HA-pairs.html) |
@@ -260,17 +242,17 @@ graph TD
 
 ### Related documents
 
-- [Domain — Performance](../README.md) — this module's hub
-- [Throughput is not set by one value](where-throughput-is-determined-and-shared.md) — how the ceiling is decided, and sharing per HA pair
-- [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md) — choosing the statistic, and granularity
-- [When FlexCache helps](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) (日本語) — accelerating reads against another file system or a remote site
-- [The deployment type is decided once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md) — HA pairs and the NVMe cache default
-- [Tiering defaults differ by how the volume was created](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語) — the condition that changes where reads come from
+- [Domain: Performance](../README.md): this module's hub
+- [Throughput is not set by one value](where-throughput-is-determined-and-shared.md): how the ceiling is decided, and sharing per HA pair
+- [Monitoring fails on averages](../../../playbooks/05-operate/notes/monitoring-fails-on-averages.md): choosing the statistic, and granularity
+- [When FlexCache helps](../../../../ja/domains/data-utilization/notes/reaching-data-without-copies.md#flexcache-が効く条件) (日本語): accelerating reads against another file system or a remote site
+- [The deployment type is decided once](../../../playbooks/02-design/notes/deployment-type-is-decided-once.md): HA pairs and the NVMe cache default
+- [Tiering defaults differ by how the volume was created](../../../../ja/playbooks/06-optimize/notes/tiering-defaults-differ-by-creation-method.md) (日本語): the condition that changes where reads come from
 - [Evidence Policy](../../../evidence-policy.md)
 
 ---
 
-[🏠 Repository home](../../../README.md) | [Domain — Performance](../README.md)
+[🏠 Repository home](../../../README.md) | [Domain: Performance](../README.md)
 
 ---
 
@@ -278,20 +260,20 @@ graph TD
 
 ## Verify it in your environment
 
-**The first thing to establish is whether the figure in front of you is an average or a tail.**
+The first thing to establish is whether the figure in front of you is an average or a tail.
 
 | # | Step | What it establishes |
 |---|---|---|
-| 1 | Derive average latency as `DataReadOperationTime` ÷ `DataReadOperations` | **That this is an average.** The tail is not in it |
-| 2 | Measure the latency distribution with client instrumentation or other request-level telemetry and derive p99 | **The gap against the volume operation-time/count pair's average.** The tail, measured |
+| 1 | Derive average latency as `DataReadOperationTime` ÷ `DataReadOperations` | That this is an average. The tail is not in it |
+| 2 | Measure the latency distribution with client instrumentation or other request-level telemetry and derive p99 | The gap against the volume operation-time/count pair's average. The tail, measured |
 | 3 | Record `FileServerDiskThroughputBalance` and `FileServerDiskIopsBalance` before the test | Whether you are measuring burst or sustained |
-| 4 | Re-run the same test with the balance depleted and compare | **How much the credits contribute.** The basis for reproducibility |
+| 4 | Re-run the same test with the balance depleted and compare | How much the credits contribute. The basis for reproducibility |
 | 5 | Lengthen the test in stages and find where the figure drops | How long until it falls to the baseline |
 | 6 | Estimate the working set size and compare across throughput capacities | Whether it fits in the cache |
-| 7 | Load one protocol and observe the other's latency | **Interference between protocols, measured.** Whether separation is needed |
+| 7 | Load one protocol and observe the other's latency | Interference between protocols, measured. Whether separation is needed |
 | 8 | Compare periods with background tasks running against periods without | How much the background tasks contribute |
 
-A benchmark that skips steps 3 and 4 **does not reproduce even when the procedure is repeated exactly.** This is the most overlooked point.
+A benchmark that skips steps 3 and 4 does not reproduce even when the procedure is repeated exactly.
 
 Step 2 also separates "the storage is slow" from "the path or the client is slow".
 
@@ -315,4 +297,4 @@ This calculation does not validate the input metrics, request distribution, p99,
 
 ## Read next
 
-[Domain — Performance](../README.md)
+[Domain: Performance](../README.md)
