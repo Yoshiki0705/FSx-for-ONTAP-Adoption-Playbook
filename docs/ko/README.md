@@ -253,6 +253,7 @@ Issue / Pull Request를 환영합니다. 집필 규약은 [CONTRIBUTING.md](../.
 | **VMware에서 이전** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2와 FSx for ONTAP로의 마이그레이션 |
 | **ECS / EKS 컨테이너의 데이터스토어로 사용** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2의 NFS/SMB 마운트, EKS on EC2의 NetApp Trident 영구 볼륨, Fargate의 S3 액세스 포인트 경유 등 5가지 구성과 CloudFormation 템플릿. **드라이버 선택과 볼륨 수 상한 같은 일반적인 ONTAP 지식은 이 리포지토리를 참조합니다** |
 | **데이터를 FSx for ONTAP에 둔 채 애플리케이션을 현대화** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | Windows의 .NET Framework 애플리케이션을 같은 볼륨을 계속 사용하면서 Linux의 .NET, 나아가 일부 서버리스로 단계적으로 현대화하는 절차와 CloudFormation 템플릿 |
+| **클라이언트 도구(AWS CLI, rclone, Mountpoint for Amazon S3, MCP 클라이언트 등)에서 FSx for ONTAP의 S3 Access Points 사용** | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns) | 도구별 설정 절차, 수동 체크리스트, 호환성 매트릭스, 측정 기록. **현재는 확인 전의 뼈대이며 측정값은 없습니다.** S3 Access Points의 사양과 한도는 이 저장소를 참조하는 분담입니다 |
 
 ---
 
