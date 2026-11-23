@@ -253,6 +253,7 @@ make all           # 以上全部
 | **從 VMware 遷移** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | 遷移到 Amazon EC2 與 FSx for ONTAP |
 | **用作 ECS / EKS 容器的資料存放區** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | 五種配置及 CloudFormation 範本：ECS on EC2 的 NFS/SMB 掛載、EKS on EC2 的 NetApp Trident 持久卷、Fargate 經由 S3 存取點。**驅動程式選擇與磁碟區數量上限等通用 ONTAP 知識以本儲存庫為準** |
 | **資料保留在 FSx for ONTAP 上，現代化應用程式** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | 在持續使用同一磁碟區的前提下，將 Windows 上的 .NET Framework 應用程式分階段現代化為 Linux 上的 .NET，再將部分處理現代化為無伺服器的步驟及 CloudFormation 範本 |
+| **從用戶端工具（AWS CLI、rclone、Mountpoint for Amazon S3、MCP 用戶端等）使用 FSx for ONTAP 的 S3 Access Points** | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns) | 依工具區分的設定步驟、手動檢查清單、相容性矩陣和測量記錄。**目前是尚未確認的雛形，沒有測量值。** S3 Access Points 的規格和上限，依分工參照本儲存庫 |
 
 ---
 

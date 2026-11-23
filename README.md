@@ -301,6 +301,7 @@ Issue / Pull Request を歓迎します。執筆規約は [CONTRIBUTING.md](CONT
 | **VMware から移す** | [VMware-Migration-EC2-ONTAP](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP) | Amazon EC2 と FSx for ONTAP への移行手順 |
 | **ECS / EKS のコンテナのデータストアにする** | [FSx-for-ONTAP-Container-Datastore-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns) | ECS on EC2 の NFS/SMB マウント、EKS on EC2 の NetApp Trident 永続ボリューム、Fargate の S3 Access Points 経由の 5 構成と CloudFormation テンプレート。**ドライバ選択やボリューム数の上限といった一般的な ONTAP 知見はこのリポジトリを参照する分担**です |
 | **データを FSx for ONTAP に置いたまま、アプリケーションをモダナイズする** | [FSx-for-ONTAP-App-Modernization-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns) | データを FSx for ONTAP に残したままレガシーアプリケーションを近代化するパターン集（言語に依存しないスコープ）。現在の検証済みの実例は .NET のスライス 1 本（Windows 上の .NET Framework → Linux 上の .NET、一部サーバーレス）で、手順と CloudFormation テンプレートを提供する |
+| **FSx for ONTAP の S3 Access Points を、クライアントツール（AWS CLI、rclone、Mountpoint for Amazon S3、MCP クライアント等）から使う** | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns) | ツール別の手順、手動チェックリスト、互換性マトリクス、測定記録。**現状は確認前の雛形で、測定値はありません。** S3 Access Points の仕様と上限はこのリポジトリを参照する分担です |
 
 **両方を通す順序がある場合は、決定ツリー側に書いてあります。**
 例として [ファイルストレージの決定木](docs/ja/reference/decision-trees/file-storage-selection.md#この決定木が送り出す先) は、
