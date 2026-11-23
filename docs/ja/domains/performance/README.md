@@ -39,6 +39,7 @@
 | 12 | QoS の上限とバーストはどのワークロードに効き、上限を設ける他の手段とどう選び分けるか | [QoS の上限とバーストは、どのワークロードに効くのか](notes/qos-ceiling-burst-use-cases.md) |
 | 13 | FlexCache で読めるのに書けないとき、どこを見るか。無認証ピアはなぜ解除できないか | [FlexCache で「読めるのに書けない」ときに最初に見るところ](notes/flexcache-origin-permissions-and-peering-constraints.md) |
 | 14 | 第 3 世代はどのリージョンで作れて、上限はいくつか。公式の記載と実機は一致するか | [第 3 世代は確認した 7 リージョンのうち米国の 3 リージョンだけで作れた](notes/third-generation-file-systems-and-where-the-sources-disagree.md) |
+| 15 | broadcast domain の MTU は変更できるか。世代と ONTAP の版で結果は変わるか | [第 1 世代では broadcast domain の MTU を REST と CLI のどちらでも変更できた](notes/broadcast-domain-mtu-can-be-changed-on-first-generation.md) |
 
 ---
 

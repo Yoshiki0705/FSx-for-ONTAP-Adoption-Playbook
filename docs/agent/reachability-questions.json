@@ -629,6 +629,47 @@
         {"path": "docs/en/reference/ontap-commands-and-apis.md", "anchor": "scope-of-the-mav-observations"}
       ],
       "rationale": "The target is the section that states the scope of the Spoke's observation (one environment, one version, fsxadmin) without answering yes or no, so the Hub does not assert that MAV is unavailable."
+    },
+    {
+      "id": "wl-mtu-change-on-fsx-for-ontap",
+      "question": "Can the broadcast domain MTU be changed on FSx for ONTAP, and does it depend on the generation or ONTAP version?",
+      "keywords": [
+        {
+          "en": ["MTU", "broadcast domain"],
+          "ja": ["MTU", "broadcast domain"]
+        },
+        {
+          "en": ["FSx for ONTAP", "generation", "Gen2"],
+          "ja": ["FSx for ONTAP", "世代", "第 2 世代"]
+        }
+      ],
+      "category": "workload",
+      "scope": "hub",
+      "targets": [
+        {"path": "docs/ja/domains/performance/notes/broadcast-domain-mtu-can-be-changed-on-first-generation.md"},
+        {"path": "docs/ja/playbooks/04-build/checklists/rebuild-version-and-generation-checks.md"}
+      ],
+      "rationale": "The note records the first-generation result on two ONTAP versions and states that second and third generation are untested; the checklist is the procedure to repeat per generation."
+    },
+    {
+      "id": "wl-ontap-release-feature-on-fsx-for-ontap",
+      "question": "Is a feature listed in an ONTAP 9.17.1 to 9.20.1 release note available on FSx for ONTAP?",
+      "keywords": [
+        {
+          "en": ["ONTAP 9.19.1", "release notes", "What's new", "new features"],
+          "ja": ["ONTAP 9.19.1", "リリースノート", "新機能"]
+        },
+        {
+          "en": ["FSx for ONTAP", "fsxadmin"],
+          "ja": ["FSx for ONTAP", "fsxadmin"]
+        }
+      ],
+      "category": "workload",
+      "scope": "hub",
+      "targets": [
+        {"path": "docs/ja/reference/ontap-release-features-and-fsx-for-ontap.md"}
+      ],
+      "rationale": "The table separates the release-note text from the check on a real file system and marks every row not yet checked as not confirmed, so the page makes no claim beyond what was observed."
     }
   ]
 }
