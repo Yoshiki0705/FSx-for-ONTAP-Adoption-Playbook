@@ -41,6 +41,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 13 | コンソールで SnapMirror をつなぐ手順と、断られる条件は何か | [作る順序](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md#作る順序) |
 | 14 | オンプレミスの ONTAP や既存の FSx for ONTAP 利用者は、SnapMirror・スナップショット・クローンをどの場面で使い分けるか | [3 つの出発点と 6 組のパラメーター](notes/snapmirror-snapshot-clone-use-cases-and-ontap-parameters.md) |
 | 15 | AWS Backup の論理エアギャップボールトを隔離方式として選ぶとき、何が不可逆で何を先に決めるか | [4 つの隔離方式の置き場所と制約](notes/aws-backup-air-gapped-vault-as-isolation-option.md#4-つの隔離方式の置き場所と制約) |
+| 16 | 新しく作ったボリュームの ARP/AI は既定で有効か | [新規ボリュームの ARP/AI は既定で無効だった](notes/new-volumes-start-with-arp-disabled-on-first-generation.md) |
 
 ---
 

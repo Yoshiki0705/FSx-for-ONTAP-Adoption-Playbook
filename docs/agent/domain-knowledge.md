@@ -57,6 +57,23 @@ What is established, and what you must still check each time:
 What a few hours cannot settle: anything that needs a second environment you do not control (for example a
 non-AWS ONTAP service as a FlexCache Origin). Say so, name the missing environment, and keep the label.
 
+## Generation and ONTAP version
+
+What a first-generation file system on ONTAP 9.19.1P4 does is not what a second- or third-generation one
+does, and the ONTAP patch level changes under a file system without notice. Before you write that a
+feature works, is missing, or can be changed on FSx for ONTAP:
+
+| Question | Read |
+|---|---|
+| Does a feature in an ONTAP 9.17.1 to 9.20.1 release note exist on FSx for ONTAP? | [`ontap-release-features-and-fsx-for-ontap.md`](../ja/reference/ontap-release-features-and-fsx-for-ontap.md). A release-note entry is not evidence; the status column says what was confirmed, in which environment |
+| Can the broadcast domain MTU be changed? Does the generation matter? | [the MTU note](../ja/domains/performance/notes/broadcast-domain-mtu-can-be-changed-on-first-generation.md). First generation only; the broadcast domain is `Fsx` and `Default` is the IPspace |
+| A rebuilt file system, or an ONTAP update: what to re-take | [`rebuild-version-and-generation-checks.md`](../ja/playbooks/04-build/checklists/rebuild-version-and-generation-checks.md) |
+
+Three rules come from the work behind those pages. A REST or CLI call that returns HTTP 200 may have
+changed nothing (`num_records: 0`), so read the value back. A file system tagged `Teardown` or
+`MeasurementId` belongs to another project's measurement: do not reset its password or change it. Record
+the generation, the full ONTAP version and the date with every result, or the result cannot be compared.
+
 ## AD integration
 
 - AWS Managed Microsoft AD inserts an intermediate OU: `OU=Computers,OU=<ShortName>,DC=…`. Omitting it causes silent failures. Self-managed AD has no intermediate OU.

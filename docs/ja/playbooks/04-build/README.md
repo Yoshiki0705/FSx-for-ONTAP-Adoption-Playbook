@@ -15,6 +15,7 @@
 | **テンプレートは通ったのに構成が完成しない** | [IaC の境界は API の表面で決まる](notes/what-iac-cannot-reach.md) | **成功したデプロイでも ONTAP 側の設定は届いていません。** 境界がどこかが分かります |
 | **Active Directory 連携をこれから自動化する** | [Active Directory 連携の自動化](notes/what-iac-cannot-reach.md#active-directory-連携の自動化) | 自動化できる範囲と、手で入れることになる範囲 |
 | **本番投入の前に何を試すか決めたい** | [本番投入前レビュー](checklists/pre-production-review.md) | **不可逆な設定と、本番前に実際に試しておく項目** |
+| **ファイルシステムを作り直した / ONTAP の版が上がった** | [世代と版の確認](checklists/rebuild-version-and-generation-checks.md) | **世代、ONTAP の版、MTU、管理者の権限、新機能を同じ手順で取り直します** |
 
 ---
 
@@ -38,7 +39,7 @@
 | ディレクトリ | 内容 |
 |---|---|
 | [`notes/`](notes/) | 知見の最小単位。1 ファイル = 1 論点。frontmatter に `evidence` 区分を持ちます |
-| [`checklists/`](checklists/) | 現場で使うチェックリスト。→ [本番投入前レビュー](checklists/pre-production-review.md) |
+| [`checklists/`](checklists/) | 現場で使うチェックリスト。→ [本番投入前レビュー](checklists/pre-production-review.md)、[世代と版の確認](checklists/rebuild-version-and-generation-checks.md) |
 
 ---
 
