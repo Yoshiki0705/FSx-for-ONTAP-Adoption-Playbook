@@ -25,7 +25,7 @@ LUN copy と file copy は、同じファイルシステムの中で、LUN ま�
 - ファイルシステムをまたぐコピーを別の経路（REST の `copy.source.peer` など）で通せるか（クラスター間ピアに許可を設定できないことは確かめた）
 - NTFS ACL と UNIX の所有者・権限が引き継がれるか（試したファイルは既定の権限のままで、差が出ない条件だった）
 - AWS DataSync と SnapMirror の実測（このノートの比較は各ドキュメントの記載に基づく）
-- robocopy、rsync、NetApp XCP、サードパーティの移行製品、ブロック単位のツールの動作（どれも試していない。比較は公式ページの記載に基づく）
+- robocopy、rsync、NetApp XCP、サードパーティの移行製品、ブロック単位のツールの動作（どれも試していない。比較は公式ページの記載に基づく。実機での確認は [Issue #427](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/427) で管理）
 
 ## 前提レベル
 
@@ -139,7 +139,7 @@ ONTAP の機能（LUN copy、file copy、SnapMirror、FlexClone）は、スト�
 | ツール | 動く場所 | FSx for ONTAP への接続 | 稼働中のコピーと切り替え | 主な制約 |
 |---|---|---|---|---|
 | Cirrus Migrate Cloud（cMotion、MigrateOps） | 移行元と宛先のホストのエージェントと、SaaS の管理画面 | iSCSI（マルチパス）。製品から FSx for ONTAP のボリューム・LUN・igroup を作って割り当てる手順が、NetApp の手順書にある | 移行元を使ったまま同期し、cMotion が I/O を宛先へ切り替える。切り替えは戻せ、戻すときは変わったブロックだけを同期し直す | 製品のアカウントとライセンス。速度はネットワークと宛先のインスタンスの帯域次第 |
-| AWS Transform MGN（AWS Application Migration Service） | 移行元のエージェント（エージェントなしの方式もある）と AWS のサービス | 記載なし。サーバー全体を Amazon EC2 へ移し、ディスクはブロック単位で継続複製する | 継続複製のあと、テスト用インスタンスで確かめて切り替える | サーバー単位の移行。データボリュームを FSx for ONTAP に置く場合は、別の経路（[AWS Transform の FSx for ONTAP 対応](../../../reference/recent-updates.md#aws-transform-が-fsx-for-ontap-をサポートga-2026-08)）を確認する |
+| AWS Transform MGN（AWS Application Migration Service） | 移行元のエージェントと AWS のサービス。FSx for ONTAP を移行先にする場合はエージェント方式だけ | iSCSI。サーバーのデータディスクを、FSx for ONTAP のボリューム内の LUN（ディスクごとに 1 つ）として置く。ブートボリュームは EBS（[MGN のユーザーガイド](https://docs.aws.amazon.com/mgn/latest/ug/fsx-ontap.html)） | ディスクをブロック単位で継続複製し、テスト用インスタンスで確かめてから切り替える | 移行元のサーバー 1 台につき FSx for ONTAP のボリュームは 1 つ。ONTAP の設定は移さない。サーバー単位の移行で、LUN だけを選んで移す道具ではない |
 | `dd`（GNU coreutils） | ホストのコマンド | iSCSI か NVMe/TCP の LUN をブロックデバイスとして使えば書ける。推論 | 増分も切り替えの仕組みもない。範囲を指定したコピーはできる | 書き込み先を切り詰めないには `conv=notrunc` が要る。稼働中のデータの整合は取らない |
 | LVM の `pvmove` | Linux のホスト（device-mapper） | FSx for ONTAP の LUN を物理ボリュームとして足せば、そこへエクステントを移せる。推論 | 一時的なミラーで区間ごとに同期し、同期した区間から切り替える。中断しても続きから再開できる | 移行元のディスクが LVM で管理されていること。マニュアルは、移動中にファイルシステムをマウントしたままでよいとは明記していない |
 | Oracle ASM のディスクの追加・削除とリバランス | Oracle ASM のインスタンス | FSx for ONTAP の LUN を ASM のディスクとして足せば、そこへデータを移せる。推論 | データベースを止めずにディスクを足し、古いディスクを外すとデータが残りのディスクへ移る | ASM のディスクグループの中のデータだけが対象。読んだのは Oracle Database 18 の管理者ガイド |
@@ -160,6 +160,30 @@ AWS 規範ガイダンスの[アプリケーションモビリティ](https://do
 | Cirata Data Migrator | Hadoop の HDFS のデータと Hive のメタデータ | データレイクの移行用。NAS のコピーの道具ではない |
 | Tessell DBaaS | データベース（RMAN と Data Guard による移行） | 自前のストレージを持つデータベースのサービス |
 
+#### 公開されている実施記録
+
+各ツールを FSx for ONTAP と組み合わせて使った公開記事です。2026-11-23 に開いて、本文に FSx for ONTAP が出てくることを確かめたものだけを載せています。「手順あり」は手順・画面・結果を含むもの、「概要」は構成や事例の紹介です。記事の数値は各記事の環境のもので、このリポジトリでは再現していません。
+
+| ツール | 記事 | 発行元・日付 | 内容 | 種類 |
+|---|---|---|---|---|
+| AWS DataSync | [Migrating file shares to Amazon FSx for NetApp ONTAP using AWS DataSync](https://aws.amazon.com/blogs/storage/migrating-file-shares-to-amazon-fsx-for-netapp-ontap-using-aws-datasync/)（[日本語訳](https://aws.amazon.com/jp/blogs/news/migrating-file-shares-to-amazon-fsx-for-netapp-ontap-using-aws-datasync/)） | AWS Storage Blog | 階層化ポリシーと DataSync の移行の関係。スループット容量 512 MB/s、約 1.1 TiB で 2 回の転送の平均を示す | 手順あり |
+| AWS DataSync | [AWS DataSync が Amazon FSx for NetApp ONTAP をサポートしました](https://dev.classmethod.jp/articles/aws-datasync-copy-data-amazon-fsx-netapp-ontap/) | DevelopersIO（クラスメソッド） | SMB の共有と S3 バケットの間を、エージェントなしでコピーする手順。Snapshot はコピーされないとまとめている | 手順あり |
+| AWS DataSync | [Amazon FSx for NetApp ONTAP のデータを AWS DataSync で Amazon S3 に移行する](https://zenn.dev/kameoncloud/articles/63a05e2fc9db4c) | Zenn、2025-03-14 更新 | FSx for ONTAP を移行元にして、NFS のデータを S3 へ移す手順 | 手順あり |
+| robocopy、rsync、NetApp XCP | [Migrating on-premises file shares to Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/migrating-on-premises-file-shares-to-amazon-fsx-for-netapp-ontap/) | AWS Storage Blog | ホスト側のツールと SnapMirror などの比較表。手順は SnapMirror だけ | 概要 |
+| robocopy、rsync | [Preserve FlexClone space efficiency when migrating to Amazon FSx for NetApp ONTAP](https://aws.amazon.com/blogs/storage/preserve-flexclone-space-efficiency-when-migrating-to-amazon-fsx-for-netapp-ontap/) | AWS Storage Blog | ファイル単位のコピーでは FlexClone の共有ブロックが全量のコピーになることを示し、SnapMirror で保つ手順 | 手順あり（SnapMirror） |
+| Komprise | [Cost-optimized file storage with Amazon FSx for NetApp ONTAP and Komprise](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/) | AWS Storage Blog | 製造業の約 3 PB の移行事例（企業名は非公開） | 概要 |
+| Cirrus Migrate Cloud | [Migrate VMs to Amazon EC2 using Amazon FSx for ONTAP](https://docs.netapp.com/us-en/netapp-solutions/vmware/migrate-vms-to-ec2-fsxn-deploy.html) | NetApp のドキュメント | MigrateOps で FSx for ONTAP のボリューム・LUN・igroup を作り、iSCSI で SQL Server の仮想マシンを移す手順 | 手順あり |
+| Cirrus Migrate Cloud | [VMware 環境から FSx for ONTAP と Amazon EC2 への移行](https://aws.amazon.com/blogs/storage/seamless-migration-from-any-vmware-environment-to-amazon-fsx-for-netapp-ontap-and-amazon-ec2/) | AWS Storage Blog | MigrateOps による VMware の仮想マシンとブロックストレージの移行の構成と、デモ動画 | 概要 |
+| AWS Transform MGN | [FSx for ONTAP configuration](https://docs.aws.amazon.com/mgn/latest/ug/fsx-ontap.html) | AWS のドキュメント | FSx for ONTAP を移行先のストレージにする設定と制約 | 手順あり |
+| AWS Transform MGN | [Migrate VMware Storage to Amazon FSx for NetApp ONTAP using AWS Transform](https://aws.amazon.com/blogs/storage/migrate-vmware-storage-to-amazon-fsx-for-netapp-ontap-using-aws-transform/) | AWS Storage Blog | 仮想マシンのエージェントから FSx for ONTAP の iSCSI ボリュームへの複製、テスト、切り戻し、切り替え | 概要 |
+| AWS Transform MGN | [AWS Transform の FSx for ONTAP サポート GA 検証レポート](https://github.com/Yoshiki0705/VMware-Migration-EC2-ONTAP/blob/main/docs/ja/atx-fsxn-ga-verification.md) | このプロジェクトの VMware 移行のリポジトリ、2026-09-04 実測 | ap-northeast-1 で、移行先に `FSX_ONTAP` を設定し、複製からテスト起動、切り替え、データの整合の確認まで行った記録 | 手順あり |
+| Storage vMotion | [Migration from VMware Cloud on AWS to Amazon EVS with FSx for ONTAP](https://repost.aws/articles/ARo3N3YBmQR0WcL1SOya6GfQ/migration-from-vmware-cloud-on-aws-to-amazon-evs-with-fsx-for-ontap) | AWS re:Post | 仮想マシンを FSx for ONTAP の NFS データストアへ Storage vMotion で移し、SnapMirror で Amazon EVS 側へ渡す流れ | 手順あり（文章のみ） |
+
+次のツールは、FSx for ONTAP と組み合わせた公開記事を見つけられませんでした（2026-11-23、Web 検索。ツール名と「FSx for NetApp ONTAP」または「FSx for ONTAP」の組み合わせ、日本語の検索も含む）。見つからなかったことは、使えないことを意味しません。
+
+- Vcinity、`dd`、LVM の `pvmove`（オンプレミスの ONTAP への移行の記事はある）、Oracle ASM のディスクの入れ替え、Concierto.cloud、Deloitte ATAsphere、RiverMeadow、Stromasys Charon、Cirata Data Migrator
+- CloudHedge、Matilda Cloud、Tessell は FSx for ONTAP を扱う記事があるが、評価・サイジングか、データベースの保存先としての利用で、データのコピーの記録ではない
+
 #### 状況ごとの選び方
 
 | 状況 | 向く手段 | その手段のトレードオフ |
@@ -171,7 +195,7 @@ AWS 規範ガイダンスの[アプリケーションモビリティ](https://do
 | SAN の LUN を、アプリケーションを止めずに FSx for ONTAP の iSCSI LUN へ移す | Cirrus Migrate Cloud（cMotion）。ホストが LVM か Oracle ASM を使っていれば `pvmove` かリバランス | Cirrus は製品のアカウントとライセンス。LVM と ASM は、ホストのボリューム管理がその仕組みであることが前提 |
 | LUN を止めて 1 回だけ写す | ホストの `dd` | 増分も整合の確保もないので、停止中に行う |
 | 同じ FSx for ONTAP の中で、LUN やファイルを別の SVM へ写す | LUN copy、file copy（このノート） | ONTAP の管理者の資格情報と管理エンドポイントへの経路が要る |
-| サーバーごと EC2 へ移す | AWS Transform MGN | ディスクの移行先は EC2 側の設定で決まる。FSx for ONTAP にデータを置くなら、別の経路と組み合わせる |
+| サーバーごと EC2 へ移し、データディスクを FSx for ONTAP に置く | AWS Transform MGN（移行先のストレージに FSx for ONTAP を指定） | エージェント方式だけ。ブートボリュームは EBS に残る。移行元のサーバー単位で、ONTAP の設定は移らない |
 | VMware のまま仮想マシンのディスクを移す | Storage vMotion | 移行先のデータストアに FSx for ONTAP を使えるかは、VMware の環境側の対応による |
 
 ## 検証環境
