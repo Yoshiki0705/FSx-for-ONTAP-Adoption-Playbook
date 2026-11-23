@@ -149,3 +149,5 @@ SnapMirror ポリシーを選ばずに作った関係のポリシーは `Asynchr
 ## Read next
 
 [コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md)
+
+このノートの確認をまとめた解説記事: [2026-11-22 時点、FSx for ONTAP のコンソールに告知なしで表示された SnapMirror・スナップショットポリシーの画面と、公開情報との照合](https://hakobiya.hatenablog.com/entry/fsxn-console-snapmirror-snapshot-policy-cli-api)（はてなブログ。英語版は [dev.to](https://dev.to/aws-builders/fsx-for-ontap-console-snapmirror-and-snapshot-policies-can-the-aws-cli-and-api-use-them-reading-2cd9)）
