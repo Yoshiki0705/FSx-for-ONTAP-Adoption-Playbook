@@ -125,7 +125,7 @@ graph TD
 | 種類 | リソース | 論点 |
 |------|----------|------|
 | 制約 | [AWS: Restrictions, limitations, and naming rules](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-point-for-fsxn-restrictions-limitations-naming-rules.html) | 同一アカウント・同一リージョンなどの計画段階の制約 |
-| 対応表 | [AWS: Access point compatibility](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html) | どの S3 操作が通るか。**この表は AWS 自身が partial list と明記しています。ここから作った「非対応の一覧」は網羅ではありません。** 設計を変える差分と確認日は [対応表を読むときに効く差分](../domains/data-utilization/notes/s3-access-point-constraints.md#対応表を読むときに効く差分)。**行は動きます** — `Presign` は非対応から Supported に変わりました |
+| 対応表 | [AWS: Access point compatibility](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html) | どの S3 操作が通るか。**この表は AWS 自身が partial list と明記しています。ここから作った「非対応の一覧」は網羅ではありません。** 設計を変える差分と確認日は [対応表を読むときに効く差分](../domains/data-utilization/notes/s3-access-point-constraints.md#対応表を読むときに設計を変える差分)。**行は動きます** — `Presign` は非対応から Supported に変わりました |
 | 認可 | [AWS: Managing access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/s3-ap-manage-access-fsxn.html) | **AWS 側と ONTAP 側の両方が許可する必要があること**（二層認可） |
 | 参照 | [AWS: Referencing access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/referencing-access-points-for-fsxn.html) | virtual-hosted-style URI での参照形式 |
 | ネットワーク | [AWS: Configuring network access](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/configuring-network-access-for-s3-access-points.html) | VPC エンドポイントの構成 |

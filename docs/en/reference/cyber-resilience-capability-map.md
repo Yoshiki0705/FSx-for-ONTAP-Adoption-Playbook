@@ -96,9 +96,9 @@ Per-function implementation detail lives in the following places. This page does
 
 ## The logically air-gapped vault's placement
 
-The logically air-gapped vault appears above under Protect (documentation only) and Recover (Option D restore). The work of adding this vault as one isolation option in the data-protection domain is handled in a separate Issue ([#316](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/316)). The trade-offs beside SnapLock, Tamperproof Snapshot, and SnapVault to a separate account, and the approval path for the irreversible settings such as Vault Lock compliance mode being always on, are deferred to #316. This page does not restate them.
+The logically air-gapped vault appears above under Protect (documentation only) and Recover (Option D restore). Its treatment as one isolation option beside SnapLock, Tamperproof Snapshot, and SnapVault to a separate account, and the approval path for the irreversible settings such as Vault Lock compliance mode being always on, are in the data-protection note [AWS Backup's logically air-gapped vault as an isolation option](../../ja/domains/data-protection/notes/aws-backup-air-gapped-vault-as-isolation-option.md) (日本語) ([#316](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/316)). This page does not restate them.
 
-This map is a reference for seeing the function-to-Spoke mapping, and #316 is the isolation-option content in the data-protection domain. The two are distinct slices and do not overlap.
+This map is a reference for seeing the function-to-Spoke mapping, and that note is the isolation-option content in the data-protection domain. The two are distinct slices and do not overlap.
 
 ---
 
