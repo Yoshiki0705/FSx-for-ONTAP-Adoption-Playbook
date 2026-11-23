@@ -32,7 +32,7 @@ intermediate
 ## 結論
 
 - LUN copy と file copy は、SVM ピアの許可項目に SnapMirror や FlexCache と並んでいますが、SnapMirror の機能ではありません。SnapMirror の関係は作らず、1 回のコピーで終わります。
-- 範囲は同じファイルシステムの中です。別の SVM へコピーするには、同じファイルシステム内の SVM ピアと、そのピアでの `lun-copy` または `file-copy` の許可が要ります。別のクラスター（Google Cloud NetApp Volumes）とのピアには、`lun-copy` も `file-copy` も許可として設定できませんでした。
+- 範囲は同じファイルシステムの中です。別の SVM へコピーするには、同じファイルシステム内の SVM ピアと、そのピアでの `lun-copy` または `file-copy` の許可が要ります。別のクラスター（Google Cloud NetApp Volumes）とのピアには、`lun-copy` も `file-copy` も許可として設定できませんでした。既存のピアへの追加、REST でのピアの新規作成、コンソールでのピアの新規作成の 3 つの経路とも、ONTAP が同じエラーで拒否しました。
 - 操作は ONTAP の CLI か REST API で行います。AWS の API にはなく、CloudTrail の `fsx.amazonaws.com` にも記録されません。
 - ファイルシステムやリージョンをまたぐ場合、継続して複製する場合、ONTAP 以外のストレージとの間でコピーする場合は、SnapMirror、AWS DataSync、バックアップのコピーから選びます。
 
@@ -72,14 +72,17 @@ FSx for ONTAP では 1 つのファイルシステムが ONTAP の 1 クラス�
 | 9 | ピアの許可を `file_copy` だけにして LUN copy（CLI） | 拒否。「ピアの関係に `lun-copy` が含まれていない」 |
 | 10 | LUN のファイルを file copy（CLI） | 開始は 200 で受け付けられたが、宛先はできず、`Cannot quiesce source file. LUN unsupported.` で再試行を続けた。ドキュメントにも REST にも中止の手段が見つからず、コピー元の LUN を消すと一覧から消えた |
 | 11 | Google Cloud NetApp Volumes とのクラスター間ピア（許可は `snapmirror` と `flexcache`）に `file_copy` か `lun_copy` を足す（REST の `PATCH /api/svm/peers`） | 202 の後、ジョブが失敗。理由は `Cannot specify "file-copy" as an intercluster application.`（`lun-copy` も同じ）。ピアの許可は元のまま |
-| 12 | 同じファイルシステムと Google Cloud NetApp Volumes の SVM をコピー元にして LUN copy と file copy（CLI） | LUN copy は「ピアに `lun-copy` が含まれていない」、file copy は「相手の SVM の識別子を引けない」で拒否 |
-| 13 | CloudTrail の `fsx.amazonaws.com` のイベント（テストの時間帯） | AWS API の呼び出し（ボリュームの作成と削除など）だけで、LUN copy と file copy に当たるイベントはなかった |
+| 12 | 同じ相手と SVM ピアを新しく作る（REST の `POST /api/svm/peers`）。アプリケーションは (a) `lun_copy` だけ、(b) `file_copy` だけ、(c) `snapmirror`・`lun_copy`・`file_copy` の 3 通り | 3 通りとも 202 の後でジョブが失敗し、ピアは作られなかった。理由は (a) が `Cannot specify "lun-copy" as an intercluster application.`、(b) と (c) が同じ文の `"file-copy"` 版 |
+| 13 | コンソールの「Create SVM peer」で、相手の場所に「In another AWS account or Region or on premises」を選び、Google Cloud NetApp Volumes の SVM 名とクラスター名を入れ、アプリケーションに File copy と LUN copy だけを選んで作る | 画面は作成を受け付け、一覧に `Creating` で表示した。数十秒後に `Failed` になり、詳細画面の「Lifecycle transition message」は `Cannot specify "file-copy" as an intercluster application. (ONTAP error code: 9895996)`。ONTAP 側にピアはできなかった。失敗した SVM ピアは AWS 側に記録として残るので、コンソールの「Delete SVM peer」で削除した |
+| 14 | 同じファイルシステムと Google Cloud NetApp Volumes の SVM をコピー元にして LUN copy と file copy（CLI） | LUN copy は「ピアに `lun-copy` が含まれていない」、file copy は「相手の SVM の識別子を引けない」で拒否 |
+| 15 | CloudTrail の `fsx.amazonaws.com` のイベント（テストの時間帯） | AWS API の呼び出し（ボリュームの作成と削除など）だけで、LUN copy と file copy に当たるイベントはなかった |
 
-ここから、運用で気をつける点が 3 つ出ます。
+ここから、運用で気をつける点が 4 つ出ます。
 
 1. REST の file copy は、許可の不足を受け付け（202）の後で黙って失敗します。結果は宛先のファイルで確かめてください。理由が要るときは CLI で実行します。
 2. LUN を別の SVM へコピーするときは、CLI の `lun copy start -source-vserver` を使います。REST の `copy.source` に名前か UUID を渡す形では通りませんでした。
 3. LUN に file copy を使わないでください。失敗したまま再試行が残ります。LUN には LUN copy を使います。
+4. コンソールは、別のクラスターを相手にする SVM ピアでも File copy と LUN copy を選ばせます。作成は ONTAP が拒否し、`Failed` の記録が AWS 側に残ります。別のファイルシステムやオンプレミスの ONTAP、他のクラウドとのピアでは、SnapMirror と FlexCache だけを選びます。
 
 ### AWS のコピー手段との違い
 
@@ -138,7 +141,8 @@ LUN をファイルシステムの外へコピーする AWS のサービスは�
 | 誤解 | 実際 |
 |---|---|
 | LUN copy と file copy は SnapMirror の一部である | SVM ピアの許可項目に並んでいるだけで、別のコマンドと API で動く。SnapMirror の関係は作らない |
-| SVM ピアを作れば、別のファイルシステムへもコピーできる | 範囲は同じクラスター（同じファイルシステム）の中。クラスター間のピアには `lun-copy` も `file-copy` も許可できなかった（Google Cloud NetApp Volumes との組で確認）。ファイルシステムをまたぐなら SnapMirror か AWS DataSync |
+| SVM ピアを作れば、別のファイルシステムへもコピーできる | 範囲は同じクラスター（同じファイルシステム）の中。クラスター間のピアには、既存のピアへの追加でも新規作成（REST、コンソール）でも、`lun-copy` と `file-copy` を許可できなかった（Google Cloud NetApp Volumes との組で確認）。ファイルシステムをまたぐなら SnapMirror か AWS DataSync |
+| コンソールのピア作成画面で File copy と LUN copy を選べるので、別のクラスターとのピアにも使える | 画面は選ばせて作成を受け付けるが、ONTAP が拒否して `Failed` になる。選べるのは同じファイルシステム内のピアに限って意味がある |
 | REST が 202 を返したので、file copy は成功した | 許可が足りないと、202 の後で何も作らずに終わった。結果は宛先で確かめる |
 | file copy は LUN にも使える | `LUN unsupported` で失敗し、再試行が残った。LUN には LUN copy を使う |
 | コピーは AWS の監査ログに残る | ONTAP 側の操作で、CloudTrail の `fsx.amazonaws.com` には記録されなかった |
