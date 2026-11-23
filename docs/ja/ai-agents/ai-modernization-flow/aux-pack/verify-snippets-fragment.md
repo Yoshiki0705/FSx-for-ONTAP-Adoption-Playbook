@@ -49,7 +49,7 @@ FlexClone でテストデータを配るときに決める 3 点（認可・資�
 
 ## 撤去の注意（MP-FSXN-6 と接続）
 
-S3 Access Points を取り付けた、あるいは取り付けようとしたボリュームの teardown は、ONTAP CLI の `volume delete` ではなく `aws fsx delete-volume` を使ってください。ONTAP CLI の `volume delete` を前提にした手順書は、この経路で詰まります。根拠と実測は Hub の [撤去時の停滞](../../../domains/data-utilization/notes/s3-access-point-constraints.md#撤去時の停滞--aws-側からしか消せなくなるボリューム) にあります。
+S3 Access Points を取り付けた、あるいは取り付けようとしたボリュームの teardown は、ONTAP CLI の `volume delete` ではなく `aws fsx delete-volume` を使ってください。ONTAP CLI の `volume delete` を前提にした手順書は、この経路で詰まります。根拠と実測は Hub の [撤去時の停滞](../../../domains/data-utilization/notes/s3-access-point-constraints.md#撤去時の停滞-aws-側からしか消せなくなるボリューム) にあります。
 
 ---
 
