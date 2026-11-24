@@ -51,7 +51,7 @@ Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームに付け
 
 Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Point を直接読めるサービスへ渡すだけなら、コピーは要りません（[AWS サービスでの利用](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-access-points-with-aws-services.html)）。コピーは複製なので、正本が 2 か所になり、どちらを更新するかの約束が要ります。
 
-> **区分**: 機能の範囲は `documented`（What's New とユーザーガイドを 2026-11-24 に閲覧）。下の「[実機で確かめた範囲](#実機で確かめた範囲)」は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4）で 1 回ずつ確かめた `verified` です。用途、連携先、費用の節で「推測」と書いた箇所は、測っていません。
+> **区分**: 機能の範囲は、What's New とユーザーガイドの記載です（2026-11-24 に閲覧）。下の「[実機で確かめた範囲](#実機で確かめた範囲)」は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4）で 1 回ずつ確かめた結果です。用途、連携先、費用の節で「推測」と書いた箇所は、測っていません。
 
 ---
 
@@ -134,7 +134,7 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | メディア / VFX のレンダリング素材 | 制作端末、レンダリングノード（SMB / NFS） | 約 500 MiB、月 5 万件 | DataSync | 5 GiB を超える素材はマルチパートのコピー（実測 3）。50 GiB を超える素材は Access Point へ写せない |
 | ゲノム解析のシーケンサー出力 | HPC クラスタ（NFS） | 約 8 MiB、月 200 万件 | DataSync | 5 GiB を超える BAM / FASTQ はマルチパートのコピー。S3 Glacier 系に退避済みのデータは、先に復元が要る |
 | 車載 / IoT のテレメトリ | 解析ジョブ | 約 64 KiB、月 3 億件 | DataSync（比較対象） | 小さなファイルが多く、コピーのリクエスト料金が DataSync の転送料金を上回る可能性がある |
-| AWS の外の利用者が同じデータを繰り返し読む | AWS の外のクライアント | 4 MiB、20 TiB を月 30 回 | DataSync で全量を写す案 | 全量を写す手段に、コピーが加わる。読まれた分だけを運ぶ FlexCache の性質は変わらない |
+| AWS の外の利用者が同じデータを繰り返し読む | AWS の外のクライアント | 4 MiB、20 TiB を月 30 回 | DataSync で全量を写す案 | 全量を写す手段に、コピーが加わる。読まれた分だけを持ち込む FlexCache の性質は変わらない |
 | 石油・ガス、製造の品質検査、医療画像、IoT / エッジ、リモートワーク | NFS / SMB の端末 | 試算なし | 記述なし | 判断する材料がない |
 
 HiL テストを例に、取り込みの経路を比べます。
