@@ -26,6 +26,7 @@
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	benchmarks/results/baseline-estimates.md	retraction	デモ環境実測（2 ドキュメント、ap-northeast-1）
+FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/en/managed-kb-migration-evaluation.md	retraction	explicitly managing where vector data is stored
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/fsxn-sizing-and-performance.md	retraction	Permission-aware RAG システムにおける FSx for ONTAP の性能・容量設計指針を提供します
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
 FSx-for-ONTAP-App-Modernization-Patterns	docs/en/environment.md	retraction	at the domain root
@@ -49,6 +50,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max even
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent-prompts/ontap-catalog-snapshot.md	retraction	このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	AWS マネージドキーで暗号化されたファイルシステムのバックアップはボールトへコピーされない
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	MessageCategory は `KMS_KEY_ERROR`、メッセージは
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	is one pattern for that.
@@ -61,12 +63,14 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	re
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	本番の見積りではなく、他の構成の値でもない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-objectives-guide.md	retraction	RTO は、起点と終点を決めないと値にならない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/supply-chain-use-cases.md	retraction	11 のユースケース（A1 から D1）に分けてまとめる
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/adversarial-configuration-probe.md	retraction	には、データが置かれ、送られる場所
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/arp-configuration.md	retraction	まだ有効なボリュームを無効と表示する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/fsxadmin-limitations.md	retraction	一部の操作は AWS サポートへの連絡が必要
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/mav-configuration.md	retraction	破壊的な管理操作に対して複数の管理者の承認を要求する機能
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/ontap-command-api-snapshot.md	retraction	MAV は ONTAP に存在し、
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ontap-native/ontap-command-api-snapshot.md	retraction	は、実測で確かめたためです
 FSx-for-ONTAP-Cyber-Resilience-Patterns	solutions/ontap-catalog-snapshot/README.md	retraction	最初の認証失敗で全体を止める
+FSx-for-ONTAP-Cyber-Resilience-Patterns	tests/test_fsx_kms_customer_key.py	retraction	cannot be swapped in place
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	require metadata operations that fail on S3 AP
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
@@ -75,6 +79,7 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considera
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	同一 FlexGroup constituent にファイルが集中
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	稼働中の SnapMirror 宛先は、break もクローンもなしに S3 AP 経由で読める。
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
+FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/ja/research.md	retraction	Cross-region S3 AP re-attach RTO: ~3 分
 FSx-for-ONTAP-Lakehouse-Integrations	llms.txt	retraction	which parts work, which do not, and what each claim rests on.
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/s3ap-list-latency/evidence/2026-09-14-scale/benchmark-result.yaml	retraction	BENCH-S3AP-LIST-002
@@ -110,6 +115,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics run inputs and outputs must be Amazon S3 URIs
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	「マウントできない」とは書きません。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	未実装、新パターン候補としてバックログ化
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/bedrock-inference-profiles.md	retraction	＝日本国内、`au.`＝豪州国内
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	always requires an agent and Basic mode
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	could not be confirmed. The existence of the REST API and OAuth 2.0 was confirmed
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
