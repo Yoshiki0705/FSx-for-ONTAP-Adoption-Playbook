@@ -24,7 +24,7 @@ lang: ja
 
 - AWS 以外の ONTAP クラスターを相手にした作成（ネットワーク経路を用意していない。画面の説明と、既存の関係の表示だけを確認した）
 - 大きなデータの転送時間、転送スループット、料金（空のボリュームの初回転送だけを見た）
-- これらの操作を AWS CLI から呼べること（[公開 SDK にない操作名を呼ぶ](console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md)ので、使えるとは書かない）
+- AWS CLI・SDK・CloudFormation から同じ順序で作ったときの挙動（[2026-11-23 の告知](https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-fsx-for-netapp-ontap-additional-resources/)で公開された。このノートはコンソールで確かめた。API と CLI の版は [Amazon FSx API の操作](console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#追加された-api-操作)）
 
 ## 前提レベル
 
@@ -60,7 +60,7 @@ intermediate
 | キーポリシーの条件 | `kms:ViaService` は `secretsmanager.<リージョン>.amazonaws.com`、`aws:SourceAccount` は自分のアカウント、`aws:SourceArn` は `file-system/*` と `storage-virtual-machine/fs-*/svm-*` の ARN |
 | シークレット | 上のキーで暗号化し、値はパスフレーズの文字列 1 つ。リソースポリシーで `fsx.amazonaws.com` に `secretsmanager:GetSecretValue` と `secretsmanager:DescribeSecret` を許可し、`aws:SourceAccount` で絞る |
 
-キーポリシーの形は、ユーザーガイドの「Storing Active Directory credentials using AWS Secrets Manager」の節にあるものと同じ型です。クラスターピア用のシークレットの条件は、ユーザーガイドの本文には見つかりませんでした（2026-11-22 に検索）。
+キーポリシーの形は、ユーザーガイドの「Storing Active Directory credentials using AWS Secrets Manager」の節にあるものと同じ型です。2026-11-23 の告知の後、ユーザーガイドに [クラスターピアの作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-cluster-peers.html) のページができました（2026-11-24 に閲覧）。CLI の手順はカスタマー管理のキーを使い、キーポリシーで Amazon FSx に `kms:Decrypt` を許可するよう書いています。コンソールの手順は、カスタマー管理のキーを使う場合のキーポリシーを書いていますが、既定の AWS 管理キーでは作れないとは書いていません。
 
 ### クラスターピアを作る 2 つの方法
 
@@ -82,7 +82,7 @@ intermediate
 
 ![SVM ピアを作成する画面。ローカルとピアのファイルシステムと SVM、アプリケーションを選ぶ](../../../../_assets/images/aws-console-fsx-ja-svm-peer-create.png)
 
-**SVM ピアは、両側のファイルシステムから 1 つずつ作る必要があります。** 送信元側だけに作った状態で、宛先側から SnapMirror 関係を作る画面を開くと、「デスティネーション SVM には、ソース SVM との SVM ピアがありません。この関係を作成する前に SVM ピアを作成してください」と表示されます。この条件は、同じアカウントとリージョン内の方法でも、外部の方法でも同じでした。宛先側のファイルシステムからも SVM ピアを作ると、約 20 秒で両側が `PEERED` になり、関係を作れます。
+**このノートの確認では、SVM ピアを両側のファイルシステムから 1 つずつ作る必要がありました。** ユーザーガイドの [SVM ピアの作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-svm-peers.html) は、SVM ピアは片側から作り、クラスターピアがすべての SVM を許可していれば作成した時点で使える、と書いています（2026-11-24 に閲覧。この確認はその記載より前のコンソールで行った）。 送信元側だけに作った状態で、宛先側から SnapMirror 関係を作る画面を開くと、「デスティネーション SVM には、ソース SVM との SVM ピアがありません。この関係を作成する前に SVM ピアを作成してください」と表示されます。この条件は、同じアカウントとリージョン内の方法でも、外部の方法でも同じでした。宛先側のファイルシステムからも SVM ピアを作ると、約 20 秒で両側が `PEERED` になり、関係を作れます。
 ![SnapMirror 関係を作成する画面。宛先 SVM にソース SVM との SVM ピアがないという断りが出ている](../../../../_assets/images/aws-console-fsx-ja-snapmirror-relationship-error.png)
 
 SVM ピアの一覧では、両側に 1 件ずつ表示されます。
@@ -148,6 +148,6 @@ SnapMirror ポリシーを選ばずに作った関係のポリシーは `Asynchr
 
 ## Read next
 
-[コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md)
+[コンソールの SnapMirror とスナップショットポリシーは Amazon FSx API の操作で、2026-11-23 に公開された](console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md)
 
 このノートの確認をまとめた解説記事: [2026-11-22 時点、FSx for ONTAP のコンソールに告知なしで表示された SnapMirror・スナップショットポリシーの画面と、公開情報との照合](https://hakobiya.hatenablog.com/entry/fsxn-console-snapmirror-snapshot-policy-cli-api)（はてなブログ。英語版は [dev.to](https://dev.to/aws-builders/fsx-for-ontap-console-snapmirror-and-snapshot-policies-can-the-aws-cli-and-api-use-them-reading-2cd9)）

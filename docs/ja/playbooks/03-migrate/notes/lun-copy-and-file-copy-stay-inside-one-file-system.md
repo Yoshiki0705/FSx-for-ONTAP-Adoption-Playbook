@@ -52,7 +52,7 @@ intermediate
 
 - LUN copy と file copy は、SVM ピアの許可項目に SnapMirror や FlexCache と並んでいますが、SnapMirror の機能ではありません。SnapMirror の関係は作らず、1 回のコピーで終わります。
 - 範囲は同じファイルシステムの中です。別の SVM へコピーするには、同じファイルシステム内の SVM ピアと、そのピアでの `lun-copy` または `file-copy` の許可が要ります。別のクラスター（Google Cloud NetApp Volumes）とのピアには、`lun-copy` も `file-copy` も許可として設定できませんでした。既存のピアへの追加、REST でのピアの新規作成、コンソールでのピアの新規作成の 3 つの経路とも、ONTAP が同じエラーで拒否しました。
-- 操作は ONTAP の CLI か REST API で行います。AWS の API にはなく、CloudTrail の `fsx.amazonaws.com` にも記録されません。
+- コピーの操作は ONTAP の CLI か REST API で行います。SVM ピアは 2026-11-23 から Amazon FSx API と CloudFormation でも作れますが、LUN copy と file copy そのものの操作は AWS の API になく、CloudTrail の `fsx.amazonaws.com` にも記録されません。
 - 同じファイルシステムの中なら、ONTAP の機能はコピー用のサーバーなしで動き、Snapshot から一貫した時点を写せます。理由とトレードオフは [同じファイルシステム内で ONTAP の機能を選ぶ理由](#同じファイルシステム内で-ontap-の機能を選ぶ理由) にあります。
 - ファイルシステムやリージョンをまたぐ場合、継続して複製する場合、ONTAP 以外のストレージとの間でコピーする場合は、SnapMirror、AWS DataSync、バックアップのコピーから選びます。
 
@@ -62,7 +62,7 @@ intermediate
 
 > **区分**: `documented`。ONTAP のコマンドリファレンスと REST API リファレンスに基づきます（2026-11-23 に閲覧）。
 
-SVM ピアには、相手の SVM に許可するアプリケーションとして `snapmirror`、`file-copy`、`lun-copy`、`flexcache` を指定します（[vserver peer create](https://docs.netapp.com/us-en/ontap-cli/vserver-peer-create.html)）。Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のコンソールの SVM ピアの作成画面でも、同じ 4 つを選べます（[コンソールの SnapMirror とスナップショットポリシー](../../../domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#svm-ピアで選べるアプリケーションと設計で読む資料)）。この 4 つは、ピアの相手に何を許すかの項目です。LUN copy と file copy は、SnapMirror とは別のコマンドと API で動きます。
+SVM ピアには、相手の SVM に許可するアプリケーションとして `snapmirror`、`file-copy`、`lun-copy`、`flexcache` を指定します（[vserver peer create](https://docs.netapp.com/us-en/ontap-cli/vserver-peer-create.html)）。Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のコンソールの SVM ピアの作成画面と、2026-11-23 に公開された Amazon FSx API の `CreateStorageVirtualMachinePeer`（`Applications` に `SNAPMIRROR`、`FILE_COPY`、`LUN_COPY`、`FLEXCACHE`）でも、同じ 4 つを選べます（[コンソールの SnapMirror とスナップショットポリシー](../../../domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#svm-ピアで選べるアプリケーションと設計で読む資料)）。この 4 つは、ピアの相手に何を許すかの項目です。LUN copy と file copy は、SnapMirror とは別のコマンドと API で動きます。
 
 | 項目 | LUN copy | file copy |
 |---|---|---|

@@ -17,13 +17,13 @@ lang: ja
 - コンソールの「既存のボリュームからクローン」と「S3 アクセス: 有効」を同時に指定すると、クローンの作成と S3 Access Points のアタッチが 1 回の操作で済むこと
 - そのクローンが `describe-volumes` に現れるまでの待ちがないこと（クリックの約 7 秒後に `CREATING` で現れた）
 - 待ちが残るのは ONTAP REST API や CLI で作ったクローンで、経路による差であること
-- コンソールが使う `CloneConfiguration` が、公開されている SDK のモデルとユーザーガイドにまだ載っていないこと
+- コンソールが使う `CloneConfiguration` が、[2026-11-23 の告知](https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-fsx-for-netapp-ontap-additional-resources/)で API リファレンス、SDK、CloudFormation、ユーザーガイドに載ったこと
 
 ## このノートが答えないこと
 
 - 大きいデータを持つボリュームのクローン、第 2・第 3 世代、Multi-AZ での所要時間（未測定）
 - ONTAP 側で作ったクローンの反映時間の再測定（今回は測っていない。値は [姉妹プロジェクトの記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/solutions/flexcache/devops-cicd/README.md) と [比較表](../../../reference/comparison/data-protection-methods.md#ontap-で作ったボリュームが-aws-の-api-に現れるまでの時間) を引く）
-- クローン作成の API が今後も同じ形で使えること（未公開の項目で、保証はない）
+- クローンに S3 Access Points をアタッチできること（ユーザーガイドと API リファレンスには記載がない。このノートはコンソールで 1 回確かめた）
 
 ## 前提レベル
 
@@ -66,7 +66,7 @@ CloudTrail には、同じ秒の前後で 2 つの呼び出しが残ります。
 | 05:53:00 | `CreateVolume` | `ontapConfiguration.cloneConfiguration.parentVolumeId` に親のボリューム ID |
 | 05:53:01 | `CreateAndAttachS3AccessPoint` | 作ったばかりのボリューム ID を指定（ボリュームは `CREATING` のまま） |
 
-**`cloneConfiguration` は、2026-11-20 時点の公開 SDK（botocore）のモデルにも、2026-11-22 に読んだユーザーガイドの「Creating volumes」にもありません。** 署名付きリクエストで直接送ると HTTP 200 で通り、応答に `CloneConfiguration` が戻りましたが、AWS CLI や SDK からは今のところ指定できません。**自動化の前提にせず、公開されるまではコンソールの機能として扱ってください。** 直接送るときは `JunctionPath` が必須でした。
+**`CloneConfiguration` は、[2026-11-23 の告知](https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-fsx-for-netapp-ontap-additional-resources/)で公開されました。** botocore 1.44.10 と AWS CLI v2 2.42.2 から、`CreateVolume` の `OntapConfiguration` に `CloneConfiguration`（`ParentVolumeId` と、任意で `SnapshotId`）を指定できます。CloudFormation の `AWS::FSx::Volume` にもあります。ユーザーガイドの [ボリュームの作成](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/creating-volumes.html) と [ボリュームのクローン](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/managing-volumes.html#volume-clones) は、クローンは親と同じ SVM に作られ、クローンがある間は親を削除できないと書いています（2026-11-24 に閲覧）。告知の前に署名付きリクエストで直接送ったときは、`JunctionPath` が必須でした（2026-11-22）。
 
 ### この観測の範囲
 
