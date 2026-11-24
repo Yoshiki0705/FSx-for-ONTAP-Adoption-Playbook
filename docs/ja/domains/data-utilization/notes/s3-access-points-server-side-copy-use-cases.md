@@ -11,7 +11,7 @@ lang: ja
 
 # S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか
 
-ボリュームのファイルをバケットへ、バケットのオブジェクトをボリュームへ、サーバー側で写せるようになりました。使うのは、読む側が Access Point を直接読めないときと、バケット側にしかない機能（アーカイブ用のストレージクラス、S3 Lifecycle、イベント通知など）が要るときです。直接読めるなら、コピーしない構成を先に検討します。
+ボリュームのファイルをバケットへ、バケットのオブジェクトをボリュームへ、サーバー側で写せるようになりました。サーバー側コピーを使うのは、読む側が Access Point を直接読めないときと、バケット側にしかない機能（アーカイブ用のストレージクラス、S3 Lifecycle、イベント通知など）が要るときです。直接読めるなら、コピーしない構成を先に検討します。
 
 ## このノートで学べること
 
@@ -47,16 +47,16 @@ Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームに付け
 |---|---|---|
 | バケット側の機能が要る | S3 Glacier Deep Archive への退避、S3 Lifecycle、イベント通知、Amazon Macie、クロスリージョンレプリケーション | Access Point の側では、ストレージクラスは `FSX_ONTAP` だけで、Lifecycle とイベント通知は非対応です（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）。Macie とレプリケーションは対応表に載っていません |
 | ファイルとして渡す | データレイクのバケットにあるデータを、NFS / SMB で読む装置やアプリへ渡す | 読む側が S3 API に対応していません |
-| 別のファイルシステムへ渡す | 別のファイルシステム、別のアカウントの Access Point へ写す | 同じリージョンの中で、マウントせずに写したい |
+| 別のファイルシステムへ渡す | 別のファイルシステム、別のアカウントの Access Point へ写す | 同じリージョンの中で、ファイルをマウントせずに別のファイルシステムや別のアカウントの Access Point へ写したい |
 
-Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Point を直接読めるサービスへ渡すだけなら、コピーは要りません（[AWS サービスでの利用](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-access-points-with-aws-services.html)）。コピーは複製なので、正本が 2 か所になり、どちらを更新するかの約束が要ります。
+Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Point を直接読めるサービスにデータを読ませるだけなら、バケットへコピーする必要はありません（[AWS サービスでの利用](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-access-points-with-aws-services.html)）。コピーは複製なので、正本が 2 か所になり、どちらを更新するかの約束が要ります。
 
 設計の前に知っておく制約は次の 4 つです。
 
 1. 写るのは中身だけです。所有者、パーミッション、更新時刻はコピー先の設定とコピーした時刻になり、パーミッションは 640 が 644 になりました（2026-11-24 の実測）
 2. 1 回の `CopyObject` は 5 GiB までです。それを超えるファイルは `UploadPartCopy` を使うマルチパートのコピーで写せます（6 GiB で実測）
-3. 50 GiB を超えるファイルは、Access Point を通してボリュームへ写せません。ボリューム側のアップロード上限で、ユーザーガイドの対応表の記載です（測ったのは 6 GiB まで）
-4. S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive から戻すときは、先にバケット側で復元が要ります（実測）
+3. 50 GiB を超えるファイルは、Access Point を通してボリュームへ写せません。ボリュームへ書けるオブジェクトの大きさの上限が 50 GiB だからで、この上限はユーザーガイドの対応表に書かれています（測ったのは 6 GiB まで）
+4. S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive にあるオブジェクトをボリュームへ戻すときは、先にバケット側で復元が要ります（実測）
 
 > **区分**: 機能の範囲は、What's New とユーザーガイドの記載です（2026-11-24 に閲覧）。下の「[実機で確かめた範囲](#実機で確かめた範囲)」は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4）で 1 回ずつ確かめた結果です。用途、連携先、費用の節で「推測」と書いた箇所は、測っていません。
 
@@ -87,11 +87,11 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 
 図 1: S3 Access Points のサーバー側コピーによるアーカイブの往復。上下の FSx for ONTAP は同じファイルシステムでもよい。右の欄の内容は、下の「[ストレージクラスとコピーのオプションの実測一覧](#ストレージクラスとコピーのオプションの実測一覧)」と[制約ノートの往復の表](s3-access-point-constraints.md#s3-のストレージクラスとの往復)と同じで、2026-11-24 に ap-northeast-1 で 1 回ずつ確かめた結果です。
 
-結果 4 から、コピーはファイルの中身を写す操作で、POSIX の所有者・モード・更新時刻は写らないことが分かります。今回のコピー先の Access Point はファイルシステムユーザーが UNIX の root で、所有者 0:1 はこの設定によるものと考えています（[認可は 1 つの ID で行われる](reaching-data-without-copies.md)）。root 以外のユーザーは試していません。モードが 644 になるので、ほかのユーザーに読ませたくないファイルは、写した後にモードを付け直すか、読める範囲を絞ったディレクトリへ写します。属性を保ったまま移す用途は、POSIX の属性なら rsync や AWS DataSync（NFS）、NTFS の ACL なら DataSync（SMB）、ボリューム単位なら SnapMirror の側です。NTFS の ACL を持つボリュームでは測っていません。
+結果 4 から、コピーはファイルの中身を写す操作で、POSIX の所有者・モード・更新時刻は写らないことが分かります。今回のコピー先の Access Point はファイルシステムユーザーが UNIX の root で、所有者 0:1 はこの設定によるものと考えています（[認可は 1 つの ID で行われる](reaching-data-without-copies.md)）。root 以外のユーザーは試していません。モードが 644 になるので、ほかのユーザーに読ませたくないファイルは、写した後にモードを付け直すか、読める範囲を絞ったディレクトリへ写します。ファイルの属性を保ったまま移したいときは、POSIX の属性なら rsync や AWS DataSync（NFS）、NTFS の ACL なら DataSync（SMB）、ボリューム単位なら SnapMirror を使います。NTFS の ACL を持つボリュームでは測っていません。
 
-コピー元の Access Point の `HeadObject` と `ListObjectsV2` は、`LastModified` にファイルの更新時刻を返しました。更新されていないファイルを選ぶ処理はこの値で組めます。最後に読まれた時刻は S3 API では返らないので、読まれていないファイルを選ぶなら、NFS で `stat` を取るか ONTAP の機能で調べます。
+コピー元の Access Point の `HeadObject` と `ListObjectsV2` は、`LastModified` にファイルの更新時刻を返しました。更新されていないファイルを選ぶ処理はこの値で組めます。最後に読まれた時刻は S3 API では返らないので、読まれていないファイルを選ぶなら、最後に読まれた時刻を、NFS の `stat` か ONTAP の機能で調べます。
 
-結果 2 と 3 から、5 GiB を超えるファイルは `UploadPartCopy` を使えば写せます。大きさの上限は 2 つあり、混同しやすいので並べます。
+結果 2 と 3 から、5 GiB を超えるファイルは `UploadPartCopy` を使えば写せます。大きさの主な上限は、1 回の `CopyObject` の 5 GiB と、ボリュームへ書くオブジェクト全体の 50 GiB の 2 つです。混同しやすいので、関係する上限とあわせて表にまとめます。
 
 | 上限 | 値 | かかる場所 | 超えたとき |
 |---|---|---|---|
@@ -101,7 +101,7 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | バケットへ書くオブジェクト全体 | 48.8 TiB（[S3 の上限](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)） | コピー先が汎用バケットのとき | - |
 | ボリュームから読む大きさ | 上限なし（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)） | コピー元が FSx for ONTAP のボリュームのとき | - |
 
-`UploadPartCopy` そのものに 50 GiB の上限があるわけではありません。50 GiB は、ボリューム側に置けるオブジェクトの上限です。AWS CLI の `aws s3 cp` と `aws s3 sync` は、5 GiB を超えると自動でマルチパートのコピーにします。50 GiB を超えるファイルをバケットからボリュームへ移すときは、NFS / SMB で書きます（AWS DataSync など）。ボリュームからバケットへ 50 GiB を超えるファイルを写す方向は試していません。ツールによっては 5 GiB を超えるサーバー側コピーに対応していません（[サーバー側コピーとクライアントツール](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/docs/server-side-copy.md)）。
+`UploadPartCopy` そのものに 50 GiB の上限があるわけではありません。50 GiB は、ボリューム側に置けるオブジェクトの上限です。AWS CLI の `aws s3 cp` と `aws s3 sync` は、コピー元のファイルが 5 GiB を超えると、1 回の `CopyObject` から `UploadPartCopy` を使うマルチパートのコピーへ自動で切り替えます。50 GiB を超えるファイルをバケットからボリュームへ移すときは、ファイルを NFS / SMB でボリュームへ書き込みます（AWS DataSync など）。ボリュームからバケットへ 50 GiB を超えるファイルを写す方向は試していません。ツールによっては 5 GiB を超えるサーバー側コピーに対応していません（[サーバー側コピーとクライアントツール](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/docs/server-side-copy.md)）。
 
 ---
 
@@ -112,13 +112,13 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | ストレージクラス | Access Point → バケット | バケット → Access Point（復元なし） | 1 KiB の往復 | 6 GiB: Access Point → バケット | 6 GiB: バケット → Access Point |
 |---|---|---|---|---|---|
 | S3 Standard（`STANDARD`） | 成功 | 成功 | 成功 | 24 秒 | 130 秒 |
-| S3 Reduced Redundancy（`REDUCED_REDUNDANCY`） | 成功 | 成功 | 試していない | 20 秒 | 134 秒、135 秒 |
+| S3 Reduced Redundancy（`REDUCED_REDUNDANCY`） | 成功 | 成功 | 成功 | 20 秒 | 134 秒、135 秒 |
 | S3 Standard-IA（`STANDARD_IA`） | 成功 | 成功 | 成功 | 20 秒 | 223 秒、130 秒 |
 | S3 One Zone-IA（`ONEZONE_IA`） | 成功 | 成功 | 成功 | 19 秒 | 134 秒 |
 | S3 Intelligent-Tiering（`INTELLIGENT_TIERING`） | 成功 | 成功 | 成功 | 20 秒 | 134 秒 |
 | S3 Glacier Instant Retrieval（`GLACIER_IR`） | 成功 | 成功 | 成功 | 22 秒 | 133 秒 |
-| S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出し、標準取り出しで復元した後はどちらも成功 | - | 24 秒 | - |
-| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。標準取り出しで復元した後は成功 | - | 23 秒 | - |
+| S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出し、標準取り出しで復元した後はどちらも成功 | 成功（迅速取り出しで復元した後） | 24 秒 | 132 秒（迅速取り出しで復元した後） |
+| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。標準取り出しで復元した後は成功 | 復元が終わるのを待っている | 23 秒 | 復元が終わるのを待っている |
 
 表の読み方を補足します。
 
@@ -127,16 +127,16 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 - S3 Standard-IA、S3 One Zone-IA、S3 Glacier Instant Retrieval は、128 KB 未満のオブジェクトも 128 KB として課金されます（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。1 KiB のファイルも写せましたが、料金は 128 KB 分です
 - S3 Reduced Redundancy は、AWS が使わないよう勧めているクラスです（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。写せることを確かめただけで、勧めるものではありません
 - S3 Intelligent-Tiering で試したのは、すぐに読める層にあるオブジェクトです。アーカイブ用の層（Archive Access、Deep Archive Access）へ移るには 90 日以上アクセスがないことが要るので、試していません
-- 大きなファイルを写す前に、コピー先のボリュームの空き容量を確かめます。空きが足りないと、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗します。`ServiceUnavailable` が返ることもあります
+- 大きなファイルを写す前に、コピー先のボリュームの空き容量を確かめます。空きが足りないと、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗します。`CompleteMultipartUpload` が `ServiceUnavailable` を返すこともあります
 
 S3 の API が定義するストレージクラスの値は 13 個です（`CopyObject` の `x-amz-storage-class`）。汎用バケットに置けない値も含めて、確かめた範囲を次に並べます。
 
 | ストレージクラス | 確かめた範囲 | 確かめていない範囲と理由 |
 |---|---|---|
 | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`GLACIER_IR` | 両方向、1 KiB・8 MiB・6 GiB | なし |
-| `INTELLIGENT_TIERING` | 両方向、1 KiB・8 MiB・6 GiB。高頻度アクセスの層だけ | 低頻度アクセス（30 日）、アーカイブインスタントアクセス（90 日）、アーカイブアクセスとディープアーカイブアクセス（任意、90 日と 180 日）。層へ移るまでの日数が要るので、2026-12-24、2027-02-22、2027-05-23 に確かめる（[#435](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/435)） |
+| `INTELLIGENT_TIERING` | 両方向、1 KiB・8 MiB・6 GiB。高頻度アクセスの層だけ | 低頻度アクセス（30 日）、アーカイブインスタントアクセス（90 日）、アーカイブアクセスとディープアーカイブアクセス（任意、90 日と 180 日）。層へ移るまでの日数が要るので、2026-12-24、2027-02-22、2027-05-23 に、層へ移ったオブジェクトをボリュームへ戻せるかを確かめる（[#435](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/435)） |
 | `GLACIER` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、復元の後に 1 KiB・8 MiB・6 GiB（迅速）、8 MiB（標準、大容量） | なし |
-| `DEEP_ARCHIVE` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、標準取り出しで復元した後に 8 MiB | 大容量取り出しと、6 GiB・1 KiB の復元の後のコピーは、完了待ち |
+| `DEEP_ARCHIVE` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、標準取り出しで復元した後に 8 MiB | 大容量取り出しによる復元と、6 GiB・1 KiB のオブジェクトを標準取り出しで復元した後のコピーは、復元が終わるのを待っている |
 | `EXPRESS_ONEZONE` | ディレクトリバケットとの間は両方向とも失敗。汎用バケットへ指定すると `InvalidStorageClass` | ディレクトリバケットは、告知が挙げる「汎用バケット」に入らない |
 | `OUTPOSTS` | 汎用バケットへ指定すると `InvalidStorageClass` | S3 on Outposts の環境がない。ドキュメントでは、S3 on Outposts の `CopyObject` は同じ Outposts バケットの中だけで、ほかの種類のバケットとの間は非対応（[CopyObject の API リファレンス](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)） |
 | `SNOW` | 汎用バケットへ指定すると `InvalidStorageClass` | Snow のデバイスがない。現行の Snowball Edge は 2025-11-07 から新しい利用者に提供されていない（[availability change](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html)） |
@@ -183,7 +183,7 @@ S3 Express One Zone のディレクトリバケットとの間のコピーは、
 
 ### FSx for OpenZFS の Access Point との間
 
-Amazon FSx for OpenZFS のボリュームに付けた S3 Access Points でも、同じ組み合わせを確かめました。環境は、2026-11-24 に `ap-northeast-1` に作った `SINGLE_AZ_HA_2`（SSD 64 GiB、160 MBps）のファイルシステムの子ボリュームです。Access Point のファイルシステムユーザーは POSIX の UID 0、GID 0 にしました。確認の後、ファイルシステムは削除しました。
+Amazon FSx for OpenZFS のボリュームに付けた S3 Access Points でも、FSx for ONTAP と同じく、バケットとの間、別の Access Point との間、ストレージクラス、6 GiB のコピーを確かめました。環境は、2026-11-24 に `ap-northeast-1` に作った `SINGLE_AZ_HA_2`（SSD 64 GiB、160 MBps）のファイルシステムの子ボリュームです。Access Point のファイルシステムユーザーは POSIX の UID 0、GID 0 にしました。確認の後、ファイルシステムは削除しました。
 
 FSx for OpenZFS で S3 Access Points を付けられるのは、HA の構成（Single-AZ (HA) と Multi-AZ）のボリュームだけです（[Access points restrictions](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/access-point-restrictions-limitations-naming-rules.html)）。2026-11-24 時点の `ap-northeast-1a` では、SSD の `SINGLE_AZ_HA_1` は作成できず、`SINGLE_AZ_HA_2` は作成できました。
 
@@ -199,7 +199,7 @@ FSx for OpenZFS で S3 Access Points を付けられるのは、HA の構成（S
 | FSx for OpenZFS の Access Point への暗号化 | `aws:fsx` は成功。`AES256` は `InvalidArgument` |
 | 6 GiB（`aws s3 cp`、マルチパートのコピー） | FSx for ONTAP → FSx for OpenZFS が 108 秒、バケット（`GLACIER_IR`）→ FSx for OpenZFS が 113 秒、復元した `GLACIER` → FSx for OpenZFS が 109 秒、FSx for OpenZFS → バケットが 69 秒。NFS で読んだ SHA-256 がすべて一致 |
 | 6 GiB を 1 回の `CopyObject` で | バケットをコピー元にすると、すぐに `InvalidRequest`。FSx for OpenZFS の Access Point をコピー元にすると、23〜72 秒後に接続が閉じられ、オブジェクトはできなかった（3 回） |
-| ファイルの属性 | 所有者は 0:0、モードは 644 になった（Access Point に設定したユーザー） |
+| ファイルの属性 | コピー先のファイルの所有者は 0:0、モードは 644 になった。所有者は、Access Point に設定したユーザー |
 | タグとユーザー定義のメタデータ | コピー元のタグが写り、`--metadata-directive REPLACE` も成功 |
 
 1 回の `CopyObject` で 5 GiB を超えたときの返り方は、FSx for ONTAP（すぐに `InvalidRequest`）と FSx for OpenZFS（接続が閉じられる）で違いました。どちらもオブジェクトはできないので、5 GiB を超えるファイルは、コピー元によらず `UploadPartCopy` で写します。
@@ -219,10 +219,10 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 | 読む側 | 第一の選択肢 | コピーが要る場合 |
 |---|---|---|
 | S3 API で読み、Access Point のエイリアスか ARN を指定できる（Athena、Glue、Bedrock Knowledge Bases、SageMaker など） | Access Point を直接読む | バケット側の機能（Lifecycle、イベント通知、Macie、バージョニング、レプリケーション）が要るとき |
-| NFS / SMB でしか読めない（物理装置、既存の業務アプリ、Windows のクライアント） | ボリュームをマウントする | 正本がバケットにあり、装置の近くのボリュームへ写す必要があるとき |
+| NFS / SMB でしか読めない（物理装置、既存の業務アプリ、Windows のクライアント） | ボリュームをマウントする | 正本がバケットにあり、そのデータを装置の近くのボリュームへ写す必要があるとき |
 | 別のファイルシステムや別のアカウント | FlexCache、SnapMirror、Access Point ポリシーでの共有 | ボリューム全体ではなく、選んだファイルだけを写したいとき |
 
-サーバー側コピーは、ファイル単位で、属性を持たず、増分の仕組みもありません。SnapMirror のような整合性のあるボリュームの複製や、FlexCache のような読まれた分だけを持つキャッシュとは、使う場面が違います。
+サーバー側コピーは、ファイル単位で、ファイルの属性を写さず、変更分だけを送る増分の仕組みもありません。SnapMirror のような整合性のあるボリュームの複製や、FlexCache のような読まれた分だけを持つキャッシュとは、使う場面が違います。
 
 ---
 
@@ -237,7 +237,7 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 | 3 | データレイクのバケットにあるデータを、NFS / SMB の業務アプリへ渡す | 新規、既存 | バケット → Access Point | マウントしたホストで `aws s3 sync` | 所有者はコピー先 Access Point のユーザーになる（実測 4）。アプリが期待する所有者は別に設定する | 実測 1、4 |
 | 4 | 移行の初期投入（バケットにある過去のデータを入れる） | 新規 | バケット → Access Point | DataSync、マウントしたホストでのコピー | NTFS の ACL など属性が要るなら DataSync の側。属性が要らなければマウント用のホストが要らない | 実測 1、3、4 |
 | 5 | 処理結果をバケットへ公開し、イベント通知や Lifecycle に載せる | 既存 | Access Point → バケット | クライアントで取得して再アップロード | Access Point の側にイベント通知はないので、コピーのきっかけは定期実行か、書き込んだアプリからの呼び出し | 実測 1、文書 |
-| 6 | 別のファイルシステム、別のアカウントへ選んだファイルを渡す | 既存 | Access Point → Access Point | NFS で両方をマウントしてコピー | 同じリージョンだけ。アカウントをまたぐ場合は両側の IAM と Access Point ポリシー。アカウントをまたぐコピーは測っていない | 実測 1、文書 |
+| 6 | 別のファイルシステム、別のアカウントへ選んだファイルを渡す | 既存 | Access Point → Access Point | NFS で両方をマウントしてコピー | 同じリージョンだけ。アカウントをまたぐ場合は、コピー元とコピー先の両側の IAM と Access Point ポリシーで許可が要る。アカウントをまたぐコピーは測っていない | 実測 1、文書 |
 | 7 | 開発・テスト用のボリュームへ、選んだデータを写す | 既存 | Access Point → Access Point | NFS でのコピー | ボリューム全体なら FlexClone を検討する。FlexClone は元のボリュームとブロックを共有するので、変更した分だけ容量を使う。個人情報の匿名化は別の工程 | 実測 1、推測 |
 | 8 | 大きなメディアファイルを配信・保管用のバケットへ送る | 既存 | Access Point → バケット | クライアントで取得して再アップロード | 5 GiB を超えるとマルチパートのコピーが要る（実測 2、3） | 実測 2、3 |
 | 9 | アプリがボリュームに出すログやダンプを、分析・保管用のバケットへ送る | 既存 | Access Point → バケット | cron と AWS CLI | 新しいファイルの検出は一覧の走査になる。FSx for ONTAP のバックアップの代わりにはならない | 実測 1、文書 |
@@ -248,10 +248,10 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 退避した後にボリュームのファイルを消すときは、次の順で確かめます。
 
 1. 写す前に、ファイルごとにパス、大きさ、更新時刻、所有者、モード、SHA-256 を記録する。戻したときに属性を付け直すのにも使う
-2. 写した後、バケットの `HeadObject` で大きさを比べる。ETag は中身の MD5 ではなく、ボリューム側にはチェックサムが保存されない（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）ので、中身の一致は SHA-256 を自分で比べる
+2. 写した後、バケットの `HeadObject` が返す大きさを、写す前に記録した大きさと比べる。ETag は中身の MD5 ではなく、ボリューム側にはチェックサムが保存されない（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）ので、中身の一致は、ボリュームのファイルとバケットのオブジェクトの SHA-256 を自分で比べて確かめる
 3. 確認できたファイルだけを消す。スナップショットが消したファイルのブロックを持っている間は、容量は空かない
 
-マルチパートのコピーが途中で止まると、パートが残ります。バケット側は S3 Lifecycle の不完全なマルチパートアップロードの削除で、ボリューム側は `AbortMultipartUpload` で片付けます。対応表は、中断したパートがファイルシステムの使用量に数えられると書いています。
+マルチパートのコピーが途中で止まると、パートが残ります。バケット側に残ったパートは S3 Lifecycle の不完全なマルチパートアップロードの削除で、ボリューム側に残ったパートは `AbortMultipartUpload` で片付けます。対応表は、中断したパートがファイルシステムの使用量に数えられると書いています。
 
 コピー先のバケットに S3 Object Lock の既定の保持期間が設定されていると、写したオブジェクトにもその保持期間がかかり、期間中は消せません。保持の設計は、法令や規制の判断ではなく、システム設計上の考慮として扱い、保持期間を名指しした承認を取ってから設定してください。
 
@@ -269,7 +269,7 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 
 ### S3 が正本で、ファイルとしての性能が欲しい構成
 
-[S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) は、S3 API で集めたデータを、FlexCache を通して NFS / SMB で読ませる構成を扱います。このリポジトリの基準構成では、正本は FSx for ONTAP のボリューム（Origin）で、S3 Access Points は書き込みの入口です。正本が汎用バケットにある形は、比較の対象や、移行の出発点として出てきます。サーバー側コピーが変えるのは、正本がバケットにある形です。
+[S3-Burst-on-ONTAP-Files](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files) は、S3 API で集めたデータを、FlexCache を通して NFS / SMB で読ませる構成を扱います。このリポジトリの基準構成では、正本は FSx for ONTAP のボリューム（Origin）で、S3 Access Points は書き込みの入口です。正本が汎用バケットにある形は、比較の対象や、移行の出発点として出てきます。サーバー側コピーで変わるのは、正本がバケットにある形での、ボリュームへのデータの取り込み方です。
 
 下の表のユースケースと試算は、S3-Burst-on-ONTAP-Files の [architecture.md](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/architecture.md) と [finops-s3-vs-s3ap.md](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/comparison/finops-s3-vs-s3ap.md) にあるものです。試算は ap-northeast-1、2026-08-09 取得の単価による計算で、実測ではありません。「コピーで変わること」は、すべて推測です。
 
@@ -305,7 +305,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | FabricPool で、冷えたブロックを Amazon S3 へ階層化する | SSD の容量を空ける。ファイルからは透過的 | FSx for ONTAP では容量プールの階層化が同じ役割を持つ。FabricPool はブロック単位で、Amazon S3 の S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive は対象外。ファイル単位でクラスを選ぶコピーとは別の層 | [FabricPool の要件](https://docs.netapp.com/us-en/ontap/fabricpool/requirements-concept.html) |
 | 外部のデータ管理ツールで、ファイル単位にアーカイブする | 最終アクセス日時などで選び、元のパスから読み戻せるようにする | コピーで置き換えられるのは移動の部分だけ。選別、元のパスからの読み戻し、メタデータの管理はコピーに含まれない | [AWS Storage Blog の製造業の事例](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/)、[アーカイブと階層化の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
 | SnapMirror Cloud で、オブジェクトストレージへバックアップする | ボリューム単位の保護と復元 | FSx for ONTAP では、バックアップと SnapMirror が同じ役割を持つ。コピーはボリュームの保護手段ではない | [SnapMirror Cloud の概要](https://docs.netapp.com/us-en/ontap/concepts/snapmirror-cloud-backups-object-store-concept.html) |
-| ONTAP S3 のマルチプロトコル（NAS バケット）で、NAS のデータを S3 API のアプリに見せる | 分析・機械学習から、コピーせずに読む | FSx for ONTAP では S3 Access Points が同じ目的の機能。コピーは、Access Point とバケットの間の移動を加える | [ONTAP S3 マルチプロトコル](https://docs.netapp.com/us-en/ontap/s3-multiprotocol/) |
+| ONTAP S3 のマルチプロトコル（NAS バケット）で、NAS のデータを S3 API のアプリに見せる | 分析・機械学習から、コピーせずに読む | FSx for ONTAP では S3 Access Points が同じ目的の機能。サーバー側コピーは、これに、Access Point とバケットの間でデータを移す手段を加える | [ONTAP S3 マルチプロトコル](https://docs.netapp.com/us-en/ontap/s3-multiprotocol/) |
 | オンプレミスから SnapMirror で FSx for ONTAP へ移し、その後アーカイブする | 段階的な移行とアーカイブ | 移したボリュームの Access Point から、バケットの各クラスへコピーできる。この流れを手順として公開した事例は見つかっていない | [SnapMirror による移行](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 
 この表の外部ツールは、公開された事例に出てくるものとして名前を挙げています。推奨ではありません。
@@ -328,7 +328,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | Amazon Athena、AWS Glue | Access Point を直接読む | 文書 | [Athena のチュートリアル](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/tutorial-query-data-with-athena.html)。コピーは要らない |
 | Amazon Bedrock Knowledge Bases | Access Point をデータソースにする | 文書 | [RAG のチュートリアル](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/tutorial-build-rag-with-bedrock.html)。コピーは要らない |
 | Amazon Macie | バケットの機密データの検出 | 対象外の記録あり | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) の記録は、Macie がストレージクラス `FSX_ONTAP` のオブジェクトを対象外にすると整理している。検査が要るならバケットへのコピーが前提になる（推測） |
-| S3 Lifecycle | バケットへ写した後のクラスの移動、期限切れの削除 | バケット側の機能 | コピーの時点でクラスを指定できる（実測 7）ので、Lifecycle を待たずに S3 Glacier 系へ置ける |
+| S3 Lifecycle | バケットへ写した後のクラスの移動、期限切れの削除 | バケット側の機能 | コピーの時点でクラスを指定できる（実測 7）ので、S3 Lifecycle による移動を待たずに、オブジェクトを S3 Glacier 系のクラスへ置ける |
 | AWS CloudTrail | コピーの記録 | データイベントは記録あり | Access Point 経由の操作が S3 のデータイベントとして記録されることは、[制約ノート](s3-access-point-constraints.md)と [FSx-for-ONTAP-Observability-integrations の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/integrations/grafana/docs/en/cloudtrail-trigger-alternative.md)にある。`CopyObject` がコピー元とコピー先のどちらのイベントとして出るかは測っていない <!-- spoke-checked: cloudtrail --> |
 | AWS CLI、s5cmd、rclone | コピーを呼ぶ | 実測の記録あり | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/benchmarks/records/2026-11-24-client-tools-stage3.md#サーバー側コピーの結果)は、2026-11-24 に 256 MiB のバケット → Access Point のコピーを確かめている。`aws s3 cp` は `UploadPartCopy` のマルチパートのコピーを、s5cmd はサーバー側のコピーを行った。rclone は既定で `X-Amz-Storage-Class: STANDARD` を送って `InvalidStorageClass` で失敗し、`--s3-storage-class FSX_ONTAP` を付けると成功した <!-- spoke-checked: rclone --> |
 
@@ -370,8 +370,8 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 
 | 実装 | 現在の動き | サーバー側コピーで変えられること（推測） |
 |---|---|---|
-| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) のファイルポータル（`solutions/amplify-portal/functions/list-files/index.py`） | 名前の変更、移動、コピー、ゴミ箱への移動と復元を、同じ Access Point の中の `copy_object` で行う。5 GiB を超えると理由を示して断る | バケットへの退避と、バケットからの復元を画面の操作として加えられる。5 GiB を超えるファイルもマルチパートのコピーで扱える |
-| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) の管理コンソール（`management-console/lambda/s3_copy_handler.py`） | ダウンロード用の一時バケットへ、Lambda がオブジェクトを取得してアップロードし直す。本文をメモリに読み込む | 一時バケットへのサーバー側コピーに置き換えれば、Lambda のメモリと実行時間がファイルの大きさに縛られなくなる |
+| [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) のファイルポータル（`solutions/amplify-portal/functions/list-files/index.py`） | 名前の変更、移動、コピー、ゴミ箱への移動と復元を、同じ Access Point の中の `copy_object` で行う。ファイルが 5 GiB を超えると、ファイルポータルがその操作を、理由を示して断る | バケットへの退避と、バケットからの復元を画面の操作として加えられる。5 GiB を超えるファイルもマルチパートのコピーで扱える |
+| [FSx-for-ONTAP-Observability-integrations](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations) の管理コンソール（`management-console/lambda/s3_copy_handler.py`） | ダウンロード用の一時バケットへ、Lambda がオブジェクトを取得してアップロードし直す。そのとき、Lambda はオブジェクトの本文をメモリに読み込む | 一時バケットへのサーバー側コピーに置き換えれば、Lambda のメモリと実行時間がファイルの大きさに縛られなくなる |
 
 ファイルポータルにアーカイブの操作を加えるなら、どのファイルを、いつ、どのクラスへ移したかの記録と、復元にかかる時間を利用者に示す画面が要ります。ドキュメントの目安は、S3 Glacier Flexible Retrieval が迅速 1〜5 分、標準 3〜5 時間、大容量 5〜12 時間、S3 Glacier Deep Archive が標準 12 時間以内、大容量 48 時間以内です（[Understanding archive retrieval options](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html)）。S3 Intelligent-Tiering でも、アーカイブ用の層へ移ったオブジェクトは復元が要ります。
 
@@ -388,7 +388,7 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間
 - 第 2 世代、Multi-AZ のファイルシステムでのコピー
 - 並列に写したときのスループットと、ペタバイト規模での所要時間（コピーは 1 件ずつ順に実行した）
-- コピー元のバケットが SSE-KMS で暗号化されている場合、バージョニングや Object Lock が有効な場合
+- コピー元のバケットで S3 Object Lock が有効な場合（バージョニングと SSE-KMS（AWS マネージドキー）を有効にしたバケットは確かめた）
 - AWS Lambda や AWS Step Functions からコピーを呼ぶ構成
 
 ---
@@ -425,7 +425,7 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 | # | 手順 | 確認できること |
 |---|---|---|
 | 1 | 小さなファイルを 1 つ、バケットから Access Point へ `CopyObject` で写す | 権限とネットワークの前提が整っているか |
-| 2 | 5 GiB を超えるファイルを `aws s3 cp` で写し、NFS で読んだ SHA-256 を比べる | コピー元と一致すれば、マルチパートのコピーが通っている |
+| 2 | 5 GiB を超えるファイルを、バケットから Access Point へ `aws s3 cp` で写し、コピー先のファイルを NFS で読んで求めた SHA-256 を、コピー元の SHA-256 と比べる | 一致すれば、マルチパートのコピーが成功している |
 | 3 | コピー先のファイルを `stat` で読む | 所有者とモードが、アプリの期待どおりか。ファイルシステムユーザーが root の Access Point では `0:1` と `644` だった |
 | 4 | `--storage-class DEEP_ARCHIVE` でバケットへ写したファイルを復元し、`head-object` の `Restore` が `ongoing-request="false"` になってから `CopyObject` で戻す | 往復の手順と所要時間 |
 
@@ -446,7 +446,7 @@ FSX_ONTAP    aws:fsx    <コピー元と同じバイト数>
 
 実際の出力では、3 つの値がタブで区切られます。
 
-1 つ目のコマンドは、コピー先のボリュームにファイルを 1 つ作ります。終わったら `aws s3api delete-object` で消してください。手順 4 の S3 Glacier Deep Archive は 180 日の最小保管期間があり、早く消しても残りの日数分の保管料金がかかります。
+1 つ目のコマンドは、コピー先のボリュームにファイルを 1 つ作ります。終わったら、このコマンドで作ったファイルを `aws s3api delete-object` で消してください。手順 4 の S3 Glacier Deep Archive は 180 日の最小保管期間があり、早く消しても残りの日数分の保管料金がかかります。
 
 ## Read next
 
