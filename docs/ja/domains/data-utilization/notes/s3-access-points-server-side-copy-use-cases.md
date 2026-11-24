@@ -133,6 +133,8 @@ S3 の API が定義するストレージクラスの値は 13 個です（`Copy
 | `FSX_ONTAP` | FSx for ONTAP の Access Point へ指定すると成功。バケットへ指定すると `InvalidArgument` | なし |
 | `FSX_OPENZFS` | FSx for OpenZFS の Access Point との間を、下の「[FSx for OpenZFS の Access Point との間](#fsx-for-openzfs-の-access-point-との間)」で確かめた | なし |
 
+S3 on Outposts のデータを FSx for ONTAP へ移す経路は、ドキュメントから 2 つ組めます。AWS DataSync（エージェントが要る）で S3 on Outposts から汎用バケットへ移し、そこからサーバー側のコピーで Access Point へ写す経路と、DataSync で S3 on Outposts から FSx for ONTAP（NFS / SMB）へ直接移す経路です（[DataSync で転送できる場所](https://docs.aws.amazon.com/datasync/latest/userguide/working-with-locations.html)）。どちらも試していません。
+
 ストレージクラス以外の指定と、汎用バケット以外のコピー先も確かめました。
 
 | 確かめたこと | 結果 |
