@@ -15,6 +15,7 @@ lang: ja
 
 ## このノートで学べること
 
+- 読まれないファイルを、容量プールに置いたままにするか、サーバー側コピーでバケットへ移すかの判断
 - 2026-11-22 に告知されたサーバー側コピー（`CopyObject` / `UploadPartCopy`）で、新しく組めるようになった用途と、組めない用途
 - 5 GiB を超えるファイル、ファイルの属性、S3 Batch Operations、アーカイブ用のストレージクラスとの往復を、実機で確かめた結果
 - 「S3 が正本で、ファイルとしての性能が欲しい」構成（HiL テスト、EDA、メディア、ゲノム解析など）で、コピーを使う範囲
@@ -48,6 +49,8 @@ Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームに付け
 | バケット側の機能が要る | S3 Glacier Deep Archive への退避、S3 Lifecycle、イベント通知、Amazon Macie、クロスリージョンレプリケーション | Access Point の側では、ストレージクラスは `FSX_ONTAP` だけで、Lifecycle とイベント通知は非対応です（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）。Macie とレプリケーションは対応表に載っていません |
 | ファイルとして渡す | データレイクのバケットにあるデータを、NFS / SMB で読む装置やアプリへ渡す | 読む側が S3 API に対応していません |
 | 別のファイルシステムへ渡す | 別のファイルシステム、別のアカウントの Access Point へ写す | 同じリージョンの中で、ファイルをマウントせずに別のファイルシステムや別のアカウントの Access Point へ写したい |
+
+読まれないファイルの保管料金を下げるだけなら、先にボリュームの階層化を検討します。東京リージョンの Single-AZ では、容量プールの保管料金（$0.0238 / GB-月）は S3 Standard（$0.025 / GB-月）と同じくらいで、ファイルのパス、アクセス権、スナップショットは変わりません。S3 Glacier 系のクラスへコピーするのは、容量プールの保管料金よりさらに下げたい場合や、バケット側の機能が要る場合です（[容量プールに置いたままにするか、バケットへ移すかの判断](#容量プールに置いたままにするかバケットへ移すかの判断)）。
 
 Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Point を直接読めるサービスにデータを読ませるだけなら、バケットへコピーする必要はありません（[AWS サービスでの利用](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-access-points-with-aws-services.html)）。コピーは複製なので、正本が 2 か所になり、どちらを更新するかの約束が要ります。
 
@@ -212,6 +215,61 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 
 ---
 
+### 容量プールに置いたままにするか、バケットへ移すかの判断
+
+読まれないファイルの保管料金を下げるとき、最初の選択肢はボリュームの階層化です。階層化ポリシーを設定したボリュームでは、データが SSD から容量プールへ自動で移ります。`AUTO` では設定した日数のあいだ読まれていないデータが移り、`ALL` では読まれたかどうかに関わらず移ります。SSD は確保した量に課金されるので、保管料金が下がるのは、空いた分だけ SSD の確保容量を小さくしたときです。新しく作るファイルシステムでは、よく読まれるデータに合わせて SSD を見積もります。第 2 世代と第 3 世代のファイルシステムは、作った後に SSD の確保容量を減らせます。第 1 世代は増やすことしかできません。サーバー側コピーでバケットへ移すのは、容量プールの保管料金よりさらに下げたい場合や、バケット側の機能が要る場合です。
+
+東京リージョン（ap-northeast-1）の保管料金です（2026-11-24 と 2026-11-25 に Price List API で取得）。FSx for ONTAP の SSD は確保した量に、容量プールと S3 は使った量に課金されます。
+
+| 置き場所 | 保管料金（GB-月） | 読み書きで加わる料金 | 最小保管期間 |
+|---|---|---|---|
+| FSx for ONTAP の SSD（Single-AZ / Multi-AZ） | $0.150 / $0.300 | なし | なし |
+| FSx for ONTAP の容量プール（Single-AZ / Multi-AZ） | $0.0238 / $0.0476 | 読み取り $0.00037 / 1,000 リクエスト、書き込み $0.0047 / 1,000 リクエスト | なし |
+| S3 Standard（最初の 50 TB） | $0.025 | GET や PUT などのリクエスト料金 | なし |
+| S3 Standard-IA | $0.0138 | リクエスト料金と、GB あたりの取り出し料金 | 30 日 |
+| S3 Glacier Instant Retrieval | $0.005 | リクエスト料金と、GB あたりの取り出し料金 | 90 日 |
+| S3 Glacier Deep Archive | $0.002 | 復元のリクエスト料金と、GB あたりの取り出し料金 | 180 日 |
+
+Single-AZ の容量プールの保管料金は、S3 Standard と同じくらいです。Multi-AZ の容量プールは、S3 Standard の約 1.9 倍、S3 Glacier Deep Archive の約 24 倍です。容量プールに置いたままにする場合と、サーバー側コピーでバケットへ移す場合では、次の点が変わります。
+
+| 観点 | 容量プールに置いたまま | サーバー側コピーでバケットへ移す |
+|---|---|---|
+| ファイルのパスと読み方 | 変わらない。利用者はこれまでどおり NFS / SMB で読める | バケットのオブジェクトになる。ファイルとして読むには、ボリュームへ戻す |
+| 所有者、パーミッション、更新時刻 | 残る | 引き継がれない。中身だけが写る |
+| スナップショット、SnapMirror、バックアップ | ボリュームの機能を続けて使える | バケット側で別に設計する（バージョニング、レプリケーション、S3 Object Lock など） |
+| 移すときの作業 | 階層化ポリシーを設定する。データ自体は自動で移る。SSD の料金を下げるには、SSD の確保容量の見直しも要る | 対象の選別、コピー、照合、元のファイルの削除を、利用者が組む |
+| 読み戻し | ファイルとして読める。読み取りのリクエスト料金がかかり、SSD より遅くなる可能性がある（測っていない）。`AUTO` では、ランダムに読まれたデータが SSD に戻る | S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive からは、復元を待ってから戻す |
+| 保管料金 | Single-AZ で S3 Standard と同じくらい。Multi-AZ はその約 2 倍 | S3 Glacier Deep Archive なら、Single-AZ の容量プールの約 12 分の 1、Multi-AZ の約 24 分の 1 |
+| バケット側の機能 | 使えない。Access Point の側には、S3 Lifecycle もイベント通知もない | S3 Lifecycle、S3 Object Lock、イベント通知、レプリケーションを使える |
+| SSD の使用量 | メタデータは SSD に残る | 元のファイルをボリュームから消すと、SSD と容量プールの使用量が減る。SSD の料金が下がるのは、確保容量を小さくしたとき |
+
+容量プールに置いたままにするのは、次の場合です。
+
+- 読まれる可能性が残っている場合
+- ファイルのパスやアクセス権を保ちたい場合
+- スナップショットやバックアップを続けたい場合
+- データ量に対して、保管料金の差が小さい場合
+
+サーバー側コピーでバケットへ移すのは、次の場合です。
+
+- データ量が大きく、容量プールとの保管料金の差が、コピー、照合、復元の運用の手間より大きい場合。S3 Glacier Deep Archive との差は、1 TiB あたり月約 $22（Single-AZ）、月約 $47（Multi-AZ）です
+- 180 日より長く残し、読み戻すことがまれな場合
+- S3 Lifecycle、S3 Object Lock、レプリケーション、イベント通知など、バケット側の機能が要る場合
+- ファイルシステムを小さくする、または廃止する場合
+
+どちらを選ぶ場合も、容量プールのデータは、繰り返し読まれると読み取りのリクエスト料金がかかります。読まれ方を測ってから判断します。
+
+参考:
+
+- [Volume storage capacity（FSx for ONTAP ユーザーガイド、階層化ポリシー）](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html)
+- [Amazon FSx for NetApp ONTAP の料金](https://aws.amazon.com/fsx/netapp-ontap/pricing/)
+- [Amazon S3 の料金](https://aws.amazon.com/s3/pricing/)
+- [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md)
+- [階層化が常に安くなるとは限らない理由](../../cost/notes/provisioned-versus-consumed.md#階層化が常に安くなるとは限らない理由)
+- [外部ツールのアーカイブと容量プール階層の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
+
+---
+
 ### 直接読むか、コピーするかの判断
 
 先に、読む側が対応しているプロトコルで分けます。
@@ -232,7 +290,7 @@ FSx for OpenZFS について、選ぶ前に知っておく点は次のとおり�
 
 | # | 用途 | 主な利用者 | 方向 | これまでの方法 | 確かめる制約 | 根拠 |
 |---|---|---|---|---|---|---|
-| 1 | アクセスの少ないファイルを S3 Glacier Deep Archive へ退避する | 既存 | Access Point → バケット | クライアントで取得して再アップロード、または外部のアーカイブツール | 属性が写らない（実測 4）。ボリューム側の削除は別の操作。最小保管期間 180 日 | 実測 7、文書 |
+| 1 | アクセスの少ないファイルを S3 Glacier Deep Archive へ退避する | 既存 | Access Point → バケット | クライアントで取得して再アップロード、または外部のアーカイブツール | 容量プールの保管料金で足りるかを先に確認する（[判断](#容量プールに置いたままにするかバケットへ移すかの判断)）。属性が写らない（実測 4）。ボリューム側の削除は別の操作。最小保管期間 180 日 | 実測 7、文書 |
 | 2 | 退避したファイルをボリュームへ戻す | 既存 | バケット → Access Point | 復元後にクライアントで取得して書き込み | 先にバケット側で `RestoreObject`。Access Point の側は `RestoreObject` 非対応 | 実測 7、文書 |
 | 3 | データレイクのバケットにあるデータを、NFS / SMB の業務アプリへ渡す | 新規、既存 | バケット → Access Point | マウントしたホストで `aws s3 sync` | 所有者はコピー先 Access Point のユーザーになる（実測 4）。アプリが期待する所有者は別に設定する | 実測 1、4 |
 | 4 | 移行の初期投入（バケットにある過去のデータを入れる） | 新規 | バケット → Access Point | DataSync、マウントしたホストでのコピー | NTFS の ACL など属性が要るなら DataSync の側。属性が要らなければマウント用のホストが要らない | 実測 1、3、4 |
@@ -345,6 +403,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | FSx for ONTAP Single-AZ の容量プール | $0.0238 / GB-月 |
 | S3 Glacier Flexible Retrieval の保管 | $0.0045 / GB-月 |
 | S3 Glacier Deep Archive の保管 | $0.002 / GB-月 |
+| S3 Glacier Instant Retrieval の保管 | $0.005 / GB-月 |
 | S3 Glacier Deep Archive への `CopyObject` | $0.065 / 1,000 リクエスト |
 | S3 Glacier Deep Archive からの取り出し（Standard / Bulk） | $0.022 / GB、$0.005 / GB |
 | S3 Glacier Deep Archive の復元リクエスト（Standard / Bulk） | $0.1142 / 1,000、$0.025 / 1,000 |
@@ -355,11 +414,14 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 |---|---|---|
 | 容量プールに置いたままの保管 | 10,240 GB × $0.0238 | $243.71 / 月 |
 | S3 Glacier Deep Archive に置いた保管 | 10,240 GB × $0.002 | $20.48 / 月 |
+| 比較: S3 Glacier Instant Retrieval に置いた保管 | 10,240 GB × $0.005 | $51.20 / 月 |
 | 移すときのコピー（S3 Glacier Deep Archive 側） | 10 万件 × $0.065 / 1,000 | $6.50（1 回） |
 | 移すときのコピー（Access Point 側のリクエスト） | 10 万件 × $0.00108 / 1,000 | 約 $0.11（1 回） |
 | 復元した一時コピーを 7 日置く | 1,024 GB × $0.025 × 7 / 30 | 約 $5.97（1 回） |
 | 1 TiB を Standard の取り出しで戻す | 1,024 GB × $0.022 + 1 万件 × $0.1142 / 1,000 | $23.67（1 回） |
 | 1 TiB を Bulk の取り出しで戻す | 1,024 GB × $0.005 + 1 万件 × $0.025 / 1,000 | $5.37（1 回） |
+
+保管料金の差（$243.71 − $20.48 = 月 $223.23）は、データがすでに容量プールにあることを前提にしています。SSD（$0.150 / GB-月）に置いたデータを容量プールへ移し、その分だけ SSD の確保容量を小さくできれば、10 TiB あたり月 $1,292.29（10,240 GB × ($0.150 − $0.0238)）下がります。SSD の確保容量を小さくしなければ、SSD の料金は変わりません。容量プールから S3 Glacier Deep Archive へ移してさらに下がる額は、1 TiB あたり月約 $22 です。S3 Glacier Instant Retrieval なら、10 TiB での差は月 $192.51 で、最小保管期間は 90 日です。この差が、コピー、照合、元のファイルの削除、復元を待つ運用の手間に見合うかで判断します。
 
 S3 Glacier Deep Archive には 180 日の最小保管期間があり、それより前に削除すると残りの日数分の保管料金がかかります。オブジェクトごとに 40 KB のメタデータも課金されます（[Amazon S3 の料金](https://aws.amazon.com/s3/pricing/)）。小さなファイルが多いと、コピーと復元のリクエスト料金とメタデータの比重が上がります。ボリュームへ戻したデータが SSD と容量プールのどちらに置かれるかは、ボリュームの階層化ポリシーで決まります（推測。確かめていません）。
 
@@ -398,6 +460,7 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 
 | 誤解 | 実際 |
 |---|---|
+| 読まれないファイルは、S3 Glacier 系のクラスへ移さないと安くならない | 容量プールへの階層化で、Single-AZ では S3 Standard と同じくらいの単価になる。S3 Glacier 系へ移すのは、それより下げたい場合やバケット側の機能が要る場合 |
 | サーバー側コピーで、ファイルの属性ごと移せる | 中身だけが写る。所有者、モード、更新時刻は、コピー先の Access Point の設定とコピーした時刻になった（実測 4） |
 | 5 GiB を超えるファイルはコピーできない | 1 回の `CopyObject` は 5 GiB まで。`UploadPartCopy` を使うマルチパートのコピーで 6 GiB を写せた（実測 2、3） |
 | コピーできるなら、SnapMirror や FlexClone は要らない | コピーはオブジェクト単位で、整合性のあるボリュームの複製も、差分の転送もない |
@@ -419,6 +482,8 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - [FSx for ONTAP S3 Access Points は S3 として使えるか](s3-access-point-constraints.md)
 - [コピーを増やさずにデータへ届けるにはどうするか](reaching-data-without-copies.md)
 - [外部ツールのアーカイブと容量プール階層の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
+- [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md)
+- [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md)
 - [不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)
 
 ## 自環境での確認手順
