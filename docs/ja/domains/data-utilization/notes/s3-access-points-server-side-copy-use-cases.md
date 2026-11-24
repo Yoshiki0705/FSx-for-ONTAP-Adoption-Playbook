@@ -46,17 +46,17 @@ Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームに付け
 | 用途の型 | 例 | コピーが要る理由 |
 |---|---|---|
 | バケット側の機能が要る | S3 Glacier Deep Archive への退避、S3 Lifecycle、イベント通知、Amazon Macie、クロスリージョンレプリケーション | Access Point の側では、ストレージクラスは `FSX_ONTAP` だけで、Lifecycle とイベント通知は非対応です（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）。Macie とレプリケーションは対応表に載っていません |
-| ファイルとして渡す | データレイクのバケットにあるデータを、NFS / SMB で読む装置やアプリへ渡す | 読む側が S3 API を話せません |
+| ファイルとして渡す | データレイクのバケットにあるデータを、NFS / SMB で読む装置やアプリへ渡す | 読む側が S3 API に対応していません |
 | 別のファイルシステムへ渡す | 別のファイルシステム、別のアカウントの Access Point へ写す | 同じリージョンの中で、マウントせずに写したい |
 
 Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Point を直接読めるサービスへ渡すだけなら、コピーは要りません（[AWS サービスでの利用](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-access-points-with-aws-services.html)）。コピーは複製なので、正本が 2 か所になり、どちらを更新するかの約束が要ります。
 
-設計の前に知っておく制約は次の 4 つです（いずれも 2026-11-24 の実測）。
+設計の前に知っておく制約は次の 4 つです。
 
-1. 写るのは中身だけです。所有者、パーミッション、更新時刻はコピー先の設定とコピーした時刻になり、パーミッションは 640 が 644 になりました
-2. 1 回の `CopyObject` は 5 GiB までです。それを超えるファイルは `UploadPartCopy` を使うマルチパートのコピーで写せます
-3. 50 GiB を超えるファイルは、バケットへ写せても、Access Point を通してボリュームへ戻せません（ボリューム側のアップロード上限）
-4. S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive から戻すときは、先にバケット側で復元が要ります
+1. 写るのは中身だけです。所有者、パーミッション、更新時刻はコピー先の設定とコピーした時刻になり、パーミッションは 640 が 644 になりました（2026-11-24 の実測）
+2. 1 回の `CopyObject` は 5 GiB までです。それを超えるファイルは `UploadPartCopy` を使うマルチパートのコピーで写せます（6 GiB で実測）
+3. 50 GiB を超えるファイルは、Access Point を通してボリュームへ写せません。ボリューム側のアップロード上限で、ユーザーガイドの対応表の記載です（測ったのは 6 GiB まで）
+4. S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive から戻すときは、先にバケット側で復元が要ります（実測）
 
 > **区分**: 機能の範囲は、What's New とユーザーガイドの記載です（2026-11-24 に閲覧）。下の「[実機で確かめた範囲](#実機で確かめた範囲)」は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4）で 1 回ずつ確かめた結果です。用途、連携先、費用の節で「推測」と書いた箇所は、測っていません。
 
@@ -97,11 +97,11 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 
 ### 直接読むか、コピーするかの判断
 
-先に、読む側が何を話せるかで分けます。
+先に、読む側が対応しているプロトコルで分けます。
 
 | 読む側 | 第一の選択肢 | コピーが要る場合 |
 |---|---|---|
-| S3 API を話し、Access Point のエイリアスか ARN を指定できる（Athena、Glue、Bedrock Knowledge Bases、SageMaker など） | Access Point を直接読む | バケット側の機能（Lifecycle、イベント通知、Macie、バージョニング、レプリケーション）が要るとき |
+| S3 API で読み、Access Point のエイリアスか ARN を指定できる（Athena、Glue、Bedrock Knowledge Bases、SageMaker など） | Access Point を直接読む | バケット側の機能（Lifecycle、イベント通知、Macie、バージョニング、レプリケーション）が要るとき |
 | NFS / SMB でしか読めない（物理装置、既存の業務アプリ、Windows のクライアント） | ボリュームをマウントする | 正本がバケットにあり、装置の近くのボリュームへ写す必要があるとき |
 | 別のファイルシステムや別のアカウント | FlexCache、SnapMirror、Access Point ポリシーでの共有 | ボリューム全体ではなく、選んだファイルだけを写したいとき |
 
@@ -121,7 +121,7 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | 4 | 移行の初期投入（バケットにある過去のデータを入れる） | 新規 | バケット → Access Point | DataSync、マウントしたホストでのコピー | NTFS の ACL など属性が要るなら DataSync の側。属性が要らなければマウント用のホストが要らない | 実測 1、3、4 |
 | 5 | 処理結果をバケットへ公開し、イベント通知や Lifecycle に載せる | 既存 | Access Point → バケット | クライアントで取得して再アップロード | Access Point の側にイベント通知はないので、コピーのきっかけは定期実行か、書き込んだアプリからの呼び出し | 実測 1、文書 |
 | 6 | 別のファイルシステム、別のアカウントへ選んだファイルを渡す | 既存 | Access Point → Access Point | NFS で両方をマウントしてコピー | 同じリージョンだけ。アカウントをまたぐ場合は両側の IAM と Access Point ポリシー。アカウントをまたぐコピーは測っていない | 実測 1、文書 |
-| 7 | 開発・テスト用のボリュームへ、選んだデータを写す | 既存 | Access Point → Access Point | NFS でのコピー | ボリューム全体なら FlexClone のほうが速く、容量も使いません（推測）。個人情報の匿名化は別の工程 | 実測 1、推測 |
+| 7 | 開発・テスト用のボリュームへ、選んだデータを写す | 既存 | Access Point → Access Point | NFS でのコピー | ボリューム全体なら FlexClone を検討する。FlexClone は元のボリュームとブロックを共有するので、変更した分だけ容量を使う。個人情報の匿名化は別の工程 | 実測 1、推測 |
 | 8 | 大きなメディアファイルを配信・保管用のバケットへ送る | 既存 | Access Point → バケット | クライアントで取得して再アップロード | 5 GiB を超えるとマルチパートのコピーが要る（実測 2、3） | 実測 2、3 |
 | 9 | アプリがボリュームに出すログやダンプを、分析・保管用のバケットへ送る | 既存 | Access Point → バケット | cron と AWS CLI | 新しいファイルの検出は一覧の走査になる。FSx for ONTAP のバックアップの代わりにはならない | 実測 1、文書 |
 | 10 | 大量のファイルをまとめてコピーする | 新規、既存 | 両方向 | 自作のスクリプト | S3 Batch Operations の Copy ジョブが使えた（実測 5、6）。ジョブで写せるのは 1 件 5 GB まで、コピー元とコピー先はそれぞれ 1 つ（[Batch Operations の制限](https://docs.aws.amazon.com/AmazonS3/latest/userguide/batch-ops-copy-object.html)）。マニフェストは `ListObjectsV2` の結果から作った | 実測 5、6、文書 |
@@ -306,9 +306,9 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 | # | 手順 | 確認できること |
 |---|---|---|
 | 1 | 小さなファイルを 1 つ、バケットから Access Point へ `CopyObject` で写す | 権限とネットワークの前提が整っているか |
-| 2 | 5 GiB を超えるファイルを `aws s3 cp` で写し、NFS で読んだ SHA-256 を比べる | マルチパートのコピーが自分の環境で通るか |
-| 3 | コピー先のファイルを `stat` で読む | 所有者とモードが、アプリの期待どおりか |
-| 4 | `--storage-class DEEP_ARCHIVE` でバケットへ写したファイルを、復元してから戻す | 往復の手順と所要時間 |
+| 2 | 5 GiB を超えるファイルを `aws s3 cp` で写し、NFS で読んだ SHA-256 を比べる | コピー元と一致すれば、マルチパートのコピーが通っている |
+| 3 | コピー先のファイルを `stat` で読む | 所有者とモードが、アプリの期待どおりか。ファイルシステムユーザーが root の Access Point では `0:1` と `644` だった |
+| 4 | `--storage-class DEEP_ARCHIVE` でバケットへ写したファイルを復元し、`head-object` の `Restore` が `ongoing-request="false"` になってから `CopyObject` で戻す | 往復の手順と所要時間 |
 
 ```bash
 aws s3api copy-object \
@@ -316,16 +316,16 @@ aws s3api copy-object \
   --key check/sample.bin \
   --copy-source <source-bucket>/check/sample.bin
 aws s3api head-object --bucket <destination-access-point-alias> --key check/sample.bin \
-  --query '[StorageClass,ServerSideEncryption,ContentLength]'
+  --query '[StorageClass,ServerSideEncryption,ContentLength]' --output text
 ```
 
 ### 期待結果
 
 ```text
-"FSX_ONTAP"
-"aws:fsx"
-<コピー元と同じバイト数>
+FSX_ONTAP    aws:fsx    <コピー元と同じバイト数>
 ```
+
+実際の出力では、3 つの値がタブで区切られます。
 
 1 つ目のコマンドは、コピー先のボリュームにファイルを 1 つ作ります。終わったら `aws s3api delete-object` で消してください。手順 4 の S3 Glacier Deep Archive は 180 日の最小保管期間があり、早く消しても残りの日数分の保管料金がかかります。
 
