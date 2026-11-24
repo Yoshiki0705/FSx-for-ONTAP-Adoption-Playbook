@@ -330,7 +330,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | Amazon Macie | バケットの機密データの検出 | 対象外の記録あり | [FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns) の記録は、Macie がストレージクラス `FSX_ONTAP` のオブジェクトを対象外にすると整理している。検査が要るならバケットへのコピーが前提になる（推測） |
 | S3 Lifecycle | バケットへ写した後のクラスの移動、期限切れの削除 | バケット側の機能 | コピーの時点でクラスを指定できる（実測 7）ので、Lifecycle を待たずに S3 Glacier 系へ置ける |
 | AWS CloudTrail | コピーの記録 | データイベントは記録あり | Access Point 経由の操作が S3 のデータイベントとして記録されることは、[制約ノート](s3-access-point-constraints.md)と [FSx-for-ONTAP-Observability-integrations の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/integrations/grafana/docs/en/cloudtrail-trigger-alternative.md)にある。`CopyObject` がコピー元とコピー先のどちらのイベントとして出るかは測っていない <!-- spoke-checked: cloudtrail --> |
-| rclone、s5cmd などの S3 互換ツール | コピーを呼ぶ | 記録では未確認 | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns の互換性マトリクス](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/docs/compatibility-matrix.md)は、rclone と s5cmd の一覧・取得・書き込み・マルチパート・削除をすべて未確認としている。コピーは列にない。Access Point のエイリアスを `CopySource` に渡せるかは、ツールごとに確かめる <!-- spoke-checked: rclone --> |
+| AWS CLI、s5cmd、rclone | コピーを呼ぶ | 実測の記録あり | [FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/benchmarks/records/2026-11-24-client-tools-stage3.md#サーバー側コピーの結果)は、2026-11-24 に 256 MiB のバケット → Access Point のコピーを確かめている。`aws s3 cp` は `UploadPartCopy` のマルチパートのコピーを、s5cmd はサーバー側のコピーを行った。rclone は既定で `X-Amz-Storage-Class: STANDARD` を送って `InvalidStorageClass` で失敗し、`--s3-storage-class FSX_ONTAP` を付けると成功した <!-- spoke-checked: rclone --> |
 
 ---
 
