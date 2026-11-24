@@ -765,29 +765,27 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "CopyObject /<br>UploadPartCopy",
     },
     "copy_back_edge": {
-        "ja": "RestoreObject の後<br>CopyObject",
-        "en": "RestoreObject, then<br>CopyObject",
+        "ja": "CopyObject<br>（2 クラスは<br>復元の後）",
+        "en": "CopyObject<br>(2 classes:<br>restore first)",
     },
     "archive_notes": {
         "ja": (
-            "<b>退避できたクラス</b><br>"
-            "・S3 Standard<br>・S3 Standard-IA<br>・S3 One Zone-IA<br>・S3 Intelligent-Tiering<br>"
-            "・S3 Glacier Instant<br>　Retrieval<br>・S3 Glacier Flexible<br>　Retrieval<br>"
-            "・S3 Glacier Deep Archive<br><br>"
+            "<b>写せたクラス</b><br>"
+            "汎用バケットの<br>8 つすべて<br><br>"
             "<b>そのまま戻せた</b><br>"
-            "・S3 Standard-IA<br>・S3 Intelligent-Tiering<br>・S3 Glacier Instant<br>　Retrieval<br><br>"
+            "・S3 Standard<br>・S3 Standard-IA<br>・S3 One Zone-IA<br>・S3 Intelligent-Tiering<br>"
+            "・S3 Glacier Instant<br>　Retrieval<br>・S3 Reduced<br>　Redundancy<br><br>"
             "<b>先に復元が要る</b><br>"
             "・S3 Glacier Flexible<br>　Retrieval<br>・S3 Glacier Deep Archive<br><br>"
             "<b>コピー先がボリューム</b><br>SSE-FSX と FSX_ONTAP<br>のみ<br><br>"
             "2026-11-24 実測<br>（ap-northeast-1）"
         ),
         "en": (
-            "<b>Archived to</b><br>"
-            "- S3 Standard<br>- S3 Standard-IA<br>- S3 One Zone-IA<br>- S3 Intelligent-Tiering<br>"
-            "- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br>- S3 Glacier Flexible<br>&nbsp;&nbsp;Retrieval<br>"
-            "- S3 Glacier Deep Archive<br><br>"
+            "<b>Copied out to</b><br>"
+            "All eight general<br>purpose classes<br><br>"
             "<b>Copied back directly</b><br>"
-            "- S3 Standard-IA<br>- S3 Intelligent-Tiering<br>- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br><br>"
+            "- S3 Standard<br>- S3 Standard-IA<br>- S3 One Zone-IA<br>- S3 Intelligent-Tiering<br>"
+            "- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br>- S3 Reduced<br>&nbsp;&nbsp;Redundancy<br><br>"
             "<b>Restore first</b><br>"
             "- S3 Glacier Flexible<br>&nbsp;&nbsp;Retrieval<br>- S3 Glacier Deep Archive<br><br>"
             "<b>Volume as destination</b><br>SSE-FSX and FSX_ONTAP<br>only<br><br>"
@@ -1630,7 +1628,7 @@ def _s3ap_server_side_copy_archive() -> Diagram:
 
     Two rows, each read rightwards, because the flow check forbids a leftward edge: the top row
     copies a volume's file out to a bucket in an archive class, the bottom row copies it back after
-    a restore. The two volume icons can be the same file system; drawing it twice keeps every edge
+    a restore for the two classes that need one. The two volume icons can be the same file system; drawing it twice keeps every edge
     forwards. Which classes were measured in each direction is short text in the notes column, and
     the same facts are tables in the S3 Access Points notes. Wide and short so the image serves as
     the blog cover.
@@ -1672,7 +1670,7 @@ def _s3ap_server_side_copy_archive() -> Diagram:
                 "copy_back_edge",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
-                label_offset=(0, -34),
+                label_offset=(0, -46),
             ),
             Edge("e4", "ap_back", "fsx_back", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
         ),
