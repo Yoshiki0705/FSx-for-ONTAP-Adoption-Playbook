@@ -716,9 +716,9 @@ LABELS: dict[str, dict[str, str]] = {
         "ja": "Amazon EC2<br>（管理用）",
         "en": "Amazon EC2<br>(administration)",
     },
-    "fsx_api_unpublished": {
-        "ja": "Amazon FSx API<br>（未公開の操作）",
-        "en": "Amazon FSx API<br>(unpublished)",
+    "fsx_api_console": {
+        "ja": "Amazon FSx API",
+        "en": "Amazon FSx API",
     },
     "snapmirror_edge": {"ja": "SnapMirror", "en": "SnapMirror"},
     "ontap_cli_rest": {"ja": "ONTAP CLI / REST API", "en": "ONTAP CLI / REST API"},
@@ -727,16 +727,16 @@ LABELS: dict[str, dict[str, str]] = {
             "<b>コンソールの画面</b><br>"
             "・クラスターピア<br>・SVM ピア<br>　（両側に作る）<br>"
             "・SnapMirror ポリシー<br>・SnapMirror 関係<br>・スナップショット<br>　ポリシー<br><br>"
-            "<b>aws fsx（CLI・SDK）</b><br>該当する操作なし<br><b>Cloud Control API</b><br>5 つの型を読み取れた<br>（2026-11-22 時点）<br><br>"
-            "<b>自動化</b><br>ONTAP CLI / REST API"
+            "<b>公開（2026-11-23）</b><br>Amazon FSx API<br>AWS CLI・SDK<br>AWS CloudFormation<br><br>"
+            "<b>自動化の経路</b><br>AWS CLI・SDK・<br>CloudFormation、<br>ONTAP CLI / REST API"
         ),
         "en": (
             "<b>Console screens</b><br>"
             "- Cluster peers<br>- SVM peers<br>&nbsp;&nbsp;(one per side)<br>"
             "- SnapMirror policies<br>- SnapMirror<br>&nbsp;&nbsp;relationships<br>"
             "- Snapshot policies<br><br>"
-            "<b>aws fsx (CLI, SDK)</b><br>No such operations<br><b>Cloud Control API</b><br>Five types readable<br>(as of 2026-11-22)<br><br>"
-            "<b>Automation</b><br>ONTAP CLI / REST API"
+            "<b>Published (2026-11-23)</b><br>Amazon FSx API<br>AWS CLI, SDKs<br>AWS CloudFormation<br><br>"
+            "<b>Automation paths</b><br>AWS CLI, SDKs,<br>CloudFormation,<br>ONTAP CLI / REST API"
         ),
     },
 }
@@ -1519,10 +1519,10 @@ def _third_generation_overview() -> Diagram:
 def _console_snapmirror_planes() -> Diagram:
     """Which management plane connects SnapMirror, and which one an automation can rely on.
 
-    The console reaches the file systems through Amazon FSx API operations that the public SDK model
-    does not carry, so the AWS CLI gets no edge: that is stated in the notes column rather than
-    drawn as a box with nothing leaving it. The ONTAP CLI / REST API path from an in-VPC host is the
-    published one. Wide and short so the image serves as the blog cover.
+    The console reaches the file systems through Amazon FSx API operations that were published on
+    2026-11-23 (API reference, AWS CLI, SDKs, CloudFormation). The notes column lists those paths
+    next to the ONTAP CLI / REST API path from an in-VPC host. Wide and short so the image serves as
+    the blog cover.
     """
     return Diagram(
         name="fsx-console-snapmirror-planes",
@@ -1542,7 +1542,7 @@ def _console_snapmirror_planes() -> Diagram:
                 "e1",
                 "console",
                 "fsx_src",
-                "fsx_api_unpublished",
+                "fsx_api_console",
                 exit_at=(1.0, 0.5),
                 entry_at=(0.0, 0.5),
                 label_offset=(0, 30),

@@ -17,7 +17,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | **ランサムウェア対策を求められている** | [SnapLock は有効化とロックが別](notes/snaplock-and-layered-ransomware-readiness.md) | **不可逆な選択が 3 段あります。** 特権削除は満了後には使えません |
 | **アカウント侵害に備える隔離先を選びたい** | [AWS Backup の論理エアギャップボールトは隔離方式の 1 つ](notes/aws-backup-air-gapped-vault-as-isolation-option.md) | **ファイルシステムのキーとボールトのキーが先に決まります。** SnapLock、Tamperproof Snapshot、SnapVault との置き場所の違いもここです |
 | **既存のバックアップ製品を使っている** | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) | **経路が違う場合があります。** 「非対応」と「書かれていない」の区別も要ります |
-| **コンソールの SnapMirror やスナップショットポリシーを自動化したい** | [コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) | **今は AWS CLI から使えるとは書けません。** 呼べても、公開されるまで前提にしません |
+| **コンソールの SnapMirror やスナップショットポリシーを自動化したい** | [コンソールの SnapMirror とスナップショットポリシーは Amazon FSx API の操作で、2026-11-23 に公開された](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) | **AWS CLI v2 2.42.2 以降、SDK、CloudFormation から使えます。** ONTAP で作った関係も API から読めます |
 | **コンソールだけで SnapMirror をつなぎたい** | [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) | **クラスターピア、SVM ピア、関係の順です。** SVM ピアは宛先側から作り、パスフレーズのシークレットにはカスタマー管理の KMS キーが要ります |
 
 ---
@@ -37,7 +37,7 @@ Snapshot、SnapMirror、SnapLock、バックアップ、ランサムウェア対
 | 9 | Snapshot をデータセットの「版」として使えるか | [版を Snapshot に載せるときの 3 つの落とし穴](../data-utilization/notes/dataset-versions-and-experiment-branches.md#版を-snapshot-に載せるときの-3-つの落とし穴) |
 | 10 | 既存の第三者バックアップ製品をそのまま使えるか | [第三者バックアップ製品が届く経路は AWS の API 側ではない](notes/third-party-backup-reaches-it-by-another-route.md) |
 | 11 | ベンダー資料の「対応」をどう読むか。列挙に無いことは非対応か | [明示的な除外と列挙の不在の区別](notes/third-party-backup-reaches-it-by-another-route.md#明示的な除外と列挙の不在の区別) |
-| 12 | コンソールの SnapMirror やスナップショットポリシーは AWS CLI から使えるか | [画面が呼ぶ操作](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#画面が呼ぶ操作) |
+| 12 | コンソールの SnapMirror やスナップショットポリシーは AWS CLI から使えるか | [追加された API 操作](notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md#追加された-api-操作) |
 | 13 | コンソールで SnapMirror をつなぐ手順と、断られる条件は何か | [作る順序](notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md#作る順序) |
 | 14 | オンプレミスの ONTAP や既存の FSx for ONTAP 利用者は、SnapMirror・スナップショット・クローンをどの場面で使い分けるか | [3 つの出発点と 6 組のパラメーター](notes/snapmirror-snapshot-clone-use-cases-and-ontap-parameters.md) |
 | 15 | AWS Backup の論理エアギャップボールトを隔離方式として選ぶとき、何が不可逆で何を先に決めるか | [4 つの隔離方式の置き場所と制約](notes/aws-backup-air-gapped-vault-as-isolation-option.md#4-つの隔離方式の置き場所と制約) |

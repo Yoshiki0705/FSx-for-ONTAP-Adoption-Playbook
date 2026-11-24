@@ -21,11 +21,11 @@ lang: ja
 2. **リージョン拡張と世代制限の緩和** — 第 2 世代が使えるリージョンが増え、性能上限の格差が縮まりつつある
 3. **マルチプロトコル統合の拡大** — Transfer Family (SFTP/FTPS/FTP) が S3 AP 経由で FSx for ONTAP に接続可能に
 4. **VMware 関連パスの追加** — 経路が 2 つあり、役割も状態も異なる。AWS Transform は **EC2 リホスト時のデータボリュームのターゲットストレージ**（2026-08-30 GA）、Amazon EVS は **VMware を継続したままの外部データストア**（2025-06 に public preview として告知、GA 告知は未確認）
-5. **第 3 世代と、告知のないコンソール画面（2026-11）** — 第 3 世代は告知されたが、作れるリージョンは記載と食い違う。SnapMirror やスナップショットポリシーの画面は告知がなく、公開 SDK に操作がない
+5. **第 3 世代と、スナップショット・クローン・SnapMirror の AWS 側での管理（2026-11）** — 第 3 世代は作れるリージョンが記載と食い違う。スナップショット、クローン、SnapMirror は、コンソール・API・CloudFormation から管理できるようになった
 
 以下は各アップデートの概要と、このリポジトリの既存ノートとの対応です。
 
-> **区分**: `documented` — 告知のないコンソール画面の項目を除き、AWS 公式 What's New / Document History / Blog の記載に基づきます。
+> **区分**: `documented` — AWS 公式 What's New / Document History / Blog / API リファレンスの記載に基づきます。
 > 具体的なスループット値やレイテンシの実測は含みません。
 
 ---
@@ -45,19 +45,23 @@ lang: ja
 
 ---
 
-### 告知のないコンソール画面: ピア、SnapMirror、スナップショットポリシー（2026-11-22 に確認）
+### スナップショット、クローン、SnapMirror をコンソール・API・CloudFormation で管理（2026-11-23）
 
-Amazon FSx コンソールに、クラスターピア、SVM ピア、SnapMirror ポリシー、SnapMirror 関係、スナップショットポリシーの画面と、ボリューム作成画面のクローンが表示されていました。
+2026-11-23 の What's New で、スナップショット、ボリュームのクローン、SnapMirror による複製を、Amazon FSx コンソール、Amazon FSx API、AWS CloudFormation から管理できるようになったと告知されました。これまでは ONTAP の CLI か REST API でしか設定できなかったものです。FSx for ONTAP が提供されているすべてのリージョンが対象です。
 
-> **区分**: この項目だけは告知に基づきません。画面の存在と、画面が呼ぶ操作は、2026-11-22 に自分のアカウント（`ap-northeast-1`、`us-east-1`）で確認した結果です。
-
-- 2026-11-23 の再確認でも、What's New、ドキュメント履歴、API リファレンス、公開 SDK（botocore）には記載がありません。
-- サービス認可リファレンスには、2026-11-23 に 20 の IAM アクションとリソースタイプが載っていました。
+- Amazon FSx API に、クラスターピア、SVM ピア、SnapMirror 関係、SnapMirror ポリシー、スナップショットポリシーの作成・参照・更新・削除の 20 操作が加わりました。`CreateVolume` の `CloneConfiguration` も載りました。
+- 最初に対応した版は botocore 1.44.10 と AWS CLI v2 2.42.2 です（どちらも 2026-11-23 公開）。
+- CloudFormation には `AWS::FSx::ClusterPeer`、`AWS::FSx::StorageVirtualMachinePeer`、`AWS::FSx::SnapmirrorPolicy`、`AWS::FSx::SnapmirrorRelationship`、`AWS::FSx::SnapshotPolicy` があります。
+- コンソールの画面は告知の前日（2026-11-22）から表示されていて、このリポジトリはその時点の挙動を記録しています。
 
 | 設計への影響 | 関連ノート |
 |---|---|
-| 公開されるまでは、本番の手順と自動化に ONTAP の CLI・REST API を使い続ける | [コンソールの SnapMirror とスナップショットポリシーは、公開 SDK にない Amazon FSx API を呼んでいる](../domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) |
-| コンソールで SnapMirror 関係を作るなら、SVM ピアを宛先側から作る | [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](../domains/data-protection/notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) |
+| SnapMirror の設定と複製の監視を、ONTAP の資格情報なしに AWS の API で自動化できる。ONTAP で作った関係も API から読める | [コンソールの SnapMirror とスナップショットポリシーは Amazon FSx API の操作で、2026-11-23 に公開された](../domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md) |
+| SVM ピアを作る側と、パスフレーズのシークレットの KMS キーは、ドキュメントと実機の挙動を並べて確かめる | [コンソールの SnapMirror は、SVM ピアを宛先側から作らないと関係を作れない](../domains/data-protection/notes/console-snapmirror-needs-the-svm-peer-on-the-destination-side.md) |
+| 別のクラスターとの SVM ピアには、File copy と LUN copy を許可できない（ドキュメントに記載はなく、実機で確かめた） | [LUN copy と file copy は同じファイルシステム内の SVM 間コピーで、SnapMirror の機能ではない](../playbooks/03-migrate/notes/lun-copy-and-file-copy-stay-inside-one-file-system.md) |
+| クローンを API で作り、S3 Access Points をアタッチできる（アタッチはドキュメントに記載がなく、コンソールで確かめた） | [コンソールで作ったクローンは API に即座に現れ、S3 Access Points まで約 93 秒](../domains/data-utilization/notes/a-console-clone-attaches-s3-access-points-in-minutes.md) |
+
+出典: [What's New（2026-11-23）](https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-fsx-for-netapp-ontap-additional-resources/)、[API リファレンスの操作一覧](https://docs.aws.amazon.com/fsx/latest/APIReference/API_Operations.html)、[SnapMirror によるレプリケーション](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/scheduled-replication.html)。ユーザーガイドのドキュメント履歴には、2026-11-24 の時点でこの項目がありません。
 
 ---
 
@@ -340,7 +344,7 @@ GPU インスタンスが複数 AZ に分散する ML トレーニングで、Fl
 |---|---|
 | [Document History](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html) | ドキュメント本文の変更が日付付きで並ぶ。**ただし全件ではありません** |
 | What's New（FSx for ONTAP と **AWS Backup の両方**） | 機能追加の一次情報。周辺サービス側にしか出ない項目があります |
-| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_fsx.html) | IAM アクションが、API リファレンスや SDK より先に載ることがある（2026-11 のコンソール画面の操作） |
+| [サービス認可リファレンス（Amazon FSx）](https://docs.aws.amazon.com/service-authorization/latest/reference/list_fsx.html) | IAM アクションが、What's New、API リファレンス、SDK より先に載ることがある（2026-11 のスナップショット・クローン・SnapMirror の操作で、告知の前日に載っていた） |
 | ユーザーガイドの該当ページ本文 | **制約を引用している箇所は、引用元の現行版を読み直す**。History に出ない改訂があります |
 
 **制約を根拠に設計判断を書いている箇所は、定期的に出典の現行版と突き合わせてください。** 「できない」という記述は、機能追加によって静かに古くなります。
