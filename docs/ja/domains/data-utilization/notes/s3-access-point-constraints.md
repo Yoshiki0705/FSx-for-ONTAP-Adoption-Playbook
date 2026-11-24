@@ -146,6 +146,33 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 
 コピー先の `HeadObject` は、ストレージクラス `FSX_ONTAP`、暗号化 `aws:fsx` を返しました。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーが非対応です（ユーザーガイドの対応表）。
 
+#### アーカイブ用のストレージクラスとの往復
+
+ボリュームのファイルを S3 Glacier Deep Archive などのアーカイブ用のクラスへ移し、必要になったらボリュームへ戻す使い方は、サーバー側のコピーで組めます。戻す方向では、S3 Glacier Flexible Retrieval（`GLACIER`）と S3 Glacier Deep Archive（`DEEP_ARCHIVE`）のオブジェクトだけ、先にバケット側で復元が要ります。
+
+> **区分**: 2026-11-24 に、上の表と同じ環境で 1 回ずつ確かめた `verified` です。オブジェクトは特記のない限り 8 MiB で、中身は SHA-256 で比べました。コピーはすべて `CopyObject` です。
+
+| 方向 | ストレージクラス | 結果 |
+|---|---|---|
+| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 7 つとも成功。コピー先の `HeadObject` が指定したクラスを返した |
+| バケット → Access Point（復元なし） | `STANDARD_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致 |
+| バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
+| バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP`。復元は要求から 5 分以内に完了 |
+
+`DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。`ONEZONE_IA` からボリュームへ戻す方向は試していません。
+
+復元（`RestoreObject`）は、コピー元のバケットに対して呼びます。Access Point の側では `RestoreObject` は非対応ですが、この往復ではボリュームの側に復元が要るオブジェクトはありません。復元にかかる時間と料金は取り出しの階層（Expedited、Standard、Bulk）で変わり、Amazon S3 の [Restoring an archived object](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects.html) に従います。
+
+1 GiB のファイルでの所要時間は次のとおりです。いずれもこの環境での 1 回のサンプル実行で、本番の見積りではありません。
+
+| コピー | 所要時間 |
+|---|---|
+| `aws s3 cp` で Access Point → バケット（`DEEP_ARCHIVE`、128 パートのマルチパートコピー） | 3 秒 |
+| `aws s3 cp` で Access Point → バケット（`GLACIER_IR`） | 4 秒 |
+| `aws s3 cp` でバケット（`GLACIER_IR`）→ 別のファイルシステムの Access Point | 21 秒。NFS で読んだファイルの SHA-256 が元と一致 |
+
+バケット側で Object Lock や S3 Lifecycle を組み合わせる設計はありえますが、Object Lock は保持期間中に削除できなくなる不可逆な設定です。このリポジトリでは試しておらず、設定するなら保持期間を名指しした承認を別に取ってください（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)）。
+
 #### Presign が対応に変わっていること
 
 対応表は現在 `Presign` を Supported としています（2026-09-14 に確認）。署名付き URL による、短命で資格情報なしのアクセスがこの経路で使えます。ブラウザ経路を自分で組む場合の選択肢に入ります（[エンドユーザーがデータに届く経路](../../../playbooks/02-design/notes/how-end-users-reach-the-data.md#ブラウザ経路を自分で組む場合の選択肢)）。
