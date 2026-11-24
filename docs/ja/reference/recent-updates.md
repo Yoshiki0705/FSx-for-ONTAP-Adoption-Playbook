@@ -45,6 +45,21 @@ lang: ja
 
 ---
 
+### S3 Access Points でバケットとの間をサーバー側でコピー（2026-11-22）
+
+2026-11-22 の What's New で、`CopyObject` と `UploadPartCopy` を使い、Amazon S3 のバケットと FSx for ONTAP（と Amazon FSx for OpenZFS）のボリュームに付けた S3 Access Points の間を、サーバー側でコピーできると告知されました。同じリージョンの中が対象です。ユーザーガイドのドキュメント履歴には 2026-10-08 の項目として載っています。
+
+- これまでのノートは、コピーを同じ Access Point の中に限られると書いていました。告知の内容と、2026-11-24 の実測（バケットと Access Point の間、別のファイルシステムの Access Point の間、`UploadPartCopy`）に合わせて直しました。
+- コピー先が FSx for ONTAP のボリュームのときは、暗号化は `SSE-FSX`、ストレージクラスは `FSX_ONTAP` だけです。
+
+| 設計への影響 | 関連ノート |
+|---|---|
+| 取り込みと書き出しで、オブジェクトを一度サーバーに取得してアップロードし直す処理が要らなくなる | [FSx for ONTAP S3 Access Points は S3 として使えるか](../domains/data-utilization/notes/s3-access-point-constraints.md#バケットと別の-access-point-の間のサーバー側のコピー) |
+
+出典: [What's New（2026-11-22）](https://aws.amazon.com/about-aws/whats-new/2026/11/s3-access-points-server-side-copy-fsx/)
+
+---
+
 ### スナップショット、クローン、SnapMirror をコンソール・API・CloudFormation で管理（2026-11-23）
 
 2026-11-23 の What's New で、スナップショット、ボリュームのクローン、SnapMirror による複製を、Amazon FSx コンソール、Amazon FSx API、AWS CloudFormation から管理できるようになったと告知されました。これまでは ONTAP の CLI か REST API でしか設定できなかったものです。FSx for ONTAP が提供されているすべてのリージョンが対象です。

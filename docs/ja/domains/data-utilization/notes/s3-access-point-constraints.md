@@ -122,9 +122,29 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 
 収集パイプラインが完全性を ETag の突き合わせやチェックサムの再検証で担保しているなら、そこは作り直しになります。「S3 に置いたから同じ検証ができる」とは読めません。
 
-#### コピーの範囲が同一 Access Point 内に限られること
+#### バケットと別の Access Point の間のサーバー側のコピー
 
-`CopyObject` と `UploadPartCopy` は同一リージョンのコピーで、かつコピー元とコピー先が同一の Access Point 内にある場合に限り対応します。別の Access Point へ、あるいは Amazon S3 のバケットへ直接コピーする形にはなりません。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーも非対応です。
+`CopyObject` と `UploadPartCopy` で、Amazon S3 のバケットと、FSx for ONTAP のボリュームに付けた S3 Access Points の間を、サーバー側でコピーできます。2026-11-22 の [What's New](https://aws.amazon.com/about-aws/whats-new/2026/11/s3-access-points-server-side-copy-fsx/) で告知されました。ユーザーガイドの[ドキュメント履歴](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/document-history.html)には、2026-10-08 の項目として載っています。
+
+- 組み合わせ: バケットから Access Point、Access Point からバケット、Access Point から別の Access Point（Amazon FSx for OpenZFS のボリュームとの間を含む）
+- 同じリージョンの中だけ。アカウントをまたぐコピーはできると書かれている
+- コピー先が FSx for ONTAP のボリュームのときは、暗号化は `SSE-FSX`、ストレージクラスは `FSX_ONTAP` だけ
+- 以前は、オブジェクトを一度サーバーに取得してアップロードし直す必要があった
+
+> **区分**: 上の組み合わせは `documented`（2026-11-24 に告知とユーザーガイドを閲覧）。次の表は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4、UNIX セキュリティスタイル）で 1 回ずつ確かめた `verified` です。オブジェクトは 8 MiB で、中身は SHA-256 で比べました。
+
+| # | コピー | 結果 |
+|---|---|---|
+| 1 | バケット → Access Point（`CopyObject`） | 成功。中身が一致 |
+| 2 | Access Point → バケット（`CopyObject`） | 成功。中身が一致 |
+| 3 | 同じ Access Point の中（`CopyObject`） | 成功。中身が一致 |
+| 4 | ファイルシステム A の Access Point → ファイルシステム B の Access Point（`CopyObject`） | 成功。中身が一致 |
+| 5 | バケット → Access Point、`--server-side-encryption AES256` を指定 | `InvalidArgument`（The encryption method specified is not supported） |
+| 6 | バケット → Access Point、`--storage-class STANDARD` を指定 | `InvalidStorageClass` |
+| 7 | 別の Access Point をコピー元にした `UploadPartCopy`（コピー元のキー `ssc/obj.bin` は `/` を含む、2 パート） | 成功。`CompleteMultipartUpload` の後、中身が一致 |
+| 8 | `aws s3 cp` でバケットから Access Point のエイリアスへ | 成功。中身が一致 |
+
+コピー先の `HeadObject` は、ストレージクラス `FSX_ONTAP`、暗号化 `aws:fsx` を返しました。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーが非対応です（ユーザーガイドの対応表）。
 
 #### Presign が対応に変わっていること
 
@@ -151,7 +171,7 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 | AP 経由の書き込みは ARP が検知する | ランサムウェア検知については、FPolicy の穴を ARP が埋めます（実測: AP 経由で書いた高エントロピーオブジェクトが suspect として記録、2026-08-26 / ONTAP 9.18.1P3D1 / ARP/AI。手順と件数は [この経路を見ない FPolicy](../../security-governance/notes/access-point-authorization-layers.md#この経路を見ない-fpolicy) 側に書いてあります。件数はこちらでは持ちません）。観測された検知理由は高エントロピーのみで、他の理由で検知されるかは測っていません。改名・削除のレートも ARP の検知入力ですが、閾値がサージ判定なので同じようには検知されません（[暗号化を伴わない攻撃](../../data-protection/notes/snaplock-and-layered-ransomware-readiness.md#暗号化を伴わない攻撃)）。ただし、検知は遮断ではありません。ベンダーの応答手順は警告・Snapshot・管理者による分類で、書き込みを拒否する段がありません（[ベンダーのドキュメント](https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html)は「detecting and warning」と記載、2026-09-05 に確認）。遮断は AP ポリシーと IAM の側で表現してください |
 | 同一 SVM に ONTAP のオブジェクトストアサーバーがあると AP を作成できない | 下記のとおり自環境で実測。ONTAP の S3 機能と S3 AP は、同じ SVM では併存しませんでした |
 | オブジェクトタグの一部の Unicode 文字が `InvalidTag` で拒否される | 後述のとおり不具合であり、意図された制限ではありません。修正までタグ値を ASCII に限定してください |
-| `UploadPartCopy` が同一 AP 内のコピーで `NoSuchKey` を返す | 後述のとおり不具合です。copy-source のキーにパーセントエンコード対象の文字（`/` など）が含まれる場合に発生します |
+| `UploadPartCopy` が同一 AP 内のコピーで `NoSuchKey` を返す（2026-08 の実測） | 2026-11-24 の確認では、キーに `/` を含むコピー元からの `UploadPartCopy` が成功し、再現しませんでした（[上の表](#バケットと別の-access-point-の間のサーバー側のコピー)の 7） |
 
 #### 方向で非対称なサイズ上限
 
@@ -247,15 +267,17 @@ S3 AP をアタッチするとき、FSx for ONTAP は、対象ボリュームが
 | 事象 | 区分 | 現時点の扱い |
 |---|---|---|
 | オブジェクトタグのキー / 値に含まれる特定の Unicode 文字が `InvalidTag` で拒否される | ONTAP 側の不具合（NetApp KB [CONTAP-771956](https://kb.netapp.com/on-prem/ontap/da/S3/S3-Issues/CONTAP-771956)）。将来の ONTAP バージョンで修正予定 | タグ値を ASCII に限定する |
-| 同一 AP 内のコピーで `UploadPartCopy` が `NoSuchKey` を返す | AWS 側の不具合。ドキュメントの誤りではありません。修正が進行中 | 採用できる回避策がありません（下記「採用できない回避策を回避策として書かないこと」を参照） |
+| 同一 AP 内のコピーで `UploadPartCopy` が `NoSuchKey` を返す | 2026-08 に観測した事象。2026-11-24 の確認では再現しなかった | 自分の環境で、下の対照（`CopyObject`）と並べて確かめる |
 
 `UploadPartCopy` の失敗には対照付きの実測があります。[検証記録](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3ap-operations.md)（2026-08-19、ap-northeast-1、`SINGLE_AZ_1` / 128 MBps、UNIX）で、同一の `CopySource` を与えた `CopyObject` が同一実行内で成功しています。つまり、`NoSuchKey` は署名や権限や手順の誤りではなく、この API 呼び出しに固有です。自分の環境で同じ症状に当たったときは、まず `CopyObject` を対照として流してください。通れば経路と権限は正常で、切り分けが 1 手で済みます。
 
-ただし、この検証記録は `UploadPartCopy` そのものの対応可否を未判定としています。別 AP をソースとするコピーは `CopyObject` でも拒否されるため、「同一 AP 内では失敗する」ことと「この API が非対応である」ことを、その測定では分離できていません。不具合という区分は AWS サポートの判断で、この測定から導いた結論ではありません。
+ただし、この検証記録は `UploadPartCopy` そのものの対応可否を未判定としています。その時点（2026-08-19）では別 AP をソースとするコピーが `CopyObject` でも拒否されたため、「同一 AP 内では失敗する」ことと「この API が非対応である」ことを、その測定では分離できていません。不具合という区分は AWS サポートの判断で、この測定から導いた結論ではありません。
 
 オブジェクトタグは Amazon S3 と同等の Unicode 対応が意図された仕様で、現在拒否される文字があることは仕様ではありません。ASCII への限定は修正までの回避策であり、恒久的な設計制約として文書化すると、修正後も不要な制限を残すことになります。
 
 #### 到達性を決めるのは設定値
+
+> 2026-11-24 の確認では、`UploadPartCopy` の `NoSuchKey` は再現しませんでした（[サーバー側のコピーの表](#バケットと別の-access-point-の間のサーバー側のコピー)の 7）。修正されたという告知は見つかっていないので、この節は、自分の環境で再現するかを確かめるときの手がかりとして残します。
 
 `UploadPartCopy` を使うかどうかは、自分のコードがそれを呼ぶかどうかでは決まりません。
 
@@ -443,7 +465,7 @@ graph TD
 | `If-None-Match` で上書き競合を防げる | 条件付き書き込みが非対応です。排他はアプリケーション側かファイル側のロックに移します |
 | S3 のライフサイクルで階層化を自動化できる | 非対応です。階層化は FabricPool 側の別の設定です |
 | 署名付き URL は使えない | 対応表は現在 Supported としています（2026-09-14 に確認）。以前の対応表は非対応と記載していました |
-| `CopyObject` で別の Access Point やバケットへコピーできる | 同一 Access Point 内の同一リージョンコピーに限られます |
+| `CopyObject` は同じ Access Point の中でしか使えない | 2026-11-22 に告知されたとおり、バケットと Access Point の間、別の Access Point との間でもサーバー側でコピーできます（同じリージョンの中だけ。2026-11-24 に実測） |
 | S3 Event Notifications でイベント駆動にできる | 使えません。EventBridge Scheduler によるポーリングか、ONTAP ネイティブ監査ログを起点にします |
 | S3 Event が無くても FPolicy で代替できる | できません。AP 経由の操作は FPolicy 通知を発火せず、`mandatory` 指定でも遮断されません（実測） |
 | FPolicy はイベントソースとして使えない | 使えます。効かないのは AP 経由の書き込みに対してだけで、NFS / SMB で着地する書き込みには動きます（[書き込みの着地経路で決まること](fpolicy-fits-by-how-writes-land.md)） |
