@@ -298,17 +298,18 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 
 ### オンプレミスの ONTAP での運用からの置き換え
 
-オンプレミスの ONTAP には、ファイルを選んで S3 Glacier 系のクラスへサーバー側で写す機能は見つかりませんでした。FabricPool、ONTAP S3、SnapMirror Cloud の NetApp のドキュメントを 2026-11-24 に確かめた結果です。同じ目的には、次の運用が使われています。
+オンプレミスの ONTAP から Amazon S3 の保管料金の安いストレージクラスへデータを移す方法として、NetApp のドキュメントには、ONTAP の機能と NetApp のクラウドサービスの組み合わせが載っています（2026-11-25 時点のドキュメントの記述で、このノートでは試していない）。方法によって、写す単位、選べるストレージクラス、データが通る経路が違います。
 
-| オンプレミスでの運用 | 目的 | FSx for ONTAP とサーバー側コピーでの扱い | 出典 |
+| オンプレミスでの運用 | 写す単位、選べるクラス、目的 | FSx for ONTAP とサーバー側コピーでの扱い | 出典 |
 |---|---|---|---|
-| FabricPool で、冷えたブロックを Amazon S3 へ階層化する | SSD の容量を空ける。ファイルからは透過的 | FSx for ONTAP では容量プールの階層化が同じ役割を持つ。FabricPool はブロック単位で、Amazon S3 の S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive は対象外。ファイル単位でクラスを選ぶコピーとは別の層 | [FabricPool の要件](https://docs.netapp.com/us-en/ontap/fabricpool/requirements-concept.html) |
+| FabricPool（ONTAP の機能）と、それを設定する NetApp Cloud Tiering で、使われていないブロックを Amazon S3 へ階層化する | ブロック。S3 Standard に置き、ライフサイクルの規則で S3 Standard-IA、S3 One Zone-IA、S3 Intelligent-Tiering、S3 Glacier Instant Retrieval の 4 つへ移せる。S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive は選べない。ファイルからは透過的 | FSx for ONTAP では容量プールの階層化が同じ目的に使える。ファイル単位でクラスを選ぶコピーとは別の層 | [FabricPool の要件](https://docs.netapp.com/us-en/ontap/fabricpool/requirements-concept.html)、[Cloud Tiering の S3 のストレージクラス](https://docs.netapp.com/us-en/data-services-cloud-tiering/reference-aws-support.html) |
+| SnapMirror Cloud（ONTAP の機能）と、それを使う NetApp Backup and Recovery（旧 Cloud Backup）で、オブジェクトストレージへバックアップする | ボリュームのスナップショットのバックアップ。S3 Standard に作られ、30 日後に S3 Standard-IA へ移る。ONTAP 9.10.1 以降は、アーカイブ用のクラスを選ぶと、指定した日数の後に S3 Glacier Flexible Retrieval か S3 Glacier Deep Archive へ移る。アーカイブ用のクラスにあるバックアップは、復元の前に取り出しが要る | FSx for ONTAP では、バックアップと SnapMirror がボリューム単位の保護に使える。コピーはボリュームの保護手段ではない | [SnapMirror Cloud の概要](https://docs.netapp.com/us-en/ontap/concepts/snapmirror-cloud-backups-object-store-concept.html)、[Backup and Recovery のアーカイブ用のクラス](https://docs.netapp.com/us-en/data-services-backup-recovery/prev-reference-aws-archive-storage-tiers.html) |
+| NetApp Copy and Sync（旧 Cloud Sync）で、NFS / SMB のファイルを S3 へ同期する | ファイル。S3 Standard、S3 Intelligent-Tiering、S3 Standard-IA、S3 One Zone-IA、S3 Glacier Instant Retrieval、S3 Glacier Flexible Retrieval、S3 Glacier Deep Archive の 7 つから選べる。データブローカー（AWS などの仮想マシンか、Linux のホスト）がファイルを読んで書き、最初のコピーの後はスケジュールに従って変更を同期する | ファイルを選んで移す処理は、サーバー側コピーでも行える。サーバー側コピーでは、データはコピーを指示したクライアントを通らない。スケジュールと変更の同期は含まない | [Copy and Sync の対応する同期関係](https://docs.netapp.com/us-en/data-services-copy-sync/reference-supported-relationships.html)、[同期関係の作成](https://docs.netapp.com/us-en/data-services-copy-sync/task-creating-relationships.html) |
 | 外部のデータ管理ツールで、ファイル単位にアーカイブする | 最終アクセス日時などで選び、元のパスから読み戻せるようにする | コピーで置き換えられるのは移動の部分だけ。選別、元のパスからの読み戻し、メタデータの管理はコピーに含まれない | [AWS Storage Blog の製造業の事例](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/)、[アーカイブと階層化の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
-| SnapMirror Cloud で、オブジェクトストレージへバックアップする | ボリューム単位の保護と復元 | FSx for ONTAP では、バックアップと SnapMirror が同じ役割を持つ。コピーはボリュームの保護手段ではない | [SnapMirror Cloud の概要](https://docs.netapp.com/us-en/ontap/concepts/snapmirror-cloud-backups-object-store-concept.html) |
 | ONTAP S3 のマルチプロトコル（NAS バケット）で、NAS のデータを S3 API のアプリに見せる | 分析・機械学習から、コピーせずに読む | FSx for ONTAP では S3 Access Points が同じ目的の機能。サーバー側コピーは、これに、Access Point とバケットの間でデータを移す手段を加える | [ONTAP S3 マルチプロトコル](https://docs.netapp.com/us-en/ontap/s3-multiprotocol/) |
 | オンプレミスから SnapMirror で FSx for ONTAP へ移し、その後アーカイブする | 段階的な移行とアーカイブ | 移したボリュームの Access Point から、バケットの各クラスへコピーできる。この流れを手順として公開した事例は見つかっていない | [SnapMirror による移行](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
 
-この表の外部ツールは、公開された事例に出てくるものとして名前を挙げています。推奨ではありません。
+この表の NetApp のサービスと外部ツールは、公開されたドキュメントと事例に出てくるものとして名前を挙げています。推奨ではなく、このノートでは試していません。
 
 ---
 
