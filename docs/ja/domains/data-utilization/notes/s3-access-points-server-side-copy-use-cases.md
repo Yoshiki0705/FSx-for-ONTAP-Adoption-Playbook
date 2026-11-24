@@ -113,11 +113,11 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 表の読み方を補足します。
 
 - 「バケット → Access Point」で中身が一致したコピーは、どれもコピー先のクラスが `FSX_ONTAP` になりました
-- 6 GiB の「バケット → Access Point」で 2 つの値があるのは、2 回実行した結果です。S3 Standard-IA は 1 回目が 223 秒、2 回目が 130 秒でした。1 回ずつのサンプルなので、クラスによる差とは読めません
+- 6 GiB の「バケット → Access Point」で 2 つの値があるのは、2 回実行した結果です。S3 Standard-IA は 130〜223 秒と幅がありました。回数が少ないので、クラスによる差とは読めません
 - S3 Standard-IA、S3 One Zone-IA、S3 Glacier Instant Retrieval は、128 KB 未満のオブジェクトも 128 KB として課金されます（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。1 KiB のファイルも写せましたが、料金は 128 KB 分です
 - S3 Reduced Redundancy は、AWS が使わないよう勧めているクラスです（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。写せることを確かめただけで、勧めるものではありません
 - S3 Intelligent-Tiering で試したのは、すぐに読める層にあるオブジェクトです。アーカイブ用の層（Archive Access、Deep Archive Access）へ移るには 90 日以上アクセスがないことが要るので、試していません
-- コピー先のボリュームが満杯になると、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗しました。同じ状況で `ServiceUnavailable` が返ったこともあります。大きなファイルを写す前に、ボリュームの空き容量を確かめてください
+- 大きなファイルを写す前に、コピー先のボリュームの空き容量を確かめます。空きが足りないと、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗します。`ServiceUnavailable` が返ることもあります
 
 S3 の API が定義するストレージクラスの値は 13 個です（`CopyObject` の `x-amz-storage-class`）。汎用バケットに置けない値も含めて、確かめた範囲を次に並べます。
 
@@ -158,7 +158,7 @@ S3 on Outposts のデータを FSx for ONTAP へ移す経路は、ドキュメ�
 | `--copy-source-if-match`（Access Point のオブジェクトの ETag） | 正しい ETag で成功、違う ETag で `PreconditionFailed` |
 | `UploadPartCopy` の `--copy-source-range`、Access Point → バケット、2 パート | 成功。中身が一致 |
 
-復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しと大容量取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。6 GiB の迅速取り出しは 69 秒でした。標準取り出しは通知を有効にする前に要求したので、`head-object` で確かめた時刻から幅で書いています。
+復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しと大容量取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。6 GiB の迅速取り出しは 69 秒でした。標準取り出しの時間は、状態を確かめた時刻から求めた幅です。
 
 | クラスと取り出し | 復元にかかった時間 | ドキュメントの目安 |
 |---|---|---|
@@ -175,7 +175,7 @@ S3 Express One Zone のディレクトリバケットとの間のコピーは、
 
 Amazon FSx for OpenZFS のボリュームに付けた S3 Access Points でも、同じ組み合わせを確かめました。環境は、2026-11-24 に `ap-northeast-1` に作った `SINGLE_AZ_HA_2`（SSD 64 GiB、160 MBps）のファイルシステムの子ボリュームです。Access Point のファイルシステムユーザーは POSIX の UID 0、GID 0 にしました。確認の後、ファイルシステムは削除しました。
 
-FSx for OpenZFS で S3 Access Points を付けられるのは、HA の構成（Single-AZ (HA) と Multi-AZ）のボリュームだけです（[Access points restrictions](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/access-point-restrictions-limitations-naming-rules.html)）。今回の `ap-northeast-1a` では、`SINGLE_AZ_HA_1` と SSD の組み合わせは作れず、`SINGLE_AZ_HA_2` を使いました。
+FSx for OpenZFS で S3 Access Points を付けられるのは、HA の構成（Single-AZ (HA) と Multi-AZ）のボリュームだけです（[Access points restrictions](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/access-point-restrictions-limitations-naming-rules.html)）。2026-11-24 時点の `ap-northeast-1a` では、SSD の `SINGLE_AZ_HA_1` は作成できず、`SINGLE_AZ_HA_2` は作成できました。
 
 | 確かめたこと | 結果 |
 |---|---|
