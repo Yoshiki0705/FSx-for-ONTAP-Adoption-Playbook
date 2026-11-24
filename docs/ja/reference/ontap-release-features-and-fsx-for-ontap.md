@@ -33,7 +33,7 @@ NetApp の What's new in ONTAP に載る機能のうち、Amazon FSx for NetApp 
 
 | 領域 | 機能 | 条件 | FSx for ONTAP での確認 | 状態 |
 |---|---|---|---|---|
-| NAS / S3 | ONTAP S3 の NAS バケットで CopyObject を使える | ONTAP S3 の NAS バケット | FSx for ONTAP の S3 Access Points と ONTAP S3 サーバーは別の仕組み。S3 Access Points の側で同等の操作ができるかを確認する | 未確認 |
+| NAS / S3 | ONTAP S3 の NAS バケットで CopyObject を使える | ONTAP S3 の NAS バケット | FSx for ONTAP の S3 Access Points と ONTAP S3 サーバーは別の仕組み。S3 Access Points の `CopyObject` は、2026-11-22 の告知でバケットや別の Access Point との間でも使える（[実測](../domains/data-utilization/notes/s3-access-point-constraints.md#バケットと別の-access-point-の間のサーバー側のコピー)） | 未確認 |
 | NAS / S3 | NAS バケットをボリュームにリンクする（ジャンクションパスの変更に追従） | ONTAP CLI で作成する NAS バケット | 同上 | 未確認 |
 | NAS / S3 | マルチプロトコル環境の CreateMultipartUpload でタグとメタデータを使える | S3 と NAS のマルチプロトコル | 同上 | 未確認 |
 | セキュリティ | ARP/AI のスナップショット更新 | | ARP/AI の設定項目と既定値を読み取る | 未確認 |
