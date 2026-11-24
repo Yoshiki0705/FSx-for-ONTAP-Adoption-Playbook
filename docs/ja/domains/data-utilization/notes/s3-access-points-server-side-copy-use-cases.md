@@ -107,8 +107,8 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | S3 One Zone-IA（`ONEZONE_IA`） | 成功 | 成功 | 成功 | 19 秒 | 134 秒 |
 | S3 Intelligent-Tiering（`INTELLIGENT_TIERING`） | 成功 | 成功 | 成功 | 20 秒 | 134 秒 |
 | S3 Glacier Instant Retrieval（`GLACIER_IR`） | 成功 | 成功 | 成功 | 22 秒 | 133 秒 |
-| S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出しで復元した後は成功 | - | 24 秒 | - |
-| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。復元した後は完了待ち | - | 23 秒 | - |
+| S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出し、標準取り出しで復元した後はどちらも成功 | - | 24 秒 | - |
+| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。標準取り出しで復元した後は成功 | - | 23 秒 | - |
 
 表の読み方を補足します。
 
@@ -141,6 +141,16 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | `--checksum-algorithm SHA256` | どちらのコピー先でも成功。バケットは `ChecksumSHA256` を返し、Access Point は返さなかった |
 | `--copy-source-if-match`（Access Point のオブジェクトの ETag） | 正しい ETag で成功、違う ETag で `PreconditionFailed` |
 | `UploadPartCopy` の `--copy-source-range`、Access Point → バケット、2 パート | 成功。中身が一致 |
+
+復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。標準取り出しは通知を有効にする前に要求したので、`head-object` で確かめた時刻から幅で書いています。
+
+| クラスと取り出し | 復元にかかった時間 | ドキュメントの目安 |
+|---|---|---|
+| S3 Glacier Flexible Retrieval、迅速 | 70 秒 | 1〜5 分 |
+| S3 Glacier Flexible Retrieval、標準 | 1 時間 22 分〜4 時間 30 分の間 | 3〜5 時間 |
+| S3 Glacier Deep Archive、標準 | 7 時間 43 分〜10 時間 51 分の間 | 12 時間以内 |
+
+大容量取り出し（S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive）は、2026-11-24 10:11 UTC に要求し、完了を待っています。
 
 S3 Express One Zone のディレクトリバケットとの間のコピーは、What's New とユーザーガイドが挙げる「汎用バケット」の範囲の外で、今回は両方向とも失敗しました。ディレクトリバケットとの間でデータを動かすなら、汎用バケットを経由します。
 
@@ -315,9 +325,8 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 
 - NTFS の ACL を持つボリューム（SMB の利用者がいる環境）での、コピー先のファイルの所有者と ACL
 - アカウントをまたぐコピー、FlexCache のボリュームに付けた Access Point からのコピー
-- S3 Glacier Deep Archive から復元した後のボリュームへのコピー（復元を 2026-11-24 に要求し、完了待ち）
 - S3 Intelligent-Tiering のアーカイブ用の層に移ったオブジェクトのコピー
-- S3 Glacier Flexible Retrieval の標準・大容量取り出しと、S3 Glacier Deep Archive の大容量取り出しにかかった時間（2026-11-24 に要求し、完了待ち）
+- 大容量取り出しにかかった時間（S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive。2026-11-24 に要求し、完了待ち）
 - 小さなファイルを大量にコピーしたときのリクエストレートの上限と所要時間
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間
 - 第 2 世代、Multi-AZ のファイルシステムでのコピー

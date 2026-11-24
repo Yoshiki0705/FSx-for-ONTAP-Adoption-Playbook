@@ -162,8 +162,9 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 | バケット → Access Point（復元なし） | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 | バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
 | バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
+| バケット → Access Point（Standard で復元した後） | `GLACIER`、`DEEP_ARCHIVE` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 
-`DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。6 GiB と 1 KiB での往復、コピー先に指定できないクラス、コピーのオプションは、[ストレージクラスとコピーのオプションの実測一覧](s3-access-points-server-side-copy-use-cases.md#ストレージクラスとコピーのオプションの実測一覧)にあります。
+復元にかかった時間と、6 GiB と 1 KiB での往復、コピー先に指定できないクラス、コピーのオプションは、[ストレージクラスとコピーのオプションの実測一覧](s3-access-points-server-side-copy-use-cases.md#ストレージクラスとコピーのオプションの実測一覧)にあります。
 
 復元（`RestoreObject`）は、コピー元のバケットに対して呼びます。Access Point の側では `RestoreObject` は非対応ですが、この往復ではボリュームの側に復元が要るオブジェクトはありません。復元にかかる時間と料金は取り出しの階層（Expedited、Standard、Bulk）で変わり、Amazon S3 の [Restoring an archived object](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects.html) に従います。
 
