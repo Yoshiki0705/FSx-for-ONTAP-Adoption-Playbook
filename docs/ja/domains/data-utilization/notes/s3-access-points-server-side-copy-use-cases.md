@@ -119,6 +119,20 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 - S3 Intelligent-Tiering で試したのは、すぐに読める層にあるオブジェクトです。アーカイブ用の層（Archive Access、Deep Archive Access）へ移るには 90 日以上アクセスがないことが要るので、試していません
 - コピー先のボリュームが満杯になると、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗しました。同じ状況で `ServiceUnavailable` が返ったこともあります。大きなファイルを写す前に、ボリュームの空き容量を確かめてください
 
+S3 の API が定義するストレージクラスの値は 13 個です（`CopyObject` の `x-amz-storage-class`）。汎用バケットに置けない値も含めて、確かめた範囲を次に並べます。
+
+| ストレージクラス | 確かめた範囲 | 確かめていない範囲と理由 |
+|---|---|---|
+| `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`GLACIER_IR` | 両方向、1 KiB・8 MiB・6 GiB | なし |
+| `INTELLIGENT_TIERING` | 両方向、1 KiB・8 MiB・6 GiB。高頻度アクセスの層だけ | 低頻度アクセス（30 日）、アーカイブインスタントアクセス（90 日）、アーカイブアクセスとディープアーカイブアクセス（任意、90 日と 180 日）。層へ移るまでの日数が要るので、2026-12-24、2027-02-22、2027-05-23 に確かめる（[#435](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/435)） |
+| `GLACIER` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、復元の後に 1 KiB・8 MiB・6 GiB（迅速）、8 MiB（標準、大容量） | なし |
+| `DEEP_ARCHIVE` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、標準取り出しで復元した後に 8 MiB | 大容量取り出しと、6 GiB・1 KiB の復元の後のコピーは、完了待ち |
+| `EXPRESS_ONEZONE` | ディレクトリバケットとの間は両方向とも失敗。汎用バケットへ指定すると `InvalidStorageClass` | ディレクトリバケットは、告知が挙げる「汎用バケット」に入らない |
+| `OUTPOSTS` | 汎用バケットへ指定すると `InvalidStorageClass` | S3 on Outposts の環境がない。ドキュメントでは、S3 on Outposts の `CopyObject` は同じ Outposts バケットの中だけで、ほかの種類のバケットとの間は非対応（[CopyObject の API リファレンス](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)） |
+| `SNOW` | 汎用バケットへ指定すると `InvalidStorageClass` | Snow のデバイスがない。現行の Snowball Edge は 2025-11-07 から新しい利用者に提供されていない（[availability change](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html)） |
+| `FSX_ONTAP` | FSx for ONTAP の Access Point へ指定すると成功。バケットへ指定すると `InvalidArgument` | なし |
+| `FSX_OPENZFS` | FSx for OpenZFS の Access Point との間を、下の「[FSx for OpenZFS の Access Point との間](#fsx-for-openzfs-の-access-point-との間)」で確かめた | なし |
+
 ストレージクラス以外の指定と、汎用バケット以外のコピー先も確かめました。
 
 | 確かめたこと | 結果 |
@@ -142,17 +156,47 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | `--copy-source-if-match`（Access Point のオブジェクトの ETag） | 正しい ETag で成功、違う ETag で `PreconditionFailed` |
 | `UploadPartCopy` の `--copy-source-range`、Access Point → バケット、2 パート | 成功。中身が一致 |
 
-復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。標準取り出しは通知を有効にする前に要求したので、`head-object` で確かめた時刻から幅で書いています。
+復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しと大容量取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。6 GiB の迅速取り出しは 69 秒でした。標準取り出しは通知を有効にする前に要求したので、`head-object` で確かめた時刻から幅で書いています。
 
 | クラスと取り出し | 復元にかかった時間 | ドキュメントの目安 |
 |---|---|---|
 | S3 Glacier Flexible Retrieval、迅速 | 70 秒 | 1〜5 分 |
 | S3 Glacier Flexible Retrieval、標準 | 1 時間 22 分〜4 時間 30 分の間 | 3〜5 時間 |
+| S3 Glacier Flexible Retrieval、大容量 | 5 時間 34 分 | 5〜12 時間 |
 | S3 Glacier Deep Archive、標準 | 7 時間 43 分〜10 時間 51 分の間 | 12 時間以内 |
 
-大容量取り出し（S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive）は、2026-11-24 10:11 UTC に要求し、完了を待っています。
+大容量取り出しで復元した S3 Glacier Flexible Retrieval のオブジェクトも、ボリュームへ戻せ、中身が一致しました。S3 Glacier Deep Archive の大容量取り出しは、2026-11-24 10:11 UTC に要求し、完了を待っています。
 
 S3 Express One Zone のディレクトリバケットとの間のコピーは、What's New とユーザーガイドが挙げる「汎用バケット」の範囲の外で、今回は両方向とも失敗しました。ディレクトリバケットとの間でデータを動かすなら、汎用バケットを経由します。
+
+### FSx for OpenZFS の Access Point との間
+
+Amazon FSx for OpenZFS のボリュームに付けた S3 Access Points でも、同じ組み合わせを確かめました。環境は、2026-11-24 に `ap-northeast-1` に作った `SINGLE_AZ_HA_2`（SSD 64 GiB、160 MBps）のファイルシステムの子ボリュームです。Access Point のファイルシステムユーザーは POSIX の UID 0、GID 0 にしました。確認の後、ファイルシステムは削除しました。
+
+FSx for OpenZFS で S3 Access Points を付けられるのは、HA の構成（Single-AZ (HA) と Multi-AZ）のボリュームだけです（[Access points restrictions](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/access-point-restrictions-limitations-naming-rules.html)）。今回の `ap-northeast-1a` では、`SINGLE_AZ_HA_1` と SSD の組み合わせは作れず、`SINGLE_AZ_HA_2` を使いました。
+
+| 確かめたこと | 結果 |
+|---|---|
+| バケット → FSx for OpenZFS の Access Point（8 MiB） | 成功。コピー先のクラスは `FSX_OPENZFS`、暗号化は `aws:fsx` |
+| FSx for ONTAP の Access Point → FSx for OpenZFS の Access Point（8 MiB） | 成功。中身が一致 |
+| FSx for OpenZFS の Access Point → FSx for ONTAP の Access Point（8 MiB） | 成功。コピー先のクラスは `FSX_ONTAP` |
+| FSx for OpenZFS の Access Point → バケット、汎用バケットの 8 つのクラス | 8 つとも成功 |
+| バケット → FSx for OpenZFS の Access Point（復元なし） | すぐに読める 6 つのクラスから成功。`GLACIER` と `DEEP_ARCHIVE` は `InvalidObjectState`。`GLACIER` は迅速取り出しで復元した後に成功 |
+| FSx for OpenZFS の Access Point への `--storage-class` | `FSX_OPENZFS` は成功。`FSX_ONTAP` と `STANDARD` は `InvalidStorageClass` |
+| バケットへ `--storage-class FSX_OPENZFS` | `InvalidArgument`（FSX_OPENZFS is not allowed.） |
+| FSx for OpenZFS の Access Point への暗号化 | `aws:fsx` は成功。`AES256` は `InvalidArgument` |
+| 6 GiB（`aws s3 cp`、マルチパートのコピー） | FSx for ONTAP → FSx for OpenZFS が 108 秒、バケット（`GLACIER_IR`）→ FSx for OpenZFS が 113 秒、復元した `GLACIER` → FSx for OpenZFS が 109 秒、FSx for OpenZFS → バケットが 69 秒。NFS で読んだ SHA-256 がすべて一致 |
+| 6 GiB を 1 回の `CopyObject` で | バケットをコピー元にすると、すぐに `InvalidRequest`。FSx for OpenZFS の Access Point をコピー元にすると、23〜72 秒後に接続が閉じられ、オブジェクトはできなかった（3 回） |
+| ファイルの属性 | 所有者は 0:0、モードは 644 になった（Access Point に設定したユーザー） |
+| タグとユーザー定義のメタデータ | コピー元のタグが写り、`--metadata-directive REPLACE` も成功 |
+
+1 回の `CopyObject` で 5 GiB を超えたときの返り方は、FSx for ONTAP（すぐに `InvalidRequest`）と FSx for OpenZFS（接続が閉じられる）で違いました。どちらもオブジェクトはできないので、5 GiB を超えるファイルは、コピー元によらず `UploadPartCopy` で写します。
+
+FSx for OpenZFS について、選ぶ前に知っておく点は次のとおりです（[What is Amazon FSx for OpenZFS?](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/what-is-fsx.html)、[Managing volumes](https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/managing-volumes.html)）。
+
+- ファイルのプロトコルは NFS（v3、v4.0、v4.1、v4.2）で、SMB と iSCSI はありません。S3 API は S3 Access Points で使います
+- デプロイの単位はファイルシステムで、その中にボリュームを階層で作ります。ボリュームごとに、容量の上限、圧縮、NFS のエクスポート、ユーザーとグループのクォータを分けられます
+- FSx for ONTAP の SVM（ストレージ仮想マシン）にあたる単位はありません。1 つのファイルシステムを複数の利用者で分けるときは、ボリュームと NFS のエクスポートで分けます。管理用のエンドポイントや、Active Directory への参加を利用者ごとに分けることはできません
 
 ---
 
@@ -326,7 +370,8 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - NTFS の ACL を持つボリューム（SMB の利用者がいる環境）での、コピー先のファイルの所有者と ACL
 - アカウントをまたぐコピー、FlexCache のボリュームに付けた Access Point からのコピー
 - S3 Intelligent-Tiering のアーカイブ用の層に移ったオブジェクトのコピー
-- 大容量取り出しにかかった時間（S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive。2026-11-24 に要求し、完了待ち）
+- S3 Glacier Deep Archive の大容量取り出しにかかった時間と、6 GiB・1 KiB を標準取り出しで復元した後のコピー（2026-11-24 に要求し、完了待ち）
+- S3 on Outposts と Snow（環境とデバイスがない）
 - 小さなファイルを大量にコピーしたときのリクエストレートの上限と所要時間
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間
 - 第 2 世代、Multi-AZ のファイルシステムでのコピー
