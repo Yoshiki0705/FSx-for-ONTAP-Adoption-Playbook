@@ -739,6 +739,61 @@ LABELS: dict[str, dict[str, str]] = {
             "<b>Automation paths</b><br>AWS CLI, SDKs,<br>CloudFormation,<br>ONTAP CLI / REST API"
         ),
     },
+    # --- server-side copy with S3 Access Points and archive classes (s3ap-server-side-copy-archive) ---
+    "archive_out_frame": {
+        "ja": "退避: ボリューム → バケット",
+        "en": "Archive: volume to bucket",
+    },
+    "archive_back_frame": {
+        "ja": "戻す: バケット → ボリューム",
+        "en": "Recall: bucket to volume",
+    },
+    "fsx_copy_volume": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
+    },
+    "s3ap_copy": {
+        "ja": "Amazon S3<br>Access Points",
+        "en": "Amazon S3<br>Access Points",
+    },
+    "s3_copy_bucket": {
+        "ja": "Amazon S3<br>（汎用バケット）",
+        "en": "Amazon S3<br>(general purpose bucket)",
+    },
+    "copy_out_edge": {
+        "ja": "CopyObject /<br>UploadPartCopy",
+        "en": "CopyObject /<br>UploadPartCopy",
+    },
+    "copy_back_edge": {
+        "ja": "RestoreObject の後<br>CopyObject",
+        "en": "RestoreObject, then<br>CopyObject",
+    },
+    "archive_notes": {
+        "ja": (
+            "<b>退避できたクラス</b><br>"
+            "・S3 Standard<br>・S3 Standard-IA<br>・S3 One Zone-IA<br>・S3 Intelligent-Tiering<br>"
+            "・S3 Glacier Instant<br>　Retrieval<br>・S3 Glacier Flexible<br>　Retrieval<br>"
+            "・S3 Glacier Deep Archive<br><br>"
+            "<b>そのまま戻せた</b><br>"
+            "・S3 Standard-IA<br>・S3 Intelligent-Tiering<br>・S3 Glacier Instant<br>　Retrieval<br><br>"
+            "<b>先に復元が要る</b><br>"
+            "・S3 Glacier Flexible<br>　Retrieval<br>・S3 Glacier Deep Archive<br><br>"
+            "<b>コピー先がボリューム</b><br>SSE-FSX と FSX_ONTAP<br>のみ<br><br>"
+            "2026-11-24 実測<br>（ap-northeast-1）"
+        ),
+        "en": (
+            "<b>Archived to</b><br>"
+            "- S3 Standard<br>- S3 Standard-IA<br>- S3 One Zone-IA<br>- S3 Intelligent-Tiering<br>"
+            "- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br>- S3 Glacier Flexible<br>&nbsp;&nbsp;Retrieval<br>"
+            "- S3 Glacier Deep Archive<br><br>"
+            "<b>Copied back directly</b><br>"
+            "- S3 Standard-IA<br>- S3 Intelligent-Tiering<br>- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br><br>"
+            "<b>Restore first</b><br>"
+            "- S3 Glacier Flexible<br>&nbsp;&nbsp;Retrieval<br>- S3 Glacier Deep Archive<br><br>"
+            "<b>Volume as destination</b><br>SSE-FSX and FSX_ONTAP<br>only<br><br>"
+            "Measured 2026-11-24<br>(ap-northeast-1)"
+        ),
+    },
 }
 
 # There is deliberately no `note` label, and no Note shape below. The figure used to carry a nine
@@ -1570,6 +1625,60 @@ def _console_snapmirror_planes() -> Diagram:
     )
 
 
+def _s3ap_server_side_copy_archive() -> Diagram:
+    """Server-side copy between an S3 Access Point and a bucket, as an archive round trip.
+
+    Two rows, each read rightwards, because the flow check forbids a leftward edge: the top row
+    copies a volume's file out to a bucket in an archive class, the bottom row copies it back after
+    a restore. The two volume icons can be the same file system; drawing it twice keeps every edge
+    forwards. Which classes were measured in each direction is short text in the notes column, and
+    the same facts are tables in the S3 Access Points notes. Wide and short so the image serves as
+    the blog cover.
+    """
+    return Diagram(
+        name="s3ap-server-side-copy-archive",
+        diagram_id="s3ap-server-side-copy-archive",
+        width=1000,
+        height=640,
+        groups=(Group("aws_cloud", "aws_cloud", 30, 30, 700, 580),),
+        frames=(
+            Frame("out_row", "archive_out_frame", 60, 80, 640, 240),
+            Frame("back_row", "archive_back_frame", 60, 345, 640, 240),
+        ),
+        notes=(Note("notes", "archive_notes", 750, 30, 230, 580),),
+        nodes=(
+            Node("fsx_out", "fsx_ontap", "fsx_copy_volume", 110, 160),
+            Node("ap_out", "s3_access_point", "s3ap_copy", 356, 176),
+            Node("s3_out", "s3", "s3_copy_bucket", 545, 160),
+            Node("s3_back", "s3", "s3_copy_bucket", 130, 425),
+            Node("ap_back", "s3_access_point", "s3ap_copy", 356, 441),
+            Node("fsx_back", "fsx_ontap", "fsx_copy_volume", 560, 425),
+        ),
+        edges=(
+            Edge("e1", "fsx_out", "ap_out", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "e2",
+                "ap_out",
+                "s3_out",
+                "copy_out_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -34),
+            ),
+            Edge(
+                "e3",
+                "s3_back",
+                "ap_back",
+                "copy_back_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -34),
+            ),
+            Edge("e4", "ap_back", "fsx_back", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+        ),
+    )
+
+
 DIAGRAMS = (
     _backup_copy(),
     _qos_two_plane(),
@@ -1583,6 +1692,7 @@ DIAGRAMS = (
     _crosscloud_mobility(),
     _third_generation_overview(),
     _console_snapmirror_planes(),
+    _s3ap_server_side_copy_archive(),
 )
 
 
