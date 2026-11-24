@@ -119,7 +119,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/multi-tenant-design.md	
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	の可否は確認できていません。REST API と OAuth 2.0 の存在は確認済みです
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	常にエージェントと Basic モードが必要です
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
-FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/large-batch-processing-guide.md	reread	"InputType": "MANIFEST"
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/large-batch-processing-guide.md	reread	DISTRIBUTED モードを使用する場合は、Step Functions の定義を以下のように変更します
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-benchmark-results.md	retraction	各 S3 API 操作のレイテンシとスループットを実測した結果です

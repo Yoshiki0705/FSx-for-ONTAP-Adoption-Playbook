@@ -171,7 +171,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | AWS CLI、AWS SDK | コピーを呼ぶ | 実測 1〜4 | `aws s3 cp` は 5 GiB を超えると自動でマルチパートのコピーになる |
 | S3 Batch Operations | 大量のコピーをジョブにする | 実測 5、6 | マニフェストの作成、IAM ロール、完了レポートの置き場所は利用者が用意する |
 | AWS Lambda | コピーを呼ぶ処理 | 同じ Access Point の中は記録あり | Lambda から同じ Access Point の中で `copy_object` を呼ぶ実装が、[FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) のファイルポータルにある。バケットとの間のコピーを Lambda から呼ぶ形は、AWS CLI と同じ API なので組める（推測） |
-| AWS Step Functions | コピーの順序、再試行、記録 | 測っていない | 同じリポジトリの [大量バッチ処理のガイド](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/large-batch-processing-guide.md) は Distributed Map をマニフェスト入力で使っているが、目的は処理の並列化で、コピーではない <!-- spoke-checked: copyobject --> |
+| AWS Step Functions | コピーの順序、再試行、記録 | 測っていない | 同じリポジトリの [大量バッチ処理のガイド](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/large-batch-processing-guide.md) は、1,000 件を超える処理で Distributed Map への移行を勧めている。目的は処理の並列化で、コピーではない <!-- spoke-checked: copyobject --> |
 | Amazon EventBridge Scheduler | 定期的なコピーのきっかけ | 該当なし | Access Point の側にイベント通知がないので、定期実行が起点になる |
 | AWS DataSync | 別の転送の仕組み | 該当なし | ファイルの属性を保つ移行や、スケジュールの管理が要るときの選択肢 |
 | AWS Transfer Family | 外部とのファイル受け渡しの入口 | 文書 | [Transfer Family と S3 Access Points](https://docs.aws.amazon.com/transfer/latest/userguide/fsx-s3-access-points.html)。バケットで受けたデータを共有領域へ写す後段にコピーを置ける（推測） |
