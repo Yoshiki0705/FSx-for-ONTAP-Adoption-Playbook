@@ -56,6 +56,7 @@ lang: ja
 |---|---|
 | 取り込みと書き出しで、オブジェクトを一度サーバーに取得してアップロードし直す処理が要らなくなる | [FSx for ONTAP S3 Access Points は S3 として使えるか](../domains/data-utilization/notes/s3-access-point-constraints.md#バケットと別の-access-point-の間のサーバー側のコピー) |
 | ボリュームのファイルを S3 Glacier Deep Archive などへ移し、後でボリュームへ戻せる。`GLACIER` と `DEEP_ARCHIVE` から戻すときは、先にバケット側で復元が要る | [アーカイブ用のストレージクラスとの往復](../domains/data-utilization/notes/s3-access-point-constraints.md#アーカイブ用のストレージクラスとの往復) |
+| 用途ごとに、直接読むかコピーするかを選べる。HiL テストのように正本がバケットにある構成では、DataSync を挟まずにボリュームへ写せる | [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md) |
 
 出典: [What's New（2026-11-22）](https://aws.amazon.com/about-aws/whats-new/2026/11/s3-access-points-server-side-copy-fsx/)
 

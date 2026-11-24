@@ -131,7 +131,7 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 - コピー先が FSx for ONTAP のボリュームのときは、暗号化は `SSE-FSX`、ストレージクラスは `FSX_ONTAP` だけ
 - 以前は、オブジェクトを一度サーバーに取得してアップロードし直す必要があった
 
-> **区分**: 上の組み合わせは `documented`（2026-11-24 に告知とユーザーガイドを閲覧）。次の表は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4、UNIX セキュリティスタイル）で 1 回ずつ確かめた `verified` です。オブジェクトは 8 MiB で、中身は SHA-256 で比べました。
+> **区分**: 上の組み合わせは `documented`（2026-11-24 に告知とユーザーガイドを閲覧）。次の表は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4、UNIX セキュリティスタイル）で 1 回ずつ確かめた `verified` です。オブジェクトは 8 MiB（9 と 10 は 6 GiB）で、中身は SHA-256 で比べました。
 
 | # | コピー | 結果 |
 |---|---|---|
@@ -143,6 +143,10 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 | 6 | バケット → Access Point、`--storage-class STANDARD` を指定 | `InvalidStorageClass` |
 | 7 | 別の Access Point をコピー元にした `UploadPartCopy`（コピー元のキー `ssc/obj.bin` は `/` を含む、2 パート） | 成功。`CompleteMultipartUpload` の後、中身が一致 |
 | 8 | `aws s3 cp` でバケットから Access Point のエイリアスへ | 成功。中身が一致 |
+| 9 | 6 GiB のファイルを 1 回の `CopyObject` で、バケットへ、また別の Access Point へ | `InvalidRequest`（コピー元の上限 5368709120 バイトを超える） |
+| 10 | 同じ 6 GiB を `aws s3 cp`（768 パートの `UploadPartCopy`）で、Access Point → バケット、バケット → Access Point、Access Point → 別の Access Point | 3 つとも成功。中身が一致 |
+
+ファイルの所有者、モード、更新時刻はコピー先に写りません。用途ごとの使い分け、属性と S3 Batch Operations の実測は、[S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](s3-access-points-server-side-copy-use-cases.md)にあります。
 
 コピー先の `HeadObject` は、ストレージクラス `FSX_ONTAP`、暗号化 `aws:fsx` を返しました。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーが非対応です（ユーザーガイドの対応表）。
 
