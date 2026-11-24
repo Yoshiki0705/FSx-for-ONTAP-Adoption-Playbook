@@ -81,17 +81,68 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | 4 | 所有者 1234:5678、モード 640、更新時刻 2020-01-02 のファイルを、別の Access Point へ直接、またバケット経由でコピー | 中身は一致。コピー先の所有者は 0:1、モードは 644、更新時刻はコピーした時刻になった。コピー元の `HeadObject` は `LastModified` にファイルの更新時刻を返したが、ユーザー定義のメタデータは空 |
 | 5 | S3 Batch Operations の `S3PutObjectCopy` ジョブで、バケットのオブジェクトを Access Point へ（`TargetResource` に Access Point のエイリアスを指定） | 2 件とも成功。コピー先のストレージクラスは `FSX_ONTAP` |
 | 6 | 同じジョブ型で、マニフェストの `Bucket` 列に Access Point のエイリアスを書き、バケットへ | 1 件成功。中身が一致 |
-| 7 | アーカイブ用のストレージクラスとの往復 | [制約ノートの往復の表](s3-access-point-constraints.md#アーカイブ用のストレージクラスとの往復)にまとめた。`GLACIER` と `DEEP_ARCHIVE` から戻すときは、先にバケット側で復元が要る |
+| 7 | S3 のストレージクラスとの往復 | [制約ノートの往復の表](s3-access-point-constraints.md#s3-のストレージクラスとの往復)にまとめた。`GLACIER` と `DEEP_ARCHIVE` から戻すときは、先にバケット側で復元が要る |
 
 ![2 つの枠が上下に並ぶ。上の枠は退避で、FSx for ONTAP のボリュームから S3 Access Points を通り、CopyObject または UploadPartCopy で Amazon S3 の汎用バケットへ写す。下の枠は戻す流れで、汎用バケットのオブジェクトを RestoreObject で復元した後、CopyObject で S3 Access Points を通してボリュームへ写す。右の欄に、退避できた 7 つのストレージクラス、そのまま戻せた 3 つのクラス、先に復元が要る 2 つのクラス、コピー先がボリュームのときは SSE-FSX と FSX_ONTAP だけであることを書いている。](../../../../_assets/images/s3ap-server-side-copy-archive.svg)
 
-図 1: S3 Access Points のサーバー側コピーによるアーカイブの往復。上下の FSx for ONTAP は同じファイルシステムでもよい。右の欄の内容は、上の表の 7 と[制約ノートの往復の表](s3-access-point-constraints.md#アーカイブ用のストレージクラスとの往復)と同じで、2026-11-24 に ap-northeast-1 で 1 回ずつ確かめた結果です。
+図 1: S3 Access Points のサーバー側コピーによるアーカイブの往復。上下の FSx for ONTAP は同じファイルシステムでもよい。右の欄の内容は、上の表の 7 と[制約ノートの往復の表](s3-access-point-constraints.md#s3-のストレージクラスとの往復)と同じで、2026-11-24 に ap-northeast-1 で 1 回ずつ確かめた結果です。
 
 結果 4 から、コピーはファイルの中身を写す操作で、POSIX の所有者・モード・更新時刻は写らないことが分かります。今回のコピー先の Access Point はファイルシステムユーザーが UNIX の root で、所有者 0:1 はこの設定によるものと考えています（[認可は 1 つの ID で行われる](reaching-data-without-copies.md)）。root 以外のユーザーは試していません。モードが 644 になるので、ほかのユーザーに読ませたくないファイルは、写した後にモードを付け直すか、読める範囲を絞ったディレクトリへ写します。属性を保ったまま移す用途は、POSIX の属性なら rsync や AWS DataSync（NFS）、NTFS の ACL なら DataSync（SMB）、ボリューム単位なら SnapMirror の側です。NTFS の ACL を持つボリュームでは測っていません。
 
 コピー元の Access Point の `HeadObject` と `ListObjectsV2` は、`LastModified` にファイルの更新時刻を返しました。更新されていないファイルを選ぶ処理はこの値で組めます。最後に読まれた時刻は S3 API では返らないので、読まれていないファイルを選ぶなら、NFS で `stat` を取るか ONTAP の機能で調べます。
 
 結果 2 と 3 から、5 GiB を超えるファイルは `UploadPartCopy` を使えば写せます。AWS CLI の `aws s3 cp` と `aws s3 sync` は、大きなオブジェクトを自動でマルチパートのコピーにします。コピー先が FSx for ONTAP のボリュームなら、1 オブジェクトのアップロード上限 50 GiB（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）は残ります。
+
+---
+
+### ストレージクラスとコピーのオプションの実測一覧
+
+汎用バケットのストレージクラスごとに、両方向のコピーを 3 つの大きさで確かめました。環境は上の「実機で確かめた範囲」と同じで、2026-11-24 に 1 回ずつ実行しました。所要時間は `aws s3 cp`（6 GiB は 768 パートのマルチパートのコピー）のサンプルで、本番の見積りではありません。中身は、ボリューム側は NFS で読んだファイルの SHA-256、バケット側は取得したオブジェクトの SHA-256 で比べました。
+
+| ストレージクラス | Access Point → バケット | バケット → Access Point（復元なし） | 1 KiB の往復 | 6 GiB: Access Point → バケット | 6 GiB: バケット → Access Point |
+|---|---|---|---|---|---|
+| S3 Standard（`STANDARD`） | 成功 | 成功 | 成功 | 24 秒 | 130 秒 |
+| S3 Reduced Redundancy（`REDUCED_REDUNDANCY`） | 成功 | 成功 | 試していない | 20 秒 | 134 秒、135 秒 |
+| S3 Standard-IA（`STANDARD_IA`） | 成功 | 成功 | 成功 | 20 秒 | 223 秒、130 秒 |
+| S3 One Zone-IA（`ONEZONE_IA`） | 成功 | 成功 | 成功 | 19 秒 | 134 秒 |
+| S3 Intelligent-Tiering（`INTELLIGENT_TIERING`） | 成功 | 成功 | 成功 | 20 秒 | 134 秒 |
+| S3 Glacier Instant Retrieval（`GLACIER_IR`） | 成功 | 成功 | 成功 | 22 秒 | 133 秒 |
+| S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出しで復元した後は成功 | - | 24 秒 | - |
+| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。復元した後は完了待ち | - | 23 秒 | - |
+
+表の読み方を補足します。
+
+- 「バケット → Access Point」で中身が一致したコピーは、どれもコピー先のクラスが `FSX_ONTAP` になりました
+- 6 GiB の「バケット → Access Point」で 2 つの値があるのは、2 回実行した結果です。S3 Standard-IA は 1 回目が 223 秒、2 回目が 130 秒でした。1 回ずつのサンプルなので、クラスによる差とは読めません
+- S3 Standard-IA、S3 One Zone-IA、S3 Glacier Instant Retrieval は、128 KB 未満のオブジェクトも 128 KB として課金されます（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。1 KiB のファイルも写せましたが、料金は 128 KB 分です
+- S3 Reduced Redundancy は、AWS が使わないよう勧めているクラスです（[Amazon S3 のストレージクラスの比較](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)）。写せることを確かめただけで、勧めるものではありません
+- S3 Intelligent-Tiering で試したのは、すぐに読める層にあるオブジェクトです。アーカイブ用の層（Archive Access、Deep Archive Access）へ移るには 90 日以上アクセスがないことが要るので、試していません
+- コピー先のボリュームが満杯になると、`CompleteMultipartUpload` が `InsufficientCapacity` で失敗しました。同じ状況で `ServiceUnavailable` が返ったこともあります。大きなファイルを写す前に、ボリュームの空き容量を確かめてください
+
+ストレージクラス以外の指定と、汎用バケット以外のコピー先も確かめました。
+
+| 確かめたこと | 結果 |
+|---|---|
+| Access Point → 汎用バケット、`--storage-class` に `EXPRESS_ONEZONE`、`OUTPOSTS`、`SNOW` | `InvalidStorageClass` |
+| Access Point → 汎用バケット、`--storage-class FSX_ONTAP` | `InvalidArgument`（FSX_ONTAP is not allowed.） |
+| バケット → Access Point、`--storage-class FSX_ONTAP` | 成功。`FSX_ONTAP` を明示してもよい |
+| バケット → Access Point、`--storage-class` に `STANDARD_IA`、`GLACIER_IR` | `InvalidStorageClass` |
+| Access Point → 別の Access Point、`--storage-class FSX_ONTAP` | 成功 |
+| Access Point → S3 Express One Zone のディレクトリバケット | `InternalServerError`（3 回とも） |
+| S3 Express One Zone のディレクトリバケット → Access Point | `InvalidArgument`（Invalid copy source header） |
+| 対照: 汎用バケットとディレクトリバケットの間（タグのないオブジェクト） | 両方向とも成功。タグの付いたオブジェクトは、ディレクトリバケットへは `NotImplemented` |
+| バージョニングと SSE-KMS（AWS マネージドキー）を有効にしたバケットの古いバージョン → Access Point（`?versionId=` を指定） | 成功。古いバージョンの中身が写り、コピー先の暗号化は `aws:fsx` |
+| Access Point → バージョニングと SSE-KMS を有効にしたバケット | 成功。コピー先は `aws:kms` で、新しいバージョンができた |
+| Access Point → バケット、`--server-side-encryption` に `AES256`、`aws:kms` | どちらも成功し、指定した暗号化になった |
+| バケット → Access Point、`--server-side-encryption aws:fsx` | 成功（`AES256` は `InvalidArgument`） |
+| タグ（既定の `COPY`） | バケット → Access Point、Access Point → バケットのどちらでも、コピー元のタグが写った |
+| タグ（`--tagging-directive REPLACE`）、バケット → Access Point | 成功。指定したタグに置き換わった |
+| ユーザー定義のメタデータ（`--metadata-directive REPLACE`） | 両方向とも成功。Access Point 側でも `HeadObject` がメタデータと Content-Type を返した |
+| `--checksum-algorithm SHA256` | どちらのコピー先でも成功。バケットは `ChecksumSHA256` を返し、Access Point は返さなかった |
+| `--copy-source-if-match`（Access Point のオブジェクトの ETag） | 正しい ETag で成功、違う ETag で `PreconditionFailed` |
+| `UploadPartCopy` の `--copy-source-range`、Access Point → バケット、2 パート | 成功。中身が一致 |
+
+S3 Express One Zone のディレクトリバケットとの間のコピーは、What's New とユーザーガイドが挙げる「汎用バケット」の範囲の外で、今回は両方向とも失敗しました。ディレクトリバケットとの間でデータを動かすなら、汎用バケットを経由します。
 
 ---
 
@@ -265,6 +316,8 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - NTFS の ACL を持つボリューム（SMB の利用者がいる環境）での、コピー先のファイルの所有者と ACL
 - アカウントをまたぐコピー、FlexCache のボリュームに付けた Access Point からのコピー
 - S3 Glacier Deep Archive から復元した後のボリュームへのコピー（復元を 2026-11-24 に要求し、完了待ち）
+- S3 Intelligent-Tiering のアーカイブ用の層に移ったオブジェクトのコピー
+- S3 Glacier Flexible Retrieval の標準・大容量取り出しと、S3 Glacier Deep Archive の大容量取り出しにかかった時間（2026-11-24 に要求し、完了待ち）
 - 小さなファイルを大量にコピーしたときのリクエストレートの上限と所要時間
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間
 - 第 2 世代、Multi-AZ のファイルシステムでのコピー

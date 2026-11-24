@@ -150,20 +150,20 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 
 コピー先の `HeadObject` は、ストレージクラス `FSX_ONTAP`、暗号化 `aws:fsx` を返しました。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーが非対応です（ユーザーガイドの対応表）。
 
-#### アーカイブ用のストレージクラスとの往復
+#### S3 のストレージクラスとの往復
 
-ボリュームのファイルを S3 Glacier Deep Archive などのアーカイブ用のクラスへ移し、必要になったらボリュームへ戻す使い方は、サーバー側のコピーで組めます。戻す方向では、S3 Glacier Flexible Retrieval（`GLACIER`）と S3 Glacier Deep Archive（`DEEP_ARCHIVE`）のオブジェクトだけ、先にバケット側で復元が要ります。
+ボリュームのファイルを、汎用バケットのどのストレージクラスへも写せます。アーカイブ用のクラスへ移して必要になったら戻す使い方も、サーバー側のコピーで組めます。戻す方向では、S3 Glacier Flexible Retrieval（`GLACIER`）と S3 Glacier Deep Archive（`DEEP_ARCHIVE`）のオブジェクトだけ、先にバケット側で復元が要ります。
 
 > **区分**: 2026-11-24 に、上の表と同じ環境で 1 回ずつ確かめた結果です。オブジェクトは特記のない限り 8 MiB で、中身は SHA-256 で比べました。コピーはすべて `CopyObject` です。
 
 | 方向 | ストレージクラス | 結果 |
 |---|---|---|
-| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 7 つとも成功。`STANDARD` 以外は、コピー先の `HeadObject` が指定したクラスを返した（`STANDARD` のときは S3 がクラスを返さない） |
-| バケット → Access Point（復元なし） | `STANDARD_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致 |
+| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 8 つとも成功。`STANDARD` 以外は、コピー先の `HeadObject` が指定したクラスを返した（`STANDARD` のときは S3 がクラスを返さない） |
+| バケット → Access Point（復元なし） | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 | バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
 | バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 
-`DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。`ONEZONE_IA` からボリュームへ戻す方向は試していません。
+`DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。6 GiB と 1 KiB での往復、コピー先に指定できないクラス、コピーのオプションは、[ストレージクラスとコピーのオプションの実測一覧](s3-access-points-server-side-copy-use-cases.md#ストレージクラスとコピーのオプションの実測一覧)にあります。
 
 復元（`RestoreObject`）は、コピー元のバケットに対して呼びます。Access Point の側では `RestoreObject` は非対応ですが、この往復ではボリュームの側に復元が要るオブジェクトはありません。復元にかかる時間と料金は取り出しの階層（Expedited、Standard、Bulk）で変わり、Amazon S3 の [Restoring an archived object](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects.html) に従います。
 
