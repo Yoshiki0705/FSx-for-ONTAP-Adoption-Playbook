@@ -158,10 +158,10 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 
 | 方向 | ストレージクラス | 結果 |
 |---|---|---|
-| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 7 つとも成功。コピー先の `HeadObject` が指定したクラスを返した |
+| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 7 つとも成功。`STANDARD` 以外は、コピー先の `HeadObject` が指定したクラスを返した（`STANDARD` のときは S3 がクラスを返さない） |
 | バケット → Access Point（復元なし） | `STANDARD_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致 |
 | バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
-| バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP`。復元は要求から 5 分以内に完了 |
+| バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 
 `DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。`ONEZONE_IA` からボリュームへ戻す方向は試していません。
 

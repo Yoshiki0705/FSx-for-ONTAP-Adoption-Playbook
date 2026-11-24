@@ -17,7 +17,7 @@ lang: ja
 
 - 2026-11-22 に告知されたサーバー側コピー（`CopyObject` / `UploadPartCopy`）で、新しく組めるようになった用途と、組めない用途
 - 5 GiB を超えるファイル、ファイルの属性、S3 Batch Operations、アーカイブ用のストレージクラスとの往復を、実機で確かめた結果
-- 「S3 が正本で、ファイルとしての性能が欲しい」構成（HiL テスト、EDA、メディア、ゲノム解析など）で、コピーが受け持つ範囲
+- 「S3 が正本で、ファイルとしての性能が欲しい」構成（HiL テスト、EDA、メディア、ゲノム解析など）で、コピーを使う範囲
 - オンプレミスの ONTAP で同じ目的に使われている運用が、FSx for ONTAP ではどう置き換わるか
 - 連携する AWS サービスと外部ツールのうち、Access Point での動作を出典か実測で確かめられたものと、確かめられていないもの
 
@@ -102,10 +102,10 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | 読む側 | 第一の選択肢 | コピーが要る場合 |
 |---|---|---|
 | S3 API を話し、Access Point のエイリアスか ARN を指定できる（Athena、Glue、Bedrock Knowledge Bases、SageMaker など） | Access Point を直接読む | バケット側の機能（Lifecycle、イベント通知、Macie、バージョニング、レプリケーション）が要るとき |
-| NFS / SMB だけを話す（物理装置、既存の業務アプリ、Windows のクライアント） | ボリュームをマウントする | 正本がバケットにあり、装置の近くのボリュームへ写す必要があるとき |
+| NFS / SMB でしか読めない（物理装置、既存の業務アプリ、Windows のクライアント） | ボリュームをマウントする | 正本がバケットにあり、装置の近くのボリュームへ写す必要があるとき |
 | 別のファイルシステムや別のアカウント | FlexCache、SnapMirror、Access Point ポリシーでの共有 | ボリューム全体ではなく、選んだファイルだけを写したいとき |
 
-サーバー側コピーは、ファイル単位で、属性を持たず、増分の仕組みもありません。SnapMirror のような整合性のあるボリュームの複製や、FlexCache のような読まれた分だけを持つキャッシュとは、受け持つ範囲が違います。
+サーバー側コピーは、ファイル単位で、属性を持たず、増分の仕組みもありません。SnapMirror のような整合性のあるボリュームの複製や、FlexCache のような読まれた分だけを持つキャッシュとは、使う場面が違います。
 
 ---
 
@@ -137,6 +137,16 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 マルチパートのコピーが途中で止まると、パートが残ります。バケット側は S3 Lifecycle の不完全なマルチパートアップロードの削除で、ボリューム側は `AbortMultipartUpload` で片付けます。対応表は、中断したパートがファイルシステムの使用量に数えられると書いています。
 
 コピー先のバケットに S3 Object Lock の既定の保持期間が設定されていると、写したオブジェクトにもその保持期間がかかり、期間中は消せません。保持の設計は、法令や規制の判断ではなく、システム設計上の考慮として扱い、保持期間を名指しした承認を取ってから設定してください。
+
+退避先のバケットについては、次の項目を設計の段階で決めておきます。いずれもシステム設計上の確認事項で、法令や規制への適合の判断ではありません。
+
+| 項目 | 決めること |
+|---|---|
+| 保管場所 | バケットのリージョン。コピーは同じリージョンの中だけ |
+| 暗号化 | バケットの既定の暗号化（SSE-S3 か SSE-KMS）。SSE-KMS なら、コピーを呼ぶ側に鍵の権限が要る |
+| アクセス制御 | バケットポリシーと、Block Public Access の設定 |
+| 保持 | S3 Lifecycle による削除の時期。S3 Object Lock を使うかどうかは、保持期間を名指しした承認を取ってから |
+| 記録 | 誰がいつ写し、戻したかを残す方法（AWS CloudTrail のデータイベントなど） |
 
 ---
 
@@ -176,7 +186,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | オンプレミスでの運用 | 目的 | FSx for ONTAP とサーバー側コピーでの扱い | 出典 |
 |---|---|---|---|
 | FabricPool で、冷えたブロックを Amazon S3 へ階層化する | SSD の容量を空ける。ファイルからは透過的 | FSx for ONTAP では容量プールの階層化が同じ役割を持つ。FabricPool はブロック単位で、Amazon S3 の S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive は対象外。ファイル単位でクラスを選ぶコピーとは別の層 | [FabricPool の要件](https://docs.netapp.com/us-en/ontap/fabricpool/requirements-concept.html) |
-| 外部のデータ管理ツールで、ファイル単位にアーカイブする | 最終アクセス日時などで選び、元のパスから読み戻せるようにする | コピーは移動の部分だけを受け持つ。選別、元のパスからの読み戻し、メタデータの管理はコピーに含まれない | [AWS Storage Blog の製造業の事例](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/)、[アーカイブと階層化の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
+| 外部のデータ管理ツールで、ファイル単位にアーカイブする | 最終アクセス日時などで選び、元のパスから読み戻せるようにする | コピーで置き換えられるのは移動の部分だけ。選別、元のパスからの読み戻し、メタデータの管理はコピーに含まれない | [AWS Storage Blog の製造業の事例](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/)、[アーカイブと階層化の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md) |
 | SnapMirror Cloud で、オブジェクトストレージへバックアップする | ボリューム単位の保護と復元 | FSx for ONTAP では、バックアップと SnapMirror が同じ役割を持つ。コピーはボリュームの保護手段ではない | [SnapMirror Cloud の概要](https://docs.netapp.com/us-en/ontap/concepts/snapmirror-cloud-backups-object-store-concept.html) |
 | ONTAP S3 のマルチプロトコル（NAS バケット）で、NAS のデータを S3 API のアプリに見せる | 分析・機械学習から、コピーせずに読む | FSx for ONTAP では S3 Access Points が同じ目的の機能。コピーは、Access Point とバケットの間の移動を加える | [ONTAP S3 マルチプロトコル](https://docs.netapp.com/us-en/ontap/s3-multiprotocol/) |
 | オンプレミスから SnapMirror で FSx for ONTAP へ移し、その後アーカイブする | 段階的な移行とアーカイブ | 移したボリュームの Access Point から、バケットの各クラスへコピーできる。この流れを手順として公開した事例は見つかっていない | [SnapMirror による移行](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/migrating-fsx-ontap-snapmirror.html) |
@@ -209,7 +219,7 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 
 ### アーカイブの往復の費用
 
-単価は 2026-11-24 に Price List API で ap-northeast-1 について取得しました。下の金額は単価 × 数量の計算例で、請求額ではありません。表にない費目（Access Point のリクエスト料金、容量プールのリクエスト料金、スループット容量、復元した一時コピーの保管料金）は含みません。
+単価は 2026-11-24 に Price List API で ap-northeast-1 について取得しました。下の金額は単価 × 数量の計算例で、請求額ではありません。表にない費目（容量プールのリクエスト料金、スループット容量、S3 Batch Operations のジョブ料金）は含みません。S3 Standard の保管単価（最初の 50 TB）は $0.025 / GB-月、Access Point の PUT・COPY は $0.00108 / 1,000 件です。
 
 | 単価（ap-northeast-1） | 値 |
 |---|---|
@@ -221,13 +231,15 @@ S3-Burst-on-ONTAP-Files は、HiL のテストベンチが NFSv3 に固定され
 | S3 Glacier Deep Archive からの取り出し（Standard / Bulk） | $0.022 / GB、$0.005 / GB |
 | S3 Glacier Deep Archive の復元リクエスト（Standard / Bulk） | $0.1142 / 1,000、$0.025 / 1,000 |
 
-計算の前提は、10 TiB（10,240 GB）、平均 100 MiB のファイル 10 万件を容量プールから S3 Glacier Deep Archive へ移し、そのうち 1 TiB（1 万件）を 1 回戻す、というものです。
+計算の前提は、10 TiB（10,240 GB）、平均約 105 MiB のファイル 10 万件を容量プールから S3 Glacier Deep Archive へ移し、そのうち 1 TiB（1 万件）を 1 回戻す、というものです。
 
 | 項目 | 計算 | 金額 |
 |---|---|---|
 | 容量プールに置いたままの保管 | 10,240 GB × $0.0238 | $243.71 / 月 |
 | S3 Glacier Deep Archive に置いた保管 | 10,240 GB × $0.002 | $20.48 / 月 |
-| 移すときのコピー | 10 万件 × $0.065 / 1,000 | $6.50（1 回） |
+| 移すときのコピー（S3 Glacier Deep Archive 側） | 10 万件 × $0.065 / 1,000 | $6.50（1 回） |
+| 移すときのコピー（Access Point 側のリクエスト） | 10 万件 × $0.00108 / 1,000 | 約 $0.11（1 回） |
+| 復元した一時コピーを 7 日置く | 1,024 GB × $0.025 × 7 / 30 | 約 $5.97（1 回） |
 | 1 TiB を Standard の取り出しで戻す | 1,024 GB × $0.022 + 1 万件 × $0.1142 / 1,000 | $23.67（1 回） |
 | 1 TiB を Bulk の取り出しで戻す | 1,024 GB × $0.005 + 1 万件 × $0.025 / 1,000 | $5.37（1 回） |
 
@@ -256,6 +268,9 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - 小さなファイルを大量にコピーしたときのリクエストレートの上限と所要時間
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間
 - 第 2 世代、Multi-AZ のファイルシステムでのコピー
+- 並列に写したときのスループットと、ペタバイト規模での所要時間（コピーは 1 件ずつ順に実行した）
+- コピー元のバケットが SSE-KMS で暗号化されている場合、バージョニングや Object Lock が有効な場合
+- AWS Lambda や AWS Step Functions からコピーを呼ぶ構成
 
 ---
 
