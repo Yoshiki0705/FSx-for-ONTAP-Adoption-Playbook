@@ -91,7 +91,17 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 
 コピー元の Access Point の `HeadObject` と `ListObjectsV2` は、`LastModified` にファイルの更新時刻を返しました。更新されていないファイルを選ぶ処理はこの値で組めます。最後に読まれた時刻は S3 API では返らないので、読まれていないファイルを選ぶなら、NFS で `stat` を取るか ONTAP の機能で調べます。
 
-結果 2 と 3 から、5 GiB を超えるファイルは `UploadPartCopy` を使えば写せます。AWS CLI の `aws s3 cp` と `aws s3 sync` は、大きなオブジェクトを自動でマルチパートのコピーにします。コピー先が FSx for ONTAP のボリュームなら、1 オブジェクトのアップロード上限 50 GiB（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）は残ります。
+結果 2 と 3 から、5 GiB を超えるファイルは `UploadPartCopy` を使えば写せます。大きさの上限は 2 つあり、混同しやすいので並べます。
+
+| 上限 | 値 | かかる場所 | 超えたとき |
+|---|---|---|---|
+| 1 回の `CopyObject` で写せるコピー元の大きさ | 5 GiB（5,368,709,120 バイト） | コピー元がバケットでも Access Point でも | `InvalidRequest`（実測 2） |
+| マルチパートのコピー（`UploadPartCopy`）の 1 パート | 5 MiB〜5 GiB、最大 10,000 パート（[S3 の上限](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)） | 5 GiB を超えるファイルを写すとき | パートの指定が拒否される |
+| ボリュームへ書くオブジェクト全体 | 50 GiB（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)） | コピー先が FSx for ONTAP のボリュームのとき。マルチパートのコピーも含む | `CompleteMultipartUpload` で失敗する（`PutObject` での実測は[方向で非対称なサイズ上限](s3-access-point-constraints.md#方向で非対称なサイズ上限)と[検証記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/blob/main/docs/s3ap-object-size-limits-verification.md)） |
+| バケットへ書くオブジェクト全体 | 48.8 TiB（[S3 の上限](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)） | コピー先が汎用バケットのとき | - |
+| ボリュームから読む大きさ | 上限なし（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)） | コピー元が FSx for ONTAP のボリュームのとき | - |
+
+`UploadPartCopy` そのものに 50 GiB の上限があるわけではありません。50 GiB は、ボリューム側に置けるオブジェクトの上限です。AWS CLI の `aws s3 cp` と `aws s3 sync` は、5 GiB を超えると自動でマルチパートのコピーにします。50 GiB を超えるファイルをバケットからボリュームへ移すときは、NFS / SMB で書きます（AWS DataSync など）。ボリュームからバケットへ 50 GiB を超えるファイルを写す方向は試していません。ツールによっては 5 GiB を超えるサーバー側コピーに対応していません（[サーバー側コピーとクライアントツール](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns/blob/main/docs/server-side-copy.md)）。
 
 ---
 

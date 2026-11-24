@@ -124,6 +124,7 @@ FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/REA
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/README.md	retraction	Create, a plan with no changes, a tag value change, removal of all tags, and destroy all succeeded.
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json	retraction	alarm:fsxn-monitoring-*
 FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns	docs/compatibility-matrix.md	reread	（未確認）で、数値はありません。
+FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns	docs/server-side-copy.md	reread	5 GB を超えるオブジェクトは未対応と書く
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics provides no documented mechanism to mount
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics run inputs and outputs must be Amazon S3 URIs
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/pitfalls-volume-lifecycle.md	retraction	削除済みクローンがキューにある限り、親から見ればクローンは存在する。
