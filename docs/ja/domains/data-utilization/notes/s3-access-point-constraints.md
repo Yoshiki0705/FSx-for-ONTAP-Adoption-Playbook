@@ -131,7 +131,7 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 - コピー先が FSx for ONTAP のボリュームのときは、暗号化は `SSE-FSX`、ストレージクラスは `FSX_ONTAP` だけ
 - 以前は、オブジェクトを一度サーバーに取得してアップロードし直す必要があった
 
-> **区分**: 上の組み合わせは `documented`（2026-11-24 に告知とユーザーガイドを閲覧）。次の表は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4、UNIX セキュリティスタイル）で 1 回ずつ確かめた `verified` です。オブジェクトは 8 MiB で、中身は SHA-256 で比べました。
+> **区分**: 上の組み合わせは、告知とユーザーガイドの記載です（2026-11-24 に閲覧）。次の表は、このリポジトリで 2026-11-24 に `ap-northeast-1` の第 1 世代 `SINGLE_AZ_1`（ONTAP 9.19.1P4、UNIX セキュリティスタイル）で 1 回ずつ確かめた結果です。オブジェクトは 8 MiB（9 と 10 は 6 GiB）で、中身は SHA-256 で比べました。
 
 | # | コピー | 結果 |
 |---|---|---|
@@ -143,8 +143,39 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 | 6 | バケット → Access Point、`--storage-class STANDARD` を指定 | `InvalidStorageClass` |
 | 7 | 別の Access Point をコピー元にした `UploadPartCopy`（コピー元のキー `ssc/obj.bin` は `/` を含む、2 パート） | 成功。`CompleteMultipartUpload` の後、中身が一致 |
 | 8 | `aws s3 cp` でバケットから Access Point のエイリアスへ | 成功。中身が一致 |
+| 9 | 6 GiB のファイルを 1 回の `CopyObject` で、バケットへ、また別の Access Point へ | `InvalidRequest`（コピー元の上限 5368709120 バイトを超える） |
+| 10 | 同じ 6 GiB を `aws s3 cp`（768 パートの `UploadPartCopy`）で、Access Point → バケット、バケット → Access Point、Access Point → 別の Access Point | 3 つとも成功。中身が一致 |
+
+ファイルの所有者、モード、更新時刻はコピー先に写りません。用途ごとの使い分け、属性と S3 Batch Operations の実測は、[S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](s3-access-points-server-side-copy-use-cases.md)にあります。
 
 コピー先の `HeadObject` は、ストレージクラス `FSX_ONTAP`、暗号化 `aws:fsx` を返しました。`CopyObject` では `x-amz-object-annotation-directive` ヘッダーが非対応です（ユーザーガイドの対応表）。
+
+#### S3 のストレージクラスとの往復
+
+ボリュームのファイルを、汎用バケットのどのストレージクラスへも写せます。アーカイブ用のクラスへ移して必要になったら戻す使い方も、サーバー側のコピーで組めます。戻す方向では、S3 Glacier Flexible Retrieval（`GLACIER`）と S3 Glacier Deep Archive（`DEEP_ARCHIVE`）のオブジェクトだけ、先にバケット側で復元が要ります。
+
+> **区分**: 2026-11-24 に、上の表と同じ環境で 1 回ずつ確かめた結果です。オブジェクトは特記のない限り 8 MiB で、中身は SHA-256 で比べました。コピーはすべて `CopyObject` です。
+
+| 方向 | ストレージクラス | 結果 |
+|---|---|---|
+| Access Point → バケット（`--storage-class` でコピー先のクラスを指定） | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR`、`GLACIER`、`DEEP_ARCHIVE` | 8 つとも成功。`STANDARD` 以外は、コピー先の `HeadObject` が指定したクラスを返した（`STANDARD` のときは S3 がクラスを返さない） |
+| バケット → Access Point（復元なし） | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`INTELLIGENT_TIERING`、`GLACIER_IR` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
+| バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
+| バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
+
+`DEEP_ARCHIVE` を復元した後のコピーは、復元の完了を待っている段階で、まだ確かめていません。6 GiB と 1 KiB での往復、コピー先に指定できないクラス、コピーのオプションは、[ストレージクラスとコピーのオプションの実測一覧](s3-access-points-server-side-copy-use-cases.md#ストレージクラスとコピーのオプションの実測一覧)にあります。
+
+復元（`RestoreObject`）は、コピー元のバケットに対して呼びます。Access Point の側では `RestoreObject` は非対応ですが、この往復ではボリュームの側に復元が要るオブジェクトはありません。復元にかかる時間と料金は取り出しの階層（Expedited、Standard、Bulk）で変わり、Amazon S3 の [Restoring an archived object](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects.html) に従います。
+
+1 GiB のファイルでの所要時間は次のとおりです。いずれもこの環境での 1 回のサンプル実行で、本番の見積りではありません。
+
+| コピー | 所要時間 |
+|---|---|
+| `aws s3 cp` で Access Point → バケット（`DEEP_ARCHIVE`、128 パートのマルチパートコピー） | 3 秒 |
+| `aws s3 cp` で Access Point → バケット（`GLACIER_IR`） | 4 秒 |
+| `aws s3 cp` でバケット（`GLACIER_IR`）→ 別のファイルシステムの Access Point | 21 秒。NFS で読んだファイルの SHA-256 が元と一致 |
+
+バケット側で Object Lock や S3 Lifecycle を組み合わせる設計はありえますが、Object Lock は保持期間中に削除できなくなる不可逆な設定です。このリポジトリでは試しておらず、設定するなら保持期間を名指しした承認を別に取ってください（[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)）。
 
 #### Presign が対応に変わっていること
 

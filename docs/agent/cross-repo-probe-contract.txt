@@ -100,10 +100,12 @@ FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction
 FSx-for-ONTAP-Observability-integrations	docs/ja/native-alternative-matrix.md	retraction	本リポジトリの AWS ネイティブ実装にマッピングしたもの
 FSx-for-ONTAP-Observability-integrations	docs/ja/s3ap-throughput-benchmark.md	retraction	サイジングの参考値であり、サービス上限ではありません
 FSx-for-ONTAP-Observability-integrations	docs/ja/verification-results-cloudwatch-monitoring.md	retraction	確認項目を伴う検証の実行ではなく、1 つの環境でのサンプルです。
+FSx-for-ONTAP-Observability-integrations	integrations/grafana/docs/en/cloudtrail-trigger-alternative.md	retraction	CloudTrail data events DO work with FSx for ONTAP S3 Access Points.
 FSx-for-ONTAP-Observability-integrations	llms.txt	retraction	this repository is where a chosen route is implemented.
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/README.ja.md	retraction	作成、変更のない plan、タグの値の変更、すべてのタグの削除、削除（destroy）がすべて成功しました。
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/README.md	retraction	Create, a plan with no changes, a tag value change, removal of all tags, and destroy all succeeded.
 FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/examples/basic/iam-policy.json	retraction	alarm:fsxn-monitoring-*
+FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns	docs/compatibility-matrix.md	reread	（未確認）で、数値はありません。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics provides no documented mechanism to mount
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics run inputs and outputs must be Amazon S3 URIs
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	「マウントできない」とは書きません。
@@ -117,6 +119,7 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/multi-tenant-design.md	
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	の可否は確認できていません。REST API と OAuth 2.0 の存在は確認済みです
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	常にエージェントと Basic モードが必要です
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/snaplock-audit-log-console-guardrails.md	retraction	デフォルト 0 年 / 最小 0 年 / 最大 30 年
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/large-batch-processing-guide.md	reread	DISTRIBUTED モードを使用する場合は、Step Functions の定義を以下のように変更します
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.en.md	retraction	There is no subtraction across them
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-authorization-model.md	retraction	層をまたいだ引き算は起きません
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-benchmark-results.md	retraction	各 S3 API 操作のレイテンシとスループットを実測した結果です
@@ -125,11 +128,13 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-ve
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	solutions/flexcache/devops-cicd/README.md	retraction	に反映されるまで ~30 分かかる
+S3-Burst-on-ONTAP-Files	docs/ja/architecture.md	retraction	すべての HiL 環境がこうだという主張ではない。
 S3-Burst-on-ONTAP-Files	docs/ja/deployment/onprem-terraform.md	retraction	クラスタピアと SVM ピアが先に必要です。
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
 S3-Burst-on-ONTAP-Files	docs/ja/performance-expectations.md	retraction	記録の側が正で、ここは索引
 S3-Burst-on-ONTAP-Files	docs/ja/poc-checklist.md	retraction	測ったあとに合否を決めると、出た数値が合格になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-performance-test-patterns.md	retraction	実際の請求ではない
+S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	テストベンチは構成を変えられない物理機器で、AWS 外にある。マウントヘルパーを入れられない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/comparison/finops-s3-vs-s3ap.md	retraction	片方にあって他方にない項目が、そのまま設計上の制約になる。
 S3-Burst-on-ONTAP-Files	docs/ja/reference/decision-trees/choosing-this-architecture.md	retraction	S3 Access Point のみでよい。ファンアウトは不要
 S3-Burst-on-ONTAP-Files	docs/ja/reference/glossary/object-access-on-ontap.md	retraction	ONTAP 自身が S3 オブジェクトサーバとして専用バケットを提供する
