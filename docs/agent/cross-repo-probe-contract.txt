@@ -48,6 +48,7 @@ FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-2-aimf-modern-dotnet.md	r
 FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-3-s3-access-points.md	retraction	S3 Access Points 経由ではキーの大文字小文字を区別する
 FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max events/second before DLQ overflow
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent-prompts/ontap-catalog-snapshot.md	retraction	このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent/evidence-ledger.json	retraction	NetApp Volume Encryption key management on FSx for ONTAP
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	AWS マネージドキーで暗号化されたファイルシステムのバックアップはボールトへコピーされない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	MessageCategory は `KMS_KEY_ERROR`、メッセージは
@@ -60,6 +61,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/supply-chain-use-cases.md	retrac
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	に置く構成は、そのための 1 つのパターンである
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジックの 3 本の柱を 1 か所にまとめ
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	SnapMirror（M5）、CloudWatch のメトリクス（M6）は数値がない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	本番の見積りではなく、他の構成の値でもない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-objectives-guide.md	retraction	RTO は、起点と終点を決めないと値にならない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/supply-chain-use-cases.md	retraction	11 のユースケース（A1 から D1）に分けてまとめる
@@ -80,6 +82,7 @@ FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considera
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	稼働中の SnapMirror 宛先は、break もクローンもなしに S3 AP 経由で読める。
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/en/research.md	retraction	the refusal is by volume kind
 FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/ja/research.md	retraction	Cross-region S3 AP re-attach RTO: ~3 分
+FSx-for-ONTAP-Lakehouse-Integrations	integrations/snapmirror-flexcache-multicloud/docs/ja/research.md	retraction	稼働中の SnapMirror 宛先を ONTAP で mount すれば S3 AP で読める
 FSx-for-ONTAP-Lakehouse-Integrations	llms.txt	retraction	which parts work, which do not, and what each claim rests on.
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/fpolicy-event-source/evidence/2026-09-14/evidence-record.yaml	retraction	is an invalid value for field "protocol"
 FSx-for-ONTAP-Lakehouse-Integrations	verification-pack/s3ap-list-latency/evidence/2026-09-14-scale/benchmark-result.yaml	retraction	BENCH-S3AP-LIST-002
@@ -132,6 +135,8 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-benchmark-results.md	
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	はいずれも二進表記でした
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/s3ap-object-size-limits-verification.md	retraction	上限は正確に 50 GiB = 53,687,091,200 バイト
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/support-matrix-fsx-ontap-flexcache-s3ap.md	retraction	ONTAP バージョンだけでは判断できない
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	infrastructure/shared-backup-vault-lab/docs/verification-record.md	retraction	クロスリージョンでも同じ共有ボールトと復旧ポイントが受け手に見えます
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	infrastructure/shared-backup-vault-lab/docs/verification-record.md	retraction	ソースリージョンの list-copy-jobs に、宛先ボールト ARN（ap-northeast-3）付きで出ました
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	solutions/flexcache/devops-cicd/README.md	retraction	に反映されるまで ~30 分かかる
 S3-Burst-on-ONTAP-Files	docs/ja/architecture.md	retraction	すべての HiL 環境がこうだという主張ではない。
