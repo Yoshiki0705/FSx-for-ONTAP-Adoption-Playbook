@@ -756,8 +756,8 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "Amazon EC2<br>(writes over S3 API)",
     },
     "ec2_nfs_reader": {
-        "ja": "Amazon EC2<br>（NFS で読む）",
-        "en": "Amazon EC2<br>(reads over NFS)",
+        "ja": "Amazon EC2<br>（同じ EC2 が<br>NFS で読む）",
+        "en": "Amazon EC2<br>(same instance,<br>reads over NFS)",
     },
     "putobject_edge": {"ja": "PutObject", "en": "PutObject"},
     "nfs_any_edge": {
@@ -765,8 +765,8 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "NFS v3 / v4.x<br>visible in ms",
     },
     "s3files_import_edge": {
-        "ja": "約 1.5 秒で<br>取り込み",
-        "en": "Imported in<br>about 1.5 s",
+        "ja": "p50 約 1.5 秒で<br>取り込み",
+        "en": "Imported in<br>about 1.5 s (p50)",
     },
     "nfs4_edge": {"ja": "NFSv4.1 / 4.2", "en": "NFSv4.1 / 4.2"},
     # --- S3 Files and S3 Access Points joined by server-side copy (s3files-s3ap-copy-bridge) ---
@@ -784,11 +784,14 @@ LABELS: dict[str, dict[str, str]] = {
     },
     "s3_files_fs": {"ja": "Amazon S3<br>Files", "en": "Amazon S3<br>Files"},
     "export_edge": {
-        "ja": "約 60 秒後に<br>エクスポート",
-        "en": "Exported after<br>about 60 s",
+        "ja": "実測 約 64 秒で<br>エクスポート",
+        "en": "Exported after<br>64 s, measured",
     },
     "copy_edge": {"ja": "CopyObject", "en": "CopyObject"},
-    "import_edge": {"ja": "約 1.5 秒で<br>読める", "en": "Readable in<br>about 1.5 s"},
+    "import_edge": {
+        "ja": "約 1.0〜1.5 秒で<br>読める",
+        "en": "Readable in<br>1.0 to 1.5 s",
+    },
     # --- server-side copy with S3 Access Points and archive classes (s3ap-server-side-copy-archive) ---
     "archive_out_frame": {
         "ja": "書き出し: ボリューム → バケット",
@@ -1731,7 +1734,7 @@ def _s3files_s3ap_copy_bridge() -> Diagram:
     """S3 Files on a bucket and FSx for ONTAP S3 Access Points, joined by server-side copy.
 
     Two rows, each read rightwards because the flow check forbids a leftward edge. The top row is a
-    file written through S3 Files, exported to the bucket after the about-60-second wait and copied
+    file written through S3 Files, exported to the bucket after about 64 s (measured) and copied
     to the volume; the bottom row is a volume file copied to the bucket and read through S3 Files.
     The timings are short edge labels only; the measured values and the attribute handling are
     tables in the Hub note `s3-files-and-access-points-bridged-by-copy.md`. Wide and short so the

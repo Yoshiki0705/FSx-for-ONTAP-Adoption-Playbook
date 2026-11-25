@@ -8,7 +8,7 @@
         <mxCell id="o1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#FFFFFF;strokeWidth=1;fontSize=16;fontColor=#FFFFFF;labelBackgroundColor=#232F3E;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="ec2_out" target="s3f_out" parent="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="o2" value="Exported after&lt;br&gt;about 60 s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#FFFFFF;strokeWidth=1;fontSize=16;fontColor=#FFFFFF;labelBackgroundColor=#232F3E;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="s3f_out" target="s3_out" parent="1">
+        <mxCell id="o2" value="Exported after&lt;br&gt;64 s, measured" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#FFFFFF;strokeWidth=1;fontSize=16;fontColor=#FFFFFF;labelBackgroundColor=#232F3E;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="s3f_out" target="s3_out" parent="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint as="offset" x="0" y="-46" />
           </mxGeometry>
@@ -29,7 +29,7 @@
             <mxPoint as="offset" x="0" y="-30" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="i3" value="Readable in&lt;br&gt;about 1.5 s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#FFFFFF;strokeWidth=1;fontSize=16;fontColor=#FFFFFF;labelBackgroundColor=#232F3E;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="s3_in" target="s3f_in" parent="1">
+        <mxCell id="i3" value="Readable in&lt;br&gt;1.0 to 1.5 s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#FFFFFF;strokeWidth=1;fontSize=16;fontColor=#FFFFFF;labelBackgroundColor=#232F3E;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="s3_in" target="s3f_in" parent="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint as="offset" x="0" y="-46" />
           </mxGeometry>

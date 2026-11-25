@@ -20,7 +20,7 @@ lang: ja
 
 コピーはファイル単位の複製です。どちらを正本にするかを決め、もう片方は写しとして扱います。
 
-![上の段は、Amazon EC2 が Amazon S3 Files に書いたファイルが約 60 秒後にバケットへエクスポートされ、CopyObject で S3 Access Points を通して FSx for ONTAP のボリュームへ写る流れ。下の段は、ボリュームのファイルを S3 Access Points からバケットへ CopyObject し、約 1.5 秒で S3 Files から EC2 が読める流れ](../../../../_assets/images/s3files-s3ap-copy-bridge.svg)
+![上の段は、Amazon EC2 が Amazon S3 Files に書いたファイルが約 64 秒（実測）でバケットへエクスポートされ、CopyObject で S3 Access Points を通して FSx for ONTAP のボリュームへ写る流れ。下の段は、ボリュームのファイルを S3 Access Points からバケットへ CopyObject し、約 1.0〜1.5 秒で S3 Files から EC2 が読める流れ](../../../../_assets/images/s3files-s3ap-copy-bridge.svg)
 
 図の内容は下の表と同じです（[暗い背景の版](../../../../_assets/images/s3files-s3ap-copy-bridge-dark.svg)、[English](../../../../_assets/images/s3files-s3ap-copy-bridge-en.svg)）。
 
