@@ -148,7 +148,7 @@ S3 の `DeleteObject` が NFS 側から消えるまでの時間（[同一ボリ�
 
 S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつないだときの反映は、別のノートにあります。Access Point からバケットへ写したファイルが S3 Files で読めるまでは p50 約 1.5 秒、S3 Files で書いたファイルがバケットに出るまでは p50 約 64 秒でした（[S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](s3-files-and-access-points-bridged-by-copy.md)、2026-11-25）。
 
-S3 Access Points で書いたファイルを NFSv3、NFSv4.1、NFSv4.2 で読むまでの時間は、2026-11-25 に別の環境で測りました。どの版でも `stat` は p50 0.4〜3.3 ms で、版による差より属性キャッシュの設定による差の方が大きく出ました（[S3 Access Points で書いたファイルを NFS で読むまで](s3-access-points-write-read-over-nfs-versions.md)）。
+S3 Access Points で書いたファイルを NFSv3、NFSv4.1、NFSv4.2、SMB 3.0、SMB 3.1.1 で読むまでの時間は、2026-11-25 に別の環境で測りました。新しいファイルの `stat` は、NFS で p50 0.4〜3.3 ms、SMB で p50 0.4〜0.8 ms でした（[S3 Access Points で書いたファイルを NFS と SMB で読むまで](s3-access-points-write-read-over-nfs-versions.md)）。
 
 ### この数値の範囲外
 

@@ -756,13 +756,17 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "Amazon EC2<br>(writes over S3 API)",
     },
     "ec2_nfs_reader": {
+        "ja": "Amazon EC2<br>（同じ EC2 が<br>数 ms で読める）",
+        "en": "Amazon EC2<br>(same instance,<br>reads within ms)",
+    },
+    "ec2_nfs_only_reader": {
         "ja": "Amazon EC2<br>（同じ EC2 が<br>NFS で読む）",
         "en": "Amazon EC2<br>(same instance,<br>reads over NFS)",
     },
     "putobject_edge": {"ja": "PutObject", "en": "PutObject"},
     "nfs_any_edge": {
-        "ja": "NFS v3 / v4.x<br>数 ms で見える",
-        "en": "NFS v3 / v4.x<br>visible in ms",
+        "ja": "NFS v3 / v4.1 / v4.2<br>SMB 3.0 / 3.1.1",
+        "en": "NFS v3 / v4.1 / v4.2<br>SMB 3.0 / 3.1.1",
     },
     "s3files_import_edge": {
         "ja": "p50 約 1.5 秒で<br>取り込み",
@@ -1832,7 +1836,7 @@ def _s3api_in_files_out_ab() -> Diagram:
             Node("b_w", "ec2", "ec2_s3api_writer", 90, 405),
             Node("b_s3", "s3", "s3_copy_bucket", 330, 405),
             Node("b_s3f", "s3_files", "s3_files_fs", 586, 421),
-            Node("b_r", "ec2", "ec2_nfs_reader", 820, 405),
+            Node("b_r", "ec2", "ec2_nfs_only_reader", 820, 405),
         ),
         edges=(
             Edge(
