@@ -165,6 +165,7 @@ lang: ja
 | 技術資料 | [HealthOmics + Bedrock AgentCore でのバリアント解釈](https://aws.amazon.com/jp/blogs/news/accelerating-genomics-variant-interpretation-with-aws-healthomics-and-amazon-bedrock-agentcore/) | VCF → VEP → S3 Tables → AgentCore エージェント。構造化バリアントのクエリ層 |
 | 技術資料 | [Kiro for Life Sciences — 100+ 公開 DB への統合 AI インターフェース](https://aws.amazon.com/jp/blogs/news/accelerating-life-sciences-research-with-kiro-a-unified-ai-interface-to-100-open-source-databases/) | 研究者が公開 DB を横断する MCP。**ストレージは主役ではなく、自前の解析データと突き合わせる文脈で参照** |
 | ノート | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](../domains/data-utilization/notes/where-genomics-pipeline-data-lives.md) | Sequence Store / S3・S3 Tables / POSIX 共有ファイルシステムの役割の違い |
+| ノート | [エージェントに渡す研究データセットは Snapshot の UUID で再現する](../domains/data-utilization/notes/reproducible-research-datasets-for-agents.md) | 版ごとの Snapshot、実験ごとの FlexClone、クローンに付けた S3 Access Points と、実験の記録に残す識別子 |
 | ノート | [Snapshot があることと復旧できることは別](../domains/data-protection/notes/snapshots-are-not-a-recovery-plan.md) | データ保護設計 |
 
 ### 通信
