@@ -26,6 +26,7 @@
 # third shape and is deliberately filed as `retraction`: when it stops being true, the guidance
 # resting on it changes, and that is something to be stopped by rather than warned about.
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	benchmarks/results/baseline-estimates.md	retraction	デモ環境実測（2 ドキュメント、ap-northeast-1）
+FSx-for-ONTAP-Agentic-Access-Aware-RAG	docker/nextjs/src/lib/agentcore/episodic-memory.ts	retraction	export async function deleteEpisode(
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/en/managed-kb-migration-evaluation.md	retraction	explicitly managing where vector data is stored
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	docs/fsxn-sizing-and-performance.md	retraction	Permission-aware RAG システムにおける FSx for ONTAP の性能・容量設計指針を提供します
 FSx-for-ONTAP-Agentic-Access-Aware-RAG	llms.txt	retraction	matched against the user's SID / UID / GID **at query time**
@@ -49,19 +50,23 @@ FSx-for-ONTAP-App-Modernization-Patterns	docs/ja/stage-3-s3-access-points.md	ret
 FSx-for-ONTAP-Cyber-Resilience-Patterns	benchmarks/README.md	retraction	Max events/second before DLQ overflow
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent-prompts/ontap-catalog-snapshot.md	retraction	このリポジトリのサンプルを、自分の VPC・シークレットに合わせて導入したい
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent/evidence-ledger.json	retraction	NetApp Volume Encryption key management on FSx for ONTAP
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent/evidence-ledger.json	retraction	but does not record the requesting principal
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	AWS マネージドキーで暗号化されたファイルシステムのバックアップはボールトへコピーされない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	MessageCategory は `KMS_KEY_ERROR`、メッセージは
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/deletion-requests-and-retained-copies.md	retraction	のキーで `GetObject` すると読めた
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	is one pattern for that.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/recovery-measurement-results.md	retraction	It is not a production estimate and not a value for other configurations.
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/recovery-measurement-results.md	retraction	about 80 times as long for clone creation (193.0 and 2.5 seconds)
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/recovery-objectives-guide.md	retraction	An RTO is not a value until its start and end are fixed.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/supply-chain-use-cases.md	retraction	It is organized as 11 use cases (A1 to D1).
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-framework-mapping.md	retraction	保護するのは復旧点とファイルの可用性・完全性。認可された読み取りによる持ち出しは止めない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	に置く構成は、そのための 1 つのパターンである
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/cyber-resilience-programme.md	retraction	ソフトウェアサプライチェーンの可視化と対応、RTO/RPO と SLA/SLO/SLI、フォレンジックの 3 本の柱を 1 か所にまとめ
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	SnapMirror（M5）、CloudWatch のメトリクス（M6）は数値がない
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	クローン作成で約 80 倍（193.0 秒と 2.5 秒）
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-measurement-results.md	retraction	本番の見積りではなく、他の構成の値でもない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/recovery-objectives-guide.md	retraction	RTO は、起点と終点を決めないと値にならない。
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/ja/supply-chain-use-cases.md	retraction	11 のユースケース（A1 から D1）に分けてまとめる
@@ -116,6 +121,7 @@ FSx-for-ONTAP-Observability-integrations	terraform/fsxn-monitoring-dashboard/exa
 FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns	docs/compatibility-matrix.md	reread	（未確認）で、数値はありません。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics provides no documented mechanism to mount
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/evidence-ledger.json	retraction	AWS HealthOmics run inputs and outputs must be Amazon S3 URIs
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/agent/pitfalls-volume-lifecycle.md	retraction	削除済みクローンがキューにある限り、親から見ればクローンは存在する。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	「マウントできない」とは書きません。
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/aws-feature-requests/lambda-healthomics-s3ap-gaps.md	retraction	未実装、新パターン候補としてバックログ化
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/bedrock-inference-profiles.md	retraction	＝日本国内、`au.`＝豪州国内
@@ -123,6 +129,8 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migra
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/en/saas-to-fsx-ontap-migration.md	retraction	could not be confirmed. The existence of the REST API and OAuth 2.0 was confirmed
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/errata-fpolicy-s3ap-coverage.md	retraction	書き込みが S3 Access Point 経由で届く場合には成り立たない
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/file-portal-amplify-gen2.md	retraction	作らずに済むかもしれません
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/guides/flexclone-serverless-patterns-en.md	retraction	FlexClone gives each researcher an independent writable copy
+FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/guides/flexclone-serverless-patterns.md	retraction	共通データは物理的に 1 コピーのみ保持
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/cost-measurement.md	retraction	Cost Explorer
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/multi-tenant-design.md	retraction	テナント ID をパーティションキーにする
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	docs/ja/saas-to-fsx-ontap-migration.md	retraction	の可否は確認できていません。REST API と OAuth 2.0 の存在は確認済みです
@@ -139,6 +147,9 @@ FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	infrastructure/shared-backup-va
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	infrastructure/shared-backup-vault-lab/docs/verification-record.md	retraction	ソースリージョンの list-copy-jobs に、宛先ボールト ARN（ap-northeast-3）付きで出ました
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	llms.txt	retraction	This repository holds **implementations**.
 FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns	solutions/flexcache/devops-cicd/README.md	retraction	に反映されるまで ~30 分かかる
+ONTAP-Edge-to-Cloud-AI	docs/en/agentic-ai-on-aws.md	retraction	The source of truth sits outside the AI.
+ONTAP-Edge-to-Cloud-AI	docs/ja/agentic-ai-on-aws.md	retraction	真実の源は AI の外にあります
+S3-Burst-on-ONTAP-Files	docs/en/reference/limits/s3ap-interoperability.md	retraction	The sha256 of a 256 MiB file matched the parent
 S3-Burst-on-ONTAP-Files	docs/ja/architecture.md	retraction	すべての HiL 環境がこうだという主張ではない。
 S3-Burst-on-ONTAP-Files	docs/ja/deployment/onprem-terraform.md	retraction	クラスタピアと SVM ピアが先に必要です。
 S3-Burst-on-ONTAP-Files	docs/ja/design-first-decisions.md	retraction	取り消せない。**保持期間を明示した指示がない限り有効化しない**
@@ -155,6 +166,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3-access-point.md	retraction	�
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	リーフとその下の階層に同じ名前を使わない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	作成経路によって成否が変わるので、CLI で失敗しても仕様上不可能とは判断しない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	衝突するのは経路が変わったときである
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	256 MiB ファイルの sha256 が親と一致
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NFS / SMB から見えるので、収集層のボリュームを人が覗く運用では
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイルシステムは満杯ではなく
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイル単位クローンだけがジョブを残さない
