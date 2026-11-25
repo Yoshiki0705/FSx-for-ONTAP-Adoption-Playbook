@@ -9,7 +9,7 @@ lang: en
 
 # What does the data side have to decide when neural and biometric recordings go on Amazon FSx for NetApp ONTAP?
 
-Split raw recordings from derived data into separate volumes, then choose the placement after counting two things: the key is per file system, and each copy has its own deadline for honoring a withdrawal of consent.
+Split raw recordings from derived data into separate volumes, then choose the placement after deciding two things: the unit at which keys are separated (file system, SVM, or volume), and the deadline each copy has for honoring a withdrawal of consent.
 
 <!-- lang-switcher:start -->
 🌐 [日本語](../../../../ja/domains/security-governance/notes/neural-and-biometric-recordings.md) | [English](neural-and-biometric-recordings.md) | [🏠 Repository home](../../../README.md)
@@ -18,7 +18,7 @@ Split raw recordings from derived data into separate volumes, then choose the pl
 ## What you will learn
 
 - Why raw electroencephalography (EEG) and magnetoencephalography (MEG) recordings and the data derived from them belong on separate volumes
-- That encryption at rest in FSx for ONTAP uses a key per file system, so a key per subject needs another mechanism
+- That encryption at rest in FSx for ONTAP uses an AWS KMS key per file system, and that NetApp Volume Encryption (NVE) adds a key per volume and a key per SVM, so keys per subject or per study can be separated by SVM or by volume
 - That after you delete a file, snapshots, backups, SnapMirror destinations and clones each keep the data until their own expiry
 - What you give up for each of four kinds of data (raw recordings, anonymized data, training data, audit and consent records) when you put it on WORM storage and when you do not
 
@@ -26,7 +26,7 @@ Split raw recordings from derived data into separate volumes, then choose the pl
 
 - Whether an organization may handle neural data, and how to word consent (legal counsel and an ethics review decide)
 - The laws of other jurisdictions
-- Whether NetApp Volume Encryption can be enabled on FSx for ONTAP (not tried)
+- How FSx for ONTAP behaves with NVE enabled (not tried)
 - A live reproduction of a configuration that combines one qtree and quota per subject
 
 ## Prerequisite level
@@ -52,7 +52,7 @@ Four things need to be decided before choosing where the data goes.
 | Decision | Answer in this note |
 |---|---|
 | Whether to separate raw recordings from derived data | Separate them. Protection, retention period and access scope differ for each |
-| The unit of the key | Encryption at rest in FSx for ONTAP uses an AWS KMS key that you choose per file system. A key per subject needs application-side encryption or a split into several file systems |
+| The unit of the key | Encryption at rest in FSx for ONTAP uses an AWS KMS key that you choose per file system. Adding NVE adds a key per volume and a key per SVM, so keys per subject or per study can be separated by SVM or by volume (not tried on FSx for ONTAP). Application-side encryption and a split into several file systems are also options |
 | The deadline for honoring a withdrawal of consent | Deleting a file leaves copies that live until their own expiry. Count the deadline per copy |
 | Whether to put data on WORM storage | If you do, nobody can delete it until the retention ends. If you do not, you must cover ransomware readiness by other means |
 
@@ -110,7 +110,9 @@ Writing a narrower `Allow` in an access point policy does not narrow access with
 
 FSx for ONTAP encrypts data at rest with an AWS KMS key that you choose per file system ([AWS: Encryption at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html), `documented`).
 
-Because the key belongs to the file system, a key per subject needs envelope encryption in the application or a split into several file systems.
+Below that, NVE can add a per-volume key layer. According to the [NetApp Community post Encryption options for Amazon FSx for NetApp ONTAP](https://community.netapp.com/community/discussion/461606/encryption-options-for-amazon-fsx-for-netapp-ontap) (2025-06-17, `documented`), FSx for ONTAP supports external KMIP key managers, and NVE keys can be managed in two ways. In the first, keys that ONTAP generates are held in an external KMIP key manager. In the second, each volume's key (VDEK) is wrapped by an SVM key (SVM-KEK), and the key protecting the SVM-KEK is encrypted with an AWS KMS CMK (a KMS key you manage) whose key material you generated and imported, one KMS key per SVM. The ONTAP documentation on [key management with a cloud provider](https://docs.netapp.com/us-en/ontap/encryption-at-rest/manage-keys-azure-google-task.html) limits this to data SVMs (`documented`).
+
+So, to separate keys per subject or per study, you can split SVMs (one KMS key per SVM) or split volumes (a key per volume). Envelope encryption in the application and a split into several file systems remain options. This note states only that keys can be separated per SVM or per volume. Erasing data by deleting a key is not covered, because the sources read do not describe it.
 
 For ONTAP volume encryption, the Cyber Resilience Patterns [read-only configuration probe](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/adversarial-configuration-probe.md) recorded the following (`verified`; these are that project's values and were not re-measured in this repository).
 
@@ -123,7 +125,7 @@ For ONTAP volume encryption, the Cyber Resilience Patterns [read-only configurat
 
 `encryption.enabled=false` shows that ONTAP volume encryption is not in use. It does not show that the file-system-level KMS encryption at rest is off.
 
-Whether NetApp Volume Encryption can be enabled on FSx for ONTAP was not tried (`open`).
+Enabling NVE on FSx for ONTAP has not been tried (`open`, [Cyber ledger E-062](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/agent/evidence-ledger.json)). According to the same ledger, the `fsxadmin` role on ONTAP 9.18.1P6 has `security key-manager external` and `volume encryption` with access all for data SVMs.
 
 ---
 
@@ -152,7 +154,7 @@ Each row is a kind of data. The "On WORM storage" column states what you give up
 
 | Data | Placement | Key | On WORM storage (SnapLock, logically air-gapped vault) | What you give up instead |
 |---|---|---|---|---|
-| Raw recordings (subject to withdrawal) | A dedicated volume. One qtree and quota per subject | The file system's KMS key. For a key per subject, application-side envelope encryption or a split into file systems | Keep off WORM by default | If off WORM, cover ransomware readiness with another volume or another protection; those copies also count toward the withdrawal deadline. If on WORM, you cannot honor a deletion request until the retention ends |
+| Raw recordings (subject to withdrawal) | A dedicated volume. One qtree and quota per subject | The file system's KMS key. For a key per subject or per study, split SVMs or volumes and separate NVE keys (not tried on FSx for ONTAP), or use application-side envelope encryption or a split into file systems | Keep off WORM by default | If off WORM, cover ransomware readiness with another volume or another protection; those copies also count toward the withdrawal deadline. If on WORM, you cannot honor a deletion request until the retention ends |
 | Anonymized data | A volume separate from the raw recordings | Same as above | An option only when the organization has decided it falls outside withdrawal | If off WORM, cover tampering and ransomware with another protection. If on WORM, you cannot delete it until the retention ends even if the anonymization judgment is later overturned |
 | Training data | A separate volume | Same as above | Keep off WORM by default | If off WORM, arrange another way to pin the data for reproducing a training run. If on WORM, you cannot honor a withdrawal by the original subject until the retention ends |
 | Audit and consent records | A separate volume, designed to hold no content that identifies a subject directly | Same as above | An option | If on WORM, you cannot correct or delete a record until the retention ends. If off WORM, you need another way to prevent tampering with the records |
@@ -166,7 +168,7 @@ Whether anonymized data falls outside a withdrawal, and whether training data fo
 | Misconception | Reality |
 |---|---|
 | Deleting the file honors the withdrawal | Snapshots, backups, SnapMirror destinations and clones each keep the data until their own expiry. A record shows a deleted file stayed readable through S3 Access Points while a snapshot existed |
-| Encryption at rest gives each subject a separate key | The key is per file system. A key per subject needs application-side envelope encryption or a split into file systems |
+| Encryption at rest gives each subject a separate key | The default key is per file system. For a key per subject, design for split SVMs or volumes with NVE keys (not tried on FSx for ONTAP), application-side envelope encryption, or a split into file systems |
 | Writing an `Allow` in the access point policy restricts access to the subjects it names | Within one account a narrower `Allow` does not narrow access. Narrow it with two layers: an explicit deny and file-system permissions |
 | Putting data on WORM storage makes it safe to honor a withdrawal | Nobody can delete it until the retention ends, so there is a period in which a withdrawal cannot be honored |
 
@@ -177,7 +179,7 @@ Whether anonymized data falls outside a withdrawal, and whether training data fo
 - Only two legal developments are covered. What was read is the public page of the Colorado bill and the text of the California bill. The full status of enactment and effect was not followed.
 - The layout of one qtree and quota per subject is a design judgment and was not tried on a live system.
 - The Cyber Resilience Patterns observations come from that project's environment (ONTAP 9.19.1P4, 2026-11-24). They were not re-measured in this repository.
-- Whether NetApp Volume Encryption can be enabled on FSx for ONTAP was not tried.
+- Enabling NVE on FSx for ONTAP was not tried. Erasing data by deleting a key is not covered either.
 - The behavior of how long data stays in the edge cache was not tried.
 
 ---
@@ -187,6 +189,9 @@ Whether anonymized data falls outside a withdrawal, and whether training data fo
 | Topic | Source |
 |---|---|
 | Encryption at rest uses an AWS KMS key chosen per file system | [AWS: Encryption at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html) |
+| The two NVE key management methods, and one KMS key per SVM | [NetApp Community post Encryption options for Amazon FSx for NetApp ONTAP](https://community.netapp.com/community/discussion/461606/encryption-options-for-amazon-fsx-for-netapp-ontap) (2025-06-17) |
+| Cloud-provider key management being limited to data SVMs | [ONTAP: key management with a cloud provider](https://docs.netapp.com/us-en/ontap/encryption-at-rest/manage-keys-azure-google-task.html) |
+| Enabling NVE on FSx for ONTAP not having been tried | [Cyber ledger E-062](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/agent/evidence-ledger.json) |
 | Biological data including neural data added to sensitive data (signed 2024-04-17, effective 2024-08-07) | [Colorado HB24-1058](https://leg.colorado.gov/bills/hb24-1058) |
 | Bill text adding "neural data" to sensitive personal information | [California SB 1223](https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202320240SB1223) |
 | The read in which ONTAP volume encryption was not in use | [Read-only configuration probe](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/adversarial-configuration-probe.md) |

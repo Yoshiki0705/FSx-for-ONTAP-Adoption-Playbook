@@ -9,7 +9,7 @@ lang: ja
 
 # 神経と生体の記録を Amazon FSx for NetApp ONTAP に置くとき、データの側で何を決めるか？
 
-生の記録と派生データでボリュームを分け、鍵がファイルシステム単位であることと、同意の撤回に応えられる期限をコピーごとに数えたうえで置き場所を決めます。
+生の記録と派生データでボリュームを分け、鍵をどの単位（ファイルシステム、SVM、ボリューム）で分けるかと、同意の撤回に応えられる期限をコピーごとに数えたうえで置き場所を決めます。
 
 <!-- lang-switcher:start -->
 🌐 [日本語](neural-and-biometric-recordings.md) | [English](../../../../en/domains/security-governance/notes/neural-and-biometric-recordings.md) | [🏠 リポジトリトップ](../../../../../README.md)
@@ -18,7 +18,7 @@ lang: ja
 ## このノートで学べること
 
 - 脳波（EEG）や脳磁図（MEG）の生の記録と、そこから作る派生データを、別のボリュームに分ける理由
-- FSx for ONTAP の保存時の暗号化がファイルシステム単位の鍵であり、被験者ごとの鍵には別の手段が要ること
+- FSx for ONTAP の保存時の暗号化は、ファイルシステムごとの AWS KMS のキーに加えて、NetApp Volume Encryption（NVE）でボリュームごとと SVM ごとの鍵を持てること。被験者や研究ごとの鍵の分離は、SVM かボリュームの単位で設計できること
 - ファイルを削除しても、Snapshot、バックアップ、SnapMirror の宛先、クローンがそれぞれの期限までデータを持つこと
 - 生の記録、匿名化したデータ、学習用のデータ、監査と同意の記録を、WORM に置く場合と置かない場合で何を失うか
 
@@ -26,7 +26,7 @@ lang: ja
 
 - 個別の組織が神経のデータを取り扱ってよいか、どの文言で同意を取るか（法務と倫理審査が決めます）
 - ほかの法域の法令の動き
-- NetApp Volume Encryption を FSx for ONTAP で有効にできるか（試していません）
+- FSx for ONTAP で NVE を有効にしたときの挙動（試していません）
 - 被験者ごとの qtree とクォータを組み合わせた構成の実機での再現
 
 ## 前提レベル
@@ -50,7 +50,7 @@ intermediate
 | 決めること | このノートの答え |
 |---|---|
 | 生の記録と派生データを分けるか | 分けます。保護、保持期間、アクセスの範囲がそれぞれ違うためです |
-| 鍵の単位 | FSx for ONTAP の保存時の暗号化は、ファイルシステムごとに選ぶ AWS KMS のキーです。被験者ごとに分けるなら、アプリケーション側か、ファイルシステムの分割が要ります |
+| 鍵の単位 | FSx for ONTAP の保存時の暗号化は、ファイルシステムごとに選ぶ AWS KMS のキーです。NVE を足すと、ボリュームごとの鍵と SVM ごとの鍵が加わり、被験者や研究ごとに SVM かボリュームで鍵を分けられます（FSx for ONTAP では試していません）。アプリケーション側の暗号化と、ファイルシステムの分割も選択肢です |
 | 同意の撤回に応えられる期限 | ファイルを削除しても、コピーはそれぞれの期限まで残ります。期限はコピーごとに数えます |
 | WORM に置くか | 置けば期限まで誰も削除できず、置かなければランサムウェアへの備えを別の手段で補う必要があります |
 
@@ -108,7 +108,9 @@ intermediate
 
 FSx for ONTAP は保存時のデータを、ファイルシステムごとに選ぶ AWS KMS のキーで暗号化します（[AWS: Encryption at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html)、`documented`）。
 
-鍵の単位がファイルシステムなので、被験者ごとに鍵を分けるには、アプリケーション側のエンベロープ暗号化か、ファイルシステムの分割が要ります。
+その下に、NVE でボリュームごとの鍵の層を足せます。[NetApp Community の投稿 Encryption options for Amazon FSx for NetApp ONTAP](https://community.netapp.com/community/discussion/461606/encryption-options-for-amazon-fsx-for-netapp-ontap)（2025-06-17、`documented`）によると、FSx for ONTAP は外部の KMIP キーマネージャーに対応し、NVE の鍵を 2 つの方法で管理できます。1 つは、ONTAP が生成した鍵を外部の KMIP キーマネージャーに預ける方法です。もう 1 つは、ボリュームごとの鍵（VDEK）を SVM の鍵（SVM-KEK）で包み、SVM-KEK を守る鍵を、自分で生成してインポートした鍵素材を持つ AWS KMS のカスタマーマネージドキーで暗号化する方法で、KMS キーは SVM ごとに 1 つです。ONTAP の文書 [クラウドプロバイダによるキー管理](https://docs.netapp.com/us-en/ontap/encryption-at-rest/manage-keys-azure-google-task.html) は、この管理をデータ SVM に限っています（`documented`）。
+
+このため、被験者ごと、研究ごとに鍵を分けるなら、SVM を分ける（SVM ごとに KMS キー 1 つ）か、ボリュームを分ける（ボリュームごとの鍵）設計がとれます。アプリケーション側のエンベロープ暗号化と、ファイルシステムの分割も選択肢です。このノートが述べるのは、鍵を SVM やボリュームの単位で分けられることまでです。キーの削除でデータを読めなくする消去は、参照した文書に書かれていないので扱いません。
 
 ONTAP のボリューム暗号化については、Cyber Resilience Patterns の[読み取り専用の設定プローブ](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/adversarial-configuration-probe.md)が、次を読み取っています（`verified`。そちらの記録の値で、このリポジトリでは再測定していません）。
 
@@ -121,7 +123,7 @@ ONTAP のボリューム暗号化については、Cyber Resilience Patterns の
 
 `encryption.enabled=false` は、ONTAP のボリューム暗号化が使われていないことを示します。ファイルシステム単位の KMS による保存時の暗号化が無効であることは示しません。
 
-NetApp Volume Encryption を FSx for ONTAP で有効にできるかは試していません（`open`）。
+FSx for ONTAP で NVE を有効にすることは試していません（`open`、[Cyber Resilience Patterns の台帳 E-062](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/agent/evidence-ledger.json)）。同じ台帳によると、ONTAP 9.18.1P6 の `fsxadmin` ロールは、データ SVM について `security key-manager external` と `volume encryption` を all で持ちます。
 
 ---
 
@@ -150,7 +152,7 @@ SnapLock Compliance のボリュームと、論理エアギャップボールト
 
 | データ | 置き場所 | 鍵 | WORM（SnapLock、論理エアギャップボールト）に置くか | 代わりに失うもの |
 |---|---|---|---|---|
-| 生の記録（撤回の対象） | 専用のボリューム。被験者ごとの qtree とクォータ | ファイルシステムの KMS キー。被験者ごとに分けるならアプリケーション側のエンベロープ暗号化か、ファイルシステムの分割 | 置かない構成を基本にします | 置かない場合は、ランサムウェアへの備えを別のボリュームや別の保護で補います。ただし、そのコピーも撤回の期限を数える対象です。置く場合は、削除の依頼に期限まで応えられません |
+| 生の記録（撤回の対象） | 専用のボリューム。被験者ごとの qtree とクォータ | ファイルシステムの KMS キー。被験者や研究ごとに分けるなら、SVM かボリュームを分けて NVE の鍵を分ける（FSx for ONTAP では試していない）か、アプリケーション側のエンベロープ暗号化か、ファイルシステムの分割 | 置かない構成を基本にします | 置かない場合は、ランサムウェアへの備えを別のボリュームや別の保護で補います。ただし、そのコピーも撤回の期限を数える対象です。置く場合は、削除の依頼に期限まで応えられません |
 | 匿名化したデータ | 生の記録とは別のボリューム | 同上 | 撤回の対象から外れると組織が判断したときに限り、置く選択肢があります | 置かない場合は、改ざんやランサムウェアへの備えを別の保護で補います。置く場合は、匿名化の判断が後で覆っても、期限まで削除できません |
 | 学習用のデータ | 別のボリューム | 同上 | 置かない構成を基本にします | 置かない場合は、学習の再現のためにデータを固定する手段を別に用意します。置く場合は、元の被験者の撤回に期限まで応えられません |
 | 監査と同意の記録 | 別のボリューム。被験者を直接識別する内容を含めない設計にします | 同上 | 置く選択肢があります | 置く場合は、期限まで訂正と削除ができません。置かない場合は、記録の改ざんを防ぐ別の手段が要ります |
@@ -164,7 +166,7 @@ SnapLock Compliance のボリュームと、論理エアギャップボールト
 | 誤解 | 実際 |
 |---|---|
 | ファイルを消せば撤回に応じたことになる | Snapshot、バックアップ、SnapMirror の宛先、クローンが、それぞれの期限までデータを持ちます。削除したファイルが、Snapshot がある間は S3 Access Points から読めた記録があります |
-| 保存時暗号化で被験者ごとに鍵が分かれる | 鍵はファイルシステム単位です。被験者ごとに分けるには、アプリケーション側のエンベロープ暗号化か、ファイルシステムの分割が要ります |
+| 保存時暗号化で被験者ごとに鍵が分かれる | 既定の鍵はファイルシステム単位です。被験者ごとに分けるには、SVM かボリュームを分けて NVE の鍵を使う（FSx for ONTAP では試していません）か、アプリケーション側のエンベロープ暗号化か、ファイルシステムの分割を設計します |
 | アクセスポイントポリシーに `Allow` を書けば、書いた被験者だけに絞れる | 同一アカウントでは、`Allow` を狭く書いても絞り込みになりません。明示的な拒否とファイルシステムの権限の 2 層で絞ります |
 | WORM に置けば、撤回にも安全に応えられる | 期限まで誰も削除できないため、撤回に応えられない期間ができます |
 
@@ -175,7 +177,7 @@ SnapLock Compliance のボリュームと、論理エアギャップボールト
 - 法令の動きは 2 件だけで、読んだのはコロラド州の法案の公開ページとカリフォルニア州の法案の本文です。成立や施行の状況の全体は追っていません。
 - 被験者ごとの qtree とクォータの構成は、設計上の見解で、実機では試していません。
 - Cyber Resilience Patterns の観測値は、そちらの環境（ONTAP 9.19.1P4、2026-11-24）のものです。このリポジトリでは再測定していません。
-- NetApp Volume Encryption を FSx for ONTAP で有効にできるかは、試していません。
+- FSx for ONTAP で NVE を有効にすることは、試していません。キーの削除によるデータの消去も扱っていません。
 - エッジ側のキャッシュに残る期間の挙動は、試していません。
 
 ---
@@ -185,6 +187,9 @@ SnapLock Compliance のボリュームと、論理エアギャップボールト
 | 論点 | 出典 |
 |---|---|
 | 保存時の暗号化がファイルシステムごとに選ぶ AWS KMS のキーであること | [AWS: Encryption at rest](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/encryption-at-rest.html) |
+| NVE の 2 つの鍵管理の方法と、SVM ごとの KMS キー | [NetApp Community の投稿 Encryption options for Amazon FSx for NetApp ONTAP](https://community.netapp.com/community/discussion/461606/encryption-options-for-amazon-fsx-for-netapp-ontap)（2025-06-17） |
+| クラウドプロバイダによるキー管理がデータ SVM に限られること | [ONTAP: クラウドプロバイダによるキー管理](https://docs.netapp.com/us-en/ontap/encryption-at-rest/manage-keys-azure-google-task.html) |
+| FSx for ONTAP で NVE を有効にすることを試していないこと | [Cyber Resilience Patterns の台帳 E-062](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/agent/evidence-ledger.json) |
 | 神経のデータを含む生体のデータを sensitive data に加えたこと（2024-04-17 承認、2024-08-07 施行） | [Colorado HB24-1058](https://leg.colorado.gov/bills/hb24-1058) |
 | 「neural data」を機微な個人情報に加える法案の本文 | [California SB 1223](https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202320240SB1223) |
 | ONTAP のボリューム暗号化が使われていなかった読み取りの結果 | [読み取り専用の設定プローブ](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/ontap-native/adversarial-configuration-probe.md) |
