@@ -24,7 +24,7 @@ Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームに付け
 
 S3 API でデータを受け入れ、ファイルとして読む構成には、正本の置き場所で 2 つの形があります。正本を FSx for ONTAP のボリュームに置いて S3 Access Points で受け入れる形と、正本を S3 のバケットに置いて Amazon S3 Files で読む形です。後者の反映の待ちは、S3 API で書いてファイルで読めるまで p50 約 1.5 秒でした（[S3 Files の実測記録](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/verification/s3files-measured.md)、2026-09-01）。前者は NFSv3 で p50 3 ms の記録があり（[書いた側と読む側が違うと、見えるまでの時間は方向で決まる](how-long-until-a-write-is-visible.md)）、NFSv4.x は測っていませんでした。このノートは、前者を NFS の版ごとに測った記録です。
 
-![上の段（A）は、Amazon EC2 が S3 API で PutObject したデータが S3 Access Points を通して FSx for ONTAP のボリュームのファイルになり、別の EC2 が NFS v3 / v4.x で数 ms で読める流れ。下の段（B）は、EC2 が汎用バケットへ PutObject したデータを Amazon S3 Files が約 1.5 秒で取り込み、EC2 が NFSv4.1 / 4.2 で読む流れ](../../../../_assets/images/s3api-in-files-out-ab.svg)
+![上の段（A）は、Amazon EC2 が S3 API で PutObject したデータが S3 Access Points を通して FSx for ONTAP のボリュームのファイルになり、読む側の EC2 が NFS v3 / v4.x で数 ms で読める流れ（図は書く側と読む側を役割で分けて描いている。測定は 1 台の EC2 で両方を行った）。下の段（B）は、EC2 が汎用バケットへ PutObject したデータを Amazon S3 Files が約 1.5 秒で取り込み、EC2 が NFSv4.1 / 4.2 で読む流れ](../../../../_assets/images/s3api-in-files-out-ab.svg)
 
 図の内容は本文の表と同じです（[暗い背景の版](../../../../_assets/images/s3api-in-files-out-ab-dark.svg)、[English](../../../../_assets/images/s3api-in-files-out-ab-en.svg)）。
 
