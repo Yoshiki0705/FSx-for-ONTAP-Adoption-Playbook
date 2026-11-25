@@ -116,6 +116,8 @@ ICONS = {
         "Architecture-Service-Icons_{d}/Arch_Artificial-Intelligence/64/"
         "Arch_Amazon-Bedrock-AgentCore_64.svg"
     ),
+    # S3 Files ships as a storage resource icon only, with no Light/Dark variant (like S3 Tables).
+    "s3_files": "Resource-Icons_{d}/Res_Storage/Res_Amazon-Simple-Storage-Service_S3-Files_48.svg",
     # The resource icon for an access point, which the standard prefers over the generic bucket.
     "s3_access_point": (
         "Resource-Icons_{d}/Res_Storage/"
@@ -157,6 +159,7 @@ ICON_SIZE = {
     "s3_tables": 48,
     "agentcore": 80,
     "s3_access_point": 48,
+    "s3_files": 48,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -738,6 +741,56 @@ LABELS: dict[str, dict[str, str]] = {
             "<b>Published (2026-11-23)</b><br>Amazon FSx API<br>AWS CLI, SDKs<br>AWS CloudFormation<br><br>"
             "<b>Automation paths</b><br>AWS CLI, SDKs,<br>CloudFormation,<br>ONTAP CLI / REST API"
         ),
+    },
+    # --- S3 API in, files out: FSx for ONTAP S3 Access Points vs S3 Files (s3api-in-files-out-ab) ---
+    "ab_a_frame": {
+        "ja": "A: 正本は FSx for ONTAP（S3 Access Points で受け入れる）",
+        "en": "A: source of truth on FSx for ONTAP (in through S3 Access Points)",
+    },
+    "ab_b_frame": {
+        "ja": "B: 正本は S3 バケット（S3 Files で読む）",
+        "en": "B: source of truth in an S3 bucket (read through S3 Files)",
+    },
+    "ec2_s3api_writer": {
+        "ja": "Amazon EC2<br>（S3 API で書く）",
+        "en": "Amazon EC2<br>(writes over S3 API)",
+    },
+    "ec2_nfs_reader": {
+        "ja": "Amazon EC2<br>（同じ EC2 が<br>NFS で読む）",
+        "en": "Amazon EC2<br>(same instance,<br>reads over NFS)",
+    },
+    "putobject_edge": {"ja": "PutObject", "en": "PutObject"},
+    "nfs_any_edge": {
+        "ja": "NFS v3 / v4.x<br>数 ms で見える",
+        "en": "NFS v3 / v4.x<br>visible in ms",
+    },
+    "s3files_import_edge": {
+        "ja": "p50 約 1.5 秒で<br>取り込み",
+        "en": "Imported in<br>about 1.5 s (p50)",
+    },
+    "nfs4_edge": {"ja": "NFSv4.1 / 4.2", "en": "NFSv4.1 / 4.2"},
+    # --- S3 Files and S3 Access Points joined by server-side copy (s3files-s3ap-copy-bridge) ---
+    "bridge_out_frame": {
+        "ja": "S3 Files で書いたファイルをボリュームへ",
+        "en": "From S3 Files to a volume",
+    },
+    "bridge_in_frame": {
+        "ja": "ボリュームのファイルを S3 Files で読む",
+        "en": "From a volume to S3 Files",
+    },
+    "ec2_linux_nfs4": {
+        "ja": "Amazon EC2<br>（Linux、NFSv4）",
+        "en": "Amazon EC2<br>(Linux, NFSv4)",
+    },
+    "s3_files_fs": {"ja": "Amazon S3<br>Files", "en": "Amazon S3<br>Files"},
+    "export_edge": {
+        "ja": "実測 約 64 秒で<br>エクスポート",
+        "en": "Exported after<br>64 s, measured",
+    },
+    "copy_edge": {"ja": "CopyObject", "en": "CopyObject"},
+    "import_edge": {
+        "ja": "約 1.0〜1.5 秒で<br>読める",
+        "en": "Readable in<br>1.0 to 1.5 s",
     },
     # --- server-side copy with S3 Access Points and archive classes (s3ap-server-side-copy-archive) ---
     "archive_out_frame": {
@@ -1677,6 +1730,161 @@ def _s3ap_server_side_copy_archive() -> Diagram:
     )
 
 
+def _s3files_s3ap_copy_bridge() -> Diagram:
+    """S3 Files on a bucket and FSx for ONTAP S3 Access Points, joined by server-side copy.
+
+    Two rows, each read rightwards because the flow check forbids a leftward edge. The top row is a
+    file written through S3 Files, exported to the bucket after about 64 s (measured) and copied
+    to the volume; the bottom row is a volume file copied to the bucket and read through S3 Files.
+    The timings are short edge labels only; the measured values and the attribute handling are
+    tables in the Hub note `s3-files-and-access-points-bridged-by-copy.md`. Wide and short so the
+    image serves as the blog cover.
+    """
+    return Diagram(
+        name="s3files-s3ap-copy-bridge",
+        diagram_id="s3files-s3ap-copy-bridge",
+        width=1000,
+        height=600,
+        groups=(Group("aws_cloud", "aws_cloud", 20, 20, 960, 560),),
+        frames=(
+            Frame("out_row", "bridge_out_frame", 45, 70, 910, 235),
+            Frame("in_row", "bridge_in_frame", 45, 325, 910, 235),
+        ),
+        nodes=(
+            Node("ec2_out", "ec2", "ec2_linux_nfs4", 80, 150),
+            Node("s3f_out", "s3_files", "s3_files_fs", 276, 166),
+            Node("s3_out", "s3", "s3_copy_bucket", 450, 150),
+            Node("ap_out", "s3_access_point", "s3ap_copy", 656, 166),
+            Node("fsx_out", "fsx_ontap", "fsx_copy_volume", 830, 150),
+            Node("fsx_in", "fsx_ontap", "fsx_copy_volume", 80, 405),
+            Node("ap_in", "s3_access_point", "s3ap_copy", 276, 421),
+            Node("s3_in", "s3", "s3_copy_bucket", 450, 405),
+            Node("s3f_in", "s3_files", "s3_files_fs", 656, 421),
+            Node("ec2_in", "ec2", "ec2_linux_nfs4", 830, 405),
+        ),
+        edges=(
+            Edge("o1", "ec2_out", "s3f_out", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "o2",
+                "s3f_out",
+                "s3_out",
+                "export_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -46),
+            ),
+            Edge(
+                "o3",
+                "s3_out",
+                "ap_out",
+                "copy_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+            Edge("o4", "ap_out", "fsx_out", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge("i1", "fsx_in", "ap_in", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "i2",
+                "ap_in",
+                "s3_in",
+                "copy_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+            Edge(
+                "i3",
+                "s3_in",
+                "s3f_in",
+                "import_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -46),
+            ),
+            Edge("i4", "s3f_in", "ec2_in", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+        ),
+    )
+
+
+def _s3api_in_files_out_ab() -> Diagram:
+    """Write over the S3 API, read as files: FSx for ONTAP S3 Access Points (A) and S3 Files (B).
+
+    Two rows read rightwards, one per pattern, so the two implementations of the same flow sit one
+    above the other. The waits are short edge labels; the measured tables are in the Hub notes
+    `s3-access-points-write-read-over-nfs-versions.md` and `how-long-until-a-write-is-visible.md`.
+    """
+    return Diagram(
+        name="s3api-in-files-out-ab",
+        diagram_id="s3api-in-files-out-ab",
+        width=1000,
+        height=600,
+        groups=(Group("aws_cloud", "aws_cloud", 20, 20, 960, 560),),
+        frames=(
+            Frame("a_row", "ab_a_frame", 45, 70, 910, 235),
+            Frame("b_row", "ab_b_frame", 45, 325, 910, 235),
+        ),
+        nodes=(
+            Node("a_w", "ec2", "ec2_s3api_writer", 90, 150),
+            Node("a_ap", "s3_access_point", "s3ap_copy", 336, 166),
+            Node("a_fsx", "fsx_ontap", "fsx_copy_volume", 560, 150),
+            Node("a_r", "ec2", "ec2_nfs_reader", 820, 150),
+            Node("b_w", "ec2", "ec2_s3api_writer", 90, 405),
+            Node("b_s3", "s3", "s3_copy_bucket", 330, 405),
+            Node("b_s3f", "s3_files", "s3_files_fs", 586, 421),
+            Node("b_r", "ec2", "ec2_nfs_reader", 820, 405),
+        ),
+        edges=(
+            Edge(
+                "a1",
+                "a_w",
+                "a_ap",
+                "putobject_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+            Edge("a2", "a_ap", "a_fsx", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "a3",
+                "a_fsx",
+                "a_r",
+                "nfs_any_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -46),
+            ),
+            Edge(
+                "b1",
+                "b_w",
+                "b_s3",
+                "putobject_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+            Edge(
+                "b2",
+                "b_s3",
+                "b_s3f",
+                "s3files_import_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -46),
+            ),
+            Edge(
+                "b3",
+                "b_s3f",
+                "b_r",
+                "nfs4_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+        ),
+    )
+
+
 DIAGRAMS = (
     _backup_copy(),
     _qos_two_plane(),
@@ -1691,6 +1899,8 @@ DIAGRAMS = (
     _third_generation_overview(),
     _console_snapmirror_planes(),
     _s3ap_server_side_copy_archive(),
+    _s3files_s3ap_copy_bridge(),
+    _s3api_in_files_out_ab(),
 )
 
 
