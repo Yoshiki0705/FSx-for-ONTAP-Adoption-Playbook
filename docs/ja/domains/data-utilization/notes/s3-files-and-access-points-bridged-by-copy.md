@@ -20,6 +20,10 @@ lang: ja
 
 コピーはファイル単位の複製です。どちらを正本にするかを決め、もう片方は写しとして扱います。
 
+![上の段は、Amazon EC2 が Amazon S3 Files に書いたファイルが約 60 秒後にバケットへエクスポートされ、CopyObject で S3 Access Points を通して FSx for ONTAP のボリュームへ写る流れ。下の段は、ボリュームのファイルを S3 Access Points からバケットへ CopyObject し、約 1.5 秒で S3 Files から EC2 が読める流れ](../../../../_assets/images/s3files-s3ap-copy-bridge.svg)
+
+図の内容は下の表と同じです（[暗い背景の版](../../../../_assets/images/s3files-s3ap-copy-bridge-dark.svg)、[English](../../../../_assets/images/s3files-s3ap-copy-bridge-en.svg)）。
+
 ## 背景
 
 S3 Files と FSx for ONTAP の S3 Access Points は、どちらも同じデータをファイルと S3 API の両方で扱えます。違いは正本の位置で、S3 Files はバケット、FSx for ONTAP はボリュームです。2026-11 までは、両方を使う組織が一方から他方へファイルを渡すには、クライアントでファイルを読み出して書き直す必要がありました。S3 Access Points のサーバー側コピーで、バケットと Access Point の間をクライアントを通さずに写せるようになりました（[What's New](https://aws.amazon.com/about-aws/whats-new/2026/11/s3-access-points-server-side-copy-fsx/)）。
@@ -108,6 +112,7 @@ S3 Files と FSx for ONTAP の S3 Access Points は、どちらも同じデー�
 | ボリュームから写したファイルは、S3 Files でも元の所有者とモードになる | 既定では `root:root`、`0644` になりました。S3 Files のメタデータを付けて写すと指定した値になります |
 | S3 Files が付けたメタデータは、ボリュームへ写すと UNIX の属性になる | オブジェクトのメタデータとしては残りますが、NFS で見る所有者とモードは Access Point のファイルシステムユーザーで決まります |
 | S3 Files で書いたファイルはすぐにボリュームへ写せる | バケットに出るまで約 60 秒かかります。写すのはその後です |
+| S3 Files で編集中のファイルにバケット側から上書きコピーしても、編集は残る | S3 Files はバケットを正として扱い、編集中のファイルを `.s3files-lost+found-<ファイルシステム ID>` へ移します（[同期](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-synchronization.html)）。S3 Files で編集するプレフィックスと、コピーで書き込むプレフィックスを分けます |
 
 ## 関連ドキュメント
 
