@@ -83,7 +83,7 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | 6 | 同じジョブ型で、マニフェストの `Bucket` 列に Access Point のエイリアスを書き、バケットへ | 1 件成功。中身が一致 |
 | 7 | S3 のストレージクラスとの往復 | [制約ノートの往復の表](s3-access-point-constraints.md#s3-のストレージクラスとの往復)にまとめた。`GLACIER` と `DEEP_ARCHIVE` から戻すときは、先にバケット側で復元が要る |
 
-![2 つの枠が上下に並ぶ。上の枠は退避で、FSx for ONTAP のボリュームから S3 Access Points を通り、CopyObject または UploadPartCopy で Amazon S3 の汎用バケットへ写す。下の枠は戻す流れで、汎用バケットのオブジェクトを CopyObject で S3 Access Points を通してボリュームへ写す。2 つのクラスは先に RestoreObject で復元する。右の欄に、汎用バケットの 8 つのクラスすべてへ写せたこと、そのまま戻せた 6 つのクラス、先に復元が要る 2 つのクラス、コピー先がボリュームのときは SSE-FSX と FSX_ONTAP だけであることを書いている。](../../../../_assets/images/s3ap-server-side-copy-archive.svg)
+![2 つの枠が上下に並ぶ。上の枠は書き出しで、FSx for ONTAP のボリュームから S3 Access Points を通り、CopyObject または UploadPartCopy で Amazon S3 の汎用バケットへ写す。下の枠は取り込みで、汎用バケットのオブジェクトを CopyObject で S3 Access Points を通してボリュームへ写す。2 つのクラスは先に RestoreObject で復元する。右の欄に、汎用バケットの 8 つのクラスすべてへ書き出せたこと、そのまま取り込めた 6 つのクラス、先に復元が要る 2 つのクラス、コピー先がボリュームのときは SSE-FSX と FSX_ONTAP だけであることを書いている。](../../../../_assets/images/s3ap-server-side-copy-archive.svg)
 
 図 1: S3 Access Points のサーバー側コピーによるアーカイブの往復。上下の FSx for ONTAP は同じファイルシステムでもよい。右の欄の内容は、下の「[ストレージクラスとコピーのオプションの実測一覧](#ストレージクラスとコピーのオプションの実測一覧)」と[制約ノートの往復の表](s3-access-point-constraints.md#s3-のストレージクラスとの往復)と同じで、2026-11-24 に ap-northeast-1 で 1 回ずつ確かめた結果です。
 

@@ -741,12 +741,12 @@ LABELS: dict[str, dict[str, str]] = {
     },
     # --- server-side copy with S3 Access Points and archive classes (s3ap-server-side-copy-archive) ---
     "archive_out_frame": {
-        "ja": "退避: ボリューム → バケット",
-        "en": "Archive: volume to bucket",
+        "ja": "書き出し: ボリューム → バケット",
+        "en": "Copy out: volume to bucket",
     },
     "archive_back_frame": {
-        "ja": "戻す: バケット → ボリューム",
-        "en": "Recall: bucket to volume",
+        "ja": "取り込み: バケット → ボリューム",
+        "en": "Copy in: bucket to volume",
     },
     "fsx_copy_volume": {
         "ja": "Amazon FSx for<br>NetApp ONTAP",
@@ -770,9 +770,9 @@ LABELS: dict[str, dict[str, str]] = {
     },
     "archive_notes": {
         "ja": (
-            "<b>写せたクラス</b><br>"
+            "<b>書き出せたクラス</b><br>"
             "汎用バケットの<br>8 つすべて<br><br>"
-            "<b>そのまま戻せた</b><br>"
+            "<b>そのまま取り込めた</b><br>"
             "・S3 Standard<br>・S3 Standard-IA<br>・S3 One Zone-IA<br>・S3 Intelligent-Tiering<br>"
             "・S3 Glacier Instant<br>　Retrieval<br>・S3 Reduced<br>　Redundancy<br><br>"
             "<b>先に復元が要る</b><br>"
@@ -783,7 +783,7 @@ LABELS: dict[str, dict[str, str]] = {
         "en": (
             "<b>Copied out to</b><br>"
             "All eight general<br>purpose classes<br><br>"
-            "<b>Copied back directly</b><br>"
+            "<b>Copied in directly</b><br>"
             "- S3 Standard<br>- S3 Standard-IA<br>- S3 One Zone-IA<br>- S3 Intelligent-Tiering<br>"
             "- S3 Glacier Instant<br>&nbsp;&nbsp;Retrieval<br>- S3 Reduced<br>&nbsp;&nbsp;Redundancy<br><br>"
             "<b>Restore first</b><br>"
