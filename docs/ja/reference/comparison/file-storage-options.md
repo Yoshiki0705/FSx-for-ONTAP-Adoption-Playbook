@@ -26,7 +26,7 @@ lang: ja
 | POSIX 互換の並列ファイルシステム | FSx for Lustre |
 | ファイルの意味論が要らない | Amazon S3（読み取り中心なら Mountpoint for Amazon S3） |
 
-**2 番目に決まるのが正本の位置です。** データの正本が Amazon S3 にあるなら Amazon S3 Files と FSx for Lustre が S3 と同期する形を持っており、正本がファイルシステム側にあるなら FSx for ONTAP・FSx for Windows File Server・Amazon EFS が素直です。オンプレミスに正本を残したままクラウドへ出すなら S3 File Gateway が該当します。
+**2 番目に決まるのが正本の位置です。** データの正本が Amazon S3 にあるなら Amazon S3 Files と FSx for Lustre が S3 と同期する形を持っており、正本がファイルシステム側にあるなら FSx for ONTAP・FSx for Windows File Server・Amazon EFS が素直です。オンプレミスに正本を残したままクラウドへ出すなら S3 File Gateway が該当します。正本が S3 と FSx for ONTAP に分かれている場合は、2026-11 から S3 Access Points のサーバー側コピーで、選んだファイルを両者の間で写せます。属性の扱いと反映の待ちは [S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](../../domains/data-utilization/notes/s3-files-and-access-points-bridged-by-copy.md) にあります。
 
 **性能はその後です。** そして単一の数字では比較できません。**上限の置き方がサービスごとに違い、同じ「500 MB/s」が別の理由で出るためです。** 詳細は [上限の形の違い](#上限の形の違い) にあります。
 

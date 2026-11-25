@@ -274,6 +274,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	ゼロブロックをディスクに行かずに返します
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	指定するとマウントはハングしました
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	止めているのはローカルのプロキシです
+S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	約 60 秒のバッチング窓が実在し分布も狭い
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した 128 MBps の 4.5 倍です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/s3files-vs-flexcache.md	retraction	購入した容量を分け合うので、クライアントを増やしても合計は増えません
 S3-Burst-on-ONTAP-Files	docs/ja/verification/throughput-capacity-burst-and-baseline.md	retraction	27 分でバースト枠が尽き、2.0 倍の段差がつく
