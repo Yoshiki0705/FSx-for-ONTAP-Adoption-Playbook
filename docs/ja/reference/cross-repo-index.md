@@ -499,6 +499,22 @@ lang: ja
 | `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/comparison/finops-s3-vs-s3ap.md` | `片方にあって他方にない項目が、そのまま設計上の制約になる。` | `retraction` | S3 標準と S3 Access Points の費用構造の対応。**AI の経路別整理が、繰り返し読むか 1 回かで cost per call が逆転する根拠として引く** |
 | `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/ja/cost-measurement.md` | `Cost Explorer` | `retraction` | S3 Access Points のコスト実測手順。**見積りではない** — この区別が落ちると実測値が見積りとして引用されます |
 | `docs/ja/domains/cost/notes/access-path-cost-and-performance-by-service.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/adoption-guide/cost-estimation.md` | `scaling formulas` | `retraction` | 構成要素別の内訳とスケーリング算定式。**AI の経路別整理が分析基盤に載せるときのコストの所在として引く** |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/data-protection/deletion-requests-and-retained-copies.md` | ``のキーで `GetObject` すると読めた`` | `retraction` | 削除したデータが Snapshot から読めた実測。予測 1 と 5 の備えの根拠 |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/data-protection/deletion-requests-and-retained-copies.md` | ``のキーで `GetObject` すると読めた`` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `ONTAP-Edge-to-Cloud-AI` | `docs/ja/agentic-ai-on-aws.md` | `真実の源は AI の外にあります` | `retraction` | 記憶と真実の源を分ける設計の所在 |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `ONTAP-Edge-to-Cloud-AI` | `docs/en/agentic-ai-on-aws.md` | `The source of truth sits outside the AI.` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/adversarial-configuration-probe.md` | `ストレージ設定を入力に挙げた記載がありません` | `retraction` | AWS Security Agent と AWS Continuum の入力にストレージの設定がないという読み取り（E-026、推論） |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/ontap-native/adversarial-configuration-probe.md` | `ストレージ設定を入力に挙げた記載がありません` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/agent-prompts/adversarial-review.md` | `推測と文書の記述を分けてラベルを付ける規則` | `retraction` | 実装前の攻撃側レビューのプロンプトが推測と文書の記述を分ける規則を持つこと |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/agent-prompts/adversarial-review.md` | `推測と文書の記述を分けてラベルを付ける規則` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/architecture/continuum-security-agent-and-storage.md` | `攻撃側の観点の検査を、設計の前、リリースの前、稼働中の 3 か所に置きます` | `retraction` | 攻撃側の検査を置く 3 つの段階 |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/architecture/continuum-security-agent-and-storage.md` | `攻撃側の観点の検査を、設計の前、リリースの前、稼働中の 3 か所に置きます` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/runbooks/pentest-clone-isolation.md` | `この手順は実機で通していません` | `retraction` | 侵入テスト前後のクローン隔離の手順が実機で通されていないこと |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/runbooks/pentest-clone-isolation.md` | `この手順は実機で通していません` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/guides/flexclone-serverless-patterns.md` | `共通データは物理的に 1 コピーのみ保持` | `retraction` | 研究者ごとの FlexClone のパターンの所在 |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/guides/flexclone-serverless-patterns-en.md` | `FlexClone gives each researcher an independent writable copy` | `retraction` | 同上（EN 版） |
+| `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/s3ap-interoperability.md` | `256 MiB ファイルの sha256 が親と一致` | `retraction` | クローンに付けたアクセスポイントから読んだ内容が元のボリュームと一致した実測 |
+| `docs/en/reference/tech-predictions-2027-readiness-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/en/reference/limits/s3ap-interoperability.md` | `The sha256 of a 256 MiB file matched the parent` | `retraction` | 同上（EN 版） |
 <!-- cross-repo-table:end -->
 
 ---
