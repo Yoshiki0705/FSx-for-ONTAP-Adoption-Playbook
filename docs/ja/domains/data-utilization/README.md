@@ -21,6 +21,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **ゲノム / HPC の解析データをどこに置くか迷う** | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](notes/where-genomics-pipeline-data-lives.md) | **マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えません。** 共有層を自分で用意するかは実行基盤ごとに違います（HealthOmics の run は自前で提供） |
 | **バケットとボリュームの間でファイルを写したい、アーカイブしたい** | [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](notes/s3-access-points-server-side-copy-use-cases.md) | **直接読めるなら、コピーは要りません。** 属性は写らず、S3 Glacier 系から戻すときは先に復元が要ります |
 | **S3 Files のバケットと FSx for ONTAP の間で、選んだファイルを渡したい** | [S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](notes/s3-files-and-access-points-bridged-by-copy.md) | **属性は既定では写りません。** 反映の待ちは、ボリュームから S3 Files へ約 1.5 秒、S3 Files からボリュームへ約 60 秒 |
+| **S3 Access Points で受け入れたファイルを NFS で読みたい（NFS の版を選びたい）** | [S3 Access Points で書いたファイルを NFS で読むまで、NFS の版と属性キャッシュでどれだけ違うか](notes/s3-access-points-write-read-over-nfs-versions.md) | **版による差は小さく、属性キャッシュの設定の方が大きく出ました。** 新しいディレクトリの最初の 1 件だけ、NFSv3 の既定のマウントで約 28 秒遅れました |
 | **クロスクラウド / クロスリージョンで分析したい** | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) | 書き込みはローカルに寄せ、クロスな依存は読み取り側に。**他クラウド ONTAP との FlexCache は、公式ドキュメントに記載はあるが実機の公開記録がない** |
 
 ---
@@ -44,6 +45,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 13 | クローンを分析基盤につなぐまでの待ち時間は、作る経路で変わるか | [コンソールで作ったクローンは API に即座に現れ、S3 Access Points まで 1 回の観測で約 93 秒](notes/a-console-clone-attaches-s3-access-points-in-minutes.md) |
 | 14 | バケットとボリュームの間のサーバー側コピーは、どの用途で使い、どの用途で使わないか | [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](notes/s3-access-points-server-side-copy-use-cases.md) |
 | 15 | S3 Files のバケットと FSx for ONTAP のボリュームの間でファイルを写すと、何が写り、どれだけ待つか | [S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](notes/s3-files-and-access-points-bridged-by-copy.md) |
+| 16 | S3 Access Points で書いたファイルを NFS で読むまで、NFSv3 と NFSv4.x、属性キャッシュでどれだけ違うか | [S3 Access Points で書いたファイルを NFS で読むまで](notes/s3-access-points-write-read-over-nfs-versions.md) |
 
 ---
 
