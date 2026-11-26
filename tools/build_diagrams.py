@@ -118,6 +118,20 @@ ICONS = {
     ),
     # S3 Files ships as a storage resource icon only, with no Light/Dark variant (like S3 Tables).
     "s3_files": "Resource-Icons_{d}/Res_Storage/Res_Amazon-Simple-Storage-Service_S3-Files_48.svg",
+    "step_functions": (
+        "Architecture-Service-Icons_{d}/Arch_Application-Integration/64/"
+        "Arch_AWS-Step-Functions_64.svg"
+    ),
+    "dynamodb": "Architecture-Service-Icons_{d}/Arch_Databases/64/Arch_Amazon-DynamoDB_64.svg",
+    "fargate": "Architecture-Service-Icons_{d}/Arch_Containers/64/Arch_AWS-Fargate_64.svg",
+    "sns": (
+        "Architecture-Service-Icons_{d}/Arch_Application-Integration/64/"
+        "Arch_Amazon-Simple-Notification-Service_64.svg"
+    ),
+    "s3_glacier": (
+        "Architecture-Service-Icons_{d}/Arch_Storage/64/"
+        "Arch_Amazon-Simple-Storage-Service-Glacier_64.svg"
+    ),
     # The resource icon for an access point, which the standard prefers over the generic bucket.
     "s3_access_point": (
         "Resource-Icons_{d}/Res_Storage/"
@@ -160,6 +174,11 @@ ICON_SIZE = {
     "agentcore": 80,
     "s3_access_point": 48,
     "s3_files": 48,
+    "step_functions": 80,
+    "dynamodb": 80,
+    "fargate": 80,
+    "sns": 80,
+    "s3_glacier": 80,
 }
 
 # --- styles --------------------------------------------------------------------------------------
@@ -308,6 +327,64 @@ def edge_style(ink: str, background: str) -> str:
 # titles, resource descriptions, the footnote — is localized.
 LABELS: dict[str, dict[str, str]] = {
     "aws_cloud": {"ja": "AWS Cloud", "en": "AWS Cloud"},
+    # --- archive with verify-then-delete over S3 Access Points (archive-verify-delete) ---
+    "avd_control_frame": {
+        "ja": "AWS Step Functions が順に呼ぶ: 選ぶ → 記録 → 写す → 照合 → 承認 → 消す",
+        "en": "AWS Step Functions calls in order: select, record, copy, verify, approve, delete",
+    },
+    "avd_sfn": {"ja": "AWS Step Functions", "en": "AWS Step Functions"},
+    "avd_lambda": {
+        "ja": "AWS Lambda<br>（ハッシュ、<br>5 GiB 以下）",
+        "en": "AWS Lambda<br>(hash,<br>up to 5 GiB)",
+    },
+    "avd_fargate": {
+        "ja": "AWS Fargate<br>（ハッシュ、<br>5 GiB 超）",
+        "en": "AWS Fargate<br>(hash,<br>over 5 GiB)",
+    },
+    "avd_dynamodb": {
+        "ja": "Amazon DynamoDB<br>（台帳）",
+        "en": "Amazon DynamoDB<br>(ledger)",
+    },
+    "avd_sns": {
+        "ja": "Amazon SNS<br>（承認の依頼、<br>人が承認）",
+        "en": "Amazon SNS<br>(approval request,<br>a person approves)",
+    },
+    "avd_fsx": {
+        "ja": "Amazon FSx for<br>NetApp ONTAP",
+        "en": "Amazon FSx for<br>NetApp ONTAP",
+    },
+    "avd_ap": {"ja": "Amazon S3<br>Access Points", "en": "Amazon S3<br>Access Points"},
+    "avd_archive": {
+        "ja": "Amazon S3 Glacier<br>（汎用バケット）",
+        "en": "Amazon S3 Glacier<br>(general purpose bucket)",
+    },
+    "avd_second": {
+        "ja": "Amazon S3<br>（2 つ目の写し）",
+        "en": "Amazon S3<br>(second copy)",
+    },
+    "avd_backup": {
+        "ja": "AWS Backup<br>（移す前の<br>ボリューム）",
+        "en": "AWS Backup<br>(volume,<br>before delete)",
+    },
+    "avd_calls_edge": {
+        "ja": "CopyObject<br>HeadObject<br>DeleteObject",
+        "en": "CopyObject<br>HeadObject<br>DeleteObject",
+    },
+    "avd_copy_edge": {
+        "ja": "チェックサム付きの<br>サーバー側コピー",
+        "en": "Server-side copy<br>with a checksum",
+    },
+    "avd_second_edge": {"ja": "同じリージョン", "en": "Same Region"},
+    "avd_backup_edge": {"ja": "経路 A", "en": "Route A"},
+    "avd_clumio_edge": {"ja": "経路 B", "en": "Route B"},
+    "avd_clumio_box": {
+        "ja": "Clumio などのバックアップ製品<br>（S3 Glacier Instant Retrieval のバケット）",
+        "en": "Backup products such as Clumio<br>(S3 Glacier Instant Retrieval bucket)",
+    },
+    "avd_komprise_box": {
+        "ja": "Komprise などのデータ管理ソフト<br>（NFS / SMB で選別、経路 D）",
+        "en": "Data management software such as Komprise<br>(selects over NFS / SMB, route D)",
+    },
     "region_source": {
         "ja": "ap-northeast-1（東京）",
         "en": "ap-northeast-1 (Tokyo)",
@@ -1889,6 +1966,90 @@ def _s3api_in_files_out_ab() -> Diagram:
     )
 
 
+def _archive_verify_delete() -> Diagram:
+    """Archive with verify-then-delete through FSx for ONTAP S3 Access Points.
+    The control plane sits in a frame across the top, so every call it makes reaches the data row
+    with a downward edge; the data row then reads rightwards from the volume to the archive bucket
+    and its second copy. Combination routes hang below the services they attach to. Products
+    without an AWS icon (Clumio, Komprise) are drawn as labelled boxes, never as logos. The same
+    facts are tables in the comparison `archive-tiering-library-options.md`.
+    """
+    return Diagram(
+        name="archive-verify-delete",
+        diagram_id="archive-verify-delete",
+        width=1000,
+        height=820,
+        groups=(Group("aws_cloud", "aws_cloud", 20, 20, 960, 670),),
+        frames=(Frame("control", "avd_control_frame", 40, 70, 920, 220),),
+        boxes=(
+            Box("clumio", "avd_clumio_box", 540, 720, 330, 70),
+            Box("komprise", "avd_komprise_box", 40, 720, 420, 70),
+        ),
+        nodes=(
+            Node("sfn", "step_functions", "avd_sfn", 60, 120),
+            Node("lam", "lambda", "avd_lambda", 340, 120),
+            Node("far", "fargate", "avd_fargate", 500, 120),
+            Node("ddb", "dynamodb", "avd_dynamodb", 660, 120),
+            Node("sns", "sns", "avd_sns", 820, 120),
+            Node("fsx", "fsx_ontap", "avd_fsx", 60, 380),
+            Node("ap", "s3_access_point", "avd_ap", 256, 396),
+            Node("arc", "s3_glacier", "avd_archive", 560, 380),
+            Node("sec", "s3", "avd_second", 820, 380),
+            Node("bkp", "aws_backup", "avd_backup", 160, 530),
+        ),
+        edges=(
+            Edge(
+                "calls",
+                "sfn",
+                "ap",
+                "avd_calls_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.5, 0.0),
+                label_at=0.6,
+                label_offset=(70, 0),
+            ),
+            Edge("e_fsx_ap", "fsx", "ap", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
+            Edge(
+                "e_copy",
+                "ap",
+                "arc",
+                "avd_copy_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -40),
+            ),
+            Edge(
+                "e_second",
+                "arc",
+                "sec",
+                "avd_second_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -30),
+            ),
+            Edge(
+                "e_backup",
+                "fsx",
+                "bkp",
+                "avd_backup_edge",
+                exit_at=(1.0, 0.85),
+                entry_at=(0.5, 0.0),
+                label_at=0.85,
+                label_offset=(40, 0),
+            ),
+            Edge(
+                "e_clumio",
+                "arc",
+                "clumio",
+                "avd_clumio_edge",
+                exit_at=(1.0, 0.85),
+                entry_at=(0.5, 0.0),
+                label_offset=(40, 0),
+            ),
+        ),
+    )
+
+
 DIAGRAMS = (
     _backup_copy(),
     _qos_two_plane(),
@@ -1905,6 +2066,7 @@ DIAGRAMS = (
     _s3ap_server_side_copy_archive(),
     _s3files_s3ap_copy_bridge(),
     _s3api_in_files_out_ab(),
+    _archive_verify_delete(),
 )
 
 

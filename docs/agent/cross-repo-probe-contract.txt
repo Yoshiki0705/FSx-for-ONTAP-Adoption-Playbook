@@ -54,6 +54,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent/evidence-ledger.json	retracti
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/agent/evidence-ledger.json	retraction	but does not record the requesting principal
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	FSx for ONTAP のストレージ設定そのものを評価する機能は、AWS の文書に記載がありません
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-agent-and-storage.md	retraction	攻撃側の観点の検査を、設計の前、リリースの前、稼働中の 3 か所に置きます
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/comparison-security-layers.md	retraction	FSx for ONTAP S3 Access Points 経由のオブジェクトは FSX_ONTAP ストレージクラスで、対象に入らない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	AWS マネージドキーで暗号化されたファイルシステムのバックアップはボールトへコピーされない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	MessageCategory は `KMS_KEY_ERROR`、メッセージは
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/deletion-requests-and-retained-copies.md	retraction	のキーで `GetObject` すると読めた
@@ -85,6 +86,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	solutions/ontap-catalog-snapshot/README.
 FSx-for-ONTAP-Cyber-Resilience-Patterns	tests/test_fsx_kms_customer_key.py	retraction	cannot be swapped in place
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/adoption-assessment.md	retraction	require metadata operations that fail on S3 AP
 FSx-for-ONTAP-Lakehouse-Integrations	docs/adoption-guide/cost-estimation.md	retraction	scaling formulas
+FSx-for-ONTAP-Lakehouse-Integrations	docs/en/compatibility-matrix.md	retraction	Read-only analytics (Athena/Glue/EMR/Snowflake/Bedrock) are verified.
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	PERMISSION_DENIED
 FSx-for-ONTAP-Lakehouse-Integrations	docs/en/s3ap-flexcache-snapmirror-considerations.md	retraction	no break and no clone
 FSx-for-ONTAP-Lakehouse-Integrations	docs/ja/s3ap-flexcache-snapmirror-considerations.md	retraction	キャッシュミス時の Origin 問い合わせが多段に
@@ -116,6 +118,7 @@ FSx-for-ONTAP-Observability-integrations	docs/ja/cyber-resilience-capability-map
 FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	QoS ポリシーグループやワークロードを識別するディメンションはありません
 FSx-for-ONTAP-Observability-integrations	docs/ja/monitoring-design.md	retraction	収集経路の選択は行いません。
 FSx-for-ONTAP-Observability-integrations	docs/ja/native-alternative-matrix.md	retraction	本リポジトリの AWS ネイティブ実装にマッピングしたもの
+FSx-for-ONTAP-Observability-integrations	docs/ja/s3ap-monitoring-coverage-implications.md	retraction	**発火しない**
 FSx-for-ONTAP-Observability-integrations	docs/ja/s3ap-throughput-benchmark.md	retraction	サイジングの参考値であり、サービス上限ではありません
 FSx-for-ONTAP-Observability-integrations	docs/ja/verification-results-cloudwatch-monitoring.md	retraction	確認項目を伴う検証の実行ではなく、1 つの環境でのサンプルです。
 FSx-for-ONTAP-Observability-integrations	integrations/grafana/docs/en/cloudtrail-trigger-alternative.md	retraction	CloudTrail data events DO work with FSx for ONTAP S3 Access Points.

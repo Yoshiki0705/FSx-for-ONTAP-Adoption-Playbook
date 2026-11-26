@@ -1,0 +1,436 @@
+---
+title: ファイルを消して S3 Glacier 系へ移す用途は戻しを待てるデータに限られ、連携できる AWS サービスの多くはバケット側にしか届かない
+lifecycle: [assess, design, operate]
+domains: [data-utilization, cost, data-protection]
+evidence: documented
+source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html
+lang: ja
+---
+
+# ファイルを消して S3 Glacier 系へ移す用途は戻しを待てるデータに限られ、連携できる AWS サービスの多くはバケット側にしか届かない
+
+Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームから、めったに読まれないファイルを S3 Glacier 系のクラスへ移し、元を消す運用は、どのデータにも合うわけではありません。このノートは、公開された事例と規則の条文から、合う用途と合わない用途を分け、合わない場合の代替と、AWS のサービスや外部の製品が流れのどの段階につながるかを整理します。
+
+## このノートで学べること
+
+- オンプレミスの ONTAP の利用者が、冷えたデータをオブジェクトストレージやテープへ移している理由と、移した後にファイルが見えるかどうか
+- FSx for ONTAP の新規の利用者と既存の利用者が、冷えたデータについて公開している根拠
+- 業界ごとの用途について、データの種類、読まれにくい理由、戻しに待てる時間、保持規則の例、写して消す流れが合うかどうかと、合わないときの代替
+- 流れの 12 段階（選ぶ、記録する、写す、照合する、承認する、消す、戻す、検索する、保護する、監査する、通知する、費用を報告する）に、AWS のサービスと外部の製品がどうつながるか。Access Points まで届くのか、アーカイブ用のバケットにしか届かないのか
+- 検討、検証、構築、運用の各段階で、自分の環境について何を決めるか
+
+## このノートが答えないこと
+
+- 保持期間や不変性が法令や規制を満たすかどうかの判断。保持規則の例は条文に書かれた数字の転記で、法的な助言ではありません
+- 製品の機能比較。比べる表は[アーカイブ用のクラスへ移す仕組みの比較](../../../reference/comparison/archive-tiering-library-options.md)にあります
+- 費用の見積り。単価と計算例は[サーバー側コピーのノートの費用の節](s3-access-points-server-side-copy-use-cases.md#アーカイブの往復の費用)にあります
+- ファイルを移す操作の手順と実装。実装は [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) にあります
+
+## 前提レベル
+
+intermediate
+
+## 本文
+
+[🏠 リポジトリトップ](../../../../../README.md) | [Domain: データ活用](../README.md)
+
+---
+
+### 結論
+
+誰のためのノートか。FSx for ONTAP のボリュームに、数か月から数年読まれないファイルがあり、S3 Glacier 系のクラスへ移すかどうかを決める人です。決めるのは次の 3 点です。自分のデータが「写して、照合して、承認の後に消す」流れに合うか。合わないなら何を使うか。連携したい AWS サービスや製品が、どの段階まで届くか。
+
+1. **合うのは、戻しを数時間から 48 時間待てて、元のパスで開く必要のないデータです。** 公開事例で挙がる、生のシーケンサー出力、完了した制作物の素材、公刊後の研究データがこれに当たります。元のパスで開く前提の事例（FabricPool、容量プール、動的リンクを使うもの）は、別の層の話で、この流れは使えません
+2. **合わないのは、診療の途中で再参照する画像、書き換え不能な保存を条文が求める記録、保全の義務が続く資料です。** 診療での再参照なら容量プールか S3 Glacier Instant Retrieval、書き換え不能な保存ならバケット側の機能が前提になります。バケット側の Object Lock は不可逆で、保持期間を名指しした承認が要ります
+3. **連携先の多くは、アーカイブ用のバケットにしか届きません。** S3 Inventory、S3 Metadata、S3 Storage Lens、Amazon Macie、AWS Backup は、読んだページに FSx for ONTAP の Access Points の記載がありませんでした。Access Points 側は、イベント通知、`RestoreObject`、バージョニング、Object Lock、ライフサイクルを使えません。元のボリュームの側を見る道具は、ONTAP REST API、NFS、`ListObjectsV2`、Amazon CloudWatch のメトリクスです
+
+![構成図。上の枠の AWS Step Functions が、AWS Lambda（5 GiB 以下のハッシュ）、AWS Fargate（5 GiB 超のハッシュ）、Amazon DynamoDB（台帳）、Amazon SNS（承認の依頼）を順に使い、Amazon S3 Access Points に CopyObject、HeadObject、DeleteObject を呼ぶ。下の段では、Amazon FSx for NetApp ONTAP のボリュームのファイルが、S3 Access Points からチェックサム付きのサーバー側コピーで S3 Glacier 系のクラスの汎用バケットへ写り、同じリージョンの別のバケットに 2 つ目の写しが置かれる。移す前のボリュームは AWS Backup でバックアップできる（経路 A）。S3 Glacier Instant Retrieval のバケットは Clumio などのバックアップ製品で守れる（経路 B）。選別は Komprise などのデータ管理ソフトに任せられる（経路 D）](../../../../_assets/images/archive-verify-delete.svg)
+
+図の内容は本文の表と同じです（[暗い背景の版](../../../../_assets/images/archive-verify-delete-dark.svg)、[English](../../../../_assets/images/archive-verify-delete-en.svg)）。
+
+> **区分**: `documented`。公開ページと規則の条文を 2026-11-26 に読んだ結果です。表の「実測」と書いた箇所だけが、実機で確かめた記録の引用です。法令や規制への適合の判断ではありません。
+
+---
+
+### 用語と区分の語
+
+この節の表と、後の表で使う語です。
+
+| 語 | 意味 |
+|---|---|
+| 写して消す流れ | ボリュームのファイルを、Access Points の S3 API だけで S3 Glacier 系のバケットへ写し、チェックサムを照合し、人の承認の後にだけ元を消す流れ。戻すときは、バケットで復元してから Access Points へ写し戻す |
+| 流れの 12 段階 | 選ぶ（S1）、記録する（S2）、写す（S3）、照合する（S4）、承認する（S5）、消す（S6）、戻す（S7）、検索する（S8）、保護する（S9）、監査する（S10）、通知する（S11）、費用を報告する（S12） |
+| 文書 | AWS またはベンダーの公開ページに、その組み合わせの記載がある |
+| 実測 | 実機で確かめた記録がある。出典は姉妹リポジトリのファイルか、この Hub の比較資料 |
+| 記載なし | 読んだ範囲に、記載も実測もない。非対応という意味ではない |
+| 推測 | 読んだ記述からの推論で、測っていない |
+| 容量プール | FSx for ONTAP の、使った量だけ課金される低価格の保管領域。ファイルは元のパスで見えたままになる |
+| S3 Glacier Instant Retrieval | S3 Glacier 系のうち、復元なしですぐ読めるクラス |
+| 復元が要る 2 クラス | S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive。読む前にバケットで復元が要る |
+
+流れの実装は、FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns リポジトリの `solutions/data-lifecycle/archive-verify-delete` です。以下、「パターン」と書いたらこれを指します。パターンが持つのは S1 から S7 と、S11、S12 の一部（通知と件数のメトリクス）です。S8 から S10 の大半は、利用者が連携先を足します。
+
+---
+
+### オンプレミスの ONTAP で公開されている階層化とアーカイブの用途
+
+オンプレミスの ONTAP から Amazon S3 へ移す方法の対応表（FabricPool、SnapMirror Cloud、Copy and Sync など）は、[サーバー側コピーのノート](s3-access-points-server-side-copy-use-cases.md#オンプレミスの-ontap-での運用からの置き換え)にあります。ここでは、公開された導入事例と製品文書が、冷えたデータをなぜ、どう移しているかを足します。業界で示し、数値は条件が書かれていないものを転記しません。
+
+| 用途 | 業界 | 移す理由 | 移した後にファイルは見えるか | 取り出しの記述 | 出典 |
+|---|---|---|---|---|---|
+| FabricPool と StorageGRID で、使われていないブロックを階層化 | 医療・生命科学の非営利の財団 | 高価な記憶域に画像、動画、測定ファイルのすべてを置き続けると容量と予算が逼迫する | 見える。階層化は透過的で、必要になれば自動で性能層へ戻る | 時間の記載なし | N9、N2 |
+| FabricPool と StorageGRID で、データを自動階層化 | 大学の宇宙物理の研究所 | 観測データの保管費用を下げる | 見える（FabricPool は透過）。事例は戻し方に触れていない | 記載なし | N10、N2 |
+| FabricPool で媒体コンテンツを階層化 | メディア事業者（欧州） | 制作と保管の費用と需要の均衡 | 見える | 記載なし | N11 |
+| データ管理ソフトで最終アクセスの分布を測り、冷えたデータを容量ストレージへ | 生命科学企業 | 最終アクセスの分布から、移せる比率を出し、予算要求の根拠にした | 製品の記述は、ユーザーとアプリを止めずに移すとだけ | 記載なし | K2 |
+| データ管理ソフトの階層化で、主 NAS の容量を空ける | 製薬企業（匿名） | 非構造データの増加、ハードウェア追加の回避 | 見える。パスを保つと書く | 研究者は変化に気づかないと書く（時間の記載なし） | K3 |
+| 自動階層化で NAS のファイルをテープへ | 大学（米国、匿名。ONTAP ではない） | 高速 NAS に数か月から数年読まれないファイルを置くのは高価で、将来のために保持は要る | 見える。テープにしかないファイルは自動でディスクへ戻る | 時間の記載なし | Q1 |
+| S3 互換のテープ基盤での長期保存 | 放送事業者（英国。ONTAP ではない） | アナログカセットの置き換え。サイバー攻撃からの隔離 | 見えない。素材管理から検索して取り出す | 制作チームは「ほぼ即時」と書く（ベンダーの事例） | SP1 |
+| メタデータカタログとポリシーで、ディレクトリ単位にアーカイブ | 研究機関と大学（ONTAP の記載なし） | 急増するシーケンスデータ。使用率の逼迫 | 研究者のアクセスを保つと書く（要約のみ） | 記載なし | SF1 |
+| StorageGRID の Cloud Storage Pools で、S3 Glacier 系などへ移す | 一般（製品文書） | 低頻度のオブジェクトの費用削減 | オブジェクトとして StorageGRID が管理する。FabricPool と同じバケットには使えない | FabricPool の階層先には使えない（取り出しの遅延が理由） | N3 |
+| SnapMirror Cloud で、スナップショットをオブジェクトストレージへバックアップ | 一般（製品文書） | 長期保持。旧来のテープバックアップの置き換え | 見えない。復元の操作が要る | 取り出しは S3 の取り出し時間に従う | N4 |
+
+読み取れることは 3 つです。
+
+1. 公開事例の動機は、容量の逼迫と費用です。冷えた比率を最終アクセスで測ってから移す順序（K2、A4）は、流れの S1 に使えます
+2. 元のパスで開ける事例（N9、N10、K3、Q1）が大半で、ファイルを消して S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive へ写す ONTAP の公開事例は、読んだ範囲に見つかりませんでした。FabricPool と Cloud Tiering の対象クラスは、この 2 クラスを含まないと書かれています（N1、N6）。パターンの `CopyObject` による書き込みに、公開された先例はありません
+3. 数値の多くはベンダーのページの記述で、条件が書かれていません。順序（アーカイブが先、階層化が後）だけを引く方針は、[アーカイブと階層化の順序のノート](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)と同じです
+
+---
+
+### FSx for ONTAP の新規の利用者と既存の利用者の用途
+
+「新規」はこれから入れる利用者で、冷えたデータの行き先を選ぶ段階です。「既存」はすでにボリュームを運用していて、容量の逼迫、費用、保持のどれかに向き合う段階です。サーバー側コピーそのものの用途（バケットとボリュームの間の移動、5 GiB 超のコピーなど）は、[新規の利用者と既存の利用者の用途](s3-access-points-server-side-copy-use-cases.md#新規の利用者と既存の利用者の用途)の表にあるので、ここでは繰り返しません。
+
+| 利用者 | 用途 | 公開されている根拠 | 出典 |
+|---|---|---|---|
+| 新規 | 移行の前に、冷えたデータの比率を測り、SSD 層の大きさを決める | 測り方として、アクセスログ、最終アクセス時刻、アプリの担当者への聞き取り、パイロットを挙げる。ブログは 80 対 20 を例にする | A5 |
+| 新規 | 移行中に Cloud Write で、容量プールへ直接書き込む | 匿名の製造業の事例で、300 TB を超える移行が約 2 週間から 2 日になったと書く | A6 |
+| 新規 | 移行後に、最終アクセス日で最初のアーカイブを実行する | 匿名の製造業の事例。データ管理ソフトの動的リンクで、FSx for ONTAP と S3 の両方から開ける。取り出しの費用の前提は S3 Glacier Instant Retrieval に月 10 TB | A4、K1 |
+| 既存 | 容量プールへの階層化。Auto の冷却期間は既定 31 日（2 から 183 日） | SSD の使用率が 50% 以下では All だけが階層化し、90% 以上で冷たいデータを SSD へ戻さなくなり、98% 以上で階層化が止まる。ファイルのメタデータは SSD に残る | A3 |
+| 既存 | All の階層化ポリシー、または cloud retrieval policy の Never | 読まれても SSD へ戻さない。読み取りのたびに容量プールの遅延がかかる | A3 |
+| 既存 | S3 Glacier 系への退避 | AWS の発表と対応表は、S3 Glacier 系への退避を用途として挙げていない。Access Points 側は Object Lock、ライフサイクル、バージョニング、`RestoreObject` に非対応と書く。照合、削除、復元の運用は利用者が組む | A1、A2 |
+
+FSx for ONTAP で S3 Glacier 系を行き先に選んだ公開事例は、読んだ範囲では A4 の 1 件（匿名）だけでした。S3 Access Points のサーバー側コピーを移行の段階で使った事例は見つかっていません。
+
+FSx for ONTAP ではない参考事例が 3 つあります。大学が研究室のサーバーのバックアップを S3 Glacier Deep Archive へ置いた事例（A10）、ゲノムのシーケンス出力を 90 日後に S3 Glacier Deep Archive へ移すホワイトペーパー（A8。ページ冒頭に歴史的参照のみと書かれている）、放送アーカイブを S3 Glacier Instant Retrieval と Intelligent-Tiering に置いた事例（A9）です。いずれも S3 を最初から正本にしていて、FSx for ONTAP のボリュームからファイルを消す流れの根拠にはなりません。
+
+---
+
+### 業界別の用途と、写して消す流れの適合
+
+「適合」の列は、このノートの判断です。公開根拠があるのは、データの種類と取り出しの記述（出典の列）までで、適合の判定は、パターンの性質（元のパスで開けない、戻しに復元が要る、Object Lock を使わない）に照らした推論です。
+
+| 業界 | データ | 読まれにくい理由 | 戻しに待てる時間の目安 | 適合と、合わないときの代替 |
+|---|---|---|---|---|
+| メディア、映像制作 | 完了した制作物の原版、マスター、素材 | 再利用や再放送まで読まれない。公共放送の事例は 100 年分の保存を目的にする（A9） | 公共放送は S3 Glacier Instant Retrieval で即時に近い取り出し（A9）。S3 Glacier Flexible Retrieval なら迅速 1 から 5 分、標準 3 から 5 時間（A7） | 条件付きで合う。制作の再開に数時間待てる素材が対象。素材管理システムがパスで素材を参照するなら、移動後の所在の更新が要る。即時性が要るなら S3 Glacier Instant Retrieval か容量プール |
+| 生命科学、ゲノム | 生のシーケンサー出力（BCL、FastQ） | 解析後は読まれない | 研究単位で復元を依頼する運用例がある（A8）。S3 Glacier Deep Archive は標準 12 時間以内、大容量 48 時間以内（A7） | 合う。ただし BAM や生データが 50 GiB を超えると、Access Points へ戻せない（A2） |
+| 医療 | 医用画像（DICOM） | 古い検査はまれにしか読まれない | 診療での再参照は待てない場合が多い（このノートの判断。公開根拠なし） | 合わないことが多い。再参照があるなら容量プールか S3 Glacier Instant Retrieval。画像の長期保管を医用画像の専用サービスに任せる選択肢もある（AWS HealthImaging は長期アーカイブを用途に挙げる。HI1） |
+| 金融 | 口座の記録、通信、帳簿 | 規則上の保管のために置く | 規則は迅速に提出できることを前提にする（R6） | 単独では合わない。規則が書き換えと消去のできない形式、または監査証跡を求める（R6）ので、バケット側の Object Lock などが前提になる。パターンは Object Lock を使わない |
+| 研究機関、大学 | 研究データ全般 | 公刊後、再現性と監査のためだけに保持する | 要求時に提供できること | 合う。保持が 3 から 10 年以上（下の表）なので、S3 Glacier Deep Archive の最小保管期間 180 日は問題にならない。バケット側の S3 Lifecycle で削除の時期を決められる（Access Points 側にライフサイクルはない） |
+| 航空機製造など | 品質記録（設計データの管理を含む体系） | 製造の適合の証明のために保持する | 記載なし | 条件付き。条文が求めるのは品質記録で、CAD ファイルそのものの保持期間ではない（R5）。小さなファイルが多いと、1 つにつき 40 KB のメタデータ課金が積み上がるので、先に見積もる |
+| 法務 | 電子的に保存された情報（訴訟の保全の対象） | 訴訟の予期から保存義務が続く | 要求に応じて提出 | そのままでは合わない。保全の対象を移動と削除から外す仕組みが要る。パターンは保全の対象を除く機能を持たないので、承認の段で、対象が保全の対象でないことを人が確かめる運用になる |
+| 公共 | 公文書（PDF、スキャン画像、メール） | 情報公開請求への対応と歴史資料 | 記載なし | 判断の材料がない。保存期間の一次資料（米国の記録スケジュール、日本の公文書管理）を読めていない。検索の索引が別に要る |
+| 半導体、自動運転、石油ガス | 設計データ、走行ログ、地震探査の生データ | 完了後の再現、検証、再処理 | 記載なし | 判断の材料がない。保持期間の公開された一次資料を見つけていない。ファイルの大きさが 50 GiB を超えるもの（生映像、地震探査の生データなど）は戻せない。小さなファイルが多い設計データは課金の見積りを先に |
+
+合わない場合の代替を、見え方の要件で並べ直します。
+
+| 要件 | 選ぶもの | 引き受けること |
+|---|---|---|
+| 移した後も、元のパスでファイルを開く | 容量プール（Auto、All、cloud retrieval policy の Never） | 保管料金の下げ幅は、容量プールまで（Single-AZ で S3 Standard と同水準）。復元を待つ運用は要らない |
+| 元のパスは保ち、ファイルを移す | データ管理ソフト（動的リンクやスタブ） | NFS か SMB でマウントする構成。製品のライセンスが要る |
+| 即時に読め、バケット側のバックアップ製品で守る | S3 Glacier Instant Retrieval | 保管料金は復元が要る 2 クラスより高い |
+| 書き換え不能な保存、または保全 | バケット側の Object Lock などと、保持期間を名指しした承認 | 不可逆。[不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)を先に読む |
+| 数時間から 48 時間待て、元のパスで開く必要がない | 写して消す流れ | スタブも透過な呼び戻しもない。ファイルは利用者のフォルダーから消える |
+
+---
+
+### 保持規則の例
+
+保持の列は、条文や方針に書かれた数字の転記です。**記録の保持規則の例であって、法的な助言ではありません。** 適用される対象は条文の範囲で、データの種類と一致するとは限りません。
+
+| 業界 | 規則 | 書かれていること | 注意 | 出典 |
+|---|---|---|---|---|
+| 医薬品の治験 | 21 CFR 312.57(c) | スポンサーは、販売承認の後 2 年間（承認されない場合は、治験薬の出荷が止まり FDA に通知した後 2 年間）、この部が求める記録と報告を保持する | 米国の規則 | R7 |
+| 医療（米国の病院） | 42 CFR 482.24(b)(1) | メディケアの参加条件として、診療録を少なくとも 5 年保持する。(c)(4)(vi) は記録に含める事項に放射線と検査の報告を挙げる | 画像データそのものが診療録に含まれるかは、読んだ条文に書かれていない。州法の期間と日本の診療録の保存年限は読めていない | R4 |
+| 金融（米国の証券会社） | 17 CFR 240.17a-4(c)、(f)(2) | 口座の開設と維持に関する記録は口座の閉鎖から 6 年以上。電子記録は、変更と削除の完全な監査証跡を保つか、書き換えと消去のできない形式で保存する | 読んだのは (c) から (f) の一部で、(a)(b) の期間は読んでいない | R6 |
+| 航空機製造 | 14 CFR 21.137(k) | 品質記録を、製造した製品と部品について少なくとも 5 年、重要部品について少なくとも 10 年 | 対象は品質記録で、CAD ファイルではない | R5 |
+| 研究費の助成（米国） | 2 CFR 200.334、45 CFR 75.361 | 最終の財務報告の提出から 3 年。訴訟、請求、監査が始まっていれば解決まで | 書面で延長を求められることがある | R2、R3 |
+| 研究費の助成（英国の資金提供者） | 大学による要約 | プロジェクト終了後、AHRC は少なくとも 3 年、BBSRC は最低 10 年、CRUK は少なくとも 5 年、EPSRC は 10 年（最後の請求またはアクセスから）、MRC は基礎研究で 10 年以上、集団保健と縦断研究で 20 年。NIH と STFC は期間の指定なし | 二次資料。資金提供者の一次ページは読めていない | R9 |
+| 訴訟 | FRCP 37(e) | 訴訟の予期または進行中に保存すべき電子情報が、合理的な措置を怠って失われ、復元も代替もできないとき、裁判所は措置を命じる | 固定の保持期間はなく、事案ごと | R8 |
+| 医療情報の安全管理（米国） | 45 CFR 164.316(b)(2)(i) | 方針と手順などの文書を、作成日か有効だった最後の日の遅い方から 6 年保持する | 患者の記録ではなく、文書化の保持。台帳がこの文書に当たるかは判断していない | R1 |
+
+---
+
+### 実機の通しで確かめた挙動
+
+パターンを、FSx for ONTAP の 1 つのファイルシステムで 1 回ずつ通しました（2026-11-26、ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX スタイルのボリューム、S3 Glacier Flexible Retrieval、7 ファイル）。用途の判断に効く事実を挙げます。環境と手順ごとの結果は、[比較資料の節](../../../reference/comparison/archive-tiering-library-options.md#実機での通しの結果)にあります。記録の原本は、パターンの `solutions/data-lifecycle/archive-verify-delete/README.md` にあります。
+
+| 用途の判断に効く事実 | 結果 |
+|---|---|
+| 戻しの時間 | 取り出しの種類を Expedited にして、5.5 GiB を含む 6 ファイルを 287 秒で戻し、SHA-256 は全件一致した。Standard と Bulk の完了待ちは測っていない |
+| 戻した後の属性 | 所有者 0:1、モード 644、更新時刻は戻した時刻。生成された再付与スクリプトを root で実行すると、元の uid、gid、mode、mtime に戻った |
+| 承認の拒否 | 拒否すると何も消えなかった |
+| 承認を待つ間の書き換え | 同じ大きさのまま mtime が更新された書き換えは検出され、そのファイルは消えなかった |
+| 最後のファイルを消したとき | 空になった親ディレクトリも消えた。戻しの `CopyObject` が親ディレクトリを作り直す |
+| 最終アクセス日で選ぶとき | ハッシュ計算の読み取りがファイルの atime を実行時刻に更新する。dry run の直後に同じ入力で本番を回すと、0 件で終わった |
+
+通しの規模は 7 ファイルで、多数のファイルでの所要時間と費用は測っていません。
+
+---
+
+### 連携先と流れの段階の対応
+
+連携先を、流れのどの段階に置くかと、FSx for ONTAP の S3 Access Points まで届くのか、アーカイブ用のバケットにしか届かないのかで整理します。まず段階ごとの標準の構成を示し、その後に連携先を種類別に並べます。
+
+#### 流れの段階と標準の連携先
+
+| 段階 | パターンが持つもの | 追加で組み合わせる連携先 |
+|---|---|---|
+| S1 選ぶ | `ListObjectsV2` の更新時刻、または ONTAP REST API の最終アクセス時刻 | Amazon EventBridge Scheduler（定期起動）、Amazon Macie か Amazon Comprehend などによる分類（移す前に限る） |
+| S2 記録 | Amazon DynamoDB の台帳（大きさ、ETag、SHA-256、CRC64NVME、所有者、モード、時刻） | なし |
+| S3 写す | AWS Step Functions の `copyObject`、5 GiB 超は AWS Fargate のマルチパートコピー | S3 Batch Operations（実装案として並ぶ） |
+| S4 照合 | バケットの `HeadObject` のチェックサムと台帳の比較 | なし |
+| S5 承認 | `waitForTaskToken`、Amazon SNS の通知、AWS Systems Manager Parameter Store のトークン | Amazon Q Developer in chat applications、Slack、Microsoft Teams、チケットシステム |
+| S6 消す | Access Points の `HeadObject` で ETag を確かめてから `DeleteObject` | AWS Organizations の SCP（バケット側の削除の拒否） |
+| S7 戻す | `RestoreObject`、ポーリングで完了を待ち、`CopyObject` で戻す | EventBridge（Object Restore Completed）、S3 Batch Operations、ファイルポータル |
+| S8 検索 | 台帳 | Amazon Athena、AWS Glue Data Catalog、S3 Inventory、Amazon OpenSearch Service |
+| S9 保護 | 2 つ目の写し（任意、同一リージョンのバケット） | AWS Backup（ボリューム） |
+| S10 監査 | 台帳の `deletedBy`、Step Functions の実行履歴 | AWS CloudTrail のデータイベント、S3 Metadata |
+| S11 通知 | SNS | Amazon Q Developer in chat applications |
+| S12 費用 | Amazon CloudWatch への件数とバイト数のメトリクス | Cost and Usage Report 2.0（Data Exports）、S3 Storage Lens |
+
+#### AWS のサービスと S3 の機能
+
+「Access Points」の列は FSx for ONTAP の S3 Access Points に対する区分、「バケット」の列は S3 の汎用バケットに対する区分です（区分の語は「用語と区分の語」の表）。
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| S3 Inventory | S8 S9 S10 | バケットの全オブジェクトの一覧（クラス、チェックサムのアルゴリズム、暗号化の状態）を日次か週次で作る | 記載なし | 文書 | リアルタイムではない。元のボリュームの一覧は `ListObjectsV2` か ONTAP REST API で取る |
+| S3 Batch Operations | S3 S7 | 大量のコピー、タグ付け、`RestoreObject` をジョブにする | 記載なし | 文書 | 復元ジョブでは、Flexible Retrieval と Deep Archive、Intelligent-Tiering のアーカイブ層を同じジョブに混ぜられない。ジョブの作成に課金される |
+| S3 Storage Lens | S12 | バケットとプレフィックスごとの保管量とクラスの内訳 | 記載なし | 文書 | プレフィックスの集計と CloudWatch への出力は上位の層。ボリューム側の容量は FSx for ONTAP の CloudWatch メトリクス |
+| S3 Metadata | S8 S10 | バケットの作成、更新、削除をジャーナル表に記録する | 記載なし | 文書 | 設定した後の変更だけが記録される。復元の要求が追えるかは、概要ページに記載がない |
+| S3 のイベント通知と EventBridge | S7 S11 | 復元の完了（Object Restore Completed）で戻す処理を起動する | 非対応（文書） | 文書 | パターンの現行の実装はポーリングで、EventBridge を使っていない。バケットの EventBridge 通知は有効にしてあるので、後から切り替えられる |
+| `RestoreObject` | S7 | 復元を要求する | 非対応（文書） | 文書 | 復元はバケット側で行い、Access Points へは `CopyObject` で戻す |
+| ストレージクラスの課金 | S1 S12 | 移す価値の判断 | 該当なし | 文書 | 復元が要る 2 クラスは、1 オブジェクトにつき 40 KB の追加メタデータが課金される。最小保管期間は Instant Retrieval と Flexible Retrieval が 90 日、Deep Archive が 180 日。取り出しは GB ごとに課金される |
+| コスト配分タグ | S12 | 保管料金を部門や案件に割り当てる | 記載なし | 文書 | タグを付けられるのはバケットだけで、オブジェクトやプレフィックスには付けられない。案件ごとの請求はバケットを分けるか、台帳で集計する |
+| AWS KMS | S3 S7 | アーカイブ用のバケットの暗号化と、鍵の権限による隔離 | SSE-FSX のみ（文書） | SSE-KMS を使える（文書） | 戻すときは SSE-FSX になる。`CopyObject` を呼ぶロールに鍵の権限が要る |
+| CloudTrail のデータイベント | S10 | 操作の記録。要求元の IAM の主体を残せるのは CloudTrail だけ | 文書（`AWS::S3::AccessPoint` のリソース種別） | 文書 | 既定では記録されない。パターンの通しでは、削除のイベントが出ることを確かめていない |
+| ONTAP の FPolicy と監査ログ | S10 | 変更検知と監査 | 実測（[他の Spoke の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/s3ap-monitoring-coverage-implications.md)。ONTAP 9.18.1P3D1） | 該当なし | Access Points 経由の操作は FPolicy の通知が発火せず、ONTAP の監査ログには記録されるが要求者は記録されない。FPolicy を前提に削除を見る設計は、Access Points 経由の削除を見落とす |
+
+#### 分析、カタログ、検索、分類
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| Amazon Athena | S8 S10 | 台帳のエクスポート、Inventory、CloudTrail のログを SQL で引く | 文書、実測（[他の Spoke の互換性表](https://github.com/Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations/blob/main/docs/en/compatibility-matrix.md)は読み取りのみ） | 文書 | Access Points は Internet origin が必要。復元が要る 2 クラスのオブジェクトの中身は、復元するまで読めない |
+| AWS Glue Data Catalog | S8 | 台帳やログの表の定義。クローラを Access Points のエイリアスに向けられる | 文書、実測（同上） | 文書 | 移した後のファイルを表の場所に残すと、Athena の読み取りが失敗する |
+| Amazon Macie | S1 S2 | 移す前の機密データの検出 | 記載なし（[FSx-for-ONTAP-Cyber-Resilience-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/comparison-security-layers.md) は、`FSX_ONTAP` クラスのオブジェクトを対象外と整理している。この Spoke は S3 Glacier 系のバケットへ写した後の Macie の動作を扱っていない） | S3 Glacier Instant Retrieval までは対象。S3 Glacier Deep Archive は対象外と明記（文書）。Flexible Retrieval は対象クラスの一覧にない | 復元が要る 2 クラスへ直接写すと、写した後は Macie で見られない。分類が要るなら、移す前にファイルを読んで判定するか、Standard のバケットへいったん写してから移す（後者は試していない）<!-- spoke-checked: macie --> |
+| Amazon Comprehend | S1 S2 | 移す前の文書の分類 | 記載なし。FSx-for-ONTAP-Agentic-Access-Aware-RAG の手順に、Comprehend で個人情報を検出する例がある。ファイルを読んで API へ渡す構成か、非同期ジョブの入力に Access Points を直接指せるかは、本調査では確かめていない<!-- spoke-checked: comprehend --> | 記載なし | 分類が要るなら、移す前に読む |
+| Amazon Bedrock Knowledge Bases | S1 S2 S8 | 移す前の内容の要約やタグ付け、検索 | 文書、実測（読み取り、Internet origin が必要） | 推測（復元が要る 2 クラスは復元が要る） | 1 文書 50 MB を超えるファイルは取り込みから外れる。ファイルの権限は索引に引き継がれない |
+| Amazon OpenSearch Service | S8 | 台帳の全文検索 | 記載なし | 記載なし | 台帳の副索引として使う構成は実装案で、読んだ文書に記載はない |
+| Amazon Kendra | S8 | 検索サービス | 記載なし | 該当なし | ページ冒頭に、新規の利用者に開放されていないと書かれている。新しい構成の前提にしない |
+
+#### 起動、承認、通知
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| Step Functions（SDK 統合、Distributed Map） | S3 S4 S6 S7 | コピー、照合、削除、復元をファイルごとに並列で実行する | 実測（[比較資料の部品確認](../../../reference/comparison/archive-tiering-library-options.md#部品ごとに確かめたこと)で `copyObject` から `deleteObject` までを 1 回、25 秒。パターンの通しで 7 ファイル） | 実測（同上） | 並列の子実行は 1 つの Map Run で 10,000 まで。1 実行の履歴は 25,000 イベントまで。子実行の起動は Standard で毎秒 100 まで |
+| `waitForTaskToken` | S5 | 人の承認が返るまで待つ | 該当なし | 該当なし | 実測（SNS の通知と Parameter Store のトークンで、承認と拒否を 1 回ずつ）。待てるのは最長 1 年。トークンは同じアカウントのプリンシパルから送る |
+| Amazon SNS、Amazon SQS | S5 S11 | 承認依頼と失敗の通知 | 該当なし | 該当なし | SNS はパターンで実測。SQS は試していない。承認の返答は別の入口から `SendTaskSuccess` を呼ぶ構成が要る |
+| Amazon Q Developer in chat applications | S5 S11 | SNS のトピックを Slack、Teams、Amazon Chime のチャンネルへ送る。通知にカスタムアクションを付けられる | 該当なし | 該当なし | 文書。承認のボタンから `SendTaskSuccess` を呼ぶ構成は、ページが示すカスタムアクションから組める実装案で、その構成の記載は読んでいない |
+| EventBridge Scheduler | S1 | 定期の起動 | 文書（Access Points はイベント通知が使えないので、定期の起動で代える） | 文書 | パターンは手動で実行を開始する。定期の起動は利用者が足す |
+
+#### 保護、ガバナンス、費用
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| AWS Backup（FSx for ONTAP のボリューム） | S9 | 消す前の安全網。消したファイルをボリュームのバックアップから戻す | Access Points は通らない（ボリューム本体が対象） | 該当なし | ボリューム単位で戻し、戻し先は新しいボリューム。個別のファイルは戻せない。SSD の使用率が 98% を超えるとバックアップは失敗する |
+| AWS Backup（S3 バケット） | S9 | アーカイブ用のバケットの保護 | 記載なし | S3 Glacier Instant Retrieval は対象。復元が要る 2 クラスは対象外（文書） | バージョニングが必須。パターンの 2 つ目の写しで代える |
+| AWS Config | S10 | バケットの設定（暗号化、公開設定）の変更の記録 | 記載なし | 文書 | 設定の記録で、オブジェクトの操作の記録ではない |
+| AWS Organizations の SCP | S6 S9 | アーカイブ用のバケットでの削除や暗号化の変更を、組織の境界で拒否する | 文書（リクエストの評価に SCP を含む） | 文書 | SCP は許可を与えない。管理アカウントには効かない |
+| Amazon CloudWatch | S10 S11 S12 | ファイルシステムとボリュームの容量、Step Functions のメトリクス、パターンの件数のメトリクス | 該当なし（Access Points 経由のリクエスト専用のメトリクスは記載なし） | 該当なし | スナップショットがある間は、消してもボリュームの使用量は下がらない（比較資料の実測） |
+| Cost and Usage Report 2.0（Data Exports） | S12 | 保管料金、リクエスト、取り出しの料金を日次で取り出し、台帳と突き合わせる | 該当なし | 文書 | FSx for ONTAP のコスト配分は、読んだ文書にない |
+
+#### データ移動と利用者側
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| AWS DataSync | S3 の別経路、S9 の 2 つ目の写し | NFS v3 か SMB でボリュームを読み、バケットへ写す | 記載なし | 文書 | 元を消す機能は、読んだページに記載がない。ボリュームをマウントするホストが要る |
+| AWS Transfer Family | S7 の後 | 戻したファイルを、外部の相手へ SFTP などで渡す | 文書（エイリアスのみ。ARN は不可。Internet origin） | 該当なし | リネームと追記は不可 |
+| AWS Storage Gateway | S7 の利用者側 | バケットを NFS か SMB の共有として見せる | 記載なし | 記載なし | 復元が要る 2 クラスのオブジェクトを共有から読んだときの動作は読んでいない |
+| Amazon S3 Files | S7 の利用者側 | バケットを共有ファイルシステムとしてマウントする | 記載なし | 文書 | 復元が要る 2 クラスのオブジェクトは、ファイルシステムから読めず、先に S3 API で復元する。FSx for ONTAP のボリュームの代わりにはならない |
+| AWS HealthOmics、AWS Deadline Cloud、AWS Elemental MediaConvert、AWS HealthImaging | 戻した後の利用 | ゲノムの解析、レンダリング、映像の変換、医用画像の保管 | 記載なし | 記載なし | 復元が要る 2 クラスのオブジェクトを入力にしたときの動作は読んでいない。HealthImaging は、ファイルとして移す代わりに医用画像の専用サービスへ取り込む選択肢 |
+| Amazon WorkSpaces | S7 S11 | 利用者の画面 | 該当なし | 該当なし | 移したファイルは利用者のフォルダーから消えるので、案内と戻しの申請の入口が要る |
+
+#### アプリケーション（種類としての推測）
+
+アプリケーションの製品ページは読んでいません。ファイルの参照の一般的な形からの推測と、姉妹リポジトリの実装がある分だけを書きます。
+
+| 種類 | 段階 | 役割 | 区分 | 注意 |
+|---|---|---|---|---|
+| ファイルポータル（[Amplify Gen2 版](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/amplify-portal)） | S5 S7 S8 S10 S11 | ファイルの閲覧、処理の起動、承認つきの操作の利用者側の入口 | 実測（Access Points 経由の閲覧と処理） | アーカイブした分の一覧、戻しの申請、復元の待ち時間の表示は未実装 |
+| 文書管理、記録管理システム | S1 S8 S10 | 保持期間、廃棄の判断、文書の台帳 | 推測 | ファイルへのリンクがボリュームのパスなら、移して消すとリンク切れになる。保持の判断を持つなら、パターンの承認の前に置く |
+| メディア資産管理 | S1 S7 S8 | 素材のメタデータと所在 | 推測 | パスで素材を参照するなら、移動後の所在の更新が要る。復元を待つ間、制作を止めない運用が要る |
+| 医用画像の保管・配信システム | S1 S7 S8 | DICOM の保管と配信 | 推測 | パスで DICOM を参照している場合の扱いは、読んだ範囲に記載がない |
+| 研究室の情報管理、設計データの版管理 | S1 S8 | 測定データ、設計データの所在 | 推測 | 元のパスを持つ記録は、移した後にリンク切れになる |
+
+#### 外部の製品とサービス
+
+| 連携先 | 段階 | 役割 | Access Points | バケット | 注意 |
+|---|---|---|---|---|---|
+| Clumio | S9 | アーカイブ用のバケットの保護 | 記載なし | S3 Glacier Instant Retrieval は対象。復元が要る 2 クラスは対象外。公式サイトの FAQ とドキュメントの記載が食い違う | 使う前に製品側へ確認が要る |
+| Komprise、Starfish、Datadobi | S1 S8 S10 | ポリシーによる選別、カタログ、移動 | 記載なし | 該当なし | 選別だけを任せ、照合と削除をパターンが担う組み合わせがありうる（比較資料の経路 D）。台帳が 2 つになる |
+| Slack、Microsoft Teams | S5 S11 | 承認のボタンと通知 | 該当なし | 該当なし | 承認の操作を受ける入口（AWS Lambda など）が要る。Slack はペイロードを受けて 3 秒以内に HTTP 200 を返す必要がある。Teams のページは旧版の扱いで、最新の仕様は読んでいない |
+| ServiceNow、Splunk、Datadog | S5 S10 | チケットの承認、ログの集約 | 記載なし | 記載なし | 製品のページを読めなかった（本文が取れないか、HTTP 403）。接続の記述は書かない |
+
+---
+
+### 用途と流れの段階の対応表
+
+標準の連携先（上の「流れの段階と標準の連携先」）に、用途ごとに何を足すかです。**各セルは組み合わせの整理で、実機で通したものではありません。** アプリケーションの列は、推測に基づきます。
+
+| 用途 | S1 選ぶ | S5 承認 | S7 戻す | S8 検索 | S9 S10 保護と監査 |
+|---|---|---|---|---|---|
+| メディアの素材 | 素材管理システムの所在情報と突き合わせる | ファイルポータル | 映像の変換やレンダリングの入力にする前に復元。復元を待つ間の制作の運用を決める | 素材管理システム、Athena | 共通。プロジェクトごとにバケットを分ける |
+| ゲノム、研究データ | 研究室の情報管理の所在情報。大きなファイルは CRC64NVME | ファイルポータル、Slack、Teams | S3 Batch Operations で一括の復元。50 GiB 超は戻せない | Athena、OpenSearch Service | 共通。案件ごとにバケットを分け、コスト配分タグを付ける |
+| 医用画像 | 医用画像の保管・配信システムの所在情報 | 個人情報の保護のガードレールを前提に承認 | 診療での再参照には復元の待ちが合わない場合が多い | Athena | CloudTrail と ONTAP の監査ログ（要求者なし） |
+| 金融などの記録 | 記録管理システムの保持の判断を先に | 保持の判断者の承認を先に置く | 規則が提出の迅速さを前提にするなら、復元の時間を確認 | Athena、OpenSearch Service | バケット側の Object Lock は不可逆。保持期間を名指しした承認を先に取る |
+| 製造の品質記録、設計データ | 小さなファイルの多さを見積もる。まとめてからアーカイブにする設計も検討 | ファイルポータル | 共通 | Athena、OpenSearch Service | 共通 |
+| 自動運転のログ | 共通。Distributed Map の並列の上限を見積もる | Slack、Teams | S3 Batch Operations で一括の復元 | Athena | 共通 |
+| 法務の保全 | 保全の対象を除く運用を先に決める（パターンに機能なし） | 法務の承認 | 保全中は戻しも止める運用 | 文書管理システム、OpenSearch Service | AWS Organizations の SCP でバケットの削除を拒否。バケット側の Object Lock は使わない前提なので別設計 |
+| 公文書 | 記録管理システムの保存期間の設定と突き合わせる | ファイルポータル | ファイルポータル | Athena、OpenSearch Service | CloudTrail、S3 Metadata、AWS Config |
+
+---
+
+### 自環境での始め方
+
+検討、検証、構築、運用の順に、何を決めるかです。
+
+| 段階 | 決めること | 判断の材料 |
+|---|---|---|
+| 検討 | 冷えたデータの比率と読まれ方を測る | アクセスログ、最終アクセス時刻、アプリの担当者への聞き取り、パイロット（A5）。最終アクセス時刻で選ぶ場合は、パターン自身の読み取りで atime が更新されるので、dry run の直後に本番を回さない |
+| 検討 | 移した後も元のパスで開く必要があるか | ある: 容量プール（Auto、All）かデータ管理ソフト。ない: 次へ。[比較資料の選び方](../../../reference/comparison/archive-tiering-library-options.md#選び方)の 1 番 |
+| 検討 | 戻しに何時間待てるか | S3 Glacier Instant Retrieval は復元不要。Flexible Retrieval は迅速 1 から 5 分、標準 3 から 5 時間、大容量 5 から 12 時間。Deep Archive は標準 12 時間以内、大容量 48 時間以内（A7） |
+| 検討 | 保持、不変性、保全の要件を聞き取る | 要件が書き換え不能な保存や保全の対象を含むなら、このパターンだけでは足りない。バケット側の Object Lock は不可逆で、保持期間を名指しした承認が要る |
+| 検討 | ファイルの大きさと数を確認する | 5 GiB 超は Fargate、50 GiB 超は Access Points へ戻せない（A2）。小さなファイルが多いと、1 つにつき 40 KB のメタデータ課金と最小保管期間が効く |
+| 検証 | 部品が自環境で動くか | `CopyObject` のチェックサム、ETag の挙動、`DeleteObject` の `NotImplemented`、スナップショットがある間の容量の挙動を、[比較資料の部品の確認](../../../reference/comparison/archive-tiering-library-options.md#部品ごとに確かめたこと)と同じ手順で 1 回ずつ確かめる |
+| 検証 | dry run を、小さな `maxFiles` で回す | dry run でもコピーは行われ、アーカイブ用のクラスの保管料金がかかる。削除は行われない |
+| 検証 | 承認の拒否、承認待ちの間の書き換え、1 ファイルの戻しを 1 回ずつ通す | 拒否すると何も消えないこと、書き換えたファイルが消えないこと、戻したファイルの SHA-256 が一致することを確かめる |
+| 構築 | パターンをデプロイする | [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) の README の手順 |
+| 構築 | アーカイブ用のバケットを設計する | 暗号化、アクセス制御、Block Public Access、S3 Lifecycle による削除の時期、同一リージョンの 2 つ目の写し、CloudTrail のデータイベント、SCP |
+| 構築 | 承認できる主体を決める | 承認の入力の `approver` は申告で、実際に承認した主体を示すのは CloudTrail の `SendTaskSuccess` のイベント |
+| 構築 | 消す前に、AWS Backup でボリュームをバックアップする | 戻すのはボリューム単位で、戻し先は新しいボリューム |
+| 運用 | 台帳を守る | 台帳が戻しの索引になる。パターンの DynamoDB には point-in-time recovery を設定している |
+| 運用 | 戻しの訓練をする | 戻した後は、所有者 0:1、モード 644、更新時刻は戻した時刻になる。再付与スクリプトを root で実行する手順を訓練する |
+| 運用 | 費用を突き合わせる | Cost and Usage Report 2.0 と台帳、パターンのメトリクスを突き合わせる |
+| 運用 | 利用者に案内する | 移したファイルは利用者のフォルダーから消える。戻しの申請の入口（ファイルポータルなど）を用意する。ファイルポータルのアーカイブの一覧と戻しの申請は未実装 |
+
+---
+
+### よくある誤解
+
+| 誤解 | 実際 |
+|---|---|
+| 読まれないファイルは、S3 Glacier 系へ移さないと安くならない | 容量プールへの階層化で、Single-AZ では S3 Standard と同水準の単価になる。S3 Glacier 系は、それより下げたい場合や、バケット側の機能が要る場合に選ぶ |
+| 連携したい AWS サービスは、Access Points にもバケットにも同じようにつながる | 読んだページに Access Points の記載がないものが多い。バケット側にだけ届く連携は、移した後のファイルが対象になる |
+| Amazon Macie で、アーカイブ用のバケットの機密データを後から検出できる | S3 Glacier Deep Archive は対象外と明記されている。移す前に分類するか、Standard のバケットを経由する（後者は試していない） |
+| 保持期間が条文にあるので、そのファイルを S3 Glacier 系へ移せば足りる | 条文の期間は記録に付くもので、ファイルの種類には付かない。書き換え不能な保存を求める条文には、移すだけでは足りない |
+| アーカイブ用のバケットは AWS Backup で守れる | 復元が要る 2 クラスのオブジェクトは対象外と書かれている。2 つ目の写しを自分で作る |
+| 承認があれば、承認者が誰かも台帳で確かめられる | 台帳の `deletedBy` は申告値。実際に承認した主体は CloudTrail の `SendTaskSuccess` のイベントで確かめる |
+| 公開事例があるので、同じ用途で動く | ONTAP の公開事例の多くは、元のパスで開ける階層化で、この流れとは別の層。S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive へ写して消す ONTAP の事例は、読んだ範囲に見つからなかった |
+
+---
+
+### 確認できていないこと
+
+- ONTAP の公開事例で、復元が要る 2 クラスへファイルを写して消す事例の有無。見つからなかったことは、存在しないことの証明ではない
+- 多数のファイルでの所要時間と費用、Standard と Bulk の復元の完了待ち、NTFS ボリューム、第 2 世代、Multi-AZ での動作
+- 日本の診療録の保存年限、日本の公文書の保存期間、米国の一般記録スケジュール。条文のページは取得できたが、該当の記述を抽出できなかった
+- 半導体の設計データ、自動運転のログ、地震探査の生データの保持期間。公開された一次資料を見つけていない
+- 金融の規則の (a)(b) の期間、研究資金提供者の一次ページ。大学の要約（二次）に頼っている
+- ServiceNow、Splunk、Datadog のページ。本文が取れないか、HTTP 403 だった
+- アプリケーションの製品（文書管理、素材管理、医用画像の保管、研究室の情報管理、設計データの版管理）。種類としての推測で、製品ページは読んでいない
+- Amazon Comprehend と Amazon Bedrock の非同期ジョブが、FSx for ONTAP の Access Points のエイリアスを入力に指せるか
+- S3 Metadata のジャーナル表が、復元の要求と完了を記録するか
+- CloudTrail のデータイベントで、FSx for ONTAP の Access Points の削除がどういうイベントで出るか
+- AWS Elemental MediaConvert、AWS Deadline Cloud、AWS Storage Gateway、AWS HealthOmics が、復元が要る 2 クラスのオブジェクトを入力にしたときの動作
+- NetApp のページのうち、HTTP 403 で取得できなかったもの（導入事例の一部とブログ）。PDF の事例資料は題名と URL だけを確認し、内容を引いていない
+
+---
+
+### 参照した一次情報
+
+すべて 2026-11-26 に閲覧しました。
+
+#### AWS
+
+| 記号 | 出典 |
+|---|---|
+| A1 | [What's New: Amazon S3 Access Points for Amazon FSx now support server-side copy](https://aws.amazon.com/about-aws/whats-new/2026/11/s3-access-points-server-side-copy-fsx/) |
+| A2 | [Access point compatibility（FSx for ONTAP ユーザーガイド）](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html) |
+| A3 | [Volume storage capacity（同ユーザーガイド）](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/volume-storage-capacity.html) |
+| A4 | [Cost-optimized file storage with FSx for ONTAP and Komprise（AWS Storage Blog）](https://aws.amazon.com/blogs/storage/cost-optimized-file-storage-with-amazon-fsx-for-netapp-ontap-and-komprise/) |
+| A5 | [How to size an FSx for ONTAP file system（AWS Storage Blog）](https://aws.amazon.com/blogs/storage/how-to-size-an-amazon-fsx-for-netapp-ontap-file-system/) |
+| A6 | [Cloud Write mode（AWS Storage Blog）](https://aws.amazon.com/blogs/storage/streamline-petabyte-scale-data-migrations-with-cloud-write-mode-on-amazon-fsx-for-netapp-ontap/) |
+| A7 | [Understanding archive retrieval options（Amazon S3 ユーザーガイド）](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html) |
+| A8 | [Genomics Data Transfer, Analytics, and Machine Learning, Appendix F](https://docs.aws.amazon.com/whitepapers/latest/genomics-data-transfer-analytics-and-machine-learning/appendix-f-optimizing-storage-cost-and-data-lifecycle-management.html) |
+| A9 | [BBC Case Study（Amazon S3）](https://aws.amazon.com/solutions/case-studies/bbc-s3-case-study/) |
+| A10 | [University of California Irvine backs up petabytes of research data（AWS Storage Blog）](https://aws.amazon.com/blogs/storage/university-of-california-irvine-backs-up-petabytes-of-research-data-to-aws) |
+| HI1 | [What is AWS HealthImaging](https://docs.aws.amazon.com/healthimaging/latest/devguide/what-is.html) |
+
+#### NetApp の文書と導入事例
+
+| 記号 | 出典 |
+|---|---|
+| N1 | [Requirements for using ONTAP FabricPool](https://docs.netapp.com/us-en/ontap/fabricpool/requirements-concept.html) |
+| N2 | [Learn about ONTAP FabricPool](https://docs.netapp.com/us-en/ontap/concepts/fabricpool-concept.html) |
+| N3 | [Hybrid clouds with StorageGRID](https://docs.netapp.com/us-en/storagegrid/primer/hybrid-clouds-with-storagegrid.html) |
+| N4 | [ONTAP SnapMirror Cloud backups to object storage](https://docs.netapp.com/us-en/ontap/concepts/snapmirror-cloud-backups-object-store-concept.html) |
+| N6 | [Supported S3 storage classes and regions for Cloud Tiering](https://docs.netapp.com/us-en/data-services-cloud-tiering/reference-aws-support.html) |
+| N9 | [導入事例: 医療・生命科学の財団](https://www.netapp.com/customers/swiss-epi/) |
+| N10 | [導入事例: 大学の宇宙物理の研究所](https://www.netapp.com/customers/cu-boulder-lasp-storagegrid-case-study) |
+| N11 | [導入事例: 欧州のメディア事業者](https://www.netapp.com/customers/media-company-in-europe/) |
+
+#### 外部の製品とベンダーの事例
+
+| 記号 | 出典 |
+|---|---|
+| K1 | [Komprise: Manufacturing Case Study（FSx for ONTAP）](https://www.komprise.com/blog/manufacturing-case-study-komprise-amazon-fsx-for-ontap/) |
+| K2 | [Komprise: How Pacific Biosciences Manages Data at Scale](https://www.komprise.com/blog/how-pacific-biosciences-manages-data-at-scale-with-komprise-netapp/) |
+| K3 | [Komprise: Pharmaceutical Manufacturer Reclaims 2PB+](https://www.komprise.com/resource/pharma-komprise-intelligent-tiering-customer/) |
+| SF1 | [Starfish Storage Resource Hub](https://starfishstorage.com/resources/) |
+| SP1 | [Spectra Logic: ITV の事例](https://spectralogic.com/case-studies/itv-case-study/) |
+| Q1 | [Quantum: Ivy League University](https://cdn.quantum.com/customerstories/ivyleague/index.aspx) |
+
+#### 規則の条文と方針
+
+| 記号 | 出典 |
+|---|---|
+| R1 | [45 CFR 164.316](https://www.law.cornell.edu/cfr/text/45/164.316) |
+| R2 | [2 CFR 200.334](https://www.law.cornell.edu/cfr/text/2/200.334) |
+| R3 | [45 CFR 75.361](https://www.law.cornell.edu/cfr/text/45/75.361) |
+| R4 | [42 CFR 482.24](https://www.law.cornell.edu/cfr/text/42/482.24) |
+| R5 | [14 CFR 21.137](https://www.law.cornell.edu/cfr/text/14/21.137) |
+| R6 | [17 CFR 240.17a-4](https://www.law.cornell.edu/cfr/text/17/240.17a-4) |
+| R7 | [21 CFR 312.57](https://www.law.cornell.edu/cfr/text/21/312.57) |
+| R8 | [FRCP Rule 37](https://www.law.cornell.edu/rules/frcp/rule_37) |
+| R9 | [UCL: Data policies and expectations（資金提供者の方針の大学による要約。二次資料）](https://www.ucl.ac.uk/library/open-science-research-support/research-data-management/policies) |
+
+#### 連携先の根拠にした AWS のドキュメント
+
+| 連携先 | URL |
+|---|---|
+| S3 Inventory、Batch Operations、Storage Lens、Metadata | [Inventory](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-inventory.html)、[Batch Operations](https://docs.aws.amazon.com/AmazonS3/latest/userguide/batch-ops.html)、[Storage Lens](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage_lens.html)、[Metadata](https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html) |
+| S3 の復元、イベント、クラス、タグ、KMS、CloudTrail | [復元](https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects.html)、[EventBridge](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html)、[クラス](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)、[コスト配分タグ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/CostAllocTagging.html)、[KMS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)、[CloudTrail](https://docs.aws.amazon.com/AmazonS3/latest/userguide/cloudtrail-logging-s3-info.html)、[S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files.html) |
+| 分析、分類、検索 | [Athena のチュートリアル](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/tutorial-query-data-with-athena.html)、[Bedrock のチュートリアル](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/tutorial-build-rag-with-bedrock.html)、[Macie の対応クラス](https://docs.aws.amazon.com/macie/latest/user/discovery-supported-storage.html)、[Kendra](https://docs.aws.amazon.com/kendra/latest/dg/what-is-kendra.html) |
+| オーケストレーションと通知 | [Distributed Map](https://docs.aws.amazon.com/step-functions/latest/dg/state-map-distributed.html)、[クォータ](https://docs.aws.amazon.com/step-functions/latest/dg/service-quotas.html)、[コールバック](https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html)、[Amazon Q Developer in chat applications](https://docs.aws.amazon.com/chatbot/latest/adminguide/what-is.html)、[EventBridge Scheduler](https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html) |
+| 保護、ガバナンス、費用 | [FSx for ONTAP のバックアップ](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/using-backups.html)、[AWS Backup の S3 バックアップ](https://docs.aws.amazon.com/aws-backup/latest/devguide/s3-backups.html)、[SCP](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)、[Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) |
+| データ移動と利用者側 | [DataSync](https://docs.aws.amazon.com/datasync/latest/userguide/create-ontap-location.html)、[Transfer Family](https://docs.aws.amazon.com/transfer/latest/userguide/fsx-s3-access-points.html)、[Storage Gateway](https://docs.aws.amazon.com/filegateway/latest/files3/what-is-file-s3.html) |
+
+### 関連ドキュメント
+
+- [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](s3-access-points-server-side-copy-use-cases.md)
+- [FSx for ONTAP のファイルをアーカイブ用のクラスへ移す 8 種類の仕組みの比較](../../../reference/comparison/archive-tiering-library-options.md)
+- [外部ツールのアーカイブと容量プール階層の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
+- [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md)
+- [不可逆な操作の承認は作業の承認とは別に取る](../../security-governance/notes/irreversible-operations-need-separate-approval.md)
+- [FSx for ONTAP S3 Access Points は S3 として使えるか](s3-access-point-constraints.md)

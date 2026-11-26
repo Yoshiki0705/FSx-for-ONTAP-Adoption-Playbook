@@ -312,7 +312,7 @@ Single-AZ の容量プールの保管料金は、S3 Standard と同じくらい�
 2. 写した後、バケットの `HeadObject` が返す大きさを、写す前に記録した大きさと比べる。ETag は中身の MD5 ではなく、ボリューム側にはチェックサムが保存されない（[対応表](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）ので、中身の一致は、ボリュームのファイルとバケットのオブジェクトの SHA-256 を自分で比べて確かめる
 3. 確認できたファイルだけを消す。スナップショットが消したファイルのブロックを持っている間は、容量は空かない
 
-この手順を担う既存の製品と、S3 API だけで組む場合の流れと組み合わせ方は、[アーカイブ用のクラスへ移す仕組みの比較](../../../reference/comparison/archive-tiering-library-options.md)にまとめました。
+この手順を担う既存の製品と、S3 API だけで組む場合の流れと組み合わせ方は、[アーカイブ用のクラスへ移す仕組みの比較](../../../reference/comparison/archive-tiering-library-options.md)にまとめました。業界ごとの用途と、連携できる AWS サービスは、[ファイルを消して S3 Glacier 系へ移す用途と連携先](archive-use-cases-and-integrations.md)にあります。
 
 マルチパートのコピーが途中で止まると、パートが残ります。バケット側に残ったパートは S3 Lifecycle の不完全なマルチパートアップロードの削除で、ボリューム側に残ったパートは `AbortMultipartUpload` で片付けます。対応表は、中断したパートがファイルシステムの使用量に数えられると書いています。
 
@@ -485,6 +485,7 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 
 - [FSx for ONTAP S3 Access Points は S3 として使えるか](s3-access-point-constraints.md)
 - [コピーを増やさずにデータへ届けるにはどうするか](reaching-data-without-copies.md)
+- [ファイルを消して S3 Glacier 系へ移す用途と連携先](archive-use-cases-and-integrations.md)
 - [外部ツールのアーカイブと容量プール階層の順序](../../cost/notes/archiving-and-tiering-are-ordered-not-alternatives.md)
 - [階層化ポリシーの比較](../../../reference/comparison/tiering-policies.md)
 - [課金は「確保した量」と「使った量」に分かれる](../../cost/notes/provisioned-versus-consumed.md)
