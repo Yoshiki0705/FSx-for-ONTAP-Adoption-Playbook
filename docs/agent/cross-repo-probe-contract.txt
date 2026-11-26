@@ -208,6 +208,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retra
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	書き換えの形を測る前に決めておく
 S3-Burst-on-ONTAP-Files	docs/ja/verification/block-protocol-matrix-plan.md	retraction	範囲に入ったことを原因が同じ証拠にしない
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	4 方向の反映速度を同一条件で比較し
+S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	持続接続では SMB と NFS は同等です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/cross-protocol-directions.md	retraction	正しい値は今回の p50 44 ms です
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	Origin への往復が不要になります
 S3-Burst-on-ONTAP-Files	docs/ja/verification/flexcache-s3ap-visibility.md	retraction	代表値として引くなら 8 ms です
