@@ -1,0 +1,331 @@
+{
+  "schema_version": 2,
+  "run_id": "45899885372-1",
+  "record_path": "runs/2026/11/45899885372-1.json",
+  "record_sha256": "3a3059456d4f792cff77bf489f178461add6595b06e3fcb7863180a85b9c0b5e",
+  "skipped_paths": {
+    "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": [
+      "scripts/tests/fixtures",
+      "tests/fixtures"
+    ]
+  },
+  "pilot": {
+    "observation": {
+      "input_file": true,
+      "observed_repos": [
+        "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook",
+        "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns"
+      ],
+      "window_start": "2026-11-16T14:26:24Z",
+      "window_end": null,
+      "restarts_done": 0,
+      "extensions_exhausted": false,
+      "max_rate_percent": null
+    },
+    "counts": {
+      "issued": 0,
+      "detector_errors": 0,
+      "not_affected_other": 0,
+      "fixed": 0,
+      "affected": 0,
+      "undecided": 0
+    },
+    "rates": {
+      "issued": 0,
+      "false_positive": 0,
+      "not_affected_other": 0,
+      "undecided": 0,
+      "rate_percent": null,
+      "min_issues": 20,
+      "awaiting_decisions": false,
+      "fixed": 0,
+      "affected": 0,
+      "duplicates": 0,
+      "under_investigation": 0,
+      "carried_over": 0,
+      "before_window": 5,
+      "false_positive_causes": 0
+    },
+    "review": {
+      "applies": true,
+      "issued": 0,
+      "detector_errors": 0,
+      "not_affected_other": 0,
+      "undecided": 0,
+      "within_error_limit": true,
+      "needs_cause_classification": false,
+      "awaiting_decisions": false,
+      "errors_are_majority": false,
+      "next_batch_conditions_hold": false,
+      "under_investigation": 0,
+      "restart_causes": [],
+      "can_restart_observation": false,
+      "needs_maintainer_decision": false,
+      "may_restart_now": false,
+      "detector_error_issues": 0
+    },
+    "restart": {
+      "restarts_done": 0,
+      "remaining": 3,
+      "may_restart": true,
+      "redesign_required": false
+    },
+    "sli": {
+      "met": 0,
+      "denominator": 0
+    },
+    "issue_cap": {
+      "repos": [],
+      "deferred_initial_bulk": 0
+    },
+    "excluded_outside_observation": 28,
+    "excluded_test_issues": 0
+  },
+  "detector_signals": {
+    "list_limit": 200,
+    "vex_unchecked_against_kev": {
+      "count": 0,
+      "omitted": 0,
+      "items": []
+    },
+    "duplicate_issues": {
+      "count": 0,
+      "omitted": 0,
+      "items": []
+    },
+    "alias_multi_cve": {
+      "count": 0,
+      "omitted": 0,
+      "items": []
+    },
+    "kev_unknown": {
+      "count": 0,
+      "omitted": 0,
+      "items": []
+    },
+    "vex_name_only_ghsa": {
+      "count": 0,
+      "omitted": 0,
+      "items": []
+    }
+  },
+  "detection_excluded_unknown_origin": 0,
+  "sbom": {
+    "Yoshiki0705/BLEA-FSx-for-ONTAP-Usecase": {
+      "layer": "A",
+      "component_count": 480,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook": {
+      "layer": "B",
+      "component_count": 0,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "trivy",
+          "version": "0.76.2"
+        }
+      ],
+      "generation": {
+        "tool": "trivy-0.76.2",
+        "scanner_series": "trivy"
+      }
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Agentic-Access-Aware-RAG": {
+      "layer": "A",
+      "component_count": 1322,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-App-Modernization-Patterns": {
+      "layer": "A",
+      "component_count": 25,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Container-Datastore-Patterns": {
+      "layer": "A",
+      "component_count": 8,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns": {
+      "layer": "B",
+      "component_count": 2,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "trivy",
+          "version": "0.76.2"
+        }
+      ],
+      "generation": {
+        "tool": "trivy-0.76.2",
+        "scanner_series": "trivy"
+      }
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Lakehouse-Integrations": {
+      "layer": "A",
+      "component_count": 28,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-Observability-integrations": {
+      "layer": "A",
+      "component_count": 449,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns": {
+      "layer": "A",
+      "component_count": 1494,
+      "coverage_complete": false,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/ONTAP-Edge-to-Cloud-AI": {
+      "layer": "A",
+      "component_count": 25,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/S3-Burst-on-ONTAP-Files": {
+      "layer": "A",
+      "component_count": 9,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    },
+    "Yoshiki0705/VMware-Migration-EC2-ONTAP": {
+      "layer": "A",
+      "component_count": 15,
+      "coverage_complete": true,
+      "tools": [
+        {
+          "name": "protobom-v0.0.0",
+          "version": "20261126160829-4b866bbcfe3f+dirty"
+        },
+        {
+          "name": "GitHub.com-Dependency-Graph",
+          "version": "unknown"
+        },
+        {
+          "name": "dependabot",
+          "version": "unknown"
+        }
+      ]
+    }
+  }
+}
