@@ -3,7 +3,7 @@ title: S3 Access Points のサーバー側コピーは、直接読めない用�
 lifecycle: [design, migrate, operate]
 domains: [data-utilization, cost]
 evidence: verified
-verified_on: 2026-11-24
+verified_on: 2026-11-26
 region: ap-northeast-1
 ontap_version: 9.19.1P4
 lang: ja
@@ -121,7 +121,7 @@ Amazon Athena、AWS Glue、Amazon Bedrock Knowledge Bases のように Access Po
 | S3 Intelligent-Tiering（`INTELLIGENT_TIERING`） | 成功 | 成功 | 成功 | 20 秒 | 134 秒 |
 | S3 Glacier Instant Retrieval（`GLACIER_IR`） | 成功 | 成功 | 成功 | 22 秒 | 133 秒 |
 | S3 Glacier Flexible Retrieval（`GLACIER`） | 成功 | `InvalidObjectState`。迅速取り出し、標準取り出しで復元した後はどちらも成功 | 成功（迅速取り出しで復元した後） | 24 秒 | 132 秒（迅速取り出しで復元した後） |
-| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。標準取り出しで復元した後は成功 | 復元が終わるのを待っている | 23 秒 | 復元が終わるのを待っている |
+| S3 Glacier Deep Archive（`DEEP_ARCHIVE`） | 成功 | `InvalidObjectState`。標準取り出し、大容量取り出しで復元した後はどちらも成功 | 成功（標準取り出しで復元した後） | 23 秒 | 131 秒（標準取り出しで復元した後） |
 
 表の読み方を補足します。
 
@@ -139,7 +139,7 @@ S3 の API が定義するストレージクラスの値は 13 個です（`Copy
 | `STANDARD`、`REDUCED_REDUNDANCY`、`STANDARD_IA`、`ONEZONE_IA`、`GLACIER_IR` | 両方向、1 KiB・8 MiB・6 GiB | なし |
 | `INTELLIGENT_TIERING` | 両方向、1 KiB・8 MiB・6 GiB。高頻度アクセスの層だけ | 低頻度アクセス（30 日）、アーカイブインスタントアクセス（90 日）、アーカイブアクセスとディープアーカイブアクセス（任意、90 日と 180 日）。層へ移るまでの日数が要るので、2026-12-24、2027-02-22、2027-05-23 に、層へ移ったオブジェクトをボリュームへ戻せるかを確かめる（[#435](https://github.com/Yoshiki0705/FSx-for-ONTAP-Adoption-Playbook/issues/435)） |
 | `GLACIER` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、復元の後に 1 KiB・8 MiB・6 GiB（迅速）、8 MiB（標準、大容量） | なし |
-| `DEEP_ARCHIVE` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、標準取り出しで復元した後に 8 MiB | 大容量取り出しによる復元と、6 GiB・1 KiB のオブジェクトを標準取り出しで復元した後のコピーは、復元が終わるのを待っている |
+| `DEEP_ARCHIVE` | ボリュームから写す方向は 3 つの大きさ。戻す方向は、復元の後に 1 KiB・8 MiB・6 GiB（標準）、8 MiB（大容量） | なし |
 | `EXPRESS_ONEZONE` | ディレクトリバケットとの間は両方向とも失敗。汎用バケットへ指定すると `InvalidStorageClass` | ディレクトリバケットは、告知が挙げる「汎用バケット」に入らない |
 | `OUTPOSTS` | 汎用バケットへ指定すると `InvalidStorageClass` | S3 on Outposts の環境がない。ドキュメントでは、S3 on Outposts の `CopyObject` は同じ Outposts バケットの中だけで、ほかの種類のバケットとの間は非対応（[CopyObject の API リファレンス](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)） |
 | `SNOW` | 汎用バケットへ指定すると `InvalidStorageClass` | Snow のデバイスがない。現行の Snowball Edge は 2025-11-07 から新しい利用者に提供されていない（[availability change](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html)） |
@@ -171,16 +171,19 @@ S3 on Outposts のデータを FSx for ONTAP へ移す経路は、ドキュメ�
 | `--copy-source-if-match`（Access Point のオブジェクトの ETag） | 正しい ETag で成功、違う ETag で `PreconditionFailed` |
 | `UploadPartCopy` の `--copy-source-range`、Access Point → バケット、2 パート | 成功。中身が一致 |
 
-復元が終わるまでの時間は、次のとおりでした（2026-11-24、8 MiB のオブジェクト、各 1 回）。迅速取り出しと大容量取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。6 GiB の迅速取り出しは 69 秒でした。標準取り出しの時間は、状態を確かめた時刻から求めた幅です。
+復元が終わるまでの時間は、次のとおりでした（どれも 2026-11-24 に要求、各 1 回。大きさは表の列のとおり）。迅速取り出しと大容量取り出しは、バケットの Amazon EventBridge 通知（Object Restore Initiated と Object Restore Completed）の時刻で測りました。6 GiB の迅速取り出しは 69 秒でした。S3 Glacier Deep Archive の 1 KiB と 6 GiB の標準取り出しも EventBridge の時刻で測りました。それ以外の標準取り出しの時間は、状態を確かめた時刻から求めた幅です。
 
 | クラスと取り出し | 復元にかかった時間 | ドキュメントの目安 |
 |---|---|---|
 | S3 Glacier Flexible Retrieval、迅速 | 70 秒 | 1〜5 分 |
 | S3 Glacier Flexible Retrieval、標準 | 1 時間 22 分〜4 時間 30 分の間 | 3〜5 時間 |
 | S3 Glacier Flexible Retrieval、大容量 | 5 時間 34 分 | 5〜12 時間 |
-| S3 Glacier Deep Archive、標準 | 7 時間 43 分〜10 時間 51 分の間 | 12 時間以内 |
+| S3 Glacier Deep Archive、標準（8 MiB） | 7 時間 43 分〜10 時間 51 分の間 | 12 時間以内 |
+| S3 Glacier Deep Archive、標準（1 KiB） | 8 時間 01 分 | 12 時間以内 |
+| S3 Glacier Deep Archive、標準（6 GiB） | 8 時間 14 分 | 12 時間以内 |
+| S3 Glacier Deep Archive、大容量（8 MiB） | 36 時間 13 分 | 48 時間以内 |
 
-大容量取り出しで復元した S3 Glacier Flexible Retrieval のオブジェクトも、ボリュームへ戻せ、中身が一致しました。S3 Glacier Deep Archive の大容量取り出しは、2026-11-24 10:11 UTC に要求し、完了を待っています。
+大容量取り出しで復元した S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive のオブジェクトも、ボリュームへ戻せ、中身が一致しました。S3 Glacier Deep Archive の 3 つ（1 KiB、8 MiB、6 GiB）は、どれも戻したファイルを NFS で読んだ SHA-256 が元のファイルと一致し、コピー先のクラスは `FSX_ONTAP` でした。
 
 S3 Express One Zone のディレクトリバケットとの間のコピーは、What's New とユーザーガイドが挙げる「汎用バケット」の範囲の外で、今回は両方向とも失敗しました。ディレクトリバケットとの間でデータを動かすなら、汎用バケットを経由します。
 
@@ -445,7 +448,6 @@ S3 Glacier Deep Archive には 180 日の最小保管期間があり、それよ
 - NTFS の ACL を持つボリューム（SMB の利用者がいる環境）での、コピー先のファイルの所有者と ACL
 - アカウントをまたぐコピー、FlexCache のボリュームに付けた Access Point からのコピー
 - S3 Intelligent-Tiering のアーカイブ用の層に移ったオブジェクトのコピー
-- S3 Glacier Deep Archive の大容量取り出しにかかった時間と、6 GiB・1 KiB を標準取り出しで復元した後のコピー（2026-11-24 に要求し、完了待ち）
 - S3 on Outposts と Snow（環境とデバイスがない）
 - 小さなファイルを大量にコピーしたときのリクエストレートの上限と所要時間
 - FlexCache の Origin のボリュームへ写したファイルが、Cache から読めるようになるまでの時間

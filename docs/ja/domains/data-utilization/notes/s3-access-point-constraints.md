@@ -163,6 +163,7 @@ ETag もチェックサムも、**Amazon S3 で使っていた形では使えま
 | バケット → Access Point（復元なし） | `GLACIER`、`DEEP_ARCHIVE` | `InvalidObjectState`（Operation is not valid for the source object's storage class） |
 | バケット → Access Point（`GLACIER` を Expedited で復元した後） | `GLACIER` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
 | バケット → Access Point（Standard で復元した後） | `GLACIER`、`DEEP_ARCHIVE` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP` |
+| バケット → Access Point（Bulk で復元した後） | `GLACIER`、`DEEP_ARCHIVE` | 成功。中身が一致し、コピー先のクラスは `FSX_ONTAP`。`DEEP_ARCHIVE` の Bulk の復元は 8 MiB で 36 時間 13 分 |
 
 復元にかかった時間と、6 GiB と 1 KiB での往復、コピー先に指定できないクラス、コピーのオプションは、[ストレージクラスとコピーのオプションの実測一覧](s3-access-points-server-side-copy-use-cases.md#ストレージクラスとコピーのオプションの実測一覧)にあります。
 
