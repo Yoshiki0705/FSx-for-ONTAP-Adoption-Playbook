@@ -1,5 +1,5 @@
 ---
-title: FSx for ONTAP のファイルをアーカイブ用のクラスへ移す 8 種類の仕組みの比較 — バックアップ製品との組み合わせを含む
+title: FSx for ONTAP のファイルをアーカイブ用のクラスへ移す 9 種類の仕組みの比較 — バックアップ製品との組み合わせを含む
 lifecycle: [design, operate, optimize]
 domains: [data-utilization, cost, data-protection]
 evidence: documented
@@ -7,13 +7,13 @@ source: https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn
 lang: ja
 ---
 
-# FSx for ONTAP のファイルをアーカイブ用のクラスへ移す 8 種類の仕組みの比較
+# FSx for ONTAP のファイルをアーカイブ用のクラスへ移す 9 種類の仕組みの比較
 
 [🏠 リポジトリトップ](../../../../README.md) | [Reference](../README.md) | [比較マトリクス](README.md)
 
 ---
 
-この資料は、Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームにある、めったに読まれないファイルを、Amazon S3 の S3 Glacier 系のクラスへ移して保管料金を下げたい人に向けたものです。この資料は、移す仕組みを 8 種類に分けて比べます。ボリュームの階層化、ストレージ内蔵の階層化とスタブ（元の場所に残す小さな参照）、ファイルを被せるデータ管理ソフト、オブジェクトを正本にするファイル基盤、転送サービス、OSS のツールと層、デジタル保存システム、S3 API だけで照合と削除を行う仕組みです。それぞれが何を担い、何を担わないかを、各社の公開ページで並べます。アーカイブ用のバケットを守るバックアップ製品（Clumio など）は、別の表で比べ、組み合わせ方も書きます。
+この資料は、Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームにある、めったに読まれないファイルを、Amazon S3 の S3 Glacier 系のクラスへ移して保管料金を下げたい人に向けたものです。この資料は、移す仕組みを 9 種類に分けて比べます。ボリュームの階層化、ストレージ内蔵の階層化とスタブ（元の場所に残す小さな参照）、ディレクトリを S3 へ写す機能、ファイルを被せるデータ管理ソフト、オブジェクトを正本にするファイル基盤、転送サービス、OSS のツールと層、デジタル保存システム、S3 API だけで照合と削除を行う仕組みです。それぞれが何を担い、何を担わないかを、各社の公開ページで並べます。アーカイブ用のバケットを守るバックアップ製品（Clumio など）は、別の表で比べ、組み合わせ方も書きます。
 
 この資料で使う語は次のとおりです。
 
@@ -25,14 +25,16 @@ lang: ja
 - 台帳: どのファイルを、いつ、どこへ移したかと、属性とハッシュを記録したものです。戻すときの索引になります
 - S3 Glacier 系のクラス: S3 Glacier Instant Retrieval（すぐに読める）、S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive（読む前にバケットで復元が要る）の 3 つです。この資料で「復元が要る 2 クラス」と書くときは、後の 2 つを指します
 
-この資料が比べる「S3 API だけで照合と削除を行う仕組み」は、このリポジトリで設計し、[FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) に実装したものです。FSx for ONTAP の 1 つのファイルシステムで、7 ファイルを 1 回通しで実行しました。その欄は、公開ページの記載ではなく、この実装と 1 回の実行の結果です。多数のファイルと、この環境の外の構成は測っていません。中身は「[S3 API だけの照合と削除の仕組み](#s3-api-だけの照合と削除の仕組み)」の節にあります。どの用途に合うかは、[ファイルを消して S3 Glacier 系へ移す用途と連携先のノート](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md)にあります。
+この資料が比べる「S3 API だけで照合と削除を行う仕組み」は、この Hub（FSx for ONTAP Adoption Playbook）で設計し、実装は別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) にあります。以下、この実装を「パターン」と書きます。FSx for ONTAP の 1 つのファイルシステムで、7 ファイルを 1 回通しで実行しました。その欄は、公開ページの記載ではなく、この実装と 1 回の実行の結果です。多数のファイルと、この環境の外の構成は測っていません。中身は「[S3 API だけの照合と削除の仕組み](#s3-api-だけの照合と削除の仕組み)」の節にあります。どの用途に合うかは、[ファイルを消して S3 Glacier 系へ移す用途と連携先のノート](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md)にあります。
+
+> **2026-11-26 の改訂との関係**: この資料の実測値は、同日の第 1 回の通し（改訂前のコード）のものです。その後、パターンは次を追加しました。承認を台帳に記録する、50 GiB を超えるファイルを選択から外す、最小サイズ（既定 128 KiB）、除外パターンと保全の対象のプレフィックス、アーカイブ先のキーへの実行 ID の組み込み、タイムアウト、戻した後の再ハッシュによる照合、アラーム、SNS の KMS 設定の修正、Access Point のポリシーの出力です。改訂後のコードでの実機の通しは、この資料の実測に含まれません。たとえば第 1 回の通しの 64 B のファイル 3 つは、既定の最小サイズでは対象外になります。
 
 ## 結論
 
-- **ファイルを利用者から見えたままにしたいなら、ボリュームの階層化で足ります。** 容量プールの保管料金は、東京リージョンの Single-AZ で $0.0238 / GB-月で、S3 Standard の $0.025 / GB-月と同じくらいです（2026-11-24 取得）。Multi-AZ は $0.0476 / GB-月で、約 1.9 倍です。容量プールには読み取りと書き込みのリクエスト料金も別にかかります。S3 Glacier 系のクラスほどは下がりませんが、復元を待つ時間も、照合と削除の運用も要りません（[容量プールに置いたままにするか、バケットへ移すかの判断](../../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md#容量プールに置いたままにするかバケットへ移すかの判断)）
-- **復元が要る 2 クラスへ移したいなら、今回読んだ範囲に、写して元を消すところまで行えると書いた製品はありませんでした。** 対象は FSx for ONTAP のボリュームのファイルです。階層化とスタブ型の製品の多くは、S3 Glacier Instant Retrieval までを対象にしています。復元が要る 2 クラスについては、Dell PowerScale CloudPools、ONTAP の FabricPool、Nasuni が対象外と書いています。Hammerspace、Panzura、CTERA は、読んだページに記載がありませんでした。写すだけなら、AWS DataSync が全クラスへ書けます。DataSync に元を消す機能の記載は、読んだページにありませんでした
-- **S3 API だけの照合と削除の仕組みは、次の 3 つを加えます。** ボリュームをマウントしない（S3 Access Points だけを使う）こと、復元が要る 2 クラスへ `CopyObject` で直接写すこと、照合で一致したファイルだけを、人の承認の後に消すことです。実装して 1 回通しで実行し、7 ファイル（5.5 GiB を含む）のうち 6 ファイルが消え、承認待ちの間に書き換えたファイル 1 つは消えず、承認を拒否すると何も消えず、消した 6 ファイルは戻せて SHA-256 が一致しました（ap-northeast-1、2026-11-26、各 1 回。条件は「[実機での通しの結果](#実機での通しの結果)」）。代わりに、スタブも透過な呼び戻しもなく、移したファイルは利用者のフォルダーから消えます
-- **アーカイブ用のバケットを守るバックアップ製品は、復元が要る 2 クラスのオブジェクトを対象外にしています。** AWS Backup、Clumio、Commvault、Veeam が公開ページで対象外と書き、Druva は Flexible Retrieval を読み飛ばすと書いています。S3 のレプリケーションも、この 2 クラスのオブジェクトを複製しません。バックアップ製品もレプリケーションも使えないので、復元が要る 2 クラスに置くなら、バケットのオブジェクトの別のコピー（2 つ目の写し）を、移す時点で自分で作ります。これが経路 C です。試した範囲では、S3 Access Points（インターネット起点、1 つ）から大阪のバケットへの直接のコピーは `AccessDenied` になり、一度東京のバケットへ S3 Standard で写してから大阪へ送る手順は成功しました（2026-11-26、1 MiB、各 1 回）。直接のコピーが失敗した原因が Access Point の設定なのか、リージョンをまたぐ制約一般なのかは区別していません。バックアップ製品で守るなら、アーカイブ用のクラスを S3 Glacier Instant Retrieval にします。これが経路 B です。どちらの場合も、移す前に AWS Backup でボリュームをバックアップしておく経路 A を組み合わせられます。経路 A から D の内容は「[他の仕組みと組み合わせる経路](#他の仕組みと組み合わせる経路)」の表にあります
+- **ファイルを利用者から見えたままにしたいなら、ボリュームの階層化で足ります。** 容量プールの保管料金は、東京リージョンの Single-AZ で $0.0238 / GB-月で、S3 Standard の $0.025 / GB-月と同じくらいです（2026-11-24 取得）。Multi-AZ は $0.0476 / GB-月で、約 1.9 倍です。容量プールには読み取りと書き込みのリクエスト料金も別にかかります。S3 Glacier 系のクラスほどは下がりませんが、復元を待つ時間も、照合と削除の運用も要りません。S3 Glacier 系へ移して得になるかは、1 オブジェクトの追加メタデータ、最小保管期間、取り出しとリクエストの料金で変わります（[保管料金の損益分岐の考え方](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#保管料金の損益分岐の考え方)。[容量プールに置いたままにするか、バケットへ移すかの判断](../../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md#容量プールに置いたままにするかバケットへ移すかの判断)）
+- **復元が要る 2 クラスへ移したいなら、「写す、照合する、人が承認する、元を消す」を 1 つの製品で行えると書いたページは、今回読んだ範囲にありませんでした。** 部分的な記載はあります。OSS の rclone は `move` で元を消せ、クラスを指定して書けます（FSx for ONTAP の S3 Access Points ではボリューム側の MD5 が取れず、MD5 での照合は成り立ちません）。iRODS は次の階層へ複製し、大きさかチェックサムで検証してから元を消します（人の承認の記載はありません）。Archivematica は削除を「要求」と「管理者の承認」の 2 段階にしています（復元が要る 2 クラスへの書き込みの記載は見つけられませんでした）。対象は FSx for ONTAP のボリュームのファイルです。階層化とスタブ型の製品の多くは、S3 Glacier Instant Retrieval までを対象にしています。復元が要る 2 クラスについては、Dell PowerScale CloudPools、ONTAP の FabricPool、Nasuni が対象外と書いています。Hammerspace、Panzura、CTERA は、読んだページに記載がありませんでした。写すだけなら、AWS DataSync が全クラスへ書けます。DataSync に元を消す機能の記載は、読んだページにありませんでした
+- **S3 API だけの照合と削除の仕組み（パターン）が前提にするのは、次の 3 つです。** ファイルの読み取り、コピー、削除に NFS のマウントを使わず、S3 Access Points の S3 API だけで行うこと、復元が要る 2 クラスへ `CopyObject` で直接写すこと、照合で一致したファイルだけを、人の承認の後に消すことです。ただし、最終アクセス時刻で選ぶときは VPC 内の AWS Lambda から ONTAP REST API を呼び（ONTAP の認証情報と管理エンドポイントへの到達性が要る）、戻した後の所有者・モード・更新時刻の付け直しには、NFS でボリュームをマウントしたホストが要ります。実装して 1 回通しで実行し、7 ファイル（5.5 GiB を含む）のうち 6 ファイルが消え、承認待ちの間に書き換えたファイル 1 つは消えず、承認を拒否すると何も消えず、消した 6 ファイルは戻せて、SHA-256 が事前に記録した値と一致しました（ap-northeast-1、2026-11-26、各 1 回。この一致の確認は手作業で、当時の戻しの流れは戻した後のハッシュを台帳と比べていませんでした。改訂後のパターンは戻した後に再ハッシュして台帳と比べます。条件は「[実機での通しの結果](#実機での通しの結果)」）。代わりに、スタブも透過な呼び戻しもなく、移したファイルは利用者のフォルダーから消えます
+- **アーカイブ用のバケットを守るバックアップ製品は、復元が要る 2 クラスのオブジェクトを対象外にしています。** AWS Backup、Clumio、Commvault、Veeam が公開ページで対象外と書き、Druva は Flexible Retrieval を読み飛ばすと書いています。S3 のレプリケーションも、この 2 クラスのオブジェクトを複製しません。バックアップ製品もレプリケーションも使えないので、復元が要る 2 クラスに置くなら、バケットのオブジェクトの別のコピー（2 つ目の写し）を、移す時点で自分で作ります。これが経路 C です（A、B、D も含めた 4 つの経路は次の文のとおりです）。試した範囲では、S3 Access Points（インターネット起点、1 つ）から大阪のバケットへの直接のコピーは `AccessDenied` になり、一度東京のバケットへ S3 Standard で写してから大阪へ送る手順は成功しました（2026-11-26、1 MiB、各 1 回）。直接のコピーが失敗した原因が Access Point の設定なのか、リージョンをまたぐ制約一般なのかは区別していません。バックアップ製品で守るなら、アーカイブ用のクラスを S3 Glacier Instant Retrieval にします。これが経路 B です。どちらの場合も、移す前に AWS Backup でボリュームをバックアップしておく経路 A を組み合わせられます。選別だけをデータ管理ソフトに任せる経路 D もあります。経路 A から D の内容は「[他の仕組みと組み合わせる経路](#他の仕組みと組み合わせる経路)」の表にあります
 
 > **区分** — `documented`。各社の公開ページ（2026-11-26 に閲覧）の記述をまとめたもので、どの製品も、この資料のために動かしてはいません。「記載を見つけられなかった」は、読んだページにその記述がないという意味で、機能がないという意味ではありません。読めなかったページは「[比較時点](#比較時点)」の節に数を書きました。
 >
@@ -59,9 +61,11 @@ lang: ja
 | 転送サービス | AWS DataSync | NFS、SMB（FSx for ONTAP は場所の種類として記載あり） | そのまま（元を消す機能は、読んだページに記載なし） | 全クラスへ書ける | 転送中のチェックサムと、終了時の検証モードがある | なし |
 | OSS のツールと層 | rclone、Mountpoint for Amazon S3、iRODS、Lustre HSM | S3 API、POSIX | rclone の `move` は元を消す。iRODS は次の階層へ複製し、大きさかチェックサムで検証してから元を消す（検証の水準は設定で選び、既定はカタログへの登録確認だけ） | rclone、Mountpoint はクラスを指定して書ける | rclone は MD5 で照合するが、FSx for ONTAP の S3 Access Points では MD5 が取れない（下の注記） | iRODS のカタログ |
 | デジタル保存システム | Archivematica、Preservica、Ex Libris Rosetta | 取り込み（保管形式のパッケージを作る） | 保管形式へ取り込む設計で、容量を空ける目的ではない | Preservica は S3 と Glacier のストレージアダプタを持つ。Archivematica と Rosetta は、Glacier 系への書き込みの記載を見つけられなかった | 保存前と定期のチェックサム検証。Archivematica は削除を「要求」と「管理者の承認」の 2 段階にしている | 保存システムのカタログ |
-| S3 API だけの照合と削除の仕組み（実装あり。1 回の通しの実行） | このリポジトリで設計した [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) | S3 Access Points | 消える（スタブなし） | `CopyObject` で直接書く。S3 Glacier Flexible Retrieval への書き込みと、そこからの戻しを実機で通した（ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、2026-11-26、各 1 回） | 一致したファイルだけを、人の承認の後に消す。承認の拒否で何も消えないことと、承認待ちの間に書き換えたファイルが消えないことを確認した（各 1 回） | DynamoDB の台帳 |
+| S3 API だけの照合と削除の仕組み（実装あり。1 回の通しの実行） | この Hub で設計した [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) | S3 Access Points | 消える（スタブなし） | `CopyObject` で直接書く。S3 Glacier Flexible Retrieval への書き込みと、そこからの戻しを実機で通した（ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、2026-11-26、各 1 回） | 一致したファイルだけを、人の承認の後に消す。承認の拒否で何も消えないことと、承認待ちの間に書き換えたファイルが消えないことを確認した（各 1 回） | DynamoDB の台帳 |
 
 > **注記**: FSx for ONTAP の S3 Access Points では、ETag は MD5 ではありません。アップロード時に指定したチェックサムは受け付ける前に検証されますが、その値はボリュームに保存されず、応答にも返りません（[サポートする API の一覧](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）。このため、MD5 を比べる道具（rclone の `check` など）は、ボリューム側のハッシュを得られません。rclone で実際にそうなった記録は、[FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns) にあります（2026-11-24、rclone 1.76.0）。
+
+上の表の根拠の区分は行によって違います。最初の 8 行は、各社の公開ページの記載（`documented`）です。最終行だけが、この資料の筆者が作った実装と、その 1 回の実測です。表の中の優劣を示すものではなく、根拠の強さが違う行が並んでいることを示しています。照合と削除を AWS DataSync と自前のスクリプトで組む構成も、同じ目的に使える別の組み立てです（下の「選び方」の 6 番）。
 
 ### FSx for ONTAP との組み合わせの記載
 
@@ -106,15 +110,15 @@ lang: ja
 | 転送サービス（DataSync） | 大量のファイルを、検証つきでバケットへ写す | 元を消す機能、台帳、人の承認の 3 つは、読んだページに記載がないため、使う場合は自分で組む前提で考える。NFS か SMB の場所として使う |
 | OSS のツールと層 | 自分でスクリプトを組める。ライセンスをかけたくない | FSx for ONTAP の S3 Access Points ではボリューム側のハッシュが取れないので、rclone の照合はそのままでは使えない。iRODS は自分のカタログの内側で動く |
 | デジタル保存システム | 長期保存の手順（取り込み、定期の再検証、メタデータの標準）が求められる | 容量を空ける目的の仕組みではない。保存システムの運用が加わる |
-| S3 API だけの照合と削除の仕組み | 下の「[選び方](#選び方)」の条件に当てはまる | 実機の通しは 7 ファイルを 1 回で、多数のファイルでの所要時間と料金、第 2 世代、Multi-AZ、NTFS は測っていない。ETag は内容でなく更新時刻と大きさに連動するので、大きさと更新時刻を変えない内容の変更は、消す前の確認で検出できない。スタブも透過な呼び戻しもない。戻すのに、クラスと取り出しの種類に応じて数分から 48 時間かかる。最小保管期間（S3 Glacier Deep Archive は 180 日）がある。1 GiB のファイルを消しても、スナップショットがある間は、ボリュームの使用量は作成前に戻らなかった（実測、1 回。使用量が元に戻ったのは、そのスナップショットを消した後）。照合のためにボリュームのファイルを一度読む（読み取りのリクエスト料金がかかり、容量プールにあればその読み取り料金もかかる）。自前で作るので保守も自前 |
+| S3 API だけの照合と削除の仕組み | 下の「[選び方](#選び方)」の条件に当てはまる | 実機の通しは 7 ファイルを 1 回で、多数のファイルでの所要時間と料金、第 2 世代、Multi-AZ、NTFS は測っていない。ETag は内容でなく更新時刻と大きさに連動するので、大きさと更新時刻を変えない内容の変更は、消す前の確認で検出できない。スタブも透過な呼び戻しもない。戻すのに、クラスと取り出しの種類に応じて数分から 48 時間かかる。最小保管期間（S3 Glacier Deep Archive は 180 日）がある。1 GiB のファイルを消しても、スナップショットがある間は、ボリュームの使用量は作成前に戻らなかった（実測、1 回。使用量が元に戻ったのは、そのスナップショットを消した後）。照合のためにボリュームのファイルを一度読む（読み取りのリクエスト料金がかかり、容量プールにあればその読み取り料金もかかる）。単一ファイルが 50 GiB を超えると、Access Points へ戻せない（公式ページは、アップロードの上限が 50 GiB で、それを超えるオブジェクトのダウンロードはできると書く。バケットから直接ダウンロードする手順は通していない。改訂後のパターンは、50 GiB を超えるファイルを選択から外す）。消したファイルはスナップショットには残り、SnapMirror の宛先への伝わり方は確かめていない（[消した結果が及ぶ範囲](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#消した結果が及ぶ範囲)）。自前で作るので保守も自前 |
 
 ## S3 API だけの照合と削除の仕組み
 
-このリポジトリで設計し、[FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) に実装した仕組みです。流れ全体を、FSx for ONTAP の 1 つのファイルシステムで 1 回通しで実行しました（「[実機での通しの結果](#実機での通しの結果)」）。
+この Hub で設計し、別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) に実装した仕組み（パターン）です。流れ全体を、FSx for ONTAP の 1 つのファイルシステムで 1 回通しで実行しました（「[実機での通しの結果](#実機での通しの結果)」）。
 
-![構成図。上の枠の AWS Step Functions が、AWS Lambda（5 GiB 以下のハッシュ）、AWS Fargate（5 GiB 超のハッシュ）、Amazon DynamoDB（台帳）、Amazon SNS（承認の依頼）を順に使い、Amazon S3 Access Points に CopyObject、HeadObject、DeleteObject を呼ぶ。下の段では、Amazon FSx for NetApp ONTAP のボリュームのファイルが、S3 Access Points からチェックサム付きのサーバー側コピーで S3 Glacier 系のクラスの汎用バケットへ写り、同じリージョンの別のバケットに 2 つ目の写しが置かれる。移す前のボリュームは AWS Backup でバックアップできる（経路 A）。S3 Glacier Instant Retrieval のバケットは Clumio などのバックアップ製品で守れる（経路 B）。選別は Komprise などのデータ管理ソフトに任せられる（経路 D）](../../../_assets/images/archive-verify-delete.svg)
+![構成図。上の枠の AWS Step Functions が、AWS Lambda（5 GiB 以下のハッシュ）、AWS Fargate（5 GiB 超のハッシュとコピー）、Amazon DynamoDB（台帳）、Amazon SNS（承認の依頼）を呼び、承認する人が結果を返す。AWS Step Functions は Amazon S3 Access Points に CopyObject、HeadObject、DeleteObject を呼ぶ。下の段では、Amazon FSx for NetApp ONTAP のボリュームのファイルが、S3 Access Points からチェックサム付きのサーバー側コピーで S3 Glacier 系のクラスの汎用バケットへ写り、同じリージョンの別のバケットに 2 つ目の写しが置かれる（経路 C）。移す前のボリュームは AWS Backup でバックアップできる（経路 A）。S3 Glacier Instant Retrieval のバケットは AWS Backup や Clumio などのバックアップ製品で守れる（経路 B）。選別は Komprise などのデータ管理ソフトに任せられる（経路 D）。戻す流れは図の下の注記にある](../../../_assets/images/archive-verify-delete.svg)
 
-図の内容は本文の表と同じです（[暗い背景の版](../../../_assets/images/archive-verify-delete-dark.svg)、[English](../../../_assets/images/archive-verify-delete-en.svg)）。
+図の内容は、戻す流れを除き本文の表と同じです。戻す流れは「流れ」の表の段階 7 にあります（[暗い背景の版](../../../_assets/images/archive-verify-delete-dark.svg)、[English](../../../_assets/images/archive-verify-delete-en.svg)）。
 
 部品の挙動は、2026-11-24 と 2026-11-26 に、通しの実行の前に確かめました。環境は ap-northeast-1 の第 1 世代 `SINGLE_AZ_1`（スループット容量 128 MBps、ONTAP 9.19.1P4D1）、UNIX セキュリティスタイルのボリュームで、Access Point のファイルシステムユーザーは UNIX の root です。クライアントは Amazon Linux 2023 の EC2（AWS CLI 2.38.0、boto3 1.40.31）で、どの確認も 1 回ずつです。この環境の外（第 2 世代、Multi-AZ、NTFS のボリューム、root 以外のユーザー）は測っていません。
 
@@ -122,13 +126,13 @@ lang: ja
 
 | 段階 | 処理 | 使う機能 |
 |---|---|---|
-| 1. 選ぶ | 最後に読まれた日時、パス、大きさで対象を一覧にする | ONTAP REST API か NFS の `stat`。S3 API の `LastModified` は更新時刻で、最後に読まれた日時は返らない |
+| 1. 選ぶ | 最後に読まれた日時、パス、大きさで対象を一覧にする | ONTAP REST API か NFS の `stat`。S3 API の `LastModified` は更新時刻で、最後に読まれた日時は返らない。ONTAP REST API は VPC 内の Lambda から呼ぶ |
 | 2. 記録する | パス、大きさ、所有者、モード、更新時刻、ETag、SHA-256 と CRC64NVME を台帳に書く | AWS Lambda（S3 Access Points から `GetObject` してハッシュを計算。5 GiB を超えるファイルは AWS Fargate のタスク）、Amazon DynamoDB |
 | 3. 写す | アーカイブ用のクラスを指定して写す。5 GiB 以下は `CopyObject` に `--checksum-algorithm SHA256`、5 GiB を超えるものはマルチパートのコピーに `CRC64NVME`。台帳の ETag を `--copy-source-if-match` に付ける | AWS Step Functions の SDK 統合（`aws-sdk:s3:copyObject`）と Distributed Map。5 GiB を超えるファイルは Fargate のタスクがマルチパートのコピーを行う |
 | 4. 照合する | コピー先の大きさと、バケットが返すチェックサムを、台帳の値と比べる | Step Functions の SDK 統合（`headObject` に `ChecksumMode: ENABLED`） |
 | 5. 承認する | 一致したファイルの一覧を人が確かめる | Step Functions のタスクトークン（`waitForTaskToken`）。通知は Amazon SNS、トークンは AWS Systems Manager Parameter Store に置く |
 | 6. 消す | 承認されたファイルについて、Access Point の `HeadObject` で ETag が台帳と同じことを確かめてから、`DeleteObject` で消す | Step Functions の SDK 統合（`headObject`、`deleteObject`） |
-| 7. 戻す | 台帳から探し、バケットで復元を要求し、完了を待って `CopyObject` で戻し、所有者、モード、更新時刻を台帳の値で付け直す | Step Functions。完了の待ちはポーリング（`HeadObject` の `Restore` ヘッダー）。付け直しは、生成したスクリプトを NFS でマウントしたホストで実行する |
+| 7. 戻す | 台帳から探し、バケットで復元を要求し、完了を待って `CopyObject` で戻し、所有者、モード、更新時刻を台帳の値で付け直す | Step Functions。完了の待ちはポーリング（`HeadObject` の `Restore` ヘッダー）。付け直しは、生成したスクリプトを NFS でマウントしたホストで実行する。改訂後のパターンは、戻した後に再ハッシュして台帳と比べる |
 
 ### 部品ごとに確かめたこと
 
@@ -136,7 +140,7 @@ lang: ja
 |---|---|---|
 | 3、4 | 64 B と 8 MiB を `CopyObject` に `--checksum-algorithm SHA256` を付けて写すと、バケットが返す `ChecksumSHA256`（型は `FULL_OBJECT`）は、NFS で読んだファイルの SHA-256 と一致した。S3 Glacier Deep Archive と S3 Standard の両方で同じ。Access Point の `HeadObject` はチェックサムを返さない | 5 GiB 以下は、台帳の SHA-256 とバケットの `ChecksumSHA256` を比べる |
 | 3、4 | 5.5 GiB（5,905,580,032 バイト、704 パート）をマルチパートで写すと、SHA-256 は `COMPOSITE`（8 MiB ごとの SHA-256 を組み合わせた値）になり、ファイル全体の SHA-256 とは別の値になった。CRC64NVME は `FULL_OBJECT` で、ファイル全体から計算した値と一致した。CRC64NVME で S3 Standard へ写すのに 16.5 秒かかった | 台帳には SHA-256 と CRC64NVME の両方を書く。5 GiB を超えるものは CRC64NVME で照合する |
-| 3 | NFS で、同じ大きさで中身を上書きする、追記する、`touch` で更新時刻だけを変えると、Access Point の ETag が変わり、古い ETag を付けた `--copy-source-if-match` は `PreconditionFailed` になった。`chmod` だけでは ETag も `LastModified` も変わらなかった。変更なしの対照は成功した。ETag は中身ではなく、更新時刻と大きさに連動していた（UNIX スタイルのボリュームのみ）。`chown` と、中身を変えて更新時刻を元に戻す操作は、この確認では試していない（通しの実行では、同じ大きさと同じ更新時刻で内容の違うファイルが同じ ETag を返した） | 中身の上書き、追記、更新時刻の変更は、ETag の変化で捕まえられる。大きさと更新時刻を変えない内容の変更は、ETag では捕まえられない。所有者とモードの変化は ETag では分からない（`chmod` は確認、`chown` は未測定）ので、消す前に台帳のハッシュと属性を NFS か ONTAP REST API で読み直す |
+| 3 | NFS で、同じ大きさで中身を上書きする、追記する、`touch` で更新時刻だけを変えると、Access Point の ETag が変わり、古い ETag を付けた `--copy-source-if-match` は `PreconditionFailed` になった。`chmod` だけでは ETag も `LastModified` も変わらなかった。変更なしの対照は成功した。ETag は中身ではなく、更新時刻と大きさに連動していた（UNIX スタイルのボリュームのみ）。公式ページ（[サポートする API の一覧](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)、2026-11-26 閲覧）は、ETag が反映するのはオブジェクトの内容の変更だけで、メタデータの変更は反映しないと書いている。この測定は 1 回で、公式の記述との食い違いの理由は調べていない。`chown` と、中身を変えて更新時刻を元に戻す操作は、この確認では試していない（通しの実行では、同じ大きさと同じ更新時刻で内容の違うファイルが同じ ETag を返した） | 中身の上書き、追記、更新時刻の変更は、ETag の変化で捕まえられる。大きさと更新時刻を変えない内容の変更は、ETag では捕まえられない。所有者とモードの変化は ETag では分からない（`chmod` は確認、`chown` は未測定）。パターンは消す前に ETag と大きさだけを確かめ、台帳のハッシュと属性の読み直しは行わない。読み直す場合は、NFS か ONTAP REST API で行う別の段階になる（変更時刻（ctime）が ONTAP REST API で取れるかは未確認） |
 | 6 | Access Point の `DeleteObject` は条件付きの削除（`If-Match`）を受け付けず、正しい ETag でも `NotImplemented` で、ファイルは消えなかった。`DeleteObjects` は ETag を付けると `MalformedXML` になった | 消す直前に `HeadObject` で ETag を確かめる。確かめてから消すまでの間に書き換えられる余地は残る |
 | 6 | ランダムデータの 1 GiB のファイルを作り（使用量 8,440 MiB → 9,478 MiB）、通常のスナップショットを取ってから、Access Point の `DeleteObject` で消した。60〜180 秒後の使用量は 8,679 MiB で、削減は約 800 MiB だった（作成前より約 240 MiB 多い）。スナップショットの使用量は 224 MiB から 1,253 MiB に増えた。そのスナップショットを消すと、30 秒後に使用量は 8,450 MiB に戻った。スナップショットなしで消した対照は取っていない | 容量が作成前の水準に戻ったのは、そのスナップショットを消した後だった。スナップショットの保持期間を、効果が出るまでの時間として示す。対照を取っていないため、約 240 MiB が残った原因がスナップショットだけかは未確認 |
 | 7 | S3 Standard のバケットのオブジェクト（256 KiB）を、Access Point へ `CopyObject` で戻した。戻したファイルは、所有者 0:1、モード 644、更新時刻は戻した時刻になり、元は所有者 1234:5678、モード 640、更新時刻 2020-01-02 03:04:05 だった。NFS の `chown`、`chmod`、`touch -d` で、4 つとも元の値に付け直せ、中身の SHA-256 は元と一致した。S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive からの復元を経た戻しは、この確認では行っていない（復元を経た戻しは、[サーバー側コピーの用途のノート](../../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md)で別に測った） | 段階 2 で記録した値で付け直す |
@@ -164,7 +168,7 @@ lang: ja
 | dry run（削除なし） | 7 ファイルとも照合が一致（SHA-256 が 6、CRC64NVME が 1）。2 つ目の写しも一致。削除は 0 バイトで、NFS では 7 ファイルとも残った | 244 秒（承認の待ち約 70 秒を含む） |
 | 承認待ちの間の書き換え | 1 ファイルを NFS で同じ大きさのまま 4 KiB 上書き（更新時刻は更新）。承認後に `CHANGED`（ETag または大きさの不一致）になり、消えなかった | |
 | 本番と承認 | 6 ファイルを削除し、書き換えた 1 ファイルは `CHANGED` で残した。削除した量は 5,922,357,440 バイト | 310 秒（承認要求まで 172 秒、承認から完了まで約 6 秒） |
-| 戻し（`Expedited`） | 6 ファイルが戻り、SHA-256 は 5.5 GiB を含む 6 ファイルとも、事前に NFS で記録した値と一致。戻した直後は所有者 0:1、モード 644、更新時刻は戻した時刻。生成された再付与スクリプトを root で実行すると、1234:5678、640、2020-01-02 03:04:05 に戻り、内容の SHA-256 は変わらなかった | 287 秒（5.5 GiB の Fargate によるコピーが 2 分 38 秒） |
+| 戻し（`Expedited`） | 6 ファイルが戻り、SHA-256 は 5.5 GiB を含む 6 ファイルとも、事前に NFS で記録した値と一致（この比較は、実験者が NFS で手作業で行った。当時の戻しの流れは、戻した後のハッシュを台帳と比べていない）。戻した直後は所有者 0:1、モード 644、更新時刻は戻した時刻。生成された再付与スクリプトを root で実行すると、1234:5678、640、2020-01-02 03:04:05 に戻り、内容の SHA-256 は変わらなかった | 287 秒（5.5 GiB の Fargate によるコピーが 2 分 38 秒） |
 | 承認の拒否 | 実行は拒否で終わり、3 ファイルは照合が一致したまま残り、削除されなかった。NFS では 3 ファイルとも残った | 16 秒 |
 | Lambda で約 4.94 GiB のハッシュ | 照合が一致（SHA-256 が NFS の値と一致）。ハッシュを計算する関数は 69.8 秒、使用メモリ 152 MB（設定 2048 MB） | |
 
@@ -185,6 +189,7 @@ lang: ja
 - `Standard` と `Bulk` の復元の完了待ち（実機では `Expedited` のみ）。復元が要る 2 クラスのうち、通したのは S3 Glacier Flexible Retrieval だけ
 - `S3.SlowDownException` の再試行。SDK 統合が返す名前を観測していない。不具合の 3 件目と同じ型の食い違いが起きる恐れがある
 - AWS CloudTrail のデータイベントでの削除の記録（実行したアカウントのトレイルが、対象の Access Point のデータイベントを含むかを確認していない）
+- 50 GiB を超えるファイルの写し（マルチパートコピー）と、バケットからの直接のダウンロード。実測は 5.5 GiB まで
 - NTFS ボリューム、root 以外のファイルシステムユーザー、第 2 世代、Multi-AZ、Access Point にポリシーを付けない場合の動作
 - 戻し先に同名のファイルがある場合の経路（実行していない）
 - 送り終えた東京の S3 Standard の写しを S3 Glacier Deep Archive に変える操作（ライフサイクルの遷移か再コピー）と、その間の保管料金
@@ -195,7 +200,7 @@ lang: ja
 
 | 経路 | 組み合わせ | 担うこと | 引き受けること |
 |---|---|---|---|
-| A | 移す前に、AWS Backup で FSx for ONTAP のボリュームをバックアップする | 消す前の安全網。消したファイルは、ボリュームのバックアップから戻せる。別リージョン、別アカウントへのコピーも記載がある | バックアップの保管料金がかかる。戻すのはボリューム単位。復元先の扱いは、本調査では読んでいない。バックアップ用スナップショットでボリュームの SSD 使用率が 98% を超えると、バックアップは失敗すると記載されている |
+| A | 移す前に、AWS Backup で FSx for ONTAP のボリュームをバックアップする | 消す前の安全網。消したファイルは、ボリュームのバックアップから戻せる。別リージョン、別アカウントへのコピーも記載がある | バックアップの保管料金がかかる。戻すのはボリューム単位。復元先の扱いは、本調査では読んでいない。ボリュームのスナップショットや SnapMirror の宛先が既にあるなら、それらも消す前の安全網になりうるが、消した後の状態は確かめていない（上の「消した結果が及ぶ範囲」）。バックアップ用スナップショットでボリュームの SSD 使用率が 98% を超えると、バックアップは失敗すると記載されている |
 | B | アーカイブ用のクラスを S3 Glacier Instant Retrieval にし、アーカイブ用のバケットを AWS Backup か Clumio で守る（Clumio は、公式サイトとドキュメントの記載が食い違うため、使う前に製品側へ確認が要る） | バケットの 2 つ目の写し、別アカウントへの写し、復元テスト（AWS Backup の Restore testing） | 保管料金は復元が要る 2 クラスより高い。バックアップのたびに取得料金がかかると AWS Backup が記載している。AWS Backup はバージョニングを必須にしている |
 | C | 復元が要る 2 クラスに置き、2 つ目の写しは移す時点で作る（手順は「[2 つ目の写しの作り方](#2-つ目の写しの作り方)」） | バックアップ製品が扱えないクラスでも、2 つ目の写しを持てる | 別のリージョンへの直接のコピーは、試した 1 つの Access Point（インターネット起点）では `AccessDenied` だった。原因は未区別。東京のバケットへ S3 Standard で写してから送ったので、その間の保管料金がかかる。同じリージョンの別バケットへの 2 つ目の写しは、通しの実行で成功した（7 ファイル）。別のリージョンへ送る手順は、通しでは試していない |
 | D | 選別をデータ管理ソフト（Komprise など）に任せ、照合と削除をこの仕組みが担う | 多くの NAS を横断した分析と選別 | データ管理ソフトは NFS か SMB でマウントする構成になる。2 つの台帳をつなぐ必要がある |
@@ -206,12 +211,13 @@ lang: ja
 
 | # | 確認すること | 判断 |
 |---|---|---|
+| 0 | データを使うアプリケーションが、古いデータの退避や階層化を自分で持つか | 持つなら、ファイルを外から動かす前に、そのアプリケーションの機能を検討する（データベースのデータや表形式のデータをファイル単位で移さない理由は、[ファイル単位で移してはいけないデータ](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#ファイル単位で移してはいけないデータ)） |
 | 1 | 移した後も、利用者がファイルを元のフォルダーで開く必要があるか | 必要ならボリュームの階層化を選ぶ。スタブで見せたいなら、マウントして被せるデータ管理ソフト（Komprise の動的リンクなど）を選ぶ。S3 API だけの仕組みはファイルを消すので向かない |
 | 2 | 容量プールの保管料金で足りるか | 足りるなら階層化で終わる。足りないなら、S3 Glacier 系のクラスへ移す仕組みを選ぶ |
 | 3 | 戻すまでに何時間待てるか | Instant Retrieval は復元が要らない。Flexible Retrieval は迅速で 1〜5 分、標準で 3〜5 時間、大容量で 5〜12 時間（AWS のドキュメントの目安）。Deep Archive は標準で 12 時間以内、大容量で 48 時間以内 |
 | 4 | アーカイブ用のバケットを、バックアップ製品で守る必要があるか | 必要なら、S3 Glacier Instant Retrieval に置いて経路 B を選ぶ。復元が要る 2 クラスに置くなら、経路 C で 2 つ目の写しを自分で作る（同じリージョンの別バケットへの写しは通しで確認。別のリージョンへ送る手順は通しでは未確認） |
-| 5 | ボリュームをマウントするホストを置けるか | 置けるなら、DataSync やデータ管理ソフトも選べる。置かずに S3 API だけで済ませたいなら、S3 API だけの仕組みが候補になる。ただし、戻した後の所有者、モード、更新時刻の付け直しは、NFS でボリュームをマウントしたホストで、生成されたスクリプトを実行する |
-| 6 | 消す前に照合と人の承認を必ず挟む必要があるか | 必要なら、S3 API だけの仕組みか、Archivematica のような 2 段階の削除を持つ保存システムが候補になる。iRODS は、検証をチェックサムに設定すれば、照合してから元を消す。ただし人の承認の段階は、読んだ範囲に記載がない。ほかの製品では、照合と承認の両方の記載がない |
+| 5 | ボリュームをマウントするホストを置けるか | 置けるなら、DataSync やデータ管理ソフトも選べる。ファイルの読み書きと削除を S3 API だけで済ませたいなら、S3 API だけの仕組みが候補になる。ただし、最終アクセス時刻で選ぶなら ONTAP REST API への到達性が要り、戻した後の所有者、モード、更新時刻の付け直しは、NFS でボリュームをマウントしたホストで、生成されたスクリプトを実行する |
+| 6 | 消す前に照合と人の承認を必ず挟む必要があるか | 必要なら、Archivematica のような 2 段階の削除を持つ保存システム、AWS DataSync（検証つきの転送）に照合の結果の確認と削除を自前で足す組み立て、S3 API だけの仕組み（パターン。この資料の実装は一例）が選択肢になる。iRODS は、検証をチェックサムに設定すれば、照合してから元を消す。ただし人の承認の段階は、読んだ範囲に記載がない。ほかの製品では、照合と承認の両方の記載がない |
 | 7 | 長期保存の手順（定期の再検証、標準のメタデータ）が求められるか | 求められるなら、デジタル保存システムを選ぶか、組み合わせる |
 
 ## よくある誤解
@@ -220,7 +226,7 @@ lang: ja
 |---|---|
 | バックアップ製品に任せれば、アーカイブ用のバケットも守れる | 復元が要る 2 クラスのオブジェクトは、AWS Backup、Clumio、Commvault、Veeam が対象外と書き、Druva は Flexible Retrieval を読み飛ばすと書いている。S3 のレプリケーションも複製しない |
 | FSx for ONTAP の階層化を使えば、S3 Glacier Deep Archive まで下げられる | 容量プールは AWS が管理する保管領域で、利用者が階層先のバケットやクラスを選ぶ方法は、読んだ FSx for ONTAP のユーザーガイドに記載がなかった。ONTAP の FabricPool は、オンプレミスでも S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive を対象にしていない |
-| ファイルを消せば、すぐにボリュームの容量が空く | 1 GiB を消した実測（1 回）では、スナップショットがある間、使用量は約 800 MiB 減っただけで、作成前の水準には戻らなかった。戻ったのは、そのスナップショットを消した後だった。スナップショットなしの対照と、移した後に容量が空くまでの時間は測っていない |
+| ファイルを消せば、すぐにボリュームの容量が空く | ランダムデータの 1 GiB、ストレージ効率化ありのボリューム、1 回の実測では、スナップショットがある間、使用量は約 800 MiB 減っただけで、作成前の水準には戻らなかった。戻ったのは、そのスナップショットを消した後だった。スナップショットなしの対照と、圧縮できるデータでの結果と、移した後に容量が空くまでの時間は測っていない |
 | S3 API で照合するなら、ETag を比べればよい | FSx for ONTAP の S3 Access Points の ETag は MD5 ではなく、ボリューム側にチェックサムも保存されない。元のファイルを一度読んでハッシュを計算する |
 | S3 API で、使われていないファイルを選べる | `LastModified` は更新時刻で、最後に読まれた日時は返らない。最後に読まれた日時は ONTAP REST API か NFS で読む |
 
