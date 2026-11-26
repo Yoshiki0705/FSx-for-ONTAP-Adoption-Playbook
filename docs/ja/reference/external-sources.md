@@ -70,6 +70,7 @@ lang: ja
 | aws-bedrock-kb-datasource | https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-ds.html | 2026-11-09 | 90 | Bedrock Knowledge Bases のデータソース要件。S3 以外の経路が追加されたか |
 | azure-finops | https://learn.microsoft.com/azure/cost-management-billing/finops/ | 2026-11-09 | 90 | Microsoft の FinOps ガイダンス（中立性のための対等な一次情報） |
 | google-cloud-finops | https://cloud.google.com/architecture/framework/cost-optimization | 2026-11-09 | 90 | Google Cloud のコスト最適化ガイダンス（中立性のための対等な一次情報） |
+| s3-intelligent-tiering-tiers | https://docs.aws.amazon.com/AmazonS3/latest/userguide/intelligent-tiering-overview.html | 2026-11-24 | 30 | S3 Intelligent-Tiering の層の定義と、層へ移ったオブジェクトを FSx for ONTAP の S3 Access Points へサーバー側のコピーで戻せるか。確認日は Issue #435〜#437（2026-12-24、2027-02-22、2027-05-23）。確認したら結果を `s3-access-points-server-side-copy-use-cases.md` とブログの記事に反映し、次の確認日までの日数をこの行に入れる |
 
 <!-- source-freshness:end -->
 <!-- markdownlint-enable MD034 -->
