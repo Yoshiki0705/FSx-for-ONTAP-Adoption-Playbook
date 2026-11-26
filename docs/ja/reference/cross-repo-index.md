@@ -520,6 +520,9 @@ lang: ja
 | `docs/en/reference/tech-predictions-2027-readiness-map.md` | `FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns` | `docs/guides/flexclone-serverless-patterns-en.md` | `FlexClone gives each researcher an independent writable copy` | `retraction` | 同上（EN 版） |
 | `docs/ja/reference/tech-predictions-2027-readiness-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/s3ap-interoperability.md` | `256 MiB ファイルの sha256 が親と一致` | `retraction` | クローンに付けたアクセスポイントから読んだ内容が元のボリュームと一致した実測 |
 | `docs/en/reference/tech-predictions-2027-readiness-map.md` | `S3-Burst-on-ONTAP-Files` | `docs/en/reference/limits/s3ap-interoperability.md` | `The sha256 of a 256 MiB file matched the parent` | `retraction` | 同上（EN 版） |
+| `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/s3ap-monitoring-coverage-implications.md` | `**発火しない**` | `retraction` | S3 Access Point 経由の操作は FPolicy の通知が発火せず、ONTAP の監査ログに要求者が記録されないこと（ONTAP 9.18.1P3D1 の測定）。アーカイブの流れの監査で、削除の記録を CloudTrail と台帳に頼る根拠 |
+| `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/compatibility-matrix.md` | `Read-only analytics (Athena/Glue/EMR/Snowflake/Bedrock) are verified.` | `retraction` | Athena、Glue、Bedrock が Access Points を読み取りで使えること。アーカイブの流れで台帳や元のボリュームを分析する連携の根拠 |
+| `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/comparison-security-layers.md` | `FSx for ONTAP S3 Access Points 経由のオブジェクトは FSX_ONTAP ストレージクラスで、対象に入らない` | `retraction` | Amazon Macie が `FSX_ONTAP` クラスのオブジェクトを対象にしないこと。移す前の分類が要る理由 |
 <!-- cross-repo-table:end -->
 
 ---

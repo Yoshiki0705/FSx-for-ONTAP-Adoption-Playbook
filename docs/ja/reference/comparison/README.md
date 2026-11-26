@@ -90,7 +90,7 @@ YYYY-MM-DD 時点の情報です。
 | [端末別にできることの比較](client-endpoint-capabilities.md) | Windows / WSL2 の Linux / Mac / ネイティブ Linux / WorkSpaces・AppStream / Chromebook・iPad × ブロック・ファイル・オブジェクト | 2026-09-13 |
 | [端末の到達経路の比較](endpoint-reachability-options.md) | Client VPN / Site-to-Site VPN / Direct Connect / VDI / ブラウザ（+ Verified Access） | 2026-09-13 |
 | [AI のアクセス経路の選び方](finops-for-ai-access-paths.md) | S3 Access Points / NFS / SMB / ブロック（iSCSI・NVMe/TCP）/ FlexCache 経由 × 接続サービス | 2026-11-09 |
-| [FSx for ONTAP のファイルをアーカイブ用のクラスへ移す仕組みの比較](archive-tiering-library-options.md) | ボリュームの階層化 / ストレージ内蔵の階層化とスタブ / データ管理ソフト / オブジェクトを正本にするファイル基盤 / AWS DataSync / OSS / デジタル保存システム / S3 API だけの照合と削除（+ バックアップ製品との組み合わせ） | 2026-11-26 |
+| [FSx for ONTAP のファイルをアーカイブ用のクラスへ移す仕組みの比較](archive-tiering-library-options.md) | ボリュームの階層化 / ストレージ内蔵の階層化とスタブ / ディレクトリを S3 へ写す機能 / データ管理ソフト / オブジェクトを正本にするファイル基盤 / AWS DataSync / OSS / デジタル保存システム / S3 API だけの照合と削除（+ バックアップ製品との組み合わせ） | 2026-11-26 |
 
 ---
 

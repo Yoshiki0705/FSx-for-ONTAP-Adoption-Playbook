@@ -20,6 +20,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | **ファイルの到着でパイプラインを起動したい** | [FPolicy が適合するかは、データをどう読むかではなく、どう書くかで決まる](notes/fpolicy-fits-by-how-writes-land.md) | **判定は書き込みが着地するプロトコルです。** 読む側は入りません |
 | **ゲノム / HPC の解析データをどこに置くか迷う** | [ゲノム・HPC パイプラインのデータは 3 か所に分かれる](notes/where-genomics-pipeline-data-lives.md) | **マネージドなオブジェクトストアは POSIX 共有ファイル層を置き換えません。** 共有層を自分で用意するかは実行基盤ごとに違います（HealthOmics の run は自前で提供） |
 | **バケットとボリュームの間でファイルを写したい、アーカイブしたい** | [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](notes/s3-access-points-server-side-copy-use-cases.md) | **直接読めるなら、コピーは要りません。** 属性は写らず、S3 Glacier 系から戻すときは先に復元が要ります |
+| **めったに読まれないファイルを S3 Glacier 系へ移して消してよいか、業界ごとに知りたい** | [ファイルを消して S3 Glacier 系へ移す用途は戻しを待てるデータに限られ、連携できる AWS サービスの多くはバケット側にしか届かない](notes/archive-use-cases-and-integrations.md) | **戻しを数時間から 48 時間待てて、元のパスで開く必要のないデータが合います。** 連携できる AWS サービスの多くは、Access Points ではなくアーカイブ用のバケットにしか届きません |
 | **S3 Files のバケットと FSx for ONTAP の間で、選んだファイルを渡したい** | [S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](notes/s3-files-and-access-points-bridged-by-copy.md) | **属性は既定では写りません。** 反映の待ちは、ボリュームから S3 Files へ約 1.5 秒、S3 Files からボリュームへ約 60 秒 |
 | **S3 Access Points で受け入れたファイルを NFS か SMB で読みたい（プロトコルの版を選びたい）** | [S3 Access Points で書いたファイルを NFS と SMB で読むまで、プロトコルの版とクライアントのキャッシュでどれだけ違うか](notes/s3-access-points-write-read-over-nfs-versions.md) | **新しいファイルは NFS でも SMB でも数 ms で読めました。** NFSv3 の既定のマウントでは新しいディレクトリの最初の 1 件が約 28 秒遅れ、UNIX ボリュームを Linux の既定のオプションで SMB マウントすると、10 ms ごとに開き直す読み方では上書きが 120 秒以内に見えませんでした |
 | **クロスクラウド / クロスリージョンで分析したい** | [クロスクラウド分析でコピーを増やさない](notes/cross-cloud-analytics-without-extra-copies.md) | 書き込みはローカルに寄せ、クロスな依存は読み取り側に。**他クラウド ONTAP との FlexCache は、公式ドキュメントに記載はあるが実機の公開記録がない** |
@@ -46,6 +47,7 @@ NAS 上のデータを、コピーを増やさずに分析・AI・アプリケ�
 | 14 | バケットとボリュームの間のサーバー側コピーは、どの用途で使い、どの用途で使わないか | [S3 Access Points のサーバー側コピーは、どの用途で使い、どの用途で使わないか](notes/s3-access-points-server-side-copy-use-cases.md) |
 | 15 | S3 Files のバケットと FSx for ONTAP のボリュームの間でファイルを写すと、何が写り、どれだけ待つか | [S3 Files のバケットと FSx for ONTAP のボリュームをサーバー側コピーでつなぐ](notes/s3-files-and-access-points-bridged-by-copy.md) |
 | 16 | S3 Access Points で書いたファイルを NFS と SMB で読むまで、プロトコルの版とクライアントのキャッシュでどれだけ違うか | [S3 Access Points で書いたファイルを NFS と SMB で読むまで](notes/s3-access-points-write-read-over-nfs-versions.md) |
+| 17 | めったに読まれないファイルを S3 Glacier 系へ移して消す流れは、どの業界の用途に合い、どの AWS サービスや製品とつながるか | [ファイルを消して S3 Glacier 系へ移す用途は戻しを待てるデータに限られ、連携できる AWS サービスの多くはバケット側にしか届かない](notes/archive-use-cases-and-integrations.md) |
 
 ---
 
