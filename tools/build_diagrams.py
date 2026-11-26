@@ -359,8 +359,8 @@ LABELS: dict[str, dict[str, str]] = {
     },
     "avd_ap": {"ja": "Amazon S3<br>Access Points", "en": "Amazon S3<br>Access Points"},
     "avd_archive": {
-        "ja": "Amazon S3<br>汎用バケット<br>（S3 Glacier 系）",
-        "en": "Amazon S3<br>general purpose<br>bucket<br>(S3 Glacier classes)",
+        "ja": "Amazon S3 汎用バケット<br>S3 Glacier Instant Retrieval /<br>Flexible Retrieval /<br>Deep Archive",
+        "en": "Amazon S3 bucket<br>S3 Glacier Instant Retrieval /<br>Flexible Retrieval /<br>Deep Archive",
     },
     "avd_second": {
         "ja": "Amazon S3<br>（2 つ目の写し）",
@@ -371,23 +371,35 @@ LABELS: dict[str, dict[str, str]] = {
         "en": "AWS Backup<br>(volume,<br>before delete)",
     },
     "avd_calls_edge": {
-        "ja": "CopyObject、HeadObject<br>DeleteObject",
-        "en": "CopyObject, HeadObject<br>DeleteObject",
+        "ja": "CopyObject、DeleteObject<br>HeadObject（元の確認）",
+        "en": "CopyObject, DeleteObject<br>HeadObject (source check)",
     },
     "avd_copy_edge": {
         "ja": "チェックサム付きの<br>サーバー側コピー",
         "en": "Server-side copy<br>with a checksum",
     },
     "avd_second_edge": {
-        "ja": "経路 C<br>同じリージョン",
-        "en": "Route C<br>Same Region",
+        "ja": "経路 C（同じリージョン）<br>Access Points から直接",
+        "en": "Route C (same Region)<br>from the access point",
     },
     "avd_backup_edge": {"ja": "経路 A", "en": "Route A"},
+    "avd_head_edge": {
+        "ja": "HeadObject<br>（コピー先の照合）",
+        "en": "HeadObject<br>(destination check)",
+    },
+    "avd_backup_bucket": {
+        "ja": "AWS Backup<br>（バケット）",
+        "en": "AWS Backup<br>(bucket)",
+    },
+    "avd_backup_b_edge": {
+        "ja": "経路 B<br>（Instant Retrieval<br>のときだけ）",
+        "en": "Route B<br>(Instant Retrieval<br>only)",
+    },
     "avd_clumio_edge": {"ja": "経路 B", "en": "Route B"},
     "avd_komprise_edge": {"ja": "経路 D", "en": "Route D"},
     "avd_clumio_box": {
-        "ja": "AWS Backup、Clumio などのバックアップ製品<br>（バケットが S3 Glacier Instant Retrieval のときだけ）",
-        "en": "AWS Backup, or products such as Clumio<br>(only when the bucket is S3 Glacier Instant Retrieval)",
+        "ja": "Clumio などのバックアップ製品（AWS の外のサービス）<br>（バケットが S3 Glacier Instant Retrieval のときだけ）",
+        "en": "Backup products such as Clumio (outside AWS)<br>(only when the bucket is S3 Glacier Instant Retrieval)",
     },
     "avd_komprise_box": {
         "ja": "Komprise などのデータ管理ソフト<br>（選別だけを任せる）",
@@ -1981,35 +1993,38 @@ def _s3api_in_files_out_ab() -> Diagram:
 def _archive_verify_delete() -> Diagram:
     """Archive with verify-then-delete through FSx for ONTAP S3 Access Points.
     The control plane sits in a frame across the top, so every call it makes reaches the data row
-    with a downward edge; the data row then reads rightwards from the volume to the archive bucket
-    and its second copy. Combination routes hang below the services they attach to. Products
-    without an AWS icon (Clumio, Komprise) are drawn as labelled boxes, never as logos. The same
-    facts are tables in the comparison `archive-tiering-library-options.md`.
+    with a downward edge; the data row then reads rightwards from the volume to the archive bucket.
+    The second copy is made from the access point directly, so it hangs on a second row beneath the
+    archive bucket with its own edge from the access point. AWS Backup stays inside the AWS Cloud
+    group (route A for the volume, route B for the bucket); only the SaaS box (Clumio and similar)
+    sits outside it. Products without an AWS icon are drawn as labelled boxes, never as logos. The
+    same facts are tables in the comparison `archive-tiering-library-options.md`.
     """
     return Diagram(
         name="archive-verify-delete",
         diagram_id="archive-verify-delete",
         width=1000,
-        height=1130,
-        groups=(Group("aws_cloud", "aws_cloud", 20, 110, 960, 800),),
+        height=1230,
+        groups=(Group("aws_cloud", "aws_cloud", 20, 110, 960, 890),),
         frames=(Frame("control", "avd_control_frame", 40, 160, 930, 330),),
         boxes=(
             Box("komprise", "avd_komprise_box", 40, 20, 300, 70),
-            Box("approver", "avd_approver_box", 855, 300, 105, 80),
-            Box("clumio", "avd_clumio_box", 410, 940, 570, 70),
+            Box("approver", "avd_approver_box", 862, 300, 100, 80),
+            Box("clumio", "avd_clumio_box", 410, 1030, 570, 70),
         ),
-        notes=(Note("restore", "avd_restore_note", 40, 1030, 920, 70),),
+        notes=(Note("restore", "avd_restore_note", 40, 1130, 920, 70),),
         nodes=(
             Node("sfn", "step_functions", "avd_sfn", 120, 195),
-            Node("lam", "lambda", "avd_lambda", 340, 300),
-            Node("far", "fargate", "avd_fargate", 470, 300),
-            Node("ddb", "dynamodb", "avd_dynamodb", 600, 300),
-            Node("sns", "sns", "avd_sns", 730, 300),
+            Node("lam", "lambda", "avd_lambda", 330, 300),
+            Node("far", "fargate", "avd_fargate", 440, 300),
+            Node("ddb", "dynamodb", "avd_dynamodb", 630, 300),
+            Node("sns", "sns", "avd_sns", 745, 300),
             Node("fsx", "fsx_ontap", "avd_fsx", 60, 570),
             Node("ap", "s3_access_point", "avd_ap", 285, 586),
-            Node("arc", "s3", "avd_archive", 560, 570),
-            Node("sec", "s3", "avd_second", 820, 570),
-            Node("bkp", "aws_backup", "avd_backup", 160, 720),
+            Node("arc", "s3", "avd_archive", 545, 570),
+            Node("bkp2", "aws_backup", "avd_backup_bucket", 850, 570),
+            Node("sec", "s3", "avd_second", 545, 800),
+            Node("bkp", "aws_backup", "avd_backup", 160, 780),
         ),
         edges=(
             Edge(
@@ -2036,7 +2051,17 @@ def _archive_verify_delete() -> Diagram:
                 exit_at=(1.0, 0.5),
                 entry_at=(0.5, 0.0),
                 label_at=0.72,
-                label_offset=(100, 0),
+                label_offset=(-120, 0),
+            ),
+            Edge(
+                "e_head",
+                "sfn",
+                "arc",
+                "avd_head_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.5, 0.0),
+                label_at=0.75,
+                label_offset=(-150, 40),
             ),
             Edge("e_fsx_ap", "fsx", "ap", exit_at=(1.0, 0.5), entry_at=(0.0, 0.5)),
             Edge(
@@ -2050,12 +2075,12 @@ def _archive_verify_delete() -> Diagram:
             ),
             Edge(
                 "e_second",
-                "arc",
+                "ap",
                 "sec",
                 "avd_second_edge",
-                exit_at=(1.0, 0.5),
+                exit_at=(1.0, 0.85),
                 entry_at=(0.0, 0.5),
-                label_offset=(0, -30),
+                label_offset=(150, 34),
             ),
             Edge(
                 "e_backup",
@@ -2068,13 +2093,22 @@ def _archive_verify_delete() -> Diagram:
                 label_offset=(40, 0),
             ),
             Edge(
+                "e_backup_b",
+                "arc",
+                "bkp2",
+                "avd_backup_b_edge",
+                exit_at=(1.0, 0.5),
+                entry_at=(0.0, 0.5),
+                label_offset=(0, -45),
+            ),
+            Edge(
                 "e_clumio",
                 "arc",
                 "clumio",
                 "avd_clumio_edge",
                 exit_at=(1.0, 0.85),
                 entry_at=(0.5, 0.0),
-                label_offset=(40, 0),
+                label_offset=(60, 0),
             ),
         ),
     )
