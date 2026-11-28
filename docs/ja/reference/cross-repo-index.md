@@ -523,6 +523,9 @@ lang: ja
 | `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Observability-integrations` | `docs/ja/s3ap-monitoring-coverage-implications.md` | `**発火しない**` | `retraction` | S3 Access Point 経由の操作は FPolicy の通知が発火せず、ONTAP の監査ログに要求者が記録されないこと（ONTAP 9.18.1P3D1 の測定）。アーカイブの流れの監査で、削除の記録を CloudTrail と台帳に頼る根拠 |
 | `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Lakehouse-Integrations` | `docs/en/compatibility-matrix.md` | `Read-only analytics (Athena/Glue/EMR/Snowflake/Bedrock) are verified.` | `retraction` | Athena、Glue、Bedrock が Access Points を読み取りで使えること。アーカイブの流れで台帳や元のボリュームを分析する連携の根拠 |
 | `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/comparison-security-layers.md` | `FSx for ONTAP S3 Access Points 経由のオブジェクトは FSX_ONTAP ストレージクラスで、対象に入らない` | `retraction` | Amazon Macie が `FSX_ONTAP` クラスのオブジェクトを対象にしないこと。移す前の分類が要る理由 |
+| `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/s3ap-interoperability.md` | `NTFS セキュリティスタイルのボリューム` | `retraction` | NTFS ボリュームに S3 Access Points を取り付けられた実測。このパターンの経路では確かめていない |
+| `docs/ja/reference/comparison/archive-tiering-library-options.md` | `S3-Burst-on-ONTAP-Files` | `docs/ja/reference/limits/s3ap-interoperability.md` | `NTFS セキュリティスタイルのボリューム` | `retraction` | NTFS ボリュームに S3 Access Points を取り付けられた実測。このパターンの経路では確かめていない |
+| `docs/ja/domains/data-utilization/notes/archive-use-cases-and-integrations.md` | `FSx-for-ONTAP-Cyber-Resilience-Patterns` | `docs/data-protection/deletion-requests-and-retained-copies.md` | `Snapshot が残っている間は、データはボリューム上に残る` | `retraction` | 消したファイルが、スナップショットの保持中は S3 Access Points で読めること（E-061）。このパターンの削除のあとでは確かめていない |
 <!-- cross-repo-table:end -->
 
 ---

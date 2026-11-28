@@ -57,6 +57,7 @@ FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/architecture/continuum-security-age
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/comparison-security-layers.md	retraction	FSx for ONTAP S3 Access Points 経由のオブジェクトは FSX_ONTAP ストレージクラスで、対象に入らない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	AWS マネージドキーで暗号化されたファイルシステムのバックアップはボールトへコピーされない
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/aws-backup-logically-air-gapped-vault.md	retraction	MessageCategory は `KMS_KEY_ERROR`、メッセージは
+FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/deletion-requests-and-retained-copies.md	retraction	Snapshot が残っている間は、データはボリューム上に残る
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/data-protection/deletion-requests-and-retained-copies.md	retraction	のキーで `GetObject` すると読めた
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-framework-mapping.md	retraction	Protects the availability and integrity of files and recovery points; does not stop exfiltration through authorised reads
 FSx-for-ONTAP-Cyber-Resilience-Patterns	docs/en/cyber-resilience-programme.md	retraction	This document puts three pillars in one place: software supply chain visibility and response, RTO/RPO with SLA/SLO/SLI, and forensics.
@@ -179,6 +180,7 @@ S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-design-guide.md	retraction	衝突するのは経路が変わったときである
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	256 MiB ファイルの sha256 が親と一致
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NFS / SMB から見えるので、収集層のボリュームを人が覗く運用では
+S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	NTFS セキュリティスタイルのボリューム
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイルシステムは満杯ではなく
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/s3ap-interoperability.md	retraction	ファイル単位クローンだけがジョブを残さない
 S3-Burst-on-ONTAP-Files	docs/ja/reference/limits/smb-multichannel-enablement.md	retraction	ONTAP 9 の SMB Multichannel は無効で出荷される

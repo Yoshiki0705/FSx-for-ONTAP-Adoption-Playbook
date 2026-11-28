@@ -25,15 +25,15 @@ lang: ja
 - 台帳: どのファイルを、いつ、どこへ移したかと、属性とハッシュを記録したものです。戻すときの索引になります
 - S3 Glacier 系のクラス: S3 Glacier Instant Retrieval（すぐに読める）、S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive（読む前にバケットで復元が要る）の 3 つです。この資料で「復元が要る 2 クラス」と書くときは、後の 2 つを指します
 
-この資料が比べる「S3 API だけで照合と削除を行う仕組み」は、この Hub（FSx for ONTAP Adoption Playbook）で設計し、実装は別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) にあります。以下、この実装を「パターン」と書きます。FSx for ONTAP の 1 つのファイルシステムで、3 つの確認（「5.5 GiB を含む 7 ファイルの通し」「除外と承認を確かめる通し」「直接呼び出しを確かめる確認」）を実行しました。その欄は、公開ページの記載ではなく、この実装とその実行の結果です。多数のファイルと、この環境の外の構成は測っていません。中身は「[S3 API だけの照合と削除の仕組み](#s3-api-だけの照合と削除の仕組み)」の節にあります。どの用途に合うかは、[ファイルを消して S3 Glacier 系へ移す用途と連携先のノート](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md)にあります。
+この資料が比べる「S3 API だけで照合と削除を行う仕組み」は、この Hub（FSx for ONTAP Adoption Playbook）で設計し、実装は別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) にあります。以下、この実装を「パターン」と書きます。FSx for ONTAP の 1 つのファイルシステムで、4 つの確認（「5.5 GiB を含む 7 ファイルの通し」「除外と承認を確かめる通し」「直接呼び出しを確かめる確認」「承認と戻しの経路を確かめる確認」）を実行しました。その欄は、公開ページの記載ではなく、この実装とその実行の結果です。多数のファイルと、この環境の外の構成は測っていません。中身は「[S3 API だけの照合と削除の仕組み](#s3-api-だけの照合と削除の仕組み)」の節にあります。どの用途に合うかは、[ファイルを消して S3 Glacier 系へ移す用途と連携先のノート](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md)にあります。
 
-> **実機での確認は 3 つで、値は確認ごとに書きます**: 「5.5 GiB を含む 7 ファイルの通し」は、Fargate を通る大きなファイルの写しと戻しを含みます。「除外と承認を確かめる通し」は 11 ファイルを作り、4 ファイルが選ばれた構成で、除外条件、承認の検査、戻した後の照合を確かめました。Fargate は通っていません。「直接呼び出しを確かめる確認」は 256 KiB のファイル 8 つで、承認が実行と時間に結び付いていることを、delete 関数の直接呼び出しで確かめました。3 つとも ap-northeast-1、2026-11-26 に、各手順 1 回です。たとえば 5.5 GiB を含む 7 ファイルの通しの 64 B のファイル 3 つは、除外と承認を確かめる通しの既定の最小サイズ（128 KiB）では選ばれません。削除の再試行と再開は、単体テストだけで、実機では通していません。
+> **実機での確認は 4 つで、値は確認ごとに書きます**: 「5.5 GiB を含む 7 ファイルの通し」は、Fargate を通る大きなファイルの写しと戻しを含みます。「除外と承認を確かめる通し」は 11 ファイルを作り、4 ファイルが選ばれた構成で、除外条件、承認の検査、戻した後の照合を確かめました。Fargate は通っていません。「直接呼び出しを確かめる確認」は 256 KiB のファイル 8 つで、承認が実行と時間に結び付いていることを、delete 関数の直接呼び出しで確かめました。「承認と戻しの経路を確かめる確認」は、別の IAM 主体による承認、CloudTrail の記録、5 GiB 超のファイルの Fargate での戻した後の照合、削除の再試行と再開、承認の有効期間の超過、承認待ちのアラームを確かめました。最初の 3 つは 2026-11-26、4 つ目は 2026-11-28 で、すべて ap-northeast-1、各手順 1 回です。たとえば 5.5 GiB を含む 7 ファイルの通しの 64 B のファイル 3 つは、除外と承認を確かめる通しの既定の最小サイズ（128 KiB）では選ばれません。承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わることと、ウォッチドッグが残ったトークンを消すことは、単体テストだけで、実機では通していません。
 
 ## 結論
 
 - **ファイルを利用者から見えたままにしたいなら、ボリュームの階層化で足ります。** 容量プールの保管料金は、東京リージョンの Single-AZ で $0.0238 / GB-月で、S3 Standard の $0.025 / GB-月と同じくらいです（2026-11-24 取得）。Multi-AZ は $0.0476 / GB-月で、約 1.9 倍です。容量プールには読み取りと書き込みのリクエスト料金も別にかかります。S3 Glacier 系のクラスほどは下がりませんが、復元を待つ時間も、照合と削除の運用も要りません。S3 Glacier 系へ移して得になるかは、1 オブジェクトの追加メタデータ、最小保管期間、取り出しとリクエストの料金で変わります（[保管料金の損益分岐の考え方](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#保管料金の損益分岐の考え方)。[容量プールに置いたままにするか、バケットへ移すかの判断](../../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md#容量プールに置いたままにするかバケットへ移すかの判断)）
 - **復元が要る 2 クラスへ移したいなら、「写す、照合する、人が承認する、元を消す」を 1 つの製品で行えると書いたページは、今回読んだ範囲にありませんでした。** 部分的な記載はあります。OSS の rclone は `move` で元を消せ、クラスを指定して書けます（FSx for ONTAP の S3 Access Points ではボリューム側の MD5 が取れず、MD5 での照合は成り立ちません）。iRODS は次の階層へ複製し、大きさかチェックサムで検証してから元を消します（人の承認の記載はありません）。Archivematica は削除を「要求」と「管理者の承認」の 2 段階にしています（復元が要る 2 クラスへの書き込みの記載は見つけられませんでした）。対象は FSx for ONTAP のボリュームのファイルです。階層化とスタブ型の製品の多くは、S3 Glacier Instant Retrieval までを対象にしています。復元が要る 2 クラスについては、Dell PowerScale CloudPools、ONTAP の FabricPool、Nasuni が対象外と書いています。Hammerspace、Panzura、CTERA は、読んだページに記載がありませんでした。写すだけなら、AWS DataSync が全クラスへ書けます。DataSync に元を消す機能の記載は、読んだページにありませんでした
-- **S3 API だけの照合と削除の仕組み（パターン）が前提にするのは、次の 3 つです。** ファイルの読み取り、コピー、削除に NFS のマウントを使わず、S3 Access Points の S3 API だけで行うこと、復元が要る 2 クラスへ `CopyObject` で直接写すこと、照合で一致したファイルだけを、人の承認の後に消すことです。ただし、最終アクセス時刻で選ぶときは VPC 内の AWS Lambda から ONTAP REST API を呼び（ONTAP の認証情報と管理エンドポイントへの到達性が要る）、戻した後の所有者・モード・更新時刻の付け直しには、NFS でボリュームをマウントしたホストが要ります。実装して 3 つの確認を実行しました（ap-northeast-1、2026-11-26、各手順 1 回）。5.5 GiB を含む 7 ファイルの通しでは、7 ファイルのうち 6 ファイルが消え、承認待ちの間に書き換えたファイル 1 つは消えず、承認を拒否すると何も消えず、消した 6 ファイルは戻せて、SHA-256 が事前に記録した値と一致しました。「除外と承認を確かめる通し」では、11 ファイルのうち 4 ファイルが選ばれ、同じ実行 ID の再利用、起動者と同じ申告の承認、承認を経ない直接の削除が拒否され、書き換えたファイルは `CHANGED` で残り、戻した 3 ファイルは戻した後の再ハッシュで台帳と一致しました（`RESTORE_VERIFIED`）。「直接呼び出しを確かめる確認」では、別の実行の ARN と止めた実行自身の ARN での delete 関数の直接呼び出しが拒否されました。5 GiB を超えるファイルの戻した後の照合（Fargate の経路）は通していません。条件は「[実機での通しの結果](#実機での通しの結果)」。起動者と承認者を分ける検査は、申告された 2 つの値の比較で、主体の証明ではありません。実際に承認した主体は、AWS CloudTrail の `userIdentity` で後から確かめます。代わりに、スタブも透過な呼び戻しもなく、移したファイルは利用者のフォルダーから消えます
+- **S3 API だけの照合と削除の仕組み（パターン）が前提にするのは、次の 3 つです。** ファイルの読み取り、コピー、削除に NFS のマウントを使わず、S3 Access Points の S3 API だけで行うこと、復元が要る 2 クラスへ `CopyObject` で直接写すこと、照合で一致したファイルだけを、人の承認の後に消すことです。ただし、最終アクセス時刻で選ぶときは VPC 内の AWS Lambda から ONTAP REST API を呼び（ONTAP の認証情報と管理エンドポイントへの到達性が要る）、戻した後の所有者・モード・更新時刻の付け直しには、NFS でボリュームをマウントしたホストが要ります。実装して 4 つの確認を実行しました（ap-northeast-1、2026-11-26 と 2026-11-28、各手順 1 回）。5.5 GiB を含む 7 ファイルの通しでは、7 ファイルのうち 6 ファイルが消え、承認待ちの間に書き換えたファイル 1 つは消えず、承認を拒否すると何も消えず、消した 6 ファイルは戻せて、SHA-256 が事前に記録した値と一致しました。「除外と承認を確かめる通し」では、11 ファイルのうち 4 ファイルが選ばれ、同じ実行 ID の再利用、起動者と同じ申告の承認、承認を経ない直接の削除が拒否され、書き換えたファイルは `CHANGED` で残り、戻した 3 ファイルは戻した後の再ハッシュで台帳と一致しました（`RESTORE_VERIFIED`）。「直接呼び出しを確かめる確認」では、別の実行の ARN と止めた実行自身の ARN での delete 関数の直接呼び出しが拒否されました。「承認と戻しの経路を確かめる確認」では、承認専用の一時の IAM ロールによる承認で 3 ファイルが消え、起動者と同じ主体の自己承認は拒否され、5,905,580,032 B のファイルが Fargate の戻した後の照合で `RESTORE_VERIFIED` になりました。条件は「[実機での通しの結果](#実機での通しの結果)」。起動者と承認者を分ける検査は、申告された 2 つの値の比較で、主体の証明ではありません。実際に承認した主体は、AWS CloudTrail の `userIdentity` で後から確かめます。代わりに、スタブも透過な呼び戻しもなく、移したファイルは利用者のフォルダーから消えます
 - **アーカイブ用のバケットを守るバックアップ製品は、復元が要る 2 クラスのオブジェクトを対象外にしています。** AWS Backup、Clumio、Commvault、Veeam が公開ページで対象外と書き、Druva は Flexible Retrieval を読み飛ばすと書いています。S3 のレプリケーションも、この 2 クラスのオブジェクトを複製しません。バックアップ製品もレプリケーションも使えないので、復元が要る 2 クラスに置くなら、バケットのオブジェクトの別のコピー（2 つ目の写し）を、移す時点で自分で作ります。これが経路 C です（A、B、D も含めた 4 つの経路は次の文のとおりです）。試した範囲では、S3 Access Points（インターネット起点、1 つ）から大阪のバケットへの直接のコピーは `AccessDenied` になり、一度東京のバケットへ S3 Standard で写してから大阪へ送る手順は成功しました（2026-11-26、1 MiB、各 1 回）。直接のコピーが失敗した原因が Access Point の設定なのか、リージョンをまたぐ制約一般なのかは区別していません。バックアップ製品で守るなら、アーカイブ用のクラスを S3 Glacier Instant Retrieval にします。これが経路 B です。どちらの場合も、移す前に AWS Backup でボリュームをバックアップしておく経路 A を組み合わせられます。選別だけをデータ管理ソフトに任せる経路 D もあります。経路 A から D の内容は「[他の仕組みと組み合わせる経路](#他の仕組みと組み合わせる経路)」の表にあります
 
 > **区分** — `documented`。各社の公開ページ（2026-11-26 に閲覧）の記述をまとめたもので、どの製品も、この資料のために動かしてはいません。「記載を見つけられなかった」は、読んだページにその記述がないという意味で、機能がないという意味ではありません。読めなかったページは「[比較時点](#比較時点)」の節に数を書きました。
@@ -61,7 +61,7 @@ lang: ja
 | 転送サービス | AWS DataSync | NFS、SMB（FSx for ONTAP は場所の種類として記載あり） | そのまま（元を消す機能は、読んだページに記載なし） | 全クラスへ書ける | 転送中のチェックサムと、終了時の検証モードがある | なし |
 | OSS のツールと層 | rclone、Mountpoint for Amazon S3、iRODS、Lustre HSM | S3 API、POSIX | rclone の `move` は元を消す。iRODS は次の階層へ複製し、大きさかチェックサムで検証してから元を消す（検証の水準は設定で選び、既定はカタログへの登録確認だけ） | rclone、Mountpoint はクラスを指定して書ける | rclone は MD5 で照合するが、FSx for ONTAP の S3 Access Points では MD5 が取れない（下の注記） | iRODS のカタログ |
 | デジタル保存システム | Archivematica、Preservica、Ex Libris Rosetta | 取り込み（保管形式のパッケージを作る） | 保管形式へ取り込む設計で、容量を空ける目的ではない | Preservica は S3 と Glacier のストレージアダプタを持つ。Archivematica と Rosetta は、Glacier 系への書き込みの記載を見つけられなかった | 保存前と定期のチェックサム検証。Archivematica は削除を「要求」と「管理者の承認」の 2 段階にしている | 保存システムのカタログ |
-| S3 API だけの照合と削除の仕組み（実装あり。実機の確認 3 つ） | この Hub で設計した [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) | S3 Access Points | 消える（スタブなし） | `CopyObject` で直接書く。S3 Glacier Flexible Retrieval への書き込みと、そこからの戻しを実機で通した（ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、2026-11-26、各 1 回） | 一致したファイルだけを、人の承認の後に消す。承認の拒否で何も消えないことと、承認待ちの間に書き換えたファイルが消えないことを確認した（各 1 回）。削除するのは、同じ実行で承認され、承認から `ApprovalValidityHours`（既定 24 時間）以内の項目だけ（別の実行の ARN と、止めた実行自身の ARN での直接呼び出しの拒否は実機で確認。期間の超過は単体テストのみ）。起動者と承認者の分離は申告値の比較 | DynamoDB の台帳 |
+| S3 API だけの照合と削除の仕組み（実装あり。実機の確認 4 つ） | この Hub で設計した [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) | S3 Access Points | 消える（スタブなし） | `CopyObject` で直接書く。S3 Glacier Flexible Retrieval への書き込みと、そこからの戻しを実機で通した（ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、2026-11-26、各 1 回） | 一致したファイルだけを、人の承認の後に消す。承認の拒否で何も消えないことと、承認待ちの間に書き換えたファイルが消えないことを確認した（各 1 回）。削除するのは、同じ実行で承認され、承認から `ApprovalValidityHours`（既定 24 時間）以内の項目だけ（別の実行の ARN と、止めた実行自身の ARN での直接呼び出しの拒否、期間の超過での拒否は実機で確認）。起動者と承認者の分離は申告値の比較。別の IAM 主体による承認は実機で通した | DynamoDB の台帳 |
 
 > **注記**: FSx for ONTAP の S3 Access Points では、ETag は MD5 ではありません。アップロード時に指定したチェックサムは受け付ける前に検証されますが、その値はボリュームに保存されず、応答にも返りません（[サポートする API の一覧](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/access-points-for-fsxn-object-api-support.html)）。このため、MD5 を比べる道具（rclone の `check` など）は、ボリューム側のハッシュを得られません。rclone で実際にそうなった記録は、[FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Client-Access-Patterns) にあります（2026-11-24、rclone 1.76.0）。
 
@@ -110,11 +110,11 @@ lang: ja
 | 転送サービス（DataSync） | 大量のファイルを、検証つきでバケットへ写す | 元を消す機能、台帳、人の承認の 3 つは、読んだページに記載がないため、使う場合は自分で組む前提で考える。NFS か SMB の場所として使う |
 | OSS のツールと層 | 自分でスクリプトを組める。ライセンスをかけたくない | FSx for ONTAP の S3 Access Points ではボリューム側のハッシュが取れないので、rclone の照合はそのままでは使えない。iRODS は自分のカタログの内側で動く |
 | デジタル保存システム | 長期保存の手順（取り込み、定期の再検証、メタデータの標準）が求められる | 容量を空ける目的の仕組みではない。保存システムの運用が加わる |
-| S3 API だけの照合と削除の仕組み | 下の「[選び方](#選び方)」の条件に当てはまる | 実機の確認は、5.5 GiB を含む 7 ファイルの通し、11 ファイルから 4 ファイルが選ばれた除外と承認を確かめる通し、8 ファイルで直接呼び出しを確かめる確認の 3 つで、多数のファイルでの所要時間と料金、第 2 世代、Multi-AZ、NTFS は測っていない。削除の再試行と再開は、単体テストだけで、実機では通していない。ETag は内容でなく更新時刻と大きさに連動するので、大きさと更新時刻を変えない内容の変更は、消す前の確認で検出できない。スタブも透過な呼び戻しもない。戻すのに、クラスと取り出しの種類に応じて数分から 48 時間かかる。最小保管期間（S3 Glacier Deep Archive は 180 日）がある。1 GiB のファイルを消しても、スナップショットがある間は、ボリュームの使用量は作成前に戻らなかった（実測、1 回。使用量が元に戻ったのは、そのスナップショットを消した後）。照合のためにボリュームのファイルを一度読む（読み取りのリクエスト料金がかかり、容量プールにあればその読み取り料金もかかる）。単一ファイルが 50 GiB を超えると、Access Points へ戻せない（公式ページは、アップロードの上限が 50 GiB で、それを超えるオブジェクトのダウンロードはできると書く。バケットから直接ダウンロードする手順は通していない。パターンは、50 GiB を超えるファイルを選択から外す。`SKIPPED_TOO_LARGE`。51 GiB の疎ファイルが外れることだけを確かめ、写しと戻しは行っていない）。消したファイルはスナップショットには残り、SnapMirror の宛先への伝わり方は確かめていない（[消した結果が及ぶ範囲](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#消した結果が及ぶ範囲)）。起動者と承認者の分離は、申告された 2 つの値の比較で、主体の単位で強制するには IAM の設計が要る。自前で作るので保守も自前 |
+| S3 API だけの照合と削除の仕組み | 下の「[選び方](#選び方)」の条件に当てはまる | 実機の確認は、5.5 GiB を含む 7 ファイルの通し、11 ファイルから 4 ファイルが選ばれた除外と承認を確かめる通し、8 ファイルで直接呼び出しを確かめる確認、別の IAM 主体の承認と戻しの経路を確かめる確認の 4 つで、多数のファイルでの所要時間と料金、第 2 世代、Multi-AZ、NTFS は測っていない。削除の再試行と再開は、現行のコードで実機を通した。承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わることは、単体テストだけ。ETag は内容でなく更新時刻と大きさに連動するので、大きさと更新時刻を変えない内容の変更は、消す前の確認で検出できない。スタブも透過な呼び戻しもない。戻すのに、クラスと取り出しの種類に応じて数分から 48 時間かかる。最小保管期間（S3 Glacier Deep Archive は 180 日）がある。1 GiB のファイルを消しても、スナップショットがある間は、ボリュームの使用量は作成前に戻らなかった（実測、1 回。使用量が元に戻ったのは、そのスナップショットを消した後）。照合のためにボリュームのファイルを一度読む（読み取りのリクエスト料金がかかり、容量プールにあればその読み取り料金もかかる）。単一ファイルが 50 GiB を超えると、Access Points へ戻せない（公式ページは、アップロードの上限が 50 GiB で、それを超えるオブジェクトのダウンロードはできると書く。バケットから直接ダウンロードする手順は通していない。パターンは、50 GiB を超えるファイルを選択から外す。`SKIPPED_TOO_LARGE`。51 GiB の疎ファイルが外れることだけを確かめ、写しと戻しは行っていない）。消したファイルはスナップショットには残り、SnapMirror の宛先への伝わり方は確かめていない（[消した結果が及ぶ範囲](../../domains/data-utilization/notes/archive-use-cases-and-integrations.md#消した結果が及ぶ範囲)）。起動者と承認者の分離は、申告された 2 つの値の比較で、主体の単位で強制するには IAM の設計が要る。自前で作るので保守も自前 |
 
 ## S3 API だけの照合と削除の仕組み
 
-この Hub で設計し、別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) に実装した仕組み（パターン）です。流れ全体を、FSx for ONTAP の 1 つのファイルシステムで 3 つの確認を実行しました（「[実機での通しの結果](#実機での通しの結果)」）。
+この Hub で設計し、別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) に実装した仕組み（パターン）です。流れ全体を、FSx for ONTAP の 1 つのファイルシステムで 4 つの確認を実行しました（「[実機での通しの結果](#実機での通しの結果)」）。
 
 ![構成図。上の枠の AWS Step Functions が、AWS Lambda（5 GiB 以下のハッシュ）、AWS Fargate（5 GiB 超のハッシュとコピー）、Amazon DynamoDB（台帳）、Amazon SNS（承認の依頼）を呼び、承認する人が結果を返す。AWS Step Functions は、Amazon S3 Access Points に CopyObject、DeleteObject、元の HeadObject を呼び、アーカイブ用の汎用バケットにコピー先の HeadObject（照合）を呼ぶ。下の段では、Amazon FSx for NetApp ONTAP のボリュームのファイルが、S3 Access Points からチェックサム付きのサーバー側コピーで、汎用バケット（S3 Glacier Instant Retrieval、Flexible Retrieval、Deep Archive）へ写る。同じリージョンの別のバケットの 2 つ目の写しは、汎用バケットからではなく S3 Access Points から直接作る（経路 C）。移す前のボリュームは AWS Backup でバックアップできる（経路 A）。バケットが S3 Glacier Instant Retrieval のときは、AWS Cloud の内側の AWS Backup と、AWS の外のバックアップ製品（Clumio など）で守れる（経路 B）。選別は Komprise などのデータ管理ソフトに任せられる（経路 D）。戻す流れは図の下の注記にある](../../../_assets/images/archive-verify-delete.svg)
 
@@ -161,13 +161,14 @@ lang: ja
 
 ### 実機での通しの結果
 
-実装した流れ全体を、同じ FSx for ONTAP のファイルシステムで、次の 3 つの確認を実行しました。環境は ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX セキュリティスタイルのボリュームで、Access Point のファイルシステムユーザーは UNIX の root です。実行日は 3 つとも 2026-11-26（時刻は日本時間）で、各手順は 1 回です。3 つが確かめた範囲は違います。
+実装した流れ全体を、同じ FSx for ONTAP のファイルシステムで、次の 4 つの確認を実行しました。環境は ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX セキュリティスタイルのボリュームで、Access Point のファイルシステムユーザーは UNIX の root です。実行日は、最初の 3 つが 2026-11-26、4 つ目が 2026-11-28（時刻は日本時間）で、各手順は 1 回です。4 つが確かめた範囲は違います。
 
 | 確認 | ファイル | 確かめた範囲 | 通っていない範囲 |
 |---|---|---|---|
-| 5.5 GiB を含む 7 ファイルの通し | 7 ファイル（5.5 GiB を含む） | 写し、照合、承認の拒否、承認待ちの間の書き換え、削除、戻し。Fargate が行う 5.5 GiB のコピー | Fargate 経路での戻した後の台帳との照合（SHA-256 は、事前に NFS で記録した値と一致） |
-| 除外と承認を確かめる通し | 11 ファイルを作り、4 ファイルが選ばれた（最大 1 MiB） | 除外条件、実行 ID の再利用の拒否、自己承認と直接の削除の拒否、書き換えの検出、戻した後の再ハッシュ、通知とアラーム | Fargate の経路（5 GiB 超のハッシュとコピー、戻した後の照合）。50 GiB 超の写しと戻し。削除の再試行と再開（単体テストのみ） |
-| 直接呼び出しを確かめる確認 | 256 KiB のファイル 8 つ | 承認の結び付け（別の実行の ARN での直接呼び出しの拒否、止めた実行自身の ARN の拒否）、`reconcile` での復帰、承認後と拒否後のトークンの削除 | 承認の期間（`ApprovalValidityHours`）の超過、ウォッチドッグによる古いトークンの削除、削除の再試行と再開（単体テストのみ） |
+| 5.5 GiB を含む 7 ファイルの通し | 7 ファイル（5.5 GiB を含む） | 写し、照合、承認の拒否、承認待ちの間の書き換え、削除、戻し。Fargate が行う 5.5 GiB のコピー | Fargate 経路での戻した後の台帳との照合（SHA-256 は、事前に NFS で記録した値と一致。この照合は 4 つ目の確認で通した） |
+| 除外と承認を確かめる通し | 11 ファイルを作り、4 ファイルが選ばれた（最大 1 MiB） | 除外条件、実行 ID の再利用の拒否、自己承認と直接の削除の拒否、書き換えの検出、戻した後の再ハッシュ、通知とアラーム | 50 GiB 超の写しと戻し。Fargate の経路は 4 つ目の確認で、削除の再試行と再開も 4 つ目の確認で通した |
+| 直接呼び出しを確かめる確認 | 256 KiB のファイル 8 つ | 承認の結び付け（別の実行の ARN での直接呼び出しの拒否、止めた実行自身の ARN の拒否）、`reconcile` での復帰、承認後と拒否後のトークンの削除 | ウォッチドッグによる古いトークンの削除（単体テストのみ）。承認の期間（`ApprovalValidityHours`）の超過、削除の再試行と再開は 4 つ目の確認で通した |
+| 承認と戻しの経路を確かめる確認 | 5.5 GiB を含む数ファイル（5,905,580,032 B が 1 つ）と、1 MiB の小さなファイル | 別の IAM 主体による承認、CloudTrail の管理イベントとデータイベント、Fargate の戻した後の照合（5 GiB 超）、削除の再試行と再開、承認の有効期間の超過、`ApprovalPendingAlarm`、戻し先に同名のファイルがある場合、`retryMismatched`、ストレージクラスの変更 | 承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わること、ウォッチドッグが残ったトークンを消すこと（単体テストのみ）。50 GiB 超の写し、多数のファイル |
 
 #### 5.5 GiB を含む 7 ファイルの通し: 7 ファイルと大きなファイルの戻し
 
@@ -231,7 +232,28 @@ delete 関数を直接呼ぶ入力が、承認と実行に結び付いている�
 | 止めた実行自身の ARN を `claim` にした呼び出し | `NOT_APPROVED`（`claiming execution is not running`）で、何も消えなかった。止めた実行の ARN は台帳に載っていて、台帳を読める人は渡せるので、delete 関数は `claim` の実行が実行中かを確かめる。`reconcile` は残った `APPROVED` の項目を `VERIFIED` に戻した |
 | 対照 | 承認して最後まで流すと、承認した項目がすべて `DELETED`（実行状態の確認が通り、`states:DescribeExecution` の権限が足りている）。拒否（`send-task-failure`）した実行は全件 `VERIFIED` のまま、トークンは削除済み |
 
-この確認で確かめていないのは、承認の期間（`ApprovalValidityHours`）の超過、ウォッチドッグが古いトークンを消す動作、実行中の実行が `DescribeExecution` を経て再試行し `DELETED` に至る経路です。`states:SendTaskSuccess` は IAM でリソースを絞れない（AWS の Service Authorization Reference で確認）ため、承認者のポリシーが絞れるのは、トークンを読む経路です。
+この確認で確かめていないのは、ウォッチドッグが古いトークンを消す動作です。承認の期間の超過と、実行中の実行が `DescribeExecution` を経て再試行し `DELETED` に至る経路は、次の確認で通しました。`states:SendTaskSuccess` は IAM でリソースを絞れない（AWS の Service Authorization Reference で確認）ため、承認者のポリシーが絞れるのは、トークンを読む経路です。
+
+#### 承認と戻しの経路を確かめる確認: 別の主体の承認、記録、戻しの経路
+
+承認を別の IAM 主体が行う経路と、記録、戻し、期限の扱いを確かめました。実行日は 2026-11-28（日本時間）、ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX セキュリティスタイルのボリューム、Access Point のファイルシステムユーザーは UNIX の root で、前の 3 つと同じファイルシステムと Access Point です。構成は、アーカイブ先 `GLACIER`、2 つ目の写しあり、Fargate あり（arm64、2 vCPU、8 GiB）、`ApprovalTimeoutHours=1`、`ApprovalValidityHours=1`、`ApprovalAlarmHours=1`、`RestorePollMinutes=1`、`MapConcurrency=1` で、各手順は 1 回です。
+
+| 手順 | 結果 |
+|---|---|
+| 別の IAM 主体による承認 | 承認専用に作った一時の IAM ロール（`SendTaskSuccess` と `SendTaskFailure`、トークンのパラメーターの読み取りと復号だけを許可）で承認すると、3 ファイル（5.5 GiB が 1 つ、1 MiB が 2 つ）が `DELETED` になった。起動者と同じ主体が自分を承認者と申告した承認は `APPROVAL_REFUSED` で、2 ファイルとも `VERIFIED` のまま |
+| CloudTrail の管理イベント | `SendTaskSuccess` の `userIdentity` は、受理した承認 5 件が承認用ロール、拒否された自己承認 1 件が起動者の主体（SSO）だった。`SendTaskFailure` 3 件も記録された |
+| CloudTrail のデータイベント | `resources.type` に `AWS::S3::AccessPoint` を選んだデータイベントのトレイルに、この確認の `DeleteObject` が 11 件記録され、11 件とも delete 関数のロールだった。`resources` には `AWS::FSx::Volume`、`AWS::S3::AccessPoint`、`AWS::S3::Object` が入った。2026-11-26 の 3 つの確認の削除（6 件、3 件、8 件）も、同じトレイルに delete 関数のロールで残っていた |
+| Fargate の戻した後の照合（5 GiB 超） | 5,905,580,032 B のファイルを `Expedited` で戻すと、復元の完了後に Fargate のタスクがコピー（約 2 分 37 秒）と戻した後の照合（約 1 分 45 秒）を行い、`RESTORE_VERIFIED` になった。NFS で読んだ SHA-256 は事前の値と一致した |
+| 削除の再試行 | 実行中の実行の `claim` を付けて `DELETING` にした項目への delete 関数の再試行は、元が既に消えていれば `DELETED`（`already gone on retry`）、残っていれば消して `DELETED` になった |
+| 再開 | 2 件を `DELETING` のまま残した実行は `COMPLETED_WITH_ERRORS` で終わった。同じ `runId` に `"resume": true` を付けて起動すると、`reconcile` が元の消えていた 1 件を `DELETED`、元が残っていた 1 件を `VERIFIED` にし、承認の後にその 1 件が `DELETED` になった |
+| 承認の有効期間の超過 | `ApprovalValidityHours=1` で、承認から約 61 分後に、実行中の実行の `claim` で delete 関数を呼ぶと `NOT_APPROVED`（`approval not current`）で消えなかった。承認時刻を直前にした対照は `DELETED` になった |
+| `ApprovalPendingAlarm` | `ApprovalAlarmHours=1` で、承認待ちが約 69 分続いた時点で `ALARM` になり、通知のトピック経由で通知が届いた（ウォッチドッグは 15 分ごとに動く） |
+| 戻し先に同名のファイルがある場合 | 消したパスに NFS で別の内容のファイルを置いてから戻すと、`EXISTS` で上書きせず、NFS のファイルの SHA-256 は変わらなかった |
+| `retryMismatched` | バージョニングのあるアーカイブ用バケットで、写しを別の内容の版に差し替えてから戻すと、戻した後の照合が `RESTORE_MISMATCH` になり、`RestoreMismatchAlarm` が `ALARM` になった。元の版を最新に戻し、`"retryMismatched": true` で戻すと、その項目だけを上書きして `RESTORE_VERIFIED`（SHA-256 は元の値と一致）になった |
+| `selection=ATIME` の直前の `touch -d` | atime と mtime を 2020-01-02 にした 12 秒後と約 5 分後の `selection=ATIME` の dry run は、どちらも 2 ファイルを選んだ。以前の 1 回（約 10 秒後に 0 件）は再現しなかった。原因は特定していない |
+| ストレージクラスの変更 | バケットの 1 KiB の S3 Standard のオブジェクトを、`CopyObject` で同じキーへ `--storage-class DEEP_ARCHIVE --metadata-directive COPY` で写すと、S3 Glacier Deep Archive の新しい版になった（バージョニングありのため、元の版は S3 Standard のまま残る） |
+
+この確認で確かめていないのは、承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わることと、ウォッチドッグが残ったタスクトークンを、承認のタイムアウトに 1 時間を足した後に消すこと（どちらも単体テストのみ）、多数のファイル、`S3.SlowDownException` の名前、50 GiB 超の写し、Multi-AZ、root 以外のユーザー、Access Point にポリシーを付けない場合、SnapMirror の宛先、SQS を通知先にした承認です。
 
 ### デプロイと運用の前提条件
 
@@ -250,18 +272,12 @@ delete 関数を直接呼ぶ入力が、承認と実行に結び付いている�
 ### まだ確かめていないこと
 
 - 多数のファイルでの所要時間と料金。S3 のリクエスト数（リクエストメトリクスを有効にしていない）
-- `Standard` と `Bulk` の復元の完了待ち（実機では `Expedited` のみ）。復元が要る 2 クラスのうち、通したのは S3 Glacier Flexible Retrieval だけ
-- 5 GiB を超えるファイルの戻した後の照合（Fargate の経路）。除外と承認を確かめる通しは最大 1 MiB で、Fargate のタスクは 0 件だった。5.5 GiB を含む 7 ファイルの通しの 5.5 GiB の戻しは、SHA-256 が事前に NFS で記録した値と一致したことまで。Fargate の戻した後の照合の経路は単体テストだけ
-- 2 つ目の主体による承認。除外と承認を確かめる通しは、同じ SSO の主体が別の ARN を申告して受理側を確かめた。主体の単位の分離は、IAM と CloudTrail の設計による
-- 削除の再試行と再開（`DELETING` と同じ `claimedBy`）の実機での通し。この経路は単体テストだけ
-- 承認の期間（`ApprovalValidityHours`）の超過と、ウォッチドッグが古いトークンを消す動作（単体テストのみ）
-- `ApprovalPendingAlarm` が実際に ALARM になるまでの待ち（メトリクスが出ていることだけを確認）
+- このパターンの戻しの流れで、`Standard` と `Bulk` の復元の完了待ちを通すこと（実機では `Expedited` のみ）。`Standard` と `Bulk` の所要時間は、[サーバー側コピーの記事](../../domains/data-utilization/notes/s3-access-points-server-side-copy-use-cases.md#実機で確かめた範囲)で 1 オブジェクトずつ測った。復元が要る 2 クラスのうち、パターンの流れで通したのは S3 Glacier Flexible Retrieval だけ
+- 承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わることと、ウォッチドッグが残ったタスクトークンを、承認のタイムアウトに 1 時間を足した後に消すこと（単体テストのみ）
 - `S3.SlowDownException` の再試行。SDK 統合が返す名前を観測していない。復元要求の二重投入（前提条件の (3)）と同じ型の食い違いが起きる恐れがある
-- AWS CloudTrail のデータイベントでの削除の記録（実行したアカウントのトレイルが、対象の Access Point のデータイベントを含むかを確認していない）
 - 50 GiB を超えるファイルの写し（マルチパートコピー）と、バケットからの直接のダウンロード。実測は 5.5 GiB まで。51 GiB の疎ファイルが選択から外れることだけを確かめた
-- NTFS ボリューム、root 以外のファイルシステムユーザー、第 2 世代、Multi-AZ、Access Point にポリシーを付けない場合の動作
-- 戻し先に同名のファイルがある場合の経路（実行していない）
-- 送り終えた東京の S3 Standard の写しを S3 Glacier Deep Archive に変える操作（ライフサイクルの遷移か再コピー）と、その間の保管料金
+- NTFS ボリューム、root 以外のファイルシステムユーザー、第 2 世代、Multi-AZ、Access Point にポリシーを付けない場合の、このパターンの経路での動作（NTFS ボリュームへの S3 Access Points の取り付けと、第 2 世代での利用は、[S3-Burst-on-ONTAP-Files の相互運用の記録](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/limits/s3ap-interoperability.md)で実測済みで、このパターンの経路では未実施）
+- 送り終えた東京の S3 Standard の写しを S3 Glacier Deep Archive に変えるライフサイクルの遷移と、その間の保管料金（同じバケットで `CopyObject` による再コピーは通した。「承認と戻しの経路を確かめる確認」）
 - 通知先を SQS などにした承認の流れ（通しでは SNS の通知と Parameter Store のトークンで、承認と拒否を行った）
 - レプリケーションが S3 Glacier Deep Archive のオブジェクトを複製しなかった理由。ドキュメントは、このクラスのオブジェクトを複製しないと書いている（[複製しないもの](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-what-is-isnot-replicated.html)）
 
