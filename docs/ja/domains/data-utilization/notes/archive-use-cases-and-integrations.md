@@ -11,7 +11,7 @@ lang: ja
 
 Amazon FSx for NetApp ONTAP（以下 FSx for ONTAP）のボリュームから、めったに読まれないファイルを S3 Glacier 系のクラスへ移し、元を消す運用は、どのデータにも合うわけではありません。このノートは、公開された事例と規則の条文から、合う用途と合わない用途を分け、合わない場合の代替と、AWS のサービスや外部の製品が流れのどの段階につながるかを整理します。
 
-このノートで「パターン」と書くのは、別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) の [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) です。設計はこの Hub（FSx for ONTAP Adoption Playbook）で行いました。実測値は、2026-11-26 の 3 つの確認のものです。「5.5 GiB を含む 7 ファイルの通し」（Fargate を通る写しと戻し）、「除外と承認を確かめる通し」（11 ファイルを作って 4 ファイルが選ばれた構成。除外条件、承認の検査、削除と回復の再試行、戻した後の照合。Fargate は通っていない）、「直接呼び出しを確かめる確認」（256 KiB のファイル 8 つ。承認の結び付け）で、値にはどの確認かを付けます。
+このノートで「パターン」と書くのは、別のリポジトリ [FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns) の [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) です。設計はこの Hub（FSx for ONTAP Adoption Playbook）で行いました。実測値は、2026-11-26 の 3 つと 2026-11-28 の 1 つ、合わせて 4 つの確認のものです。「5.5 GiB を含む 7 ファイルの通し」（Fargate を通る写しと戻し）、「除外と承認を確かめる通し」（11 ファイルを作って 4 ファイルが選ばれた構成。除外条件、承認の検査、削除と回復の再試行、戻した後の照合。Fargate は通っていない）、「直接呼び出しを確かめる確認」（256 KiB のファイル 8 つ。承認の結び付け）、「承認と戻しの経路を確かめる確認」（別の IAM 主体の承認、CloudTrail の記録、Fargate の戻した後の照合、削除の再試行と再開、承認の有効期間の超過。2026-11-28）で、値にはどの確認かを付けます。
 
 > **読み方の案内**: このノートは長いので、目的で入口を選べます。
 >
@@ -188,35 +188,37 @@ FSx for ONTAP ではない参考事例が 3 つあります。大学が研究室
 
 ### 実機の通しで確かめた挙動
 
-パターンを、FSx for ONTAP の 1 つのファイルシステムで 3 つの確認を行いました（2026-11-26、ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX スタイルのボリューム、S3 Glacier Flexible Retrieval、各手順 1 回）。「5.5 GiB を含む 7 ファイルの通し」、11 ファイルを作って 4 ファイルが選ばれた「除外と承認を確かめる通し」、256 KiB のファイル 8 つで承認の結び付けを確かめた「直接呼び出しを確かめる確認」です。用途の判断に効く事実を、どの確認の値かを付けて挙げます。環境と手順ごとの結果は、[比較資料の節](../../../reference/comparison/archive-tiering-library-options.md#実機での通しの結果)に、デプロイと運用の前提条件は[同じ資料の節](../../../reference/comparison/archive-tiering-library-options.md#デプロイと運用の前提条件)にあります。記録の原本は、パターンの `solutions/data-lifecycle/archive-verify-delete/README.md` にあります。
+パターンを、FSx for ONTAP の 1 つのファイルシステムで 4 つの確認を行いました（2026-11-26 に 3 つ、2026-11-28 に 1 つ、ap-northeast-1、第 1 世代 `SINGLE_AZ_1`、ONTAP 9.19.1P4D1、UNIX スタイルのボリューム、S3 Glacier Flexible Retrieval、各手順 1 回）。「5.5 GiB を含む 7 ファイルの通し」、11 ファイルを作って 4 ファイルが選ばれた「除外と承認を確かめる通し」、256 KiB のファイル 8 つで承認の結び付けを確かめた「直接呼び出しを確かめる確認」、別の IAM 主体の承認と戻しの経路を確かめた「承認と戻しの経路を確かめる確認」です。用途の判断に効く事実を、どの確認の値かを付けて挙げます。環境と手順ごとの結果は、[比較資料の節](../../../reference/comparison/archive-tiering-library-options.md#実機での通しの結果)に、デプロイと運用の前提条件は[同じ資料の節](../../../reference/comparison/archive-tiering-library-options.md#デプロイと運用の前提条件)にあります。記録の原本は、パターンの `solutions/data-lifecycle/archive-verify-delete/README.md` にあります。
 
 | 用途の判断に効く事実 | 結果 |
 |---|---|
 | 戻しの時間（5.5 GiB を含む 7 ファイルの通し） | 取り出しの種類を Expedited にして、5.5 GiB を含む 6 ファイルを 287 秒で戻し、SHA-256 は全件、事前に NFS で記録した値と一致した。Standard と Bulk の完了待ちは測っていない |
 | 戻しと戻した後の照合（除外と承認を確かめる通し） | 小さい 3 ファイルを Expedited で 192 秒で戻し（ポーリング間隔は 1 分に設定）、戻した後の再ハッシュで 3 件が `RESTORE_VERIFIED` になった。NFS の SHA-256 も、手順の前の値と一致した。5 GiB を超えるファイルの戻した後の照合（Fargate の経路）は、この通しでは通っていない |
+| 5 GiB 超のファイルの戻した後の照合（承認と戻しの経路を確かめる確認） | 5,905,580,032 B のファイルを `Expedited` で戻すと、Fargate のタスクがコピー（約 2 分 37 秒）と戻した後の照合（約 1 分 45 秒）を行い、`RESTORE_VERIFIED` になった。NFS で読んだ SHA-256 は事前の値と一致した |
 | 戻した後の属性 | 所有者 0:1（5.5 GiB を含む 7 ファイルの通し）か root:bin（除外と承認を確かめる通し）、モード 644、更新時刻は戻した時刻。5.5 GiB を含む 7 ファイルの通しは、生成された再付与スクリプトを root で実行すると、元の uid、gid、mode、mtime に戻った。除外と承認を確かめる通しはスクリプトの生成までで、`RESTORE_VERIFIED` の 3 件分が出た |
 | 承認の拒否（5.5 GiB を含む 7 ファイルの通し） | 拒否すると何も消えなかった |
-| 起動者と同じ申告の承認、直接の削除（除外と承認を確かめる通し） | どちらも拒否され、ファイルは残った。承認者を別の ARN で申告すると受理された（申告値の比較。2 つ目の主体は用意していない） |
-| 直接呼び出しと承認の結び付け（直接呼び出しを確かめる確認） | 別の実行の ARN、文字列 `manual`、削除済みの `approvedBy` を付けた入力のどれでも `NOT_APPROVED` で、止めた実行の `APPROVED` の項目は消えなかった。止めた実行自身の ARN を `claim` にした呼び出しも、`claiming execution is not running` で拒否された。承認の期間（`ApprovalValidityHours`）の超過は実機では確認しておらず、単体テストだけ |
+| 起動者と同じ申告の承認、直接の削除（除外と承認を確かめる通し） | どちらも拒否され、ファイルは残った。承認者を別の ARN で申告すると受理された（申告値の比較）。承認専用の一時の IAM ロールで承認する場合は、「承認と戻しの経路を確かめる確認」で通した（次の行） |
+| 別の IAM 主体による承認（承認と戻しの経路を確かめる確認） | 承認専用の一時の IAM ロールで承認すると 3 ファイルが `DELETED` になった。起動者と同じ主体が自分を承認者と申告した承認は `APPROVAL_REFUSED` で、2 ファイルとも `VERIFIED` のまま。CloudTrail の `SendTaskSuccess` の `userIdentity` は、受理した 5 件が承認用ロール、拒否された自己承認 1 件が起動者の主体（SSO）で、主体を区別できた |
+| 直接呼び出しと承認の結び付け（直接呼び出しを確かめる確認） | 別の実行の ARN、文字列 `manual`、削除済みの `approvedBy` を付けた入力のどれでも `NOT_APPROVED` で、止めた実行の `APPROVED` の項目は消えなかった。止めた実行自身の ARN を `claim` にした呼び出しも、`claiming execution is not running` で拒否された。承認の期間（`ApprovalValidityHours`）の超過は、「承認と戻しの経路を確かめる確認」で確かめた。`ApprovalValidityHours=1` で承認から約 61 分後に、実行中の実行の `claim` で delete 関数を呼ぶと `NOT_APPROVED`（`approval not current`）で消えず、承認時刻を直前にした対照は `DELETED` になった |
 | 承認を待つ間の書き換え（5.5 GiB を含む 7 ファイルの通しと除外と承認を確かめる通し） | 同じ大きさのまま mtime が更新された書き換えは検出され、そのファイルは消えず `CHANGED` で残った |
 | 除外（除外と承認を確かめる通し） | `*.vmdk`、保全用のプレフィックス、最小サイズ未満（131,071 B）は選ばれず、131,073 B と 1 MiB は選ばれた。51 GiB の疎ファイルは `SKIPPED_TOO_LARGE` で外れ、写しも戻しもしていない |
-| 同じ実行 ID の再利用、削除の再試行（除外と承認を確かめる通し） | 再利用は `InvalidInput` で拒否された。削除の再試行と再開は単体テストだけで、実機では通していない |
-| 通知とアラーム（除外と承認を確かめる通し） | 失敗の通知は、カスタマー管理キーで暗号化した SNS トピックから届いた。アラームは 6 個あり、手で ALARM にした 1 個は通知を発行できた。滞留のアラームは、メトリクスの存在までで、ALARM になるまでは待っていない |
+| 同じ実行 ID の再利用（除外と承認を確かめる通し）、削除の再試行と再開（承認と戻しの経路を確かめる確認） | 再利用は `InvalidInput` で拒否された。削除の再試行は、`DELETING` にした項目への再試行で、元が既に消えていれば `DELETED`（`already gone on retry`）、残っていれば消して `DELETED` になった。再開は、`DELETING` を残した実行（`COMPLETED_WITH_ERRORS`）を同じ `runId` に `"resume": true` を付けて起動すると、`reconcile` が元の消えていた 1 件を `DELETED`、元が残っていた 1 件を `VERIFIED` にし、承認の後に `DELETED` になった |
+| 通知とアラーム（除外と承認を確かめる通し） | 失敗の通知は、カスタマー管理キーで暗号化した SNS トピックから届いた。アラームは 6 個あり、手で ALARM にした 1 個は通知を発行できた。滞留のアラーム（`ApprovalPendingAlarm`）は、承認と戻しの経路を確かめる確認で、`ApprovalAlarmHours=1` のとき承認待ちが約 69 分続いた時点で `ALARM` になり、通知が届いた |
 | 最後のファイルを消したとき（5.5 GiB を含む 7 ファイルの通し） | 空になった親ディレクトリも消えた。戻しの `CopyObject` が親ディレクトリを作り直す |
 | 最終アクセス日で選ぶとき（5.5 GiB を含む 7 ファイルの通し） | ハッシュ計算の読み取りがファイルの atime を実行時刻に更新する。dry run の直後に同じ入力で本番を回すと、0 件で終わった |
 
-確認の規模は、5.5 GiB を含む 7 ファイルの通しが 7 ファイル、除外と承認を確かめる通しが選ばれた 4 ファイル、直接呼び出しを確かめる確認が 8 ファイルで、多数のファイルでの所要時間と費用は測っていません。
+確認の規模は、5.5 GiB を含む 7 ファイルの通しが 7 ファイル、除外と承認を確かめる通しが選ばれた 4 ファイル、直接呼び出しを確かめる確認が 8 ファイル、承認と戻しの経路を確かめる確認が 3 ファイル（5.5 GiB が 1 つ、1 MiB が 2 つ）の削除と、戻しの数ファイルで、多数のファイルでの所要時間と費用は測っていません。
 
 ---
 
 ### 消した結果が及ぶ範囲
 
-Access Points 経由でファイルを消すと、ボリュームの外の仕組みにも影響が及びます。測ったのはボリュームの使用量だけで、ほかは確かめていません。
+Access Points 経由でファイルを消すと、ボリュームの外の仕組みにも影響が及びます。測ったのはボリュームの使用量が中心で、スナップショットからの読み出しは FSx-for-ONTAP-Cyber-Resilience-Patterns の記録があり、SnapMirror の宛先は確かめていません。
 
 | 仕組み | 消した後に起きること | 区分 |
 |---|---|---|
 | ボリュームのスナップショット | ファイルを消しても、使用量は約 800 MiB しか減らなかった。スナップショットの使用量が 224 MiB から 1,253 MiB に増え、そのスナップショットを消すと使用量は元の水準に戻った（ランダムデータの 1 GiB、ストレージ効率化ありのボリューム、1 回） | 実測（[比較資料](../../../reference/comparison/archive-tiering-library-options.md#部品ごとに確かめたこと)） |
-| スナップショットからの復元 | 消したファイルがスナップショットに残るので、そこから戻せる可能性がある。Access Points 経由で消した後に、スナップショットからファイルを戻せるかは試していない | 推測 |
+| スナップショットからの復元 | 消したファイルは、スナップショットが保持している間、`.snapshot/<name>/<path>` を S3 Access Points で読める（FSx-for-ONTAP-Cyber-Resilience-Patterns の記録 E-061、実測。[削除の依頼と残るコピー](https://github.com/Yoshiki0705/FSx-for-ONTAP-Cyber-Resilience-Patterns/blob/main/docs/data-protection/deletion-requests-and-retained-copies.md)）。このパターンの削除のあとで確かめたのではない | 実測（他の Spoke。このパターンの経路では未実施） |
 | SnapMirror の宛先 | 転送はスナップショットの単位なので、次の更新で削除が宛先に伝わると考えられる。宛先側の古いスナップショットには残る。測っていない | 推測 |
 | AWS Backup（ボリューム） | ボリューム単位のバックアップが消す前の安全網になる。戻すのはボリューム単位で、戻し先は新しいボリューム | 文書（A2 と同じ FSx for ONTAP のユーザーガイドのバックアップの節） |
 
@@ -229,7 +231,7 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 | 要素 | 記載 | 効く条件 |
 |---|---|---|
 | 1 オブジェクトの追加メタデータ | S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive は、1 オブジェクトにつき 40 KB（32 KB はそのクラスの単価、8 KB は S3 Standard の単価）。S3 Glacier Instant Retrieval は最小の課金対象サイズが 128 KB | 小さなファイルが多いほど、保管量に対する比率が上がる。1 MiB のファイルなら 40 KB は約 3.9%（40 ÷ 1,024 の計算） |
-| 最小保管期間 | S3 Glacier Instant Retrieval と S3 Glacier Flexible Retrieval が 90 日、S3 Glacier Deep Archive が 180 日 | それより短い期間で削除や上書きをした場合の課金の扱いは、料金ページで確認する（このノートでは確認していない） |
+| 最小保管期間 | S3 Glacier Instant Retrieval と S3 Glacier Flexible Retrieval が 90 日、S3 Glacier Deep Archive が 180 日 | 最小保管期間より前に削除、上書き、別のクラスへの遷移をすると、残りの期間分が日割りで課金される（[S3 のライフサイクルの遷移の考慮事項](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html)） |
 | 取り出しの料金 | 3 クラスとも GB あたりの取り出し料金がかかる | 戻す頻度と量が増えるほど効く。取り出しの種類（迅速、標準、大容量）で単価が違う |
 | リクエストの料金 | 書き込み（`CopyObject`）と復元のリクエストに、リクエスト数あたりの料金がかかる（単価は料金ページ） | ファイル数に比例する |
 | 2 つ目の写し | 別のバケットの保管料金（比較資料の経路 C） | 復元が要る 2 クラスでバックアップ製品が使えないとき、常に加わる |
@@ -282,7 +284,7 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 | ストレージクラスの課金 | S1 S12 | 移す価値の判断 | 該当なし | 文書 | 復元が要る 2 クラスは、1 オブジェクトにつき 40 KB の追加メタデータが課金される。最小保管期間は Instant Retrieval と Flexible Retrieval が 90 日、Deep Archive が 180 日。取り出しは GB ごとに課金される（出典: [Comparing the Amazon S3 storage classes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)、2026-11-26 閲覧。内訳は[損益分岐](#保管料金の損益分岐の考え方)） |
 | コスト配分タグ | S12 | 保管料金を部門や案件に割り当てる | 記載なし | 文書 | タグを付けられるのはバケットだけで、オブジェクトやプレフィックスには付けられない。案件ごとの請求はバケットを分けるか、台帳で集計する |
 | AWS KMS | S3 S7 | アーカイブ用のバケットの暗号化と、鍵の権限による隔離 | SSE-FSX のみ（文書） | SSE-KMS を使える（文書） | 戻すときは SSE-FSX になる。`CopyObject` を呼ぶロールに鍵の権限が要る |
-| CloudTrail のデータイベント | S10 | 操作の記録。要求元の IAM の主体を残せるのは CloudTrail だけ | 文書（`AWS::S3::AccessPoint` のリソース種別） | 文書 | 既定では記録されない。パターンの通しでは、削除のイベントが出ることを確かめていない |
+| CloudTrail のデータイベント | S10 | 操作の記録。要求元の IAM の主体を残せるのは CloudTrail だけ | 文書（`AWS::S3::AccessPoint` のリソース種別） | 文書 | 既定では記録されない。承認と戻しの経路を確かめる確認では、`resources.type` に `AWS::S3::AccessPoint` を選んだデータイベントのトレイルに、`DeleteObject` が 11 件記録され、11 件とも delete 関数のロールだった。`resources` には `AWS::FSx::Volume`、`AWS::S3::AccessPoint`、`AWS::S3::Object` が入った（FSx for ONTAP のボリュームに付けた Access Point では `AWS::FSx::Volume` が入る。[S3 Access Points のログと監視](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-monitoring-logging.html)） |
 | ONTAP の FPolicy と監査ログ | S10 | 変更検知と監査 | 実測（[他の Spoke の記録](https://github.com/Yoshiki0705/FSx-for-ONTAP-Observability-integrations/blob/main/docs/ja/s3ap-monitoring-coverage-implications.md)。ONTAP 9.18.1P3D1） | 該当なし | Access Points 経由の操作は FPolicy の通知が発火せず、ONTAP の監査ログには記録されるが要求者は記録されない。FPolicy を前提に削除を見る設計は、Access Points 経由の削除を見落とす |
 
 #### 分析、カタログ、検索、分類
@@ -388,7 +390,7 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 | 検証 | 承認の拒否、承認待ちの間の書き換え、1 ファイルの戻しを 1 回ずつ通す | 拒否すると何も消えないこと、書き換えたファイルが消えないこと、戻したファイルの SHA-256 が一致することを確かめる |
 | 構築 | パターンをデプロイする | [archive-verify-delete](https://github.com/Yoshiki0705/FSx-for-ONTAP-S3AccessPoints-Serverless-Patterns/tree/main/solutions/data-lifecycle/archive-verify-delete) の README の手順 |
 | 構築 | アーカイブ用のバケットを設計する | 暗号化、アクセス制御、Block Public Access、S3 Lifecycle による削除の時期、同一リージョンの 2 つ目の写し、CloudTrail のデータイベント、SCP。台帳とマニフェストにはファイルのパスが入る。パスに個人や案件を識別できる名前が含まれる場合は、元のデータと同じ分類で扱う |
-| 構築 | 承認できる主体を決める | 開始入力の `requestedBy` と承認の `approver` は呼び出し側が書く申告値で、パターンの分離の検査は、この 2 つの文字列の比較です。主体の証明ではなく、別の ARN を申告すれば受理されます（除外と承認を確かめる通しで確かめた）。実際に承認した主体は、CloudTrail の `SendTaskSuccess` のイベントの `userIdentity` で後から確かめます。承認は台帳に記録され、削除は同じ実行で承認された項目だけを、承認から `ApprovalValidityHours`（既定 24 時間）以内に消します（別の実行の ARN と、止めた実行自身の ARN での直接呼び出しの拒否は実機で確認。期間の超過は単体テストのみ）。起動者と承認者を主体の単位で分けるには、起動と承認の IAM ロールを分ける設計を、利用者が行います |
+| 構築 | 承認できる主体を決める | 開始入力の `requestedBy` と承認の `approver` は呼び出し側が書く申告値で、パターンの分離の検査は、この 2 つの文字列の比較です。主体の証明ではなく、別の ARN を申告すれば受理されます（除外と承認を確かめる通しで確かめた）。パターンの検査は申告値の比較のままで、主体の区別は IAM のロールと CloudTrail が担います。実際に承認した主体は、CloudTrail の `SendTaskSuccess` のイベントの `userIdentity` で後から確かめます。承認は台帳に記録され、削除は同じ実行で承認された項目だけを、承認から `ApprovalValidityHours`（既定 24 時間）以内に消します（別の実行の ARN と、止めた実行自身の ARN での直接呼び出しの拒否、期間の超過での拒否は実機で確認）。起動者と承認者を主体の単位で分けるには、起動と承認の IAM ロールを分ける設計を、利用者が行います。承認専用の一時の IAM ロールでの承認は実機で通し、CloudTrail の `userIdentity` で承認用ロールと起動者の主体を区別できました |
 | 構築 | 消す前に、AWS Backup でボリュームをバックアップする | 戻すのはボリューム単位で、戻し先は新しいボリューム |
 | 運用 | 台帳を守る | 台帳が戻しの索引になる。パターンの DynamoDB には point-in-time recovery を設定している。パターンは失敗と滞留のアラームを持つ。通知の購読は、メールの確認を済ませるまで有効にならない |
 | 運用 | 戻しの訓練をする | 戻した後は、所有者 0:1、モード 644、更新時刻は戻した時刻になる。再付与スクリプトを root で実行する手順を訓練する |
@@ -405,7 +407,7 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 | 照合は全件で一致するか | 選ばれた全件が `VERIFIED` になる。`MISMATCH` が出たら原因を説明できる | 小さいファイルと、扱うなら 5 GiB を超えるファイル | （決める） | 原因を説明できない不一致があれば No-Go |
 | 1 ファイルあたりの遷移数と所要は安定するか | `maxFiles` を段階的に増やしても、1 ファイルあたりの状態遷移数と Fargate の秒数が安定する（このノートの値は、5.5 GiB を含む 7 ファイルの通しが 17 から 18、除外と承認を確かめる通しが 14 から 19.5） | 大きさの分布が本番に近い抜き取り | （決める） | 損益分岐の式が、移す価値を示さなければ No-Go |
 | 承認の検査は意図どおりに働くか | 起動者と同じ申告の承認が拒否される。承認を経ない削除が拒否される。承認待ちの間に書き換えたファイルが `CHANGED` で残る | 検証用のファイル | （決める） | 拒否されるべき操作が通れば No-Go |
-| 実際に承認した主体を、後から確かめられるか | CloudTrail で `SendTaskSuccess` と削除の記録を引ける。データイベントの記録は、このノートでは未確認 | 検証用の実行 | （決める） | 追えなければ、承認の体制の見直しが先 |
+| 実際に承認した主体を、後から確かめられるか | CloudTrail で `SendTaskSuccess`（管理イベント）と削除の `DeleteObject`（データイベント）を引ける。データイベントは既定で記録されないので、トレイルに `AWS::S3::AccessPoint` を選んで有効にしておく | 検証用の実行 | （決める） | 追えなければ、承認の体制の見直しが先 |
 | 戻しは待てる時間に収まり、戻したファイルは使えるか | 戻した後の再ハッシュが `RESTORE_VERIFIED` になる。再付与した後に、取り込みの処理が動く | 実際に戻す用途のファイル。使う予定の取り出しの種類 | 待てる時間の上限は利用者が決める | 待てる時間に収まらなければ、クラスを見直す |
 | 運用の体制は決まっているか | 承認する人、戻しの申請の入口と応答の目標時間、利用者への案内、保全の対象を特定する役割が決まっている | （データは不要） | （決める） | 未決なら No-Go |
 
@@ -422,7 +424,7 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 | アーカイブ用のバケットは AWS Backup で守れる | 復元が要る 2 クラスのオブジェクトは対象外と書かれている。2 つ目の写しを自分で作る |
 | 承認があれば、承認者が誰かも台帳で確かめられる | 台帳の `deletedBy` は申告値で、起動者と承認者を分ける検査も、2 つの申告値の比較。実際に承認した主体は CloudTrail の `SendTaskSuccess` のイベントで確かめる |
 | 承認があれば、動いているデータベースや表形式のデータも移してよい | 承認の一覧を人が見て、データベースのファイルや表のデータファイルだと気づける保証はない。ファイル単位で移さない理由は[ファイル単位で移してはいけないデータ](#ファイル単位で移してはいけないデータ)にある |
-| 消したファイルはスナップショットから戻せるので、容量もすぐ戻る | 消したファイルはスナップショットに残るので、使用量はスナップショットが消えるまで下がらない（実測、1 回）。SnapMirror の宛先への伝わり方は確かめていない |
+| 消したファイルはスナップショットから戻せるので、容量もすぐ戻る | 消したファイルはスナップショットに残るので、使用量はスナップショットが消えるまで下がらない（実測、1 回）。SnapMirror の宛先への伝わり方は確かめていない。スナップショットが保持している間は、消したファイルを `.snapshot/<name>/<path>` で読める（FSx-for-ONTAP-Cyber-Resilience-Patterns の実測。このパターンの削除のあとで確かめたのではない） |
 | 公開事例があるので、同じ用途で動く | ONTAP の公開事例の多くは、元のパスで開ける階層化で、この流れとは別の層。S3 Glacier Flexible Retrieval と S3 Glacier Deep Archive へ写して消す ONTAP の事例は、読んだ範囲に見つからなかった |
 
 ---
@@ -430,13 +432,10 @@ S3 Glacier 系のクラスは、1 GB あたりの保管単価が容量プール�
 ### 確認できていないこと
 
 - ONTAP の公開事例で、復元が要る 2 クラスへファイルを写して消す事例の有無。見つからなかったことは、存在しないことの証明ではない
-- 多数のファイルでの所要時間と費用、Standard と Bulk の復元の完了待ち、NTFS ボリューム、第 2 世代、Multi-AZ での動作
+- 多数のファイルでの所要時間と費用、このパターンの戻しの流れでの Standard と Bulk の復元の完了待ち（Standard と Bulk は[サーバー側コピーの記事](s3-access-points-server-side-copy-use-cases.md#実機で確かめた範囲)で 1 オブジェクトずつ測った）、Multi-AZ での動作。NTFS ボリュームへの S3 Access Points の取り付けと第 2 世代での利用は [S3-Burst-on-ONTAP-Files の相互運用の記録](https://github.com/Yoshiki0705/S3-Burst-on-ONTAP-Files/blob/main/docs/ja/reference/limits/s3ap-interoperability.md)で実測済みで、このパターンの経路では未実施
 - 50 GiB を超えるファイルの写しと、バケットからの直接のダウンロード（実測は 5.5 GiB まで。51 GiB の疎ファイルが選択から外れることだけを除外と承認を確かめる通しで確認）
-- 5 GiB を超えるファイルの戻した後の照合（Fargate の経路）。除外と承認を確かめる通しは最大 1 MiB で通っていない
-- 削除の再試行と再開の実機での通し（単体テストのみ）と、承認の期間の超過、ウォッチドッグが古いトークンを消す動作
-- 2 つ目の主体による承認（除外と承認を確かめる通しは同じ SSO の主体が別の ARN を申告した）、滞留のアラームが ALARM になるまでの待ち、Standard と Bulk の戻し
-- Access Points 経由で消した後のスナップショットからの復元と、SnapMirror の宛先の状態
-- アーカイブ用クラスの最小保管期間より短く削除や上書きをした場合の課金の扱い
+- 承認の待ちが `ApprovalTimeoutHours` を過ぎて実行が終わること、ウォッチドッグが残ったタスクトークンを消すこと（どちらも単体テストのみ）
+- このパターンの削除のあとにスナップショットから戻すこと（スナップショットからの読み出しは FSx-for-ONTAP-Cyber-Resilience-Patterns の実測）と、SnapMirror の宛先の状態
 - 日本の診療録の保存年限、日本の公文書の保存期間、米国の一般記録スケジュール。条文のページは取得できたが、該当の記述を抽出できなかった
 - 半導体の設計データ、自動運転のログ、地震探査の生データの保持期間。公開された一次資料を見つけていない
 - 金融の規則の (a)(b) の期間、研究資金提供者の一次ページ。大学の要約（二次）に頼っている
