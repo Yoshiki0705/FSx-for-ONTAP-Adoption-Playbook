@@ -93,6 +93,25 @@ the generation, the full ONTAP version and the date with every result, or the re
 - Size limits are **binary** despite docs saying "GB": single `PutObject` and per-`UploadPart` 5 GiB; whole object 50 GiB. The whole-object limit is checked only at `CompleteMultipartUpload`, after the full payload transfers — validate client-side first.
 - **Open claim:** an existing carry-over says that every data operation on an AD-joined SVM requires domain-controller reachability and that `HeadBucket` can succeed while the domain is unreachable. The tracked record does not contain the full environment, procedure, and controls needed to publish this as verified, and the current AWS pages document identity resolution and name-service reachability without establishing that universal runtime behavior. Use a data operation for end-to-end verification, but do not attribute a failure to Active Directory from `HeadBucket` alone.
 
+## Managing snapshots, clones and SnapMirror: the AWS path comes first
+
+Since 2026-11-23 (What's New, [the data-protection note](../ja/domains/data-protection/notes/console-snapmirror-and-snapshot-policies-use-unpublished-api-operations.md)),
+cluster peers, SVM peers, SnapMirror relationships and policies, snapshot policies, snapshots and
+clones are Amazon FSx API operations: the Amazon FSx console, AWS CLI v2 2.42.2+, botocore 1.44.10+
+and CloudFormation. They run on IAM permissions in the same account. They need **no agent, no relay
+function, no IAM role trusted by another account, no registration or discovery of the file system,
+and no ONTAP credentials held by the automation**. Relationships created earlier with the ONTAP CLI
+appear in the API and the console without an import step (measured 2026-11-24, ap-northeast-1).
+
+So whenever a text compares a third-party management GUI for these tasks, state the AWS path's
+prerequisites next to the GUI's, and write the GUI's own prerequisites from its current documentation
+(which role it assumes, what it discovers, what it installs, which network egress it needs). Listing
+only the GUI's prerequisites, or only its two connection models, leaves the reader without the option
+that needs none of them. This was missed once (2026-11-28) because the search used the GUI's
+vocabulary, which this repository's notes do not use under the naming rule; search by the task
+(`SnapMirror`, `スナップショットポリシー`, `クローン`) instead. `~/.kiro/tools/lint_article.py` prints a
+`NATIVE-PATH` advisory on any line naming such a GUI.
+
 ## Documented constraints
 
 - No S3 Event Notifications, and **FPolicy is not a substitute for them**: measured 2026-08-26 on ONTAP 9.18.1P3D1, data operations arriving through an access point raise no FPolicy notification, and are not blocked even by a `mandatory` synchronous policy, while the same volume over NFS or SMB is. An FPolicy event accepts only `cifs` / `nfsv3` / `nfsv4` as its protocol; there is no value for the S3 path. Use EventBridge Scheduler polling, or the ONTAP native audit log, which **does** record these operations as `Source=HTTP` (objects) and `Source=S3` (LIST) — without the requester identity. ARP also sees this path. See [the access point authorization note](../ja/domains/security-governance/notes/access-point-authorization-layers.md) and the measurement record in the observability repository.

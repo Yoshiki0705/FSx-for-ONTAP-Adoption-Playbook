@@ -103,6 +103,7 @@ Google Cloud NetApp Volumes から複製している SnapMirrored の関係は�
 | スナップショットポリシーは ONTAP の CLI か REST API で作り、AWS 側からは名前を指定するだけ | AWS の API と CloudFormation で作れる。作成後にスケジュールは変えられず、CloudFormation ではスケジュールの変更がリソースの置き換えになる |
 | SnapMirror のピアリングと関係の作成は、ONTAP の管理エンドポイントに入って行う | AWS の API と CloudFormation で作れる。ONTAP の資格情報を自動化の仕組みに持たせずに済み、操作は CloudTrail に残る |
 | 複製の状態を見るには ONTAP に入る | `DescribeSnapmirrorRelationships` で `State`、`Healthy`、`LagTimeInMinutes`、`UnhealthyReason`、`TransferState` を読める |
+| GUI で複製を扱うには、管理用のエージェントか中継の関数、外部の AWS アカウントが引き受ける IAM ロール、ファイルシステムの登録を用意する | Amazon FSx のコンソール、AWS CLI、API、CloudFormation は、同じアカウントの IAM の権限だけで動く。エージェントも中継の関数も、外部のアカウントとの信頼関係も、ファイルシステムの登録も要らない。ONTAP で以前に作った関係も、取り込みの操作なしに一覧と API に出る（上の「ONTAP で作った関係が AWS の API から見えること」） |
 | 誰が操作できるかは ONTAP のロールで決める | IAM のアクションとリソースタイプで決められる。クラスターピアは AWS の外の ONTAP につながる入口なので、`CreateClusterPeer` を許す範囲を絞る。その名前を SCP や権限境界に書いて、コンソールの操作を止められるかは確かめていない |
 
 SVM ピアで File copy と LUN copy を許可しても、コピーそのもの（LUN copy、file copy）は引き続き ONTAP の CLI・REST API の操作です。FlexCache の作成も ONTAP の CLI で行います（ユーザーガイドに手順がある）。
